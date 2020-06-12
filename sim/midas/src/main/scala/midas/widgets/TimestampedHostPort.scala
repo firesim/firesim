@@ -15,13 +15,15 @@ trait HasTimestampConstants {
 }
 
 class TimestampedToken[T <: Data](private val gen: T) extends Bundle with HasTimestampConstants {
-  val data = Output(gen.cloneType)
+  def underlyingType(): T = gen
+  val data = Output(gen)
   val time = Output(UInt(timestampWidth.W))
 }
 
 class TimestampedTuple[T <: Data](private val gen: T) extends Bundle with HasTimestampConstants { 
-  val old     = Output(Valid(new TimestampedToken(gen.cloneType)))
-  val latest   = Output(Valid(new TimestampedToken(gen.cloneType)))
+  def underlyingType(): T = gen
+  val old     = Output(Valid(new TimestampedToken(gen)))
+  val latest   = Output(Valid(new TimestampedToken(gen)))
   val observed = Input(Bool())
 
   def definedAt(time: UInt): Bool =
@@ -43,7 +45,7 @@ class TimestampedTuple[T <: Data](private val gen: T) extends Bundle with HasTim
 
 
 class TimestampedSource[T <: Data](gen: DecoupledIO[TimestampedToken[T]]) extends MultiIOModule {
-  val source = IO(Flipped(gen.cloneType))
+  val source = IO(Flipped(gen))
   val value  = IO(new TimestampedTuple(gen.bits.data))
 
   val init = RegInit(false.B)
@@ -67,49 +69,10 @@ class TimestampedSource[T <: Data](gen: DecoupledIO[TimestampedToken[T]]) extend
 
 object TimestampedSource {
   def apply[T <: Data](in: DecoupledIO[TimestampedToken[T]]): TimestampedTuple[T] = {
-    val mod = Module(new TimestampedSource(in))
+    val mod = Module(new TimestampedSource(in.cloneType))
     mod.source <> in
     mod.value
   }
-}
-
-trait EdgeSensitivity
-case object Posedge extends EdgeSensitivity
-case object Negedge extends EdgeSensitivity
-
-
-class TimestampedRegister[T <: Data](gen: T, edgeSensitivity: EdgeSensitivity, init: Option[T] = None) extends MultiIOModule {
-  val simClock  = IO(Flipped(new TimestampedTuple(Bool())))
-  val d      = IO(Flipped(new TimestampedTuple(gen)))
-  val q      = IO(new TimestampedTuple(gen))
-
-  val reg = RegInit({
-    val w = Wire(new TimestampedToken(gen))
-    w.time := 0.U
-    init.foreach(w.data := _)
-    w
-  })
-
-  val simClockAdvancing = simClock.latest.valid && simClock.old.valid
-  val latchingEdge = edgeSensitivity match {
-    case Posedge => simClockAdvancing && ~simClock.old.bits.data &&  simClock.latest.bits.data
-    case Negedge => simClockAdvancing &&  simClock.old.bits.data && ~simClock.latest.bits.data
-  }
-
-  q.old.valid := true.B
-  q.old.bits  := reg
-  q.latest.valid := simClockAdvancing && (!latchingEdge || d.definedBefore(simClock.latest.bits.time))
-  q.latest.bits.time  := simClock.latest.bits.time
-  q.latest.bits.data  := Mux(latchingEdge, d.valueBefore(simClock.latest.bits.time), q.old.bits.data)
-
-  when(q.latest.valid && (q.observed || q.unchanged)) {
-    reg := q.latest.bits
-  }
-
-  simClock.observed := !latchingEdge || q.observed && d.definedBefore(simClock.latest.bits.time)
-  d.observed := Mux(latchingEdge,
-    simClock.latest.bits.time === d.latest.bits.time + 1.U,
-    simClock.definedUntil >= d.definedUntil)
 }
 
 class TimestampedSink[T <: Data](gen: T) extends MultiIOModule {
@@ -120,37 +83,17 @@ class TimestampedSink[T <: Data](gen: T) extends MultiIOModule {
   value.observed := sink.ready
 }
 
-
-class TimestampedRegisterTest(timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
-  io.finished := true.B
-}
-
-class ClockSource(periodPS: BigInt, dutyCycle: Int = 50, initValue: Boolean = false) extends MultiIOModule {
-  val clockOut = IO(Decoupled(new TimestampedToken(Bool())))
-  val time = RegInit(0.U(clockOut.bits.timestampWidth.W))
-  val highTime = (periodPS * dutyCycle) / 100
-  val lowTime = periodPS - highTime
-  val currentValue = RegInit(initValue.B)
-  clockOut.valid := true.B
-  clockOut.bits.time := time
-  clockOut.bits.data := currentValue
-
-  when(clockOut.ready) {
-    time := Mux(currentValue, highTime.U, lowTime.U) + time
-    currentValue := ~currentValue
+object TimestampedSink {
+  def apply[T <: Data](in: TimestampedTuple[T]): DecoupledIO[TimestampedToken[T]] = {
+    val mod = Module(new TimestampedSink(in.underlyingType))
+    mod.value <> in
+    mod.sink
   }
-}
-
-class ClockSourceReference(periodPS: BigInt, dutyCycle: Int = 50, initValue: Int = 0)
-    extends BlackBox(Map("PERIOD_PS" -> periodPS, "DUTY_CYCLE" -> dutyCycle, "INIT_VALUE" -> initValue))
-    with HasBlackBoxResource {
-  addResource("/midas/widgets/ClockSourceReference.sv")
-  val io = IO(new Bundle { val clockOut = Output(Bool()) })
 }
 
 class ReferenceTimestamperImpl(dataWidth: Int) extends BlackBox(Map("DATA_WIDTH" -> dataWidth))
   with HasBlackBoxResource {
-  addResource("/midas/widgets/ReferenceTimestamper.sv")
+  addResource("/midas/widgets/ReferenceTimestamperImpl.sv")
   val io = IO(new Bundle {
     val clock = Input(Clock())
     val reset = Input(Reset())
@@ -160,8 +103,8 @@ class ReferenceTimestamperImpl(dataWidth: Int) extends BlackBox(Map("DATA_WIDTH"
 }
 
 class ReferenceTimestamper[T <: Data](gen: T) extends MultiIOModule {
-  val value = IO(Input(gen.cloneType))
-  val timestamped = IO(Decoupled(new TimestampedToken(gen.cloneType)))
+  val value = IO(Input(gen))
+  val timestamped = IO(Decoupled(new TimestampedToken(gen)))
 
   val ts = Module(new ReferenceTimestamperImpl(value.getWidth))
   ts.io.clock := clock
@@ -174,53 +117,63 @@ class ReferenceTimestamper[T <: Data](gen: T) extends MultiIOModule {
 
 object ReferenceTimestamper {
   def apply[T <: Data](value: T): DecoupledIO[TimestampedToken[T]] = {
-    val timestamper = Module(new ReferenceTimestamper(value))
+    val timestamper = Module(new ReferenceTimestamper(value.cloneType))
     timestamper.value := value
     timestamper.timestamped
   }
 }
 
-class ClockSourceTest(periodPS: BigInt, initValue: Boolean, timeout: Int = 100000)(implicit p: Parameters) extends UnitTest(timeout) with HasTimestampConstants{
-  val reference = ReferenceTimestamper(Module(new ClockSourceReference(periodPS, initValue = if (initValue) 1 else 0)).io.clockOut)
-  val model = Module(new ClockSource(periodPS, initValue = initValue))
-  val targetTime = TimestampedTokenTraceEquivalence(reference, model.clockOut)
-  io.finished := targetTime > (timeout / 2).U
-}
-
-
 // This checks two timestamped token streams model the same underlying target
 // signal by comparing non-null messages (transition times + values). Either
 // stream can provide different numbers of null-messages
+class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with HasTimestampConstants {
+  // By convention a -> reference, b -> model when not compairing two models
+  val a = IO(Flipped(new TimestampedTuple(gen)))
+  val b = IO(Flipped(new TimestampedTuple(gen)))
+  val time = IO(Output(UInt(timestampWidth.W)))
+  // Consume null-tokens greedily but wait for both channels when there's a transition in either. 
+  // These non-null messages should be indentical
+  a.observed := (a.old.valid && a.unchanged) || b.latest.valid && b.old.valid && !b.unchanged
+  b.observed := (b.old.valid && b.unchanged) || a.latest.valid && a.old.valid && !a.unchanged
+
+  // Check that last takes on indentical values, including init
+  assert(!a.old.valid || !b.old.valid || a.old.bits.data.asUInt === b.old.bits.data.asUInt,
+    "Non-null messages do not have matching data")
+  // Check that non-null messages arrive at the same cycles. (The data check
+  // is captured by the assertion above, since the transition is observed
+  // on the same host cycle.)
+  assert((!a.old.valid || !b.old.valid) || (a.unchanged || b.unchanged) || (!a.latest.valid || !b.latest.valid) ||
+     a.latest.bits.time === b.latest.bits.time,
+    "Non-null messages do not arrive at the same target times")
+  time := Mux(a.old.valid && b.old.valid,
+    Mux(a.old.bits.time > b.old.bits.time, a.old.bits.time, b.old.bits.time),
+    0.U
+  )
+}
+
 object TimestampedTokenTraceEquivalence {
   @chiselName
-  def apply[T <: Data](aSource: DecoupledIO[TimestampedToken[T]], bSource: DecoupledIO[TimestampedToken[T]]): UInt = {
-    val a = TimestampedSource(aSource)
-    val b = TimestampedSource(bSource)
-    // Consume null-tokens greedily but wait for both channels when there's a transition in either. 
-    // These non-null messages should be indentical
-    a.observed := (a.old.valid && a.unchanged) || b.latest.valid && b.old.valid && !b.unchanged
-    b.observed := (b.old.valid && b.unchanged) || a.latest.valid && a.old.valid && !a.unchanged
-
-    // Check that last takes on indentical values, including init
-    assert(!a.old.valid || !b.old.valid || a.old.bits.data.asUInt === b.old.bits.data.asUInt,
-      "Non-null messages do not have matching data")
-    // Check that non-null messages arrive at the same cycles. (The data check
-    // is captured by the assertion above, since the transition is observed
-    // on the same host cycle.)
-    assert((!a.old.valid || !b.old.valid) || (a.unchanged || b.unchanged) || (!a.latest.valid || !b.latest.valid) ||
-       a.latest.bits.time === b.latest.bits.time,
-      "Non-null messages do not arrive at the same target times")
-    Mux(a.old.valid && b.old.valid,
-      Mux(a.old.bits.time > b.old.bits.time, a.old.bits.time, b.old.bits.time),
-      0.U
-    )
+  def apply[T <: Data](a: TimestampedTuple[T], b: TimestampedTuple[T]): UInt = {
+    val checker = Module(new TimestampedTokenTraceChecker(a.underlyingType))
+    println(checker)
+    checker.a <> a
+    checker.b <> b
+    checker.time
   }
+  def apply[T <: Data](a: DecoupledIO[TimestampedToken[T]], b: DecoupledIO[TimestampedToken[T]]): UInt =
+    apply(TimestampedSource(a), TimestampedSource(b))
+
+  def apply[T <: Data](reference: T, model: TimestampedTuple[T]): UInt =
+    apply(TimestampedSource(ReferenceTimestamper(reference)), model)
+
+  def apply[T <: Data](reference: T, model: DecoupledIO[TimestampedToken[T]]): UInt = 
+    apply(TimestampedSource(ReferenceTimestamper(reference)), TimestampedSource(model))
 }
 
 
 class DecoupledDelayer[T <: Data](gen: DecoupledIO[T], q: Double) extends MultiIOModule {
-  val i = IO(Flipped(gen.cloneType))
-  val o = IO(gen.cloneType)
+  val i = IO(Flipped(gen))
+  val o = IO(gen)
   val allow = ((q * 65535.0).toInt).U <= LFSRNoiseMaker(16, i.valid)
   o <> i
   o.valid := i.valid && allow
@@ -230,7 +183,7 @@ class DecoupledDelayer[T <: Data](gen: DecoupledIO[T], q: Double) extends MultiI
 // Inspired by RC TLDelayer
 object DecoupledDelayer {
   def apply[T <: Data](in: DecoupledIO[T], q: Double): DecoupledIO[T] = {
-    val delay = Module(new DecoupledDelayer(in, q))
+    val delay = Module(new DecoupledDelayer(in.cloneType, q))
     delay.i <> in
     delay.o
   }

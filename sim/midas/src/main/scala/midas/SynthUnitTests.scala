@@ -42,8 +42,10 @@ class WithTimeOutCheck extends Config((site, here, up) => {
 class WithTimestampTests extends Config((site, here, up) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
+    import midas.widgets._
     Seq(
-      Module(new midas.widgets.ClockSourceTest(1000, true)),
+      //Module(new ClockSourceTest(1000, true)),
+      Module(new TimestampedRegisterTest(Posedge)),
     )
   }
 })
