@@ -280,8 +280,13 @@ class UserTopologies(object):
 
     def hwacha_memblade_base_config(self, n, m):
         self.base_twohw_config(
-                "firesim-hwacha-rdma-ddr3-l2",
-                "firesim-singlecore-memblade1024-ddr3", n, m)
+                "firesim-hwacha-rdma-lbp-l2",
+                "firesim-singlecore-memblade1024-lbp", n, m)
+
+    def boom_memblade_base_config(self, n, m):
+        self.base_twohw_config(
+                "firesim-boom-rdma-lbp-l2",
+                "firesim-singlecore-memblade1024-lbp", n, m)
 
     def dramcache_base_config(self, n, m):
         self.base_twohw_config(
@@ -298,16 +303,23 @@ class UserTopologies(object):
                 "firesim-hetero-dramcache-ddr3-l2",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
-    def hwacha_dramcache_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-hwacha-dramcache-ddr3-l2",
-                "firesim-singlecore-memblade-ddr3", n, m)
+    def hwacha_dramcache_base_config(self, n, m, biglines, nometa):
+        dramcache_name = "firesim-hwacha-dramcache{}{}-lbp-l2".format(
+                "1024" if biglines else "",
+                "-nometa" if nometa else "")
+        memblade_name = "firesim-singlecore-memblade{}-lbp".format(
+                "1024" if biglines else "")
+        self.base_twohw_config(dramcache_name, memblade_name, n, m)
 
     def boom_hwacha_dramcache_base_config(self, n, m):
         self.base_twohw_config(
                 "fireboom-hwacha-dramcache-ddr3-l2",
                 "firesim-singlecore-memblade-ddr3", n, m)
 
+    def hetero_hwacha_dramcache_base_config(self, n, m):
+        self.base_twohw_config(
+                "firesim-hetero-hwacha-dramcache-ddr3-l2",
+                "firesim-singlecore-memblade-ddr3", n, m)
 
     def memblade_1x1_config(self):
         self.memblade_base_config(1, 1)
@@ -317,6 +329,9 @@ class UserTopologies(object):
 
     def hwacha_memblade_1x1_config(self):
         self.hwacha_memblade_base_config(1, 1)
+
+    def boom_memblade_1x1_config(self):
+        self.boom_memblade_base_config(1, 1)
 
     def dramcache_1x1_config(self):
         self.dramcache_base_config(1, 1)
@@ -334,10 +349,22 @@ class UserTopologies(object):
         self.hetero_dramcache_base_config(1, 1)
 
     def hwacha_dramcache_1x1_config(self):
-        self.hwacha_dramcache_base_config(1, 1)
+        self.hwacha_dramcache_base_config(1, 1, False, False)
+
+    def hwacha_dramcache_nometa_1x1_config(self):
+        self.hwacha_dramcache_base_config(1, 1, False, True)
+
+    def hwacha_dramcache1024_1x1_config(self):
+        self.hwacha_dramcache_base_config(1, 1, True, False)
+
+    def hwacha_dramcache1024_nometa_1x1_config(self):
+        self.hwacha_dramcache_base_config(1, 1, True, True)
 
     def boom_hwacha_dramcache_1x1_config(self):
         self.boom_hwacha_dramcache_base_config(1, 1)
+
+    def hetero_hwacha_dramcache_1x1_config(self):
+        self.hetero_hwacha_dramcache_base_config(1, 1)
 
     @staticmethod
     def supernode_flatten(arr):
