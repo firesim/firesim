@@ -48,7 +48,11 @@ emul_cc    :=
 # VCS Makefrag arguments
 ifeq ($(EMUL),vcs)
 vcs_wrapper_v := $(vsrc)/TestDriver.v
-VCS_FLAGS = +verbose
+VCS_FLAGS =  \
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
+	+define+REFERENCE_INIT_DELAY=0.1 \
+
 include $(sim_makefrag_dir)/Makefrag-vcs
 
 vcs = $(OUT_DIR)/$(DESIGN)
@@ -62,6 +66,10 @@ else
 top_module := TestHarness
 override CFLAGS  += -I$(csrc) -include $(csrc)/verilator.h -DTEST_HARNESS=V$(top_module) -std=c++11
 override emul_cc += $(sim_makefrag_dir)/generic_vharness.cc
+VERILATOR_FLAGS =
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
+
 
 include $(sim_makefrag_dir)/Makefrag-verilator
 
