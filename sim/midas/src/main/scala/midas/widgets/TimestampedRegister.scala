@@ -99,16 +99,20 @@ object TimestampedRegister {
   }
 }
 
-class TimestampedRegisterTest(edgeSensitivity: EdgeSensitivity, timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
-  val refClock = Module(new ClockSourceReference(1000, initValue = 0))
+class TimestampedRegisterTest(
+    edgeSensitivity: EdgeSensitivity,
+    clockPeriodPS: Int,
+    inputPeriodPS: Int,
+    timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
+  val refClock = Module(new ClockSourceReference(clockPeriodPS, initValue = 0))
   // Use a clock source to provide data-input stimulus to resuse code we already have
-  val refInput = Module(new ClockSourceReference(373, initValue = 0))
+  val refInput = Module(new ClockSourceReference(inputPeriodPS, initValue = 0))
 
   val modelClock = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(1000, initValue = false)).clockOut,
+    Module(new ClockSource(clockPeriodPS, initValue = false)).clockOut,
     0.5))
   val modelInput = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(373, initValue = false)).clockOut,
+    Module(new ClockSource(inputPeriodPS, initValue = false)).clockOut,
     0.25))
   val (modelReg, refReg) = TimestampedRegister.instantiateAgainstReference(
     edgeSensitivity,

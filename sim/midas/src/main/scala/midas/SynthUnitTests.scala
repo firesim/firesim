@@ -44,13 +44,28 @@ class WithTimestampTests extends Config((site, here, up) => {
     implicit val p = q
     import midas.widgets._
     Seq(
-      //Module(new ClockSourceTest(1000, true)),
-      Module(new TimestampedRegisterTest(Posedge)),
+      Module(new ClockSourceTest(1000, true)),
+      //Module(new TimestampedRegisterTest(Posedge)),
     )
   }
 })
 
+// Timestamped model tests
+class WithTimestampRegisterTests extends Config((site, here, up) => {
+  case UnitTests => (q: Parameters) => {
+    implicit val p = q
+    import midas.widgets._
+    Seq(
+      Module(new TimestampedRegisterTest(Posedge, 5, 4)),
+      Module(new TimestampedRegisterTest(Negedge, 5, 4)),
+      Module(new TimestampedRegisterTest(Posedge, 10, 10)),
+      Module(new TimestampedRegisterTest(Posedge, 9, 10)),
+      Module(new TimestampedRegisterTest(Negedge, 10, 10)),
+    )
+  }
+})
 // Complete configs
 class AllUnitTests extends Config(new WithAllUnitTests ++ new midas.SimConfig)
 class TimeOutCheck extends Config(new WithTimeOutCheck ++ new midas.SimConfig)
 class TimestampTests extends Config(new WithTimestampTests ++ new midas.SimConfig)
+class TimestampRegisterTests extends Config(new WithTimestampRegisterTests ++ new midas.SimConfig)
