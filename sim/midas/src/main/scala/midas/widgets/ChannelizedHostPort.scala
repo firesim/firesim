@@ -64,7 +64,7 @@ trait IndependentChannels extends HasChannels { this: Record =>
   def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName  }).toMap
 
   protected def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock => throw new Exception("Data tokens cannot contain clock fields")
+    case c: Clock => Seq(directionOf(c))//throw new Exception("Data tokens cannot contain clock fields")
     case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
     case v: Vec[_] => v.flatMap(getLeafDirs)
     case b: Bits => Seq(directionOf(b))

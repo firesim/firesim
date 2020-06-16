@@ -5,7 +5,7 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.config.{Parameters, Field}
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import midas.widgets.{DynamicClockBridge, RationalClockBridge, PeekPokeBridge, RationalClock}
 
 class RegisterModule extends MultiIOModule {
   def dataType = UInt(32.W)
@@ -22,13 +22,13 @@ class RegisterModule extends MultiIOModule {
   }
 }
 
-case object UseMultipleClockBridges extends Field[Boolean](false)
+case object UseDynamicClockBridge extends Field[Boolean](true)
 
 class TrivialMulticlock(implicit p: Parameters) extends RawModule {
   // TODO: Resolve bug in PeekPoke bridge for 3/7 case
   //val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
 
-  val Seq(fullRate, halfRate, thirdRate) = if (!p(UseMultipleClockBridges)) {
+  val Seq(fullRate, halfRate, thirdRate) = if (!p(UseDynamicClockBridge)) {
     // DOC include start: RationalClockBridge Usage
     // Here we request three target clocks (the base clock is implicit). All
     // clocks beyond the base clock are specified using the RationalClock case
@@ -44,9 +44,9 @@ class TrivialMulticlock(implicit p: Parameters) extends RawModule {
     clockBridge.io.clocks.toSeq
     // DOC include end: RationalClockBridge Usage
   } else {
-    val clockBridgeA = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
-    val clockBridgeB = Module(new RationalClockBridge(RationalClock("ThirdRate", 1, 3)))
-    clockBridgeA.io.clocks.toSeq :+ clockBridgeB.io.clocks(1)
+    val clockBridge = Module(new DynamicClockBridge( RationalClock("HalfRate", 1, 2), 
+                                                     RationalClock("ThirdRate", 1, 3)))
+    clockBridge.io.clocks
   }
   val reset = WireInit(false.B)
 

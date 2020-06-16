@@ -26,7 +26,7 @@ import firrtl.annotations.{ModuleTarget, ReferenceTarget}
   */
 case class RationalClock(name: String, multiplier: Int, divisor: Int)
 
-sealed trait ClockBridgeConsts {
+trait ClockBridgeConsts {
   val clockChannelName = "clocks"
   val refClockDomain = "baseClock"
 }
@@ -112,7 +112,7 @@ class ClockBridgeModule(arg: ClockBridgeCtorArgument)(implicit p: Parameters)
 }
 
 /**
-  * Finds a virtual fast-clock whose period is the GCD of the periods of all requested
+  * Finds a virtual fast clock whose period is the GCD of the periods of all requested
   * clocks, and returns the period of each requested clock as an integer multiple of that
   * high-frequency virtual clock.
   */
