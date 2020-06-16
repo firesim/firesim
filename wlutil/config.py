@@ -247,13 +247,6 @@ class Config(collections.MutableMapping):
 
             self.cfg['files'] = fList
 
-        # Convert overlay to file list. Internal code can safely ignore the 'overlay' argument now.
-        if 'overlay' in self.cfg:
-            self.cfg.setdefault('files', [])
-            files = self.cfg['overlay'].glob('*')
-            for f in files:
-                self.cfg['files'].append(FileSpec(src=f, dst=pathlib.Path('/')))
-
         if 'outputs' in self.cfg:
             self.cfg['outputs'] = [ pathlib.Path(f) for f in self.cfg['outputs'] ]
 
