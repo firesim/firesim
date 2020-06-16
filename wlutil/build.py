@@ -58,6 +58,20 @@ def handlePostBin(config, linuxBin):
 
        run([config['post-bin'].path] + config['post-bin'].args, env=postbinEnv, cwd=config['workdir'])
 
+
+def submoduleDepsTask(submodules, name=""):
+    """Returns a calc_dep task for doit to check if submodule is up to date.
+    Packaging this in a calc_dep task avoids unnecessary checking that can be
+    slow."""
+    def submoduleDeps(submodules):
+        return { 'uptodate' : [ config_changed(checkGitStatus(sub), name=str(sub)+"_cfg_change") for sub in submodules ] }
+
+    return  {
+              'name' : name,
+              'actions' : [ (submoduleDeps, [ submodules ]) ]
+            }
+
+
 def addDep(loader, config):
     """Adds 'config' to the doit dependency graph ('loader')"""
 
@@ -87,14 +101,16 @@ def addDep(loader, config):
         else:
             targets = [str(config['bin'])]
 
+        bin_calc_dep_tsk = submoduleDepsTask([config.get('linux-src'), config.get('pk-src')], name="_submodule_deps_"+config['name'])
+        loader.addTask(bin_calc_dep_tsk)
+
         loader.addTask({
                 'name' : str(config['bin']),
                 'actions' : [(makeBin, [config])],
                 'targets' : targets,
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
-                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
-                    config_changed(checkGitStatus(config.get('pk-src')))]
+                'calc_dep' : [bin_calc_dep_tsk['name']]
                 })
         diskBin = [str(config['bin'])]
 
