@@ -1,0 +1,13 @@
+{
+  "name" : "generateFiles",
+  "base" : "br-base.json",
+  "host-init" : "generate.sh",
+  "overlay" : "overlay",
+  "command" : "cat /root/overlayInput && cat /root/fileInput && cat /root/generatedFileInput && cat /root/generatedOverlayInput",
+  "files" : [["fileInput", "/root/"], ["generatedFileInput", "/root/"]],
+  "post_run_hook" : "cleanup.sh",
+  "testing" : {
+    "refDir" : "refOutput",
+    "strip" : true
+  }
+}
