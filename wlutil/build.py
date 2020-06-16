@@ -66,7 +66,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
     taskDeps should be a list of names of tasks that must run before
     calculating dependencies (e.g. host-init)"""
 
-    def overlayDeps(overlay, files):
+    def fileDeps(overlay, files):
         """The python-action for the filedeps task, returns a dictionary of dependencies"""
         deps = []
         if overlay is not None:
@@ -83,7 +83,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
 
     task = {
             'name' : 'calc_' + name + '_dep',
-            'actions' : [ (overlayDeps, [overlay, files]) ],
+            'actions' : [ (fileDeps, [overlay, files]) ],
     }
     if taskDeps is not None:
         task['task_dep'] = taskDeps
@@ -179,20 +179,6 @@ def addDep(loader, config):
                 overlay=config.get('overlay'), files=config.get('files'))
             img_calc_deps.append(fdepsTask['name'])
             loader.addTask(fdepsTask)
-        # if 'files' in config:
-        #     for fSpec in config['files']:
-        #         # Add directories recursively
-        #         if fSpec.src.is_dir():
-        #             for root, dirs, files in os.walk(fSpec.src):
-        #                 for f in files:
-        #                     fdep = os.path.join(root, f)
-        #                     # Ignore symlinks
-        #                     if not os.path.islink(fdep):
-        #                         img_file_deps.append(fdep)
-        #         else:
-        #             # Ignore symlinks
-        #             if not os.path.islink(fSpec.src):
-        #                 img_file_deps.append(fSpec.src)
         if 'guest-init' in config:
             img_file_deps.append(config['guest-init'].path)
             img_task_deps.append(str(config['bin']))
@@ -446,6 +432,10 @@ def makeImage(config):
     # Resize if needed
     if config['img-sz'] != 0:
         resizeFS(config['img'], config['img-sz'])
+
+    if 'overlay' in config:
+        log.info("Applying Overlay: " + str(config['overlay']))
+        applyOverlay(config['img'], config['overlay'])
 
     if 'files' in config:
         log.info("Applying file list: " + str(config['files']))
