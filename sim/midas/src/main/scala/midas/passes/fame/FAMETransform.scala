@@ -147,34 +147,63 @@ object FAMEModuleTransformer {
      */
     val nReset = DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType)
 
+    /*
+     * At simulation time zero do a clock low for all clock domains: let all
+     * combinational paths resolve based on initial tokens and register values.
+     * We can spoof this this by setting clockEnable for all domains without
+     * actually ungating those clocks.
+     */
+    val doneInit = hostFlagReg(ns.newName("doneInit"), resetVal = UIntLiteral(0))
+    val doneInitConnect = Connect(NoInfo, WRef(doneInit), Or(WRef(doneInit), WRef(finishing)))
+
+    case class TargetClockMetadata(
+      targetSourcePort: Port,
+      // I'm not convinced these are the right names for this...
+      clockLowEnable: Expression,
+      clockHighEnable: Expression,
+      clockBuffer: SignalInfo)
+
     // Multi-clock management step 4: Generate clock buffers for all target clocks
-    val targetClockBufs: Seq[SignalInfo] = clockChannel.ports.map { en =>
+    val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.map { en =>
       val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
-        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(And(WRef(enableReg), WRef(finishing)), nReset))))
-      SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, SourceFlow))
+        Connect(NoInfo, WSubField(WRef(buf), "CE"),
+          Seq(WRef(enableReg), WRef(finishing), nReset, WRef(doneInit)).reduce(And.apply))))
+      TargetClockMetadata(
+        en,
+        WRef(enableReg),
+        clockChannel.replacePortRef(WRef(en)),
+        SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, SourceFlow))
+      )
     }
 
+    val targetClockBufs = clockMetadata.map(_.clockBuffer)
     // Multi-clock management step 5: Generate target clock substitution map
     def asWE(p: Port) = WrappedExpression.we(WRef(p))
     val replaceClocksMap = (clockChannel.ports.map(p => asWE(p)) zip targetClockBufs.map(_.ref)).toMap
+    val clockLowMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.clockLowEnable).toMap
+    val clockHighMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.clockHighEnable).toMap
 
     // LI-BDN transformation step 1: Build channels
     // TODO: get rid of the analysis calls; we just need connectivity & annotations
     val portDeps = analysis.connectivity(m.name)
 
-    def genMetadata(info: (String, (Option[Port], Seq[Port]))) = info match {
+    def genMetadata(isInput: Boolean)(info: (String, (Option[Port], Seq[Port]))) = info match {
       case (cName, (Some(clock), ports)) =>
         // must be driven by one clock input port
         // TODO: this should not include muxes in connectivity!
         val srcClockPorts = portDeps.getEdges(clock.name).map(portsByName(_))
         assert(srcClockPorts.size == 1)
         val clockRef = WRef(srcClockPorts.head)
-        val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(clockRef)), Nil, BoolType)
+        val clockFlag = if (isInput) {
+          DoPrim(PrimOps.AsUInt, Seq(clockHighMap(clockRef)), Nil, BoolType)
+        } else {
+          DoPrim(PrimOps.AsUInt, Seq(clockLowMap(clockRef)), Nil, BoolType)
+        }
         val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
         (cName, clockFlag, ports, firedReg)
       case (cName, (None, ports)) => clockChannel match {
@@ -191,12 +220,12 @@ object FAMEModuleTransformer {
 
     // Have to filter out the clock channel from the input channels
     val inChannelInfo = analysis.modelInputChannelPortMap(mTarget).filterNot(isClockChannel(_)).toSeq
-    val inChannelMetadata = inChannelInfo.map(genMetadata(_))
+    val inChannelMetadata = inChannelInfo.map(genMetadata(isInput = true))
     val inChannels = inChannelMetadata.map((FAME1InputChannel.apply _).tupled)
     val inChannelMap = stableMap(inChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
     val outChannelInfo = analysis.modelOutputChannelPortMap(mTarget).toSeq
-    val outChannelMetadata = outChannelInfo.map(genMetadata(_))
+    val outChannelMetadata = outChannelInfo.map(genMetadata(isInput = false))
     val outChannels = outChannelMetadata.map((FAME1OutputChannel.apply _).tupled)
     val outChannelMap = stableMap(outChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
@@ -247,8 +276,8 @@ object FAMEModuleTransformer {
     val clockOutputsAsWires = m.ports.collect { case Port(i, n, Output, ClockType) => DefWire(i, n, ClockType) }
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = finishing +: clockOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
-    val assigns = targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
+    val decls = Seq(finishing, doneInit) ++: clockOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
+    val assigns = Seq(doneInitConnect) ++ targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
     Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns))
   }
 }
@@ -314,7 +343,7 @@ class FAMETransform extends Transform {
 
   def transformTop(top: DefModule, analysis: FAMEChannelAnalysis): Module = top match {
     case Module(info, name, ports, body) =>
-      val transformedPorts = ports.filterNot(p => staleTopPort(p, analysis)) ++ 
+      val transformedPorts = ports.filterNot(p => staleTopPort(p, analysis)) ++
         analysis.transformedSinks.map(c => Port(NoInfo, s"${c}_sink", Input, analysis.getSinkHostDecoupledChannelType(c))) ++
         analysis.transformedSources.map(c => Port(NoInfo, s"${c}_source", Output, analysis.getSourceHostDecoupledChannelType(c)))
       val transformedStmts = Seq(body.map(updateNonChannelConnects(analysis))) ++
