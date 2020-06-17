@@ -36,7 +36,7 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
     (wrapper: BridgeModule[_ <: HostPortType])
     (implicit p: Parameters) extends WidgetImp(wrapper) {
   def hPort: HostPortType
-  def clockDomainInfo: RationalClock = p(TargetClockInfo).get
+  def clockDomainInfo: RationalClock = p(TargetClockInfo).getOrElse(RationalClock("workaround", 1, 1))
   def emitClockDomainInfo(headerWidgetName: String, sb: StringBuilder): Unit = {
     import CppGenerationUtils._
     val RationalClock(domainName, mul, div) = clockDomainInfo

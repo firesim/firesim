@@ -22,7 +22,7 @@ class RegisterModule extends MultiIOModule {
   }
 }
 
-case object UseDynamicClockBridge extends Field[Boolean](true)
+case object UseDynamicClockBridge extends Field[Boolean](false)
 
 class TrivialMulticlock(implicit p: Parameters) extends RawModule {
   // TODO: Resolve bug in PeekPoke bridge for 3/7 case
