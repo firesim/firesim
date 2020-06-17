@@ -64,7 +64,7 @@ def submoduleDepsTask(submodules, name=""):
     Packaging this in a calc_dep task avoids unnecessary checking that can be
     slow."""
     def submoduleDeps(submodules):
-        return { 'uptodate' : [ config_changed(checkGitStatus(sub), name=str(sub)+"_cfg_change") for sub in submodules ] }
+        return { 'uptodate' : [ config_changed(checkGitStatus(sub)) for sub in submodules ] }
 
     return  {
               'name' : name,
@@ -380,6 +380,7 @@ def makeDrivers(kfrags, boardDir, linuxSrc):
 
     # Setup the dependency file needed by modprobe to load the drivers
     run(['depmod', '-b', str(getOpt('initramfs-dir') / "drivers"), kernelVersion])
+
 
 def makeBin(config, nodisk=False):
     """Build the binary specified in 'config'.

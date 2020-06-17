@@ -681,15 +681,7 @@ class config_changed(dict):
         self.config = config
         self.config_digest = None
         self.encoder = encoder
-
-        # The dict and name are required to make the config_changed object json
-        # serializable. Name must be set if the config_changed object is going
-        # to be added to the doit database (this happens when it's part of a
-        # calc_dep, but not when it's added to the task directly as an
-        # uptodate). If you don't, doit will not be able to determine if the
-        # graph has changed and will randomly rebuild or not.
         dict.__init__(self)
-        self.update({"name" : name})
 
     def _calc_digest(self):
         if isinstance(self.config, str):
