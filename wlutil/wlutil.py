@@ -677,7 +677,7 @@ class config_changed(dict):
     @var config (str) or (dict)
     @var encoder (json.JSONEncoder) Encoder used to convert non-default values.
     """
-    def __init__(self, config, encoder=None, name=""):
+    def __init__(self, config, encoder=None):
         self.config = config
         self.config_digest = None
         self.encoder = encoder
