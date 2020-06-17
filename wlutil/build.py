@@ -266,8 +266,10 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             if 'img' in jCfg and buildImg:
                 imgList.append(jCfg['img'])
 
+    opts = {**getOpt('doitOpts'), **{'check_file_uptodate': WithMetadataChecker}}
+    doitHandle = doit.doit_cmd.DoitMain(taskLoader, extra_config={'run': opts})
+
     # The order isn't critical here, we should have defined the dependencies correctly in loader
-    doitHandle = doit.doit_cmd.DoitMain(taskLoader, extra_config={'run': getOpt('doitOpts')})
     return doitHandle.run([str(p) for p in binList + imgList])
 
 def makeInitramfs(srcs, cpioDir, includeDevNodes=False):

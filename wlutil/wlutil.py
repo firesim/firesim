@@ -18,6 +18,7 @@ from contextlib import contextmanager
 import yaml
 import re
 import pprint
+import doit
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
@@ -665,6 +666,48 @@ def checkSubmodule(s):
     
     if not s.exists() or not any(os.scandir(s)):
         raise SubmoduleError(s)
+
+class WithMetadataChecker(doit.dependency.MD5Checker):
+    """This checker is similar to the default MD5Checker, but it includes file
+    metadata including mode and user/group ids.
+    see https://github.com/pydoit/doit/blob/0.31.1/doit/dependency.py for details
+    """
+
+    @staticmethod
+    def extract_stat(stat):
+        return (stat.st_mode, stat.st_uid, stat.st_gid)
+
+    def check_modified(self, file_path, file_stat, state):
+        state = tuple(state)
+        meta = self.extract_stat(file_stat)
+        if meta != state[3:]:
+            return True
+        else:
+            return super().check_modified(file_path, file_stat, state[:3])
+
+    def get_state(self, dep, current_state):
+        stat = self.extract_stat(os.stat(dep))
+        if current_state is None:
+            md5State = super().get_state(dep, None)
+            metaState = stat
+        else:
+            current_state = tuple(current_state)
+            md5State = super().get_state(dep, current_state[0:3])
+            if stat == current_state[3:]:
+                metaState = None
+            else:
+                metaState = stat
+
+        # Merge the two state sources
+        if md5State is None and metaState is None:
+            return None
+        else:
+            if md5State is None:
+                md5State = current_state[0:3]
+            elif metaState is None:
+                metaState = stat
+
+            return md5State + stat
 
 # The doit.tools.config_changed helper doesn't support multiple invocations in
 # a single uptodate. I fix that bug here, otherwise it's a direct copy from their
