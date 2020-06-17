@@ -666,10 +666,13 @@ def checkSubmodule(s):
     if not s.exists() or not any(os.scandir(s)):
         raise SubmoduleError(s)
 
-# The doit.tools.config_changed helper doesn't support multiple invocations in
-# a single uptodate. I fix that bug here, otherwise it's a direct copy from their
+# The doit.tools.config_changed helper has a few limitations:
+#   - doesn't support multiple invocations in a single uptodate.
+#   - It is not JSON serializable which means you can't use it as a calc_dep
+#   (doit saves calc_dep to the DB). Fixed by subclassing dict.
+# I fix these here, otherwise it's a direct copy from their
 # code. See https://github.com/pydoit/doit/issues/333.
-class config_changed(object):
+class config_changed(dict):
     """check if passed config was modified
     @var config (str) or (dict)
     @var encoder (json.JSONEncoder) Encoder used to convert non-default values.
@@ -678,6 +681,7 @@ class config_changed(object):
         self.config = config
         self.config_digest = None
         self.encoder = encoder
+        dict.__init__(self)
 
     def _calc_digest(self):
         if isinstance(self.config, str):
