@@ -136,7 +136,7 @@ private[passes] class AssertPass extends firrtl.Transform {
         val namespace = Namespace(m)
         val tpe = mInfo.assertUInt
         val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
-        val assertConnect = Connect(NoInfo, WRef(port.name), cat(mInfo.allAsserts.reverse))
+        val assertConnect = Connect(NoInfo, WRef(port.name), cat(mInfo.allAsserts))
         assertPorts(m.name) = (port, mInfo.allClocks)
         ports += port
         stmts += assertConnect
@@ -186,10 +186,15 @@ private[passes] class AssertPass extends firrtl.Transform {
       val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))
       val finder = new ClockSourceFinder(loweredState)
       val clockMapping = mInfo.allClocks.map(cT => cT -> finder.findRootDriver(cT)).toMap
-      val rootClocks = mInfo.allClocks.map(clockMapping).flatten
+      // Generate (sourceClock, assertIndex) tuples for all synthesized
+      // assertions. Reject assertions with undriven clocks
+      val rootClocks = mInfo.allClocks
+        .map(clockMapping)
+        .zipWithIndex
+        .collect({ case (Some(clockRT), idx) => (clockRT, idx) })
 
-      // For each clock in clock channel, list associated assert indices
-      val groupedAsserts = rootClocks.zipWithIndex.groupBy(_._1).mapValues(values => values.map(_._2))
+      // Group assertion indices by their clocks
+      val groupedAsserts = rootClocks.groupBy(_._1).mapValues(values => values.map(_._2))
 
       // Step 5: Re-wire the top-level module
       val ports = collection.mutable.ArrayBuffer[Port]()
@@ -198,7 +203,7 @@ private[passes] class AssertPass extends firrtl.Transform {
 
       // Step 5a: Connect all assertions to a single wire to match the order of our previous analysis
       val allAssertsWire = DefWire(NoInfo, "allAsserts", mInfo.assertUInt)
-      val allAssertConnect = Connect(NoInfo, WRef(allAssertsWire), cat(mInfo.allAsserts.reverse))
+      val allAssertConnect = Connect(NoInfo, WRef(allAssertsWire), cat(mInfo.allAsserts))
       stmts ++= Seq(allAssertsWire, allAssertConnect)
 
       // Step 5b: Generate unique ports for each clock
@@ -210,7 +215,7 @@ private[passes] class AssertPass extends firrtl.Transform {
         val clockPort = Port(NoInfo, clockPortName, Output, ClockType)
         ports ++= Seq(port, clockPort)
         val bitExtracts = asserts.map(idx => DoPrim(PrimOps.Bits, Seq(WRef(allAssertsWire)), Seq(idx, idx), UIntType(IntWidth(1))))
-        val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts.reverse))
+        val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts))
         val connectClock   = Connect(NoInfo, WRef(clockPort), WRef(clockRT.ref))
         stmts ++= Seq(connectClock, connectAsserts)
 
