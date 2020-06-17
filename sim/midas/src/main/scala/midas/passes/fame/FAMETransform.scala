@@ -46,6 +46,13 @@ trait HasModelPort {
   def isReady = WSubField(WRef(asHostModelPort.get), "ready", BoolType)
   def isFiring: Expression = And(isReady, isValid)
   def setReady(advanceCycle: Expression): Statement = Connect(NoInfo, isReady, advanceCycle)
+  def payloadRef(): Expression = {
+    if (hasTimestamp) {
+      WSubField(WSubField(WRef(asHostModelPort.get), "bits"), "data")
+    } else {
+      WSubField(WRef(asHostModelPort.get), "bits")
+    }
+  }
 
   override def asHostModelPort: Option[Port] = {
     val tpe = FAMEChannelAnalysis.getHostDecoupledChannelType(name, ports, hasTimestamp)
@@ -56,12 +63,7 @@ trait HasModelPort {
   }
 
   def replacePortRef(wr: WRef): Expression = {
-    val payload = if (hasTimestamp) {
-      WSubField(WSubField(WRef(asHostModelPort.get), "bits"), "data")
-    } else {
-      WSubField(WRef(asHostModelPort.get), "bits")
-    }
-    if (ports.size == 1) payload else WSubField(payload, FAMEChannelAnalysis.removeCommonPrefix(wr.name, name)._1)
+    if (ports.size == 1) payloadRef else WSubField(payloadRef, FAMEChannelAnalysis.removeCommonPrefix(wr.name, name)._1)
   }
 }
 
@@ -137,13 +139,11 @@ object FAMEModuleTransformer {
     // Multi-clock management step 1: Add host clock + reset ports, finishing wire
     // TODO: Should finishing be a WrappedComponent?
     // TODO: Avoid static naming convention.
-    val hostReset = Port(NoInfo, WrapTop.hostResetName, Input, BoolType)
-    val hostClock = Port(NoInfo, WrapTop.hostClockName, Input, ClockType)
+    implicit val hostReset = new HostReset(WrapTop.hostResetName)
+    implicit val hostClock = new HostClock(WrapTop.hostClockName)
+    import HostRTLImplicitConversions._
     val finishing = DefWire(NoInfo, "targetCycleFinishing", BoolType)
-    assert(ns.tryName(hostReset.name) && ns.tryName(hostClock.name) && ns.tryName(finishing.name))
-    def hostFlagReg(suggestName: String, resetVal: UIntLiteral = UIntLiteral(0)): DefRegister = {
-      DefRegister(NoInfo, ns.newName(suggestName), BoolType, WRef(hostClock), WRef(hostReset), resetVal)
-    }
+    assert(ns.tryName(finishing.name))
 
     // Multi-clock management step 2: Build clock flags and clock channel
     def isClockChannel(info: (String, (Option[Port], Seq[Port]))) = info match {
@@ -164,7 +164,7 @@ object FAMEModuleTransformer {
      *  initialization and reset ensures all target state elements are
      *  initialized with a deterministic set of initial values.
      */
-    val nReset = DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType)
+    val nReset = DoPrim(PrimOps.Not, Seq(hostReset), Seq.empty, BoolType)
 
     /*
      * At simulation time zero do a clock low for all clock domains: let all
@@ -172,7 +172,7 @@ object FAMEModuleTransformer {
      * We can spoof this this by setting clockEnable for all domains without
      * actually ungating those clocks.
      */
-    val doneInit = hostFlagReg(ns.newName("doneInit"), resetVal = UIntLiteral(0))
+    val doneInit = HostFlagRegister(ns.newName("doneInit"), resetVal = UIntLiteral(0))
     val doneInitConnect = Connect(NoInfo, WRef(doneInit), Or(WRef(doneInit), WRef(finishing)))
 
     case class TargetClockMetadata(
@@ -184,12 +184,12 @@ object FAMEModuleTransformer {
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
     val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.map { en =>
-      val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
+      val enableReg = HostFlagRegister(s"${en.name}_enabled", resetVal = UIntLiteral(1))
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
-        Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
+        Connect(NoInfo, WSubField(WRef(buf), "I"), hostClock),
         Connect(NoInfo, WSubField(WRef(buf), "CE"),
           Seq(WRef(enableReg), WRef(finishing), nReset, WRef(doneInit)).reduce(And.apply))))
       TargetClockMetadata(
@@ -212,7 +212,7 @@ object FAMEModuleTransformer {
     val (simTimeOpt, simTimeConnectOpt) = clockChannel match {
       case c: FAME1ClockChannel =>
         val simulationTimeReg = DefRegister(
-          NoInfo, ns.newName("simulationTime"), UIntType(IntWidth(64)), WRef(hostClock), WRef(hostReset), UIntLiteral(0))
+          NoInfo, ns.newName("simulationTime"), UIntType(IntWidth(64)), hostClock, hostReset, UIntLiteral(0))
         val timeConnect = Connect(
           NoInfo,
           WRef(simulationTimeReg),
@@ -239,11 +239,11 @@ object FAMEModuleTransformer {
         } else {
           DoPrim(PrimOps.AsUInt, Seq(clockLowMap(clockRef)), Nil, BoolType)
         }
-        val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
+        val firedReg = HostFlagRegister(s"${cName}_fired")
         (cName, clockFlag, ports, firedReg, analysis.channelHasTimestamp(cName))
       case (cName, (None, ports)) => clockChannel match {
         case vc: VirtualClockChannel =>
-          val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
+          val firedReg = HostFlagRegister(s"${cName}_fired")
           (cName, UIntLiteral(1), ports, firedReg, false)
         case _ =>
           throw new RuntimeException(s"Channel ${cName} has no associated clock.")
@@ -272,7 +272,7 @@ object FAMEModuleTransformer {
     })
 
     // LI-BDN transformation step 3: transform ports (includes new clock ports)
-    val transformedPorts = hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).flatMap(_.asHostModelPort)
+    val transformedPorts = hostClock.port +: hostReset.port +: (clockChannel +: inChannels ++: outChannels).flatMap(_.asHostModelPort)
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     val clockChannelPortNames = clockChannel.ports.map(_.name).toSet
