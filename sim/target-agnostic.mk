@@ -56,8 +56,6 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
 	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
-		-ll info \
-		--skip-checks \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		-E verilog"
