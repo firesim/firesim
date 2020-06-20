@@ -1,0 +1,103 @@
+/*
+ *  Copyright (C) 2011 - 2014 Xilinx
+ *  Copyright (C) 2012 National Instruments Corp.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+/dts-v1/;
+/include/ "zynq-7000.dtsi"
+
+/ {
+	model = "Zynq Zed Development Board";
+	compatible = "xlnx,zynq-zed", "xlnx,zynq-7000";
+
+	aliases {
+		ethernet0 = &gem0;
+		serial0 = &uart1;
+		spi0 = &qspi;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x10000000>;
+	};
+
+    htif_0: htif@43c00000 {
+                #address-cells = <1>;
+                #size-cells = <1>;
+                compatible = "generic-uio", "uio", "uio_pdrv";
+                reg = <0x43c00000 0x1000>;
+    };
+
+	chosen {
+		bootargs = "console=ttyPS0,115200 root=/dev/ram rw earlyprintk";
+		linux,stdout-path = "/amba/serial@e0001000";
+	};
+};
+
+&qspi {
+	status = "okay";
+	is-dual = <0>;
+	num-cs = <1>;
+	xlnx,fb-clk = <0x1>;
+	xlnx,qspi-mode = <0x0>;
+	flash@0 {
+		compatible = "n25q128";
+		reg = <0x0>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <4>;
+		spi-max-frequency = <50000000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		partition@qspi-fsbl-uboot {
+			label = "qspi-fsbl-uboot";
+			reg = <0x0 0x100000>;
+		};
+		partition@qspi-linux {
+			label = "qspi-linux";
+			reg = <0x100000 0x500000>;
+		};
+		partition@qspi-device-tree {
+			label = "qspi-device-tree";
+			reg = <0x600000 0x20000>;
+		};
+		partition@qspi-rootfs {
+			label = "qspi-rootfs";
+			reg = <0x620000 0x5E0000>;
+		};
+		partition@qspi-bitstream {
+			label = "qspi-bitstream";
+			reg = <0xC00000 0x400000>;
+		};
+	};
+};
+
+&usb0 {
+	status = "okay";
+	dr_mode = "host";
+	phy_type = "ulpi";
+};
+
+&gem0 {
+	status = "okay";
+	phy-mode = "rgmii-id";
+
+	phy0: phy@0 {
+		reg = <0>;
+	};
+};
+
+&sdhci0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};

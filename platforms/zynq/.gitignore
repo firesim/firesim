@@ -1,0 +1,11 @@
+*.log
+*.jou
+*.Xil
+
+zedboard/cl_*
+zedboard/deliver_output
+zedboard/soft_build
+
+zc706/cl_*
+zc706/deliver_output
+zc706/soft_build
