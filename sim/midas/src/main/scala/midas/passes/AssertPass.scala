@@ -106,11 +106,11 @@ private[passes] class AssertPass extends firrtl.Transform {
     }).unzip
 
     // Get references to all module-local synthesized assertions
-    val sortedLocalAsserts = asserts(m.name).values.toSeq.sortWith (_._1 > _._1)
+    val sortedLocalAsserts = asserts(m.name).values.toSeq.sortWith(_._1 < _._1)
     val (localAsserts, localClocks) = sortedLocalAsserts.map({ case (_, en, clk) => (wref(en), mT.ref(clk)) }).unzip
 
-    def allAsserts = childAsserts ++ localAsserts
-    def allClocks = childAssertClocksRTs.flatten ++ localClocks
+    def allAsserts = localAsserts ++ childAsserts
+    def allClocks = localClocks ++ childAssertClocksRTs.flatten
     def assertUInt = UIntType(IntWidth(assertWidth))
   }
 
@@ -136,7 +136,7 @@ private[passes] class AssertPass extends firrtl.Transform {
         val namespace = Namespace(m)
         val tpe = mInfo.assertUInt
         val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
-        val assertConnect = Connect(NoInfo, WRef(port.name), cat(mInfo.allAsserts))
+        val assertConnect = Connect(NoInfo, WRef(port.name), cat(mInfo.allAsserts.reverse))
         assertPorts(m.name) = (port, mInfo.allClocks)
         ports += port
         stmts += assertConnect
@@ -148,10 +148,10 @@ private[passes] class AssertPass extends firrtl.Transform {
   def formatMessages(meta: StroberMetaData, topModule: String): Seq[String] = {
     val formattedMessages = new mutable.ArrayBuffer[String]()
     def dump(mod: String, path: String): Unit = {
-        formattedMessages ++= (asserts(mod).values.toSeq).sortWith(_._1 > _._1).map({ case (idx, _, _) =>
+        formattedMessages ++= (asserts(mod).values.toSeq).sortWith(_._1 < _._1).map({ case (idx, _, _) =>
           s"module: $mod, path: $path]\n" + (messages(mod)(idx) replace ("""\n""", "\n"))
         })
-        meta.childInsts(mod)
+        meta.childInsts(mod).reverse
             .filterNot(inst => excludeInstAsserts((mod, inst)))
             .foreach(child => dump(meta.instModMap(child, mod), s"${path}.${child}"))
     }
@@ -203,7 +203,7 @@ private[passes] class AssertPass extends firrtl.Transform {
 
       // Step 5a: Connect all assertions to a single wire to match the order of our previous analysis
       val allAssertsWire = DefWire(NoInfo, "allAsserts", mInfo.assertUInt)
-      val allAssertConnect = Connect(NoInfo, WRef(allAssertsWire), cat(mInfo.allAsserts))
+      val allAssertConnect = Connect(NoInfo, WRef(allAssertsWire), cat(mInfo.allAsserts.reverse))
       stmts ++= Seq(allAssertsWire, allAssertConnect)
 
       // Step 5b: Generate unique ports for each clock
@@ -215,7 +215,7 @@ private[passes] class AssertPass extends firrtl.Transform {
         val clockPort = Port(NoInfo, clockPortName, Output, ClockType)
         ports ++= Seq(port, clockPort)
         val bitExtracts = asserts.map(idx => DoPrim(PrimOps.Bits, Seq(WRef(allAssertsWire)), Seq(idx, idx), UIntType(IntWidth(1))))
-        val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts))
+        val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts.reverse))
         val connectClock   = Connect(NoInfo, WRef(clockPort), WRef(clockRT.ref))
         stmts ++= Seq(connectClock, connectAsserts)
 
