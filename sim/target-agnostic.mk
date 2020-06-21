@@ -46,7 +46,6 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 # Golden Gate Invocation           #
 ####################################
-midas_sbt_project := {file:$(firesim_base_dir)}midas
 firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # Pre-simulation-mapping annotations which includes all Bridge Annotations
 # extracted used to generate new runtime configurations.
@@ -75,12 +74,12 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOO
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
 	cd $(base_dir) && \
-	$(SBT) "project $(midas_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	$(call run_scala_main,$(firesim_sbt_project),midas.stage.RuntimeConfigGeneratorMain,\
 		-td $(GENERATED_DIR) \
-		-ggaf $(fame_annos) \
+		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-ggrc $(CONF_NAME)"
+		-ggrc $(CONF_NAME))
 
 ####################################
 # Verilator MIDAS-Level Simulators #
