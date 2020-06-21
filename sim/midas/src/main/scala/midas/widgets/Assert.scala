@@ -22,23 +22,29 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
     val resume = WireInit(false.B)
     val cycles = RegInit(0.U(64.W))
-    val asserts = hPort.hBits
+    val q = Module(new Queue(hPort.hBits.cloneType,2))
+    q.io.enq.valid := hPort.toHost.hValid
+    hPort.toHost.hReady := q.io.enq.ready
+    q.io.enq.bits := hPort.hBits
+    // We only sink tokens, so tie off the return channel
+    hPort.fromHost.hValid := true.B
+
+    val asserts = q.io.deq.bits
+
     val assertId = PriorityEncoder(asserts)
     val assertFire = asserts.orR
 
     val stallN = (!assertFire || resume)
 
-    val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN)
+    val tFireHelper = DecoupledHelper(q.io.deq.valid, stallN)
     val targetFire = tFireHelper.fire
-    hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
-    // We only sink tokens, so tie off the return channel
-    hPort.fromHost.hValid := true.B
+    q.io.deq.ready := tFireHelper.fire(q.io.deq.valid)
     when (targetFire) {
       cycles := cycles + 1.U
     }
 
     genROReg(assertId, "id")
-    genROReg(assertFire && hPort.toHost.hValid, "fire")
+    genROReg(assertFire && q.io.deq.valid, "fire")
     // FIXME: no hardcode
     genROReg(cycles(31, 0), "cycle_low")
     genROReg(cycles >> 32, "cycle_high")
