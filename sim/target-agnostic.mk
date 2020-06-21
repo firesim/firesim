@@ -237,7 +237,6 @@ xsim: $(xsim)
 #########################
 UNITTEST_CONFIG ?= AllUnitTests
 
-rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
 unittest_args = \
 		BASE_DIR=$(base_dir) \

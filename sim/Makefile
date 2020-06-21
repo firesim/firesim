@@ -34,6 +34,19 @@ base_dir := $(firesim_base_dir)
 chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
+else
+# Chipyard make variables
+base_dir := $(abspath ../../..)
+sim_dir := $(firesim_base_dir)
+chipyard_dir := $(base_dir)
+include $(base_dir)/variables.mk
+endif
+
+# Include target-specific sources and input generation recipes
+include $(TARGET_PROJECT_MAKEFRAG)
+
+ifdef FIRESIM_STANDALONE
+
 # Scala invocation options
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.10
@@ -98,16 +111,9 @@ firrtl: $(FIRRTL_JAR)
 .PHONY: firrtl
 
 else
-# Chipyard make variables
-base_dir := $(abspath ../../..)
-sim_dir := $(firesim_base_dir)
-chipyard_dir := $(base_dir)
-include $(base_dir)/variables.mk
+# Chipyard make targets
 include $(base_dir)/common.mk
 endif
-
-# Include target-specific sources and input generation recipes
-include $(TARGET_PROJECT_MAKEFRAG)
 
 verilog: $(VERILOG)
 compile: $(VERILOG)
