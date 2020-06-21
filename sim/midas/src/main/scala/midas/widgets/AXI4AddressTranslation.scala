@@ -18,9 +18,10 @@ class AXI4AddressTranslation(offset: BigInt, bridgeAddressSets: Seq[AddressSet],
   val virtualBound = bridgeAddressSets.map(_.max).max
   lazy val module = new LazyModuleImp(this) {
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
+      val maxHostAddr = BigInt(1) << out.ar.bits.params.addrBits
       out <> in
-      out.aw.bits.addr := in.aw.bits.addr + ((BigInt(1) << out.aw.bits.addr.getWidth) + offset).U
-      out.ar.bits.addr := in.ar.bits.addr + ((BigInt(1) << out.ar.bits.addr.getWidth) + offset).U
+      out.aw.bits.addr := in.aw.bits.addr + (maxHostAddr + (offset % maxHostAddr)).U
+      out.ar.bits.addr := in.ar.bits.addr + (maxHostAddr + (offset % maxHostAddr)).U
       assert(~in.aw.valid || in.aw.bits.addr <= virtualBound.U, s"AW request address in memory region ${regionName} exceeds region bound.")
       assert(~in.ar.valid || in.ar.bits.addr <= virtualBound.U, s"AR request address in memory region ${regionName} exceeds region bound.")
       assert(~in.aw.valid || in.aw.bits.addr >= virtualBase.U,  s"AW request address in memory region ${regionName} is less than region base.")
