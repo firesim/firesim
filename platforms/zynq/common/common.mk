@@ -23,9 +23,6 @@ default: project
 
 # Specialize sources for board
 # ------------------------------------------------------------------------------
-src/verilog/midas_wrapper.v: $(common)/midas_wrapper.v
-	cp $(common)/midas_wrapper.v src/verilog/
-
 src/tcl/create_project.tcl: $(common)/midas_zynq.tcl Makefile
 	sed 's/BOARD_NAME_HERE/$(BOARD)/g;s/PART_NUMBER_HERE/$(PART)/g' \
 		$(common)/midas_zynq.tcl > src/tcl/create_project.tcl
@@ -36,7 +33,7 @@ src/tcl/make_bitstream.tcl: $(common)/make_bitstream.tcl
 # Project generation
 # ------------------------------------------------------------------------------
 project = project/$(proj_name).xpr
-$(project): | src/verilog/midas_wrapper.v src/tcl/create_project.tcl
+$(project): | src/tcl/create_project.tcl
 	vivado -mode tcl -source src/tcl/create_project.tcl;
 project: $(project)
 
