@@ -412,13 +412,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
                                                    ASSERTBRIDGEMODULE_3_assert_count,
                                                    ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
-#ifdef ASSERTBRIDGEMODULE_3_PRESENT
-    ASSERTBRIDGEMODULE_3_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
-                                                   ASSERTBRIDGEMODULE_3_substruct,
-                                                   ASSERTBRIDGEMODULE_3_assert_count,
-                                                   ASSERTBRIDGEMODULE_3_assert_messages));
-#endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
     ASSERTBRIDGEMODULE_4_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this,
