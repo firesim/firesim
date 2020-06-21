@@ -255,13 +255,6 @@ run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
 #########################
-# Bloop Project Defs    #
-#########################
-.bloop/TIMESTAMP : build.sbt
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "bloopInstall"
-	touch $@
-
-#########################
 # ScalaDoc              #
 #########################
 scaladoc:

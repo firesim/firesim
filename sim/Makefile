@@ -39,12 +39,14 @@ JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.10
 JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar
+
 BLOOP ?= bloop
+BLOOP_CONFIG_DIR ?= $(base_dir)/.bloop
 
 SCALA_BUILDTOOL_DEPS ?= build.sbt
 
-ifdef FIRESIM_USE_BLOOP
-override SCALA_BUILDTOOL_DEPS += .bloop/TIMESTAMP
+ifdef ENABLE_BLOOP
+override SCALA_BUILDTOOL_DEPS += $(BLOOP_CONFIG_DIR)/TIMESTAMP
 define run_scala_main
 	bloop run $(shell echo $(1) | sed 's/{.*}//') --main $(2) -- $(3)
 endef
@@ -54,6 +56,12 @@ define run_scala_main
 endef
 endif
 
+#########################
+# Bloop Project Defs    #
+#########################
+$(BLOOP_CONFIG_DIR)/TIMESTAMP: build.sbt
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "bloopInstall"
+	touch $@
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
