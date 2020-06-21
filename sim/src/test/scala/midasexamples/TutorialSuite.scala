@@ -139,6 +139,21 @@ class TriggerWiringModuleF1Test extends TutorialSuite("TriggerWiringModule")
 
 class MulticlockAssertF1Test extends TutorialSuite("MulticlockAssertModule")
 
+class AssertTortureTest extends TutorialSuite("AssertTorture") with AssertTortureConstants {
+  def checkClockDomainAssertionOrder(clockIdx: Int): Unit = {
+    it should s"capture asserts in the same order as the reference printfs in clock domain $clockIdx" in {
+      val verilatedLogFile = new File(outDir,  s"/${targetName}.verilator.out")
+      // Diff parts of the simulation's stdout against itself, as the synthesized
+      // assertion messages are dumped to the same file as printfs in the RTL
+      val expected = extractLines(verilatedLogFile, prefix = s"${printfPrefix}${clockPrefix(clockIdx)}")
+      val actual  = extractLines(verilatedLogFile, prefix = s"Assertion failed: ${clockPrefix(clockIdx)}")
+      diffLines(expected, actual)
+    }
+  }
+  // TODO: Create a target-parameters instance we can inspect here
+  Seq.tabulate(4)(i => checkClockDomainAssertionOrder(i))
+}
+
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   simulationArgs = Seq("+print-file=synthprinttest.out",
                        "+print-no-cycle-prefix")) {
@@ -176,7 +191,8 @@ class PrintfSynthesisCITests extends Suites(
 
 class AssertionSynthesisCITests extends Suites(
   new AssertModuleF1Test,
-  new MulticlockAssertF1Test
+  new MulticlockAssertF1Test,
+  new AssertTortureTest
 )
 
 class AutoCounterCITests extends Suites(
@@ -201,8 +217,7 @@ class CIGroupA extends Suites(
 )
 
 class CIGroupB extends Suites(
-  new AssertModuleF1Test,
-  new MulticlockAssertF1Test,
+  new AssertionSynthesisCITests,
   new GoldenGateMiscCITests,
   new firesim.fasedtests.CIGroupB,
   new firesim.AllMidasUnitTests,
