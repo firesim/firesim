@@ -49,7 +49,7 @@ replace-rtl: $(fpga_v)
 .PHONY: replace-rtl
 
 # Runs a local fpga-bitstream build.
-bitstream: $(fpga_v)
+fpga: $(fpga_v)
 	make -C $(fpga_work_dir) bitstream
 
 .PHONY: fpga

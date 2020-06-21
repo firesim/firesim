@@ -92,6 +92,6 @@ include target-agnostic.mk
 
 
 # Point at the desired FPGA platform makefrag
-PLATFORM_MAKEFRAG ?= $(abspath ..)/platforms/f1/platform-specific.mk
+PLATFORM_MAKEFRAG = $(abspath ..)/platforms/$(PLATFORM)/platform-specific.mk
 
 include $(PLATFORM_MAKEFRAG)
