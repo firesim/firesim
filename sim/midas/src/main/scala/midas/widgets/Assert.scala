@@ -27,7 +27,6 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val assertFire = asserts.orR
 
     val stallN = (!assertFire || resume)
-    val dummyPredicate = true.B
 
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN)
     val targetFire = tFireHelper.fire

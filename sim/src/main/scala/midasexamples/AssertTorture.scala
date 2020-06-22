@@ -21,7 +21,7 @@ trait AssertTortureConstants {
 
 /**
   * A module that recursively instantiates itself, generating random assertions
-  * synchronous to one of the provided clocks. All generate assertions will fire in
+  * synchronous to one of the provided clocks. All generated assertions will fire in
   * the order they are instantiated, providing a simple check that they are
   * correctly observed by the bridge.
   *
@@ -29,7 +29,7 @@ trait AssertTortureConstants {
   * clock domain so far
   *
   * @param moduleDepth Specifies the current depth in the submodule hierarchy.
-  * Used to bound recursion depth, and to determined whether it is safe to
+  * Used to bound recursion depth and to determine whether it is safe to
   * return to the enclosing module.
   */
 
