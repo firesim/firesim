@@ -49,7 +49,8 @@ sudo yum -y install expect
 
 # Optional: install bloop for fast scala builds on EC2 / CI
 curl -fLo coursier https://git.io/coursier-cli-linux &&
-sudo cp coursier /usr/local/bin
+sudo cp -f coursier /usr/local/bin
+sudo chmod 755 /usr/local/bin/coursier
 coursier install bloop --only-prebuilt=true
 
 # these need to match what's in deploy/requirements.txt
