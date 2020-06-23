@@ -77,6 +77,10 @@ object Eq extends BinaryBooleanOp {
   val op = PrimOps.Eq
 }
 
+object Lt extends BinaryBooleanOp {
+  val op = PrimOps.Lt
+}
+
 /** Generates a DefRegister with no reset, relying instead on FPGA programming
   * to preset the register to 0
   */

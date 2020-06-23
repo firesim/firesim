@@ -248,8 +248,8 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
                          leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
     extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
-  def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Vec[Bool]] = {
-    new TimestampedToken(Vec(refTargets.size, Bool()))
+  def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = {
+    new TimestampedToken(if (refTargets.size == 1) Bool() else Vec(refTargets.size, Bool()))
   }
 
   override val elements = ListMap((wireElements ++ rvElements):_*)

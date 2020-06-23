@@ -146,11 +146,11 @@ trait TimestampedHostPortIO extends IndependentChannels { this: Record =>
   type ChannelType[A <: Data] = DecoupledIO[TimestampedToken[A]]
   def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(new TimestampedToken(payload))
   protected def clockChannelPort(direction: Direction, field: Clock): DecoupledIO[TimestampedToken[Bool]] = {
-    checkFieldDirection(field, direction)
-    val directions = getLeafDirs(field)
+    // FIXME: WHen the target interface is regenerated during compilation direction information is lost.
+    //checkFieldDirection(field, direction)
     val ch = direction match {
       case Direction.Input => Flipped(Decoupled(new TimestampedToken(Bool())))
-      case Direction.Output => Flipped(Decoupled(new TimestampedToken(Bool())))
+      case Direction.Output => Decoupled(new TimestampedToken(Bool()))
     }
     channels.append((field, ch, ClockChannelMetadata(field, direction == Direction.Input)))
     ch

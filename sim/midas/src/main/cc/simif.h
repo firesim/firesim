@@ -38,7 +38,12 @@ class simif_t
     SIMULATIONMASTER_struct * master_mmio_addrs;
     LOADMEMWIDGET_struct * loadmem_mmio_addrs;
     PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
+
+#ifdef DYNAMICCLOCKBRIDGEMODULE_0_PRESENT
+    DYNAMICCLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
+#else
     CLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
+#endif
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {

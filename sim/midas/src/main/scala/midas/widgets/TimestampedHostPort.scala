@@ -12,6 +12,7 @@ import freechips.rocketchip.tilelink.{LFSRNoiseMaker, LFSR64}
 
 trait HasTimestampConstants {
   val timestampWidth = 64
+  def timestampFType = firrtl.ir.UIntType(firrtl.ir.IntWidth(timestampWidth))
 }
 
 class TimestampedToken[T <: Data](private val gen: T) extends Bundle with HasTimestampConstants {

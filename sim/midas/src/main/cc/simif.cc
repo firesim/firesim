@@ -25,8 +25,14 @@ simif_t::simif_t() {
   this->loadmem_mmio_addrs = LOADMEMWIDGET_0_substruct;
   PEEKPOKEBRIDGEMODULE_0_substruct_create;
   this->defaultiowidget_mmio_addrs = PEEKPOKEBRIDGEMODULE_0_substruct;
+
+#ifdef DYNAMICCLOCKBRIDGEMODULE_0_PRESENT
+  DYNAMICCLOCKBRIDGEMODULE_0_substruct_create;
+  this->clock_bridge_mmio_addrs = DYNAMICCLOCKBRIDGEMODULE_0_substruct;
+#else
   CLOCKBRIDGEMODULE_0_substruct_create;
   this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;
+#endif
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
