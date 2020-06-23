@@ -27,10 +27,9 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val assertFire = asserts.orR
 
     val stallN = (!assertFire || resume)
-    val dummyPredicate = true.B
 
-    val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN, dummyPredicate)
-    val targetFire = tFireHelper.fire() // FIXME: On next RC bump
+    val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN)
+    val targetFire = tFireHelper.fire
     hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
     // We only sink tokens, so tie off the return channel
     hPort.fromHost.hValid := true.B
@@ -39,7 +38,7 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     }
 
     genROReg(assertId, "id")
-    genROReg(assertFire, "fire")
+    genROReg(assertFire && hPort.toHost.hValid, "fire")
     // FIXME: no hardcode
     genROReg(cycles(31, 0), "cycle_low")
     genROReg(cycles >> 32, "cycle_high")

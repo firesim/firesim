@@ -106,11 +106,11 @@ private[passes] class AssertPass extends firrtl.Transform {
     }).unzip
 
     // Get references to all module-local synthesized assertions
-    val sortedLocalAsserts = asserts(m.name).values.toSeq.sortWith (_._1 > _._1)
+    val sortedLocalAsserts = asserts(m.name).values.toSeq.sortWith(_._1 < _._1)
     val (localAsserts, localClocks) = sortedLocalAsserts.map({ case (_, en, clk) => (wref(en), mT.ref(clk)) }).unzip
 
-    def allAsserts = childAsserts ++ localAsserts
-    def allClocks = childAssertClocksRTs.flatten ++ localClocks
+    def allAsserts = localAsserts ++ childAsserts
+    def allClocks = localClocks ++ childAssertClocksRTs.flatten
     def assertUInt = UIntType(IntWidth(assertWidth))
   }
 
@@ -148,10 +148,10 @@ private[passes] class AssertPass extends firrtl.Transform {
   def formatMessages(meta: StroberMetaData, topModule: String): Seq[String] = {
     val formattedMessages = new mutable.ArrayBuffer[String]()
     def dump(mod: String, path: String): Unit = {
-        formattedMessages ++= (asserts(mod).values.toSeq).sortWith(_._1 > _._1).map({ case (idx, _, _) =>
+        formattedMessages ++= (asserts(mod).values.toSeq).sortWith(_._1 < _._1).map({ case (idx, _, _) =>
           s"module: $mod, path: $path]\n" + (messages(mod)(idx) replace ("""\n""", "\n"))
         })
-        meta.childInsts(mod)
+        meta.childInsts(mod).reverse
             .filterNot(inst => excludeInstAsserts((mod, inst)))
             .foreach(child => dump(meta.instModMap(child, mod), s"${path}.${child}"))
     }
@@ -186,10 +186,15 @@ private[passes] class AssertPass extends firrtl.Transform {
       val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))
       val finder = new ClockSourceFinder(loweredState)
       val clockMapping = mInfo.allClocks.map(cT => cT -> finder.findRootDriver(cT)).toMap
-      val rootClocks = mInfo.allClocks.map(clockMapping).flatten
+      // Generate (sourceClock, assertIndex) tuples for all synthesized
+      // assertions. Reject assertions with undriven clocks
+      val rootClocks = mInfo.allClocks
+        .map(clockMapping)
+        .zipWithIndex
+        .collect({ case (Some(clockRT), idx) => (clockRT, idx) })
 
-      // For each clock in clock channel, list associated assert indices
-      val groupedAsserts = rootClocks.zipWithIndex.groupBy(_._1).mapValues(values => values.map(_._2))
+      // Group assertion indices by their clocks
+      val groupedAsserts = rootClocks.groupBy(_._1).mapValues(values => values.map(_._2))
 
       // Step 5: Re-wire the top-level module
       val ports = collection.mutable.ArrayBuffer[Port]()
