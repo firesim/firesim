@@ -41,6 +41,10 @@ class simif_t
 
 #ifdef DYNAMICCLOCKBRIDGEMODULE_0_PRESENT
     DYNAMICCLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
+#endif
+
+#ifdef CLOCKBRIDGEWITHMUXMODULE_0_PRESENT
+    CLOCKBRIDGEWITHMUXMODULE_struct * clock_bridge_mmio_addrs;
 #else
     CLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
 #endif

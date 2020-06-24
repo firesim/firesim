@@ -29,6 +29,11 @@ simif_t::simif_t() {
 #ifdef DYNAMICCLOCKBRIDGEMODULE_0_PRESENT
   DYNAMICCLOCKBRIDGEMODULE_0_substruct_create;
   this->clock_bridge_mmio_addrs = DYNAMICCLOCKBRIDGEMODULE_0_substruct;
+#endif
+
+#ifdef CLOCKBRIDGEWITHMUXMODULE_0_PRESENT
+  CLOCKBRIDGEWITHMUXMODULE_0_substruct_create;
+  this->clock_bridge_mmio_addrs = CLOCKBRIDGEWITHMUXMODULE_0_substruct;
 #else
   CLOCKBRIDGEMODULE_0_substruct_create;
   this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;

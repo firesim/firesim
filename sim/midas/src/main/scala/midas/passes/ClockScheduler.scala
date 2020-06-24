@@ -53,8 +53,9 @@ class ClockScheduler(
 
   val definedUntil = node("definedUntil", Mux(nextValid, nextTime, oldTime))
   val posedge = node("posedge", Seq(nextValid, oldValid, Negate(oldData), nextData).reduce(And.apply))
-  val posedgeEnable = node("posedgeEnable", And(advance, Eq(nextTime, advanceToTime)))
-  val advanceLocally = node("advanceLocally", Mux(posedge, posedgeEnable, nextValid))
+  val timeMatch = node("timeMatch", And(advance, Eq(nextTime, advanceToTime)))
+  val posedgeEnable = node("posedgeEnable", And(posedge, timeMatch))
+  val advanceLocally = node("advanceLocally", Mux(posedge, timeMatch, nextValid))
 
   connect(oldValid, Or(oldValid, ch.isValid))
   connect(oldTime, Mux(advanceLocally, nextTime, oldTime))

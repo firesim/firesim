@@ -98,7 +98,7 @@ trait IndependentChannels extends HasChannels { this: Record =>
   // Simplifying assumption: if the user wants to aggregate a bunch of wires
   // into a single channel they should aggregate them into a Bundle on their record
   protected def channelField[T <: Data](direction: Direction, field: T): ChannelType[T] = {
-    checkFieldDirection(field, direction)
+    //checkFieldDirection(field, direction)
     val ch = direction match {
       case Direction.Input => Flipped(payloadWrapper(field.cloneType))
       case Direction.Output => payloadWrapper(field.cloneType)

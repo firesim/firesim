@@ -261,6 +261,10 @@ object FAMEModuleTransformer extends HasTimestampConstants {
         }
         val firedReg = HostFlagRegister(s"${cName}_fired")
         (cName, clockFlag, ports, firedReg, analysis.channelHasTimestamp(cName))
+      case (cName, (None, ports)) if analysis.channelHasTimestamp(cName) =>
+        val clockFlag = WRef(finishing)
+        val firedReg = HostFlagRegister(s"${cName}_fired")
+        (cName, clockFlag, ports, firedReg, true)
       case (cName, (None, ports)) =>
         if (!isHubModel) {
           val firedReg = HostFlagRegister(s"${cName}_fired")

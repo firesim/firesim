@@ -127,7 +127,7 @@ object HostRegister {
     val regName =  ns.newName(suggestedName)
     val resolvedReset: Expression = if (resetVal.nonEmpty) hostReset else zero
     val resolvedResetVal = resetVal.getOrElse(WRef(regName))
-    DefRegister(NoInfo, regName, BoolType, hostClock, resolvedReset, resolvedResetVal)
+    DefRegister(NoInfo, regName, tpe, hostClock, resolvedReset, resolvedResetVal)
   }
 }
 

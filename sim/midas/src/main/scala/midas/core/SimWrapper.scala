@@ -103,7 +103,9 @@ abstract class ChannelizedWrapperIO(
   def regenWireType(chInfo: FAMEChannelInfo, refTargets: Seq[ReferenceTarget]): Data = {
     chInfo match {
       case fame.TargetClockChannel(_) =>  regenClockType(refTargets)
-      case fame.ClockControlChannel   => ???
+      case fame.ClockControlChannel   =>
+        require(refTargets.size == 1, "FIXME: Handle aggregated wires")
+        new TimestampedToken(regenTypes(refTargets).head._2)
       case fame.PipeChannel(_) =>
         require(refTargets.size == 1, "FIXME: Handle aggregated wires")
         regenTypes(refTargets).head._2
@@ -394,6 +396,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   // Generate all other non-RV channels
   chAnnos.collect({
     case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_,_)  => genPipeChannel(ch, latency)
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.ClockControlChannel,_,_,_)  => genPipeChannel(ch, 0)
     case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => genPipeChannel(ch, 0)
   })
 }

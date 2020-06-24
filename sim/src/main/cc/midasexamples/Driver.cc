@@ -55,6 +55,8 @@
 #include "TriggerWiringModule.h"
 #elif defined DESIGNNAME_TwoAdders
 #include "TwoAdders.h"
+#elif defined DESIGNNAME_ClockMux
+#include "ClockMux.h"
 #endif
 
 class dut_emul_t:
