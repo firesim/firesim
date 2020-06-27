@@ -46,19 +46,19 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 # Golden Gate Invocation           #
 ####################################
-midas_sbt_project := {file:$(firesim_base_dir)}midas
 firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # Pre-simulation-mapping annotations which includes all Bridge Annotations
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 
-$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
-	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
+$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
+	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-E verilog"
+		-E verilog \
+	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(VERILOG) # Append blackboxes to FPGA wrapper, if any
 
@@ -74,12 +74,12 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
 	cd $(base_dir) && \
-	$(SBT) "project $(midas_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	$(call run_scala_main,$(firesim_sbt_project),midas.stage.RuntimeConfigGeneratorMain,\
 		-td $(GENERATED_DIR) \
-		-ggaf $(fame_annos) \
+		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-ggrc $(CONF_NAME)"
+		-ggrc $(CONF_NAME))
 
 ####################################
 # Verilator MIDAS-Level Simulators #

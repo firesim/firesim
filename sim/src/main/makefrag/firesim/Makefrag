@@ -39,13 +39,13 @@ else
 	firesim_sbt_project := firechip
 endif
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator,\
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
+		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG))
 
 # DOC include start: Bridge Build System Changes
 ##########################

@@ -8,3 +8,4 @@ AsyncResetReg.v
 firrtl_black_box_resource_files.f
 lib/firrtl.jar
 *.swp
+.bloop/

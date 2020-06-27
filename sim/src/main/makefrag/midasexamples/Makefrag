@@ -44,13 +44,13 @@ mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
 COMMON_SIM_ARGS ?= $(mem_model_args)
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator, \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
+		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG))
 	# Remove once runtime conf generation is generalized, and something is always emitted
 	touch $(GENERATED_DIR)/$(CONF_NAME)
 
