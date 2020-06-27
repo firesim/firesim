@@ -255,53 +255,57 @@ class UserTopologies(object):
                 level2switches[switchgroupno][switchno].add_downlinks(servers[switchgroupno][switchno])
 
     # Don't use this directly
-    def base_twohw_config(self, hw0, hw1, n, m):
-        if (n + m) < 8:
+    def base_multihw_config(self, *hws):
+        total = sum([n for (hw, n) in hws])
+        if total <= 8:
             self.roots = [FireSimSwitchNode()]
-            clients = [FireSimServerNode(hw0) for x in range(n)]
-            memblades = [FireSimServerNode(hw1) for y in range(m)]
-            self.roots[0].add_downlinks(clients)
-            self.roots[0].add_downlinks(memblades)
-        elif n < 8 and m < 8:
-            self.roots = [FireSimSwitchNode()]
-            leafswitches = [FireSimSwitchNode() for x in range(2)]
-            clients = [FireSimServerNode(hw0) for x in range(n)]
-            memblades = [FireSimServerNode(hw1) for y in range(m)]
-            leafswitches[0].add_downlinks(clients)
-            leafswitches[1].add_downlinks(memblades)
-            self.roots[0].add_downlinks(leafswitches)
+            for hw, n in hws:
+                servers = [FireSimServerNode(hw) for _ in range(n)]
+                self.roots[0].add_downlinks(servers)
         else:
-            raise Exception("Don't know how to create memblade config for {}x{}".format(n, m))
+            self.roots = [FireSimSwitchNode()]
+            leafswitches = [FireSimSwitchNode()]
+            leafn = 0
+            for hw, n in hws:
+                if n > 8:
+                    raise Exception("Can't create multi-HW config with >8 of a given hardware type")
+                if (leafn + n) > 8:
+                    leafswitches.append(FireSimSwitchNode())
+                    leafn = 0
+                servers = [FireSimServerNode(hw) for _ in range(n)]
+                leafswitches[-1].add_downlinks(servers)
+                leafn += n
+            self.roots[0].add_downlinks(leafswitches)
 
     def memblade_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-quadcore-rdma-l2-nic-ddr3",
-                "firesim-singlecore-memblade-ddr3", n, m)
+        self.base_multihw_config(
+                ("firesim-quadcore-rdma-l2-nic-ddr3", n),
+                ("firesim-singlecore-memblade-ddr3", m))
 
     def hwacha_memblade_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-hwacha-rdma-lbp-l2",
-                "firesim-singlecore-memblade1024-lbp", n, m)
+        self.base_multihw_config(
+                ("firesim-hwacha-rdma-lbp-l2", n),
+                ("firesim-singlecore-memblade1024-lbp", m))
 
     def boom_memblade_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-boom-rdma-lbp-l2",
-                "firesim-singlecore-memblade1024-lbp", n, m)
+        self.base_multihw_config(
+                ("firesim-boom-rdma-lbp-l2", n),
+                ("firesim-singlecore-memblade1024-lbp", m))
 
     def dramcache_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-dualcore-dramcache-ddr3-l2",
-                "firesim-singlecore-memblade-ddr3", n, m)
+        self.base_multihw_config(
+                ("firesim-dualcore-dramcache-ddr3-l2", n),
+                ("firesim-singlecore-memblade-ddr3", m))
 
     def boom_dramcache_base_config(self, n, m):
-        self.base_twohw_config(
-                "fireboom-dualcore-dramcache-ddr3-l2",
-                "firesim-singlecore-memblade-ddr3", n, m)
+        self.base_multihw_config(
+                ("firesim-boom-dramcache-lbp-l2", n),
+                ("firesim-singlecore-memblade-lbp", m))
 
     def hetero_dramcache_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-hetero-dramcache-ddr3-l2",
-                "firesim-singlecore-memblade-ddr3", n, m)
+        self.base_multihw_config(
+                ("firesim-hetero-dramcache-ddr3-l2", n),
+                ("firesim-singlecore-memblade-ddr3", m))
 
     def hwacha_dramcache_base_config(self, n, m, biglines, nometa):
         dramcache_name = "firesim-hwacha-dramcache{}{}-lbp-l2".format(
@@ -309,17 +313,17 @@ class UserTopologies(object):
                 "-nometa" if nometa else "")
         memblade_name = "firesim-singlecore-memblade{}-lbp".format(
                 "1024" if biglines else "")
-        self.base_twohw_config(dramcache_name, memblade_name, n, m)
+        self.base_multihw_config((dramcache_name, n), (memblade_name, m))
 
     def boom_hwacha_dramcache_base_config(self, n, m):
-        self.base_twohw_config(
-                "fireboom-hwacha-dramcache-ddr3-l2",
-                "firesim-singlecore-memblade-ddr3", n, m)
+        self.base_multihw_config(
+                ("fireboom-hwacha-dramcache-ddr3-l2", n),
+                ("firesim-singlecore-memblade-ddr3",  m))
 
     def hetero_hwacha_dramcache_base_config(self, n, m):
-        self.base_twohw_config(
-                "firesim-hetero-hwacha-dramcache-ddr3-l2",
-                "firesim-singlecore-memblade-ddr3", n, m)
+        self.base_multihw_config(
+                ("firesim-hetero-hwacha-dramcache-ddr3-l2", n),
+                ("firesim-singlecore-memblade-ddr3", m))
 
     def memblade_1x1_config(self):
         self.memblade_base_config(1, 1)
@@ -365,6 +369,12 @@ class UserTopologies(object):
 
     def hetero_hwacha_dramcache_1x1_config(self):
         self.hetero_hwacha_dramcache_base_config(1, 1)
+
+    def dramcache_4x1x3_config(self):
+        self.base_multihw_config(
+                ("firesim-boom-dualcore-nic-l2-lbp", 4),
+                ("firesim-boom-dramcache-lbp-l2", 1),
+                ("firesim-singlecore-memblade-lbp", 3))
 
     @staticmethod
     def supernode_flatten(arr):
