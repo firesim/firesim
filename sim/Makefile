@@ -68,7 +68,8 @@ endif
 #########################
 # Bloop Project Defs    #
 #########################
-$(BLOOP_CONFIG_DIR)/TIMESTAMP: build.sbt
+sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
+$(BLOOP_CONFIG_DIR)/TIMESTAMP: $(sbt_sources)
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "bloopInstall"
 	touch $@
 
