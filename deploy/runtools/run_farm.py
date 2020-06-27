@@ -126,21 +126,23 @@ class F1_16(F1_Instance):
     instance_counter = 0
     FPGA_SLOTS = 8
 
-    def __init__(self):
+    def __init__(self, ilaslot):
         super(F1_16, self).__init__()
         self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
         self.instance_id = F1_16.instance_counter
         F1_16.instance_counter += 1
+        self.ilaslot = ilaslot if ilaslot < 8 else 0
 
 class F1_4(F1_Instance):
     instance_counter = 0
     FPGA_SLOTS = 2
 
-    def __init__(self):
+    def __init__(self, ilaslot):
         super(F1_4, self).__init__()
         self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
         self.instance_id = F1_4.instance_counter
         F1_4.instance_counter += 1
+        self.ilaslot = ilaslot if ilaslot < 2 else 0
 
 class F1_2(F1_Instance):
     instance_counter = 0
@@ -151,6 +153,7 @@ class F1_2(F1_Instance):
         self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
         self.instance_id = F1_2.instance_counter
         F1_2.instance_counter += 1
+        self.ilaslot = 0
 
 class M4_16(EC2Inst):
     instance_counter = 0
@@ -169,9 +172,9 @@ class RunFarm:
 
     def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
                  run_instance_market, spot_interruption_behavior,
-                 spot_max_price):
-        self.f1_16s = [F1_16() for x in range(num_f1_16)]
-        self.f1_4s = [F1_4() for x in range(num_f1_4)]
+                 spot_max_price, ilaslot):
+        self.f1_16s = [F1_16(ilaslot) for x in range(num_f1_16)]
+        self.f1_4s = [F1_4(ilaslot) for x in range(num_f1_4)]
         self.f1_2s = [F1_2() for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
 
@@ -179,6 +182,8 @@ class RunFarm:
         self.run_instance_market = run_instance_market
         self.spot_interruption_behavior = spot_interruption_behavior
         self.spot_max_price = spot_max_price
+
+        self.ilaslot = ilaslot
 
     def bind_mock_instances_to_objects(self):
         """ Only used for testing. Bind mock Boto3 instances to objects. """
@@ -535,9 +540,10 @@ class InstanceDeployManager:
         self.instance_logger("Starting Vivado hw_server.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S hw_server -d -m bash -c "script -f -c 'hw_server'"; sleep 1""")
-        self.instance_logger("Starting Vivado virtual JTAG.")
+        ilaslot = self.parentnode.ilaslot
+        self.instance_logger("Starting Vivado virtual JTAG for slot {}.".format(ilaslot))
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
+            run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S {}'"; sleep 1""".format(ilaslot))
   
     def kill_ila_server(self):
         """ Kill the vivado hw_server and virtual jtag """

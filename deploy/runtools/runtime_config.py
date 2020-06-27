@@ -295,6 +295,7 @@ class InnerRuntimeConfiguration:
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
         if 'hostdebug' in runtime_dict:
             self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
+            self.ilaslot = int(runtime_dict['hostdebug'].get('ilaslot', '0'))
         if 'synthprint' in runtime_dict:
             self.print_start = runtime_dict['synthprint'].get("start", "0")
             self.print_end = runtime_dict['synthprint'].get("end", "-1")
@@ -342,7 +343,8 @@ class RuntimeConfig:
                                self.innerconf.runfarmtag,
                                self.innerconf.run_instance_market,
                                self.innerconf.spot_interruption_behavior,
-                               self.innerconf.spot_max_price)
+                               self.innerconf.spot_max_price,
+                               self.innerconf.ilaslot)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
