@@ -40,3 +40,6 @@
 [submodule "sim/firesim-lib/src/main/cc/lib/libdwarf"]
 	path = sim/firesim-lib/src/main/cc/lib/libdwarf
 	url = git://git.code.sf.net/p/libdwarf/code
+[submodule "sw/twemproxy-riscv-install"]
+	path = sw/twemproxy-riscv-install
+	url = git@bitbucket.org:zhemao/twemproxy-riscv-install.git
