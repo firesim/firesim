@@ -12,13 +12,15 @@ class synthesized_assertions_t: public bridge_driver_t
           simif_t* sim,
           ASSERTBRIDGEMODULE_struct * mmio_addrs,
           unsigned int num_asserts,
-          const char* const* msgs) :
+          const char* const* msgs,
+	  bool enable = true) :
             bridge_driver_t(sim),
             mmio_addrs(mmio_addrs),
             num_asserts(num_asserts),
-            msgs(msgs) {};
+            msgs(msgs),
+	    enable(enable) {};
         ~synthesized_assertions_t();
-        virtual void init() {};
+        virtual void init();
         virtual void tick();
         virtual void finish() {};
         void resume(); // Clears any set assertions, and allows the simulation to advance
@@ -26,6 +28,7 @@ class synthesized_assertions_t: public bridge_driver_t
         virtual int exit_code() { return (assert_fired) ? assert_id + 1 : 0; };
     private:
         bool assert_fired = false;
+	bool enable = true;
         int assert_id;
         uint64_t assert_cycle;
         ASSERTBRIDGEMODULE_struct * mmio_addrs;
