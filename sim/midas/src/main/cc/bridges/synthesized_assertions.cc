@@ -8,7 +8,14 @@ synthesized_assertions_t::~synthesized_assertions_t() {
     free(this->mmio_addrs);
 }
 
+void synthesized_assertions_t::init() {
+    write(this->mmio_addrs->enable, this->enable);
+}
+
 void synthesized_assertions_t::tick() {
+  if (!enable)
+    return;
+
   if (read(this->mmio_addrs->fire)) {
     // Read assertion information
     assert_cycle = read(this->mmio_addrs->cycle_low);
