@@ -73,13 +73,14 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOO
 .PHONY: conf
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && \
-	$(call run_scala_main,$(firesim_sbt_project),midas.stage.RuntimeConfigGeneratorMain,\
+	# Runtime configuration generator must run under SBT currently; When
+	# launched via bloop some Console input and output is lost.
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-ggrc $(CONF_NAME))
+		-ggrc $(CONF_NAME)"
 
 ####################################
 # Verilator MIDAS-Level Simulators #
