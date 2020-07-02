@@ -7,7 +7,7 @@ do
     taskset $CPUMASK /root/saxpy.riscv -n $size
 done
 
-for size in ${SIZES[@]}
-do
-    taskset $CPUMASK /root/saxpy.riscv -n $size -p
-done
+#for size in ${SIZES[@]}
+#do
+#    taskset $CPUMASK /root/saxpy.riscv -n $size -p
+#done

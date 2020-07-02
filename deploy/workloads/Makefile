@@ -250,6 +250,26 @@ saxpy-hwacha-dc:
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+saxpy-hwacha-pf:
+	cd ../../sw/memblade-tests/baremetal && make pingd.riscv
+	cd ../../sw/memblade-tests/linux && make saxpy-hwacha-pf.riscv
+	cp ../../sw/memblade-tests/linux/saxpy-hwacha-pf.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	cd $@ && ln -sf ../../../sw/memblade-tests/baremetal/pingd.riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
+PTRCHASE_IMG=$(abspath ./rmem-ptrchase/ptrchase.img)
+
+rmem-ptrchase:
+	python $@/gen-ptrchase-img.py --base 1555558000 --numptrs 100 --random --stride 4096 $(PTRCHASE_IMG)
+	cd ../../sw/memblade-tests/baremetal && make PAYLOAD=$(PTRCHASE_IMG) memblade-dummy.riscv
+	cd ../../sw/memblade-tests/linux && make $@.riscv
+	cp ../../sw/memblade-tests/linux/$@.riscv $@/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
+	cd $@ && ln -sf ../$(BASE_LINUX)-dwarf bbl-vmlinux-dwarf
+	cd $@ && ln -sf ../../../sw/memblade-tests/baremetal/memblade-dummy.riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
@@ -275,6 +295,19 @@ coremark:
 	mv coremark/riscv-coremark/coremark/coremark.exe coremark/overlay/coremark.riscv
 	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
+mutilate-twemproxy-small:
+	cd ../../sw/twemproxy-riscv-install/ && ./install-all.sh $(abspath $@)/overlay
+	mkdir -p $@/overlay/root
+	cp $@/nutcracker.yml $@/overlay/root
+	cd $@ && ln -sf ../$(BASE_LINUX)
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
+mutilate-memblade-small:
+	cd ../../sw/twemproxy-riscv-install/ && ./install-all.sh $(abspath $@)/overlay
+	cd $@ && ln -sf ../$(BASE_LINUX)
+	cd $@ && ln -sf ../../../sw/memblade-tests/baremetal/memblade-dummy.riscv
+	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
@@ -283,6 +316,7 @@ coremark:
 	memblade-linux-bmark memblade-linux-bmark2 memblade-lat memblade-lat2 \
 	pagerank-local pagerank-local2 pagerank-remote pagerank-remote2 \
 	histo-local fc-test ccbench ccbench-dram-cache dram-cache-test-linux \
-	saxpy saxpy-dc saxpy-hwacha saxpy-hwacha-dc \
+	saxpy saxpy-dc saxpy-hwacha saxpy-hwacha-dc saxpy-hwacha-pf \
 	pagerank-dram-cache ccbench-cache-sweep flash-stress \
-	rmem-alloc-test flush-test coremark linux-poweroff
+	rmem-alloc-test flush-test coremark linux-poweroff \
+	rmem-ptrchase mutilate-twemproxy-small mutilate-memblade-small

@@ -1,0 +1,72 @@
+{
+  "common_bootbinary" : "br-base-bin",
+  "benchmark_name" : "mutilate-memblade-small",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["usr/"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+    {
+      "name": "mutilatemaster",
+      "files": [],
+      "command": "sleep 0.5 && mutilatemaster.sh 172.16.0.6 -a 172.16.0.3 -a 172.16.0.4 -a 172.16.0.5",
+      "_command": "bash",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent-0",
+      "files": [],
+      "command": "mutilate3 -T 2 -A",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent-1",
+      "files": [],
+      "command": "mutilate3 -T 2 -A",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent-2",
+      "files": [],
+      "command": "mutilate3 -T 2 -A",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memcached",
+      "files" : [],
+      "command" : "run-memcached.sh -x 0700 -x 0800 -x 0900",
+      "_command" : "bash",
+      "simulation_outputs": [""],
+      "outputs": []
+    },
+    {
+      "name" : "pingd0",
+      "bootbinary" : "pingd.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "pingd1",
+      "bootbinary" : "pingd.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    },
+    {
+      "name" : "pingd2",
+      "bootbinary" : "pingd.riscv",
+      "files" : [],
+      "command" : "",
+      "simulation_outputs" : [],
+      "outputs" : []
+    }
+  ]
+}

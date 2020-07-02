@@ -1,0 +1,67 @@
+{
+  "common_bootbinary" : "br-base-bin",
+  "benchmark_name" : "mutilate-twemproxy-small",
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["usr/"],
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "workloads" : [
+    {
+      "name": "mutilatemaster",
+      "files": [],
+      "command": "sleep 0.5 && mutilatemaster.sh 172.16.0.6 -a 172.16.0.3 -a 172.16.0.4 -a 172.16.0.5",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent-0",
+      "files": [],
+      "command": "mutilate3 -T 2 -A",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent-1",
+      "files": [],
+      "command": "mutilate3 -T 2 -A",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "mutilateagent-2",
+      "files": [],
+      "command": "mutilate3 -T 2 -A",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "nutcracker",
+      "files" : ["/root/nutcracker.yml"],
+      "command" : "nutcracker -c /root/nutcracker.yml",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memcached0",
+      "files" : [],
+      "command" : "memcached -u root -t 2 -c 32768",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memcached1",
+      "files" : [],
+      "command" : "memcached -u root -t 2 -c 32768",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name" : "memcached2",
+      "files" : [],
+      "command" : "memcached -u root -t 2 -c 32768",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}
