@@ -30,7 +30,6 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     // Tokens will stall when an assertion is firing unless
     // resume is pulsed or assertions are disabled
     val stallN = (!assertFire || resume || !enable)
-    val dummyPredicate = true.B
 
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN)
     val targetFire = tFireHelper.fire

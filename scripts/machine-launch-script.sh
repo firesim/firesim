@@ -47,6 +47,12 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
+# Optional: install bloop for fast scala builds on EC2 / CI
+curl -fLo coursier https://git.io/coursier-cli-linux &&
+sudo cp -f coursier /usr/local/bin
+sudo chmod 755 /usr/local/bin/coursier
+coursier install bloop --only-prebuilt=true
+
 # these need to match what's in deploy/requirements.txt
 sudo pip2 install fabric==1.14.0
 sudo pip2 install boto3==1.6.2
