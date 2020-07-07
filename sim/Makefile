@@ -40,6 +40,8 @@ base_dir := $(abspath ../../..)
 sim_dir := $(firesim_base_dir)
 chipyard_dir := $(base_dir)
 include $(base_dir)/variables.mk
+# target-agnostic.mk wants lower-case rocketchip_dir but CY defines it upper-case
+rocketchip_dir := $(ROCKETCHIP_DIR)
 endif
 
 # Include target-specific sources and input generation recipes
