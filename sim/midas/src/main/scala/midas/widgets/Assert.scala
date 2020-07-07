@@ -22,7 +22,7 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
     val resume = WireInit(false.B)
     val cycles = RegInit(0.U(64.W))
-    val q = Module(new Queue(hPort.hBits.cloneType,2))
+    val q = Module(new Queue(hPort.hBits.cloneType, 2))
     q.io.enq.valid := hPort.toHost.hValid
     hPort.toHost.hReady := q.io.enq.ready
     q.io.enq.bits := hPort.hBits
