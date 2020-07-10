@@ -4,6 +4,9 @@
 [submodule "riscv-pk"]
 	path = boards/default/firmware/riscv-pk
 	url = https://github.com/firesim/riscv-pk.git
+[submodule "opensbi"]
+	path = boards/default/firmware/opensbi
+	url = https://github.com/riscv/opensbi.git
 [submodule "br/buildroot"]
 	path = wlutil/br/buildroot
 	url = https://github.com/buildroot/buildroot.git
@@ -16,6 +19,3 @@
 [submodule "boards/firechip/drivers/iceblk-driver"]
 	path = boards/firechip/drivers/iceblk-driver
 	url = https://github.com/firesim/iceblk-driver.git
-[submodule "opensbi"]
-	path = boards/default/firmware/opensbi
-	url = git@github.com:riscv/opensbi.git
