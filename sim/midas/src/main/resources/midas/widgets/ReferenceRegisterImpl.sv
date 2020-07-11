@@ -1,8 +1,8 @@
 `timescale 1ps/1ps
 module ReferenceRegisterImpl #(
-    parameter DATA_WIDTH,
-    string EDGE_SENSE,
-    parameter INIT_VALUE) (
+    parameter DATA_WIDTH = 1,
+    string EDGE_SENSE = "POSEDGE",
+    parameter INIT_VALUE = 0) (
     input logic clock,
     input logic reset,
     input logic [DATA_WIDTH-1:0] d,
