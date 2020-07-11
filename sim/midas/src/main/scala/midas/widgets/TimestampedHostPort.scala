@@ -9,6 +9,7 @@ import chisel3.experimental.chiselName
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.unittest._
 import freechips.rocketchip.tilelink.{LFSRNoiseMaker, LFSR64}
+import freechips.rocketchip.util.EnhancedChisel3Assign
 
 trait HasTimestampConstants {
   val timestampWidth = 64
@@ -41,36 +42,40 @@ class TimestampedTuple[T <: Data](private val gen: T) extends Bundle with HasTim
   def valueBefore(time: UInt): T = valueAt(time - 1.U)
 
   def definedUntil(): UInt = Mux(latest.valid, latest.bits.time, Mux(old.valid, old.bits.time, 0.U))
-  def unchanged(): Bool = old.bits.data.asUInt === latest.bits.data.asUInt
+  def unchanged(): Bool = old.bits.data.asUInt === latest.bits.data.asUInt && old.valid
+  def fire(): Bool = latest.valid && (observed || unchanged)
 }
 
 
 class TimestampedSource[T <: Data](gen: DecoupledIO[TimestampedToken[T]]) extends MultiIOModule {
   val source = IO(Flipped(gen))
-  val value  = IO(new TimestampedTuple(gen.bits.data))
+  val value  = IO(new TimestampedTuple(gen.bits.underlyingType))
 
-  val init = RegInit(false.B)
-  val old  = Reg(source.bits.cloneType)
+  val old = RegInit({
+    val w = Wire(ValidIO(new TimestampedToken(gen.bits.underlyingType)))
+    w := DontCare
+    w.valid := false.B
+    w
+  })
 
-  assert(!source.valid || !init || source.bits.time > old.time, "Token stream must advance forward in time")
+  assert(!source.valid || !old.valid || source.bits.time > old.bits.time, "Token stream must advance forward in time")
+  assert(old.valid || !source.valid || source.bits.time === 0.U, "First token must be timestamped to time 0")
 
-  when(!init && source.valid) {
-    assert(source.bits.time === 0.U, "First token must be timestamped to time 0")
-    old := source.bits
-    init := true.B
-  }.elsewhen(init && source.valid && (value.observed || value.unchanged)) {
-    old := source.bits
+  when(value.fire) {
+    old.valid := true.B
+    old.bits := source.bits
   }
-  source.ready := !init || (value.observed || value.unchanged)
-  value.old.valid := init
-  value.old.bits := old
+
+  source.ready := (value.observed || value.unchanged)
+  value.old := old
   value.latest.valid := source.valid
   value.latest.bits := source.bits
 }
 
 object TimestampedSource {
-  def apply[T <: Data](in: DecoupledIO[TimestampedToken[T]]): TimestampedTuple[T] = {
+  def apply[T <: Data](in: DecoupledIO[TimestampedToken[T]], name: Option[String] = None): TimestampedTuple[T] = {
     val mod = Module(new TimestampedSource(in.cloneType))
+    name.foreach(n => mod.suggestName(n))
     mod.source <> in
     mod.value
   }
@@ -87,10 +92,16 @@ class TimestampedSink[T <: Data](gen: T) extends MultiIOModule {
 object TimestampedSink {
   def apply[T <: Data](in: TimestampedTuple[T]): DecoupledIO[TimestampedToken[T]] = {
     val mod = Module(new TimestampedSink(in.underlyingType))
-    mod.value <> in
+    mod.value :<> in
     mod.sink
   }
 }
+
+object TupleQueue {
+  def apply[T <: Data](in: TimestampedTuple[T], depth: Int, pipe: Boolean = false, flow: Boolean = false): TimestampedTuple[T] =
+    TimestampedSource(Queue(TimestampedSink(in), depth, pipe, flow))
+}
+
 
 class ReferenceTimestamperImpl(dataWidth: Int) extends BlackBox(Map("DATA_WIDTH" -> dataWidth))
   with HasBlackBoxResource {
@@ -134,8 +145,8 @@ class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with
   val time = IO(Output(UInt(timestampWidth.W)))
   // Consume null-tokens greedily but wait for both channels when there's a transition in either. 
   // These non-null messages should be indentical
-  a.observed := (a.old.valid && a.unchanged) || b.latest.valid && b.old.valid && !b.unchanged
-  b.observed := (b.old.valid && b.unchanged) || a.latest.valid && a.old.valid && !a.unchanged
+  a.observed := b.latest.valid && !b.unchanged
+  b.observed := a.latest.valid && !a.unchanged
 
   // Check that last takes on indentical values, including init
   assert(!a.old.valid || !b.old.valid || a.old.bits.data.asUInt === b.old.bits.data.asUInt,

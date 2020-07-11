@@ -165,12 +165,12 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val targetClockPorts = clockChannels.map(_.ports.head)
 
     // Not used in the satellite models; will be optimized away
-    val currentSimTime = TimestampRegister("currentSimTime")
+    val s2_time = TimestampRegister("s2_time")
     // Multi-clock management step 2: Build clock flags and clock channel
     val clockSchedulingStmts = new mutable.ArrayBuffer[Statement]
-    clockSchedulingStmts += currentSimTime
-    val (clockEnables, nextEdgeAvailable) = if (isHubModel) {
-      val nextSimTime = TimestampRegister("nextSimTime")
+    clockSchedulingStmts += s2_time
+    val (clockEnables, nextEdgeAvailable, s1_valid, s2_valid) = if (isHubModel) {
+      // Front-end of the pipeline. based on all input tokens determine if forward progress can be made.
       val advanceToTime = DefWire(NoInfo, ns.newName("advanceToTime"), timestampFType)
       val clockSchedulers = existingClockChannels.map(ch => new ClockScheduler(ch, WRef(finishing), WRef(advanceToTime))).toSeq
       val minReductionNodes = new mutable.ArrayBuffer[DefNode]
@@ -180,23 +180,30 @@ object FAMEModuleTransformer extends HasTimestampConstants {
           minReductionNodes += node
           WRef(node)
         }).last)
-      val nextTimeUpdate = Connect(
-        NoInfo,
-        WRef(nextSimTime),
-        Mux(WRef(finishing), WRef(advanceToTime), WRef(nextSimTime)))
-      val currentTimeUpdate = Connect(
-        NoInfo,
-        WRef(currentSimTime),
-        Mux(WRef(finishing), WRef(nextSimTime), WRef(currentSimTime)))
       val clockEnables = clockSchedulers.map(_.posedgeEnable).toSeq
       val nextEdgeAvailable = DefNode(NoInfo, ns.newName("nextEdgeAvailable"), clockEnables.reduce(Or.apply))
+
+      val s1_time = TimestampRegister("s1_time")
+      val willAdvance = DefNode(NoInfo, ns.newName("willAdvance"), Neq(WRef(advanceToTime), WRef(s1_time)))
+      val s1_time_update = Connect(
+        NoInfo,
+        WRef(s1_time),
+        Mux(WRef(finishing), WRef(advanceToTime), WRef(s1_time)))
+      val s2_time_update = Connect(
+        NoInfo,
+        WRef(s2_time),
+        Mux(WRef(finishing), WRef(s1_time), WRef(s2_time)))
+      val s1_valid = HostFlagRegister("s1_valid")
+      val s1_valid_update = Connect(NoInfo, WRef(s1_valid), Mux(WRef(finishing), WRef(willAdvance), WRef(s1_valid)))
+      val s2_valid = HostFlagRegister("s2_valid")
+      val s2_valid_update = Connect(NoInfo, WRef(s2_valid), Mux(WRef(finishing), WRef(s1_valid), WRef(s2_valid)))
       // Declarations
-      clockSchedulingStmts ++= nextSimTime +: advanceToTime +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes
+      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes
       // Connections
-      clockSchedulingStmts ++= Seq(advanceToTimeConn, nextTimeUpdate, currentTimeUpdate)
-      (clockEnables, WRef(nextEdgeAvailable))
+      clockSchedulingStmts ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update)
+      (clockEnables, WRef(nextEdgeAvailable), WRef(s1_valid), WRef(s2_valid))
     } else {
-      (Seq(UIntLiteral(1)), UIntLiteral(1))
+      (Seq(UIntLiteral(1)), UIntLiteral(1), UIntLiteral(1), UIntLiteral(1))
     }
 
     /*
@@ -216,7 +223,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       clock: Expression)
 
     val (clockMetadata, clockBufDecls, clockBufAssigns) = (for ((tClock, en) <- targetClockPorts.zip(clockEnables)) yield {
-      val enableReg = HostFlagRegister(s"${tClock.name}_enabled", resetVal = UIntLiteral(1))
+      val enableReg = HostFlagRegister(s"${tClock.name}_enabled", resetVal = UIntLiteral(0))
       val buf = WDefInstance(ns.newName(s"${tClock.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), en, WRef(enableReg), BoolType)),
@@ -229,7 +236,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
          *  initialized with a deterministic set of initial values.
          */
         Connect(NoInfo, WSubField(WRef(buf), "CE"),
-          Seq(WRef(enableReg), WRef(finishing), Negate(hostReset), WRef(doneInit)).reduce(And.apply))))
+          Seq(WRef(enableReg), WRef(finishing), Negate(hostReset)).reduce(And.apply))))
       val targetClockCtrl = TargetClockMetadata(tClock, WRef(enableReg), en, WSubField(WRef(buf), "O", ClockType, SourceFlow))
       (targetClockCtrl, Block(Seq(enableReg, buf)), Block(connects))
     }).unzip3
@@ -262,7 +269,8 @@ object FAMEModuleTransformer extends HasTimestampConstants {
         val firedReg = HostFlagRegister(s"${cName}_fired")
         (cName, clockFlag, ports, firedReg, analysis.channelHasTimestamp(cName))
       case (cName, (None, ports)) if analysis.channelHasTimestamp(cName) =>
-        val clockFlag = WRef(finishing)
+        // Reset timestamped channels whenever making forward progress (any clock fires)
+        val clockFlag = And(WRef(finishing), s1_valid)
         val firedReg = HostFlagRegister(s"${cName}_fired")
         (cName, clockFlag, ports, firedReg, true)
       case (cName, (None, ports)) =>
@@ -329,7 +337,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val inputRules = inChannels.map(i => i.setReady(WRef(finishing)))
     val outputRules = outChannels.map(o => o.setValid(WRef(finishing), ccDeps(o)))
     val topRules = Seq(Connect(NoInfo, WRef(finishing), allFiredOrFiring))
-    val outputTimestamps = outChannels.flatMap(o => o.setTimestamp(WRef(currentSimTime)))
+    val outputTimestamps = outChannels.flatMap(o => o.setTimestamp(WRef(s2_time)))
     // Keep output clock ports around as wires just for convenience to keep connects legal
     val clockOutputsAsWires = m.ports.collect { case Port(i, n, Output, ClockType) => DefWire(i, n, ClockType) }
 

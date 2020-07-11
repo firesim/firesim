@@ -20,9 +20,9 @@ class TimestampedRegister[T <: Data](gen: T, edgeSensitivity: EdgeSensitivity, i
   val q      = IO(new TimestampedTuple(gen))
 
   val reg = RegInit({
-    val w = Wire(new TimestampedToken(gen))
-    w.time := 0.U
-    w.data := init.getOrElse(0.U.asTypeOf(w.data))
+    val w = Wire(ValidIO(new TimestampedToken(gen)))
+    w := DontCare
+    w.valid := false.B
     w
   })
 
@@ -31,22 +31,60 @@ class TimestampedRegister[T <: Data](gen: T, edgeSensitivity: EdgeSensitivity, i
     case Posedge => simClockAdvancing && ~simClock.old.bits.data &&  simClock.latest.bits.data
     case Negedge => simClockAdvancing &&  simClock.old.bits.data && ~simClock.latest.bits.data
   }
+  val observeClockEdge = WireDefault(false.B)
+  simClock.observed := !simClock.old.valid || !latchingEdge || observeClockEdge
 
-  q.old.valid := true.B
-  q.old.bits  := reg
-  q.latest.valid := simClockAdvancing && (!latchingEdge || d.definedBefore(simClock.latest.bits.time))
-  q.latest.bits.time  := simClock.latest.bits.time
-  q.latest.bits.data  := Mux(latchingEdge, d.valueBefore(simClock.latest.bits.time), q.old.bits.data)
+  val observeDEdge = WireDefault(false.B)
+  d.observed := !d.old.valid || d.unchanged || observeDEdge
 
-  when(q.latest.valid && (q.observed || q.unchanged)) {
-    reg := q.latest.bits
+  q.latest.bits := q.old.bits
+  q.latest.valid := !q.old.valid || q.latest.bits.time > q.old.bits.time
+
+  when(!q.old.valid) {
+    q.latest.bits.time := 0.U
+    q.latest.bits.data := init.getOrElse(0.U.asTypeOf(q.latest.bits.data))
+  // Clock leads data -> can always advance to clock.latest.time or clock.time - 1
+  }.elsewhen(simClock.definedUntil > d.definedUntil) {
+    // Any transition on D happens before an edge so we can safely acknowledge it
+    observeDEdge := true.B
+    when(latchingEdge) {
+      // Only true if D transitions defined one timestep before the clock edge
+      // Emit possible transition at @ C_t
+      when(d.definedBefore(simClock.latest.bits.time)) {
+        q.latest.bits.time := simClock.latest.bits.time
+        q.latest.bits.data := d.valueBefore(simClock.latest.bits.time)
+        observeClockEdge := q.observed
+      // More generally we need to wait until D is defined until C_t - 1
+      // Present a null token up for C_t - 1
+      }.otherwise{
+        q.latest.bits.time := simClock.latest.bits.time - 1.U
+      }
+    }.otherwise{
+      // Not an edge, so no possible change in output. Null token @ C_t
+      q.latest.bits.time := simClock.definedUntil
+    }
+    // D_t >= C_t
+  }.otherwise{
+    // The furthest we can possibly advance to is D_t, if it is unchanged.
+    when(!d.latest.valid || d.unchanged) {
+      q.latest.bits.time := d.definedUntil
+      // Neglect the clock edge if there is one.
+      observeClockEdge := true.B
+    // But if there is a D transtion we need make sure all clock edges see the old value.
+    }.elsewhen(simClock.latest.valid) {
+      // Can always advance to @ C_t; may not be null if edge.
+      q.latest.bits.time := simClock.latest.bits.time
+      when (latchingEdge) {
+        q.latest.bits.data := d.valueBefore(simClock.latest.bits.time)
+        observeClockEdge := q.observed
+      }
+    }
   }
 
-  val observeEdge = q.observed && d.definedBefore(simClock.latest.bits.time)
-  simClock.observed := !latchingEdge || q.observed && d.definedBefore(simClock.latest.bits.time)
-  d.observed := Mux(latchingEdge,
-    !d.definedBefore(simClock.latest.bits.time) || simClock.latest.bits.time === d.latest.bits.time + 1.U,
-    simClock.definedUntil >= d.definedUntil)
+  q.old := reg
+  when(q.fire) {
+    reg := q.latest
+  }
 }
 
 
@@ -79,23 +117,24 @@ class ReferenceRegister[T <: Data](gen: T, edgeSensitivity: EdgeSensitivity, ini
 
 object TimestampedRegister {
   private[midas] def instantiateAgainstReference[T <: Data](
+    gen: =>T,
     edgeSensitivity: EdgeSensitivity,
     initValue: Option[T],
-    clocks: (TimestampedTuple[T], Bool),
-    d: (TimestampedTuple[T], T)): (TimestampedRegister[T], ReferenceRegister[T]) = {
+    clocks: (Bool, TimestampedTuple[Bool]),
+    d: Option[(T, TimestampedTuple[T])] = None): (ReferenceRegister[T], TimestampedRegister[T]) = {
 
-    def tpe: T = d._1.underlyingType
-    val (modelClock, refClock) = clocks
-    val (modelD, refD) = d
-    val refReg   = Module(new ReferenceRegister(tpe, edgeSensitivity, initValue))
+    val (refClock, modelClock) = clocks
+    val refReg   = Module(new ReferenceRegister(gen, edgeSensitivity, initValue))
     refReg.reset := false.B
     refReg.clock := refClock
-    refReg.d     := refD
-
-    val modelReg   = Module(new TimestampedRegister(tpe, edgeSensitivity, initValue))
+    val modelReg   = Module(new TimestampedRegister(gen, edgeSensitivity, initValue))
     modelReg.simClock <> modelClock
-    modelReg.d <> modelD
-    (modelReg, refReg)
+
+    d.foreach { case (refD, modelD) =>
+      refReg.d := refD
+      modelReg.d <> modelD
+    }
+    (refReg, modelReg)
   }
 }
 
@@ -114,13 +153,32 @@ class TimestampedRegisterTest(
   val modelInput = TimestampedSource(DecoupledDelayer(
     Module(new ClockSource(inputPeriodPS, initValue = false)).clockOut,
     0.25))
-  val (modelReg, refReg) = TimestampedRegister.instantiateAgainstReference(
+  val (refReg, modelReg) = TimestampedRegister.instantiateAgainstReference(
+    Bool(),
     edgeSensitivity,
     initValue = None,
-    clocks = (modelClock, refClock.io.clockOut),
-    d = (modelInput, refInput.io.clockOut))
+    clocks = (refClock.io.clockOut, modelClock),
+    d = Some((refInput.io.clockOut, modelInput)))
 
   val targetTime = TimestampedTokenTraceEquivalence(refReg.q, modelReg.q)
   io.finished := targetTime > (timeout / 2).U
 }
 
+class TimestampedRegisterLoopbackTest(edgeSensitivity: EdgeSensitivity, clockPeriodPS: Int, timeout: Int = 50000) extends UnitTest(timeout) {
+  val (refClock, modelClock) = ClockSource.instantiateAgainstReference(clockPeriodPS)
+  val (refReg, modelReg) = TimestampedRegister.instantiateAgainstReference(
+    Bool(),
+    edgeSensitivity,
+    initValue = None,
+    clocks = (refClock, TimestampedSource(DecoupledDelayer(modelClock, 0.5))))
+
+  refReg.d := !refReg.q
+
+  val Seq(modelOut, modelLoopback) = FanOut(PipeStage(modelReg.q), 2)
+  modelReg.d <> (new CombLogic(Bool(), modelLoopback){
+    out.latest.bits.data := !valueOf(modelLoopback)
+  }).out
+
+  val targetTime = TimestampedTokenTraceEquivalence(refReg.q, modelOut)
+  io.finished := targetTime > (timeout / 2).U
+}

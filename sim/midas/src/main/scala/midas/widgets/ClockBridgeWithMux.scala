@@ -43,19 +43,20 @@ class ClockBridgeWithMuxModule()(implicit p: Parameters) extends BridgeModule[Cl
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
     val hPort = IO(new ClockBridgeWithMuxHostIO(new ClockBridgeWithMuxTargetIO))
-    val clockASource = Module(new ClockSource(1000))
-    val clockBSource = Module(new ClockSource(2000))
-    val clockDynamicSource = Module(new ClockSource(3000))
+    val clockASource = TimestampedSource(Module(new ClockSource(1000)).clockOut)
+    val clockBSource = TimestampedSource(Module(new ClockSource(2000)).clockOut)
 
-    hPort.clockA <> clockASource.clockOut
-    hPort.clockB <> clockBSource.clockOut
-    hPort.clockDynamic <> clockDynamicSource.clockOut
+    val Seq(clockAOut, clockAMuxIn) = FanOut(clockASource, 2)
+    val Seq(clockBOut, clockBMuxIn) = FanOut(clockBSource, 2)
 
+    val clockMux = Module(new ClockMux)
+    clockMux.sel <> TimestampedSource(hPort.sel)
+    clockMux.clockA <> clockAMuxIn
+    clockMux.clockB <> clockBMuxIn
+    hPort.clockA <> TimestampedSink(clockAOut)
+    hPort.clockB <> TimestampedSink(clockBOut)
+    hPort.clockDynamic <> TimestampedSink(clockMux.clockOut)
 
-    hPort.sel.ready := true.B
-    when(hPort.sel.valid) {
-      printf(p"Mux select value: ${hPort.sel.bits.data} @ ${hPort.sel.bits.time}\n")
-    }
     val hCycleName = "hCycle"
     val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
     hCycle := hCycle + 1.U

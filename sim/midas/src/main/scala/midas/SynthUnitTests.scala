@@ -56,11 +56,15 @@ class WithTimestampRegisterTests extends Config((site, here, up) => {
     implicit val p = q
     import midas.widgets._
     Seq(
+      Module(new ClockSourceTest(1000, true)),
+      Module(new FanOutTest),
+      Module(new CombinationalAndTest),
       Module(new TimestampedRegisterTest(Posedge, 5, 4)),
       Module(new TimestampedRegisterTest(Negedge, 5, 4)),
-      Module(new TimestampedRegisterTest(Posedge, 10, 10)),
+      Module(new TimestampedRegisterTest(Posedge, 10, 9)),
       Module(new TimestampedRegisterTest(Posedge, 9, 10)),
-      Module(new TimestampedRegisterTest(Negedge, 10, 10)),
+      Module(new TimestampedRegisterTest(Negedge, 10, 9)),
+      Module(new TimestampedRegisterLoopbackTest(Posedge, 10)),
     )
   }
 })
