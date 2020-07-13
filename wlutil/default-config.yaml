@@ -9,10 +9,10 @@ board-dir : '../boards/firechip'
 image-dir : '../images'
 
 # Default linux source
-linux-dir : '../riscv-linux'
-
-# Default pk source
-pk-dir : '../riscv-pk'
+# linux-dir : '../riscv-linux'
+#
+# # Default pk source
+# pk-dir : '../boards/default/firmware/opensbi'
 
 # Runtime Logs
 log-dir : '../logs' 

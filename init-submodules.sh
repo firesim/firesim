@@ -6,8 +6,9 @@
 # You do not need to call this script if you only intend to build bare-metal workloads.
 
 git submodule update --init \
-  riscv-linux \
-  riscv-pk \
+  boards/default/linux \
+  boards/default/firmware/riscv-pk \
+  boards/default/firmware/opensbi \
   wlutil/busybox \
   wlutil/br/buildroot \
   boards/firechip/drivers/*

@@ -36,10 +36,16 @@ pip3 install -r python-requirements.txt
 
 ## RISC-V Tools
 In addition to standard libraries, you will need a RISC-V compatible toolchain,
-the RISC-V isa simulator (spike), and Qemu.
+the RISC-V isa simulator (spike).
 
 See the [Chipyard documentation](https://chipyard.readthedocs.io/en/latest/Chipyard-Basics/Initial-Repo-Setup.html#building-a-toolchain)
 for help setting up a known-good toolchain and environment.
+
+## Qemu
+Qemu is the default simulator used by firemarshal. We require version v5.0.0 or
+greater. If you aren't using chipyard, you can get it from:
+
+https://github.com/qemu/qemu/tree/v5.0.0
 
 # Basic Usage
 If you only want to build bare-metal workloads, you can skip updating

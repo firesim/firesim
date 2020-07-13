@@ -1,9 +1,12 @@
 [submodule "riscv-linux"]
-	path = riscv-linux
+	path = boards/default/linux
 	url = https://github.com/firesim/linux.git
 [submodule "riscv-pk"]
-	path = riscv-pk
-	url = https://github.com/firesim/riscv-pk.git
+	path = boards/default/firmware/riscv-pk
+	url = https://github.com/riscv/riscv-pk.git
+[submodule "opensbi"]
+	path = boards/default/firmware/opensbi
+	url = https://github.com/riscv/opensbi.git
 [submodule "br/buildroot"]
 	path = wlutil/br/buildroot
 	url = https://github.com/buildroot/buildroot.git
