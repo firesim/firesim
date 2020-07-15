@@ -10,7 +10,7 @@
     {
       "name": "mutilatemaster",
       "files": [],
-      "command": "sleep 0.5 && mutilatemaster.sh 172.16.0.6 -a 172.16.0.3 -a 172.16.0.4 -a 172.16.0.5",
+      "command": "mutilatemaster.sh 172.16.0.6 -a 172.16.0.3 -a 172.16.0.4 -a 172.16.0.5",
       "simulation_outputs": [],
       "outputs": []
     },

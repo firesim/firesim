@@ -1,0 +1,13 @@
+main:
+  listen: 0.0.0.0:11211
+  hash: fnv1a_64
+  distribution: ketama
+  auto_eject_hosts: true
+  client_connections: 32768
+  server_connections: 2
+  server_retry_timeout: 2000
+  server_failure_limit: 1
+  servers:
+   - 172.16.0.7:11211:1
+   - 172.16.0.8:11211:1
+   - 172.16.0.9:11211:1
