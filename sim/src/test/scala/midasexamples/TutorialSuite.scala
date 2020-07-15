@@ -172,6 +172,12 @@ class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterMo
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
 
+class RegfileF1Test extends TutorialSuite("Regfile")
+
+class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
+
+class NestedModelsF1Test extends TutorialSuite("NestedModels")
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
