@@ -20,6 +20,12 @@ class AXI4AddressTranslation(offset: BigInt, bridgeAddressSets: Seq[AddressSet],
     (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
       val maxHostAddr = BigInt(1) << out.ar.bits.params.addrBits
       out <> in
+      // Adjust the target address to the correct host memory location. offset
+      // may be negative (when the target address space itself is
+      // offset; typically to 2 GiB in rocket-chip targets), so adding
+      // maxHostAddr produces a non-negative UInt literal.  Additionally, offset
+      // may be larger than the total available memory space (ex. if the host
+      // has less than < 2 GiB of host DRAM), hence %.
       out.aw.bits.addr := in.aw.bits.addr + (maxHostAddr + (offset % maxHostAddr)).U
       out.ar.bits.addr := in.ar.bits.addr + (maxHostAddr + (offset % maxHostAddr)).U
       assert(~in.aw.valid || in.aw.bits.addr <= virtualBound.U, s"AW request address in memory region ${regionName} exceeds region bound.")
