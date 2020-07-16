@@ -178,6 +178,8 @@ class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
 
 class NestedModelsF1Test extends TutorialSuite("NestedModels")
 
+class MultiRegF1Test extends TutorialSuite("MultiReg")
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,

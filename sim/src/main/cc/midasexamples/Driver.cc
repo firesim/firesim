@@ -63,6 +63,8 @@
 #include "MultiRegfile.h"
 #elif defined DESIGNNAME_NestedModels
 #include "NestedModels.h"
+#elif defined DESIGNNAME_MultiReg
+#include "MultiReg.h"
 #endif
 
 class dut_emul_t:
