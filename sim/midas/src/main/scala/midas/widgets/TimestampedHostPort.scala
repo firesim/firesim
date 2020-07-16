@@ -43,7 +43,7 @@ class TimestampedTuple[T <: Data](private val gen: T) extends Bundle with HasTim
 
   def definedUntil(): UInt = Mux(latest.valid, latest.bits.time, Mux(old.valid, old.bits.time, 0.U))
   def unchanged(): Bool = old.bits.data.asUInt === latest.bits.data.asUInt && old.valid
-  def fire(): Bool = latest.valid && (observed || unchanged)
+  def fire(): Bool = latest.valid && observed
 }
 
 
@@ -66,7 +66,7 @@ class TimestampedSource[T <: Data](gen: DecoupledIO[TimestampedToken[T]]) extend
     old.bits := source.bits
   }
 
-  source.ready := (value.observed || value.unchanged)
+  source.ready := value.observed
   value.old := old
   value.latest.valid := source.valid
   value.latest.bits := source.bits

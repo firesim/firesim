@@ -28,7 +28,7 @@ abstract class CombLogic[T <: Data](gen: =>T, sensitivityList: TimestampedTuple[
   out.latest.bits.time := minTime
 
   //Out fire suspect.
-  sensitivityList.foreach(in => in.observed := in.unchanged || (out.fire && in.definedUntil === minTime))
+  sensitivityList.foreach(in => in.observed := in.unchanged || ((out.fire || out.unchanged) && in.definedUntil === minTime))
   when (out.fire) {
     old := out.latest
   }
