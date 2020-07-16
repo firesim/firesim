@@ -28,11 +28,11 @@ class ClockMux extends MultiIOModule {
   bReg.simClock <> bRegClock
 
   aReg.d <> (new CombLogic(Bool(), aSel, bRegFeedback) {
-    out.latest.bits.data := valueOf(aSel) && !valueOf(bRegFeedback)
+    out.latest.bits.data := !valueOf(aSel) && !valueOf(bRegFeedback)
   }).out
 
   bReg.d <> (new CombLogic(Bool(), bSel, aRegFeedback) {
-    out.latest.bits.data := !valueOf(bSel) && !valueOf(aRegFeedback)
+    out.latest.bits.data := valueOf(bSel) && !valueOf(aRegFeedback)
   }).out
 
   clockOut <> (new CombLogic(Bool(), outClockA, outClockB, outAReg, outBReg){
@@ -40,3 +40,45 @@ class ClockMux extends MultiIOModule {
   }).out
 }
 
+class ReferenceClockMux extends BlackBox with HasBlackBoxResource {
+  val io = IO(new Bundle {
+    val clockA = Input(Bool())
+    val clockB = Input(Bool())
+    val sel    = Input(Bool())
+    val clockOut = Output(Bool())
+  })
+  addResource("/midas/widgets/ReferenceClockMux.sv")
+}
+
+object ClockMux {
+  def instantiateAgainstReference(
+    clockA: (Bool, TimestampedTuple[Bool]),
+    clockB: (Bool, TimestampedTuple[Bool]),
+    sel: (Bool, TimestampedTuple[Bool])): (Bool, TimestampedTuple[Bool]) = {
+
+    val refClockMux = Module(new ReferenceClockMux)
+    refClockMux.io.clockA := clockA._1
+    refClockMux.io.clockB := clockB._1
+    refClockMux.io.sel    := sel._1
+
+    val modelClockMux = Module(new ClockMux)
+    modelClockMux.clockA <> clockA._2
+    modelClockMux.clockB <> clockB._2
+    modelClockMux.sel    <> sel._2
+    (refClockMux.io.clockOut, modelClockMux.clockOut)
+  }
+}
+
+
+class TimestampedClockMuxTest(
+    clockAPeriodPS: Int,
+    clockBPeriodPS: Int,
+    selPeriodPS: Int,
+    timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
+
+  val clockATuple = ClockSource.instantiateAgainstReference(clockAPeriodPS)
+  val clockBTuple = ClockSource.instantiateAgainstReference(clockBPeriodPS)
+  val selTuple    = ClockSource.instantiateAgainstReference(selPeriodPS)
+  val (reference, model) = ClockMux.instantiateAgainstReference(clockATuple, clockBTuple, selTuple)
+  io.finished := TimestampedTokenTraceEquivalence(reference, model, timeout)
+}

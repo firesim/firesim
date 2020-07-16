@@ -65,6 +65,7 @@ class WithTimestampRegisterTests extends Config((site, here, up) => {
       Module(new TimestampedRegisterTest(Posedge, 9, 10)),
       Module(new TimestampedRegisterTest(Negedge, 10, 9)),
       Module(new TimestampedRegisterLoopbackTest(Posedge, 10)),
+      Module(new TimestampedClockMuxTest(3,5,10)),
     )
   }
 })
