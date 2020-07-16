@@ -61,6 +61,5 @@ class CombinationalAndTest(timeout: Int = 50000)(implicit p: Parameters) extends
     out.latest.bits.data := valueOf(modelInputA) && valueOf(modelInputB)
   }
 
-  val targetTime = TimestampedTokenTraceEquivalence(refAnd, and.out)
-  io.finished := targetTime > (timeout / 2).U
+  io.finished := TimestampedTokenTraceEquivalence(refAnd, and.out, timeout)
 }

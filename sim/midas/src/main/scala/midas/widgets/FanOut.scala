@@ -72,8 +72,8 @@ class FanOutTest(timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(
     Module(new ClockSource(clockPeriodPS, initValue = false)).clockOut,
     0.5))
   val Seq(modelOutA, modelOutB) = FanOut(modelInput, 2).map(o => DecoupledDelayer(TimestampedSink(PipeStage(o)), 0.5))
-  val targetTimeA = TimestampedTokenTraceEquivalence(refInput.io.clockOut, modelOutA)
-  val targetTimeB = TimestampedTokenTraceEquivalence(refInput.io.clockOut, modelOutB)
-  io.finished := targetTimeA > (timeout / 2).U && targetTimeB > (timeout / 2).U
+  val aFinished = TimestampedTokenTraceEquivalence(refInput.io.clockOut, modelOutA, timeout)
+  val bFinished = TimestampedTokenTraceEquivalence(refInput.io.clockOut, modelOutB, timeout)
+  io.finished := aFinished && bFinished
 }
 

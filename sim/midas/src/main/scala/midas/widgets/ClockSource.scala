@@ -33,17 +33,16 @@ class ClockSourceReference(periodPS: BigInt, dutyCycle: Int = 50, initValue: Int
 
 object ClockSource {
   def instantiateAgainstReference(periodPS: BigInt, dutyCycle: Int = 50, initValue: Boolean = false):
-      (Bool, DecoupledIO[TimestampedToken[Bool]]) = {
+      (Bool, TimestampedTuple[Bool]) = {
     val reference = Module(new ClockSourceReference(periodPS, initValue = if (initValue) 1 else 0))
     val model = Module(new ClockSource(periodPS, initValue = initValue))
-    (reference.io.clockOut, model.clockOut)
+    (reference.io.clockOut, TimestampedSource(DecoupledDelayer(model.clockOut, 0.5)))
   }
 }
 
 
 class ClockSourceTest(periodPS: BigInt, initValue: Boolean, timeout: Int = 100000)(implicit p: Parameters) extends UnitTest(timeout) with HasTimestampConstants{
   val (reference, model) = ClockSource.instantiateAgainstReference(periodPS, initValue = initValue)
-  val targetTime = TimestampedTokenTraceEquivalence(reference, model)
-  io.finished := targetTime > (timeout / 2).U
+  io.finished := TimestampedTokenTraceEquivalence(reference, model, timeout)
 }
 

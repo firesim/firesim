@@ -173,21 +173,21 @@ class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with
 
 object TimestampedTokenTraceEquivalence {
   @chiselName
-  def apply[T <: Data](a: TimestampedTuple[T], b: TimestampedTuple[T]): UInt = {
+  def apply[T <: Data](a: TimestampedTuple[T], b: TimestampedTuple[T], hostTimeout: Int): Bool = {
     val checker = Module(new TimestampedTokenTraceChecker(a.underlyingType))
     println(checker)
     checker.a <> a
     checker.b <> b
-    checker.time
+    checker.time > (hostTimeout / 8).U
   }
-  def apply[T <: Data](a: DecoupledIO[TimestampedToken[T]], b: DecoupledIO[TimestampedToken[T]]): UInt =
-    apply(TimestampedSource(a), TimestampedSource(b))
+  def apply[T <: Data](a: DecoupledIO[TimestampedToken[T]], b: DecoupledIO[TimestampedToken[T]], hostTimeout: Int): Bool =
+    apply(TimestampedSource(a), TimestampedSource(b), hostTimeout)
 
-  def apply[T <: Data](reference: T, model: TimestampedTuple[T]): UInt =
-    apply(TimestampedSource(ReferenceTimestamper(reference)), model)
+  def apply[T <: Data](reference: T, model: TimestampedTuple[T], hostTimeout: Int): Bool =
+    apply(TimestampedSource(ReferenceTimestamper(reference, hostTimeout)), model, hostTimeout)
 
-  def apply[T <: Data](reference: T, model: DecoupledIO[TimestampedToken[T]]): UInt = 
-    apply(TimestampedSource(ReferenceTimestamper(reference)), TimestampedSource(model))
+  def apply[T <: Data](reference: T, model: DecoupledIO[TimestampedToken[T]], hostTimeout: Int): Bool =
+    apply(TimestampedSource(ReferenceTimestamper(reference, hostTimeout)), TimestampedSource(model), hostTimeout)
 }
 
 

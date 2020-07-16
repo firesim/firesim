@@ -162,25 +162,23 @@ class TimestampedRegisterTest(
     clocks = (refClock.io.clockOut, modelClock),
     d = Some((refInput.io.clockOut, modelInput)))
 
-  val targetTime = TimestampedTokenTraceEquivalence(refReg.q, modelReg.q)
-  io.finished := targetTime > (timeout / 2).U
+  io.finished := TimestampedTokenTraceEquivalence(refReg.q, modelReg.q, timeout)
 }
 
 class TimestampedRegisterLoopbackTest(edgeSensitivity: EdgeSensitivity, clockPeriodPS: Int, timeout: Int = 50000) extends UnitTest(timeout) {
-  val (refClock, modelClock) = ClockSource.instantiateAgainstReference(clockPeriodPS)
+  val clockTuple = ClockSource.instantiateAgainstReference(clockPeriodPS)
   val (refReg, modelReg) = TimestampedRegister.instantiateAgainstReference(
     Bool(),
     edgeSensitivity,
     initValue = None,
-    clocks = (refClock, TimestampedSource(DecoupledDelayer(modelClock, 0.5))))
+    clocks = clockTuple)
 
   refReg.d := !refReg.q
 
-  val Seq(modelOut, modelLoopback) = FanOut(PipeStage(modelReg.q), 2)
+  val Seq(modelOut, modelLoopback) = FanOut(modelReg.q, "modelOut", "modelLoopback")
   modelReg.d <> (new CombLogic(Bool(), modelLoopback){
     out.latest.bits.data := !valueOf(modelLoopback)
   }).out
 
-  val targetTime = TimestampedTokenTraceEquivalence(refReg.q, modelOut)
-  io.finished := targetTime > (timeout / 2).U
+  io.finished := TimestampedTokenTraceEquivalence(refReg.q, modelOut, timeout)
 }
