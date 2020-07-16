@@ -82,7 +82,17 @@ class simif_t
     }
 
     inline bool expect(size_t id, data_t expected) {
-      while (!precise_peekable());
+      std::string errmsg = "Your peek/poke sequence may violate causality, or there may be an internal bug";
+      midas_time_t start = timestamp();
+      while (!precise_peekable()) {
+        if (diff_secs(timestamp(), start) > 1.0) {
+          if (log) {
+            fprintf(stderr, "* FAIL : EXPECT on %s.%s has timed out. %s : FAIL\n",
+                    TARGET_NAME, (const char*)OUTPUT_NAMES[id], errmsg.c_str());
+          }
+          return false;
+        }
+      }
       data_t value = peek(id);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
