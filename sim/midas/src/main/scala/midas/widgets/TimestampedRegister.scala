@@ -65,8 +65,10 @@ class TimestampedRegister[T <: Data](gen: T, edgeSensitivity: EdgeSensitivity, i
     }
     // D_t >= C_t
   }.otherwise{
-    // The furthest we can possibly advance to is D_t, if it is unchanged.
-    when(!d.latest.valid || d.unchanged) {
+    // The furthest we can possibly advance to is D_t, if it is unchanged WRT
+    // to the output.  It is insufficient to check that D is unchanged, as the
+    // init value of the register may differ from D
+    when((!d.latest.valid || d.unchanged) && d.old.bits.data.asUInt === q.old.bits.data.asUInt ) {
       q.latest.bits.time := d.definedUntil
       // Neglect the clock edge if there is one.
       observeClockEdge := true.B
