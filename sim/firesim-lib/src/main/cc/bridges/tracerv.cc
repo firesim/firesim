@@ -194,7 +194,7 @@ void tracerv_t::init() {
     {
       // Writing 0 to triggerSelector permanently enables the trigger
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-      printf("TracerV: No trigger selected. Enable trigger enabled from %lu to %lu cycles\n", 0, ULONG_MAX);
+      printf("TracerV: No trigger selected. Trigger enabled from %lu to %lu cycles\n", 0, ULONG_MAX);
     }
     write(this->mmio_addrs->initDone, true);
 }
