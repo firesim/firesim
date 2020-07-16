@@ -47,6 +47,9 @@ class simif_t
     }
     virtual void load_mem(std::string filename);
 
+    bool peekpoke_ready() { return read(this->defaultiowidget_mmio_addrs->READY); }
+    bool precise_peekable() { return read(this->defaultiowidget_mmio_addrs->PRECISE_PEEKABLE); }
+
   public:
     // Simulation APIs
     virtual void init(int argc, char** argv, bool log = false);
@@ -60,13 +63,18 @@ class simif_t
     virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
     virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
 
-    inline void poke(size_t id, data_t value) {
+    inline void poke(size_t id, data_t value, bool blocking = true) {
+      while (blocking && !peekpoke_ready());
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n",
         TARGET_NAME, INPUT_NAMES[id], value);
       write(INPUT_ADDRS[id], value);
     }
 
-    inline data_t peek(size_t id) {
+    inline data_t peek(size_t id, bool blocking = true) {
+      while (blocking && !peekpoke_ready());
+      if (log && !precise_peekable()) {
+        fprintf(stderr, "* WARNING : The following peek is on an unstable value!\n");
+      }
       data_t value = read(((unsigned int*)OUTPUT_ADDRS)[id]);
       if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n",
         TARGET_NAME, (const char*)OUTPUT_NAMES[id], value);
@@ -74,6 +82,7 @@ class simif_t
     }
 
     inline bool expect(size_t id, data_t expected) {
+      while (!precise_peekable());
       data_t value = peek(id);
       bool pass = value == expected;
       if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
