@@ -9,11 +9,7 @@ module ReferenceRegisterImpl #(
     output reg  [DATA_WIDTH-1:0] q);
 
     initial begin
-        // Create a fake transition on Q at time zero so that the reference
-        // timestamper captures the correct initialization value
-        q = ~INIT_VALUE[DATA_WIDTH - 1:0];
-        // This must be greater > 0 but < 1
-        #`REFERENCE_INIT_DELAY q = INIT_VALUE[DATA_WIDTH - 1:0];
+        q = INIT_VALUE[DATA_WIDTH - 1:0];
     end
 
     // Avoid a race condition where d simultaenously changes with the clock edge

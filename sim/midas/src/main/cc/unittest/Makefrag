@@ -51,7 +51,6 @@ vcs_wrapper_v := $(vsrc)/TestDriver.v
 VCS_FLAGS =  \
 	+define+RANDOMIZE_MEM_INIT \
 	+define+RANDOMIZE_REG_INIT \
-	+define+REFERENCE_INIT_DELAY=0.1 \
 
 include $(sim_makefrag_dir)/Makefrag-vcs
 

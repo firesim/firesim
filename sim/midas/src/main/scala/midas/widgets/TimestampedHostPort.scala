@@ -103,8 +103,8 @@ object TupleQueue {
 }
 
 
-class ReferenceTimestamperImpl(dataWidth: Int) extends BlackBox(Map("DATA_WIDTH" -> dataWidth))
-  with HasBlackBoxResource {
+class ReferenceTimestamperImpl(dataWidth: Int, depth: Int) extends BlackBox(
+    Map("DATA_WIDTH" -> dataWidth, "LOG2_NUM_SAMPLES" -> log2Ceil(depth))) with HasBlackBoxResource {
   addResource("/midas/widgets/ReferenceTimestamperImpl.sv")
   val io = IO(new Bundle {
     val clock = Input(Clock())
@@ -114,11 +114,19 @@ class ReferenceTimestamperImpl(dataWidth: Int) extends BlackBox(Map("DATA_WIDTH"
   })
 }
 
-class ReferenceTimestamper[T <: Data](gen: T) extends MultiIOModule {
+/**
+  * Translates a non-host-decoupled signal into a timestamped form, by sampling
+  * a signal and annotating it with the current simulation time
+  *
+  * @param depth The depth of the internal buffer storing samples of the
+  *   reference. Set = to the host timeout to prevent overflow
+  */
+
+class ReferenceTimestamper[T <: Data](gen: T, depth: Int) extends MultiIOModule {
   val value = IO(Input(gen))
   val timestamped = IO(Decoupled(new TimestampedToken(gen)))
 
-  val ts = Module(new ReferenceTimestamperImpl(value.getWidth))
+  val ts = Module(new ReferenceTimestamperImpl(value.getWidth, depth))
   ts.io.clock := clock
   ts.io.reset := reset
   ts.io.value := value.asUInt
@@ -128,8 +136,8 @@ class ReferenceTimestamper[T <: Data](gen: T) extends MultiIOModule {
 }
 
 object ReferenceTimestamper {
-  def apply[T <: Data](value: T): DecoupledIO[TimestampedToken[T]] = {
-    val timestamper = Module(new ReferenceTimestamper(value.cloneType))
+  def apply[T <: Data](value: T, depth: Int = 1 << 16): DecoupledIO[TimestampedToken[T]] = {
+    val timestamper = Module(new ReferenceTimestamper(value.cloneType, depth))
     timestamper.value := value
     timestamper.timestamped
   }
@@ -145,8 +153,8 @@ class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with
   val time = IO(Output(UInt(timestampWidth.W)))
   // Consume null-tokens greedily but wait for both channels when there's a transition in either. 
   // These non-null messages should be indentical
-  a.observed := b.latest.valid && !b.unchanged
-  b.observed := a.latest.valid && !a.unchanged
+  a.observed := b.latest.valid && !b.unchanged || a.unchanged
+  b.observed := a.latest.valid && !a.unchanged || b.unchanged
 
   // Check that last takes on indentical values, including init
   assert(!a.old.valid || !b.old.valid || a.old.bits.data.asUInt === b.old.bits.data.asUInt,

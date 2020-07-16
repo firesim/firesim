@@ -9,8 +9,7 @@ module ClockSourceReference #(
     localparam LOW_TIME = PERIOD_PS - HIGH_TIME;
 
     initial begin
-        clockOut = ~INIT_VALUE[0];
-        #`REFERENCE_INIT_DELAY clockOut = INIT_VALUE[0];
+        clockOut = INIT_VALUE[0];
         if (INIT_VALUE == 0) #LOW_TIME clockOut = ~clockOut;
 
         forever begin

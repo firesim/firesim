@@ -1,11 +1,13 @@
-`timescale 1ps/1ps
-// Annotates a "real" reference signal with the times it transitions
+`timescale 1ps/100fs
+// Samples a "real" reference signal every 1ps
 // (simulated time in the reference = the native simulation time in VCS,
-// essentially the host). The resulting (data, time) pairs are presented as
+// essentially the host). The resulting samples, essentially (data, time) pairs, are presented as
 // a decoupled source that can be compared against a model token stream (whose
 // simulated time is decoupled from VCS's native time).
 module ReferenceTimestamperImpl #(
-    parameter DATA_WIDTH) (
+    parameter DATA_WIDTH,
+    parameter LOG2_NUM_SAMPLES = 16
+) (
     input logic [DATA_WIDTH-1:0] value,
     input logic clock,
     input logic reset,
@@ -14,29 +16,31 @@ module ReferenceTimestamperImpl #(
     output logic [DATA_WIDTH-1:0] timestamped_bits_data,
     output logic [63:0] timestamped_bits_time);
 
+    localparam NUM_SAMPLES = 2**LOG2_NUM_SAMPLES;
+
     // The reference signal can't be backpressured (it's not host decoupled),
     // so use a large memory to capture signal transitions.
-    reg [63:0] time_mem [0:65536];
-    reg [DATA_WIDTH-1:0] data_mem [0:65536];
-    reg [15:0] w_idx, w_idx_sync, r_idx;
+    reg [DATA_WIDTH-1:0] data_mem [0:NUM_SAMPLES-1];
+    reg [LOG2_NUM_SAMPLES-1:0] w_idx, w_idx_sync, r_idx;
 
-    // At time 0 many initialization events occur; avoid capturing these
-    // spurious transitions by registering only the last one for time
-    // 0 which should be created by the reference models using an
-    // additional "REFERENCE_INIT_DELAY".
+    // Sample the signal every timestep
     initial begin
-        #0 w_idx = 16'b0;
-    end
-
-    always @(value) begin
-        time_mem[w_idx] <= $time;
-        data_mem[w_idx] <= value;
-        w_idx <= w_idx + 1'b1;
+        w_idx = '0;
+        forever begin
+            // Use a fractional delay that still rounds down to 0 to produce
+            // the right timestamp
+            #0.1;
+            if (w_idx < (NUM_SAMPLES - 1)) begin
+                data_mem[w_idx] <= value;
+                w_idx <= w_idx + 1'b1;
+            end
+            #0.9;
+        end
     end
 
     assign timestamped_valid = w_idx_sync != r_idx;
     assign timestamped_bits_data = data_mem[r_idx];
-    assign timestamped_bits_time = time_mem[r_idx];
+    assign timestamped_bits_time = r_idx;
 
     always @(posedge clock) begin
         if (reset) begin
@@ -47,9 +51,6 @@ module ReferenceTimestamperImpl #(
             w_idx_sync <= w_idx;
             if (timestamped_valid && timestamped_ready) begin
                 r_idx <= r_idx + 1'b1;
-            end
-            if (w_idx_sync + 1'b1 == r_idx) begin
-                $fatal("Timestamper buffer overflowed. Cannot backpressure");
             end
         end
     end

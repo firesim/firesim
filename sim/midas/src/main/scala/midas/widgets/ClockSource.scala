@@ -27,7 +27,7 @@ class ClockSource(periodPS: BigInt, dutyCycle: Int = 50, initValue: Boolean = fa
 class ClockSourceReference(periodPS: BigInt, dutyCycle: Int = 50, initValue: Int = 0)
     extends BlackBox(Map("PERIOD_PS" -> periodPS, "DUTY_CYCLE" -> dutyCycle, "INIT_VALUE" -> initValue))
     with HasBlackBoxResource {
-  addResource("/midas/widgets/ClockSourceReference.sv")
+  addResource("/midas/widgets/ReferenceClockSource.sv")
   val io = IO(new Bundle { val clockOut = Output(Bool()) })
 }
 
