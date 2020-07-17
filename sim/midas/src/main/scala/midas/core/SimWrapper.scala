@@ -4,9 +4,9 @@ package midas
 package core
 
 
-import midas.widgets.{BridgeIOAnnotation, TimestampedToken}
+import midas.widgets.{BridgeIOAnnotation, TimestampedToken, HasTimestampConstants}
 import midas.passes.fame
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, FAMEChannelInfo}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, FAMEChannelInfo, SimulationControlAnnotation, PortMetadata}
 import midas.core.SimUtils._
 
 // from rocketchip
@@ -22,6 +22,22 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
 case object SimWrapperKey extends Field[SimWrapperConfig]
+
+/**
+  * Driven to the hub model (The main FAME-1 transformed model), to regulate
+  * the advance of simulation time.
+  */
+class HubControlInterface extends Bundle with HasTimestampConstants {
+  // The furthest time in picoseconds the model may advance to
+  val timeHorizon = Output(UInt(timestampWidth.W))
+  // Asserted if the hub is scheduling a timestep
+  val simAdvancing = Input(Bool())
+  // If simAdvancing is true; this is the time the hub model will advance to.
+  // It will hold the current time otherwise.
+  val simTime = Input(UInt(timestampWidth.W))
+  // When simAdvancing is set, scheduledClocks will be asserted if at least 1 clock is scheduled to fire.
+  val scheduledClocks = Input(Bool())
+}
 
 private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
@@ -216,9 +232,10 @@ abstract class ChannelizedWrapperIO(
   * coming off the transformed target, such that it can be linked against
   * simulation wrapper without FIRRTL type errors.
   */
-class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                   leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
-                  extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
+class TargetBoxIO(
+    val chAnnos: Seq[FAMEChannelConnectionAnnotation],
+    ctrlAnno: SimulationControlAnnotation,
+    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = new TimestampedToken(refTargets.size match {
     // "Aggregate-ness" of single-field vecs and bundles are removed by the
@@ -230,10 +247,21 @@ class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
 
   val hostClock = Input(Clock())
   val hostReset = Input(Bool())
-  override val elements = ListMap((wireElements ++ rvElements):_*) ++
+  val ctrlElements = for (PortMetadata(rT, dir, tpe) <- ctrlAnno.signals.values) yield {
+    val leafChiselTypes = regenTypesFromField(rT.ref, tpe)
+    assert(leafChiselTypes.size == 1)
+    val chiselType = leafChiselTypes.head._2
+    if (dir == firrtl.ir.Output) {
+      (rT.ref, Output(chiselType))
+    } else {
+      (rT.ref, Input(chiselType))
+    }
+  }
+
+  override val elements = ListMap((wireElements ++ rvElements ++ ctrlElements):_*) ++
     // Untokenized ports
     ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
-  override def cloneType: this.type = new TargetBoxIO(chAnnos, leafTypeMap).asInstanceOf[this.type]
+  override def cloneType: this.type = new TargetBoxIO(chAnnos, ctrlAnno, leafTypeMap).asInstanceOf[this.type]
 }
 
 /**
@@ -241,8 +269,9 @@ class TargetBoxIO(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   * linking with the actual transformed target's module hierarchy.
   */
 class TargetBox(chAnnos: Seq[FAMEChannelConnectionAnnotation],
+               ctrlAnno: SimulationControlAnnotation,
                leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends BlackBox {
-  val io = IO(new TargetBoxIO(chAnnos, leafTypeMap))
+  val io = IO(new TargetBoxIO(chAnnos, ctrlAnno, leafTypeMap))
 }
 
 class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
@@ -258,9 +287,11 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
 }
 
-case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                         bridgeAnnos: Seq[BridgeIOAnnotation],
-                         leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
+case class SimWrapperConfig(
+  chAnnos: Seq[FAMEChannelConnectionAnnotation],
+  bridgeAnnos: Seq[BridgeIOAnnotation],
+  ctrlAnno: SimulationControlAnnotation,
+  leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
 
 /**
   * Instantiates all simulation channels based on
@@ -277,7 +308,7 @@ case class SimWrapperConfig(chAnnos: Seq[FAMEChannelConnectionAnnotation],
 class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule {
 
   outer =>
-  val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = config
+  val SimWrapperConfig(chAnnos, bridgeAnnos, ctrlAnno, leafTypeMap) = config
 
   // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
   // to bridges and will be presented in the SimWrapper's IO
@@ -287,7 +318,8 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   })
 
   val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
-  val target = Module(new TargetBox(chAnnos, leafTypeMap))
+  val hubControl = IO(Flipped(new HubControlInterface))
+  val target = Module(new TargetBox(chAnnos, ctrlAnno, leafTypeMap))
 
   // Indicates SimulationMapping which module we want to replace with the simulator
   annotate(new ChiselAnnotation { def toFirrtl =
@@ -399,4 +431,13 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
     case ch @ FAMEChannelConnectionAnnotation(name, fame.ClockControlChannel,_,_,_)  => genPipeChannel(ch, 0)
     case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => genPipeChannel(ch, 0)
   })
+
+  // Connect hub control IF
+  for ((elementName, PortMetadata(rT, fDir, _)) <- ctrlAnno.signals) {
+    if (fDir == firrtl.ir.Output) {
+      hubControl.elements(elementName) := target.io.elements(rT.ref)
+    } else {
+      target.io.elements(rT.ref) := hubControl.elements(elementName)
+    }
+  }
 }

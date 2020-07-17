@@ -32,22 +32,13 @@ class simif_t
     bool pass;
     uint64_t t;
     uint64_t fail_t;
+    uint64_t time_horizon = 0;
     // random numbers
     uint64_t seed;
     std::mt19937_64 gen;
     SIMULATIONMASTER_struct * master_mmio_addrs;
     LOADMEMWIDGET_struct * loadmem_mmio_addrs;
     PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
-
-#ifdef DYNAMICCLOCKBRIDGEMODULE_0_PRESENT
-    DYNAMICCLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
-#endif
-
-#ifdef CLOCKBRIDGEWITHMUXMODULE_0_PRESENT
-    CLOCKBRIDGEWITHMUXMODULE_struct * clock_bridge_mmio_addrs;
-#else
-    CLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
-#endif
     midas_time_t sim_start_time;
 
     inline void take_steps(size_t n, bool blocking) {
@@ -60,7 +51,16 @@ class simif_t
     // Simulation APIs
     virtual void init(int argc, char** argv, bool log = false);
     virtual int finish();
-    virtual void step(uint32_t n, bool blocking = true);
+    // Hub model time control. Note: decoupling between satellite models and/or
+    // bridges and the hub may allow those models to independently advance
+    // further in simulated time..
+    // Adds <step> picoseconds to the current time horizon
+    void advance_n_ps(uint64_t step_size);
+    // Directs the simulation to advance to time <time_horizon> in picoseconds
+    void advance_to_time_ps(uint64_t new_horizon);
+    // Let's the hub model advance arbitrarily far into the future.
+    void free_run();
+
     inline bool done() { return read(this->master_mmio_addrs->DONE); }
 
     // Widget communication
@@ -69,6 +69,8 @@ class simif_t
     virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
     virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
 
+    // Peek Poke Driver Commands
+    virtual void step(uint32_t n, bool blocking = true);
     inline void poke(size_t id, data_t value) {
       if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n",
         TARGET_NAME, INPUT_NAMES[id], value);

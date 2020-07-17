@@ -127,12 +127,13 @@ case class FAME1OutputChannel(
   }
 }
 
+
 // Multi-clock timestep:
 // When finishing is high, dequeue token from clock channel
 // - Use to initialize isFired for all channels (with negation)
 // - Finishing is gated with clock channel valid
 object FAMEModuleTransformer extends HasTimestampConstants {
-  def apply(m: Module, analysis: FAMEChannelAnalysis): Module = {
+  def apply(m: Module, analysis: FAMEChannelAnalysis): (Module, Iterable[Annotation]) = {
     // Step 0: Bookkeeping for port structure conventions
     implicit val ns = Namespace(m)
     val mTarget = ModuleTarget(analysis.circuit.main, m.name)
@@ -168,18 +169,34 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val s2_time = TimestampRegister("s2_time")
     // Multi-clock management step 2: Build clock flags and clock channel
     val clockSchedulingStmts = new mutable.ArrayBuffer[Statement]
+    val clockSchedulingPorts = new mutable.ArrayBuffer[Port]
+    val clockSchedulingAnnos = new mutable.ArrayBuffer[Annotation]
     clockSchedulingStmts += s2_time
     val (clockEnables, nextEdgeAvailable, s1_valid, s2_valid) = if (isHubModel) {
+      // Control signal generation to simulation master
+      val numTargetClocks = existingClockChannels.size
+      // From master: A driver-imposed limit on how far the simulation may advance
+      val timeHorizon =  Port(NoInfo, ns.newName("timeHorizon"), Input, timestampFType)
+      // To master: Metadata on firing clocks to calculate FMR and track simulation progress
+      val simAdvancing = Port(NoInfo, ns.newName("simulationAdvancing"), Output, BoolType)
+      val simTime = Port(NoInfo, ns.newName("nextSimulationTime"), Output, timestampFType)
+      val scheduledClocks = Port(NoInfo, ns.newName("scheduledClocks"), Output, BoolType)
+
       // Front-end of the pipeline. based on all input tokens determine if forward progress can be made.
       val advanceToTime = DefWire(NoInfo, ns.newName("advanceToTime"), timestampFType)
       val clockSchedulers = existingClockChannels.map(ch => new ClockScheduler(ch, WRef(finishing), WRef(advanceToTime))).toSeq
       val minReductionNodes = new mutable.ArrayBuffer[DefNode]
-      val advanceToTimeConn = Connect(NoInfo, WRef(advanceToTime),
+      val allClocksDefinedUntil = DefNode(NoInfo, ns.newName("allClocksDefinedUntil"),
         DensePrefixSum(clockSchedulers.map(_.definedUntil).toSeq)({ case (a, b) =>
           val node = DefNode(NoInfo, ns.newTemp, Mux(Lt(a,b), a, b))
           minReductionNodes += node
           WRef(node)
         }).last)
+
+      // So long as edges occur before the controller provided horizon,
+      // schedule them; otherwise advance as far as we've been directed.
+      val advanceToTimeConn = Connect(NoInfo, WRef(advanceToTime),
+        Mux(Lt(WRef(allClocksDefinedUntil), WRef(timeHorizon)), WRef(allClocksDefinedUntil), WRef(timeHorizon)))
       val clockEnables = clockSchedulers.map(_.posedgeEnable).toSeq
       val nextEdgeAvailable = DefNode(NoInfo, ns.newName("nextEdgeAvailable"), clockEnables.reduce(Or.apply))
 
@@ -198,9 +215,21 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val s2_valid = HostFlagRegister("s2_valid")
       val s2_valid_update = Connect(NoInfo, WRef(s2_valid), Mux(WRef(finishing), WRef(s1_valid), WRef(s2_valid)))
       // Declarations
-      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes
+      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes :+ allClocksDefinedUntil
       // Connections
       clockSchedulingStmts ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update)
+      // Control port handling
+      clockSchedulingPorts ++= Seq(timeHorizon, simAdvancing, scheduledClocks, simTime)
+      clockSchedulingStmts ++= Seq(
+        Connect(NoInfo, WRef(simAdvancing), And(WRef(willAdvance), WRef(finishing))),
+        Connect(NoInfo, WRef(simTime), WRef(advanceToTime)),
+        Connect(NoInfo, WRef(scheduledClocks), clockEnables.reduce(Or.apply)))
+
+      clockSchedulingAnnos += SimulationControlAnnotation(Map(
+          "timeHorizon" -> PortMetadata(mTarget, timeHorizon),
+          "simAdvancing" -> PortMetadata(mTarget, simAdvancing),
+          "simTime" -> PortMetadata(mTarget, simTime),
+          "scheduledClocks" -> PortMetadata(mTarget, scheduledClocks)))
       (clockEnables, WRef(nextEdgeAvailable), WRef(s1_valid), WRef(s2_valid))
     } else {
       (Seq(UIntLiteral(1)), UIntLiteral(1), UIntLiteral(1), UIntLiteral(1))
@@ -304,7 +333,9 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     })
 
     // LI-BDN transformation step 3: transform ports (includes new clock ports)
-    val transformedPorts = hostClock.port +: hostReset.port +: (clockChannels ++: inChannels ++: outChannels).flatMap(_.asHostModelPort)
+    val transformedPorts = hostClock.port +: hostReset.port +:
+      (clockChannels ++: inChannels ++: outChannels).flatMap(_.asHostModelPort) ++:
+      clockSchedulingPorts
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     val clockPortNames = clockMetadata.map(_.targetSourcePort.name).toSet
@@ -344,7 +375,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     // Statements have to be conservatively ordered to satisfy declaration order
     val decls = Seq(finishing, doneInit) ++: clockOutputsAsWires ++: clockSchedulingStmts ++: clockBufDecls ++: (inChannels ++ outChannels).map(_.firedReg)
     val assigns = Seq(doneInitConnect) ++ clockBufAssigns ++ channelStateRules ++ inputRules ++ outputRules ++ topRules ++ outputTimestamps
-    Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns))
+    (Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns)), clockSchedulingAnnos)
   }
 }
 
@@ -434,11 +465,11 @@ class FAMETransform extends Transform {
     implicit val triggerName = "finishing"
 
     val toTransform = analysis.transformedModules
-    val transformedModules = c.modules.map {
-      case m: Module if (m.name == c.main) => transformTop(m, analysis)
+    val (transformedModules, addedAnnotations) = (c.modules.map {
+      case m: Module if (m.name == c.main) => (transformTop(m, analysis), Nil)
       case m: Module if (toTransform.contains(ModuleTarget(c.main, m.name))) => FAMEModuleTransformer(m, analysis)
-      case m => m // TODO (Albert): revisit this; currently, not transforming nested modules
-    }
+      case m => (m, Nil) // TODO (Albert): revisit this; currently, not transforming nested modules
+    }).unzip
 
     val filteredAnnos = state.annotations.filter {
       case DontTouchAnnotation(rt) if toTransform.contains(rt.moduleTarget) => false
@@ -446,6 +477,6 @@ class FAMETransform extends Transform {
     }
 
     val newCircuit = c.copy(modules = transformedModules)
-    CircuitState(newCircuit, outputForm, filteredAnnos, Some(hostDecouplingRenames(analysis)))
+    CircuitState(newCircuit, outputForm, filteredAnnos ++ addedAnnotations.flatten, Some(hostDecouplingRenames(analysis)))
   }
 }

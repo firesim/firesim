@@ -9,7 +9,7 @@ import freechips.rocketchip.diplomacy.{LazyModule}
 
 import midas.Platform
 import midas.core._
-import midas.passes.fame.{FAMEChannelConnectionAnnotation}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, SimulationControlAnnotation}
 import midas.widgets.{CStrLit, UInt32, BridgeIOAnnotation}
 import midas.widgets.CppGenerationUtils._
 
@@ -27,7 +27,9 @@ private [midas] object PlatformShim {
     // SimWrapper generation. We want the targets to point at un-lowered ports
     val chAnnos = annotations.collect({ case ch: FAMEChannelConnectionAnnotation => ch })
     val bridgeAnnos = annotations.collect({ case ep: BridgeIOAnnotation => ep })
-    val simWrapperConfig = SimWrapperConfig(chAnnos, bridgeAnnos, portTypeMap)
+    val ctrlAnnos = annotations.collect({ case c: SimulationControlAnnotation => c })
+    require(ctrlAnnos.size == 1, s"Expected one SimulationControlAnnotation, got ${ctrlAnnos.size}")
+    val simWrapperConfig = SimWrapperConfig(chAnnos, bridgeAnnos, ctrlAnnos.head, portTypeMap)
     val completeParams = p.alterPartial({ case SimWrapperKey => simWrapperConfig })
     p(Platform)(completeParams)
   }
