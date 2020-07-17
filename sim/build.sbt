@@ -63,8 +63,6 @@ lazy val midas = (project in file("midas"))
   .dependsOn(barstools, rocketchip)
   .settings(commonSettings,
     Test / unmanagedBase := (chipyardRoot / baseDirectory).value / "test_lib",
-    Runtime / fullClasspathAsJars ++= ((firesimRef / Runtime / fullClasspath).value ++
-                                       (firechip / Runtime / fullClasspath).value)
   )
 
 lazy val firesimLib = (project in file("firesim-lib"))
