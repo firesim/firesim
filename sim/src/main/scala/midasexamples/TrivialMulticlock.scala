@@ -5,7 +5,7 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.config.{Parameters, Field}
 
-import midas.widgets.{DynamicClockBridge, RationalClockBridge, PeekPokeBridge, RationalClock}
+import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 class RegisterModule extends MultiIOModule {
   def dataType = UInt(32.W)
@@ -28,26 +28,20 @@ class TrivialMulticlock(implicit p: Parameters) extends RawModule {
   // TODO: Resolve bug in PeekPoke bridge for 3/7 case
   //val List(fullRate, halfRate, thirdRate, threeSeventhsRate) = clockBridge.io.clocks.toList
 
-  val Seq(fullRate, halfRate, thirdRate) = if (!p(UseDynamicClockBridge)) {
-    // DOC include start: RationalClockBridge Usage
-    // Here we request three target clocks (the base clock is implicit). All
-    // clocks beyond the base clock are specified using the RationalClock case
-    // class which gives the clock domain's name, and its clock multiplier and
-    // divisor relative to the base clock.
-    val clockBridge = Module(new RationalClockBridge( RationalClock("HalfRate", 1, 2), 
-                                                     RationalClock("ThirdRate", 1, 3)))
+  // DOC include start: RationalClockBridge Usage
+  // Here we request three target clocks (the base clock is implicit). All
+  // clocks beyond the base clock are specified using the RationalClock case
+  // class which gives the clock domain's name, and its clock multiplier and
+  // divisor relative to the base clock.
+  val clockBridge = Module(new RationalClockBridge( RationalClock("HalfRate", 1, 2), 
+                                                   RationalClock("ThirdRate", 1, 3)))
 
-    // The clock bridge has a single output: a Vec[Clock] of the requested clocks
-    // in the order they were specified, which we are now free to use through our
-    // Chisel design.  While not necessary, here we unassign the Vec to give them
-    // more informative references in our Chisel.
-    clockBridge.io.clocks.toSeq
+  // The clock bridge has a single output: a Vec[Clock] of the requested clocks
+  // in the order they were specified, which we are now free to use through our
+  // Chisel design.  While not necessary, here we unassign the Vec to give them
+  // more informative references in our Chisel.
+  val Seq(fullRate, halfRate, thirdRate) = clockBridge.io.clocks.toSeq
     // DOC include end: RationalClockBridge Usage
-  } else {
-    val clockBridge = Module(new DynamicClockBridge( RationalClock("HalfRate", 1, 2), 
-                                                     RationalClock("ThirdRate", 1, 3)))
-    clockBridge.io.clocks
-  }
   val reset = WireInit(false.B)
 
   withClockAndReset(fullRate, reset) {

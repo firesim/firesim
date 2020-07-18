@@ -14,6 +14,8 @@ import chisel3.util._
 import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 import firrtl.annotations.{ModuleTarget, ReferenceTarget}
 
+import scala.collection.immutable.ListMap
+
 /**
   * Defines a generated clock as a rational multiple of some reference clock. The generated
   * clock has a frequency (multiplier / divisor) times that of reference.
@@ -42,8 +44,10 @@ trait ClockBridgeConsts {
   *
   */
 
-class ClockTokenVector(protected val targetPortProto: ClockBridgeTargetIO) extends Bundle with TimestampedHostPortIO {
-  val clocks = OutputClockVecChannel(targetPortProto.clocks)
+class ClockTokenVector(protected val targetPortProto: ClockBridgeTargetIO) extends Record with TimestampedHostPortIO {
+  val clocks = targetPortProto.clocks.map(OutputClockChannel(_))
+  val elements = ListMap((clocks.zipWithIndex.map({ case (ch, idx) => s"clocks_$idx" -> ch })):_*)
+  def cloneType() = new ClockTokenVector(targetPortProto).asInstanceOf[this.type]
 }
 
 class ClockBridgeTargetIO(numClocks: Int) extends Bundle {
@@ -89,25 +93,13 @@ class ClockBridgeModule(arg: ClockBridgeCtorArgument)(implicit p: Parameters)
     val io = IO(new WidgetIO())
     val hPort = IO(new ClockTokenVector(new ClockBridgeTargetIO(arg.clockInfo.size)))
     val phaseRelationships = arg.clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
-    val clockTokenGen = Module(new RationalClockTokenGenerator(arg.baseClockPeriodPS, phaseRelationships))
-    hPort.clocks <> clockTokenGen.io
-
-    val hCycleName = "hCycle"
-    val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
-    hCycle := hCycle + 1.U
-
-    // Count the number of clock tokens for which the fastest clock is scheduled to fire
-    //  --> Use to calculate FMR
-    val tCycleFastest = genWideRORegInit(0.U(64.W), "tCycle")
-    val fastestClockIdx = (phaseRelationships).map({ case (n, d) => n.toDouble / d })
-                                              .zipWithIndex
-                                              .sortBy(_._1)
-                                              .last._2
-
-    when (hPort.clocks.fire && hPort.clocks.bits.data(0)) {
-      tCycleFastest := tCycleFastest + 1.U
+    val clockPeriodicity = FindScaledPeriodGCD(phaseRelationships)
+    assert(arg.baseClockPeriodPS % clockPeriodicity.head == 0)
+    val virtualClockPeriod = arg.baseClockPeriodPS / clockPeriodicity.head
+    for ((clockChannel, multiple) <- hPort.clocks.zip(clockPeriodicity)) {
+      val clockSource = Module(new ClockSource(virtualClockPeriod * multiple))
+      clockChannel <> clockSource.clockOut
     }
-    genCRFile()
   }
 }
 
