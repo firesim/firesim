@@ -214,7 +214,11 @@ class GoldenGateMiscCITests extends Suites(
   new TwoAddersF1Test,
   new TriggerWiringModuleF1Test,
   new WireInterconnectF1Test,
-  new TrivialMulticlockF1Test
+  new TrivialMulticlockF1Test,
+  new RegfileF1Test,
+  new MultiRegfileF1Test,
+  new NestedModelsF1Test,
+  new MultiRegF1Test
 )
 
 // Each group runs on a single worker instance
