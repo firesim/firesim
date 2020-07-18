@@ -24,7 +24,7 @@ test_harness_bridge_t::test_harness_bridge_t(
 // it then reads uarch event counts from the FASED instance and compares them against
 // expected values
 void test_harness_bridge_t::tick(){
-  this->done = sim->peek(done);
+  this->done = sim->sample_value(done); // use a non-blocking sample since this signal is monotonic
   if(done) {
     this->error = 0;
     // Iterate through all uarch values we want to validate

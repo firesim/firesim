@@ -422,6 +422,8 @@ module emul;
   reg  [1:0]                 mem_3_b_resp;
   reg  [`MEM_ID_BITS-1:0]    mem_3_b_id;
 
+  wire                       reset_delay;
+
   wire                       ctrl_ar_valid_delay;
   wire                       ctrl_ar_ready_delay;
   wire [`CTRL_ADDR_BITS-1:0] ctrl_ar_addr_delay;
@@ -806,6 +808,8 @@ module emul;
   assign #0.1 mem_3_b_resp_delay = mem_3_b_resp;
   assign #0.1 mem_3_b_id_delay = mem_3_b_id;
 
+  assign #0.1 reset_delay = reset;
+
   FPGATop FPGATop(
 
     .ctrl_ar_valid(ctrl_ar_valid_delay),
@@ -1004,7 +1008,7 @@ module emul;
     .mem_3_b_bits_id(mem_3_b_id_delay),
 `endif
     .clock(clock),
-    .reset(reset)
+    .reset(reset_delay)
   );
 
   always @(posedge clock) begin
