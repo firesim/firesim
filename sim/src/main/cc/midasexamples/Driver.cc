@@ -57,6 +57,14 @@
 #include "TriggerWiringModule.h"
 #elif defined DESIGNNAME_TwoAdders
 #include "TwoAdders.h"
+#elif defined DESIGNNAME_Regfile
+#include "Regfile.h"
+#elif defined DESIGNNAME_MultiRegfile
+#include "MultiRegfile.h"
+#elif defined DESIGNNAME_NestedModels
+#include "NestedModels.h"
+#elif defined DESIGNNAME_MultiReg
+#include "MultiReg.h"
 #endif
 
 class dut_emul_t:
