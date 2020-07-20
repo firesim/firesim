@@ -34,6 +34,10 @@ base_dir := $(firesim_base_dir)
 chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
+FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
+FIRRTL_JAR ?= $(chipyard_dir)/lib/firrtl.jar
+FIRRTL_TEST_JAR ?= $(chipyard_dir)/test_lib/firrtl.jar
+
 else
 # Chipyard make variables
 base_dir := $(abspath ../../..)
@@ -91,10 +95,6 @@ $(BLOOP_CONFIG_DIR)/TIMESTAMP: $(sbt_sources)
 	touch $@
 
 # Manage the FIRRTL dependency manually
-FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
-FIRRTL_JAR ?= $(chipyard_dir)/lib/firrtl.jar
-FIRRTL_TEST_JAR ?= $(chipyard_dir)/test_lib/firrtl.jar
-
 firrtl_srcs := $(shell find $(FIRRTL_SUBMODULE_DIR) -iname "[!.]*.scala")
 
 $(FIRRTL_JAR): $(firrtl_srcs)
