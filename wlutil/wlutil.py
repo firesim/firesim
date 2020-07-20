@@ -392,11 +392,13 @@ def getOpt(opt):
     else:
         return ctx[opt]
 
-# logging setup: You can call this multiple times to reset logging (e.g. if you
-# change the RunName)
 fileHandler = None
 consoleHandler = None
-def initLogging(verbose):
+def initLogging(verbose, logPath=None):
+    """logging setup: You can call this multiple times to reset logging (e.g. if you
+       change the RunName). If 'logPath' is set, that path will be used.
+       Otherwise the name will be derived from the current configuration."""
+
     global fileHandler
     global consoleHandler
 
@@ -404,7 +406,8 @@ def initLogging(verbose):
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
     # Create a unique log name
-    logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
+    if logPath is None:
+        logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
     
     # formatting for log to file
     if fileHandler is not None:
