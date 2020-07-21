@@ -13,6 +13,8 @@ import traceback
 import textwrap
 import psutil
 from enum import Enum
+import signal
+
 from .wlutil import *
 from .build import *
 from .launch import *
@@ -22,6 +24,13 @@ testResult = Enum('testResult', ['success', 'failure', 'skip'])
 # Default timeouts (in seconds)
 defBuildTimeout = 2400 
 defRunTimeout =  2400
+
+class TestFailure(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
@@ -71,22 +80,21 @@ def cmpOutput(testDir, refDir, strip=False):
 
     return None
 
-def runTimeout(func, timeout):
-    def wrap(*args, **kwargs):
-        p = mp.Process(target=func, args=args, kwargs=kwargs)
-        p.start()
-        p.join(timeout)
-        if p.is_alive():
-            # Kill all subprocesses (e.g. qemu)
-            for child in psutil.Process(p.pid).children(recursive=True):
-                child.kill()
-            p.terminate()
-            p.join()
-            raise TimeoutError(func.__name__)
-        elif p.exitcode != 0:
-            raise ChildProcessError(func.__name__)
 
-    return wrap
+@contextmanager
+def timeout(seconds, label):
+    """Raises TimeoutError if the block takes longer than 'seconds' (an integer)"""
+    def timeoutHandler(signum, fname):
+        raise TimeoutError(label)
+
+    oldSignal = signal.signal(signal.SIGALRM, timeoutHandler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGALRM, oldSignal)
+        signal.alarm(0)
+
 
 # Fedora run output can be tricky to compare due to lots of non-deterministic
 # output (e.g. timestamps, pids) This function takes the entire uartlog from a
@@ -100,6 +108,7 @@ def stripFedoraUart(lines):
             stripped += match.group(1)
 
     return stripped
+
 
 def stripBrUart(lines):
     stripped = ""
@@ -115,6 +124,7 @@ def stripBrUart(lines):
 
     return stripped
           
+
 def stripUartlog(config, outputPath):
     outDir = pathlib.Path(outputPath)
     for uartPath in outDir.glob("**/uartlog"):
@@ -133,6 +143,7 @@ def stripUartlog(config, outputPath):
 
         with open(str(uartPath), 'w') as uFile:
             uFile.write(strippedUart)
+
 
 # Build and run a workload and compare results against the testing spec
 # ('testing' field in config)
@@ -175,16 +186,24 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         if cmp_only is None:
             # Build workload
             log.info("Building test workload")
-            runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
+            ret = 0
+            # runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
+            with timeout(testCfg['buildTimeout'], 'build'):
+                res = buildWorkload(cfgName, cfgs)
+
+            if res != 0:
+                raise TestFailure("Failure when building workload " + cfgName) 
 
             # Run every job (or just the workload itself if no jobs)
             if 'jobs' in cfg:
                 for jName in cfg['jobs'].keys():
                     log.info("Running job " + jName)
-                    runTimeout(launchWorkload, testCfg['runTimeout'])(cfg, job=jName, spike=spike, interactive=verbose)
+                    with timeout(testCfg['runTimeout'], 'launch job' + jName):
+                        launchWorkload(cfg, job=jName, spike=spike, interactive=verbose)
             else:
                 log.info("Running workload")
-                runTimeout(launchWorkload, testCfg['runTimeout'])(cfg, spike=spike, interactive=verbose)
+                with timeout(testCfg['runTimeout'], 'launch'):
+                    launchWorkload(cfg, spike=spike, interactive=verbose)
 
         log.info("Testing outputs")    
         if 'strip' in testCfg and testCfg['strip']:
@@ -208,14 +227,9 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         
         return testResult.failure, testPath
 
-    except ChildProcessError as e:
+    except TestFailure as e:
         suitePass = False
-        if e.args[0] == "buildWorkload":
-            log.info("Test " + cfgName + " failure: Exception while building")
-        elif e.args[0] == "launchWorkload":
-            log.info("Test " + cfgName + " failure: Exception while running")
-        else:
-            log.error("Internal tester error: exception in unknown function: " + e.args[0])
+        log.info(e.msg)
         
         return testResult.failure, testPath
 
