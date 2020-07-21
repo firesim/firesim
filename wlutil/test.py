@@ -32,6 +32,49 @@ class TestFailure(Exception):
     def __str__(self):
         return self.msg
 
+
+# Fedora run output can be tricky to compare due to lots of non-deterministic
+# output (e.g. timestamps, pids) This function takes the entire uartlog from a
+# fedora run and returns only the output of auto-run scripts
+def stripFedoraUart(lines):
+    stripped = []
+    pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
+    for l in lines:
+        match = pat.match(l)
+        if match:
+            stripped.append(match.group(1))
+
+    return stripped
+
+
+def stripBrUart(lines):
+    stripped = []
+    inBody = False
+    for l in lines:
+        if not inBody:
+            if re.match("launching firesim workload run/command", l):
+                inBody = True
+        else:
+            if re.match("firesim workload run/command done", l):
+                break
+            stripped.append(l)
+
+    return stripped
+          
+
+def stripUartlog(config, uartlog):
+    if 'distro' in config:
+        if config['distro'] == 'fedora':
+            strippedUart = stripFedoraUart(uartlog)
+        elif config['distro'] == 'br':
+            strippedUart = stripBrUart(uartlog)
+        else:
+            strippedUart = uartlog
+    else:
+        strippedUart = uartlog
+
+    return strippedUart
+
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
 #   - Directory structures are compared directly (same folders in the same
@@ -42,7 +85,7 @@ class TestFailure(Exception):
 #   - Files named "uartlog" in the reference output need only match a subset of
 #     the test output (the entire reference uartlog contents must exist somewhere
 #     in the test output).
-def cmpOutput(testDir, refDir, strip=False):
+def cmpOutput(config, testDir, refDir, strip=False):
     testDir = pl.Path(testDir)
     refDir = pl.Path(refDir)
     if not refDir.exists():
@@ -57,11 +100,19 @@ def cmpOutput(testDir, refDir, strip=False):
         if rPath.is_file():
             # Regular file, should match exactly
             with open(str(rPath), 'r') as rFile:
-                with open(str(tPath), 'r') as tFile:
+                with open(str(tPath), 'r', newline="\n") as tFile:
                     if rPath.name == "uartlog":
                         rLines = rFile.readlines()
                         tLines = tFile.readlines()
                         
+                        # Some configurations spit out a bunch of spurious \r\n
+                        # (^M in vim) characters. This strips them so that
+                        # users can type reference outputs using normal
+                        # newlines.
+                        tLines = [ line.replace("\r", "") for line in tLines]
+                        if strip:
+                            tLines = stripUartlog(config, tLines)
+
                         matcher = difflib.SequenceMatcher(None, rLines, tLines)
                         m = matcher.find_longest_match(0, len(rLines), 0, len(tLines))
                         if m.size != len(rLines):
@@ -96,53 +147,32 @@ def timeout(seconds, label):
         signal.alarm(0)
 
 
-# Fedora run output can be tricky to compare due to lots of non-deterministic
-# output (e.g. timestamps, pids) This function takes the entire uartlog from a
-# fedora run and returns only the output of auto-run scripts
-def stripFedoraUart(lines):
-    stripped = ""
-    pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
-    for l in lines:
-        match = pat.match(l)
-        if match:
-            stripped += match.group(1)
 
-    return stripped
-
-
-def stripBrUart(lines):
-    stripped = ""
-    inBody = False
-    for l in lines:
-        if not inBody:
-            if re.match("launching firesim workload run/command", l):
-                inBody = True
-        else:
-            if re.match("firesim workload run/command done", l):
-                break
-            stripped += l
-
-    return stripped
-          
-
-def stripUartlog(config, outputPath):
-    outDir = pathlib.Path(outputPath)
-    for uartPath in outDir.glob("**/uartlog"):
-        with open(str(uartPath), 'r', errors='ignore') as uFile:
-            uartlog = uFile.readlines()
-
-        if 'distro' in config:
-            if config['distro'] == 'fedora':
-                strippedUart = stripFedoraUart(uartlog)
-            elif config['distro'] == 'br':
-                strippedUart = stripBrUart(uartlog)
-            else:
-                strippedUart = "".join(uartlog)
-        else:
-            strippedUart = "".join(uartlog)
-
-        with open(str(uartPath), 'w') as uFile:
-            uFile.write(strippedUart)
+# def stripUartlog(config, outputPath):
+#     outDir = pathlib.Path(outputPath)
+#     for uartPath in outDir.glob("**/uartlog"):
+#         with open(str(uartPath), 'r', errors='ignore') as uFile:
+#             uartlog = uFile.readlines()
+#
+#         print(uartPath)
+#         print(type(uartlog))
+#         print(len(uartlog))
+#         print(repr(uartlog[0]))
+#         uartlog = [ line.replace("\r\n", "\n") for line in uartlog ]
+#         print(repr(uartlog[0]))
+#
+#         if 'distro' in config:
+#             if config['distro'] == 'fedora':
+#                 strippedUart = stripFedoraUart(uartlog)
+#             elif config['distro'] == 'br':
+#                 strippedUart = stripBrUart(uartlog)
+#             else:
+#                 strippedUart = "".join(uartlog)
+#         else:
+#             strippedUart = "".join(uartlog)
+#
+#         with open(str(uartPath), 'w') as uFile:
+#             uFile.write(strippedUart)
 
 
 # Build and run a workload and compare results against the testing spec
@@ -206,10 +236,11 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
                     launchWorkload(cfg, spike=spike, interactive=verbose)
 
         log.info("Testing outputs")    
+        strip = False
         if 'strip' in testCfg and testCfg['strip']:
-            stripUartlog(cfg, testPath)
+            strip = True
 
-        diff = cmpOutput(testPath, refPath)
+        diff = cmpOutput(cfg, testPath, refPath, strip=strip)
         if diff is not None:
             suitePass = False
             log.info("Test " + cfgName + " failure: output does not match reference")
@@ -240,20 +271,3 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         return testResult.failure, testPath
 
     return testResult.success, testPath
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Check the outupt of a workload against a reference output. The reference directory should match the layout of test directory including any jobs, uartlogs, or file outputs. Reference uartlogs can be a subset of the full output (this will check only that the reference uartlog content exists somewhere in the test uartlog).")
-    parser.add_argument("testDir", help="Run output directory to test.")
-    parser.add_argument("refDir", help="Reference output directory.")
-
-    args = parser.parse_args()
-    res = cmpOutput(args.testDir, args.refDir)
-    if res is not None:
-        print("Failure:")
-        print(res)
-        sys.exit(os.EX_DATAERR)
-    else:
-        print("Success")
-        sys.exit(os.EX_OK)
-
-
