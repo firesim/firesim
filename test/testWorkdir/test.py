@@ -10,15 +10,19 @@ import re
 testSrc = pth.Path(__file__).parent
 testCfg = testSrc.parent / "testWorkdir.json"
 
-# Should be the directory containing marshal
-managerPath = pth.Path(os.getcwd()) / "marshal"
-if not managerPath.exists():
-    managerPath = pth.Path(os.getcwd()) / "../../marshal"
-    if not managerPath.exists:
-        print("Can't find marshal, this script should be called either from FireMarshal/ or FireMarshal/test/testWorkload/", file=sys.stderr)
-        sys.exit(1)
+if len(sys.argv) > 1:
+    managerPath = pth.Path(sys.argv[1])
+else:
+    # Should be the directory containing marshal
+    managerPath = pth.Path(os.getcwd()) / "marshal"
+    if not managerPath.exists():
+        managerPath = pth.Path(os.getcwd()) / "../../marshal"
+        if not managerPath.exists:
+            print("Can't find marshal, this script should be called either from FireMarshal/ or FireMarshal/test/testWorkload/", file=sys.stderr)
+            sys.exit(1)
 
 print(str(managerPath))
+
 # Safety first kids: Always clean before you test
 print("cleaning testWorkload test")
 cleanCmd = [str(managerPath), "--workdir", "../", "clean", str(testCfg)]

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import pathlib
 import sys
 import argparse
@@ -116,13 +117,40 @@ def runTests(testNames, categoryName, marshalArgs=[], cmdArgs=[]):
             wlutil.run([marshalBin] + marshalArgs + ['test'] + cmdArgs + [tPath], check=True)
         except sp.CalledProcessError as e:
             log.log(logging.INFO, "FAIL")
-            failures.append((tName, e))
+            failures.append(("[{}]: {}".format(categoryName, tName), e))
             continue
 
         log.log(logging.INFO, "PASS")
 
     return failures
         
+
+def runSpecial(testNames, categoryName):
+    """Run the tests named in testNamed assuming they are special tests. Each
+    name should be a directory under firemarshal/test/ and should have a
+    test.py script that will be run and indicates pass/fail via return code.
+    The tests will be called as such: ./test.py pathToMarshalBin"""
+
+    log = logging.getLogger()
+
+    # Tuples of (testName, exception) for each failed test
+    failures=[]
+
+    for tName in testNames:
+        log.log(logging.INFO, "[{}] {}:".format(categoryName, tName))
+        tPath = testDir / tName
+
+        try:
+            wlutil.run(["python3", tPath / "test.py", marshalBin], check=True)
+        except sp.CalledProcessError as e:
+            log.log(logging.INFO, "FAIL")
+            failures.append(("[{}]: {}".format(categoryName, tName), e))
+            continue
+
+        log.log(logging.INFO, "PASS")
+
+    return failures
+
 if __name__ == "__main__":
     logDir.mkdir(exist_ok=True)
 
@@ -135,7 +163,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run end-to-end FireMarshal tests (mostly in FireMarshal/test)")
 
-    parser.add_argument("-c", "--categories", nargs="+",
+    parser.add_argument("-c", "--categories", nargs="+", default=list(categories.keys()),
             help="Specify which categorie(s) of test to run. By default, all tests will be run")
 
     # TODO: add a 'from-failures' option to only run tests that failed a previous run
@@ -143,11 +171,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     allFailures = []
-    allFailures += runTests(categories["qemu"], "QEMU")
-    allFailures += runTests(categories["spike"], "SPIKE", marshalArgs=["--no-disk"], cmdArgs=["--spike"])
-    allFailures += runTests(categories["baremetal"], "BAREMETAL", cmdArgs=["--spike"])
+    for category in args.categories:
+        if category != 'special':
+            allFailures += runTests(categories[category], category)
+        else:
+            allFailures += runSpecial(categories["special"], "SPECIAL")
 
+    log.info("Test Summary:")
     if len(allFailures) > 0:
-        print(allFailures)
-
-    print("Done")
+        log.info("Some tests failed:")
+        for fail in allFailures: 
+            log.info(fail[0])
+        sys.exit(1)
+    else:
+        log.info("All PASS") 
+        sys.exit(0)
