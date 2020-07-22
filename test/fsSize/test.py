@@ -14,8 +14,8 @@ fail = False
 try:
     print("Generating input files")
     try:
-        sp.run(["dd", "if=/dev/zero", "of=huge0.dat", "bs=1M", "count=1024"], check=True)
-        sp.run(["dd", "if=/dev/zero", "of=huge1.dat", "bs=1M", "count=1024"], check=True)
+        sp.run(["dd", "if=/dev/zero", "of=" + str(testSrc / "huge0.dat"), "bs=1M", "count=1024"], check=True)
+        sp.run(["dd", "if=/dev/zero", "of=" + str(testSrc / "huge1.dat"), "bs=1M", "count=1024"], check=True)
     except sp.CalledProcessError as e:
         print("Failed to generate input files: ", e)
         raise
