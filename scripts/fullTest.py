@@ -14,10 +14,21 @@ logDir = rootDir / "testLogs"
 testDir = (rootDir / '../test').resolve() 
 marshalBin = (rootDir / "../marshal").resolve()
 
-# Each key is a category. The values are lists of test names to run, each name
+categories = ['baremetal', 'qemu', 'spike', 'smoke', 'special']
+
+# Arguments to (marshal, marshal CMD) per category
+categoryArgs = {
+        'baremetal': ([], ["--spike"]),
+        'qemu' : ([], []),
+        'smoke' : ([], []),
+        'spike' : (['--no-disk'], ['--spike']),
+        'special' : ([], [])
+}
+
+# lists of test names to run for each category, each name
 # should correspond to a test in FireMarshal/tests. E.G. "command" means
 # "FireMarshal/test/command.json". 
-categories = {
+categoryTests = {
         # Run on spike. These tests depend only on an installed toolchain, you
         # don't need to initialize Marshal's submodules to run this category
         'baremetal' : [
@@ -38,7 +49,6 @@ categories = {
             'drivers',
             'fed-run',
             'flist',
-            'fsSize',
             'generateFiles',
             'guest-init',
             'hard',
@@ -163,7 +173,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run end-to-end FireMarshal tests (mostly in FireMarshal/test)")
 
-    parser.add_argument("-c", "--categories", nargs="+", default=list(categories.keys()),
+    parser.add_argument("-c", "--categories", nargs="+", default=list(categories),
             help="Specify which categorie(s) of test to run. By default, all tests will be run")
 
     # TODO: add a 'from-failures' option to only run tests that failed a previous run
@@ -171,11 +181,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     allFailures = []
+    # allFailures += runTests(["fed-smoke0"], "manualTest")
     for category in args.categories:
         if category != 'special':
-            allFailures += runTests(categories[category], category)
+            allFailures += runTests(categoryTests[category], category,
+                    marshalArgs=categoryArgs[category][0], cmdArgs=categoryArgs[category][1])
         else:
-            allFailures += runSpecial(categories["special"], "SPECIAL")
+            allFailures += runSpecial(categoryTests["special"], "SPECIAL")
 
     log.info("Test Summary:")
     if len(allFailures) > 0:
