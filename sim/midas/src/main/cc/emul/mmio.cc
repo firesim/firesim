@@ -90,13 +90,16 @@ extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
 std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
-void* init(uint64_t memsize, bool dramsim) {
+void init(uint64_t memsize, bool dramsim) {
   master.reset(new mmio_t(CTRL_BEAT_BYTES));
   dma.reset(new mmio_t(DMA_BEAT_BYTES));
   for (int mem_channel_index=0; mem_channel_index < MEM_NUM_CHANNELS; mem_channel_index++) {
     slave[mem_channel_index].reset(dramsim ? (mm_t*) new mm_dramsim2_t(1 << MEM_ID_BITS) : (mm_t*) new mm_magic_t);
     slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
   }
-  return slave[0]->get_data();
 }
 
+void load_mems(const char *fname) {
+  for (int i = 0; i < MEM_NUM_CHANNELS; i++)
+    slave[i]->load_mem(0, fname);
+}
