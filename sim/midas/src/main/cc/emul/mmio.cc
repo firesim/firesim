@@ -100,6 +100,6 @@ void init(uint64_t memsize, bool dramsim) {
 }
 
 void load_mems(const char *fname) {
-  for (int i = 0; i < MEM_NUM_CHANNELS; i++)
-    slave[i]->load_mem(0, fname);
+  slave[0]->load_mem(0, fname);
+  // TODO: allow file to be split across slaves
 }
