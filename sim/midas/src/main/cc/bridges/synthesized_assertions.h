@@ -10,15 +10,10 @@ class synthesized_assertions_t: public bridge_driver_t
     public:
         synthesized_assertions_t(
           simif_t* sim,
+          std::vector<std::string> &args,
           ASSERTBRIDGEMODULE_struct * mmio_addrs,
           unsigned int num_asserts,
-          const char* const* msgs,
-          bool enable = true) :
-            bridge_driver_t(sim),
-            mmio_addrs(mmio_addrs),
-            num_asserts(num_asserts),
-            msgs(msgs),
-            enable(enable) {};
+          const char* const* msgs);
         ~synthesized_assertions_t();
         virtual void init();
         virtual void tick();
