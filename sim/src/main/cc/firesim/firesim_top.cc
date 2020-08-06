@@ -21,7 +21,6 @@
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
     std::vector<std::string> args(argv + 1, argv + argc);
-    bool enable_asserts = true;
 
     max_cycles = -1;
     profile_interval = max_cycles;
@@ -35,9 +34,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
         }
         if (arg.find("+zero-out-dram") == 0) {
             do_zero_out_dram = true;
-        }
-        if (arg.find("+disable-asserts") == 0) {
-            enable_asserts = false;
         }
     }
 
@@ -391,67 +387,59 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
     ASSERTBRIDGEMODULE_0_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_0_substruct,
                                                    ASSERTBRIDGEMODULE_0_assert_count,
-                                                   ASSERTBRIDGEMODULE_0_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_0_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_1_PRESENT
     ASSERTBRIDGEMODULE_1_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_1_substruct,
                                                    ASSERTBRIDGEMODULE_1_assert_count,
-                                                   ASSERTBRIDGEMODULE_1_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_1_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_2_PRESENT
     ASSERTBRIDGEMODULE_2_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_2_substruct,
                                                    ASSERTBRIDGEMODULE_2_assert_count,
-                                                   ASSERTBRIDGEMODULE_2_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_2_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_3_PRESENT
     ASSERTBRIDGEMODULE_3_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_3_substruct,
                                                    ASSERTBRIDGEMODULE_3_assert_count,
-                                                   ASSERTBRIDGEMODULE_3_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
     ASSERTBRIDGEMODULE_4_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_4_substruct,
                                                    ASSERTBRIDGEMODULE_4_assert_count,
-                                                   ASSERTBRIDGEMODULE_4_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_4_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_5_PRESENT
     ASSERTBRIDGEMODULE_5_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_5_substruct,
                                                    ASSERTBRIDGEMODULE_5_assert_count,
-                                                   ASSERTBRIDGEMODULE_5_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_5_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_6_PRESENT
     ASSERTBRIDGEMODULE_6_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_6_substruct,
                                                    ASSERTBRIDGEMODULE_6_assert_count,
-                                                   ASSERTBRIDGEMODULE_6_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_6_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_7_PRESENT
     ASSERTBRIDGEMODULE_7_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_7_substruct,
                                                    ASSERTBRIDGEMODULE_7_assert_count,
-                                                   ASSERTBRIDGEMODULE_7_assert_messages,
-                                                   enable_asserts));
+                                                   ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
 
 #ifdef PRINTBRIDGEMODULE_0_PRESENT

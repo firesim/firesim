@@ -4,6 +4,23 @@
 #include <iostream>
 #include <fstream>
 
+synthesized_assertions_t::synthesized_assertions_t(
+  simif_t* sim,
+  std::vector<std::string> &args,
+  ASSERTBRIDGEMODULE_struct * mmio_addrs,
+  unsigned int num_asserts,
+  const char* const* msgs) :
+    bridge_driver_t(sim),
+    mmio_addrs(mmio_addrs),
+    num_asserts(num_asserts),
+    msgs(msgs)
+{
+  for (auto &arg: args) {
+    if (arg.find("+disable-asserts") == 0)
+      enable = false;
+  }
+}
+
 synthesized_assertions_t::~synthesized_assertions_t() {
     free(this->mmio_addrs);
 }
