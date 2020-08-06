@@ -299,7 +299,7 @@ class InnerRuntimeConfiguration:
         if 'hostdebug' in runtime_dict:
             self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
             self.ilaslot = int(runtime_dict['hostdebug'].get('ilaslot', '0'))
-            self.disable_asserts = runtime_dict['hostdebug'].get('asserts') == "no"
+            self.disable_asserts = runtime_dict['hostdebug'].get('disable_synth_asserts') == "yes"
         if 'synthprint' in runtime_dict:
             self.print_start = runtime_dict['synthprint'].get("start", "0")
             self.print_end = runtime_dict['synthprint'].get("end", "-1")
