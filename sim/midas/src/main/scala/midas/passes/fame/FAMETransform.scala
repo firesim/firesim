@@ -75,7 +75,7 @@ trait FAME1DataChannel extends FAME1Channel with HasModelPort {
   def firedReg: DefRegister
   def isFired = WRef(firedReg)
   def isFiredOrFiring = Or(isFired, isFiring)
-  def updateFiredReg(finishing: WRef): Statement = {
+  def updateFiredReg(finishing: Expression): Statement = {
     Connect(NoInfo, isFired, Mux(finishing, Negate(clockDomainEnable), isFiredOrFiring, BoolType))
   }
 }
@@ -153,7 +153,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     // Multi-clock management step 2: Generate clock scheduling logic
     def isClockChannel(info: (String, (Option[Port], Seq[Port]))) = info match {
       case (_, (clk, ports)) =>
-        require(ports.size == 1)
+        require(clk.nonEmpty || ports.size == 1, s"Clock channels must carry a single clock. Got: ${ports.size}\n.")
         clk.isEmpty && ports.forall(_.tpe == ClockType)
     }
 
@@ -182,9 +182,13 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val simTime = Port(NoInfo, ns.newName("nextSimulationTime"), Output, timestampFType)
       val scheduledClocks = Port(NoInfo, ns.newName("scheduledClocks"), Output, BoolType)
 
+      val s1_valid = HostFlagRegister("s1_valid")
+      val s2_valid = HostFlagRegister("s2_valid")
+      val s1_enable = DefNode(NoInfo, ns.newName("s1_enable"), Or(Negate(WRef(s1_valid)), WRef(finishing)))
+
       // Front-end of the pipeline. based on all input tokens determine if forward progress can be made.
       val advanceToTime = DefWire(NoInfo, ns.newName("advanceToTime"), timestampFType)
-      val clockSchedulers = existingClockChannels.map(ch => new ClockScheduler(ch, WRef(finishing), WRef(advanceToTime))).toSeq
+      val clockSchedulers = existingClockChannels.map(ch => new ClockScheduler(ch, WRef(s1_enable), WRef(advanceToTime))).toSeq
       val minReductionNodes = new mutable.ArrayBuffer[DefNode]
       val allClocksDefinedUntil = DefNode(NoInfo, ns.newName("allClocksDefinedUntil"),
         DensePrefixSum(clockSchedulers.map(_.definedUntil).toSeq)({ case (a, b) =>
@@ -200,28 +204,27 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val clockEnables = clockSchedulers.map(_.posedgeEnable).toSeq
       val nextEdgeAvailable = DefNode(NoInfo, ns.newName("nextEdgeAvailable"), clockEnables.reduce(Or.apply))
 
+
       val s1_time = TimestampRegister("s1_time")
       val willAdvance = DefNode(NoInfo, ns.newName("willAdvance"), Neq(WRef(advanceToTime), WRef(s1_time)))
       val s1_time_update = Connect(
         NoInfo,
         WRef(s1_time),
-        Mux(WRef(finishing), WRef(advanceToTime), WRef(s1_time)))
+        Mux(WRef(s1_enable), WRef(advanceToTime), WRef(s1_time)))
       val s2_time_update = Connect(
         NoInfo,
         WRef(s2_time),
         Mux(WRef(finishing), WRef(s1_time), WRef(s2_time)))
-      val s1_valid = HostFlagRegister("s1_valid")
-      val s1_valid_update = Connect(NoInfo, WRef(s1_valid), Mux(WRef(finishing), WRef(willAdvance), WRef(s1_valid)))
-      val s2_valid = HostFlagRegister("s2_valid")
+      val s1_valid_update = Connect(NoInfo, WRef(s1_valid), Mux(WRef(s1_enable), WRef(willAdvance), WRef(s1_valid)))
       val s2_valid_update = Connect(NoInfo, WRef(s2_valid), Mux(WRef(finishing), WRef(s1_valid), WRef(s2_valid)))
       // Declarations
-      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes :+ allClocksDefinedUntil
+      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes :+ allClocksDefinedUntil
       // Connections
       clockSchedulingStmts ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update)
       // Control port handling
       clockSchedulingPorts ++= Seq(timeHorizon, simAdvancing, scheduledClocks, simTime)
       clockSchedulingStmts ++= Seq(
-        Connect(NoInfo, WRef(simAdvancing), And(WRef(willAdvance), WRef(finishing))),
+        Connect(NoInfo, WRef(simAdvancing), And(WRef(willAdvance), WRef(s1_enable))),
         Connect(NoInfo, WRef(simTime), WRef(advanceToTime)),
         Connect(NoInfo, WRef(scheduledClocks), clockEnables.reduce(Or.apply)))
 
@@ -255,7 +258,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val enableReg = HostFlagRegister(s"${tClock.name}_enabled", resetVal = UIntLiteral(0))
       val buf = WDefInstance(ns.newName(s"${tClock.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val connects = Block(Seq(
-        Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), en, WRef(enableReg), BoolType)),
+        Connect(NoInfo, WRef(enableReg), Mux(Or(WRef(finishing), Negate(s1_valid)), en, WRef(enableReg))),
         Connect(NoInfo, WSubField(WRef(buf), "I"), hostClock),
         /*
          *  NB: Failing to keep the target clock-gated during FPGA initialization
@@ -264,8 +267,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
          *  initialization and reset ensures all target state elements are
          *  initialized with a deterministic set of initial values.
          */
-        Connect(NoInfo, WSubField(WRef(buf), "CE"),
-          Seq(WRef(enableReg), WRef(finishing), Negate(hostReset)).reduce(And.apply))))
+        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(And(WRef(enableReg), Negate(hostReset)), WRef(finishing)))))
       val targetClockCtrl = TargetClockMetadata(tClock, WRef(enableReg), en, WSubField(WRef(buf), "O", ClockType, SourceFlow))
       (targetClockCtrl, Block(Seq(enableReg, buf)), Block(connects))
     }).unzip3
@@ -364,8 +366,9 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     // This is modified for multi-clock, as each channel fires only when associated clock is enabled
     val allFiredOrFiring = And.reduce(outChannels.map(_.isFiredOrFiring) ++ inChannels.map(_.isValid))
 
-    val channelStateRules = (inChannels ++ outChannels).map(c => c.updateFiredReg(WRef(finishing)))
-    val inputRules = inChannels.map(i => i.setReady(WRef(finishing)))
+    val channelStateRules = outChannels.map(c => c.updateFiredReg(WRef(finishing))) ++
+      inChannels.map(c => c.updateFiredReg(And(WRef(finishing), s1_valid)))
+    val inputRules = inChannels.map(i => i.setReady(And(WRef(finishing), s1_valid)))
     val outputRules = outChannels.map(o => o.setValid(WRef(finishing), ccDeps(o)))
     val topRules = Seq(Connect(NoInfo, WRef(finishing), allFiredOrFiring))
     val outputTimestamps = outChannels.flatMap(o => o.setTimestamp(WRef(s2_time)))

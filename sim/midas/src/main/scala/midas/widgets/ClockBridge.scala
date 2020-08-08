@@ -72,7 +72,7 @@ class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox wit
   val allClocks = baseClock +: additionalClocks
   val io = IO(new ClockBridgeTargetIO(allClocks.length))
   val bridgeIO = new ClockTokenVector(io)
-  val constructorArg = Some(ClockBridgeCtorArgument(3000, allClocks))
+  val constructorArg = Some(ClockBridgeCtorArgument(1000, allClocks))
   generateAnnotations()
 }
 

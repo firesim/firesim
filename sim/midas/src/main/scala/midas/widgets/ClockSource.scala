@@ -8,7 +8,7 @@ import chisel3.util._
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.unittest._
 
-class ClockSource(periodPS: BigInt, dutyCycle: Int = 50, initValue: Boolean = false) extends MultiIOModule {
+class ClockSource(periodPS: BigInt, dutyCycle: Int = 50, initValue: Boolean = true) extends MultiIOModule {
   val clockOut = IO(Decoupled(new TimestampedToken(Bool())))
   val time = RegInit(0.U(clockOut.bits.timestampWidth.W))
   val highTime = (periodPS * dutyCycle) / 100
