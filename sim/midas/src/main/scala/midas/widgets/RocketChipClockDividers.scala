@@ -51,7 +51,7 @@ class ClockDivider3 extends MultiIOModule {
   val clk_in   = IO(Flipped(new TimestampedTuple(Bool())))
   val clk_out  = IO(new TimestampedTuple(Bool()))
   // The init value of the register in the RC reference can come up as 0 or 1
-  val reg = Module(new TimestampedRegister(Bool(), Posedge, init = Some(true.B)))
+  val reg = Module(new TimestampedRegister(Bool(), Posedge, init = Some(false.B)))
   val delay = Module(new TimestampedRegister(Bool(), Posedge, init = Some(false.B)))
 
   val Seq(regFeedback, reg2Delay, out) = FanOut(reg.q, "regFeedback", "reg2Delay", "out")
@@ -90,7 +90,7 @@ class RocketChipClockDivider3Test(
     clockPeriodPS: Int,
     timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
 
-  val clockTuple = ClockSource.instantiateAgainstReference(clockPeriodPS, initValue = true)
+  val clockTuple = ClockSource.instantiateAgainstReference(clockPeriodPS, initValue = false)
   val (reference, model) = ClockDivider3.instantiateAgainstReference(clockTuple)
   io.finished := TimestampedTokenTraceEquivalence(reference, model, timeout)
 }
