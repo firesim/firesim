@@ -172,10 +172,14 @@ class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterMo
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
 
-// Basic test for deduplicated extracted models
-class ClockMuxTest extends TutorialSuite("ClockMux") {
-  runTest("vcs", true)
-}
+class RegfileF1Test extends TutorialSuite("Regfile")
+
+class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
+
+class NestedModelsF1Test extends TutorialSuite("NestedModels")
+
+class MultiRegF1Test extends TutorialSuite("MultiReg")
+
 
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
@@ -211,7 +215,11 @@ class GoldenGateMiscCITests extends Suites(
   new TwoAddersF1Test,
   new TriggerWiringModuleF1Test,
   new WireInterconnectF1Test,
-  new TrivialMulticlockF1Test
+  new TrivialMulticlockF1Test,
+  new RegfileF1Test,
+  new MultiRegfileF1Test,
+  new NestedModelsF1Test,
+  new MultiRegF1Test
 )
 
 // Each group runs on a single worker instance
@@ -238,4 +246,8 @@ class TimestampUnittests extends firesim.MidasUnitTestSuite("TimestampTests") {
 class TimestampRegisterUnittests extends firesim.MidasUnitTestSuite("TimestampRegisterTests") {
   //mkdirs
   runUnitTestSuite("vcs", debug = true)
+}
+
+class ClockMuxTest extends TutorialSuite("ClockMux") {
+  runTest("vcs", true)
 }

@@ -21,6 +21,7 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val io = IO(new WidgetIO())
     val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
     val resume = WireInit(false.B)
+    val enable = RegInit(false.B)
     val cycles = RegInit(0.U(64.W))
     val q = Module(new Queue(hPort.hBits.cloneType, 2))
     q.io.enq.valid := hPort.toHost.hValid
@@ -34,7 +35,9 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val assertId = PriorityEncoder(asserts)
     val assertFire = asserts.orR
 
-    val stallN = (!assertFire || resume)
+    // Tokens will stall when an assertion is firing unless
+    // resume is pulsed or assertions are disabled
+    val stallN = (!assertFire || resume || !enable)
 
     val tFireHelper = DecoupledHelper(q.io.deq.valid, stallN)
     val targetFire = tFireHelper.fire
@@ -49,6 +52,7 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     genROReg(cycles(31, 0), "cycle_low")
     genROReg(cycles >> 32, "cycle_high")
     Pulsify(genWORegInit(resume, "resume", false.B), pulseLength = 1)
+    attach(enable, "enable")
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder) {

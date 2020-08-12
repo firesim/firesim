@@ -9,13 +9,16 @@ public:
     synthesized_assertions_t * assert_endpoint;
     AssertModule_t(int argc, char** argv) {
         ASSERTBRIDGEMODULE_0_substruct_create;
-        assert_endpoint = new synthesized_assertions_t(this,
+        std::vector<std::string> args(argv + 1, argv + argc);
+        assert_endpoint = new synthesized_assertions_t(
+          this, args,
           ASSERTBRIDGEMODULE_0_substruct,
           ASSERTBRIDGEMODULE_0_assert_count,
           ASSERTBRIDGEMODULE_0_assert_messages);
     };
     void run() {
         int assertions_thrown = 0;
+        assert_endpoint->init();
         poke(reset, 1);
         poke(io_a, 0);
         poke(io_b, 0);
