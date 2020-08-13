@@ -169,9 +169,9 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val clockSchedulingStmts = new mutable.ArrayBuffer[Statement]
     val clockSchedulingPorts = new mutable.ArrayBuffer[Port]
     val clockSchedulingAnnos = new mutable.ArrayBuffer[Annotation]
-    // Not used in the satellite models; will be optimized away
+    // Not used in the satellite models
     val s2_time = TimestampRegister("s2_time")
-    clockSchedulingStmts += s2_time
+
     val (clockEnables, nextEdgeAvailable, s1_valid, s2_valid) = if (isHubModel) {
       // Control signal generation to simulation master
       val numTargetClocks = existingClockChannels.size
@@ -218,7 +218,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val s1_valid_update = Connect(NoInfo, WRef(s1_valid), Mux(WRef(s1_enable), WRef(willAdvance), WRef(s1_valid)))
       val s2_valid_update = Connect(NoInfo, WRef(s2_valid), Mux(WRef(finishing), WRef(s1_valid), WRef(s2_valid)))
       // Declarations
-      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes :+ allClocksDefinedUntil
+      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: s2_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes :+ allClocksDefinedUntil
       // Connections
       clockSchedulingStmts ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update)
       // Control port handling
