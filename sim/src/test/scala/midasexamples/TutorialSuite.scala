@@ -251,3 +251,10 @@ class TimestampRegisterUnittests extends firesim.MidasUnitTestSuite("TimestampRe
 class ClockMuxTest extends TutorialSuite("ClockMux") {
   runTest("vcs", true)
 }
+
+// Relies on target-side assertions to capture test failure; disable assertion synthesis
+class AsyncResetRegisterTest extends TutorialSuite(
+    "AsyncResetRegister",
+    platformConfigs = "DisableSynthAsserts_HostDebugFeatures_DefaultF1Config") {
+  runTest("vcs", true)
+}

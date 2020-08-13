@@ -33,3 +33,6 @@ class AutoCounterPrintf extends Config((site, here, up) => {
   case AutoCounterUsePrintfImpl => true
 })
 
+class DisableSynthAsserts extends Config((site, here, up) => {
+  case SynthAsserts => false
+})
