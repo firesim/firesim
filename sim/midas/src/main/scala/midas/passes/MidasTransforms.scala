@@ -39,7 +39,7 @@ private[midas] class MidasTransforms extends Transform {
       new firrtl.transforms.DeadCodeElimination,
       new firrtl.transforms.InferResets,
       firrtl.passes.CheckTypes,
-      CoerceAsyncToSyncReset,
+      //CoerceAsyncToSyncReset,
       EnsureNoTargetIO,
       new BridgeExtraction,
       new ResolveAndCheck,

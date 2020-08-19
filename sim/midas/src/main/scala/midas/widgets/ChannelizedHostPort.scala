@@ -49,6 +49,12 @@ case class ClockChannelMetadata(field: Data, bridgeSunk: Boolean) extends Channe
   def chInfo = midas.passes.fame.TargetClockChannel(Seq.tabulate(fieldRTs.length)(i => RationalClock(s"clock_$i",1, 1)))
 }
 
+case class AsyncResetMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
+  def fieldRTs = Seq(field.toTarget)
+  def clockRT = None
+  def chInfo = midas.passes.fame.AsyncResetChannel
+}
+
 case class ClockControlChannelMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
   def fieldRTs = Seq(field.toTarget)
   def clockRT = None
@@ -145,34 +151,46 @@ trait ChannelizedHostPortIO extends IndependentChannels { this: Record =>
 trait TimestampedHostPortIO extends IndependentChannels { this: Record =>
   type ChannelType[A <: Data] = DecoupledIO[TimestampedToken[A]]
   def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(new TimestampedToken(payload))
-  protected def clockChannelPort(direction: Direction, field: Clock): DecoupledIO[TimestampedToken[Bool]] = {
+
+  /**
+    * This is used for channels whose underlying target type is special in some
+    * way, like AsyncReset and Clock, that makes it hard to manipulate as data
+    * (i.e., as a bool). For these types we convert the underlying channel to
+    * use a Bool.
+    */
+  protected def coerceToBoolChannel(direction: Direction, field: Element): DecoupledIO[TimestampedToken[Bool]] = {
     // FIXME: WHen the target interface is regenerated during compilation direction information is lost.
     //checkFieldDirection(field, direction)
     val ch = direction match {
       case Direction.Input => Flipped(Decoupled(new TimestampedToken(Bool())))
       case Direction.Output => Decoupled(new TimestampedToken(Bool()))
     }
-    channels.append((field, ch, ClockChannelMetadata(field, direction == Direction.Input)))
+    val meta = field match {
+      case c: Clock => ClockChannelMetadata(c, direction == Direction.Input)
+      case a: AsyncReset => AsyncResetMetadata(a, direction == Direction.Input)
+      case o => throw new Exception(s"Unexpected field type ${o}. Perhaps use non-clock, non-AsyncReset Input/Output channel")
+    }
+    channels.append((field, ch, meta))
     ch
   }
 
-  def InputClockChannel(field: Clock): ChannelType[Bool] = clockChannelPort(Direction.Input, field)
-  def OutputClockChannel(field: Clock): ChannelType[Bool] = clockChannelPort(Direction.Output, field)
-  def OutputClockVecChannel(field: Vec[Clock]): ChannelType[Vec[Bool]] = {
-    val ch = Decoupled(new TimestampedToken((Vec(field.length, Bool()))))
-    channels.append((field, ch, ClockChannelMetadata(field, bridgeSunk = false)))
-    ch
-  }
+  def InputClockChannel(field: Clock): ChannelType[Bool] = coerceToBoolChannel(Direction.Input, field)
+  def OutputClockChannel(field: Clock): ChannelType[Bool] = coerceToBoolChannel(Direction.Output, field)
+  def InputAsyncResetChannel(field: AsyncReset): ChannelType[Bool] = coerceToBoolChannel(Direction.Input, field)
+  def OutputAsyncResetChannel(field: AsyncReset): ChannelType[Bool] = coerceToBoolChannel(Direction.Output, field)
 
-  // For non-clock, non-async reset singals
+  // For non-clock, non-async reset channels
   def InputChannel[A <: Data](field: A): ChannelType[A] = {
     val ch = channelField(Direction.Input, field)
-    channels.append((field, ch, ClockControlChannelMetadata(field, bridgeSunk = true)))
+    // TODO:check that there isn't an async reset or clock nested in the field
+    val meta = ClockControlChannelMetadata(field, bridgeSunk = true)
+    channels.append((field, ch, meta))
     ch
   }
   def OutputChannel[A <: Data](field: A): ChannelType[A] = {
     val ch = channelField(Direction.Output, field)
-    channels.append((field, ch, ClockControlChannelMetadata(field, bridgeSunk = false)))
+    val meta = ClockControlChannelMetadata(field, bridgeSunk = false)
+    channels.append((field, ch, meta))
     ch
   }
 }

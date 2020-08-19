@@ -159,6 +159,11 @@ case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChanne
 case object ClockControlChannel extends FAMEChannelInfo with Timestamped
 
 /**
+  * Indicates the channel carries a single asynchronous reset
+  */
+case object AsyncResetChannel extends FAMEChannelInfo with Timestamped
+
+/**
   * Indicates that a channel connection is the forward (valid) half of
   * a decoupled target connection.
   *

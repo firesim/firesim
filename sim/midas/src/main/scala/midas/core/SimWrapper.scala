@@ -75,11 +75,12 @@ abstract class ChannelizedWrapperIO(
     leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends Record {
 
   /**
-    * Clocks have different types coming off the target (where they retain
-    * their target-native Clock type) vs leaving the simulation wrapper
+    * Clocks and AsyncReset have different types coming off the target (where they retain
+    * their target-native type) vs leaving the simulation wrapper
     * (where they have been coerced to Bool).
     */
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[_]
+  def regenAsyncResetType(): TimestampedToken[_]
 
   def regenTypesFromField(name: String, tpe: firrtl.ir.Type): Seq[(String, Data)] = tpe match {
     case firrtl.ir.BundleType(fields) => fields.flatMap(f => regenTypesFromField(prefixWith(name, f.name), f.tpe))
@@ -119,7 +120,10 @@ abstract class ChannelizedWrapperIO(
   def regenWireType(chInfo: FAMEChannelInfo, refTargets: Seq[ReferenceTarget]): Data = {
     chInfo match {
       case fame.TargetClockChannel(_) =>  regenClockType(refTargets)
-      case fame.ClockControlChannel   =>
+      case fame.AsyncResetChannel =>
+        require(refTargets.size == 1, "Async Reset channels must contain only a single async reset target")
+        regenAsyncResetType()
+      case fame.ClockControlChannel =>
         require(refTargets.size == 1, "FIXME: Handle aggregated wires")
         new TimestampedToken(regenTypes(refTargets).head._2)
       case fame.PipeChannel(_) =>
@@ -142,6 +146,7 @@ abstract class ChannelizedWrapperIO(
     case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,_,_) => ch
     case ch @ FAMEChannelConnectionAnnotation(_,fame.ClockControlChannel,_,_,_) => ch
     case ch @ FAMEChannelConnectionAnnotation(_,fame.TargetClockChannel(_),_,_,_) => ch
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.AsyncResetChannel,_,_,_) => ch
   }
 
   val wireTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = wireLikeFCCAs.collect({
@@ -244,6 +249,7 @@ class TargetBoxIO(
     case 1 => Clock()
     case size => new ClockRecord(refTargets.size)
   })
+  def regenAsyncResetType(): TimestampedToken[AsyncReset] = new TimestampedToken(AsyncReset())
 
   val hostClock = Input(Clock())
   val hostReset = Input(Bool())
@@ -282,6 +288,7 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = {
     new TimestampedToken(if (refTargets.size == 1) Bool() else Vec(refTargets.size, Bool()))
   }
+  def regenAsyncResetType(): TimestampedToken[Bool] = new TimestampedToken(Bool())
 
   override val elements = ListMap((wireElements ++ rvElements):_*)
   override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
@@ -428,8 +435,9 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   // Generate all other non-RV channels
   chAnnos.collect({
     case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_,_)  => genPipeChannel(ch, latency)
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.ClockControlChannel,_,_,_)  => genPipeChannel(ch, 0)
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.ClockControlChannel,_,_,_)  => genPipeChannel(ch, 0)
     case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => genPipeChannel(ch, 0)
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.AsyncResetChannel,_,_,_)  => genPipeChannel(ch, 0)
   })
 
   // Connect hub control IF

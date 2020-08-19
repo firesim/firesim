@@ -43,6 +43,15 @@ trait InputChannel {
   def setReady(readyCond: Expression): Statement
 }
 
+trait UntimestampedChannel { this: FAME1Channel =>
+  val hasTimestamp = false
+}
+
+trait TimestampedChannel { this: FAME1Channel =>
+  val hasTimestamp = true
+  def getTimestampRef(): WSubField = WSubField(WSubField(WRef(asHostModelPort.get), "bits"), "time")
+}
+
 trait HasModelPort {
   this: FAME1Channel =>
   override def isValid = WSubField(WRef(asHostModelPort.get), "valid", BoolType)
@@ -72,24 +81,14 @@ trait HasModelPort {
 
 trait FAME1DataChannel extends FAME1Channel with HasModelPort {
   def clockDomainEnable: Expression
-  def firedReg: DefRegister
-  def isFired = WRef(firedReg)
-  def isFiredOrFiring = Or(isFired, isFiring)
-  def updateFiredReg(finishing: Expression): Statement = {
-    Connect(NoInfo, isFired, Mux(finishing, Negate(clockDomainEnable), isFiredOrFiring, BoolType))
-  }
 }
 
-case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel with InputChannel with HasModelPort {
+case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel
+    with InputChannel with HasModelPort with TimestampedChannel {
   assert(ports.size == 1)
-  val hasTimestamp = true
-  def getTimestampRef(): WSubField = {
-      WSubField(WSubField(WRef(asHostModelPort.get), "bits"), "time")
-  }
 }
 
-case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with InputChannel {
-  val hasTimestamp = false
+case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with InputChannel with UntimestampedChannel {
   val name = "VirtualClockChannel"
   val ports = Seq(targetClock)
   val isValid: Expression = UIntLiteral(1)
@@ -100,12 +99,17 @@ case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with Inpu
 case class FAME1InputChannel(
   name: String,
   clockDomainEnable: Expression,
-  ports: Seq[Port],
-  firedReg: DefRegister,
-  hasTimestamp: Boolean) extends FAME1DataChannel with InputChannel {
+  ports: Seq[Port]) extends FAME1DataChannel with InputChannel with UntimestampedChannel {
   override def setReady(advanceCycle: Expression): Statement = {
     Connect(NoInfo, isReady, And(clockDomainEnable, advanceCycle))
   }
+}
+
+case class FAME1TimestampedInputChannel(
+  name: String,
+  ports: Seq[Port],
+  ) extends FAME1Channel with  InputChannel with HasModelPort with TimestampedChannel {
+  override def setReady(advanceCycle: Expression): Statement = Connect(NoInfo, isReady, advanceCycle)
 }
 
 case class FAME1OutputChannel(
@@ -116,6 +120,12 @@ case class FAME1OutputChannel(
   hasTimestamp: Boolean) extends FAME1DataChannel {
   val direction = Output
   val portName = s"${name}_source"
+
+  def isFired = WRef(firedReg)
+  def isFiredOrFiring = Or(isFired, isFiring)
+  def updateFiredReg(finishing: Expression): Statement = {
+    Connect(NoInfo, isFired, Mux(finishing, Negate(clockDomainEnable), isFiredOrFiring, BoolType))
+  }
   def setValid(finishing: WRef, ccDeps: Iterable[FAME1InputChannel]): Statement = {
     Connect(NoInfo, isValid, And.reduce(ccDeps.map(_.isValid).toSeq :+ Negate(isFired)))
   }
@@ -157,11 +167,21 @@ object FAMEModuleTransformer extends HasTimestampConstants {
         clk.isEmpty && ports.forall(_.tpe == ClockType)
     }
 
-    val existingClockChannels = analysis.modelInputChannelPortMap(mTarget).collect {
-      case chInfo if isClockChannel(chInfo) => FAME1ClockChannel(chInfo._1, chInfo._2._2)
+    val existingClockChannels = new mutable.ArrayBuffer[FAME1ClockChannel]
+    val timestampedInputChannels = new mutable.ArrayBuffer[FAME1TimestampedInputChannel]
+
+    analysis.modelInputChannelPortMap(mTarget).collect {
+      case chInfo if isClockChannel(chInfo) =>
+        existingClockChannels += FAME1ClockChannel(chInfo._1, chInfo._2._2)
+      case (name, (clockOpt, ports)) if analysis.channelHasTimestamp(name) =>
+        require(clockOpt.isEmpty, s"Unexpected clock in Timestamped channel ${name}")
+        require(ports.size == 1, s"Timestamped input channel must carry only a single field. Got ${ports.size}.")
+        timestampedInputChannels += FAME1TimestampedInputChannel(name, ports)
     }
 
     val isHubModel = existingClockChannels.nonEmpty
+    assert(isHubModel || timestampedInputChannels.isEmpty, "Satelite model has unexpected timestamped channel")
+
     val clockChannels = if (isHubModel) existingClockChannels else Seq(VirtualClockChannel(clocks.head))
     val targetClockPorts = clockChannels.map(_.ports.head)
 
@@ -169,10 +189,11 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val clockSchedulingStmts = new mutable.ArrayBuffer[Statement]
     val clockSchedulingPorts = new mutable.ArrayBuffer[Port]
     val clockSchedulingAnnos = new mutable.ArrayBuffer[Annotation]
+
     // Not used in the satellite models
     val s2_time = TimestampRegister("s2_time")
 
-    val (clockEnables, nextEdgeAvailable, s1_valid, s2_valid) = if (isHubModel) {
+    val (clockEnables, dataEnables, s1_valid, s2_valid) = if (isHubModel) {
       // Control signal generation to simulation master
       val numTargetClocks = existingClockChannels.size
       // From master: A driver-imposed limit on how far the simulation may advance
@@ -189,9 +210,13 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       // Front-end of the pipeline. based on all input tokens determine if forward progress can be made.
       val advanceToTime = DefWire(NoInfo, ns.newName("advanceToTime"), timestampFType)
       val clockSchedulers = existingClockChannels.map(ch => new ClockScheduler(ch, WRef(s1_enable), WRef(advanceToTime))).toSeq
+      // All other timestamped channels may have sensitivities that depend on positive or negative edges.
+      // These differ in that they can only permit the simulator to advance as far as any transition.
+      val dataSchedulers = timestampedInputChannels.map(ch => new DataScheduler(ch, WRef(s1_enable), WRef(advanceToTime))).toSeq
+
       val minReductionNodes = new mutable.ArrayBuffer[DefNode]
       val allClocksDefinedUntil = DefNode(NoInfo, ns.newName("allClocksDefinedUntil"),
-        DensePrefixSum(clockSchedulers.map(_.definedUntil).toSeq)({ case (a, b) =>
+        DensePrefixSum((clockSchedulers ++ dataSchedulers).map(_.definedUntil).toSeq)({ case (a, b) =>
           val node = DefNode(NoInfo, ns.newTemp, Mux(Lt(a,b), a, b))
           minReductionNodes += node
           WRef(node)
@@ -201,9 +226,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       // schedule them; otherwise advance as far as we've been directed.
       val advanceToTimeConn = Connect(NoInfo, WRef(advanceToTime),
         Mux(Lt(WRef(allClocksDefinedUntil), WRef(timeHorizon)), WRef(allClocksDefinedUntil), WRef(timeHorizon)))
-      val clockEnables = clockSchedulers.map(_.posedgeEnable).toSeq
-      val nextEdgeAvailable = DefNode(NoInfo, ns.newName("nextEdgeAvailable"), clockEnables.reduce(Or.apply))
-
+      val clockEnables = clockSchedulers.map(_.posedgeScheduled).toSeq
 
       val s1_time = TimestampRegister("s1_time")
       val willAdvance = DefNode(NoInfo, ns.newName("willAdvance"), Neq(WRef(advanceToTime), WRef(s1_time)))
@@ -218,7 +241,9 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val s1_valid_update = Connect(NoInfo, WRef(s1_valid), Mux(WRef(s1_enable), WRef(willAdvance), WRef(s1_valid)))
       val s2_valid_update = Connect(NoInfo, WRef(s2_valid), Mux(WRef(finishing), WRef(s1_valid), WRef(s2_valid)))
       // Declarations
-      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: s2_time +: advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: nextEdgeAvailable +: minReductionNodes :+ allClocksDefinedUntil
+      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: s2_time +:
+        advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: dataSchedulers.flatMap(_.stmts) ++:
+        minReductionNodes :+ allClocksDefinedUntil
       // Connections
       clockSchedulingStmts ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update)
       // Control port handling
@@ -233,9 +258,9 @@ object FAMEModuleTransformer extends HasTimestampConstants {
           "simAdvancing" -> PortMetadata(mTarget, simAdvancing),
           "simTime" -> PortMetadata(mTarget, simTime),
           "scheduledClocks" -> PortMetadata(mTarget, scheduledClocks)))
-      (clockEnables, WRef(nextEdgeAvailable), WRef(s1_valid), WRef(s2_valid))
+      (clockEnables, dataSchedulers, WRef(s1_valid), WRef(s2_valid))
     } else {
-      (Seq(UIntLiteral(1)), UIntLiteral(1), UIntLiteral(1), UIntLiteral(1))
+      (Seq(UIntLiteral(1)), Seq(), UIntLiteral(1), UIntLiteral(1))
     }
 
     case class TargetClockMetadata(
@@ -261,17 +286,42 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       (targetClockCtrl, Block(Seq(enableReg, buf)), Block(connects))
     }).unzip3
 
+
+    /**
+      * Instantiate data-driving registers for all timestamped inputs. These
+      * are the analogs of a clock-buffer but for non-clock timestamped inputs,
+      * like AsyncReset. Here data is latched on the timestep it
+      * would become visible to the rest of the simulation.
+      */
+
+    val (dataMappings, dataDriverDecls, dataDriverAssigns) = (for (scheduler <- dataEnables) yield {
+      val enableReg = HostFlagRegister(s"${scheduler.ch.name}_enabled")
+      val driverReg = HostRegister(s"${scheduler.ch.name}_driver_reg", scheduler.payloadUIntType)
+      val connects = Block(Seq(
+        Connect(NoInfo, WRef(enableReg), Mux(Or(WRef(finishing), Negate(s1_valid)), scheduler.edgeScheduled, WRef(enableReg))),
+        Connect(NoInfo, WRef(driverReg), Mux(And(WRef(enableReg), WRef(finishing)), scheduler.oldData, WRef(driverReg)))))
+      val nativeTypeDriver = DefNode(
+        NoInfo,
+        ns.newName(s"${scheduler.ch.name}_driver_reg"),
+        scheduler.payloadNativeType match {
+          case AsyncResetType => DoPrim(PrimOps.AsAsyncReset, Seq(WRef(driverReg)), Nil, scheduler.payloadNativeType)
+          case o => WRef(driverReg) })
+      (scheduler.ch.ports.head -> nativeTypeDriver, Block(Seq(enableReg, driverReg, nativeTypeDriver)), connects)
+    }).unzip3
+
+
     // Multi-clock management step 5: Generate target clock substitution map
     def asWE(p: Port) = WrappedExpression.we(WRef(p))
 
     val replaceClocksMap = clockMetadata.map(c => asWE(c.targetSourcePort) -> c.clock).toMap
+    val replaceDataMap = dataMappings.map({ case (port, reg) => asWE(port) -> WRef(reg) }).toMap
     val clockEnableMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.clockEnable).toMap
 
     // LI-BDN transformation step 1: Build channels
     // TODO: get rid of the analysis calls; we just need connectivity & annotations
     val portDeps = analysis.connectivity(m.name)
 
-    def genMetadata(isInput: Boolean)(info: (String, (Option[Port], Seq[Port]))) = info match {
+    def genMetadata(info: (String, (Option[Port], Seq[Port]))) = info match {
       case (cName, (Some(clock), ports)) =>
         assert(isHubModel || !analysis.channelHasTimestamp(cName),
           s"Channel ${cName} connected to satellite model must not be timestamped.\n")
@@ -299,14 +349,15 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     // LinkedHashMap.from is 2.13-only :(
     def stableMap[K, V](contents: Iterable[(K, V)]) = new LinkedHashMap[K, V] ++= contents
 
-    // Have to filter out the clock channel from the input channels
-    val inChannelInfo = analysis.modelInputChannelPortMap(mTarget).filterNot(isClockChannel(_)).toSeq
-    val inChannelMetadata = inChannelInfo.map(genMetadata(isInput = true))
-    val inChannels = inChannelMetadata.map((FAME1InputChannel.apply _).tupled)
+    // Filter out timestamped input channels since their handshakes are managed by the front-end of the scheduler.
+    val inChannelInfo = analysis.modelInputChannelPortMap(mTarget)
+      .filterNot({ case (name, _) => analysis.channelHasTimestamp(name) })
+    val inChannelMetadata = inChannelInfo.map(genMetadata)
+    val inChannels = inChannelMetadata.map(m => (FAME1InputChannel(m._1, m._2, m._3)))
     val inChannelMap = stableMap(inChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
     val outChannelInfo = analysis.modelOutputChannelPortMap(mTarget).toSeq
-    val outChannelMetadata = outChannelInfo.map(genMetadata(isInput = false))
+    val outChannelMetadata = outChannelInfo.map(genMetadata)
     val outChannels = outChannelMetadata.map((FAME1OutputChannel.apply _).tupled)
     val outChannelMap = stableMap(outChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
@@ -319,12 +370,15 @@ object FAMEModuleTransformer extends HasTimestampConstants {
 
     // LI-BDN transformation step 3: transform ports (includes new clock ports)
     val transformedPorts = hostClock.port +: hostReset.port +:
-      (clockChannels ++: inChannels ++: outChannels).flatMap(_.asHostModelPort) ++:
+      (clockChannels ++: timestampedInputChannels ++: inChannels ++: outChannels).flatMap(_.asHostModelPort) ++:
       clockSchedulingPorts
 
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     val clockPortNames = clockMetadata.map(_.targetSourcePort.name).toSet
+    val timestampedInputPortNames = dataMappings.map(_._1.name).toSet
     def onExpr(expr: Expression): Expression = expr.map(onExpr) match {
+      case iWR @ WRef(name, tpe, PortKind, SourceFlow) if timestampedInputPortNames(name) =>
+        replaceDataMap(WrappedExpression.we(iWR))
       case iWR @ WRef(name, tpe, PortKind, SourceFlow) if tpe != ClockType =>
         // Generally SourceFlow references to ports will be input channels, but RTL may use
         // an assignment to an output port as something akin to a wire, so check output ports too.
@@ -358,8 +412,8 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val clockOutputsAsWires = m.ports.collect { case Port(i, n, Output, ClockType) => DefWire(i, n, ClockType) }
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = Seq(finishing) ++: clockOutputsAsWires ++: clockSchedulingStmts ++: clockBufDecls ++: outChannels.map(_.firedReg)
-    val assigns = clockBufAssigns ++: channelStateRules ++: inputRules ++: outputRules ++: topRules ++: outputTimestamps
+    val decls = Seq(finishing) ++: clockOutputsAsWires ++: clockSchedulingStmts ++: clockBufDecls ++: dataDriverDecls ++: outChannels.map(_.firedReg)
+    val assigns = clockBufAssigns ++: dataDriverAssigns ++: channelStateRules ++: inputRules ++: outputRules ++: topRules ++: outputTimestamps
     (Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns)), clockSchedulingAnnos)
   }
 }

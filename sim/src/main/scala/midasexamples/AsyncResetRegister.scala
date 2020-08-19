@@ -15,9 +15,11 @@ import midas.widgets.{RationalClockBridge, PeekPokeBridge, AsyncResetPulseSource
   *  its reset value.
   */
 
-class AsyncResetRegister(implicit p: Parameters) extends RawModule {
-  val clock = Module(new RationalClockBridge()).io.clocks.head
-  val reset = AsyncResetPulseSource()
+
+class AResetModule extends RawModule {
+  val regOut = IO(Output(Bool()))
+  val clock  = IO(Input(Clock()))
+  val areset = IO(Input(AsyncReset()))
 
   @chiselName
   class ChiselNameableImpl {
@@ -29,12 +31,20 @@ class AsyncResetRegister(implicit p: Parameters) extends RawModule {
       afterFirstEdge := true.B
     }
     assert(!afterFirstEdge || aresetReg, "aresetReg was not asynchronously reset before receiving its first clock edge.")
-
-    // This to placate parts of the compiler that still expects to find a peek-poke bridge
-    val dummy = Wire(Bool())
-    val peekPokeBridge = PeekPokeBridge(clock, dummy)
+    regOut := aresetReg
   }
+  withClockAndReset(clock, areset) { new ChiselNameableImpl }
+}
 
-  withClockAndReset(clock, reset) { new ChiselNameableImpl }
+class AsyncResetRegister(implicit p: Parameters) extends RawModule {
+  val clock = Module(new RationalClockBridge()).io.clocks.head
+  val areset = AsyncResetPulseSource(500)
+
+  val mod = Module(new AResetModule)
+  mod.clock := clock
+  mod.areset := areset
+  // This to placate parts of the compiler that still expects to find a peek-poke bridge
+  val dummy = Wire(Bool())
+  val peekPokeBridge = PeekPokeBridge(clock, dummy, "regOut" -> mod.regOut)
 }
 
