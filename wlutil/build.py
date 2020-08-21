@@ -403,10 +403,16 @@ def makeBBL(config, nodisk=False):
 
 
 def makeOpenSBI(config, nodisk=False):
+    payload = config['linux-src'] / 'arch' / 'riscv' / 'boot' / 'Image'
+    # Align to next MiB
+    payloadSize = ((payload.stat().st_size + 0xfffff) // 0x100000) * 0x100000
+
     run(['make'] + 
         getOpt('linux-make-args') +
         ['PLATFORM=generic',
-         'FW_PAYLOAD_PATH=' + str(config['linux-src'] / 'arch' / 'riscv' / 'boot' / 'Image')],
+         'FW_PAYLOAD_PATH=' + str(payload),
+         'FW_PAYLOAD_FDT_ADDR=0x$(shell printf "%X" '
+            '$$(( $(FW_TEXT_START) + $(FW_PAYLOAD_OFFSET) + ' + hex(payloadSize) + ' )))'],
         cwd=config['opensbi-src']
         )
 
