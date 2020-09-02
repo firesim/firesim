@@ -132,7 +132,8 @@ class ILATopWiringTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Forms.MidEmitters
+  // We want this pass to run before any emitters
+  override def optionalPrerequisiteOf = Forms.HighEmitters ++ Forms.LowFormOptimized.filterNot(Forms.LowForm.contains)
 
   override def invalidates(a: Transform): Boolean = a match {
     case InferTypes | ResolveKinds | ResolveFlows | ExpandConnects => true

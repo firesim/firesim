@@ -1,0 +1,21 @@
+pull_request_rules:
+  - name: backport to master
+    conditions:
+      - merged
+      - base=dev
+      - label="Please Backport"
+    actions:
+      backport:
+        branches:
+          - master
+        ignore_conflicts: True
+        label_conflicts: "bp-conflict"
+      label:
+        add: [Backported]
+
+  - name: label Mergify backport PR
+    conditions:
+      - body~=This is an automated backport of pull request \#\d+ done by Mergify
+    actions:
+      label:
+        add: [Backport]

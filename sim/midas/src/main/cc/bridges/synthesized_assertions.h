@@ -23,7 +23,7 @@ class synthesized_assertions_t: public bridge_driver_t
         virtual int exit_code() { return (assert_fired) ? assert_id + 1 : 0; };
     private:
         bool assert_fired = false;
-	bool enable = true;
+        bool enable = true;
         int assert_id;
         uint64_t assert_cycle;
         ASSERTBRIDGEMODULE_struct * mmio_addrs;

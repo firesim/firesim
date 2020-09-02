@@ -75,6 +75,9 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     // Set after trigger-dependent memory-mapped registers have been set, to
     // prevent spurious credits
     val initDone    = genWORegInit(Wire(Bool()), "initDone", false.B)
+    // When unset, diables token capture to improve FMR, while still enabling the
+    // use of TracerV-based triggers
+    val traceEnable    = genWORegInit(Wire(Bool()), "traceEnable", true.B)
     //Program Counter trigger value can be configured externally
     val hostTriggerPCWidthOffset = pcWidth - p(CtrlNastiKey).dataBits
     val hostTriggerPCLowWidth = if (hostTriggerPCWidthOffset > 0) p(CtrlNastiKey).dataBits else pcWidth
@@ -184,7 +187,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
     hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
     hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
 
-    outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready, trigger)
+    outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready, trigger) && traceEnable
 
     when (tFireHelper.fire) {
       trace_cycle_counter := trace_cycle_counter + 1.U

@@ -245,6 +245,13 @@ This process takes 2-5 minutes. In general, this is not required to produce
 deterministic simulations on target machines running linux, but should be
 enabled if you observe simulation non-determinism.
 
+``disable_synth_asserts``
+"""""""""""""""""""""""""""""
+
+Set this to ``yes`` to make the simulation ignore synthesized assertions when
+they fire. Otherwise, simulation will print the assertion message and terminate
+when an assertion fires.
+
 .. _config-build:
 
 ``config_build.ini``
