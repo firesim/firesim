@@ -2,7 +2,7 @@
   "name" : "linux-src",
   "base" : "br-base.json",
   "host-init" : "copy-src.sh",
-  "linux-src" : "riscv-linux",
+  "linux-src" : "linux",
   "command" : "echo Global : command",
   "post_run_hook" : "./check-output.sh linux-src/uartlog",
   "testing" : {

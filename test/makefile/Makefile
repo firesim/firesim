@@ -1,2 +1,2 @@
 test:
-	cd ../ && ../marshal test makefile.json
+	cd ../ && $(MARSHALBIN) test makefile.json

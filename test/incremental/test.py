@@ -20,12 +20,12 @@ testCfg = testSrc.parent / "incremental.json"
 # Should be the directory containing marshal
 if len(sys.argv) != 2:
     print(usage)
-    exit(1)
+    sys.exit(1)
 
 managerPath = pth.Path(sys.argv[1])
 if not managerPath.exists:
     print("Provided marshal command does not exist: ",managerPath)
-    exit(1)
+    sys.exit(1)
 
 # Reset the test, just in case it was left in a weird state
 sp.check_call(str(managerPath) + " clean " + str(testCfg), shell=True)

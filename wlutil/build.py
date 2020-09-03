@@ -92,7 +92,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
 
         for dep in deps.copy():
             if dep.is_dir():
-                deps += [ child for child in dep.glob('**/*') ]
+                deps += [ child for child in dep.glob('**/*') if not child.is_symlink()]
 
         return { 'file_dep' : [ str(f) for f in deps if not f.is_dir() ] }
 

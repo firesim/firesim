@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Call as ./test.py PATH/TO/MARSHAL"""
 
 import subprocess as sp
 import sys
@@ -10,13 +11,16 @@ import re
 testSrc = pth.Path(__file__).parent
 testCfg = testSrc.parent / "clean.json"
 
-# Should be the directory containing marshal
-managerPath = pth.Path(os.getcwd()) / "marshal"
-if not managerPath.exists:
-    managerPath = pth.Path(os.getcwd()) / "../../marshal"
+if len(sys.argv) > 1:
+    managerPath = pth.Path(sys.argv[1])
+else:
+    # Should be the directory containing marshal
+    managerPath = pth.Path(os.getcwd()) / "marshal"
     if not managerPath.exists:
-        print("Can't find marshal, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
-        sys.exit(1)
+        managerPath = pth.Path(os.getcwd()) / "../../marshal"
+        if not managerPath.exists:
+            print("Can't find marshal, this script should be called either from firesim-software/ or firesim-software/test/incremental/", file=sys.stderr)
+            sys.exit(1)
 
 # Safety first kids: Always clean before you test
 print("Cleaning the test the first time:")
