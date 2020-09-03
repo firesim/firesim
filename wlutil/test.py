@@ -147,34 +147,6 @@ def timeout(seconds, label):
         signal.alarm(0)
 
 
-
-# def stripUartlog(config, outputPath):
-#     outDir = pathlib.Path(outputPath)
-#     for uartPath in outDir.glob("**/uartlog"):
-#         with open(str(uartPath), 'r', errors='ignore') as uFile:
-#             uartlog = uFile.readlines()
-#
-#         print(uartPath)
-#         print(type(uartlog))
-#         print(len(uartlog))
-#         print(repr(uartlog[0]))
-#         uartlog = [ line.replace("\r\n", "\n") for line in uartlog ]
-#         print(repr(uartlog[0]))
-#
-#         if 'distro' in config:
-#             if config['distro'] == 'fedora':
-#                 strippedUart = stripFedoraUart(uartlog)
-#             elif config['distro'] == 'br':
-#                 strippedUart = stripBrUart(uartlog)
-#             else:
-#                 strippedUart = "".join(uartlog)
-#         else:
-#             strippedUart = "".join(uartlog)
-#
-#         with open(str(uartPath), 'w') as uFile:
-#             uFile.write(strippedUart)
-
-
 # Build and run a workload and compare results against the testing spec
 # ('testing' field in config)
 # Returns wlutil.test.testResult
@@ -217,7 +189,6 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
             # Build workload
             log.info("Building test workload")
             ret = 0
-            # runTimeout(buildWorkload, testCfg['buildTimeout'])(cfgName, cfgs)
             with timeout(testCfg['buildTimeout'], 'build'):
                 res = buildWorkload(cfgName, cfgs)
 
