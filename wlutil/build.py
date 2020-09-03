@@ -53,8 +53,9 @@ def handlePostBin(config, linuxBin):
 
        # add linux src and bin path to the environment
        postbinEnv = os.environ.copy()
-       postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : config.get('linux-src').as_posix()})
-       postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
+       if 'linux' in config:
+           postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : config['linux']['source'].as_posix()})
+           postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
 
        run([config['post-bin'].path] + config['post-bin'].args, env=postbinEnv, cwd=config['workdir'])
 
@@ -122,8 +123,8 @@ def addDep(loader, config):
     bin_file_deps = []
     bin_task_deps = [] + hostInit + config['base-deps']
     bin_targets = []
-    if 'linux-config' in config:
-        bin_file_deps += config['linux-config']
+    if 'linux' in config:
+        bin_file_deps += config['linux']['config']
         bin_task_deps.append('BuildBusybox')
         bin_targets.append(config['dwarf'])
 
@@ -134,9 +135,13 @@ def addDep(loader, config):
         else:
             targets = [str(config['bin'])]
 
-        bin_calc_dep_tsk = submoduleDepsTask([config.get('linux-src'),
-            config.get('pk-src'),
-            config.get('firmware-src')],
+        moddeps = [config.get('pk-src'),
+            config.get('firmware-src')]
+
+        if 'linux' in config:
+            moddeps.append(config['linux']['source'])
+
+        bin_calc_dep_tsk = submoduleDepsTask(moddeps,
             name="_submodule_deps_"+config['name'])
 
         loader.addTask(bin_calc_dep_tsk)
@@ -165,14 +170,17 @@ def addDep(loader, config):
         else:
             targets = [str(noDiskPath(config['bin']))]
 
+        uptodate = [config_changed(checkGitStatus(config.get('firmware-src')))]
+        if 'linux' in config:
+            uptodate.append(config_changed(checkGitStatus(config['linux']['source'])))
+
         loader.addTask({
                 'name' : str(noDiskPath(config['bin'])),
                 'actions' : [(makeBin, [config], {'nodisk' : True})],
                 'targets' : targets,
                 'file_dep': nodisk_file_deps,
                 'task_dep' : nodisk_task_deps,
-                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
-                    config_changed(checkGitStatus(config.get('firmware-src')))]
+                'uptodate' : uptodate
                 })
         nodiskBin = [str(noDiskPath(config['bin']))]
 
@@ -396,14 +404,14 @@ def makeBBL(config, nodisk=False):
     bblBuild.mkdir()
 
     run(['../configure', '--host=riscv64-unknown-elf',
-        '--with-payload=' + str(config['linux-src'] / 'vmlinux')], cwd=bblBuild)
+        '--with-payload=' + str(config['linux']['source'] / 'vmlinux')], cwd=bblBuild)
     run(['make', getOpt('jlevel')], cwd=bblBuild)
 
     return bblBuild / 'bbl'
 
 
 def makeOpenSBI(config, nodisk=False):
-    payload = config['linux-src'] / 'arch' / 'riscv' / 'boot' / 'Image'
+    payload = config['linux']['source'] / 'arch' / 'riscv' / 'boot' / 'Image'
     # Align to next MiB
     payloadSize = ((payload.stat().st_size + 0xfffff) // 0x100000) * 0x100000
 
@@ -428,15 +436,15 @@ def makeBin(config, nodisk=False):
     log = logging.getLogger()
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
-    if 'linux-config' in config:
+    if 'linux' in config:
         initramfsIncludes = []
 
         # Some submodules are only needed if building Linux
         try:
-            checkSubmodule(config['linux-src'])
+            checkSubmodule(config['linux']['source'])
             checkSubmodule(config['firmware-src'])
 
-            makeDrivers(config['linux-config'], getOpt('board-dir'), config['linux-src'])
+            makeDrivers(config['linux']['config'], getOpt('board-dir'), config['linux']['source'])
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
 
@@ -455,8 +463,8 @@ def makeBin(config, nodisk=False):
                 initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
 
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
-            generateKConfig(config['linux-config'] + [cpioDir / "initramfs.kfrag"], config['linux-src'])
-            run(['make'] + getOpt('linux-make-args') + ['vmlinux', 'Image', getOpt('jlevel')], cwd=config['linux-src'])
+            generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
+            run(['make'] + getOpt('linux-make-args') + ['vmlinux', 'Image', getOpt('jlevel')], cwd=config['linux']['source'])
 
         if config['use-bbl']:
             fw = makeBBL(config, nodisk)
@@ -465,10 +473,10 @@ def makeBin(config, nodisk=False):
 
         if nodisk:
             shutil.copy(fw, noDiskPath(config['bin']))
-            shutil.copy(config['linux-src'] / 'vmlinux', noDiskPath(config['dwarf']))
+            shutil.copy(config['linux']['source'] / 'vmlinux', noDiskPath(config['dwarf']))
         else:
             shutil.copy(fw, config['bin'])
-            shutil.copy(config['linux-src'] / 'vmlinux', config['dwarf'])
+            shutil.copy(config['linux']['source'] / 'vmlinux', config['dwarf'])
 
     return True
 

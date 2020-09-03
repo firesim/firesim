@@ -75,6 +75,8 @@ def main():
 
     ctx = wlutil.getCtx()
 
+    wlutil.initLogging(args.verbose)
+
     # Load all the configs from the workload directories
     # Order matters here, duplicate workload files found in later search paths
     # will overwrite files found in earlier search paths.

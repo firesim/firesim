@@ -2,7 +2,10 @@
   "name" : "br-base",
   "base" : "br",
   "overlay" : "overlay",
-  "linux-config" : "linux-config",
+  "linux" : {
+      "source" : "../../linux",
+      "config" : "linux-config"
+  },
   "host-init" : "host-init.sh",
   "files" : [
       [ "trigger/start", "/usr/bin/firesim-start-trigger"],
