@@ -439,6 +439,7 @@ def makeBin(config, nodisk=False):
     if 'linux' in config:
         initramfsIncludes = []
 
+        print("Building linux from: " + str(config['linux']['source']))
         # Some submodules are only needed if building Linux
         try:
             checkSubmodule(config['linux']['source'])

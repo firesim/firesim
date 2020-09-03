@@ -275,7 +275,6 @@ class Config(collections.MutableMapping):
             log.warning("The deprecated 'linux-config' and 'linux-src' options are mutually exclusive with the 'linux' option; ignoring")
         self.cfg.pop('linux-config', None)
         self.cfg.pop('linux-src', None)
-        
         if 'linux' in self.cfg:
             if 'config' in self.cfg['linux']:
                 if isinstance(self.cfg['linux']['config'], list):
@@ -373,7 +372,7 @@ class Config(collections.MutableMapping):
                 self.cfg['linux']['config'] = baseCfg['linux']['config'] + self.cfg['linux']['config']
 
             for k, v in baseCfg['linux'].items():
-                if k not in self.cfg:
+                if k not in self.cfg['linux']:
                     self.cfg['linux'][k] = copy.copy(v)
 
         # We inherit the parent's binary for bare-metal configs, but not linux configs
@@ -480,6 +479,7 @@ class ConfigManager(collections.MutableMapping):
         for f in list(self.cfgs.keys()):
             try:
                 self._initializeFromBase(self.cfgs[f])
+
             except KeyError as e:
                 log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
