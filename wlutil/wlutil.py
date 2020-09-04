@@ -434,7 +434,7 @@ def initLogging(verbose, logPath=None):
 # Run subcommands and handle logging etc.
 # The arguments are identical to those for subprocess.call()
 # level - The logging level to use
-# check - Throw an error on non-zero return status?
+# check - Throw an error on non-zero return status
 def run(*args, level=logging.DEBUG, check=True, **kwargs):
     log = logging.getLogger()
 
@@ -669,6 +669,7 @@ def checkGitStatus(submodule):
         status['rebuild'] = 0
 
     return status
+
 
 def checkSubmodule(s):
     """Check whether a submodule is present and initialized.

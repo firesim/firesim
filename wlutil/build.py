@@ -73,6 +73,25 @@ def submoduleDepsTask(submodules, name=""):
             }
 
 
+def kmodDepsTask(cfg, name=""):
+    """Check if the kernel modules in cfg are uptodate (suitable for doit's uptodate function)"""
+    def checkMods(cfg):
+        for driverDir in cfg['linux']['modules'].values():
+            p = run(["make", "-q", "LINUXSRC=" + str(cfg['linux']['source'])], cwd=driverDir, check=False)
+
+            if p.returncode != 0:
+                return False
+        return True
+
+    def calcModsAction(cfg):
+        return { 'uptodate' : [ checkMods(cfg) ] }
+
+    return  {
+              'name' : name,
+              'actions' : [ (calcModsAction, [ cfg ]) ]
+            }
+
+
 def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
     """Returns a task dict for a calc_dep task that calculates the file
     dependencies representd by an overlay and/or a list of FileSpec objects.
@@ -141,10 +160,13 @@ def addDep(loader, config):
         if 'linux' in config:
             moddeps.append(config['linux']['source'])
 
-        bin_calc_dep_tsk = submoduleDepsTask(moddeps,
-            name="_submodule_deps_"+config['name'])
+        bin_calc_dep_tsks = [
+                submoduleDepsTask(moddeps, name="_submodule_deps_"+config['name']),
+                kmodDepsTask(config, name="_kmod_deps_"+config['name'])
+            ]
 
-        loader.addTask(bin_calc_dep_tsk)
+        for tsk in bin_calc_dep_tsks:
+            loader.addTask(tsk)
 
         loader.addTask({
                 'name' : str(config['bin']),
@@ -152,7 +174,7 @@ def addDep(loader, config):
                 'targets' : targets,
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
-                'calc_dep' : [bin_calc_dep_tsk['name']]
+                'calc_dep' : [ tsk['name'] for tsk in bin_calc_dep_tsks ]
                 })
         diskBin = [str(config['bin'])]
 
