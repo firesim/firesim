@@ -146,8 +146,9 @@ configDefaults = {
 
 # Members of the 'linux' option in the config
 configLinux = [
-        "source",
-        "config"
+        "source",  # Path to linux source code to use
+        "config",  # Path to kfrag to apply over bases
+        "modules"  # Dictionary of kernel modules to build and load {MODULE_NAME : PATH_TO_MODULE}
         ]
 
 class RunSpec():
@@ -275,6 +276,7 @@ class Config(collections.MutableMapping):
             log.warning("The deprecated 'linux-config' and 'linux-src' options are mutually exclusive with the 'linux' option; ignoring")
         self.cfg.pop('linux-config', None)
         self.cfg.pop('linux-src', None)
+
         if 'linux' in self.cfg:
             if 'config' in self.cfg['linux']:
                 if isinstance(self.cfg['linux']['config'], list):
@@ -284,6 +286,9 @@ class Config(collections.MutableMapping):
             
             if 'source' in self.cfg['linux']:
                 self.cfg['linux']['source'] = cleanPath(self.cfg['linux']['source'], self.cfg['workdir'])
+
+            if 'modules' in self.cfg['linux']:
+                self.cfg['linux']['modules'] = { name : cleanPath(path, self.cfg['workdir']) for name, path in self.cfg['linux']['modules'].items() }
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
@@ -370,6 +375,9 @@ class Config(collections.MutableMapping):
             if 'config' in baseCfg['linux'] and 'config' in self.cfg['linux']:
                 # Order matters here! Later kfrags take precedence over earlier.
                 self.cfg['linux']['config'] = baseCfg['linux']['config'] + self.cfg['linux']['config']
+
+            if 'modules' in baseCfg['linux'] and 'modules' in self.cfg['linux']:
+                self.cfg['linux']['modules'] = {**baseCfg['linux']['modules'], **self.cfg['linux']['modules']}
 
             for k, v in baseCfg['linux'].items():
                 if k not in self.cfg['linux']:

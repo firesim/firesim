@@ -4,7 +4,7 @@ _setup_rootfs() {
   for blk in iceblk vda ; do
     if test -b "/dev/${blk}" ; then
       echo "Mounting /dev/${blk} as root device"
-      mount -o ro "/dev/${blk}" /mnt/root
+      mount -o rw "/dev/${blk}" /mnt/root
       return
     fi
   done
@@ -28,6 +28,9 @@ _setup() (
     echo 'Failed to load an appropriate block device'
     return 1
   fi
+
+  # Let users see interact with modules after boot.
+  cp -r /lib/modules /mnt/root/lib/
 
   umount /proc
   umount /sys

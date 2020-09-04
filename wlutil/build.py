@@ -345,6 +345,7 @@ def generateKConfig(kfrags, linuxSrc):
     run([linuxSrc / 'scripts/kconfig/merge_config.sh',
         str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc)
 
+
 def makeInitramfsKfrag(src, dst):
     with open(dst, 'w') as f:
         f.write("CONFIG_BLK_DEV_INITRD=y\n")
@@ -352,26 +353,22 @@ def makeInitramfsKfrag(src, dst):
         f.write('CONFIG_INITRAMFS_COMPRESSION_LZO=y\n')
         f.write('CONFIG_INITRAMFS_SOURCE="' + str(src) + '"\n')
 
-def makeDrivers(kfrags, boardDir, linuxSrc):
-    """Build all the drivers for this linux source on the specified board.
-    Returns a path to a cpio archive containing all the drivers in
-    /lib/modules/KERNELVERSION/*.ko
 
-    kfrags: list of paths to kernel configuration fragments to use when building drivers
-    boardDir: Path to the board directory. Should have a 'drivers/' subdir
-        containing all the drivers we should build for this board
-    linuxSrc: Path to linux source tree to build against
-    """
+def makeModules(cfg):
+    """Build all the kernel modules for this config. The compiled kmods will be
+    put in the appropriate location in the initramfs staging area."""
 
-    makeCmd = "make LINUXSRC=" + str(linuxSrc)
+    linCfg = cfg['linux']
 
-    # Prepare the linux source for building external drivers
-    generateKConfig(kfrags, linuxSrc)
-    run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linuxSrc)
-    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
+    makeCmd = "make LINUXSRC=" + str(linCfg['source'])
+
+    # Prepare the linux source for building external modules 
+    generateKConfig(linCfg['config'], linCfg['source'])
+    run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linCfg['source'])
+    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linCfg['source'], stdout=sp.PIPE, universal_newlines=True).stdout.strip()
 
     drivers = []
-    for driverDir in getOpt('driver-dirs'):
+    for driverDir in linCfg['modules'].values():
         checkSubmodule(driverDir)
 
         # Drivers don't seem to detect changes in the kernel
@@ -439,13 +436,12 @@ def makeBin(config, nodisk=False):
     if 'linux' in config:
         initramfsIncludes = []
 
-        print("Building linux from: " + str(config['linux']['source']))
         # Some submodules are only needed if building Linux
         try:
             checkSubmodule(config['linux']['source'])
             checkSubmodule(config['firmware-src'])
 
-            makeDrivers(config['linux']['config'], getOpt('board-dir'), config['linux']['source'])
+            makeModules(config)
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
 
