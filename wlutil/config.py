@@ -9,6 +9,7 @@ import logging
 import humanfriendly as hf
 from .wlutil import *
 import pathlib as pth
+import copy
 
 # This is a comprehensive list of all user-defined config options
 # Note that paths direct from a config file are relative to workdir, but will
@@ -27,9 +28,11 @@ configUser = [
         'qemu',
         # Optional extra arguments to qemu
         'qemu-args',
-        # Path to riscv-linux source to use (defaults to the included linux)
+        # Grouped linux options see the docs for subfields
+        'linux',
+        # (depricated) Path to riscv-linux source to use (defaults to the included linux)
         'linux-src',
-        # Path to linux configuration fragments to use (can be a list or scalar
+        # (depricated) Path to linux configuration fragments to use (can be a list or scalar
         # string from the user but will be converted to a list of pathlib.Path)
         'linux-config',
         # Path to bbl source
@@ -94,7 +97,7 @@ configDerived = [
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'linux-src', 'bbl-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
+configToAbs = ['overlay', 'bbl-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 # These are the options that should be inherited from base configs (if not
 # explicitly provided). Additional options may also be inherited if they require
@@ -104,7 +107,6 @@ configInherit = [
         'runSpec',
         'files',
         'outputs',
-        'linux-src',
         'bbl-src',
         'opensbi-src',
         'builder',
@@ -141,6 +143,13 @@ configDefaults = {
         'mem' : hf.parse_size('16GiB'), # same as firesim default target
         'cpus' : 4 # same as firesim default target
         }
+
+# Members of the 'linux' option in the config
+configLinux = [
+        "source",  # Path to linux source code to use
+        "config",  # Path to kfrag to apply over bases
+        "modules"  # Dictionary of kernel modules to build and load {MODULE_NAME : PATH_TO_MODULE}
+        ]
 
 class RunSpec():
     def __init__(self, script=None, command=None, args=[]):
@@ -215,6 +224,7 @@ class Config(collections.MutableMapping):
     # Post:
     #   - All paths will be absolute
     #   - Jobs will be a dictionary of { 'name' : Config } for each job
+    #   - All options will be in the cannonical form or not in the dictionary if undefined
     def __init__(self, cfgFile=None, cfgDict=None):
 
         if cfgFile != None:
@@ -254,11 +264,31 @@ class Config(collections.MutableMapping):
         for k in (set(configToAbs) & set(self.cfg.keys())):
             self.cfg[k] = cleanPath(self.cfg[k], self.cfg['workdir'])
 
-        if 'linux-config' in self.cfg:
-            if isinstance(self.cfg['linux-config'], list):
-                self.cfg['linux-config'] = [ cleanPath(p, self.cfg['workdir']) for p in self.cfg['linux-config'] ]
-            else:
-                self.cfg['linux-config'] = [ cleanPath(self.cfg['linux-config'], self.cfg['workdir']) ]
+        # Handle deprecated standalone linux-config and linux-src options (they now live entirely in the linux dict)
+        if 'linux' not in self.cfg:
+            if 'linux-config' in self.cfg or 'linux-src' in self.cfg:
+                self.cfg['linux'] = {}
+                if 'linux-src' in self.cfg:
+                    self.cfg['linux']['source'] = self.cfg['linux-src']
+                if 'linux-config' in self.cfg:
+                    self.cfg['linux']['config'] = self.cfg['linux-config']
+        elif 'linux-config' in self.cfg or 'linux-src' in self.cfg:
+            log.warning("The deprecated 'linux-config' and 'linux-src' options are mutually exclusive with the 'linux' option; ignoring")
+        self.cfg.pop('linux-config', None)
+        self.cfg.pop('linux-src', None)
+
+        if 'linux' in self.cfg:
+            if 'config' in self.cfg['linux']:
+                if isinstance(self.cfg['linux']['config'], list):
+                    self.cfg['linux']['config'] = [ cleanPath(p, self.cfg['workdir']) for p in self.cfg['linux']['config'] ]
+                else:
+                    self.cfg['linux']['config'] = [ cleanPath(self.cfg['linux']['config'], self.cfg['workdir']) ]
+            
+            if 'source' in self.cfg['linux']:
+                self.cfg['linux']['source'] = cleanPath(self.cfg['linux']['source'], self.cfg['workdir'])
+
+            if 'modules' in self.cfg['linux']:
+                self.cfg['linux']['modules'] = { name : cleanPath(path, self.cfg['workdir']) for name, path in self.cfg['linux']['modules'].items() }
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
@@ -338,14 +368,25 @@ class Config(collections.MutableMapping):
         if 'host-init' in baseCfg:
             self.cfg['base-deps'].append(str(baseCfg['host-init']))
 
-        if 'linux-src' not in self.cfg:
-            self.cfg['linux-src'] = getOpt('linux-dir')
+        if 'linux' not in self.cfg and 'linux' in baseCfg:
+            self.cfg['linux'] = copy.deepcopy(baseCfg['linux'])
+        elif 'linux' in baseCfg:
+            # both have a 'linux' option, handle inheritance for each suboption
+            if 'config' in baseCfg['linux'] and 'config' in self.cfg['linux']:
+                # Order matters here! Later kfrags take precedence over earlier.
+                self.cfg['linux']['config'] = baseCfg['linux']['config'] + self.cfg['linux']['config']
 
-        if 'linux-config' in baseCfg:
-            if 'linux-config' not in self.cfg:
-                self.cfg['linux-config'] = []
-            # Order matters here! Later kfrags take precedence over earlier.
-            self.cfg['linux-config'] = baseCfg['linux-config'] + self.cfg['linux-config']
+            if 'modules' in baseCfg['linux'] and 'modules' in self.cfg['linux']:
+                self.cfg['linux']['modules'] = {**baseCfg['linux']['modules'], **self.cfg['linux']['modules']}
+
+            for k, v in baseCfg['linux'].items():
+                if k not in self.cfg['linux']:
+                    self.cfg['linux'][k] = copy.copy(v)
+
+        # We inherit the parent's binary for bare-metal configs, but not linux configs
+        if 'linux' in self.cfg or 'bin' not in self.cfg:
+            self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
+            self.cfg['dwarf'] = getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
 
         if self.cfg['use-bbl']:
             if 'bbl-src' not in self.cfg:
@@ -361,12 +402,6 @@ class Config(collections.MutableMapping):
                 else:
                     raise ConfigurationOptionError('opensbi-src', "opensbi-src not found: " + getOpt('opensbi-src'))
             self.cfg['firmware-src'] = self.cfg['opensbi-src']
-
-        # We inherit the parent's binary for bare-metal configs, but not linux configs
-        # XXX This probably needs to be re-thought out. It's needed at least for including bare-metal binaries as a base for a job.
-        if 'linux-config' in self.cfg or 'bin' not in self.cfg:
-            self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
-            self.cfg['dwarf'] = getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
 
         # Some defaults need to occur, even if you don't have a base
         if 'launch' not in self.cfg:
@@ -452,6 +487,7 @@ class ConfigManager(collections.MutableMapping):
         for f in list(self.cfgs.keys()):
             try:
                 self._initializeFromBase(self.cfgs[f])
+
             except KeyError as e:
                 log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")

@@ -104,6 +104,7 @@ class Builder:
         # List all files that should be checked to determine if BR is uptodate
         deps = []
         deps.append(br_dir / 'buildroot-config')
+        deps.append(br_dir / 'busybox-config')
         deps.append(pathlib.Path(__file__))
 
         return deps

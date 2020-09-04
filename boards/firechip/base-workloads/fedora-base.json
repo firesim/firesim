@@ -2,5 +2,12 @@
   "name" : "fedora-base",
   "base" : "fedora",
   "overlay" : "overlay",
-  "linux-config" : "linux-config"
+  "linux" : {
+      "source" : "../../linux",
+      "config" : "linux-config",
+      "modules" : {
+          "icenet" : "../../drivers/icenet-driver",
+          "iceblk" : "../../drivers/iceblk-driver"
+      }
+  }
 }

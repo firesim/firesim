@@ -1,0 +1,7 @@
+This tests custom kernel module handling in FireMarshal. There are two components to the test:
+
+1) New Module
+testMod is a from-scratch "hello world" style kernel module.
+
+2) Overwrite existing module
+test_icenet is a modified version of the default icenet driver

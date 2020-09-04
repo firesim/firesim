@@ -53,8 +53,9 @@ def handlePostBin(config, linuxBin):
 
        # add linux src and bin path to the environment
        postbinEnv = os.environ.copy()
-       postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : config.get('linux-src').as_posix()})
-       postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
+       if 'linux' in config:
+           postbinEnv.update({'FIREMARSHAL_LINUX_SRC' : config['linux']['source'].as_posix()})
+           postbinEnv.update({'FIREMARSHAL_LINUX_BIN' : linuxBin})
 
        run([config['post-bin'].path] + config['post-bin'].args, env=postbinEnv, cwd=config['workdir'])
 
@@ -69,6 +70,25 @@ def submoduleDepsTask(submodules, name=""):
     return  {
               'name' : name,
               'actions' : [ (submoduleDeps, [ submodules ]) ]
+            }
+
+
+def kmodDepsTask(cfg, name=""):
+    """Check if the kernel modules in cfg are uptodate (suitable for doit's calc_dep function)"""
+    def checkMods(cfg):
+        for driverDir in cfg['linux']['modules'].values():
+            p = run(["make", "-q", "LINUXSRC=" + str(cfg['linux']['source'])], cwd=driverDir, check=False)
+
+            if p.returncode != 0:
+                return False
+        return True
+
+    def calcModsAction(cfg):
+        return { 'uptodate' : [ checkMods(cfg) ] }
+
+    return  {
+              'name' : name,
+              'actions' : [ (calcModsAction, [ cfg ]) ]
             }
 
 
@@ -122,8 +142,8 @@ def addDep(loader, config):
     bin_file_deps = []
     bin_task_deps = [] + hostInit + config['base-deps']
     bin_targets = []
-    if 'linux-config' in config:
-        bin_file_deps += config['linux-config']
+    if 'linux' in config:
+        bin_file_deps += config['linux']['config']
         bin_task_deps.append('BuildBusybox')
         bin_targets.append(config['dwarf'])
 
@@ -134,12 +154,19 @@ def addDep(loader, config):
         else:
             targets = [str(config['bin'])]
 
-        bin_calc_dep_tsk = submoduleDepsTask([config.get('linux-src'),
-            config.get('pk-src'),
-            config.get('firmware-src')],
-            name="_submodule_deps_"+config['name'])
+        moddeps = [config.get('pk-src'),
+            config.get('firmware-src')]
 
-        loader.addTask(bin_calc_dep_tsk)
+        if 'linux' in config:
+            moddeps.append(config['linux']['source'])
+
+        bin_calc_dep_tsks = [
+                submoduleDepsTask(moddeps, name="_submodule_deps_"+config['name']),
+                kmodDepsTask(config, name="_kmod_deps_"+config['name'])
+            ]
+
+        for tsk in bin_calc_dep_tsks:
+            loader.addTask(tsk)
 
         loader.addTask({
                 'name' : str(config['bin']),
@@ -147,7 +174,7 @@ def addDep(loader, config):
                 'targets' : targets,
                 'file_dep': bin_file_deps,
                 'task_dep' : bin_task_deps,
-                'calc_dep' : [bin_calc_dep_tsk['name']]
+                'calc_dep' : [ tsk['name'] for tsk in bin_calc_dep_tsks ]
                 })
         diskBin = [str(config['bin'])]
 
@@ -165,14 +192,17 @@ def addDep(loader, config):
         else:
             targets = [str(noDiskPath(config['bin']))]
 
+        uptodate = [config_changed(checkGitStatus(config.get('firmware-src')))]
+        if 'linux' in config:
+            uptodate.append(config_changed(checkGitStatus(config['linux']['source'])))
+
         loader.addTask({
                 'name' : str(noDiskPath(config['bin'])),
                 'actions' : [(makeBin, [config], {'nodisk' : True})],
                 'targets' : targets,
                 'file_dep': nodisk_file_deps,
                 'task_dep' : nodisk_task_deps,
-                'uptodate' : [config_changed(checkGitStatus(config.get('linux-src'))),
-                    config_changed(checkGitStatus(config.get('firmware-src')))]
+                'uptodate' : uptodate
                 })
         nodiskBin = [str(noDiskPath(config['bin']))]
 
@@ -337,6 +367,7 @@ def generateKConfig(kfrags, linuxSrc):
     run([linuxSrc / 'scripts/kconfig/merge_config.sh',
         str(defCfg)] + list(map(str, kfrags)), env=kconfigEnv, cwd=linuxSrc)
 
+
 def makeInitramfsKfrag(src, dst):
     with open(dst, 'w') as f:
         f.write("CONFIG_BLK_DEV_INITRD=y\n")
@@ -344,26 +375,22 @@ def makeInitramfsKfrag(src, dst):
         f.write('CONFIG_INITRAMFS_COMPRESSION_LZO=y\n')
         f.write('CONFIG_INITRAMFS_SOURCE="' + str(src) + '"\n')
 
-def makeDrivers(kfrags, boardDir, linuxSrc):
-    """Build all the drivers for this linux source on the specified board.
-    Returns a path to a cpio archive containing all the drivers in
-    /lib/modules/KERNELVERSION/*.ko
 
-    kfrags: list of paths to kernel configuration fragments to use when building drivers
-    boardDir: Path to the board directory. Should have a 'drivers/' subdir
-        containing all the drivers we should build for this board
-    linuxSrc: Path to linux source tree to build against
-    """
+def makeModules(cfg):
+    """Build all the kernel modules for this config. The compiled kmods will be
+    put in the appropriate location in the initramfs staging area."""
 
-    makeCmd = "make LINUXSRC=" + str(linuxSrc)
+    linCfg = cfg['linux']
 
-    # Prepare the linux source for building external drivers
-    generateKConfig(kfrags, linuxSrc)
-    run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linuxSrc)
-    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linuxSrc, stdout=sp.PIPE, universal_newlines=True).stdout.strip()
+    makeCmd = "make LINUXSRC=" + str(linCfg['source'])
+
+    # Prepare the linux source for building external modules 
+    generateKConfig(linCfg['config'], linCfg['source'])
+    run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linCfg['source'])
+    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linCfg['source'], stdout=sp.PIPE, universal_newlines=True).stdout.strip()
 
     drivers = []
-    for driverDir in getOpt('driver-dirs'):
+    for driverDir in linCfg['modules'].values():
         checkSubmodule(driverDir)
 
         # Drivers don't seem to detect changes in the kernel
@@ -396,14 +423,14 @@ def makeBBL(config, nodisk=False):
     bblBuild.mkdir()
 
     run(['../configure', '--host=riscv64-unknown-elf',
-        '--with-payload=' + str(config['linux-src'] / 'vmlinux')], cwd=bblBuild)
+        '--with-payload=' + str(config['linux']['source'] / 'vmlinux')], cwd=bblBuild)
     run(['make', getOpt('jlevel')], cwd=bblBuild)
 
     return bblBuild / 'bbl'
 
 
 def makeOpenSBI(config, nodisk=False):
-    payload = config['linux-src'] / 'arch' / 'riscv' / 'boot' / 'Image'
+    payload = config['linux']['source'] / 'arch' / 'riscv' / 'boot' / 'Image'
     # Align to next MiB
     payloadSize = ((payload.stat().st_size + 0xfffff) // 0x100000) * 0x100000
 
@@ -428,15 +455,15 @@ def makeBin(config, nodisk=False):
     log = logging.getLogger()
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
-    if 'linux-config' in config:
+    if 'linux' in config:
         initramfsIncludes = []
 
         # Some submodules are only needed if building Linux
         try:
-            checkSubmodule(config['linux-src'])
+            checkSubmodule(config['linux']['source'])
             checkSubmodule(config['firmware-src'])
 
-            makeDrivers(config['linux-config'], getOpt('board-dir'), config['linux-src'])
+            makeModules(config)
         except SubmoduleError as err:
             return doit.exceptions.TaskFailed(err)
 
@@ -455,8 +482,8 @@ def makeBin(config, nodisk=False):
                 initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
 
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
-            generateKConfig(config['linux-config'] + [cpioDir / "initramfs.kfrag"], config['linux-src'])
-            run(['make'] + getOpt('linux-make-args') + ['vmlinux', 'Image', getOpt('jlevel')], cwd=config['linux-src'])
+            generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
+            run(['make'] + getOpt('linux-make-args') + ['vmlinux', 'Image', getOpt('jlevel')], cwd=config['linux']['source'])
 
         if config['use-bbl']:
             fw = makeBBL(config, nodisk)
@@ -465,10 +492,10 @@ def makeBin(config, nodisk=False):
 
         if nodisk:
             shutil.copy(fw, noDiskPath(config['bin']))
-            shutil.copy(config['linux-src'] / 'vmlinux', noDiskPath(config['dwarf']))
+            shutil.copy(config['linux']['source'] / 'vmlinux', noDiskPath(config['dwarf']))
         else:
             shutil.copy(fw, config['bin'])
-            shutil.copy(config['linux-src'] / 'vmlinux', config['dwarf'])
+            shutil.copy(config['linux']['source'] / 'vmlinux', config['dwarf'])
 
     return True
 
