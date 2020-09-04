@@ -74,7 +74,7 @@ def submoduleDepsTask(submodules, name=""):
 
 
 def kmodDepsTask(cfg, name=""):
-    """Check if the kernel modules in cfg are uptodate (suitable for doit's uptodate function)"""
+    """Check if the kernel modules in cfg are uptodate (suitable for doit's calc_dep function)"""
     def checkMods(cfg):
         for driverDir in cfg['linux']['modules'].values():
             p = run(["make", "-q", "LINUXSRC=" + str(cfg['linux']['source'])], cwd=driverDir, check=False)
