@@ -12,13 +12,17 @@ testCfg = testSrc.parent / "inherit-child.json"
 
 print("testSrc:",testSrc)
 print("testCfg:",testCfg)
-# Should be the directory containing marshal
-managerPath = pth.Path(os.getcwd()) / "marshal"
-if not managerPath.exists():
-    managerPath = testSrc / "../../marshal"
+
+if len(sys.argv) > 1:
+    managerPath = pth.Path(sys.argv[1])
+else:
+    # Should be the directory containing marshal
+    managerPath = pth.Path(os.getcwd()) / "marshal"
     if not managerPath.exists():
-        print("Can't find marshal, this script should be called either from firemarshal root or firesim-software/test/inherit/", file=sys.stderr)
-        sys.exit(1)
+        managerPath = testSrc / "../../marshal"
+        if not managerPath.exists():
+            print("Can't find marshal, this script should be called either from firemarshal root or firesim-software/test/inherit/", file=sys.stderr)
+            sys.exit(1)
 
 # Safety first kids: Always clean before you test
 print("Cleaning the test:")
@@ -27,7 +31,10 @@ if sp.call(str(managerPath) + " clean " + str(testCfg), shell=True) != 0:
     sys.exit(1)
 
 print("Cleaning host-init")
-(testSrc / 'runOutput').unlink()
+try:
+    (testSrc / 'runOutput').unlink()
+except FileNotFoundError:
+    pass
 
 print("Testing child workload:")
 if sp.call(str(managerPath) + " test " + str(testCfg), shell=True) != 0:
