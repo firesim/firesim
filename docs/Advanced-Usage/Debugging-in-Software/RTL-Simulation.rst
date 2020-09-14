@@ -243,3 +243,33 @@ To run only the MIDAS examples, in the ``firesim`` SBT project:
 
     testOnly firesim.midasexamples.*
 
+Viewing and Querying Waveforms
+------------------------------
+
+During simulation, Firesim decouples the host and target clock to ensure accuracy of the simulation. However,
+this presents an issue while displaying the waveform of the simulation, as this decoupling produces "dead" cycles
+in the waveform during which the target hardware is active, complicating the debugging process. To reverse this 
+decoupling (hence recoupling), the ``firesim/sim/scripts/recouple.py`` script can be evoked to remove the dead cycles from the waveform.
+Note that this script will only work with .vcd files, and thus ``vpd2vcd`` must be used if generating waveforms with
+VCS (note that the default tool used in Firesim is Verilator), as well as the ``-s``.
+
+For example, to run the script on a file ``input.vcd`` produced by Verilator and residing in the same directory as the script:
+
+::
+
+    python3 recouple.py input.vcd recoupled.vcd
+ 
+Additionally, a query script can be found at ``firesim/sim/scripts/query.py``, which allows for text based interactions with
+waveform files. Given variable names and module hierarchy of hardware components, the script will run through the waveform and provide
+timestamps for the earliest and latest assertion of the accumulated values in hardware, as well as the number of times the accumulated
+values were asserted. Additional flags can be added to specify the type of accumulation (such as or, and, xor, and even lambda operations),
+and time range.
+
+For example, to run the script on a file ``input.vcd`` produced by verilator, and querying for the clock and reset residing in module NastiQueue
+with time range from 10000 to 20000 ps (units are in the timescale of the waveform file):
+
+::
+
+    python3 query.py input.vcd NastiQueue.clock NastiQueue.reset -tm 10000 20000
+
+ 
