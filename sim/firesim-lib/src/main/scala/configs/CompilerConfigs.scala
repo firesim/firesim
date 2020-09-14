@@ -42,6 +42,12 @@ class WithPlusArgReaderRemoval extends Config((site, here, up) => {
   case TargetTransforms => Dependency(firesim.passes.PlusArgReaderPass) +: up(TargetTransforms, site)
 })
 
+// The wiring transform is normally only run as part of ReplSeqMem
+class WithWiringTransform extends Config((site, here, up) => {
+  case TargetTransforms => Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)
+})
+
+
 // ADDITIONAL HOST TRANSFORMATIONS
 // These run on the generated simulator(after all Golden Gate transformations:
 // host-decoupling is introduced, and BridgeModules are elaborated)
@@ -69,6 +75,7 @@ class WithAutoCounterPrintf extends Config((site, here, up) => {
 })
 
 class BaseF1Config extends Config(
+  new WithWiringTransform ++
   new WithAsyncResetReplacement ++
   new WithPlusArgReaderRemoval ++
   new WithEC2F1Artefacts ++
