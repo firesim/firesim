@@ -147,6 +147,9 @@ def addDep(loader, config):
         bin_task_deps.append('BuildBusybox')
         bin_targets.append(config['dwarf'])
 
+    if config['use-parent-bin']:
+        bin_task_deps.append(str(config['base-bin']))
+
     diskBin = []
     if 'bin' in config:
         if 'dwarf' in config:
@@ -453,6 +456,12 @@ def makeBin(config, nodisk=False):
     """
 
     log = logging.getLogger()
+
+    if config['use-parent-bin']:
+        shutil.copy(config['base-bin'], config['bin'])
+        if 'dwarf' in config:
+            shutil.copy(config['base-dwarf'], config['dwarf'])
+        return True
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux' in config:
