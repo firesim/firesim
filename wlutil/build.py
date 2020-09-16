@@ -160,13 +160,14 @@ def addDep(loader, config):
         moddeps = [config.get('pk-src'),
             config.get('firmware-src')]
 
-        if 'linux' in config:
-            moddeps.append(config['linux']['source'])
-
         bin_calc_dep_tsks = [
                 submoduleDepsTask(moddeps, name="_submodule_deps_"+config['name']),
-                kmodDepsTask(config, name="_kmod_deps_"+config['name'])
             ]
+
+
+        if 'linux' in config:
+            moddeps.append(config['linux']['source'])
+            bin_calc_dep_tsks.append(kmodDepsTask(config, name="_kmod_deps_"+config['name']))
 
         for tsk in bin_calc_dep_tsks:
             loader.addTask(tsk)
