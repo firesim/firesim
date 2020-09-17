@@ -458,7 +458,7 @@ def makeBin(config, nodisk=False):
 
     log = logging.getLogger()
 
-    if config['use-parent-bin']:
+    if config['use-parent-bin'] and not nodisk:
         shutil.copy(config['base-bin'], config['bin'])
         if 'dwarf' in config:
             shutil.copy(config['base-dwarf'], config['dwarf'])
