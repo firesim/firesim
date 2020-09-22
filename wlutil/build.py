@@ -73,23 +73,38 @@ def submoduleDepsTask(submodules, name=""):
             }
 
 
-def kmodDepsTask(cfg, name=""):
+def kmodDepsTask(cfg, taskDeps=None, name=""):
     """Check if the kernel modules in cfg are uptodate (suitable for doit's calc_dep function)"""
-    def checkMods(cfg):
-        for driverDir in cfg['linux']['modules'].values():
-            p = run(["make", "-q", "LINUXSRC=" + str(cfg['linux']['source'])], cwd=driverDir, check=False)
 
-            if p.returncode != 0:
+    def checkMods(cfg):
+        log = logging.getLogger()
+        for driverDir in cfg['linux']['modules'].values():
+            if not driverDir.exists():
+                log.warn("WARNING: Required module " + str(driverDir) + " does not exist: Assuming the workload is not uptodate.")
                 return False
+            try:
+                p = run(["make", "-q", "LINUXSRC=" + str(cfg['linux']['source'])], cwd=driverDir, check=False)
+
+                if p.returncode != 0:
+                    return False
+            except Exception as e:
+                log.warn("WARNING: Error when checking if module " + str(driverDir) + " is up to date: Assuming workload is not up to date. Error: " + str(e))
+                return False
+
         return True
 
     def calcModsAction(cfg):
         return { 'uptodate' : [ checkMods(cfg) ] }
 
-    return  {
+    task =  {
               'name' : name,
               'actions' : [ (calcModsAction, [ cfg ]) ]
             }
+
+    if taskDeps is not None:
+        task['task_dep'] = taskDeps
+
+    return task
 
 
 def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
