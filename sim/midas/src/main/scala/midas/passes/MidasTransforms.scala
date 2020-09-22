@@ -82,6 +82,8 @@ private[midas] class MidasTransforms extends Transform {
       new fame.EmitFAMEAnnotations("post-channel-excision.json"),
       new EmitFirrtl("post-channel-excision.fir"),
       new fame.InferModelPorts,
+      new ResolveAndCheck,
+      new EmitFirrtl("post-infer-model-ports.fir"),
       new fame.EmitFAMEAnnotations("post-infer-model-ports.json"),
       new fame.FAMETransform,
       DefineAbstractClockGate,

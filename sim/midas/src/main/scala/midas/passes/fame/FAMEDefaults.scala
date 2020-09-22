@@ -6,7 +6,7 @@ import firrtl._
 import Mappers._
 import ir._
 import annotations._
-import collection.mutable.{ArrayBuffer, LinkedHashSet}
+import collection.mutable.{ArrayBuffer, LinkedHashSet, LinkedHashMap}
 
 import midas.targetutils.FAMEAnnotation
 
@@ -27,28 +27,38 @@ class FAMEDefaults extends Transform {
     val globalSignals = fameAnnos.collect({ case g: FAMEGlobalSignal => g.target.ref }).toSet
     val channelNames = fameAnnos.collect({ case fca: FAMEChannelConnectionAnnotation => fca.globalName })
     val channelNS = Namespace(channelNames)
+
     def isGlobal(topPort: Port) = globalSignals.contains(topPort.name)
     def isBound(topPort: Port) = analysis.channelsByPort.contains(analysis.topTarget.ref(topPort.name))
+
     val channelModules = new LinkedHashSet[String] // TODO: find modules to absorb into channels, don't label as FAME models
-    val defaultLoopbackAnnos = new ArrayBuffer[FAMEChannelConnectionAnnotation]
+    val basicLoopbackConns = new LinkedHashMap[(String, String), ArrayBuffer[(String, String)]]
     val defaultModelAnnos = new ArrayBuffer[FAMETransformAnnotation]
     val topTarget = ModuleTarget(state.circuit.main, topModule.name)
+
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
       case wi @ WDefInstance(_, iname, mname, _) if (!channelModules.contains(mname)) =>
         defaultModelAnnos += FAMETransformAnnotation(FAME1Transform, topTarget.copy(module = mname))
         wi
       case c @ Connect(_, WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, _, _), WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, _, _)) =>
         if (c.loc.tpe != ClockType && c.expr.tpe != ClockType) {
-          defaultLoopbackAnnos += FAMEChannelConnectionAnnotation.implicitlyClockedLoopback(
-            channelNS.newName(s"${rhsiname}_${rhspname}__to__${lhsiname}_${lhspname}"),
-            WireChannel,
-            Seq(topTarget.ref(rhsiname).field(rhspname)),
-            Seq(topTarget.ref(lhsiname).field(lhspname)))
+	  println(s"LOOPBACK: ${c.loc}")
+          basicLoopbackConns.getOrElseUpdate((lhsiname, rhsiname), new ArrayBuffer[(String, String)]) += new Tuple2(lhspname, rhspname)
         }
         c
       case s => s
     }
+
     topModule.body.map(onStmt)
-    state.copy(annotations = state.annotations ++  defaultLoopbackAnnos ++ defaultModelAnnos)
+    val defaultLoopbackAnnos = basicLoopbackConns.map {
+      case ((lhsi, rhsi), v) =>
+        val (sinks, sources) = v.unzip
+	val sinkRTs = sinks.map(p => topTarget.ref(lhsi).field(p))
+	val sourceRTs = sources.map(p => topTarget.ref(rhsi).field(p))
+	val name = channelNS.newName(s"${rhsi}__to__${lhsi}")
+	FAMEChannelConnectionAnnotation.implicitlyClockedLoopback(name, WireChannel, sourceRTs, sinkRTs)
+    }
+
+    state.copy(annotations = state.annotations ++ defaultLoopbackAnnos ++ defaultModelAnnos)
   }
 }
