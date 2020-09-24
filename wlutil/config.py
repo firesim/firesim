@@ -91,8 +91,9 @@ configDerived = [
         'distro', # Base linux distribution (either 'fedora' or 'br')
         'initramfs', # boolean: should we use an initramfs with this config?
         'jobs', # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
-        'base-deps' # A list of tasks that this workload needs from its base (a potentially empty list)
-        'firmware-src' # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
+        'base-deps', # A list of tasks that this workload needs from its base (a potentially empty list)
+        'firmware-src', # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
+        'use-parent-bin', # Child would build the exact same binary as the parent, just copy it instead of rebuilding.
         ]
 
 # These are the user-defined options that should be converted to absolute
@@ -242,6 +243,7 @@ class Config(collections.MutableMapping):
 
         # Some default values
         self.cfg['base-deps'] = []
+        self.cfg['use-parent-bin'] = False
 
         if 'use-bbl' not in self.cfg:
             self.cfg['use-bbl'] = False
@@ -365,6 +367,12 @@ class Config(collections.MutableMapping):
             self.cfg['base-deps'].append(str(self.cfg['base-img']))
             self.cfg['img'] = getOpt('image-dir') / (self.cfg['name'] + ".img")
 
+        if 'bin' in baseCfg:
+            self.cfg['base-bin'] = baseCfg['bin']
+
+        if 'dwarf' in baseCfg:
+            self.cfg['base-dwarf'] = baseCfg['dwarf']
+
         if 'host-init' in baseCfg:
             self.cfg['base-deps'].append(str(baseCfg['host-init']))
 
@@ -410,6 +418,20 @@ class Config(collections.MutableMapping):
         if 'runSpec' not in self.cfg:
             self.cfg['run'] = getOpt('wlutil-dir') / 'null_run.sh'
             self.cfg['runSpec'] = RunSpec(script=self.cfg['run'])
+
+        # To avoid needlessly recompiling kernels, we check if the child has
+        # the exact same binary-related configuration.
+        self.cfg['use-parent-bin'] = True
+        for opt in ['firmware-src', 'host-init']:
+            if opt in self.cfg and self.cfg.get(opt, None) != baseCfg.get(opt, None):
+                self.cfg['use-parent-bin'] = False
+
+        if 'linux' in self.cfg and 'linux' in baseCfg:
+            for opt in self.cfg['linux'].keys():
+                if self.cfg['linux'].get(opt, None) != baseCfg['linux'].get(opt, None):
+                    self.cfg['use-parent-bin'] = False
+        else:
+            self.cfg['use-parent-bin'] = False
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):

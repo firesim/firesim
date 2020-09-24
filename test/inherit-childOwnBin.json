@@ -1,0 +1,12 @@
+{
+  "name" : "inherit-childOwnBin",
+  "workdir" : "inherit",
+  "base" : "inherit-parent.json",
+  "linux" : {
+      "config" : "linux.kfrag"
+  },
+  "command" : "gunzip -kc /proc/config.gz | grep 'CONFIG_LOCALVERSION\\|CONFIG_DEFAULT_HOSTNAME'",
+  "testing" : {
+    "refDir" : "refOutput/childOwnBin"
+  }
+}

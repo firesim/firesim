@@ -162,6 +162,9 @@ def addDep(loader, config):
         bin_task_deps.append('BuildBusybox')
         bin_targets.append(config['dwarf'])
 
+    if config['use-parent-bin']:
+        bin_task_deps.append(str(config['base-bin']))
+
     diskBin = []
     if 'bin' in config:
         if 'dwarf' in config:
@@ -172,13 +175,14 @@ def addDep(loader, config):
         moddeps = [config.get('pk-src'),
             config.get('firmware-src')]
 
-        if 'linux' in config:
-            moddeps.append(config['linux']['source'])
-
         bin_calc_dep_tsks = [
                 submoduleDepsTask(moddeps, name="_submodule_deps_"+config['name']),
-                kmodDepsTask(config, name="_kmod_deps_"+config['name'])
             ]
+
+
+        if 'linux' in config:
+            moddeps.append(config['linux']['source'])
+            bin_calc_dep_tsks.append(kmodDepsTask(config, name="_kmod_deps_"+config['name']))
 
         for tsk in bin_calc_dep_tsks:
             loader.addTask(tsk)
@@ -468,6 +472,12 @@ def makeBin(config, nodisk=False):
     """
 
     log = logging.getLogger()
+
+    if config['use-parent-bin'] and not nodisk:
+        shutil.copy(config['base-bin'], config['bin'])
+        if 'dwarf' in config:
+            shutil.copy(config['base-dwarf'], config['dwarf'])
+        return True
 
     # We assume that if you're not building linux, then the image is pre-built (e.g. during host-init)
     if 'linux' in config:
