@@ -47,7 +47,6 @@ sealed trait ClockBridgeConsts {
   *
   * @param clocks The associated clock information for each output clock
   *
-  * @param clocks The name of the clock in the clocks parameter which will be used as the base
   */
 
 case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalClock])
