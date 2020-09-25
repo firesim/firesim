@@ -24,11 +24,19 @@ import firrtl.annotations.{ModuleTarget, ReferenceTarget}
   *
   * @param divisor See class comment.
   */
-case class RationalClock(name: String, multiplier: Int, divisor: Int)
+case class RationalClock(name: String, multiplier: Int, divisor: Int) {
+  def simplify: RationalClock = {
+    val gcd = BigInt(multiplier).gcd(BigInt(divisor)).intValue
+    RationalClock(name, multiplier / gcd, divisor / gcd)
+  }
+
+  def equalFrequency(that: RationalClock): Boolean =
+    this.simplify.multiplier == that.simplify.multiplier &&
+    this.simplify.divisor == that.simplify.divisor
+}
 
 sealed trait ClockBridgeConsts {
   val clockChannelName = "clocks"
-  val refClockDomain = "baseClock"
 }
 
 /**
@@ -37,7 +45,9 @@ sealed trait ClockBridgeConsts {
   *
   * @param target The target-side module for the CB
   *
-  * @param clocks The associated clock information for each output clock (including the base).
+  * @param clocks The associated clock information for each output clock
+  *
+  * @param clocks The name of the clock in the clocks parameter which will be used as the base
   */
 
 case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalClock])
@@ -55,24 +65,24 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalC
 }
 
 /**
-  * The default target-side clock bridge. Generates a "base clock" and a vector of
-  * additional clocks related to that base clock. Simulation times are
-  * generally expressed in terms of this base clock.
+  * The default target-side clock bridge. Generates a vector of
+  * clocks rationally related to one another. At least one clock must have it's ratio set to one, this will be used
+  * as the base clock of the system. Global simulation times, for features that might span multiple clock domains
+  * like printf synthesis, are expressed in terms of this base clock.
   *
-  * @param additionalClocks Rational clock information for each additional
-  * clock beyond the base
+  * @param allClocks Rational clock information for each clock in the system.
+  *
   */
-class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox with ClockBridgeConsts {
+class RationalClockBridge(val allClocks: Seq[RationalClock]) extends BlackBox with ClockBridgeConsts {
   outer =>
-  // Always generate the base (element 0 in our output vec)
-  val baseClock = RationalClock(refClockDomain, 1, 1)
-  val allClocks = baseClock +: additionalClocks
+  require(allClocks.exists(c => c.multiplier == c.divisor),
+    s"At least one requested clock must have multiplier / divisor == 1. This will be used as the base clock of the simulator.")
   val io = IO(new Bundle {
     val clocks = Output(Vec(allClocks.size, Clock()))
   })
 
   // Generate the bridge annotation
-  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation( outer.toTarget, allClocks) })
+  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation(outer.toTarget, allClocks) })
   annotate(new ChiselAnnotation { def toFirrtl =
       FAMEChannelConnectionAnnotation(
         clockChannelName,
@@ -82,6 +92,17 @@ class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox wit
         sources = None
       )
   })
+}
+
+object RationalClockBridge {
+  /**
+    * All additional provided clocks are relative to the an implicit base clock
+    * which is provided as the first index of the clock vector.
+    *
+    * @param additionalClocks Specifications for additional clocks
+    */
+  def apply(additionalClocks: RationalClock*): RationalClockBridge =
+    Module(new RationalClockBridge(RationalClock("BaseClock", 1, 1) +: additionalClocks))
 }
 
 /**
