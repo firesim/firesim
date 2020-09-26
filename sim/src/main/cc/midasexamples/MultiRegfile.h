@@ -55,7 +55,7 @@ public:
     }
   }
 
-private:
+protected:
 
   size_t mem_depth = 10;
 

@@ -153,7 +153,6 @@ object MultiThreader {
   }
 
   def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
-    // TODO: this is ugly and uses copied code instead of bumping FIRRTL
     // Simplify all memories first
     val loweredMod = (new memlib.MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
 

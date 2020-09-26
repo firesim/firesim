@@ -59,6 +59,8 @@ object MuxingMultiThreader {
       regWriteAsMemWrite(info, name, tpe, onExprRHS(rhs))
     case Connect(_, lhs, _) if (kind(lhs) == RegKind) =>
       throw CustomTransformException(new IllegalArgumentException(s"Cannot handle complex register assignment to ${lhs}"))
+    case mem: DefMemory if (mem.readLatency == 1 && mem.writeLatency == 1) =>
+      Block(ThreadedSyncReadMem(nThreads, mem), Connect(FAME5Info.info, WSubField(WRef(mem.name), "tidx"), tIdx))
     case mem: DefMemory =>
       require(mem.readLatency == 0, "Memories must be transformed with VerilogMemDelays before multithreading")
       require(mem.readLatency == 0, "Memories must have one-cycle write latency")
@@ -68,9 +70,8 @@ object MuxingMultiThreader {
   }
 
   def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
-    // TODO: this is ugly and uses copied code instead of bumping FIRRTL
     // Simplify all memories first
-    val loweredMod = (new memlib.MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
+    val loweredMod = module // (new memlib.MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
     val ns = Namespace(loweredMod)
 
     val hostClock = WRef(WrapTop.hostClockName)

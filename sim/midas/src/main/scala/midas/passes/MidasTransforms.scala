@@ -89,12 +89,14 @@ private[midas] class MidasTransforms extends Transform {
       new fame.EmitFAMEAnnotations("post-fame-transform.json"),
       new ResolveAndCheck,
       fame.MultiThreadFAME5Models,
+      fame.ImplementThreadedSyncReadMems,
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck,
       new SimulationMapping(state.circuit.main),
       xilinx.HostSpecialization,
+      new EmitFirrtl("post-host-specialization.fir"),
       new ResolveAndCheck)
       (xforms foldLeft state)((in, xform) =>
       xform runTransform in).copy(form=outputForm)
