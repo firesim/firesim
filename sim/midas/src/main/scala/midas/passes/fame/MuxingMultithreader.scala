@@ -60,7 +60,10 @@ object MuxingMultiThreader {
     case Connect(_, lhs, _) if (kind(lhs) == RegKind) =>
       throw CustomTransformException(new IllegalArgumentException(s"Cannot handle complex register assignment to ${lhs}"))
     case mem: DefMemory if (mem.readLatency == 1 && mem.writeLatency == 1) =>
-      Block(ThreadedSyncReadMem(nThreads, mem), Connect(FAME5Info.info, WSubField(WRef(mem.name), "tidx"), tIdx))
+      Block(ThreadedSyncReadMem(nThreads, mem),
+            Connect(FAME5Info.info, WSubField(WRef(mem.name), WrapTop.hostClockName), WRef(WrapTop.hostClockName)),
+            Connect(FAME5Info.info, WSubField(WRef(mem.name), WrapTop.hostResetName), WRef(WrapTop.hostResetName)),
+            Connect(FAME5Info.info, WSubField(WRef(mem.name), ThreadedSyncReadMem.tIdxName), tIdx))
     case mem: DefMemory =>
       require(mem.readLatency == 0, "Memories must be transformed with VerilogMemDelays before multithreading")
       require(mem.readLatency == 0, "Memories must have one-cycle write latency")

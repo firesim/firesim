@@ -59,6 +59,8 @@ protected:
 
   size_t mem_depth = 10;
 
+  bool write_first = true;
+  
   void do_iteration(size_t cycle_num) {
     for (size_t i = 0; i < multireg_n_copies; i++) {
       for (size_t w_idx = 0; w_idx < multireg_n_writes; w_idx++) {
@@ -90,7 +92,9 @@ protected:
         data_t prev_addr = prev_reads[std::make_pair(i, r_idx)];
         auto mem_slot = std::make_pair(i, prev_addr);
         if (history.count(mem_slot)) {
-          expect(multireg_r_data_ios[i][r_idx], history[mem_slot].first);
+          auto w_op = history[mem_slot];
+          if (w_op.second != cycle_num || write_first)
+	    expect(multireg_r_data_ios[i][r_idx], history[mem_slot].first);
         }
       }
     }

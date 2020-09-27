@@ -17,7 +17,14 @@ class SRAMInner extends Module {
     rp => rp.data := mem.read(rp.addr)
   }
   io.writes.foreach {
-    wp => when (wp.en) { mem.write(wp.addr, wp.data) }
+    wp =>
+      val underlyingRW = mem(wp.addr)
+      when (wp.en) {
+        underlyingRW := wp.data
+      } .otherwise {
+        val unusedRD = Wire(UInt())
+	unusedRD := underlyingRW
+      }
   }
 }
 
