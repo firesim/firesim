@@ -125,6 +125,12 @@ pk-src
 Path to riscv-pk source directory to use for this workload. This provides the
 bootloader (bbl). Defaults to the riscv-pk submodule included at ``riscv-pk/``.
 
+use-bbl
+^^^^^^^^^^^^^
+Use BBL as the firmware rather than the default OpenSBI. If you specified
+'pk-src' (pk includes bbl), that will be used, otherwise the default
+implementation from the firechip board will be used.
+
 host-init
 ^^^^^^^^^^^^^^
 A script to run natively on your host (i.e., them machine where you
