@@ -54,8 +54,6 @@ case class AXI4IdSpaceConstraint(idBits: Int = 4, maxFlight: Int = 8)
 // Legacy: the aggregate memory-space seen by masters wanting DRAM. Derived from HostMemChannelKey
 case object MemNastiKey extends Field[NastiParameters]
 
-case object FpgaMMIOSize extends Field[BigInt]
-
 class FPGATopIO(implicit val p: Parameters) extends WidgetIO {
   val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
 }
@@ -260,7 +258,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     dmaPorts.zip(router.io.slaves).foreach { case (dma, slave) => dma <> NastiQueue(slave)(dmaParams) }
   }
 
-  outer.genCtrlIO(ctrl, p(FpgaMMIOSize))
+  outer.genCtrlIO(ctrl)
   outer.printHostDRAMSummary
 
   val addrConsts = dmaAddrMap.map {

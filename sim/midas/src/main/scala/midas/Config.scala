@@ -59,7 +59,6 @@ class SimConfig extends Config (new Config((site, here, up) => {
   case SynthAsserts     => false
   case SynthPrints      => false
   case DMANastiKey      => NastiParameters(512, 64, 6)
-  case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
 
   // Remove once AXI4 port is complete
