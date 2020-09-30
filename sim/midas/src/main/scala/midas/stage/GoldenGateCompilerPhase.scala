@@ -36,7 +36,7 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
       Forms.LowForm).execute(loweredTarget)
 
     // Lower and emit simulator RTL and run user-requested host-transforms
-    new Compiler(Dependency[firrtl.VerilogEmitter] +: p(HostTransforms),Forms.LowForm)
+    new Compiler(Dependency(midas.passes.VerilogMemDelays) +: Dependency[firrtl.VerilogEmitter] +: p(HostTransforms),Forms.LowForm)
       .execute(simulator)
       .annotations
   }
