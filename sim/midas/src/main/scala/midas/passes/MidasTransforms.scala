@@ -90,6 +90,7 @@ private[midas] class MidasTransforms extends Transform {
       new fame.EmitFAMEAnnotations("post-fame-transform.json"),
       new ResolveAndCheck,
       fame.MultiThreadFAME5Models,
+      fame.ImplementThreadedSyncReadMems,
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
       new EmitFirrtl("post-gen-sram-models.fir"),
