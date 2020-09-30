@@ -8,7 +8,7 @@ import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 
-import testchipip.SerialIO
+import testchipip.{SerialIO, SerialAdapter}
 
 class SerialBridge(memoryRegionName: String) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
   val io = IO(new SerialBridgeTargetIO)
@@ -27,7 +27,7 @@ object SerialBridge {
 }
 
 class SerialBridgeTargetIO extends Bundle {
-  val serial = Flipped(new SerialIO(testchipip.SerialAdapter.SERIAL_IF_WIDTH))
+  val serial = Flipped(new SerialIO(SerialAdapter.SERIAL_TSI_WIDTH))
   val reset = Input(Bool())
   val clock = Input(Clock())
 }
@@ -38,7 +38,7 @@ class SerialBridgeModule(val memoryRegionName: String)(implicit p: Parameters)
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new SerialBridgeTargetIO))
 
-    val serialBits = testchipip.SerialAdapter.SERIAL_IF_WIDTH
+    val serialBits = SerialAdapter.SERIAL_TSI_WIDTH
     val inBuf  = Module(new Queue(UInt(serialBits.W), 16))
     val outBuf = Module(new Queue(UInt(serialBits.W), 16))
     val tokensToEnqueue = RegInit(0.U(32.W))
