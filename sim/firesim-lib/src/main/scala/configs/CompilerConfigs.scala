@@ -21,8 +21,14 @@ class WithMultiCycleRamModels extends Config((site, here, up) => {
   case midas.GenerateMultiCycleRamModels => true
 })
 
-// Short name alias for above
+class WithModelMultiThreading extends Config((site, here, up) => {
+  case midas.EnableModelMultiThreading => true
+})
+
+// Short name aliases for above
 class MCRams extends WithMultiCycleRamModels
+
+class MTModels extends WithModelMultiThreading
 
 // Enables NIC loopback the NIC widget
 class WithNICWidgetLoopback  extends Config((site, here, up) => {
