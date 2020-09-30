@@ -10,16 +10,18 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.{SerialIO, SerialAdapter}
 
-class SerialBridge(memoryRegionName: String) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
+case class SerialBridgeParams(memoryRegionNameOpt: Option[String])
+
+class SerialBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
   val io = IO(new SerialBridgeTargetIO)
   val bridgeIO = HostPort(io)
-  val constructorArg = Some(memoryRegionName)
+  val constructorArg = Some(SerialBridgeParams(memoryRegionNameOpt))
   generateAnnotations()
 }
 
 object SerialBridge {
-  def apply(clock: Clock, port: SerialIO, memoryRegionName: String)(implicit p: Parameters): SerialBridge = {
-    val ep = Module(new SerialBridge(memoryRegionName))
+  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String])(implicit p: Parameters): SerialBridge = {
+    val ep = Module(new SerialBridge(memoryRegionNameOpt))
     ep.io.serial <> port
     ep.io.clock := clock
     ep
@@ -32,8 +34,9 @@ class SerialBridgeTargetIO extends Bundle {
   val clock = Input(Clock())
 }
 
-class SerialBridgeModule(val memoryRegionName: String)(implicit p: Parameters)
+class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) with HostDramHeaderConsts {
+  val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new SerialBridgeTargetIO))
@@ -83,7 +86,8 @@ class SerialBridgeModule(val memoryRegionName: String)(implicit p: Parameters)
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
-      sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
+      sb.append(genMacro(s"${headerWidgetName}_has_memory", hasMemoryRegion.toString))
+      sb.append(genMacro(s"${headerWidgetName}_memory_offset", if (hasMemoryRegion) offsetConstName else "0"))
     }
   }
 }

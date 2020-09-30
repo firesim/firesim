@@ -224,7 +224,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       )))))
 
   val memorySlaveConstraints = MemorySlaveConstraints(cfg.targetAddressSpace, cfg.targetRTransfer, cfg.targetWTransfer)
-  val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
+  val memoryRegionNameOpt = completeConfig.memoryRegionName
   // End: Implementation of UsesHostDRAM
 
   lazy val module = new BridgeModuleImp(this) {
