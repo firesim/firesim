@@ -12,7 +12,7 @@ import midas.targetutils._
 
 class RegfileInner extends Module {
   val io = IO(new RegfileIO)
-  val mem = Mem(1024, UInt(64.W))
+  val mem = Mem(32, UInt(64.W))
   annotate(MemModelAnnotation(mem))
   io.reads.foreach {
     rp => rp.data := mem.read(RegNext(rp.addr))

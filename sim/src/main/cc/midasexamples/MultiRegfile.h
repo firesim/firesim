@@ -57,7 +57,7 @@ public:
 
 protected:
 
-  size_t mem_depth = 10;
+  size_t mem_depth = 32;
 
   bool write_first = true;
   

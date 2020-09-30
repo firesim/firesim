@@ -12,7 +12,7 @@ import midas.targetutils._
 
 class SRAMInner extends Module {
   val io = IO(new RegfileIO)
-  val mem = SyncReadMem(1024, UInt(64.W))
+  val mem = SyncReadMem(32, UInt(64.W))
   io.reads.foreach {
     rp => rp.data := mem.read(rp.addr)
   }
