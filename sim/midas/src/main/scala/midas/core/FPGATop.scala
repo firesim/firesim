@@ -155,7 +155,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
       (preTranslationPort := AXI4Deinterleaver(bridge.memorySlaveConstraints.supportsRead.max)
                           := bridge.memoryMasterNode)
     }
-    HostMemoryMapping(Some(regionName), offset)
+    HostMemoryMapping(regionName, offset)
   })
 
   def printHostDRAMSummary(): Unit = {

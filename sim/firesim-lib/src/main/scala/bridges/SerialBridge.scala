@@ -35,8 +35,7 @@ class SerialBridgeTargetIO extends Bundle {
 }
 
 class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Parameters)
-    extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) with HostDramHeaderConsts {
-  val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
+    extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new SerialBridgeTargetIO))
@@ -86,8 +85,10 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
-      sb.append(genMacro(s"${headerWidgetName}_has_memory", hasMemoryRegion.toString))
-      sb.append(genMacro(s"${headerWidgetName}_memory_offset", if (hasMemoryRegion) offsetConstName else "0"))
+      val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
+      val offsetConstName = memoryRegionNameOpt.map(GetMemoryRegionOffsetConstName(_)).getOrElse("0")
+      sb.append(genMacro(s"${headerWidgetName}_has_memory", memoryRegionNameOpt.isDefined.toString))
+      sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
     }
   }
 }

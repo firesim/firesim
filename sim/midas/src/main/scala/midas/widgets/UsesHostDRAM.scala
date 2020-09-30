@@ -35,6 +35,10 @@ import chisel3.util.isPow2
   */
 case class MemorySlaveConstraints(address: Seq[AddressSet], supportsRead: TransferSizes, supportsWrite: TransferSizes)
 
+object GetMemoryRegionOffsetConstName {
+  def apply(memoryRegionName: String) = s"${memoryRegionName}_offset"
+}
+
 /**
   * A common trait for referring collateral in the generated header.
   *
@@ -49,10 +53,8 @@ trait HostDramHeaderConsts {
    * to give it an independent region.
    *
    */
-  def memoryRegionNameOpt: Option[String]
-  def hasMemoryRegion = memoryRegionNameOpt.isDefined
-  def memoryRegionName = memoryRegionNameOpt.get
-  def offsetConstName = s"${memoryRegionName}_offset"
+  def memoryRegionName: String
+  def offsetConstName = GetMemoryRegionOffsetConstName(memoryRegionName)
 }
 
 /**
@@ -72,7 +74,7 @@ trait UsesHostDRAM extends HostDramHeaderConsts {
   def memorySlaveConstraints: MemorySlaveConstraints
 }
 
-private[midas] case class HostMemoryMapping(memoryRegionNameOpt: Option[String], hostOffset: BigInt) extends HostDramHeaderConsts {
+private[midas] case class HostMemoryMapping(memoryRegionName: String, hostOffset: BigInt) extends HostDramHeaderConsts {
   def serializeToHeader(sb: StringBuilder): Unit = {
     sb.append(genComment(s"Host FPGA memory mapping for region: ${memoryRegionName}"))
     sb.append(genConstStatic(offsetConstName, Int64(hostOffset)))
