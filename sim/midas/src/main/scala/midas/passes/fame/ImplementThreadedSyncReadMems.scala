@@ -35,9 +35,11 @@ case class ThreadedSyncReadMem(
   readwriters: Seq[String],
   readUnderWrite: ReadUnderWrite.Value) extends Statement with IsDeclaration {
 
-  def threadImpl(desiredName: String): DefMemory = {
-    DefMemory(info, desiredName, dataType, depth, 1, 1, readers, writers, readwriters, readUnderWrite)
+  def flatImpl(desiredName: String): DefMemory = {
+    DefMemory(info, desiredName, dataType, nThreads * depth, 1, 1, readers, writers, readwriters, readUnderWrite)
   }
+
+  def tpe: BundleType = memType(flatImpl(""))
 
   def serialize = ???
   def mapStmt(f: Statement => Statement): Statement = this
@@ -56,49 +58,15 @@ object ImplementThreadedSyncReadMems extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
 
-  private def implementSplit(tMem: ThreadedSyncReadMem, moduleName: String): Module = {
-    val info = FAME5Info.info
-    val tIdxPort = Port(info, ThreadedSyncReadMem.tIdxName, Input, UIntLiteral(tMem.nThreads).tpe)
-    val ports = tIdxPort +: memType(tMem.threadImpl("")).fields.map {
-      case Field(name, Flip, tpe) => Port(info, name, Input, tpe)
-    }
-    val ns = Namespace(ports.map(p => p.name))
-
-    val dataVecType = VectorType(tMem.dataType, tMem.nThreads.toInt)
-    val rDataVecNames = tMem.readers.map(r => r -> ns.newName(s"${r}_datas")).toMap
-    val rwDataVecNames = tMem.readwriters.map(rw => rw -> ns.newName(s"${rw}_rdatas")).toMap
- 
-    val mems = (0 until tMem.nThreads.toInt).map(i => tMem.threadImpl(ns.newName(s"mem_${i}")))
-    val rDataVecs = rDataVecNames.map { case (k, v) => DefWire(info, v, dataVecType) }
-    val rwDataVecs = rwDataVecNames.map { case (k, v) => DefWire(info, v, dataVecType) }
-    val defaultConns = mems.zipWithIndex.flatMap {
-      case (mem, i) =>
-        (mem.readers ++ mem.writers ++ mem.readwriters).flatMap { pName =>
-          val topP = WRef(pName)
-          val memP = WSubField(WRef(mem), pName)
-          val maskedEn = And(WSubField(topP, "en"), Eq(WRef(tIdxPort), UIntLiteral(i)))
-          val rDataElementConn = rDataVecNames.get(pName).map(rdVec => Connect(info, WSubIndex(WRef(rdVec), i, tMem.dataType, SinkFlow), WSubField(memP, "data")))
-          val rwDataElementConn = rwDataVecNames.get(pName).map(rwdVec => Connect(info, WSubIndex(WRef(rwdVec), i, tMem.dataType, SinkFlow), WSubField(memP, "rdata")))
-          Seq(Connect(info, memP, topP), Connect(info, WSubField(memP, "en"), maskedEn)) ++ rDataElementConn ++ rwDataElementConn
-        }
-    }
-    val rDataSelects = tMem.readers.map(r => Connect(info, WSubField(WRef(r), "data"), WSubAccess(WRef(rDataVecNames(r)), WRef(tIdxPort), tMem.dataType, SourceFlow)))
-    val rwDataSelects = tMem.readwriters.map(rw => Connect(info, WSubField(WRef(rw), "rdata"), WSubAccess(WRef(rwDataVecNames(rw)), WRef(tIdxPort), tMem.dataType, SourceFlow)))
-
-    Module(info, moduleName, ports, Block(mems ++ rDataVecs ++ rwDataVecs ++ defaultConns ++ rDataSelects ++ rwDataSelects))
-  }
-
   private def implement(tMem: ThreadedSyncReadMem, moduleName: String): Module = {
     val info = FAME5Info.info
     val tIdxMax = UIntLiteral(tMem.nThreads-1)
     val rdataPipeDepth = if (tMem.nThreads < 4) 0 else 1
 
     val hostClockPort = Port(info, WrapTop.hostClockName, Input, ClockType)
-    val hostResetPort = Port(info, WrapTop.hostResetName, Input, BoolType)
-    val tIdxPort = Port(info, ThreadedSyncReadMem.tIdxName, Input, tIdxMax.tpe)
 
     val accessors = tMem.readers ++ tMem.writers ++ tMem.readwriters
-    val ports = Seq(hostClockPort, hostResetPort, tIdxPort) ++: memType(tMem.threadImpl("")).fields.map {
+    val ports = hostClockPort +: tMem.tpe.fields.map {
       case Field(name, Flip, tpe) => Port(info, name, Input, tpe)
     }
 
@@ -121,33 +89,31 @@ object ImplementThreadedSyncReadMems extends Transform {
       }
     }
 
-    // Useful expressions
+    // Useful expressions: tidx is carried in the bottom of input addr (part of interface definition)
     val targetClock = wsf(WRef(accessors.head), "clk")
-    
+    val tLocalAddrWidth = BigInt((tMem.depth - 1).bitLength)
+    val targetClockCounterName = ns.newName("edgeCount")
+
     // Name the memories used to store read data
     val rdMemNames = tMem.readers.map(r => r -> ns.newName(s"${r}_datas")).toMap
     val rwdMemNames = tMem.readwriters.map(rw => rw -> ns.newName(s"${rw}_rdatas")).toMap
 
     // Now all the statements
-    val mem = tMem.threadImpl(ns.newName("mem")).copy(depth = tMem.nThreads * tMem.depth)
-    val targetClockCounter = DefRegister(info, ns.newName("edgeCount"), BoolType, targetClock, WRef(hostResetPort), UIntLiteral(0))
+    val tIdx = DefNode(info, ns.newName("thread"), DoPrim(PrimOps.Tail, Seq(wsf(WRef(accessors.head), "addr")), Seq(tLocalAddrWidth), tIdxMax.tpe))
+    val mem = tMem.flatImpl(ns.newName("mem"))
+    val targetClockCounter = DefRegister(info, targetClockCounterName, BoolType, targetClock, UIntLiteral(0), WRef(targetClockCounterName))
     val counterUpdate = Connect(info, WRef(targetClockCounter), Negate(WRef(targetClockCounter)))
 
     val (counterTracker, counterTrackerRef) = hostRegNext(ns.newName("edgeCountTracker"), WRef(targetClockCounter))
     val edgeStatus = DefNode(info, ns.newName("edgeStatus"), Xor(counterTrackerRef, WRef(targetClockCounter)))
 
-    val (tIdxPipe, tIdxPipedRef) = pipeline(rdataPipeDepth + 1, WRef(tIdxPort))
+    val (tIdxPipe, tIdxPipedRef) = pipeline(rdataPipeDepth + 1, WRef(tIdx))
     val (edgeStatusPipe, edgeStatusPipedRef) = pipeline(rdataPipeDepth, WRef(edgeStatus))
 
     val rdMems = rdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, 0, Seq("r"), Seq("w"), Nil) }
     val rwdMems = rwdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, 0, Seq("r"), Seq("w"), Nil) }
 
     val defaultConns = accessors.map(p => Connect(info, wsf(WRef(mem), p), WRef(p)))
-    val expandedAddrConns = accessors.map {
-      p =>
-        val expAddr = DoPrim(PrimOps.Cat, Seq(WRef(tIdxPort), wsf(WRef(p), "addr")), Nil, UnknownType)
-        Connect(info, wssf(WRef(mem), p, "addr"), expAddr)
-    }
 
     val dataOutLogic = (rdMemNames ++ rwdMemNames).flatMap {
       case (topPName, doutMemName) =>
@@ -160,7 +126,7 @@ object ImplementThreadedSyncReadMems extends Transform {
         Seq(doutNode,
             doutPipe,
             Connect(info, wssf(doutMemRef, "r", "clk"), WRef(hostClockPort)),
-	    Connect(info, wssf(doutMemRef, "r", "addr"), WRef(tIdxPort)),
+	    Connect(info, wssf(doutMemRef, "r", "addr"), WRef(tIdx)),
 	    Connect(info, wssf(doutMemRef, "r", "en"), UIntLiteral(1)),
 	    Connect(info, wsf(WRef(topPName), doutName), wssf(doutMemRef, "r", "data")),
             Connect(info, wssf(doutMemRef, "w", "clk"), WRef(hostClockPort)),
@@ -170,8 +136,8 @@ object ImplementThreadedSyncReadMems extends Transform {
             Connect(info, wssf(doutMemRef, "w", "data"), doutPipedRef))
     }
 
-    val ctrlStmts = Seq(targetClockCounter, counterUpdate, counterTracker, edgeStatus, tIdxPipe, edgeStatusPipe)
-    val body = Block(Seq(mem) ++ ctrlStmts ++ rdMems ++ rwdMems ++ defaultConns ++ expandedAddrConns ++ dataOutLogic)
+    val ctrlStmts = Seq(tIdx, targetClockCounter, counterUpdate, counterTracker, edgeStatus, tIdxPipe, edgeStatusPipe)
+    val body = Block(Seq(mem) ++ ctrlStmts ++ rdMems ++ rwdMems ++ defaultConns ++ dataOutLogic)
 
     Module(info, moduleName, ports, body)
   }
