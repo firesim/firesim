@@ -214,17 +214,22 @@ trait HasWidgets {
 
   private def sortedWidgets = widgets.toSeq.sortWith(_.memRegionSize > _.memRegionSize)
 
-  def genCtrlIO(master: WidgetMMIO, addrSize: BigInt)(implicit p: Parameters) {
+  def genCtrlIO(master: WidgetMMIO)(implicit p: Parameters) {
+
+    val lastWidgetRegion = addrMap.entries.last.region
+    val widgetAddressMax = lastWidgetRegion.start + lastWidgetRegion.size
+
+    require(log2Up(widgetAddressMax) <= p(CtrlNastiKey).addrBits,
+      s"""| Widgets have allocated ${widgetAddressMax >> 2} MMIO Registers, requiring
+          | ${widgetAddressMax} bytes of addressible register space.  The ctrl bus
+          | is configured to only have ${p(CtrlNastiKey).addrBits} bits of address,
+          | not the required ${log2Up(widgetAddressMax)} bits.""".stripMargin)
+
     val ctrlInterconnect = Module(new NastiRecursiveInterconnect(
       nMasters = 1,
       addrMap = addrMap
     )(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
     ctrlInterconnect.io.masters(0) <> master
-    // We should truncate upper bits of master addresses
-    // according to the size of flatform MMIO
-    val addrSizeBits = log2Up(addrSize)
-    ctrlInterconnect.io.masters(0).aw.bits.addr := master.aw.bits.addr(addrSizeBits, 0)
-    ctrlInterconnect.io.masters(0).ar.bits.addr := master.ar.bits.addr(addrSizeBits, 0)
     sortedWidgets.zip(ctrlInterconnect.io.slaves) foreach {
       case (w: Widget, m) => w.module.io.ctrl <> m
     }
