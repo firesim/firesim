@@ -10,6 +10,14 @@ import freechips.rocketchip.config.Parameters
 
 import testchipip.{SerialIO, SerialAdapter}
 
+/**
+  * Class which parameterizes the SerialBridge
+  *
+  * memoryRegionNameOpt, if unset, indicates that firesim-fesvr should not attempt to write a payload into DRAM through the loadmem unit.
+  * This is suitable for target designs which do not use the FASED DRAM model.
+  * If a FASEDBridge for the backing AXI4 memory is present, then memoryRegionNameOpt should be set to the same memory region name which is passed
+  * to the FASEDBridge. This enables fast payload loading in firesim-fesvr through the loadmem unit.
+  */
 case class SerialBridgeParams(memoryRegionNameOpt: Option[String])
 
 class SerialBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {

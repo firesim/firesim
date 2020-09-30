@@ -89,6 +89,7 @@ void serial_t::recv() {
 
 void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
     assert(loadmem.size % sizeof(uint32_t) == 0);
+    assert(has_mem);
     // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
     mpz_t buf;
     mpz_init(buf);
@@ -118,6 +119,7 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
 
 void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     assert(loadmem.size <= 1024);
+    assert(has_mem);
     static char buf[1024];
     fesvr->recv_loadmem_data(buf, loadmem.size);
     mpz_t data;
