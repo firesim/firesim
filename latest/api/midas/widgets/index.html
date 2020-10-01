@@ -498,7 +498,7 @@
                         <a class="class" href="RationalClock.html" title="Defines a generated clock as a rational multiple of some reference clock."></a>
                         <a href="RationalClock.html" title="Defines a generated clock as a rational multiple of some reference clock.">RationalClock</a>
                       </li><li class="current-entities indented2">
-                        <span class="separator"></span>
+                        <a class="object" href="RationalClockBridge$.html" title=""></a>
                         <a class="class" href="RationalClockBridge.html" title="The default target-side clock bridge."></a>
                         <a href="RationalClockBridge.html" title="The default target-side clock bridge.">RationalClockBridge</a>
                       </li><li class="current-entities indented2">
@@ -977,7 +977,7 @@
       
       <p class="shortcomment cmt">A custom bridge annotation for the Clock Bridge.</p><div class="fullcomment"><div class="comment cmt"><p>A custom bridge annotation for the Clock Bridge. Unique so that we can
 trivially match against it in bridge extraction.
-</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The target-side module for the CB</p></dd><dt class="param">clocks</dt><dd class="cmt"><p>The associated clock information for each output clock (including the base).</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The target-side module for the CB</p></dd><dt class="param">clocks</dt><dd class="cmt"><p>The associated clock information for each output clock</p></dd></dl></div>
     </li><li name="midas.widgets.ClockBridgeConsts" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ClockBridgeConstsextendsAnyRef"></a><a id="ClockBridgeConsts:ClockBridgeConsts"></a>
       <span class="permalink">
@@ -1649,9 +1649,10 @@ clock has a frequency (multiplier / divisor) times that of reference.
         <a title="The default target-side clock bridge." href="RationalClockBridge.html"><span class="name">RationalClockBridge</span></a><span class="result"> extends <span class="extype" name="chisel3.BlackBox">BlackBox</span> with <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></span>
       </span>
       
-      <p class="shortcomment cmt">The default target-side clock bridge.</p><div class="fullcomment"><div class="comment cmt"><p>The default target-side clock bridge. Generates a &quot;base clock&quot; and a vector of
-additional clocks related to that base clock. Simulation times are
-generally expressed in terms of this base clock.
+      <p class="shortcomment cmt">The default target-side clock bridge.</p><div class="fullcomment"><div class="comment cmt"><p>The default target-side clock bridge. Generates a vector of
+clocks rationally related to one another. At least one clock must have it's ratio set to one, this will be used
+as the base clock of the system. Global simulation times, for features that might span multiple clock domains
+like printf synthesis, are expressed in terms of this base clock.
 </p></div></div>
     </li><li name="midas.widgets.RegisterEntry" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RegisterEntryextendsMCRMapEntrywithProductwithSerializable"></a><a id="RegisterEntry:RegisterEntry"></a>
@@ -2228,6 +2229,22 @@ Returns a Seq of the leaf nodes with their absolute direction.
       </span>
       <span class="symbol">
         <a title="" href="Pulsify$.html"><span class="name">Pulsify</span></a>
+      </span>
+      
+      
+    </li><li name="midas.widgets.RationalClockBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RationalClockBridge"></a><a id="RationalClockBridge:RationalClockBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/RationalClockBridge$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="RationalClockBridge$.html"><span class="name">RationalClockBridge</span></a>
       </span>
       
       

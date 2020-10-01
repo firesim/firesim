@@ -370,7 +370,7 @@
                         <a class="class" href="RationalClock.html" title="Defines a generated clock as a rational multiple of some reference clock."></a>
                         <a href="RationalClock.html" title="Defines a generated clock as a rational multiple of some reference clock.">RationalClock</a>
                       </li><li class="current-entities indented2">
-                        <span class="separator"></span>
+                        <a class="object" href="RationalClockBridge$.html" title=""></a>
                         <a class="class" href="" title="The default target-side clock bridge."></a>
                         <a href="" title="The default target-side clock bridge.">RationalClockBridge</a>
                       </li><li class="current-entities indented2">
@@ -488,14 +488,16 @@
           <div id="content">
             <body class="class type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <a href="RationalClockBridge$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.widgets">widgets</a></p>
-        <h1>RationalClockBridge<span class="permalink">
+        <h1><a href="RationalClockBridge$.html" title="See companion object">RationalClockBridge</a><span class="permalink">
       <a href="../../midas/widgets/RationalClockBridge.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"></span></h3>
+        <h3><span class="morelinks"><div>
+            Companion <a href="RationalClockBridge$.html" title="See companion object">object RationalClockBridge</a>
+          </div></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
@@ -509,9 +511,10 @@
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The default target-side clock bridge. Generates a &quot;base clock&quot; and a vector of
-additional clocks related to that base clock. Simulation times are
-generally expressed in terms of this base clock.
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The default target-side clock bridge. Generates a vector of
+clocks rationally related to one another. At least one clock must have it's ratio set to one, this will be used
+as the base clock of the system. Global simulation times, for features that might span multiple clock domains
+like printf synthesis, are expressed in terms of this base clock.
 </p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="midas.widgets.RationalClockBridge">RationalClockBridge</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
@@ -563,9 +566,9 @@ generally expressed in terms of this base clock.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.RationalClockBridge#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(additionalClocks:midas.widgets.RationalClock*):midas.widgets.RationalClockBridge"></a><a id="&lt;init&gt;:RationalClockBridge"></a>
+      <a id="&lt;init&gt;(allClocks:Seq[midas.widgets.RationalClock]):midas.widgets.RationalClockBridge"></a><a id="&lt;init&gt;:RationalClockBridge"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/RationalClockBridge.html#&lt;init&gt;(additionalClocks:midas.widgets.RationalClock*):midas.widgets.RationalClockBridge" title="Permalink">
+      <a href="../../midas/widgets/RationalClockBridge.html#&lt;init&gt;(allClocks:Seq[midas.widgets.RationalClock]):midas.widgets.RationalClockBridge" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -574,11 +577,10 @@ generally expressed in terms of this base clock.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RationalClockBridge</span><span class="params">(<span name="additionalClocks">additionalClocks: <a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>*</span>)</span>
+        <span class="name">RationalClockBridge</span><span class="params">(<span name="allClocks">allClocks: <span class="extype" name="scala.Seq">Seq</span>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>)</span>
       </span>
       
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">additionalClocks</dt><dd class="cmt"><p>Rational clock information for each additional
-clock beyond the base</p></dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">allClocks</dt><dd class="cmt"><p>Rational clock information for each clock in the system.</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -729,7 +731,7 @@ clock beyond the base</p></dd></dl></div>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">allClocks</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>
+        <span class="name">allClocks</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>
       </span>
       
       
@@ -749,22 +751,6 @@ clock beyond the base</p></dd></dl></div>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.widgets.RationalClockBridge#baseClock" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="baseClock:midas.widgets.RationalClock"></a><a id="baseClock:RationalClock"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/RationalClockBridge.html#baseClock:midas.widgets.RationalClock" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">baseClock</span><span class="result">: <a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a></span>
-      </span>
-      
-      
     </li><li name="chisel3.internal.HasId#circuitName" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="circuitName:String"></a>
       <span class="permalink">
@@ -1188,22 +1174,6 @@ clock beyond the base</p></dd></dl></div>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>BaseModule</dd></dl></div>
-    </li><li name="midas.widgets.ClockBridgeConsts#refClockDomain" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="refClockDomain:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/RationalClockBridge.html#refClockDomain:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">refClockDomain</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></dd></dl></div>
     </li><li name="chisel3.internal.HasId#suggestName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="suggestName(name:=&gt;String):HasId.this.type"></a><a id="suggestName(⇒String):RationalClockBridge.this.type"></a>
       <span class="permalink">
