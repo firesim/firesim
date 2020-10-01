@@ -1,0 +1,11 @@
+{
+  "name" : "bbl-args",
+  "workdir" : "bbl",
+  "base" : "br-base.json",
+  "use-bbl" : true,
+  "bbl-build-args" : "--enable-logo",
+  "command" : "echo marshal bbl-args test",
+  "testing" : {
+      "refDir" : "bblArgsOutput"
+  }
+}

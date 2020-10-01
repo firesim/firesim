@@ -441,8 +441,13 @@ def makeBBL(config, nodisk=False):
         shutil.rmtree(bblBuild)
     bblBuild.mkdir()
 
-    run(['../configure', '--host=riscv64-unknown-elf',
-        '--with-payload=' + str(config['linux']['source'] / 'vmlinux')], cwd=bblBuild)
+    configureArgs = ['--host=riscv64-unknown-elf',
+        '--with-payload=' + str(config['linux']['source'] / 'vmlinux')]
+
+    if 'bbl-build-args' in config:
+        configureArgs += str.split(config['bbl-build-args'])
+
+    run(['../configure'] + configureArgs, cwd=bblBuild)
     run(['make', getOpt('jlevel')], cwd=bblBuild)
 
     return bblBuild / 'bbl'
@@ -453,16 +458,20 @@ def makeOpenSBI(config, nodisk=False):
     # Align to next MiB
     payloadSize = ((payload.stat().st_size + 0xfffff) // 0x100000) * 0x100000
 
+    args = getOpt('linux-make-args') + ['PLATFORM=generic',
+              'FW_PAYLOAD_PATH=' + str(payload),
+              'FW_PAYLOAD_FDT_ADDR=0x$(shell printf "%X" '
+                '$$(( $(FW_TEXT_START) + $(FW_PAYLOAD_OFFSET) + ' + hex(payloadSize) + ' )))']
+
+    if 'opensbi-build-args' in config:
+        args += str.split(config['opensbi-build-args'])
+
     run(['make'] + 
-        getOpt('linux-make-args') +
-        ['PLATFORM=generic',
-         'FW_PAYLOAD_PATH=' + str(payload),
-         'FW_PAYLOAD_FDT_ADDR=0x$(shell printf "%X" '
-            '$$(( $(FW_TEXT_START) + $(FW_PAYLOAD_OFFSET) + ' + hex(payloadSize) + ' )))'],
-        cwd=config['opensbi-src']
+        getOpt('linux-make-args') + args,
+        cwd=config['firmware-src']
         )
 
-    return config['opensbi-src'] / 'build' / 'platform' / 'generic' / 'firmware' / 'fw_payload.elf'
+    return config['firmware-src'] / 'build' / 'platform' / 'generic' / 'firmware' / 'fw_payload.elf'
 
 
 def makeBin(config, nodisk=False):

@@ -44,6 +44,10 @@ categoryTests = {
         # will use Marshal
         "qemu" : [
             'bbl',
+            'bbl-src',
+            'bbl-args',
+            'opensbi-src',
+            'opensbi-arg',
             'command',
             'driversJob',
             'drivers',

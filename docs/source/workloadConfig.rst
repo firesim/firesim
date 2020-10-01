@@ -120,16 +120,34 @@ The specified module directory must contain a Makefile that can be invoked as:
 
 It outputs one or more .ko files to be loaded. See test/kmod/ for an example.
 
-pk-src
+opensbi-src
+^^^^^^^^^^^^^^^^^^^^
+Path to alternative opensbi source directory. Defaults to the board-provided
+opensbi.
+
+opensbi-build-args
+^^^^^^^^^^^^^^^^^^^^
+Additional command line arguments to the 'make' command used to build opensbi.
+
+pk-src (Deprecated)
+^^^^^^^^^^^^^^^^^^^^
+Deprecated alias for 'bbl-src'.
+
+bbl-src
 ^^^^^^^^^^^^^^
 Path to riscv-pk source directory to use for this workload. This provides the
-bootloader (bbl). Defaults to the riscv-pk submodule included at ``riscv-pk/``.
+bootloader (bbl). Defaults to the riscv-pk source included with the board.
+
+bbl-build-args
+^^^^^^^^^^^^^^^^^^^^
+Additional arguments to be passed to the configure script for bbl. Arguments
+will be appended to any system defaults.
 
 use-bbl
 ^^^^^^^^^^^^^
 Use BBL as the firmware rather than the default OpenSBI. If you specified
 'pk-src' (pk includes bbl), that will be used, otherwise the default
-implementation from the firechip board will be used.
+implementation from the board will be used.
 
 host-init
 ^^^^^^^^^^^^^^

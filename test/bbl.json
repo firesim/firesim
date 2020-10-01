@@ -4,6 +4,6 @@
   "use-bbl" : true,
   "command" : "echo Global: using bbl",
   "testing" : {
-      "refDir" : "refOutput"
+      "refDir" : "bblOutput"
   }
 }

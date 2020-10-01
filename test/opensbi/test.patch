@@ -1,0 +1,29 @@
+diff -ruN opensbi/firmware/objects.mk newopensbi/firmware/objects.mk
+--- opensbi/firmware/objects.mk	2020-10-01 15:36:26.057869489 -0400
++++ newopensbi/firmware/objects.mk	2020-10-01 15:35:12.271684120 -0400
+@@ -51,3 +51,7 @@
+ ifdef FW_OPTIONS
+ firmware-genflags-y += -DFW_OPTIONS=$(FW_OPTIONS)
+ endif
++
++ifdef MARSHAL_TEST
++firmware-genflags-y += -DMARSHAL_TEST
++endif
+diff -ruN opensbi/include/sbi/sbi_version.h newopensbi/include/sbi/sbi_version.h
+--- opensbi/include/sbi/sbi_version.h	2020-10-01 15:36:19.193759202 -0400
++++ newopensbi/include/sbi/sbi_version.h	2020-10-01 15:35:12.391686048 -0400
+@@ -10,8 +10,13 @@
+ #ifndef __SBI_VERSION_H__
+ #define __SBI_VERSION_H__
+ 
+-#define OPENSBI_VERSION_MAJOR 0
++#define OPENSBI_VERSION_MAJOR 42
++
++#ifdef MARSHAL_TEST
++#define OPENSBI_VERSION_MINOR 17
++#else
+ #define OPENSBI_VERSION_MINOR 8
++#endif
+ 
+ /**
+  * OpenSBI 32-bit version with:

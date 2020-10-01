@@ -37,10 +37,14 @@ configUser = [
         'linux-config',
         # Path to bbl source
         'bbl-src',
+        # Extra arguments to pass to the bbl make command
+        'bbl-build-args',
         # deprecated alias for bbl-src
         'pk-src',
         # Path to openSBI source to use
         'opensbi-src',
+        # Extra arguments to pass to the make command for openSBI
+        'opensbi-build-args',
         # Boolean indicating whether bbl should be used (True) or openSBI (False or undefined)
         'use-bbl',
         # Path to script to run on host before building this config
@@ -109,7 +113,9 @@ configInherit = [
         'files',
         'outputs',
         'bbl-src',
+        'bbl-build-args',
         'opensbi-src',
+        'opensbi-build-args',
         'builder',
         'distro',
         'spike',
@@ -402,14 +408,14 @@ class Config(collections.MutableMapping):
                     self.cfg['bbl-src'] = getOpt('bbl-dir')
                 else:
                     raise ConfigurationOptionError('bbl-src', "bbl-src not found: " + getOpt('bbl-src'))
-            self.cfg['firmware-src'] = self.cfg['bbl-src']
+            self.cfg['firmware-src'] = cleanPath(self.cfg['bbl-src'], self.cfg['workdir'])
         else:
             if 'opensbi-src' not in self.cfg:
                 if getOpt('opensbi-dir').exists():
                     self.cfg['opensbi-src'] = getOpt('opensbi-dir')
                 else:
                     raise ConfigurationOptionError('opensbi-src', "opensbi-src not found: " + getOpt('opensbi-src'))
-            self.cfg['firmware-src'] = self.cfg['opensbi-src']
+            self.cfg['firmware-src'] = cleanPath(self.cfg['opensbi-src'], self.cfg['workdir'])
 
         # Some defaults need to occur, even if you don't have a base
         if 'launch' not in self.cfg:
