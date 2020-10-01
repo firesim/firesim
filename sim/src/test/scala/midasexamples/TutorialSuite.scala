@@ -176,6 +176,8 @@ class RegfileF1Test extends TutorialSuite("Regfile")
 
 class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
 
+class MultiSRAMF1Test extends TutorialSuite("MultiSRAM")
+
 class NestedModelsF1Test extends TutorialSuite("NestedModels")
 
 class MultiRegF1Test extends TutorialSuite("MultiReg")
@@ -217,6 +219,7 @@ class GoldenGateMiscCITests extends Suites(
   new TrivialMulticlockF1Test,
   new RegfileF1Test,
   new MultiRegfileF1Test,
+  new MultiSRAMF1Test,
   new NestedModelsF1Test,
   new MultiRegF1Test
 )
