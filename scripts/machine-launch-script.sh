@@ -10,7 +10,7 @@ sudo yum install -y mosh
 sudo yum groupinstall -y "Development tools"
 sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
 curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
-sudo yum install -y sbt texinfo gengetopt
+sudo yum install -y sbt texinfo gengetopt libffi-devel
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
 # deps for poky
 sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
