@@ -146,8 +146,8 @@ will be appended to any system defaults.
 use-bbl
 ^^^^^^^^^^^^^
 Use BBL as the firmware rather than the default OpenSBI. If you specified
-'pk-src' (pk includes bbl), that will be used, otherwise the default
-implementation from the board will be used.
+'bbl-src', that will be used, otherwise the default implementation from the
+board will be used.
 
 host-init
 ^^^^^^^^^^^^^^
