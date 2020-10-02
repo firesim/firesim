@@ -9,5 +9,10 @@
           "icenet" : "../../drivers/icenet-driver",
           "iceblk" : "../../drivers/iceblk-driver"
       }
+  },
+  "firmware" : {
+      "use-bbl" : false,
+      "bbl-src" : "../../firmware/riscv-pk",
+      "opensbi-src" : "../../firmware/opensbi"
   }
 }

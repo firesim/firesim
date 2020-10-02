@@ -3,7 +3,9 @@
     "workdir" : "opensbi",
     "base" : "br-base.json",
     "host-init" : "copy-src.sh",
-    "opensbi-src" : "opensbi",
+    "firmware" : {
+        "opensbi-src" : "opensbi"
+    },
     "command" : "echo open-sbi test",
     "testing" : {
         "refDir" : "srcOutput"

@@ -1,10 +1,12 @@
 {
-    "name" : "opensbi-arg",
+    "name" : "opensbi-args",
     "workdir" : "opensbi",
     "base" : "br-base.json",
     "host-init" : "copy-src.sh",
-    "opensbi-src" : "opensbi",
-    "opensbi-build-args" : "MARSHAL_TEST=1",
+    "firmware" : {
+        "opensbi-src" : "opensbi",
+        "opensbi-build-args" : "MARSHAL_TEST=1"
+    },
     "command" : "echo open-sbi test",
     "testing" : {
         "refDir" : "argOutput"
