@@ -2,89 +2,50 @@
 #ifndef __FIRESIM_FESVR_H
 #define __FIRESIM_FESVR_H
 
-#include <fesvr/htif.h>
-#include <string>
-#include <vector>
-#include <deque>
-#include <stdint.h>
-#include "midas_context.h"
+#include "testchip_fesvr.h"
 
-#define FESVR_CMD_READ 0
-#define FESVR_CMD_WRITE 1
-
-#define FESVR_ADDR_CHUNKS 2
-#define FESVR_LEN_CHUNKS 2
-
-// Wraps read/write requests that will be shortcircuited through the LOADMEM widget
-struct fesvr_loadmem_t {
-    fesvr_loadmem_t(): addr(0), size(0) { }
-    fesvr_loadmem_t(size_t addr, size_t size): addr(addr), size(size) { }
-    size_t addr;
-    size_t size;
+struct firesim_loadmem_t {
+  firesim_loadmem_t(): addr(0), size(0) { }
+  firesim_loadmem_t(size_t addr, size_t size): addr(addr), size(size) { }
+  size_t addr;
+  size_t size;
 };
 
-class firesim_fesvr_t : public htif_t
+class firesim_fesvr_t : public testchip_fesvr_t
 {
-    public:
-        firesim_fesvr_t(const std::vector<std::string> args, bool has_loadmem);
-        ~firesim_fesvr_t(){};
-        bool busy() { return is_busy; }
-        bool data_available();
-        void send_word(uint32_t word);
-        void tick();
-        uint32_t recv_word();
+public:
+  firesim_fesvr_t(int argc, char** argv, bool has_loadmem);
+  ~firesim_fesvr_t(){};
 
-        bool recv_loadmem_write_req(fesvr_loadmem_t& loadmem);
-        bool recv_loadmem_read_req(fesvr_loadmem_t& loadmem);
-        void recv_loadmem_data(void* buf, size_t len);
-        bool has_loadmem_reqs();
+  bool busy() { return is_busy; };
 
-    protected:
-        void idle();
-        void reset();
-        void load_program() {
-            wait(); // Switch back to commit all pending requests
-            is_loadmem = has_loadmem;
-            htif_t::load_program();
-            is_loadmem = false;
-        }
+  void tick();
+  void tick(bool out_valid, uint32_t out_bits, bool in_ready) { tick(); };
 
-        void read_chunk(reg_t taddr, size_t nbytes, void* dst);
-        void write_chunk(reg_t taddr, size_t nbytes, const void* src);
 
-        size_t chunk_align() { return 4; }
-        size_t chunk_max_size() { return 1024; }
+  bool recv_loadmem_write_req(firesim_loadmem_t& loadmem);
+  bool recv_loadmem_read_req(firesim_loadmem_t& loadmem);
+  void recv_loadmem_data(void* buf, size_t len);
+  bool has_loadmem_reqs();
 
-        int get_ipi_addrs(reg_t *addrs);
+  void send_loadmem_word(uint32_t word);
 
-        std::deque<uint32_t> in_data;
-        std::deque<uint32_t> out_data;
-        std::deque<fesvr_loadmem_t> loadmem_write_reqs;
-        std::deque<fesvr_loadmem_t> loadmem_read_reqs;
-        std::deque<char> loadmem_write_data;
+protected:
+  void idle();
 
-    private:
-        bool is_busy;
-        bool has_loadmem;
-        // A flag set only during program load to forward fesvr
-        // read/write_chunks to the loadmem unit instead of going over tsi
-        bool is_loadmem;
-        size_t idle_counts;
+  void load_mem_write(addr_t addr, size_t nbytes, const void* src) override;
+  void load_mem_read(addr_t addr, size_t nbytes, void* dst) override;
 
-        void push_addr(reg_t addr);
-        void push_len(size_t len);
+  std::deque<firesim_loadmem_t> loadmem_write_reqs;
+  std::deque<firesim_loadmem_t> loadmem_read_reqs;
+  std::deque<char> loadmem_write_data;
 
-        void read(uint32_t* data, size_t len);
-        void write(const uint32_t* data, size_t len);
-        void load_mem_write(addr_t addr, size_t nbytes, const void* src);
-        void load_mem_read(addr_t addr, size_t nbytes);
+  std::deque<uint32_t> loadmem_out_data;
+private:
+  size_t idle_counts;
+  bool is_busy;
 
-        midas_context_t host;
-        midas_context_t* target;
 
-        void wait();
-        static int host_thread(void *fesvr);
 
 };
-
 #endif // __FIRESIM_FESVR_H

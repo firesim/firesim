@@ -9,14 +9,6 @@ ifeq ($(PLATFORM),zynq)
 host = arm-xilinx-linux-gnueabi
 endif
 
-# Compile utility code
-lib_files := $(if $(filter $(CXX),cl),,midas_context)
-lib_cc    := $(addprefix $(util_dir)/, $(addsuffix .cc, $(lib_files)))
-lib_o     := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(lib_files)))
-
-$(lib_o): $(GEN_DIR)/%.o: $(util_dir)/%.cc
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
 ext_files := mm mm_dramsim2
 ext_cc    := $(addprefix $(testchip_csrc_dir)/, $(addsuffix .cc, $(ext_files)))
 ext_o     := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(ext_files)))
@@ -26,5 +18,5 @@ $(ext_o): $(GEN_DIR)/%.o: $(testchip_csrc_dir)/%.cc
 
 lib       := $(GEN_DIR)/libmidas.a
 
-$(lib): $(lib_o) $(ext_o) $(dramsim_o)
+$(lib): $(ext_o) $(dramsim_o)
 	$(AR) rcs $@ $^

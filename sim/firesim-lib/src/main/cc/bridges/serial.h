@@ -60,8 +60,8 @@ class serial_t: public bridge_driver_t
         void recv(); // Widget -> FESVR
 
         // Helper functions to handoff fesvr requests to the loadmem unit
-        void handle_loadmem_read(fesvr_loadmem_t loadmem);
-        void handle_loadmem_write(fesvr_loadmem_t loadmem);
+        void handle_loadmem_read(firesim_loadmem_t loadmem);
+        void handle_loadmem_write(firesim_loadmem_t loadmem);
         void serial_bypass_via_loadmem();
 };
 #endif // SERIALBRIDGEMODULE_struct_guard
