@@ -3,7 +3,7 @@
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 Versioning follows semantic versioning as described here: https://semver.org/spec/v2.0.0.html
 
-## [1.10.0] - 2020-09-25
+## [1.10.0] - 2020-10-05
 The biggest change in this release is the introduction of OpenSBI as the
 default firmware. BBL is still supported, but no longer the default. Other
 changes include a number of performance improvements, better support for
