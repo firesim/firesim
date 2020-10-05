@@ -61,7 +61,8 @@ object ImplementThreadedSyncReadMems extends Transform {
   private def implement(tMem: ThreadedSyncReadMem, moduleName: String): Module = {
     val info = FAME5Info.info
     val tIdxMax = UIntLiteral(tMem.nThreads-1)
-    val rdataPipeDepth = if (tMem.nThreads < 4) 0 else 1
+    val bramToBufferPipeDepth = if (tMem.nThreads < 4) 0 else 1
+    val bufferReadLatency = if (tMem.nThreads < 4) 0 else 1
 
     val hostClockPort = Port(info, WrapTop.hostClockName, Input, ClockType)
 
@@ -81,7 +82,7 @@ object ImplementThreadedSyncReadMems extends Transform {
       (Block(reg, conn), WRef(reg))
     }
 
-    def pipeline(depth: Int, expr: WRef): (Block, Expression) = {
+    def pipeline(depth: Int, expr: WRef): (Block, WRef) = {
       (1 to depth).foldLeft[(Block, WRef)]((Block(Nil), expr)) {
         case ((prevBlock, prev), idx) =>
           val (currentBlock, current) = hostRegNext(ns.newName(s"${expr.name}_p${idx}"), prev)
@@ -107,11 +108,16 @@ object ImplementThreadedSyncReadMems extends Transform {
     val (counterTracker, counterTrackerRef) = hostRegNext(ns.newName("edgeCountTracker"), WRef(targetClockCounter))
     val edgeStatus = DefNode(info, ns.newName("edgeStatus"), Xor(counterTrackerRef, WRef(targetClockCounter)))
 
-    val (tIdxPipe, tIdxPipedRef) = pipeline(rdataPipeDepth + 1, WRef(tIdx))
-    val (edgeStatusPipe, edgeStatusPipedRef) = pipeline(rdataPipeDepth, WRef(edgeStatus))
 
-    val rdMems = rdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, 0, Seq("r"), Seq("w"), Nil) }
-    val rwdMems = rwdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, 0, Seq("r"), Seq("w"), Nil) }
+    // The buffer addresses are arbitrary. Intuitively, with no pipelineing, we would write to tIdxLast and read from tIdx.
+    // Here, they are shifted back by (bufferReadLatency + 1) so that we always have pipelined addresses.
+    // More importantly, we never have to *increment* tIdx when adding buffer read latency.
+    val (tIdxLast, tIdxLastRef) = pipeline(1, WRef(tIdx))
+    val (tIdxPipe, tIdxPipedRef) = pipeline(bramToBufferPipeDepth + bufferReadLatency + 1, tIdxLastRef)
+    val (edgeStatusPipe, edgeStatusPipedRef) = pipeline(bramToBufferPipeDepth, WRef(edgeStatus))
+
+    val rdMems = rdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, bufferReadLatency, Seq("r"), Seq("w"), Nil) }
+    val rwdMems = rwdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, bufferReadLatency, Seq("r"), Seq("w"), Nil) }
 
     val defaultConns = accessors.map(p => Connect(info, wsf(WRef(mem), p), WRef(p)))
 
@@ -122,11 +128,11 @@ object ImplementThreadedSyncReadMems extends Transform {
         val tmpNodeName = ns.newName(s"${topPName}_${doutName}_node")
 
         val doutNode = DefNode(info, tmpNodeName, wssf(WRef(mem), topPName, doutName))
-        val (doutPipe, doutPipedRef) = pipeline(rdataPipeDepth, WRef(tmpNodeName, tMem.dataType, NodeKind, SourceFlow))
+        val (doutPipe, doutPipedRef) = pipeline(bramToBufferPipeDepth, WRef(tmpNodeName, tMem.dataType, NodeKind, SourceFlow))
         Seq(doutNode,
             doutPipe,
             Connect(info, wssf(doutMemRef, "r", "clk"), WRef(hostClockPort)),
-            Connect(info, wssf(doutMemRef, "r", "addr"), WRef(tIdx)),
+            Connect(info, wssf(doutMemRef, "r", "addr"), tIdxLastRef),
             Connect(info, wssf(doutMemRef, "r", "en"), UIntLiteral(1)),
             Connect(info, wsf(WRef(topPName), doutName), wssf(doutMemRef, "r", "data")),
             Connect(info, wssf(doutMemRef, "w", "clk"), WRef(hostClockPort)),
@@ -136,7 +142,7 @@ object ImplementThreadedSyncReadMems extends Transform {
             Connect(info, wssf(doutMemRef, "w", "data"), doutPipedRef))
     }
 
-    val ctrlStmts = Seq(tIdx, targetClockCounter, counterUpdate, counterTracker, edgeStatus, tIdxPipe, edgeStatusPipe)
+    val ctrlStmts = Seq(tIdx, targetClockCounter, counterUpdate, counterTracker, edgeStatus, tIdxLast, tIdxPipe, edgeStatusPipe)
     val body = Block(Seq(mem) ++ ctrlStmts ++ rdMems ++ rwdMems ++ defaultConns ++ dataOutLogic)
 
     Module(info, moduleName, ports, body)
