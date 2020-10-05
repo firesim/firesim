@@ -172,8 +172,9 @@ def addDep(loader, config):
         else:
             targets = [str(config['bin'])]
 
-        moddeps = [config.get('pk-src'),
-            config.get('firmware-src')]
+        moddeps = [config.get('pk-src')]
+        if 'firmware' in config:
+            moddeps.append(config['firmware']['source'])
 
         bin_calc_dep_tsks = [
                 submoduleDepsTask(moddeps, name="_submodule_deps_"+config['name']),
@@ -211,7 +212,9 @@ def addDep(loader, config):
         else:
             targets = [str(noDiskPath(config['bin']))]
 
-        uptodate = [config_changed(checkGitStatus(config.get('firmware-src')))]
+        uptodate = []
+        if 'firmware' in config:
+            uptodate.append(config_changed(checkGitStatus(config['firmware']['source'])))
         if 'linux' in config:
             uptodate.append(config_changed(checkGitStatus(config['linux']['source'])))
 
@@ -436,13 +439,18 @@ def makeModules(cfg):
 
 def makeBBL(config, nodisk=False):
     # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
-    bblBuild = config['bbl-src'] / 'build'
+    bblBuild = config['firmware']['source'] / 'build'
     if bblBuild.exists():
         shutil.rmtree(bblBuild)
     bblBuild.mkdir()
 
-    run(['../configure', '--host=riscv64-unknown-elf',
-        '--with-payload=' + str(config['linux']['source'] / 'vmlinux')], cwd=bblBuild)
+    configureArgs = ['--host=riscv64-unknown-elf',
+        '--with-payload=' + str(config['linux']['source'] / 'vmlinux')]
+
+    if 'bbl-build-args' in config['firmware']:
+        configureArgs += config['firmware']['bbl-build-args']
+
+    run(['../configure'] + configureArgs, cwd=bblBuild)
     run(['make', getOpt('jlevel')], cwd=bblBuild)
 
     return bblBuild / 'bbl'
@@ -453,16 +461,20 @@ def makeOpenSBI(config, nodisk=False):
     # Align to next MiB
     payloadSize = ((payload.stat().st_size + 0xfffff) // 0x100000) * 0x100000
 
+    args = getOpt('linux-make-args') + ['PLATFORM=generic',
+              'FW_PAYLOAD_PATH=' + str(payload),
+              'FW_PAYLOAD_FDT_ADDR=0x$(shell printf "%X" '
+                '$$(( $(FW_TEXT_START) + $(FW_PAYLOAD_OFFSET) + ' + hex(payloadSize) + ' )))']
+
+    if 'opensbi-build-args' in config['firmware']:
+        args += config['firmware']['opensbi-build-args']
+
     run(['make'] + 
-        getOpt('linux-make-args') +
-        ['PLATFORM=generic',
-         'FW_PAYLOAD_PATH=' + str(payload),
-         'FW_PAYLOAD_FDT_ADDR=0x$(shell printf "%X" '
-            '$$(( $(FW_TEXT_START) + $(FW_PAYLOAD_OFFSET) + ' + hex(payloadSize) + ' )))'],
-        cwd=config['opensbi-src']
+        getOpt('linux-make-args') + args,
+        cwd=config['firmware']['source']
         )
 
-    return config['opensbi-src'] / 'build' / 'platform' / 'generic' / 'firmware' / 'fw_payload.elf'
+    return config['firmware']['source'] / 'build' / 'platform' / 'generic' / 'firmware' / 'fw_payload.elf'
 
 
 def makeBin(config, nodisk=False):
@@ -486,7 +498,7 @@ def makeBin(config, nodisk=False):
         # Some submodules are only needed if building Linux
         try:
             checkSubmodule(config['linux']['source'])
-            checkSubmodule(config['firmware-src'])
+            checkSubmodule(config['firmware']['source'])
 
             makeModules(config)
         except SubmoduleError as err:
@@ -510,7 +522,7 @@ def makeBin(config, nodisk=False):
             generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
             run(['make'] + getOpt('linux-make-args') + ['vmlinux', 'Image', getOpt('jlevel')], cwd=config['linux']['source'])
 
-        if config['use-bbl']:
+        if 'use-bbl' in config.get('firmware', {}) and config['firmware']['use-bbl']:
             fw = makeBBL(config, nodisk)
         else:
             fw = makeOpenSBI(config, nodisk)

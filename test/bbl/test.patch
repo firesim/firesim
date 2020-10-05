@@ -1,0 +1,12 @@
+diff --git bbl/bbl.c bbl/bbl.c
+index 3b92fc1..ae3437e 100644
+--- bbl/bbl.c
++++ bbl/bbl.c
+@@ -129,6 +129,7 @@ void boot_loader(uintptr_t dtb)
+ #ifdef PK_PRINT_DEVICE_TREE
+   fdt_print(dtb_output());
+ #endif
++  putstring("\nMARSHAL BBL-SRC TEST\n");
+   mb();
+   /* Use optional FDT preloaded external payload if present */
+   entry_point = kernel_start ? kernel_start : PAYLOAD_START;
