@@ -103,7 +103,7 @@ object MultiThreader {
   }
 
   def transformAddr(counter: DefRegister, expr: Expression): Expression = {
-    DoPrim(PrimOps.Cat, Seq(expr, WRef(counter)), Nil, UnknownType)
+    DoPrim(PrimOps.Cat, Seq(WRef(counter), expr), Nil, UnknownType)
   }
 
   def updateReg(reg: DefRegister, slotName: String): DefRegister = {
