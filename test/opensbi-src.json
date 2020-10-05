@@ -1,0 +1,15 @@
+{
+    "name" : "opensbi-src",
+    "workdir" : "opensbi",
+    "base" : "br-base.json",
+    "host-init" : "copy-src.sh",
+    "firmware" : {
+        "opensbi-src" : "opensbi"
+    },
+    "command" : "echo open-sbi test",
+    "testing" : {
+        "refDir" : "srcOutput"
+    }
+}
+
+

@@ -44,6 +44,10 @@ categoryTests = {
         # will use Marshal
         "qemu" : [
             'bbl',
+            'bbl-src',
+            'bbl-args',
+            'opensbi-src',
+            'opensbi-args',
             'command',
             'driversJob',
             'drivers',
@@ -181,7 +185,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     allFailures = []
-    # allFailures += runTests(["fed-smoke0"], "manualTest")
     for category in args.categories:
         if category != 'special':
             allFailures += runTests(categoryTests[category], category,
