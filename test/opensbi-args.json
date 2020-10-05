@@ -9,7 +9,7 @@
     },
     "command" : "echo open-sbi test",
     "testing" : {
-        "refDir" : "argOutput"
+        "refDir" : "argsOutput"
     }
 }
 
