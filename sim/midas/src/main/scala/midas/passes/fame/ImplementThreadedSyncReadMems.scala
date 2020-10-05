@@ -92,7 +92,6 @@ object ImplementThreadedSyncReadMems extends Transform {
 
     // Useful expressions: tidx is carried in the bottom of input addr (part of interface definition)
     val targetClock = wsf(WRef(accessors.head), "clk")
-    val tLocalAddrWidth = BigInt((tMem.depth - 1).bitLength)
     val targetClockCounterName = ns.newName("edgeCount")
 
     // Name the memories used to store read data
@@ -100,7 +99,7 @@ object ImplementThreadedSyncReadMems extends Transform {
     val rwdMemNames = tMem.readwriters.map(rw => rw -> ns.newName(s"${rw}_rdatas")).toMap
 
     // Now all the statements
-    val tIdx = DefNode(info, ns.newName("thread"), DoPrim(PrimOps.Tail, Seq(wsf(WRef(accessors.head), "addr")), Seq(tLocalAddrWidth), tIdxMax.tpe))
+    val tIdx = DefNode(info, ns.newName("thread"), DoPrim(PrimOps.Head, Seq(wsf(WRef(accessors.head), "addr")), Seq(bitWidth(tIdxMax.tpe)), tIdxMax.tpe))
     val mem = tMem.flatImpl(ns.newName("mem"))
     val targetClockCounter = DefRegister(info, targetClockCounterName, BoolType, targetClock, UIntLiteral(0), WRef(targetClockCounterName))
     val counterUpdate = Connect(info, WRef(targetClockCounter), Negate(WRef(targetClockCounter)))

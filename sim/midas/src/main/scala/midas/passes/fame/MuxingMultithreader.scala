@@ -54,7 +54,7 @@ object MuxingMultiThreader {
       }
       Block(Seq(mem, rClockConn, rEnConn, rAddrConn, wClockConn, wEnDefault, wMaskConn, wAddrConn))
     case Connect(info, lhs @ WSubField(p: WSubField, "addr", _, _), rhs) if kind(lhs) == MemKind =>
-      Connect(FAME5Info.info ++ info, lhs, DoPrim(PrimOps.Cat, Seq(onExprRHS(rhs), tIdx), Nil, UnknownType))
+      Connect(FAME5Info.info ++ info, lhs, DoPrim(PrimOps.Cat, Seq(tIdx, onExprRHS(rhs)), Nil, UnknownType))
     case Connect(info, WRef(name, tpe, RegKind, _), rhs) =>
       regWriteAsMemWrite(info, name, tpe, onExprRHS(rhs))
     case Connect(_, lhs, _) if (kind(lhs) == RegKind) =>
@@ -65,7 +65,6 @@ object MuxingMultiThreader {
     case mem: DefMemory =>
       require(mem.readLatency == 0, "Memories must either by combinational read or handled as ThreadedSyncReadMems")
       require(mem.writeLatency == 1, "Memories must have one-cycle write latency")
-      require(nThreads.bitCount == 1, "Models may only be threaded by pow2 threads for now")
       mem.copy(depth = mem.depth * nThreads)
     case s => s.map(onStmt(newResets, nThreads, tIdx)).map(onExprRHS)
   }
