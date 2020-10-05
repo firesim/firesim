@@ -16,8 +16,12 @@ user-provided kernel modules, and various bug fixes.
   unifies all linux-related options into their own 'linux' option. The old
   'linux-src' 'linux-config' options are still supported but deprecated, users
   should now specify those in the 'linux' option. 
-* PR #152 adds support for OpenSBI as the default firmware. BBL is still
-  supported, but is no longer the default (use the "use-bbl" option).
+* Firmware Improvements, OpenSBI support
+    * PR #152 adds support for OpenSBI as the default firmware. BBL is still
+      supported, but is no longer the default (use the "use-bbl" option).
+    * PR #172 Adds 'opensbi-build-args' and 'bbl-build-args' options. It also
+      introduces the new 'firmware' option group (deprecating the 'pk-src'
+      option and grouping all firmware-relevant options into one place).
 
 ### Changed
 * PR #156 patches the default kernel to enable RoCC instructions by default.
