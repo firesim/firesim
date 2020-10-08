@@ -18,6 +18,7 @@ from contextlib import contextmanager
 import yaml
 import re
 import pprint
+import doit
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
@@ -28,7 +29,8 @@ ctx = None
 # List of marshal submodules (those enabled by init-submodules.sh)
 marshalSubmods = [
         'linux-dir',
-        'pk-dir',
+        'bbl-dir',
+        'opensbi-dir',
         'busybox-dir',
         'buildroot-dir',
         'driver-dirs'
@@ -100,7 +102,8 @@ def cleanPaths(opts, baseDir=pathlib.Path('.')):
         'image-dir',
         'linux-dir',
         'firesim-dir',
-        'pk-dir',
+        'bbl-dir',
+        'opensbi-dir',
         'log-dir',
         'res-dir',
         'workload-dirs'
@@ -131,9 +134,7 @@ userOpts = [
         'workload-dirs',
         'board-dir',
         'image-dir',
-        'linux-dir',
         'firesim-dir',
-        'pk-dir',
         'log-dir',
         'res-dir',
         'jlevel',  # int or str from user, converted to '-jN' after loading
@@ -173,6 +174,15 @@ derivedOpts = [
 
         # List of paths to linux driver sources to use
         'driver-dirs',
+
+        # Linux source to use by default (can be overwritten by user config). Derived from board-dir.
+        'linux-dir',
+
+        # Default pk/bbl source to use by default (can be overwritten by user config). Derived from board-dir.
+        'bbl-dir',
+
+        # Default OpenSBI source to use by default (can be overwritten by user config). Derived from board-dir.
+        'opensbi-dir',
 
         # Buildroot source directory
         'buildroot-dir',
@@ -290,7 +300,12 @@ class marshalCtx(collections.MutableMapping):
         self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
         self['jlevel'] = '-j' + str(self['jlevel'])
+
         self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
+        self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
+        self['opensbi-dir'] = self['board-dir'] / 'firmware' / 'opensbi'
+        self['linux-dir'] = self['board-dir'] / 'linux'
+
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
         self['linux-make-args'] = ["ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-"]
 
@@ -377,11 +392,13 @@ def getOpt(opt):
     else:
         return ctx[opt]
 
-# logging setup: You can call this multiple times to reset logging (e.g. if you
-# change the RunName)
 fileHandler = None
 consoleHandler = None
-def initLogging(verbose):
+def initLogging(verbose, logPath=None):
+    """logging setup: You can call this multiple times to reset logging (e.g. if you
+       change the RunName). If 'logPath' is set, that path will be used.
+       Otherwise the name will be derived from the current configuration."""
+
     global fileHandler
     global consoleHandler
 
@@ -389,7 +406,8 @@ def initLogging(verbose):
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
     # Create a unique log name
-    logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
+    if logPath is None:
+        logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
     
     # formatting for log to file
     if fileHandler is not None:
@@ -416,7 +434,7 @@ def initLogging(verbose):
 # Run subcommands and handle logging etc.
 # The arguments are identical to those for subprocess.call()
 # level - The logging level to use
-# check - Throw an error on non-zero return status?
+# check - Throw an error on non-zero return status
 def run(*args, level=logging.DEBUG, check=True, **kwargs):
     log = logging.getLogger()
 
@@ -497,16 +515,7 @@ def toCpio(src, dst):
                 stderr=sp.PIPE, stdout=outCpio, cwd=src)
         log.debug(p.stderr.decode('utf-8'))
 
-# Apply the overlay directory "overlay" to the filesystem image "img"
-# Note that all paths must be absolute
-def applyOverlay(img, overlay):
-    log = logging.getLogger()
-    flist = []
-    for f in overlay.glob('*'):
-        flist.append(FileSpec(src=f, dst=pathlib.Path('/')))
 
-    copyImgFiles(img, flist, 'in')
-    
 def resizeFS(img, newSize=0):
     """Resize the rootfs at img to newSize.
 
@@ -538,6 +547,7 @@ def resizeFS(img, newSize=0):
     run(['resize2fs', str(img)])
     return
 
+
 def copyImgFiles(img, files, direction):
     """Copies a list of type FileSpec ('files') to/from the destination image (img).
 
@@ -558,6 +568,17 @@ def copyImgFiles(img, files, direction):
                 run(sudoCmd + ['cp', '-a', src, str(f.dst)])
             else:
                 raise ValueError("direction option must be either 'in' or 'out'")
+
+
+def applyOverlay(img, overlay):
+    """Apply the overlay directory "overlay" to the filesystem image "img"
+       Note that all paths must be absolute"""
+    flist = []
+    for f in overlay.glob('*'):
+        flist.append(FileSpec(src=f, dst=pathlib.Path('/')))
+
+    copyImgFiles(img, flist, 'in')
+ 
 
 _toolVersions = None
 def getToolVersions():
@@ -649,6 +670,7 @@ def checkGitStatus(submodule):
 
     return status
 
+
 def checkSubmodule(s):
     """Check whether a submodule is present and initialized.
 
@@ -663,10 +685,56 @@ def checkSubmodule(s):
     if not s.exists() or not any(os.scandir(s)):
         raise SubmoduleError(s)
 
-# The doit.tools.config_changed helper doesn't support multiple invocations in
-# a single uptodate. I fix that bug here, otherwise it's a direct copy from their
+
+class WithMetadataChecker(doit.dependency.MD5Checker):
+    """This checker is similar to the default MD5Checker, but it includes file
+    metadata including mode and user/group ids.
+    see https://github.com/pydoit/doit/blob/0.31.1/doit/dependency.py for details
+    """
+
+    @staticmethod
+    def extract_stat(stat):
+        return (stat.st_mode, stat.st_uid, stat.st_gid)
+
+    def check_modified(self, file_path, file_stat, state):
+        state = tuple(state)
+        meta = self.extract_stat(file_stat)
+        if meta != state[3:]:
+            return True
+        else:
+            return super().check_modified(file_path, file_stat, state[:3])
+
+    def get_state(self, dep, current_state):
+        stat = self.extract_stat(os.stat(dep))
+        if current_state is None:
+            md5State = super().get_state(dep, None)
+            metaState = stat
+        else:
+            current_state = tuple(current_state)
+            md5State = super().get_state(dep, current_state[0:3])
+            if stat == current_state[3:]:
+                metaState = None
+            else:
+                metaState = stat
+
+        # Merge the two state sources
+        if md5State is None and metaState is None:
+            return None
+        else:
+            if md5State is None:
+                md5State = current_state[0:3]
+            elif metaState is None:
+                metaState = stat
+
+            return md5State + stat
+
+# The doit.tools.config_changed helper has a few limitations:
+#   - doesn't support multiple invocations in a single uptodate.
+#   - It is not JSON serializable which means you can't use it as a calc_dep
+#   (doit saves calc_dep to the DB). Fixed by subclassing dict.
+# I fix these here, otherwise it's a direct copy from their
 # code. See https://github.com/pydoit/doit/issues/333.
-class config_changed(object):
+class config_changed(dict):
     """check if passed config was modified
     @var config (str) or (dict)
     @var encoder (json.JSONEncoder) Encoder used to convert non-default values.
@@ -675,6 +743,7 @@ class config_changed(object):
         self.config = config
         self.config_digest = None
         self.encoder = encoder
+        dict.__init__(self)
 
     def _calc_digest(self):
         if isinstance(self.config, str):

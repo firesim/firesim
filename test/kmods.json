@@ -1,0 +1,15 @@
+{
+  "name" : "kmods",
+  "base" : "br-base.json",
+  "host-init" : "copy-src.sh",
+  "command" : "modinfo icenet | grep FireMarshal && modinfo testmod | grep FireMarshal",
+  "linux" : {
+      "modules" : {
+          "icenet" : "test-icenet/",
+          "testmod" : "testMod"
+      }
+  },
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}

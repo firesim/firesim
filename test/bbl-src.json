@@ -1,0 +1,16 @@
+{
+    "name" : "bbl-src",
+    "workdir" : "bbl",
+    "base" : "br-base.json",
+    "host-init" : "copy-src.sh",
+    "firmware" : {
+        "bbl-src" : "riscv-pk",
+        "use-bbl" : true
+    },
+    "command" : "echo bbl-src test",
+    "testing" : {
+        "refDir" : "bblSrcOutput"
+    }
+}
+
+

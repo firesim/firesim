@@ -8,31 +8,29 @@ import re
 
 # Should be the directory containing the test
 testSrc = pth.Path(__file__).parent
-testCfg = testSrc.parent / "testWorkdir.json"
+testCfg = testSrc / "testWorkdir.json"
 
-# Should be the directory containing marshal
-managerPath = pth.Path(os.getcwd()) / "marshal"
-if not managerPath.exists():
-    managerPath = pth.Path(os.getcwd()) / "../../marshal"
-    if not managerPath.exists:
-        print("Can't find marshal, this script should be called either from FireMarshal/ or FireMarshal/test/testWorkload/", file=sys.stderr)
-        sys.exit(1)
+if len(sys.argv) > 1:
+    managerPath = pth.Path(sys.argv[1])
+else:
+    # Should be the directory containing marshal
+    managerPath = pth.Path(os.getcwd()) / "marshal"
+    if not managerPath.exists():
+        managerPath = pth.Path(os.getcwd()) / "../../marshal"
+        if not managerPath.exists:
+            print("Can't find marshal, this script should be called either from FireMarshal/ or FireMarshal/test/testWorkload/", file=sys.stderr)
+            sys.exit(1)
 
-print(str(managerPath))
 # Safety first kids: Always clean before you test
 print("cleaning testWorkload test")
-cleanCmd = [str(managerPath), "--workdir", "../", "clean", str(testCfg)]
+cleanCmd = [str(managerPath), "--workdir", "../", "clean", "testWorkdir.json"]
 print(" ".join(cleanCmd))
-if sp.call(cleanCmd) != 0:
-    print("Clean Test Failure: the first clean command failed", file=sys.stderr)
-    sys.exit(1)
+sp.run(cleanCmd, cwd=testSrc, check=True)
 
 print("Building workload with non-local workload bases")
-testCmd = [str(managerPath), "--workdir", "../", "test", str(testCfg)]
+testCmd = [str(managerPath), "--workdir", "../", "test", "testWorkdir.json"]
 print(" ".join(testCmd))
-if sp.call(testCmd) != 0:
-    print("Clean Test Failure: first run of test failed", file=sys.stderr)
-    sys.exit(1)
+sp.run(testCmd, cwd=testSrc, check=True)
 
 print("testWorkdir test Success", file=sys.stderr)
 sys.exit()

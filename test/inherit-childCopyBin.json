@@ -1,10 +1,10 @@
 {
-  "name" : "inherit-child",
+  "name" : "inherit-childCopyBin",
   "workdir" : "inherit",
   "base" : "inherit-parent.json",
   "command" : "cat /root/runOutput",
   "testing" : {
-    "refDir" : "refOutput/child",
+    "refDir" : "refOutput/childCopyBin",
     "strip" : true
   }
 }

@@ -1,0 +1,11 @@
+{
+  "name" : "bbl",
+  "base" : "br-base.json",
+  "firmware" : {
+      "use-bbl" : true
+  },
+  "command" : "echo Global: using bbl",
+  "testing" : {
+      "refDir" : "bblOutput"
+  }
+}
