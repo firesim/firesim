@@ -191,8 +191,8 @@
                         <a href="SerialBridgeModule.html" title="">SerialBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="SerialBridgeParams.html" title="Class which parameterizes the SerialBridge"></a>
-                        <a href="SerialBridgeParams.html" title="Class which parameterizes the SerialBridge">SerialBridgeParams</a>
+                        <a class="class" href="" title="Class which parameterizes the SerialBridge"></a>
+                        <a href="" title="Class which parameterizes the SerialBridge">SerialBridgeParams</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="SerialBridgeTargetIO.html" title=""></a>
@@ -235,8 +235,8 @@
                         <a href="UARTBridgeTargetIO.html" title="">UARTBridgeTargetIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">UARTKey</a>
+                        <a class="class" href="UARTKey.html" title=""></a>
+                        <a href="UARTKey.html" title="">UARTKey</a>
                       </li>
               </ul>
             </div>
@@ -246,8 +246,8 @@
       <div id="definition">
         <div class="big-circle class">c</div>
         <p id="owner"><a href="../index.html" class="extype" name="firesim">firesim</a>.<a href="index.html" class="extype" name="firesim.bridges">bridges</a></p>
-        <h1>UARTKey<span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html" title="Permalink">
+        <h1>SerialBridgeParams<span class="permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -260,12 +260,16 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">UARTKey</span><span class="params">(<span name="uParams">uParams: <span class="extype" name="sifive.blocks.devices.uart.UARTParams">UARTParams</span></span>, <span name="div">div: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">SerialBridgeParams</span><span class="params">(<span name="memoryRegionNameOpt">memoryRegionNameOpt: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Class which parameterizes the SerialBridge</p><p>memoryRegionNameOpt, if unset, indicates that firesim-fesvr should not attempt to write a payload into DRAM through the loadmem unit.
+This is suitable for target designs which do not use the FASED DRAM model.
+If a FASEDBridge for the backing AXI4 memory is present, then memoryRegionNameOpt should be set to the same memory region name which is passed
+to the FASEDBridge. This enables fast payload loading in firesim-fesvr through the loadmem unit.
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -295,7 +299,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="firesim.bridges.UARTKey"><span>UARTKey</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="firesim.bridges.SerialBridgeParams"><span>SerialBridgeParams</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -315,10 +319,10 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="firesim.bridges.UARTKey#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(uParams:sifive.blocks.devices.uart.UARTParams,div:Int):firesim.bridges.UARTKey"></a><a id="&lt;init&gt;:UARTKey"></a>
+              <ol><li name="firesim.bridges.SerialBridgeParams#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(memoryRegionNameOpt:Option[String]):firesim.bridges.SerialBridgeParams"></a><a id="&lt;init&gt;:SerialBridgeParams"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#&lt;init&gt;(uParams:sifive.blocks.devices.uart.UARTParams,div:Int):firesim.bridges.UARTKey" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#&lt;init&gt;(memoryRegionNameOpt:Option[String]):firesim.bridges.SerialBridgeParams" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -327,7 +331,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">UARTKey</span><span class="params">(<span name="uParams">uParams: <span class="extype" name="sifive.blocks.devices.uart.UARTParams">UARTParams</span></span>, <span name="div">div: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
+        <span class="name">SerialBridgeParams</span><span class="params">(<span name="memoryRegionNameOpt">memoryRegionNameOpt: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
       </span>
       
       
@@ -344,7 +348,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -360,7 +364,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html###():Int" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -376,7 +380,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -392,7 +396,7 @@
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -408,7 +412,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#clone():Object" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -429,26 +433,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="firesim.bridges.UARTKey#div" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="div:Int"></a>
-      <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#div:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">div</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -464,7 +452,7 @@
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#finalize():Unit" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -486,7 +474,7 @@
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#getClass():Class[_]" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -505,7 +493,7 @@
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -518,10 +506,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="firesim.bridges.SerialBridgeParams#memoryRegionNameOpt" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="memoryRegionNameOpt:Option[String]"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#memoryRegionNameOpt:Option[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">memoryRegionNameOpt</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -537,7 +541,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#notify():Unit" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -556,7 +560,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#notifyAll():Unit" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -575,7 +579,7 @@
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -588,26 +592,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="firesim.bridges.UARTKey#uParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="uParams:sifive.blocks.devices.uart.UARTParams"></a><a id="uParams:UARTParams"></a>
-      <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#uParams:sifive.blocks.devices.uart.UARTParams" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">uParams</span><span class="result">: <span class="extype" name="sifive.blocks.devices.uart.UARTParams">UARTParams</span></span>
-      </span>
-      
-      
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#wait():Unit" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -629,7 +617,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -651,7 +639,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/UARTKey.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>

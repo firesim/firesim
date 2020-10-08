@@ -191,6 +191,10 @@
                         <a href="" title="">SerialBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="SerialBridgeParams.html" title="Class which parameterizes the SerialBridge"></a>
+                        <a href="SerialBridgeParams.html" title="Class which parameterizes the SerialBridge">SerialBridgeParams</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="SerialBridgeTargetIO.html" title=""></a>
                         <a href="SerialBridgeTargetIO.html" title="">SerialBridgeTargetIO</a>
                       </li><li class="current-entities indented2">
@@ -256,7 +260,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SerialBridgeModule</span><span class="result"> extends <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]] with <a href="../../midas/widgets/HostDramHeaderConsts.html" class="extype" name="midas.widgets.HostDramHeaderConsts">HostDramHeaderConsts</a></span>
+        <span class="name">SerialBridgeModule</span><span class="result"> extends <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]]</span>
       </span>
       </h4>
 
@@ -265,7 +269,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="../../midas/widgets/HostDramHeaderConsts.html" class="extype" name="midas.widgets.HostDramHeaderConsts">HostDramHeaderConsts</a>, <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]], <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a>, <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]], <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a>, <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -291,7 +295,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="firesim.bridges.SerialBridgeModule"><span>SerialBridgeModule</span></li><li class="in" name="midas.widgets.HostDramHeaderConsts"><span>HostDramHeaderConsts</span></li><li class="in" name="midas.widgets.BridgeModule"><span>BridgeModule</span></li><li class="in" name="midas.widgets.Widget"><span>Widget</span></li><li class="in" name="freechips.rocketchip.diplomacy.LazyModule"><span>LazyModule</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="firesim.bridges.SerialBridgeModule"><span>SerialBridgeModule</span></li><li class="in" name="midas.widgets.BridgeModule"><span>BridgeModule</span></li><li class="in" name="midas.widgets.Widget"><span>Widget</span></li><li class="in" name="freechips.rocketchip.diplomacy.LazyModule"><span>LazyModule</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -312,9 +316,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="firesim.bridges.SerialBridgeModule#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(memoryRegionName:String)(implicitp:freechips.rocketchip.config.Parameters):firesim.bridges.SerialBridgeModule"></a><a id="&lt;init&gt;:SerialBridgeModule"></a>
+      <a id="&lt;init&gt;(serialBridgeParams:firesim.bridges.SerialBridgeParams)(implicitp:freechips.rocketchip.config.Parameters):firesim.bridges.SerialBridgeModule"></a><a id="&lt;init&gt;:SerialBridgeModule"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/SerialBridgeModule.html#&lt;init&gt;(memoryRegionName:String)(implicitp:freechips.rocketchip.config.Parameters):firesim.bridges.SerialBridgeModule" title="Permalink">
+      <a href="../../firesim/bridges/SerialBridgeModule.html#&lt;init&gt;(serialBridgeParams:firesim.bridges.SerialBridgeParams)(implicitp:freechips.rocketchip.config.Parameters):firesim.bridges.SerialBridgeModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -323,7 +327,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SerialBridgeModule</span><span class="params">(<span name="memoryRegionName">memoryRegionName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
+        <span class="name">SerialBridgeModule</span><span class="params">(<span name="serialBridgeParams">serialBridgeParams: <a href="SerialBridgeParams.html" class="extype" name="firesim.bridges.SerialBridgeParams">SerialBridgeParams</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
       </span>
       
       
@@ -789,22 +793,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
-    </li><li name="firesim.bridges.SerialBridgeModule#memoryRegionName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="memoryRegionName:String"></a>
-      <span class="permalink">
-      <a href="../../firesim/bridges/SerialBridgeModule.html#memoryRegionName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">memoryRegionName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="firesim.bridges.SerialBridgeModule">SerialBridgeModule</a> → <a href="../../midas/widgets/HostDramHeaderConsts.html" class="extype" name="midas.widgets.HostDramHeaderConsts">HostDramHeaderConsts</a></dd></dl></div>
     </li><li name="firesim.bridges.SerialBridgeModule#module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[firesim.bridges.SerialBridgeTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[firesim.bridges.SerialBridgeTargetIO];valserialBits:Int;valinBuf:chisel3.util.Queue[chisel3.UInt];valoutBuf:chisel3.util.Queue[chisel3.UInt];valtokensToEnqueue:chisel3.UInt;valtarget:testchipip.SerialIO;valtFire:chisel3.Bool;valtargetReset:chisel3.Bool;valstepSize:chisel3.UInt;valstart:chisel3.Bool}"></a><a id="module:BridgeModuleImp[HostPortIO[SerialBridgeTargetIO]]{.../*11definitionsintyperefinement*/}"></a>
       <span class="permalink">
@@ -939,22 +927,6 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.HostDramHeaderConsts#offsetConstName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="offsetConstName:String"></a>
-      <span class="permalink">
-      <a href="../../firesim/bridges/SerialBridgeModule.html#offsetConstName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">offsetConstName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/HostDramHeaderConsts.html" class="extype" name="midas.widgets.HostDramHeaderConsts">HostDramHeaderConsts</a></dd></dl></div>
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#omitGraphML" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="omitGraphML:Boolean"></a>
       <span class="permalink">
@@ -1241,9 +1213,7 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.widgets.HostDramHeaderConsts">
-              <h3>Inherited from <a href="../../midas/widgets/HostDramHeaderConsts.html" class="extype" name="midas.widgets.HostDramHeaderConsts">HostDramHeaderConsts</a></h3>
-            </div><div class="parent" name="midas.widgets.BridgeModule">
+        <div class="parent" name="midas.widgets.BridgeModule">
               <h3>Inherited from <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]]</h3>
             </div><div class="parent" name="midas.widgets.Widget">
               <h3>Inherited from <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></h3>
