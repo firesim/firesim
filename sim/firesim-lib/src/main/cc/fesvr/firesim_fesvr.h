@@ -26,7 +26,7 @@ struct fesvr_loadmem_t {
 class firesim_fesvr_t : public htif_t
 {
     public:
-        firesim_fesvr_t(const std::vector<std::string> args);
+        firesim_fesvr_t(const std::vector<std::string> args, bool has_loadmem);
         ~firesim_fesvr_t(){};
         bool busy() { return is_busy; }
         bool data_available();
@@ -44,7 +44,7 @@ class firesim_fesvr_t : public htif_t
         void reset();
         void load_program() {
             wait(); // Switch back to commit all pending requests
-            is_loadmem = true;
+            is_loadmem = has_loadmem;
             htif_t::load_program();
             is_loadmem = false;
         }
@@ -65,6 +65,7 @@ class firesim_fesvr_t : public htif_t
 
     private:
         bool is_busy;
+        bool has_loadmem;
         // A flag set only during program load to forward fesvr
         // read/write_chunks to the loadmem unit instead of going over tsi
         bool is_loadmem;

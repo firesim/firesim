@@ -4,8 +4,8 @@
 #include <assert.h>
 #include "serial.h"
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, int64_t mem_host_offset):
-        bridge_driver_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, bool has_mem, int64_t mem_host_offset):
+        bridge_driver_t(sim), sim(sim), has_mem(has_mem), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
 
@@ -56,7 +56,7 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
     printf("\n");
 
    std::vector<std::string> args_new(argv_arr, argv_arr + argc_count);
-   fesvr = new firesim_fesvr_t(args_new);
+   fesvr = new firesim_fesvr_t(args_new, has_mem);
 }
 
 serial_t::~serial_t() {
@@ -89,6 +89,7 @@ void serial_t::recv() {
 
 void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
     assert(loadmem.size % sizeof(uint32_t) == 0);
+    assert(has_mem);
     // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
     mpz_t buf;
     mpz_init(buf);
@@ -118,6 +119,7 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
 
 void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     assert(loadmem.size <= 1024);
+    assert(has_mem);
     static char buf[1024];
     fesvr->recv_loadmem_data(buf, loadmem.size);
     mpz_t data;

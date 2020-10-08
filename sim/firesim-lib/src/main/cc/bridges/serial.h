@@ -29,13 +29,14 @@ struct serial_data_t {
                       args, \
                       SERIALBRIDGEMODULE_ ## IDX ## _substruct, \
                       IDX, \
+                      SERIALBRIDGEMODULE_ ## IDX ## _has_memory, \
                       SERIALBRIDGEMODULE_ ## IDX ## _memory_offset)); \
 
 #ifdef SERIALBRIDGEMODULE_struct_guard
 class serial_t: public bridge_driver_t
 {
     public:
-        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, int64_t mem_host_offset);
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, bool has_mem, int64_t mem_host_offset);
         ~serial_t();
         virtual void init();
         virtual void tick();
@@ -47,6 +48,7 @@ class serial_t: public bridge_driver_t
         SERIALBRIDGEMODULE_struct * mmio_addrs;
         simif_t* sim;
         firesim_fesvr_t* fesvr;
+        bool has_mem;
         // host memory offset based on the number of memory models and their size
         int64_t mem_host_offset;
         // Number of target cycles between fesvr interactions
