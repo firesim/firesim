@@ -92,13 +92,13 @@ driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
 	$(shell find $(firesim_lib_dir) -name "*.h") \
 	$(DROMAJO_REQS) \
-	$(TESTCHIPIP_CSRC_DIR)/testchip_fesvr.h
+	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
 
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
 	    $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 	    $(RISCV)/lib/libfesvr.a \
 	    $(DROMAJO_LIB) \
-	    $(TESTCHIPIP_CSRC_DIR)/testchip_fesvr.cc
+	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
 TARGET_CXX_FLAGS := -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost -I$(DROMAJO_DIR) -I$(GENERATED_DIR)
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz -L$(DROMAJO_DIR) -l$(DROMAJO_LIB_NAME)

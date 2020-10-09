@@ -12,6 +12,7 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
     std::string num_equals = std::to_string(serialno) + std::string("=");
     std::string prog_arg =         std::string("+prog") + num_equals;
     std::vector<std::string> args_vec;
+    args_vec.push_back("firesim_tsi");
     char** argv_arr;
     int argc_count = 0;
 
@@ -43,12 +44,11 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
         }
     }
 
-    argv_arr = new char*[args_vec.size()+1];
-    argv_arr[0] = (char*) "firesim-fesvr";
+    argv_arr = new char*[args_vec.size()];
     for(size_t i = 0; i < args_vec.size(); ++i)
     {
-        (argv_arr)[i+1] = new char[(args_vec)[i].size() + 1];
-        std::strcpy((argv_arr)[i+1], (args_vec)[i].c_str());
+        (argv_arr)[i] = new char[(args_vec)[i].size() + 1];
+        std::strcpy((argv_arr)[i], (args_vec)[i].c_str());
     }
 
     //debug for command line arguments
@@ -56,7 +56,7 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
     for(int i = 0; i < argc_count; i++)  { printf("%s ", (argv_arr)[i+1]);  }
     printf("\n");
 
-    fesvr = new firesim_fesvr_t(argc_count+1, argv_arr, has_mem);
+    fesvr = new firesim_tsi_t(argc_count+1, argv_arr, has_mem);
 }
 
 serial_t::~serial_t() {

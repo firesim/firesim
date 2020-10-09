@@ -1,8 +1,8 @@
 //See LICENSE for license details
-#ifndef __FIRESIM_FESVR_H
-#define __FIRESIM_FESVR_H
+#ifndef __FIRESIM_TSI_H
+#define __FIRESIM_TSI_H
 
-#include "testchip_fesvr.h"
+#include "testchip_tsi.h"
 
 struct firesim_loadmem_t {
   firesim_loadmem_t(): addr(0), size(0) { }
@@ -11,11 +11,11 @@ struct firesim_loadmem_t {
   size_t size;
 };
 
-class firesim_fesvr_t : public testchip_fesvr_t
+class firesim_tsi_t : public testchip_tsi_t
 {
 public:
-  firesim_fesvr_t(int argc, char** argv, bool has_loadmem);
-  ~firesim_fesvr_t(){};
+  firesim_tsi_t(int argc, char** argv, bool has_loadmem);
+  ~firesim_tsi_t(){};
 
   bool busy() { return is_busy; };
 
@@ -48,4 +48,4 @@ private:
 
 
 };
-#endif // __FIRESIM_FESVR_H
+#endif // __FIRESIM_TSI_H
