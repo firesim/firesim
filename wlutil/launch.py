@@ -129,6 +129,6 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
             run(prhCmd, cwd=config['workdir'])
         except sp.CalledProcessError as e:
             log.info("\nRun output available in: " + str(baseResDir))
-            raise RuntimeError("Post run hook failed:\n" + e.output)
+            raise RuntimeError("Post run hook failed:\n" + str(e.output))
 
     return baseResDir
