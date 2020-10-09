@@ -39,8 +39,8 @@ def main():
         'launch', help='Launch an image on a software simulator (defaults to qemu)')
     launch_parser.add_argument('-s', '--spike', action='store_true',
             help="Use the spike isa simulator instead of qemu")
-    launch_parser.add_argument('-j', '--job', nargs='?', default='all',
-            help="Launch the specified job. Defaults to running the base image.")
+    launch_parser.add_argument('-j', '--job', nargs='?', default=None, type=lambda s: [item for item in s.split(',')],
+            help="Launch the specified job(s). Multiple jobs are passed as a comma-separated list (-j 'foo,bar'). If the empty string is passed (-j ''), all jobs will be run. Defaults to running the root workload (the top-level of the config).")
     # the type= option here allows us to only accept one argument but store it
     # in a list so it matches the "build" behavior
     launch_parser.add_argument('config_files', metavar='config', nargs='?', type=(lambda c: [ pathlib.Path(c) ]), help="Configuration file to use.")
@@ -143,12 +143,11 @@ def main():
 
         elif args.command == "launch":
             # job-configs are named special internally
-            if args.job != 'all':
-                if 'jobs' in targetCfg: 
-                    args.job = targetCfg['name'] + '-' + args.job
+            if args.job is not None:
+                if args.job[0] == '':
+                    args.job = targetCfg['jobs']
                 else:
-                    log.error("Job " + args.job + " requested, but no jobs specified in config file\n")
-                    parser.print_help()
+                    args.job = [ targetCfg['name'] + '-' + job for job in args.job ]
 
             try:
                 outputPath = wlutil.launchWorkload(targetCfg, args.job, args.spike)
