@@ -3,7 +3,7 @@
 #define __SERIAL_H
 
 #include "bridges/bridge_driver.h"
-#include "fesvr/firesim_fesvr.h"
+#include "fesvr/firesim_tsi.h"
 
 template<class T>
 struct serial_data_t {
@@ -47,7 +47,7 @@ class serial_t: public bridge_driver_t
     private:
         SERIALBRIDGEMODULE_struct * mmio_addrs;
         simif_t* sim;
-        firesim_fesvr_t* fesvr;
+        firesim_tsi_t* fesvr;
         bool has_mem;
         // host memory offset based on the number of memory models and their size
         int64_t mem_host_offset;
@@ -60,8 +60,8 @@ class serial_t: public bridge_driver_t
         void recv(); // Widget -> FESVR
 
         // Helper functions to handoff fesvr requests to the loadmem unit
-        void handle_loadmem_read(fesvr_loadmem_t loadmem);
-        void handle_loadmem_write(fesvr_loadmem_t loadmem);
+        void handle_loadmem_read(firesim_loadmem_t loadmem);
+        void handle_loadmem_write(firesim_loadmem_t loadmem);
         void serial_bypass_via_loadmem();
 };
 #endif // SERIALBRIDGEMODULE_struct_guard
