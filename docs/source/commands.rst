@@ -68,9 +68,22 @@ be used by default and is the best choice in most circumstances.
 
 ``-j --job``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FireMarshal currently only supports launching one node at a time. By default,
-only the main workload will be run, you can specify jobs (using the job 'name')
-to run using the --job option.
+In workloads with multiple jobs, you can specify which job(s) to launch.
+FireMarshal does not currently support running networked jobs concurrently.
+However, you can run multiple jobs in a single launch command, they will be run
+sequentially. Jobs are identified by their ``name`` attribute.
+
+There are 3 forms:
+
+**Root Workload**: If ``-j`` is not provided, the root workload will be run. The root
+workload is the parent of all the jobs (i.e. the top level config in your
+JSON). This can be useful for debugging a multi-job workload.
+
+**Specific Jobs**: You may specify only a subset of jobs be run by passing a
+comma-separated list of job names. E.g. ``-j foo`` or ``-j 'foo,bar,baz'``.
+
+**All Jobs**: If you pass the empty string to ``-j`` (e.g. ``-j ''``), all jobs in the
+workload will be run.
 
 ``-s --spike``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
