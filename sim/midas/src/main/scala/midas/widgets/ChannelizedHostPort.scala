@@ -33,9 +33,9 @@ trait ChannelMetadata {
   }
 }
 
-case class PipeChannelMetadata(field: Data, clock: () => Clock, bridgeSunk: Boolean, latency: Int = 0) extends ChannelMetadata {
+case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, latency: Int = 0) extends ChannelMetadata {
   def fieldRTs = Seq(field.toTarget)
-  def clockRT = Some(clock().toTarget)
+  def clockRT = Some(clock.toTarget)
   def chInfo = midas.passes.fame.PipeChannel(latency)
 }
 
@@ -134,16 +134,17 @@ trait IndependentChannels extends HasChannels { this: Record =>
 }
 
 trait ChannelizedHostPortIO extends IndependentChannels { this: Record =>
+  def targetClockRef: Clock
   type ChannelType[A <: Data] = DecoupledIO[A]
   def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(payload)
   def InputChannel[A <: Data](field: A): ChannelType[A] = {
     val ch = channelField(Direction.Input, field)
-    channels.append((field, ch, PipeChannelMetadata(field, getClock, bridgeSunk = true)))
+    channels.append((field, ch, PipeChannelMetadata(field, targetClockRef, bridgeSunk = true)))
     ch
   }
   def OutputChannel[A <: Data](field: A): ChannelType[A] = {
     val ch = channelField(Direction.Output, field)
-    channels.append((field, ch, PipeChannelMetadata(field, getClock, bridgeSunk = false)))
+    channels.append((field, ch, PipeChannelMetadata(field, targetClockRef, bridgeSunk = false)))
     ch
   }
 }

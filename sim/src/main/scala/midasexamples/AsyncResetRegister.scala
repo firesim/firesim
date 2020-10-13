@@ -37,7 +37,7 @@ class AResetModule extends RawModule {
 }
 
 class AsyncResetRegister(implicit p: Parameters) extends RawModule {
-  val clock = Module(new RationalClockBridge()).io.clocks.head
+  val clock = RationalClockBridge().io.clocks.head
   val areset = AsyncResetPulseSource(500)
 
   val mod = Module(new AResetModule)

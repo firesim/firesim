@@ -78,7 +78,6 @@ object TimestampedTokenTraceEquivalence {
   @chiselName
   def apply[T <: Data](a: TimestampedTuple[T], b: TimestampedTuple[T], hostTimeout: Int): Bool = {
     val checker = Module(new TimestampedTokenTraceChecker(a.underlyingType))
-    println(checker)
     checker.a <> a
     checker.b <> b
     checker.time > (hostTimeout / 8).U
