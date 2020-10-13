@@ -121,6 +121,15 @@ object MultiThreadFAME5Models extends Transform {
   }
 
   override def execute(state: CircuitState): CircuitState = {
+    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
+    if (p(midas.EnableModelMultiThreading)) {
+      doTransform(state)
+    } else {
+      state
+    }
+  }
+
+  private def doTransform(state: CircuitState): CircuitState = {
     val moduleDefs = state.circuit.modules.collect({ case m: Module => OfModule(m.name) -> m}).toMap
 
     val top = moduleDefs(OfModule(state.circuit.main))

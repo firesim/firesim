@@ -26,11 +26,19 @@ import scala.collection.immutable.ListMap
   *
   * @param divisor See class comment.
   */
-case class RationalClock(name: String, multiplier: Int, divisor: Int)
+case class RationalClock(name: String, multiplier: Int, divisor: Int) {
+  def simplify: RationalClock = {
+    val gcd = BigInt(multiplier).gcd(BigInt(divisor)).intValue
+    RationalClock(name, multiplier / gcd, divisor / gcd)
+  }
+
+  def equalFrequency(that: RationalClock): Boolean =
+    this.simplify.multiplier == that.simplify.multiplier &&
+    this.simplify.divisor == that.simplify.divisor
+}
 
 trait ClockBridgeConsts {
   val clockChannelName = "clocks"
-  val refClockDomain = "baseClock"
 }
 
 /**
@@ -39,8 +47,6 @@ trait ClockBridgeConsts {
   * that clock domain will fire in the simulator time step that consumes this clock token.
   *
   * NB: The target-time elapsed between tokens is not necessarily constant.
-  *
-  * @param numClocks The total number of clocks in the channel (inclusive of the base clock)
   *
   */
 
@@ -61,19 +67,29 @@ case class ClockBridgeCtorArgument(baseClockPeriodPS: BigInt, clockInfo: Seq[Rat
   * additional clocks rationally related to that base clock. Simulation times are
   * generally expressed in terms of this base clock.
   *
-  * @param additionalClocks Rational clock information for each additional
-  * clock beyond the base
+  * @param allClocks Rational clock information for each clock in the system.
+  *
   */
-class RationalClockBridge(additionalClocks: RationalClock*) extends BlackBox with  
+class RationalClockBridge(val allClocks: Seq[RationalClock]) extends BlackBox with  
     Bridge[ClockTokenVector, ClockBridgeModule] with ClockBridgeConsts {
   outer =>
-  // Always generate the base (element 0 in our output vec)
-  val baseClock = RationalClock(refClockDomain, 1, 1)
-  val allClocks = baseClock +: additionalClocks
+  require(allClocks.exists(c => c.multiplier == c.divisor),
+    s"At least one requested clock must have multiplier / divisor == 1. This will be used as the base clock of the simulator.")
   val io = IO(new ClockBridgeTargetIO(allClocks.length))
   val bridgeIO = new ClockTokenVector(io)
   val constructorArg = Some(ClockBridgeCtorArgument(1000, allClocks))
   generateAnnotations()
+}
+
+object RationalClockBridge {
+  /**
+    * All additional provided clocks are relative to the an implicit base clock
+    * which is provided as the first index of the clock vector.
+    *
+    * @param additionalClocks Specifications for additional clocks
+    */
+  def apply(additionalClocks: RationalClock*): RationalClockBridge =
+    Module(new RationalClockBridge(RationalClock("BaseClock", 1, 1) +: additionalClocks))
 }
 
 /**

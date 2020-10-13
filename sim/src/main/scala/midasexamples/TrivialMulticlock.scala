@@ -33,9 +33,8 @@ class TrivialMulticlock(implicit p: Parameters) extends RawModule {
   // clocks beyond the base clock are specified using the RationalClock case
   // class which gives the clock domain's name, and its clock multiplier and
   // divisor relative to the base clock.
-  val clockBridge = Module(new RationalClockBridge( RationalClock("HalfRate", 1, 2), 
-                                                   RationalClock("ThirdRate", 1, 3)))
-
+  val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2),
+                                        RationalClock("ThirdRate", 1, 3))
   // The clock bridge has a single output: a Vec[Clock] of the requested clocks
   // in the order they were specified, which we are now free to use through our
   // Chisel design.  While not necessary, here we unassign the Vec to give them

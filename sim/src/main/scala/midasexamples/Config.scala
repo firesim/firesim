@@ -16,6 +16,7 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
   case DesiredHostFrequency => 75
   case SynthAsserts => true
   case GenerateMultiCycleRamModels => true
+  case EnableModelMultiThreading => true
   case SynthPrints => true
   case EnableAutoCounter => true
 }) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
