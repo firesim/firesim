@@ -14,7 +14,7 @@ case object DramOrganizationKey extends Field[DramOrganizationParams]
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
-class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up) => {
+class WithDefaultMemModel() extends Config((site, here, up) => {
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
@@ -26,9 +26,7 @@ class WithDefaultMemModel(clockDivision: Int = 1) extends Config((site, here, up
     llcKey = site(LlcKey))
 
   case MemModelKey => new LatencyPipeConfig(site(BaseParamsKey))
-}) {
-  require(clockDivision == 1, "Endpoint clock-division temporarily removed until FireSim 1.8.0")
-}
+})
 
 
 /*******************************************************************************
@@ -94,12 +92,6 @@ class LBP32R32WLLC4MB extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDefaultMemModel)
 
-// An LBP that runs at 1/3 the frequency of the cores + uncore
-// This is 1067 MHz for default core frequency of 3.2 GHz
-class LBP32R32W3Div extends Config(
-  new WithFuncModelLimits(32,32) ++
-  new WithDefaultMemModel(3))
-
 // DDR3 - FCFS models.
 class FCFS16GBQuadRank extends Config(new WithDDR3FIFOMAS(8) ++ new WithDefaultMemModel)
 class FCFS16GBQuadRankLLC4MB extends Config(
@@ -107,17 +99,12 @@ class FCFS16GBQuadRankLLC4MB extends Config(
   new FCFS16GBQuadRank)
 
 // DDR3 - First-Ready FCFS models
-class FRFCFS16GBQuadRank(clockDiv: Int = 1) extends Config(
+class FRFCFS16GBQuadRank() extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDDR3FRFCFS(8, 8) ++
-  new WithDefaultMemModel(clockDiv)
+  new WithDefaultMemModel()
 )
 class FRFCFS16GBQuadRankLLC4MB extends Config(
   new WithLLCModel(4096, 8) ++
   new FRFCFS16GBQuadRank
-)
-
-class FRFCFS16GBQuadRankLLC4MB3Div extends Config(
-  new WithLLCModel(4096, 8) ++
-  new FRFCFS16GBQuadRank(3)
 )
