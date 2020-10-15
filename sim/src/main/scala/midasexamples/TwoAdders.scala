@@ -44,14 +44,12 @@ class TwoAddersDUT extends Module {
   })
 
   val a0 = Module(new DoublePipeAdder)
-  annotate(FAMEModelAnnotation(a0))
   annotate(EnableModelMultiThreadingAnnotation(a0))
   a0.io.x := io.i0
   a0.io.y := io.i1
   io.o0 := a0.io.z
 
   val a1 = Module(new DoublePipeAdder)
-  annotate(FAMEModelAnnotation(a1))
   annotate(EnableModelMultiThreadingAnnotation(a1))
   a1.io.x := io.i2
   a1.io.y := io.i3

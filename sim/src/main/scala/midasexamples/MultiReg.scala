@@ -29,7 +29,6 @@ class MultiRegDUT extends Module {
   (io.pipeIOs zip pipes).foreach {
     case (pio, p) =>
       p.io <> pio
-      annotate(FAMEModelAnnotation(p))
       annotate(EnableModelMultiThreadingAnnotation(p))
   }
 }
