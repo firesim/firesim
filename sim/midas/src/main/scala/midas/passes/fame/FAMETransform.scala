@@ -147,11 +147,25 @@ object FAMEModuleTransformer {
      */
     val nReset = DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType)
 
+    /**
+      * Bundles together four critical elements for managing multiclock processing.
+      *
+      * @param Port The reference to the original target port
+      *
+      * @param outputChannelEnable A boolean that, when asserted alongside
+      * targetCycleFinishing, serves to reset output channels in the associated
+      * clock domain so that new output tokens may be enqueued.
+      *
+      * @param inputChannelEnable Ditto, above. This is asserted one pipeline
+      * stage earlier, ensuring that all inputs are dequeued synchronously with
+      * the launching of the target clock.
+      *
+      * @param clockBuffer Holds a reference to the gated target-clock (+ associated statements)
+      */
     case class TargetClockMetadata(
       targetSourcePort: Port,
-      // I'm not convinced these are the right names for this...
-      clockLowEnable: Expression,
-      clockHighEnable: Expression,
+      outputChannelEnable: Expression,
+      inputChannelEnable: Expression,
       clockBuffer: SignalInfo)
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
@@ -176,8 +190,12 @@ object FAMEModuleTransformer {
     // Multi-clock management step 5: Generate target clock substitution map
     def asWE(p: Port) = WrappedExpression.we(WRef(p))
     val replaceClocksMap = (clockChannel.ports.map(p => asWE(p)) zip targetClockBufs.map(_.ref)).toMap
-    val clockLowMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.clockLowEnable).toMap
-    val clockHighMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.clockHighEnable).toMap
+    /**
+      * These provide a mapping from a clock reference to signals that indicate if the channel FSM (isFired)
+      * should be reset for the next cycle which will permit a new handshake.
+      */
+    val outputChannelEnableMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.outputChannelEnable).toMap
+    val inputChannelEnableMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.inputChannelEnable).toMap
 
     // LI-BDN transformation step 1: Build channels
     // TODO: get rid of the analysis calls; we just need connectivity & annotations
@@ -191,9 +209,9 @@ object FAMEModuleTransformer {
         assert(srcClockPorts.size == 1)
         val clockRef = WRef(srcClockPorts.head)
         val clockFlag = if (isInput) {
-          DoPrim(PrimOps.AsUInt, Seq(clockHighMap(clockRef)), Nil, BoolType)
+          DoPrim(PrimOps.AsUInt, Seq(inputChannelEnableMap(clockRef)), Nil, BoolType)
         } else {
-          DoPrim(PrimOps.AsUInt, Seq(clockLowMap(clockRef)), Nil, BoolType)
+          DoPrim(PrimOps.AsUInt, Seq(outputChannelEnableMap(clockRef)), Nil, BoolType)
         }
         /**
           * Let output channels reset to "unfired". This allows combinational paths to resolve
