@@ -170,14 +170,14 @@ object FAMEModuleTransformer {
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
     val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.map { en =>
-      val enableReg = hostFlagReg(s"${en.name}_enabled")//, resetVal = UIntLiteral(1))
+      val enableReg = hostFlagReg(s"${en.name}_enabled")
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
         Connect(NoInfo, WSubField(WRef(buf), "CE"),
-          Seq(WRef(enableReg), WRef(finishing), nReset).reduce(And.apply))))
+          And.reduce(Seq(WRef(enableReg), WRef(finishing), nReset)))))
       TargetClockMetadata(
         en,
         WRef(enableReg),
