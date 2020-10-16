@@ -147,15 +147,6 @@ object FAMEModuleTransformer {
      */
     val nReset = DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType)
 
-    /*
-     * At simulation time zero do a clock low for all clock domains: let all
-     * combinational paths resolve based on initial tokens and register values.
-     * We can spoof this this by setting clockEnable for all domains without
-     * actually ungating those clocks.
-     */
-    val doneInit = hostFlagReg(ns.newName("doneInit"), resetVal = UIntLiteral(0))
-    val doneInitConnect = Connect(NoInfo, WRef(doneInit), Or(WRef(doneInit), WRef(finishing)))
-
     case class TargetClockMetadata(
       targetSourcePort: Port,
       // I'm not convinced these are the right names for this...
@@ -165,14 +156,14 @@ object FAMEModuleTransformer {
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
     val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.map { en =>
-      val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
+      val enableReg = hostFlagReg(s"${en.name}_enabled")//, resetVal = UIntLiteral(1))
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
         Connect(NoInfo, WSubField(WRef(buf), "CE"),
-          Seq(WRef(enableReg), WRef(finishing), nReset, WRef(doneInit)).reduce(And.apply))))
+          Seq(WRef(enableReg), WRef(finishing), nReset).reduce(And.apply))))
       TargetClockMetadata(
         en,
         WRef(enableReg),
@@ -204,7 +195,16 @@ object FAMEModuleTransformer {
         } else {
           DoPrim(PrimOps.AsUInt, Seq(clockLowMap(clockRef)), Nil, BoolType)
         }
-        val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
+        /**
+          * Let output channels reset to "unfired". This allows combinational paths to resolve
+          * at time 0 before the first clock token is resolved based on initialization values.
+          *
+          * Which input tokens are dequeued depends on the first clock token. Mark these as fired
+          * until the first clock token is resolved.
+          */
+        val firedReg = hostFlagReg(
+          suggestName = ns.newName(s"${cName}_fired"),
+          resetVal = UIntLiteral(if (isInput) 1 else 0))
         (cName, clockFlag, ports, firedReg)
       case (cName, (None, ports)) => clockChannel match {
         case vc: VirtualClockChannel =>
@@ -276,8 +276,8 @@ object FAMEModuleTransformer {
     val clockOutputsAsWires = m.ports.collect { case Port(i, n, Output, ClockType) => DefWire(i, n, ClockType) }
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = Seq(finishing, doneInit) ++: clockOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
-    val assigns = Seq(doneInitConnect) ++ targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
+    val decls = finishing +: clockOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
+    val assigns = targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
     Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns))
   }
 }
