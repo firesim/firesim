@@ -14,7 +14,7 @@ case object DramOrganizationKey extends Field[DramOrganizationParams]
 
 // Instantiates an AXI4 memory model that executes (1 / clockDivision) of the frequency
 // of the RTL transformed model (Rocket Chip)
-class WithDefaultMemModel() extends Config((site, here, up) => {
+class WithDefaultMemModel extends Config((site, here, up) => {
   case LlcKey => None
   // Only used if a DRAM model is requested
   case DramOrganizationKey => DramOrganizationParams(maxBanks = 8, maxRanks = 4, dramSize = BigInt(1) << 34)
@@ -99,10 +99,10 @@ class FCFS16GBQuadRankLLC4MB extends Config(
   new FCFS16GBQuadRank)
 
 // DDR3 - First-Ready FCFS models
-class FRFCFS16GBQuadRank() extends Config(
+class FRFCFS16GBQuadRank extends Config(
   new WithFuncModelLimits(32,32) ++
   new WithDDR3FRFCFS(8, 8) ++
-  new WithDefaultMemModel()
+  new WithDefaultMemModel
 )
 class FRFCFS16GBQuadRankLLC4MB extends Config(
   new WithLLCModel(4096, 8) ++
