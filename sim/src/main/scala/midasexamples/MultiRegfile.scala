@@ -31,7 +31,6 @@ class MultiRegfileDUT extends Module {
   rfs.zip(io.accesses).foreach {
     case (rf, rfio) =>
       rf.io <> rfio
-      annotate(FAMEModelAnnotation(rf))
       annotate(EnableModelMultiThreadingAnnotation(rf))
   }
 }
