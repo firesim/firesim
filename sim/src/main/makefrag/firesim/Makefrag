@@ -45,7 +45,7 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DE
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG))
+		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
 
 # DOC include start: Bridge Build System Changes
 ##########################
