@@ -16,15 +16,15 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Direction, chiselName, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
-import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
+import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget, IsModule}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer}
 
 case object SimWrapperKey extends Field[SimWrapperConfig]
 
-private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
+private[midas] case class TargetBoxAnnotation(target: IsModule) extends SingleTargetAnnotation[IsModule] {
+  def duplicate(rt: IsModule): TargetBoxAnnotation = TargetBoxAnnotation(rt)
 }
 
 class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
@@ -249,7 +249,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
 
   // Indicates SimulationMapping which module we want to replace with the simulator
   annotate(new ChiselAnnotation { def toFirrtl =
-    TargetBoxAnnotation(outer.toNamed.toTarget.ref(target.instanceName))
+    TargetBoxAnnotation(target.toAbsoluteTarget)
   })
 
   target.io.hostReset := reset.toBool

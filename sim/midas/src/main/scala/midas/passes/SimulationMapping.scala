@@ -8,7 +8,7 @@ import java.io.{File, FileWriter, StringWriter}
 import scala.collection.mutable
 
 import firrtl._
-import firrtl.annotations.{CircuitName, ReferenceTarget, ModuleTarget}
+import firrtl.annotations.{CircuitName, ReferenceTarget, ModuleTarget, InstanceTarget}
 import firrtl.options.Dependency
 import firrtl.stage.Forms
 import firrtl.stage.transforms.Compiler
@@ -70,10 +70,9 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
       case s => s map initStmt(targetModuleName, targetInstName)
     }
 
-  private def init(info: Info, target: String, tpe: Type, targetBoxRT: ReferenceTarget)(m: DefModule) = m match {
-    case m: Module if m.name == targetBoxRT.module =>
-      val targetBoxInstName = targetBoxRT.ref
-      val body = initStmt(target, targetBoxInstName)(m.body)
+  private def init(info: Info, target: String, tpe: Type, targetBoxParent: String, targetBoxInst: String)(m: DefModule) = m match {
+    case m: Module if m.name == targetBoxParent =>
+      val body = initStmt(target, targetBoxInst)(m.body)
       Some(m.copy(info = info, body = body))
     case m: Module => Some(m)
     case m: ExtModule => None
@@ -107,9 +106,13 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
-    val targetBoxAnno = outerState.annotations.collectFirst({ case c: TargetBoxAnnotation => c }).get
+    val targetBoxInstTarget = outerState.annotations.collectFirst({
+      case TargetBoxAnnotation(it: InstanceTarget) => it
+    }).getOrElse(throw new Exception("TargetBoxAnnotation not found or annotated top module!"))
+    val targetBoxParent = targetBoxInstTarget.encapsulatingModule
+    val targetBoxInst = targetBoxInstTarget.instance
     val modules = innerCircuit.modules ++ (outerCircuit.modules flatMap
-      init(innerCircuit.info, innerCircuit.main, targetType, targetBoxAnno.target))
+      init(innerCircuit.info, innerCircuit.main, targetType, targetBoxParent, targetBoxInst))
 
     // Rename the annotations from the inner module, which are using an obsolete CircuitName
     val renameMap = RenameMap(
