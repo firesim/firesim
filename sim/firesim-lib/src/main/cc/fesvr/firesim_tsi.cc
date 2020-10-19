@@ -30,6 +30,7 @@ void firesim_tsi_t::load_mem_write(addr_t addr, size_t nbytes, const void* src) 
 }
 
 void firesim_tsi_t::load_mem_read(addr_t addr, size_t nbytes, void* dst) {
+  while (!loadmem_write_reqs.empty()) switch_to_target();
   loadmem_read_reqs.push_back(firesim_loadmem_t(addr, nbytes));
 
   uint32_t *result = static_cast<uint32_t*>(dst);
