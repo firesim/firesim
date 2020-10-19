@@ -17,7 +17,8 @@ class firesim_top_t: virtual simif_t, public systematic_scheduler_t
         firesim_top_t(int argc, char** argv);
         ~firesim_top_t() { }
 
-        void run();
+        virtual void run();
+        int teardown();
 
     protected:
         void add_bridge_driver(bridge_driver_t* bridge_driver) {

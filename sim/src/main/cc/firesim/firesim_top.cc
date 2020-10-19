@@ -557,9 +557,9 @@ void firesim_top_t::run() {
         fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few minutes...\n");
         zero_out_dram();
     }
+
     fprintf(stderr, "Commencing simulation.\n");
-    uint64_t start_hcycle = hcycle();
-    uint64_t start_time = timestamp();
+    record_start_times();
 
     // Assert reset T=0 -> 50
     target_reset(50);
@@ -572,30 +572,21 @@ void firesim_top_t::run() {
         }
     }
 
-    uint64_t end_time = timestamp();
-    uint64_t end_cycle = actual_tcycle();
-    uint64_t hcycles = hcycle() - start_hcycle;
-    double sim_time = diff_secs(end_time, start_time);
-    double sim_speed = ((double) end_cycle) / (sim_time * 1000.0);
-    // always print a newline after target's output
-    fprintf(stderr, "\n");
+    record_end_times();
+    fprintf(stderr, "\nSimulation complete.\n");
+}
+
+int firesim_top_t::teardown() {
     int exitcode = exit_code();
     if (exitcode) {
-        fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, end_cycle);
+        fprintf(stderr, "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n", exitcode, get_end_tcycle());
     } else if (!simulation_complete() && has_timed_out()) {
-        fprintf(stderr, "*** FAILED *** (timeout) after %llu cycles\n", end_cycle);
+        fprintf(stderr, "*** FAILED *** (timeout) after %" PRIu64 " cycles\n", get_end_tcycle());
     } else {
-        fprintf(stderr, "*** PASSED *** after %llu cycles\n", end_cycle);
+        fprintf(stderr, "*** PASSED *** after %" PRIu64 " cycles\n", get_end_tcycle());
     }
-    if (sim_speed > 1000.0) {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
-    } else {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
-    }
-    double fmr = ((double) hcycles / end_cycle);
-    // This returns the FMR of the fastest target clock
-    fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
-    expect(!exitcode, NULL);
+
+    print_simulation_performance_summary();
 
     for (auto &e: fpga_models) {
         e->finish();
@@ -604,5 +595,5 @@ void firesim_top_t::run() {
     for (auto &e: bridges) {
         e->finish();
     }
+    return (exitcode || has_timed_out()) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
