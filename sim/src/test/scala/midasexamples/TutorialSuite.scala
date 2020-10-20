@@ -198,6 +198,18 @@ class NestedModelsF1Test extends TutorialSuite("NestedModels")
 
 class MultiRegF1Test extends TutorialSuite("MultiReg")
 
+class PassthroughModelTest extends TutorialSuite("PassthroughModel") {
+  expectedFMR(1.0)
+}
+
+class PassthroughModelNestedTest extends TutorialSuite("PassthroughModelNested") {
+  expectedFMR(1.0)
+}
+
+class PassthroughModelBridgeSourceTest extends TutorialSuite("PassthroughModelBridgeSource") {
+  expectedFMR(1.0)
+}
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
