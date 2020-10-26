@@ -39,13 +39,26 @@ else
 	firesim_sbt_project := firechip
 endif
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
-	mkdir -p $(@D)
-	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator,\
-		--target-dir $(GENERATED_DIR) \
-		--name $(long_name) \
-		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
+FAT_JAR ?= $(firesim_base_dir)/generated-src/firechip.jar
+FAT_JAR_DEPS ?= $(SCALA_SOURCES) $(SCALA_BUILDTOOL_DEPS)
+FAT_JAR_RECIPE ?= cd $(base_dir) && $(SBT) "project $(firesim_sbt_project); set assemblyOutputPath in assembly := file(\"$(FAT_JAR)\"); assembly"
+
+fat_jar_dir := $(dir $(FAT_JAR))
+$(fat_jar_dir):
+	mkdir -p $@
+
+$(FAT_JAR):  $(FAT_JAR_DEPS) | $(fat_jar_dir)
+	$(FAT_JAR_RECIPE)
+
+PRE_ELABORATION_TARGETS += $(FAT_JAR)
+
+# empty recipe to help make understand multiple targets come from single invocation
+# without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
+$(FIRRTL_FILE) $(ANNO_FILE): $(FIRRTL_FILE).intermediate ;
+
+.SECONDARY: $(FIRRTL_FILE).intermediate
+$(FIRRTL_FILE).intermediate: $(SCALA_SOURCES) $(PRE_ELABORATION_TARGETS) | $(GENERATED_DIR)
+	$(call run_main,$(firesim_sbt_project),$(GENERATOR_NAME),$(GENERATOR_ARGS))
 
 # DOC include start: Bridge Build System Changes
 ##########################

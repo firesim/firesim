@@ -60,6 +60,9 @@ SBT ?= java $(JAVA_OPTS) -jar $(rocketchip_dir)/sbt-launch.jar $(SBT_OPTS) $(SBT
 define run_scala_main
 	cd $(base_dir) && $(SBT) ";project $(1); runMain $(2) $(3)"
 endef
+# recipes for generator and gg using sbt are calls out to FAT_JAR instead of SBT
+run_main = cd $(base_dir) && java $(JAVA_ARGS) -cp $(FAT_JAR) $(2) $(3)
+RUN_MAIN_DEPS = $(FAT_JAR)
 
 ##############################################################################
 # SBT Server Setup (start server / rebuild proj. defs. if SBT_SOURCES change)

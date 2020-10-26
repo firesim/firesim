@@ -30,12 +30,20 @@ else
 	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 endif
 
+# FAT_JAR is applicable across config tuples but is tied to the sbt project
+FAT_JAR := $(firesim_base_dir)/generated-src/firesim.jar
+PRE_ELABORATION_TARGETS += $(FAT_JAR)
+
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
 		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
+
+$(FAT_JAR):  $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
+	mkdir -p $(@D)
+	$(SBT) "project $(firesim_sbt_project)" 'set assemblyOutputPath in assembly := file("$(FAT_JAR)")' assembly
 
 CONF_NAME ?= runtime.conf
 
@@ -44,9 +52,13 @@ mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
 COMMON_SIM_ARGS ?= $(mem_model_args)
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
-	mkdir -p $(@D)
-	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator, \
+# empty recipe to help make understand multiple targets come from single invocation
+# without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
+$(FIRRTL_FILE) $(ANNO_FILE): $(FIRRTL_FILE).intermediate ;
+
+.SECONDARY: $(FIRRTL_FILE).intermediate
+$(FIRRTL_FILE).intermediate: $(chisel_srcs) $(PRE_ELABORATION_TARGETS) | $(GENERATED_DIR)
+	$(call run_main,$(firesim_sbt_project),chipyard.Generator, \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \

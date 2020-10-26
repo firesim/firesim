@@ -22,7 +22,21 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases"),
-    Resolver.mavenLocal)
+    Resolver.mavenLocal),
+  assemblyMergeStrategy in assembly := {
+    case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
+    // Discard Metadata, it's irrelevant
+    case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+    // When any of our dependencies are different versions than those of firrtl.jar, there will be conflicts
+    // When this occurs, pick last one which is stuff in .ivy2 (ie. not firrtl.jar)
+    case PathList(xs @ _*) if xs.last.endsWith(".class") || xs.last.endsWith(".properties") => MergeStrategy.last
+    // Just take the last matching joda/time/tz/data resource files
+    case PathList("org", "joda", "time", "tz", "data", xs @ _*) => MergeStrategy.last
+    case x =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  },
+  test in assembly := {}
 )
 
 // Fork each scala test for now, to work around persistent mutable state
@@ -98,6 +112,8 @@ lazy val firesim    = (project in file("."))
     Compile / doc := (doc in ScalaUnidoc).value,
     // Registers the unidoc-generated html with sbt-site
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
-    concurrentRestrictions += Tags.limit(Tags.Test, 1)
+    concurrentRestrictions += Tags.limit(Tags.Test, 1),
+    mainClass in assembly := Some("chipyard.Generator"),
+    assemblyOutputPath in assembly := file("generated-src/firesim.jar"),
   )
   .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)

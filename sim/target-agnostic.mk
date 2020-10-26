@@ -1,6 +1,8 @@
 # See LICENSE for license details.
 
 # FireSim MAKEFRAG interface - Compulsory variables follow
+# The FAT JAR created using sbt assembly
+FAT_JAR ?=
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
 GENERATED_DIR ?=
@@ -54,8 +56,8 @@ fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
-$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
-	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
+$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(RUN_MAIN_DEPS)
+	$(call run_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
@@ -75,16 +77,16 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOO
 # to generate a runtime configuration that is compatible with the generated
 # hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
 .PHONY: conf
-conf: $(fame_annos)
+conf: $(fame_annos) $(FAT_JAR)
 	mkdir -p $(GENERATED_DIR)
 	# Runtime configuration generator must run under SBT currently; When
 	# launched via bloop some Console input and output is lost.
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	cd $(base_dir) && java $(JAVA_ARGS) -cp $(FAT_JAR) midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-ggrc $(CONF_NAME)"
+		-ggrc $(CONF_NAME)
 
 ####################################
 # Verilator MIDAS-Level Simulators #
