@@ -7,6 +7,53 @@ val chiselVersion = "3.4.1"
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
 apiDirectory := "latest"
 
+def filenames(tempDir: File, fs: Seq[File]): Seq[String] =
+for(f <- fs) yield {
+  sbtassembly.AssemblyUtils.sourceOfFileForMerge(tempDir, f) match {
+    case (path, base, subDirPath, false) => subDirPath
+    case (jar, base, subJarPath, true) => jar + ":" + subJarPath
+  }
+}
+
+// custom sbtassemblly.MergeStrategy
+// removes merge candidates that have 'rocketchip' in the name of their JAR
+// hopefully leaving only a single candidate to be chosen as the member of 
+// our assembly JAR.  If there's still multiple candidates, error.
+val notRocketMergeStrategy = new sbtassembly.MergeStrategy {
+  val name = "notRocket"
+  def apply(tempDir: File, path: String, files: Seq[File]) = {
+    val filtered = files collect { f =>
+      sbtassembly.AssemblyUtils.sourceOfFileForMerge(tempDir, f) match {
+        case (jar, _, _, true) if !jar.toString.contains("rocketchip") => f
+      }
+    }
+    if (filtered.size == 1) Right(Seq(filtered.head -> path))
+    else Left("still have multiple files after removing rocketchip for same target path:" +
+      filenames(tempDir, filtered).mkString("\n", "\n", "")
+      )
+  }
+}
+
+// custom sbtassemblly.MergeStrategy
+// keeps merge candidates that have 'rocketchip' in the name of their JAR
+// hopefully leaving only a single candidate to be chosen as the member of 
+// our assembly JAR.  If there's still multiple candidates, error.
+val useRocketMergeStrategy = new sbtassembly.MergeStrategy {
+  val name = "useRocket"
+  def apply(tempDir: File, path: String, files: Seq[File]) = {
+    val filtered = files collect { f =>
+      sbtassembly.AssemblyUtils.sourceOfFileForMerge(tempDir, f) match {
+        case (jar, _, _, true) if jar.toString.contains("rocketchip") => f
+      }
+    }
+    if (filtered.size == 1) Right(Seq(filtered.head -> path))
+    else Left("multiple candidates have rocketchip in their jar name for target:" +
+      filenames(tempDir, filtered).mkString("\n", "\n", "")
+      )
+  }
+}
+
+
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
@@ -32,6 +79,9 @@ lazy val commonSettings = Seq(
     case PathList(xs @ _*) if xs.last.endsWith(".class") || xs.last.endsWith(".properties") => MergeStrategy.last
     // Just take the last matching joda/time/tz/data resource files
     case PathList("org", "joda", "time", "tz", "data", xs @ _*) => MergeStrategy.last
+    // Use the file that doesn't come from rocketchip because we've overridden it
+    case PathList(xs @ _*) if xs.last.equals("emulator.cc") => notRocketMergeStrategy
+    case PathList("vsrc", "SimDTM.v") => useRocketMergeStrategy
     case x =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
