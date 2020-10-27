@@ -255,7 +255,11 @@ def initLinuxOpts(config):
         config['linux']['source'] = cleanPath(config['linux']['source'], config['workdir'])
 
     if 'modules' in config['linux']:
-        config['linux']['modules'] = { name : cleanPath(path, config['workdir']) for name, path in config['linux']['modules'].items() }
+        for name, path in config['linux']['modules'].items():
+            if path is None:
+               continue
+            else:
+                config['linux']['modules'][name] = cleanPath(path, config['workdir'])
 
 
 def inheritLinuxOpts(config, baseCfg):
@@ -277,6 +281,10 @@ def inheritLinuxOpts(config, baseCfg):
         for k, v in baseCfg['linux'].items():
             if k not in config['linux']:
                 config['linux'][k] = copy.copy(v)
+
+        for name, src in list(config['linux']['modules'].items()):
+            if src is None:
+                del config['linux']['modules'][name]
 
 
 def initFirmwareOpts(config):

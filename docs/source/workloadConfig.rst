@@ -110,9 +110,11 @@ Kernel modules to compile and load automatically in your workload. Modules will
 be loaded in the initramfs before loading the main user root. Modules are
 identified by the .ko file name (the name listed by lsmod). Workload-defined
 modules with the same name as an inherited module will take precidence,
-allowing you to override system default drivers. If you need to manually load a
-module (it shouldn't be automatically loaded), you should manually compile it in a
-post-bin script instead.
+allowing you to override system default drivers. If the path is null, the
+module will not be included. This is useful for disabling inherited modules.
+
+If you need to manually load a module (it shouldn't be automatically loaded),
+you should manually compile it in a post-bin script instead.
 
 The specified module directory must contain a Makefile that can be invoked as:
 
