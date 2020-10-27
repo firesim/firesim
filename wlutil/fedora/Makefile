@@ -1,9 +1,9 @@
-RAWURL=https://dl.fedoraproject.org/pub/alt/risc-v/disk-images/fedora/rawhide/20190126.n.0/Developer/Fedora-Developer-Rawhide-20190126.n.0-sda1.raw.xz
+RAWURL=http://fedora.riscv.rocks/kojifiles/work/tasks/944/320944/Fedora-Developer-Rawhide-20200108.n.0-sda.raw.xz
 COMPIMG=rootfs.img.xz
 NEWIMG=rootfs.img
 
 $(NEWIMG): $(COMPIMG)
-	unxz -k $(COMPIMG)
+	xzcat -k $(COMPIMG) | dd of=$(NEWIMG) bs=512 skip=1007616
 
 $(COMPIMG):
 	curl $(RAWURL) -o $(COMPIMG)

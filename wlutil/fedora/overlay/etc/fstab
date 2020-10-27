@@ -1,0 +1,1 @@
+UUID=12bd5ff0-295f-40fe-a8ba-d08878f38173  / ext4    defaults,noatime,x-systemd.device-timeout=300s,x-systemd.mount-timeout=300s 0 0
