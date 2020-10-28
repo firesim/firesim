@@ -39,8 +39,9 @@ def main():
         'launch', help='Launch an image on a software simulator (defaults to qemu)')
     launch_parser.add_argument('-s', '--spike', action='store_true',
             help="Use the spike isa simulator instead of qemu")
-    launch_parser.add_argument('-j', '--job', nargs='?', default=None, type=lambda s: [item for item in s.split(',')],
-            help="Launch the specified job(s). Multiple jobs are passed as a comma-separated list (-j 'foo,bar'). If the empty string is passed (-j ''), all jobs will be run. Defaults to running the root workload (the top-level of the config).")
+    launch_parser.add_argument('-j', '--job', action='append', default=None,
+            help="Launch the specified job. Multiple --job arguments may be passed to launch multiple jobs. Use --all to launch all jobs.")
+    launch_parser.add_argument('-a', '--all', action='store_true', help="Run all jobs in the workload")
     # the type= option here allows us to only accept one argument but store it
     # in a list so it matches the "build" behavior
     launch_parser.add_argument('config_files', metavar='config', nargs='?', type=(lambda c: [ pathlib.Path(c) ]), help="Configuration file to use.")
@@ -143,11 +144,10 @@ def main():
 
         elif args.command == "launch":
             # job-configs are named special internally
-            if args.job is not None:
-                if args.job[0] == '':
-                    args.job = targetCfg['jobs']
-                else:
-                    args.job = [ targetCfg['name'] + '-' + job for job in args.job ]
+            if args.all:
+                args.job = targetCfg['jobs']
+            elif args.job is not None:
+                args.job = [ targetCfg['name'] + '-' + job for job in args.job ]
 
             try:
                 outputPath = wlutil.launchWorkload(targetCfg, args.job, args.spike)

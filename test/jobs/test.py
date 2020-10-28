@@ -60,7 +60,7 @@ if proc.returncode != 0:
 elif not checkOuts(['root'], proc.stdout):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
-   
+
 print("Run j0 Only")
 proc = sp.run(str(managerPath) + " launch -j j0 " + str(testCfg), shell=True, stdout=sp.PIPE)
 if proc.returncode != 0:
@@ -79,8 +79,17 @@ elif not checkOuts(['j1'], proc.stdout):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
 
-print("Run Both Jobs")
-proc = sp.run(str(managerPath) + " launch -j '' " + str(testCfg), shell=True, stdout=sp.PIPE)
+print("Run Both Jobs Explicitly")
+proc = sp.run(str(managerPath) + " launch -j j0 -j j1 " + str(testCfg), shell=True, stdout=sp.PIPE)
+if proc.returncode != 0:
+    print("Failure: marshal returned non-zero exit code", file=sys.stderr)
+    sys.exit(1)
+elif not checkOuts(['j1', 'j0'], proc.stdout):
+    print("Failure: contained incorrect outputs", file=sys.stderr)
+    sys.exit(1)
+
+print("Run All Jobs")
+proc = sp.run(str(managerPath) + " launch -a " + str(testCfg), shell=True, stdout=sp.PIPE)
 if proc.returncode != 0:
     print("Failure: marshal returned non-zero exit code", file=sys.stderr)
     sys.exit(1)
