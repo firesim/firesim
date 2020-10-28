@@ -107,7 +107,8 @@ categoryTests = {
                 'fsSize',
                 'makefile',
                 'testWorkdir',
-                'workload-dirs' 
+                'workload-dirs',
+                'jobs'
         ]
 }
 
