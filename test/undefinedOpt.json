@@ -1,0 +1,9 @@
+{
+  "name" : "undefinedOpt",
+  "base" : "br-base.json",
+  "command" : "echo Global: undefinedOpt",
+  "InvalidOption!" : "Should fail with Werr",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}
