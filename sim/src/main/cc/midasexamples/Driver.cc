@@ -67,7 +67,7 @@
 #include "NestedModels.h"
 #elif defined DESIGNNAME_MultiReg
 #include "MultiReg.h"
-#elif defined DESIGNNAME_PassthroughModelIden
+#elif defined DESIGNNAME_PassthroughModel
 #include "PassthroughModels.h"
 #elif defined DESIGNNAME_PassthroughModelNested
 #include "PassthroughModels.h"

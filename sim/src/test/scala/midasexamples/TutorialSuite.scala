@@ -198,11 +198,11 @@ class NestedModelsF1Test extends TutorialSuite("NestedModels")
 class MultiRegF1Test extends TutorialSuite("MultiReg")
 
 class PassthroughModelTest extends TutorialSuite("PassthroughModel") {
-  expectedFMR(1.0)
+  expectedFMR(2.0)
 }
 
 class PassthroughModelNestedTest extends TutorialSuite("PassthroughModelNested") {
-  expectedFMR(1.0)
+  expectedFMR(2.0)
 }
 
 class PassthroughModelBridgeSourceTest extends TutorialSuite("PassthroughModelBridgeSource") {

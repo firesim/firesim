@@ -90,6 +90,7 @@ private[midas] class MidasTransforms extends Transform {
       new fame.EmitFAMEAnnotations("post-infer-model-ports.json"),
       new fame.FAMETransform,
       DefineAbstractClockGate,
+      fame.AddRemainingFanoutAnnotations,
       new EmitFirrtl("post-fame-transform.fir"),
       new fame.EmitFAMEAnnotations("post-fame-transform.json"),
       new ResolveAndCheck,
