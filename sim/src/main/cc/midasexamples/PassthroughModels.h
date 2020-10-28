@@ -16,9 +16,9 @@ public:
 
 };
 
-class PassthroughModelIden_t: public PassthroughModelDriver {
+class PassthroughModel_t: public PassthroughModelDriver {
   public:
-    PassthroughModelIden_t(int argc, char** argv) : PassthroughModelDriver(argc, argv) {};
+    PassthroughModel_t(int argc, char** argv) : PassthroughModelDriver(argc, argv) {};
 };
 class PassthroughModelNested_t: public PassthroughModelDriver {
   public:

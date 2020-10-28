@@ -23,11 +23,7 @@ import midas.widgets.CppGenerationUtils._
 private [midas] object PlatformShim {
   def apply(annotations: Seq[Annotation], portTypeMap: Map[ReferenceTarget, Port])
            (implicit p: Parameters): PlatformShim = {
-    // Grab the FAME-transformed circuit; collect all fame channel annotations and pass them to 
-    // SimWrapper generation. We want the targets to point at un-lowered ports
-    val chAnnos = annotations.collect({ case ch: FAMEChannelConnectionAnnotation => ch })
-    val bridgeAnnos = annotations.collect({ case ep: BridgeIOAnnotation => ep })
-    val simWrapperConfig = SimWrapperConfig(chAnnos, bridgeAnnos, portTypeMap)
+    val simWrapperConfig = SimWrapperConfig(annotations, portTypeMap)
     val completeParams = p.alterPartial({ case SimWrapperKey => simWrapperConfig })
     p(Platform)(completeParams)
   }
