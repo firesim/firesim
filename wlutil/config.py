@@ -20,6 +20,8 @@ configUser = [
         'name',
         # Path to config to base off (or 'fedora'/'br' if deriving from a base config)
         'base',
+        # List of job configurations
+        'jobs',
         # Path to spike binary to use (use $PATH if this is omitted)
         'spike',
         # Optional extra arguments to spike
@@ -28,6 +30,8 @@ configUser = [
         'qemu',
         # Optional extra arguments to qemu
         'qemu-args',
+        # Hard-coded binary path
+        'bin',
         # Grouped linux options see the docs for subfields
         'linux',
         # Grouped firmware-related options
@@ -56,6 +60,8 @@ configUser = [
         'workdir',
         # (bool) Should we launch this config? Defaults to 'true'. Mostly used for jobs.
         'launch',
+        # Hard-coded path to image file
+        'img',
         # Size of root filesystem (human-readable string)
         'rootfs-size',
         # Number of CPU cores to simulate (applies only to functional simulation). Converted to int after loading.
@@ -63,8 +69,16 @@ configUser = [
         # Amount of memory (DRAM) to use when simulating (applies only to functional simulation).
         # Can be standard size-formatted string from user (e.g. '4G'), but
         # converted to bytes as int after loading.
-        'mem'
+        'mem',
+        # Testing-related options
+        'testing'
         ]
+
+# Config options only used internally by distro internal configs (defined in the distro python package itself)
+configDistro = [
+        'distro',
+        'builder'
+]
 
 # Deprecated options, will be translated to current equivalents early on in
 # loading. They can be ignored after that.
@@ -156,6 +170,18 @@ configFirmware = [
         "opensbi-build-args", # Additional arguments to make for openSBI. User provides string, cannonical form is list.
         ]
 
+# Members of the 'testing' option
+configTesting = [
+        # Directory containing reference outputs
+        'refDir',
+        # Timeout for building, test will fail after this time
+        'buildTimeout',
+        # Timeout for running the workload, test will fail after this time
+        'runTimeout',
+        # Strip as much non-deterministic and irrelevant output from the uartlog before comparing
+        'strip'
+]
+
 class RunSpec():
     def __init__(self, script=None, command=None, args=[]):
         """RunSpec represents a command or script to run in the target.
@@ -240,6 +266,33 @@ def translateDeprecated(config):
         config.pop(opt, None)
 
 
+def verifyConfig(config):
+    """Check that the config passes basic sanity checks and doesn't contain any
+    undefined or obviously invalid options. More detailed checking is scattered
+    throughout the loading code, this is just for obvious easy-to-check stuff
+    on the raw config"""
+
+    log = logging.getLogger()
+
+    for k, v in config.items():
+        if k not in (configUser + configDeprecated + configDistro + ["cfg-file"]):
+            log.warning("Unrecognized Option: " + k)
+
+    if 'linux' in config:
+        for k, v in config['linux'].items():
+            if k not in configLinux:
+                log.warning("Unrecognized Option: " + k)
+
+    if 'firmware' in config:
+        for k, v in config['firmware'].items():
+            if k not in configFirmware:
+                log.warning("Unrecognized Option: " + k)
+
+    if 'testing' in config:
+        for k, v in config['testing'].items():
+            if k not in configTesting:
+                log.warning("Unrecognized Option: " + k)
+
 def initLinuxOpts(config):
     """Initialize the 'linux' option group of config"""
     if 'linux' not in config:
@@ -255,7 +308,11 @@ def initLinuxOpts(config):
         config['linux']['source'] = cleanPath(config['linux']['source'], config['workdir'])
 
     if 'modules' in config['linux']:
-        config['linux']['modules'] = { name : cleanPath(path, config['workdir']) for name, path in config['linux']['modules'].items() }
+        for name, path in config['linux']['modules'].items():
+            if path is None:
+               continue
+            else:
+                config['linux']['modules'][name] = cleanPath(path, config['workdir'])
 
 
 def inheritLinuxOpts(config, baseCfg):
@@ -277,6 +334,10 @@ def inheritLinuxOpts(config, baseCfg):
         for k, v in baseCfg['linux'].items():
             if k not in config['linux']:
                 config['linux'][k] = copy.copy(v)
+
+        for name, src in list(config['linux']['modules'].items()):
+            if src is None:
+                del config['linux']['modules'][name]
 
 
 def initFirmwareOpts(config):
@@ -336,6 +397,7 @@ class Config(collections.MutableMapping):
         else:
             self.cfg = cfgDict
 
+        verifyConfig(self.cfg)
         translateDeprecated(self.cfg)
 
         cfgDir = None

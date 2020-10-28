@@ -1,0 +1,15 @@
+{
+    "name" : "nodrivers",
+    "workdir" : "drivers",
+    "base" : "br-base.json",
+    "command" : "lsmod | grep -o 'icenet\\|iceblk'",
+    "linux" : {
+        "modules" : {
+            "icenet" : null
+        }
+    },
+    "testing" : {
+        "refDir" : "noDriversRef",
+        "strip" : true
+    }
+}
