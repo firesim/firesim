@@ -49,7 +49,7 @@ class ClockBridgeWithMuxModule()(implicit p: Parameters) extends BridgeModule[Cl
     val Seq(clockAOut, clockAMuxIn) = FanOut(clockASource, 2)
     val Seq(clockBOut, clockBMuxIn) = FanOut(clockBSource, 2)
 
-    val clockMux = Module(new ClockMux)
+    val clockMux = Module(new TimestampedClockMux)
     clockMux.sel <> TimestampedSource(hPort.sel)
     clockMux.clockA <> clockAMuxIn
     clockMux.clockB <> clockBMuxIn
