@@ -45,11 +45,9 @@ public:
     // Resolve bug in PeekPoke Bridge
     //checkers.push_back(new MulticlockChecker(this, threeSeventhsOut, 3, 7));
 
-    uint32_t current = rand_next(limit);
     for(int i = 1; i < 1024; i++){
       for(auto checker: checkers) checker->expect_and_update(i);
       poke(in, i);
-      current = rand_next(limit);
       step(1);
     }
   }

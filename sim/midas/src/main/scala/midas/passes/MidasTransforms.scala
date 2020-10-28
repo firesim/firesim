@@ -64,6 +64,7 @@ private[midas] class MidasTransforms extends Transform {
       //ChannelClockInfoAnalysis,
       //UpdateBridgeClockInfo,
       fame.WrapTop,
+      fame.LabelMultiThreadedInstances,
       new ResolveAndCheck,
       new EmitFirrtl("post-wrap-top.fir")) ++
     optionalTargetTransforms ++

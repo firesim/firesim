@@ -132,7 +132,7 @@ class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
 class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")
 class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
   runTest("verilator", true)
-  runTest("vcs", true)
+  //runTest("vcs", true)
 }
 
 class TriggerWiringModuleF1Test extends TutorialSuite("TriggerWiringModule")
