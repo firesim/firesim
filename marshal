@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--workdir', help='Use a custom workload directory (defaults to the same directory as the first config file)', type=pathlib.Path)
     parser.add_argument('-v', '--verbose',
                         help='Print all output of subcommands to stdout as well as the logs', action='store_true')
+    parser.add_argument("--werr", action="store_true", help="Warnings will cause a fatal runtime error")
     parser.add_argument('-i', '--initramfs', action='store_true', help="Alias for --no-disk")
     parser.add_argument('-d', '--no-disk', action='store_true', help="Use the no-disk version of this workload (the rootfs will be included as an initramfs in the boot binary)")
     subparsers = parser.add_subparsers(title='Commands', dest='command')
@@ -75,7 +76,7 @@ def main():
 
     ctx = wlutil.getCtx()
 
-    wlutil.initLogging(args.verbose)
+    wlutil.initLogging(args.verbose, werr=args.werr)
 
     # Load all the configs from the workload directories
     # Order matters here, duplicate workload files found in later search paths
@@ -111,7 +112,7 @@ def main():
     for cfgPath in args.config_files:
         # Each config gets it's own logging output and results directory
         ctx.setRunName(cfgPath, args.command)
-        wlutil.initLogging(args.verbose)
+        wlutil.initLogging(args.verbose, werr=args.werr)
         cfgName = cfgPath.name
 
         log = logging.getLogger()

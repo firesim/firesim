@@ -392,9 +392,25 @@ def getOpt(opt):
     else:
         return ctx[opt]
 
+
+def WErrFilt(r):
+    if r.levelno == logging.WARN:
+        raise RuntimeError("WErr ({}:{}): {}".format(r.pathname, r.lineno, r.msg % r.args))
+
+
+class consoleFormatter(logging.Formatter):
+    """A concise format for console output"""
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            self._style._fmt = "%(message)s"
+        else:
+            self._style._fmt = "%(levelname)s: %(message)s"
+        return super().format(record)
+
+
 fileHandler = None
 consoleHandler = None
-def initLogging(verbose, logPath=None):
+def initLogging(verbose, logPath=None, werr=False):
     """logging setup: You can call this multiple times to reset logging (e.g. if you
        change the RunName). If 'logPath' is set, that path will be used.
        Otherwise the name will be derived from the current configuration."""
@@ -405,6 +421,9 @@ def initLogging(verbose, logPath=None):
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
     
+    if werr:
+        rootLogger.addFilter(WErrFilt)
+
     # Create a unique log name
     if logPath is None:
         logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
@@ -414,8 +433,8 @@ def initLogging(verbose, logPath=None):
         rootLogger.removeHandler(fileHandler)
 
     fileHandler = logging.FileHandler(str(logPath))
-    logFormatter = logging.Formatter("%(asctime)s [%(funcName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-    fileHandler.setFormatter(logFormatter)
+    fileLogFormatter = logging.Formatter("%(asctime)s [%(funcName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    fileHandler.setFormatter(fileLogFormatter)
     fileHandler.setLevel(logging.NOTSET) # log everything to file
     rootLogger.addHandler(fileHandler)
 
@@ -424,6 +443,7 @@ def initLogging(verbose, logPath=None):
         rootLogger.removeHandler(consoleHandler)
 
     consoleHandler = logging.StreamHandler(stream=sys.stdout)
+    consoleHandler.setFormatter(consoleFormatter())
     if verbose:
         consoleHandler.setLevel(logging.NOTSET) # show everything
     else:
