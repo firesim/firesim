@@ -404,6 +404,9 @@ def makeModules(cfg):
 
     linCfg = cfg['linux']
 
+    if len(linCfg['modules']) == 0:
+        return
+
     makeCmd = "make LINUXSRC=" + str(linCfg['source'])
 
     # Prepare the linux source for building external modules 
