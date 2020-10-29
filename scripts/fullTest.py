@@ -109,6 +109,7 @@ categoryTests = {
                 'makefile',
                 'testWorkdir',
                 'workload-dirs',
+                'jobs'
                 'undefinedOpt'
         ]
 }

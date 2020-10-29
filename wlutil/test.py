@@ -200,7 +200,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
                 for jName in cfg['jobs'].keys():
                     log.info("Running job " + jName)
                     with timeout(testCfg['runTimeout'], 'launch job' + jName):
-                        launchWorkload(cfg, job=jName, spike=spike, interactive=verbose)
+                        launchWorkload(cfg, jobs=[jName], spike=spike, interactive=verbose)
             else:
                 log.info("Running workload")
                 with timeout(testCfg['runTimeout'], 'launch'):
