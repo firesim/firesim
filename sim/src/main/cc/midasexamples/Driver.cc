@@ -69,6 +69,12 @@
 #include "NestedModels.h"
 #elif defined DESIGNNAME_MultiReg
 #include "MultiReg.h"
+#elif defined DESIGNNAME_PassthroughModel
+#include "PassthroughModels.h"
+#elif defined DESIGNNAME_PassthroughModelNested
+#include "PassthroughModels.h"
+#elif defined DESIGNNAME_PassthroughModelBridgeSource
+#include "PassthroughModels.h"
 #elif defined DESIGNNAME_AsyncResetRegister
 #include "AsyncResetRegister.h"
 #endif

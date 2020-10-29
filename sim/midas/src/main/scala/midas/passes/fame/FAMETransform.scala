@@ -383,7 +383,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
         // Generally SourceFlow references to ports will be input channels, but RTL may use
         // an assignment to an output port as something akin to a wire, so check output ports too.
         inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
-      case oWR @ WRef(name, tpe, PortKind, SinkFlow) if tpe != ClockType =>
+      case oWR @ WRef(name, tpe, PortKind, SinkFlow) if tpe != ClockType && outChannelMap.contains(name) =>
         outChannelMap(name).replacePortRef(oWR)
       case cWR @ WRef(name, ClockType, PortKind, SourceFlow) if clockPortNames(name) =>
         replaceClocksMap(WrappedExpression.we(cWR))
@@ -408,11 +408,17 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val outputRules = outChannels.map(o => o.setValid(WRef(finishing), ccDeps(o)))
     val topRules = Seq(Connect(NoInfo, WRef(finishing), allFiredOrFiring))
     val outputTimestamps = outChannels.flatMap(o => o.setTimestamp(WRef(s2_time)))
-    // Keep output clock ports around as wires just for convenience to keep connects legal
-    val clockOutputsAsWires = m.ports.collect { case Port(i, n, Output, ClockType) => DefWire(i, n, ClockType) }
+    // Keep output ports that are not included as part of a channel around for convenience to keep connects legal
+    // Two types:
+    //  - clocks (which were kept around only to infer clock information)
+    //  - passthrough outputs. These were previously a channel source, but
+    //    the sink is now being fed by an upstream model
+    val unusedOutputsAsWires = m.ports.collect {
+      case Port(i, name, Output, tpe) if !outChannelMap.contains(name) || tpe == ClockType => DefWire(i, name, tpe)
+    }
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = Seq(finishing) ++: clockOutputsAsWires ++: clockSchedulingStmts ++: clockBufDecls ++: dataDriverDecls ++: outChannels.map(_.firedReg)
+    val decls = Seq(finishing) ++: unusedOutputsAsWires ++: clockSchedulingStmts ++: clockBufDecls ++: dataDriverDecls ++: outChannels.map(_.firedReg)
     val assigns = clockBufAssigns ++: dataDriverAssigns ++: channelStateRules ++: inputRules ++: outputRules ++: topRules ++: outputTimestamps
     (Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns)), clockSchedulingAnnos)
   }
@@ -433,16 +439,33 @@ class FAMETransform extends Transform {
     case s => s
   }
 
+  // For new top-level ports, prepend the model instance name to the model's port name
+  def topPortName(flow: ChannelFlow)(chName: String, analysis: FAMEChannelAnalysis): String = {
+    if (analysis.transformedLoopbackSources(chName) || analysis.transformedLoopbackSinks(chName)) {
+      // Check the direction of the channel agrees with what was requested
+      assert(analysis.transformedLoopbackSources(chName) ^ (flow == ChannelSink))
+      s"${chName}${flow.suffix}"
+    } else {
+      val instName = analysis.cNameToModelInst(chName, flow)
+      val portName = analysis.chNameToModelPortName(flow)(chName)
+      s"${instName.instance}_${portName}"
+    }
+  }
+
+  def topSourcePortName = topPortName(ChannelSource) _
+  def topSinkPortName = topPortName(ChannelSink) _
+
   def hostDecouplingRenames(analysis: FAMEChannelAnalysis): RenameMap = {
     // Handle renames at the top-level to new channelized names
     val renames = RenameMap()
-    def renameTop(suffix: String, lookup: String => Seq[ReferenceTarget])
+    def renameTop(flow: ChannelFlow, lookup: String => Seq[ReferenceTarget])
                  (c: String): Seq[(ReferenceTarget, ReferenceTarget)] =
       lookup(c).map { rt =>
+      val newTopName = topPortName(flow)(c, analysis)
         val baseRT = if (analysis.channelHasTimestamp(c)) {
-          rt.copy(ref = s"${c}${suffix}").field("bits").field("data")
+          rt.copy(ref = newTopName).field("bits").field("data")
         } else {
-          rt.copy(ref = s"${c}${suffix}").field("bits")
+          rt.copy(ref = newTopName).field("bits")
         }
 
         if (lookup(c).size == 1)
@@ -451,8 +474,10 @@ class FAMETransform extends Transform {
          (rt, baseRT.field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1))
       }
 
-    val sinkRenames = analysis.transformedSinks.flatMap(renameTop("_sink", analysis.sinkPorts))
-    val sourceRenames = analysis.transformedSources.flatMap(renameTop("_source", analysis.sourcePorts))
+    val sinkRenames = (analysis.transformedSinks ++ analysis.transformedLoopbacks.unzip._2)
+     .flatMap(renameTop(ChannelSink, analysis.sinkPorts))
+    val sourceRenames = (analysis.transformedSources ++ analysis.transformedLoopbacks.unzip._1)
+     .flatMap(renameTop(ChannelSource, analysis.sourcePorts))
 
     def renamePorts(suffix: String, lookup: ModuleTarget => Map[String, (Option[Port], Seq[Port])])
                    (mT: ModuleTarget): Seq[(ReferenceTarget, ReferenceTarget)] = {
@@ -485,15 +510,17 @@ class FAMETransform extends Transform {
     case Port(_, name, _, ClockType) => name != WrapTop.hostClockName
     case Port(_, name, _, _) => analysis.staleTopPorts.contains(analysis.topTarget.ref(name))
   }
-
   def transformTop(top: DefModule, analysis: FAMEChannelAnalysis): Module = top match {
     case Module(info, name, ports, body) =>
       val transformedPorts = ports.filterNot(p => staleTopPort(p, analysis)) ++
-        analysis.transformedSinks.map(c => Port(NoInfo, s"${c}_sink", Input, analysis.getSinkHostDecoupledChannelType(c))) ++
-        analysis.transformedSources.map(c => Port(NoInfo, s"${c}_source", Output, analysis.getSourceHostDecoupledChannelType(c)))
+        (analysis.transformedSinks ++ analysis.transformedLoopbacks.unzip._2).map {c =>
+          Port(NoInfo, topSinkPortName(c, analysis), Input, analysis.getSinkHostDecoupledChannelType(c)) } ++
+        (analysis.transformedSources ++ analysis.transformedLoopbacks.unzip._1).map {c =>
+          Port(NoInfo,topSourcePortName(c, analysis), Output, analysis.getSourceHostDecoupledChannelType(c)) }
       val transformedStmts = Seq(body.map(updateNonChannelConnects(analysis))) ++
-        analysis.transformedSinks.map({c => Connect(NoInfo, analysis.wsubToSinkPort(c), WRef(s"${c}_sink"))}) ++
-        analysis.transformedSources.map({c => Connect(NoInfo, WRef(s"${c}_source"), analysis.wsubToSourcePort(c))})
+        analysis.transformedSinks.map({c => Connect( NoInfo, analysis.wsubToSinkPort(c), WRef(topSinkPortName(c, analysis))) }) ++
+        analysis.transformedSources.map({c => Connect(NoInfo, WRef(topSourcePortName(c, analysis)), analysis.wsubToSourcePort(c)) }) ++
+        analysis.transformedLoopbacks.map({ case (lhs, rhs) => Connect(NoInfo, WRef(topSourcePortName(lhs, analysis)), WRef(topSinkPortName(rhs, analysis))) })
       Module(info, name, transformedPorts, Block(transformedStmts))
   }
 

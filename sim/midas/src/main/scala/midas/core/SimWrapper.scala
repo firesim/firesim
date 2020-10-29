@@ -6,20 +6,20 @@ package core
 
 import midas.widgets.{BridgeIOAnnotation, TimestampedToken, HasTimestampConstants}
 import midas.passes.fame
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, FAMEChannelInfo, SimulationControlAnnotation, PortMetadata}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, FAMEChannelInfo, SimulationControlAnnotation, PortMetadata, FAMEChannelFanoutAnnotation}
 import midas.core.SimUtils._
 
-// from rocketchip
 import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Direction, chiselName, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
-import firrtl.annotations.{SingleTargetAnnotation, ReferenceTarget}
+import firrtl.annotations.{Annotation, SingleTargetAnnotation, ReferenceTarget}
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{ArrayBuffer}
+import scala.collection.mutable
 
 case object SimWrapperKey extends Field[SimWrapperConfig]
 
@@ -56,23 +56,56 @@ class ClockRecord(numClocks: Int) extends Record {
   override val elements = ListMap(Seq.tabulate(numClocks)(i => s"_$i" -> Clock()):_*)
   override def cloneType = new ClockRecord(numClocks).asInstanceOf[this.type]
 }
+/**
+  * The metadata required to generate the simulation wrapper.
+  *
+  * @param annotations Notably [[FAMEChannelConnectionAnnotation]],
+  * [[FAMEChannelFanoutAnnotation]], [[BridgeIOAnnotation]]s
+  *
+  * @param leafTypeMap Provides the means to rebuild chisel-types that can
+  * "link" against the transformed RTL (FIRRTL), and associate specific
+  * annotations with those types..
+  */
+case class SimWrapperConfig(annotations: Seq[Annotation], leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
 
 /**
-  * Used to implement channel interfaces both on the transformed target (see
-  * subclass [[TargetBoxIO]]) and the generated simulation wrapper (see
-  * subclass [[SimWrapperChannels]]]), as function of FCCAs present on the
-  * tranformed target.
-  *
-  * @param chAnnos FCCAs describing channel connectivity. Channels with both
-  * sources and sinks (loopback) will have a pair of generated ports
-  *
-  * @param leafTypeMap A means to lookup the FIRRTL type FCCA ReferenceTargets
-  * point at. This will then be used to regenerate a connection-complaint
-  * chisel type.
+  * A convienence mixin that preprocesses the [[SimWrapperConfig]]
   */
-abstract class ChannelizedWrapperIO(
-    chAnnos: Seq[FAMEChannelConnectionAnnotation],
-    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends Record {
+trait UnpackedWrapperConfig {
+  def config: SimWrapperConfig
+  val leafTypeMap = config.leafTypeMap
+  val chAnnos     = new mutable.ArrayBuffer[FAMEChannelConnectionAnnotation]()
+  val bridgeAnnos = new mutable.ArrayBuffer[BridgeIOAnnotation]()
+  val fanoutAnnos = new mutable.ArrayBuffer[FAMEChannelFanoutAnnotation]()
+  private val ctrlAnnos: SimulationControlAnnotation
+  config.annotations collect {
+    case fcca: FAMEChannelConnectionAnnotation => chAnnos += fcca
+    case ba: BridgeIOAnnotation => bridgeAnnos += ba
+    case ffa: FAMEChannelFanoutAnnotation => fanoutAnnos += ffa
+    case ca: SimulationControlAnnotation => ctrlAnnos +=  ca
+  }
+
+  def ctrlAnno: SimulationControlAnnotation = {
+    require(ctrlAnnos.size == 1, s"Expected one SimulationControlAnnotation, got ${ctrlAnnos.size}")
+    ctrlAnnos.head
+  }
+}
+
+/**
+  * Builds a Record of tokenized interfaces based on a set of [[FAMEChannelConnectionAnnotations]].
+  * Chisel-types are reconstructed by looking up a FIRRTL type in [[SimWrapperConfig].leafTypeMap
+  * which can then be mapped back into a primitive chisel type.
+  *
+  * This is instantiated twice:
+  * 1) On the [[TargetBox]], to build a chisel-interface that can link against the FIRRTL
+  * 2) To build the SimWrapper's IO. This has the subset of channel interfaces present on the [[TargetBox]]
+  * that are connected to bridges.
+  *
+  * This class includes many members that permit looking up record elements by
+  * channel type, and by channel name instead of using the underlying Chisel element
+  * name.
+  */
+abstract class ChannelizedWrapperIO(val config: SimWrapperConfig) extends Record with UnpackedWrapperConfig {
 
   /**
     * Clocks and AsyncReset have different types coming off the target (where they retain
@@ -154,22 +187,28 @@ abstract class ChannelizedWrapperIO(
     case ch @ FAMEChannelConnectionAnnotation(_,chInfo,_,_,Some(sinks)) => ch -> regenWireType(chInfo, sinks)
   }).toMap
 
-
-  val wirePortMap: Map[String, WirePortTuple] = wireLikeFCCAs.map({ chAnno =>
-    val FAMEChannelConnectionAnnotation(globalName, chInfo, _, sources, sinks) = chAnno
-    val sinkP = sinks.map({ tRefs =>
-      val name = tRefs.head.ref.stripSuffix("_bits")
-      val port = Flipped(Decoupled(wireTypeMap(chAnno)))
-      wireElements += name -> port
-      port
-    })
-    val sourceP = sources.map({ tRefs =>
-      val name = tRefs.head.ref.stripSuffix("_bits")
-      val port = Decoupled(wireTypeMap(chAnno))
-      wireElements += name -> port
-      port
-    })
-    (globalName -> WirePortTuple(sourceP, sinkP))
+  // Identical source sets can be shared across multiple [[FAMEChannelConnectionAnnotations]],
+  // only generate a port for the first one we visit.
+  val visitedSourcePorts = mutable.LinkedHashMap[Seq[ReferenceTarget], ReadyValidIO[Data]]()
+  val wirePortMap: Map[String, WirePortTuple] = wireLikeFCCAs.collect({
+    case ch @ FAMEChannelConnectionAnnotation(globalName, _, _, sources, sinks) => {
+      val sinkP = sinks.map({ tRefs =>
+        val name = tRefs.head.ref.stripSuffix("_bits")
+        val port = Flipped(Decoupled(wireTypeMap(ch)))
+        wireElements += name -> port
+        port
+      })
+      val sourceP = sources.map({ tRefs =>
+        visitedSourcePorts.getOrElse(tRefs, {
+          val name = tRefs.head.ref.stripSuffix("_bits")
+          val port = Decoupled(wireTypeMap(ch))
+          wireElements += name -> port
+          visitedSourcePorts(tRefs) = port
+          port
+        })
+      })
+      (globalName -> WirePortTuple(sourceP, sinkP))
+    }
   }).toMap
 
   // Looks up a  channel based on a channel name
@@ -182,7 +221,7 @@ abstract class ChannelizedWrapperIO(
   })
 
 
-  val rvElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
+  val rvElements = mutable.ArrayBuffer[(String, ReadyValidIO[Data])]()
 
   // Using a channel's globalName; look up it's associated port tuple
   val rvPortMap: Map[String, TargetRVPortTuple] = chAnnos.collect({
@@ -237,10 +276,7 @@ abstract class ChannelizedWrapperIO(
   * coming off the transformed target, such that it can be linked against
   * simulation wrapper without FIRRTL type errors.
   */
-class TargetBoxIO(
-    val chAnnos: Seq[FAMEChannelConnectionAnnotation],
-    ctrlAnno: SimulationControlAnnotation,
-    leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
+class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config) {
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = new TimestampedToken(refTargets.size match {
     // "Aggregate-ness" of single-field vecs and bundles are removed by the
@@ -267,23 +303,14 @@ class TargetBoxIO(
   override val elements = ListMap((wireElements ++ rvElements ++ ctrlElements):_*) ++
     // Untokenized ports
     ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
-  override def cloneType: this.type = new TargetBoxIO(chAnnos, ctrlAnno, leafTypeMap).asInstanceOf[this.type]
+  override def cloneType: this.type = new TargetBoxIO(config).asInstanceOf[this.type]
 }
 
-/**
-  * A blackbox representing the transformed target. This will be replaced during
-  * linking with the actual transformed target's module hierarchy.
-  */
-class TargetBox(chAnnos: Seq[FAMEChannelConnectionAnnotation],
-               ctrlAnno: SimulationControlAnnotation,
-               leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port]) extends BlackBox {
-  val io = IO(new TargetBoxIO(chAnnos, ctrlAnno, leafTypeMap))
+class TargetBox(config: SimWrapperConfig) extends BlackBox {
+  val io = IO(new TargetBoxIO(config))
 }
 
-class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
-                         val bridgeAnnos: Seq[BridgeIOAnnotation],
-                         leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
-    extends ChannelizedWrapperIO(chAnnos, leafTypeMap) {
+class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(config) {
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = {
     new TimestampedToken(if (refTargets.size == 1) Bool() else Vec(refTargets.size, Bool()))
@@ -291,20 +318,15 @@ class SimWrapperChannels(val chAnnos: Seq[FAMEChannelConnectionAnnotation],
   def regenAsyncResetType(): TimestampedToken[Bool] = new TimestampedToken(Bool())
 
   override val elements = ListMap((wireElements ++ rvElements):_*)
-  override def cloneType: this.type = new SimWrapperChannels(chAnnos, bridgeAnnos, leafTypeMap).asInstanceOf[this.type]
+  override def cloneType: this.type = new SimWrapperChannels(config).asInstanceOf[this.type]
 }
 
-case class SimWrapperConfig(
-  chAnnos: Seq[FAMEChannelConnectionAnnotation],
-  bridgeAnnos: Seq[BridgeIOAnnotation],
-  ctrlAnno: SimulationControlAnnotation,
-  leafTypeMap: Map[ReferenceTarget, firrtl.ir.Port])
-
 /**
-  * Instantiates all simulation channels based on
-  * FAMEChannelConnectionAnnotations provided by the transformed target
-  * circuit. There are three types of connection directivity:
-  *
+  * The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator
+  * collateral.
+  * 1) It instantiates the tranformed target (now a collection of unconnected, decoupled models)
+  * 2) Generates channels to interconnect those models and bridges by analyzing [[FAMEChannelConnectionAnnotation]]s.
+  * 3) Exposes ReadyValid interfaces for all channels sourced or sunk by a bridge as I/O
   * FPGATop  |    SimWrapper  | Target
   * Bridge  => Channel Queue =>  Hub Model  (1) Output Channels: FCCA.sinks == None
   * Bridge  <= Channel Queue <=  Hub Model  (2) Input Channels: FCCA.sources == None
@@ -312,21 +334,23 @@ case class SimWrapperConfig(
   *                 Queue    =>   ModelB
   *
   */
-class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule {
-
+class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with UnpackedWrapperConfig {
   outer =>
-  val SimWrapperConfig(chAnnos, bridgeAnnos, ctrlAnno, leafTypeMap) = config
+  // Filter FCCAs presented to the top-level IO constructor. Remove all FCCAs:
+  // - That are loopback channels (these don't connect to bridges).
+  // - All but the first FCCA in a fanout from a bridge source, preventing
+  //   duplication of the source port.
+  val isSecondaryFanout = fanoutAnnos.flatMap(_.channelNames.tail).toSet
 
-  // Remove all FCAs that are loopback channels. All non-loopback FCAs connect
-  // to bridges and will be presented in the SimWrapper's IO
-  val bridgeChAnnos = chAnnos.collect({
-    case fca @ FAMEChannelConnectionAnnotation(_,_,_,_,None) => fca
-    case fca @ FAMEChannelConnectionAnnotation(_,_,_,None,_) => fca
+  val outerConfig = config.copy(annotations = config.annotations.filterNot {
+    case fca @ FAMEChannelConnectionAnnotation(_,_,_,Some(_), Some(_)) => true
+    case fca @ FAMEChannelConnectionAnnotation(_,_,_,_,Some(_)) => isSecondaryFanout(fca.globalName)
+    case o => false
   })
 
-  val channelPorts = IO(new SimWrapperChannels(bridgeChAnnos, bridgeAnnos, leafTypeMap))
+  val channelPorts = IO(new SimWrapperChannels(outerConfig))
   val hubControl = IO(Flipped(new HubControlInterface))
-  val target = Module(new TargetBox(chAnnos, ctrlAnno, leafTypeMap))
+  val target = Module(new TargetBox(config))
 
   // Indicates SimulationMapping which module we want to replace with the simulator
   annotate(new ChiselAnnotation { def toFirrtl =
@@ -347,27 +371,55 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
     }
   }
 
-  def genPipeChannel(chAnno: FAMEChannelConnectionAnnotation, latency: Int = 1): PipeChannel[ChLeafType] = { require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
-    val channel = Module(new PipeChannel(getPipeChannelType(chAnno), latency))
-    channel suggestName s"PipeChannel_${chAnno.globalName}"
+  /**
+    *  Implements a pipe channel.
+    *
+    *  @param chAnnos A group of [[FAMEChannelFanoutAnnotation]]s that have a common source. Groups
+    *  with size > 1 represent a fanout connection in the source RTL. Each source token will be duplicated
+    *  and enqueued into each channel.
+    *
+    *  @param primaryChannelName For fanouts that are sourced by a bridge, this provides
+    *  the unique chname used to look up the bridge-side interface in channelPorts.
+    */
+  def genPipeChannel(chAnnos: Iterable[FAMEChannelConnectionAnnotation], primaryChannelName: String):
+      Iterable[PipeChannel[ChLeafType]] = {
+    // Generate a channel queue for each annotation, leaving enq disconnected
+    val queues = for (chAnno <- chAnnos) yield {
+      require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
+      require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
+      val latency = chAnno.channelInfo match {
+        case PipeChannel(latency) => latency
+        case o => 0
+      }
+      val channel = Module(new PipeChannel(getPipeChannelType(chAnno), latency))
+      channel suggestName s"PipeChannel_${chAnno.globalName}"
 
-    val portTuple = target.io.wirePortMap(chAnno.globalName)
-    portTuple.source match {
-      case Some(srcP) => channel.io.in <> srcP
-      case None => channel.io.in <> channelPorts.elements(s"${chAnno.globalName}_sink")
+      target.io.wirePortMap(chAnno.globalName).sink match {
+        case Some(sinkP) =>
+          // Splay out the assignment so that we can coerce the bridge-side types
+          // (which use Bool in place of Clock, AsyncReset) to the hub model-side
+          // types which match those natively present in the target
+          sinkP.valid := channel.io.out.valid
+          sinkP.bits := channel.io.out.bits.asUInt.asTypeOf(sinkP.bits)
+          channel.io.out.ready := sinkP.ready
+        case None => channelPorts.wireOutputPortMap(chAnno.globalName) <> channel.io.out
+      }
+      channel
     }
 
-    portTuple.sink match {
-      case Some(sinkP) =>
-        // Splay out the assignment so that we can coerce the bridge-side types
-        // (which use Bool in place of Clock, AsyncReset) to the hub model-side
-        // types which match those natively present in the target
-        sinkP.valid := channel.io.out.valid
-        sinkP.bits := channel.io.out.bits.asUInt.asTypeOf(sinkP.bits)
-        channel.io.out.ready := sinkP.ready
-      case None => channelPorts.elements(s"${chAnno.globalName}_source") <> channel.io.out
+    val srcP = target.io.wirePortMap(primaryChannelName).source.getOrElse(
+      channelPorts.wireInputPortMap(primaryChannelName)
+    )
+   // Do the channel forking on the enq side. Enqueue the token only if all
+   // channels can accept a new one.
+    val helper = DecoupledHelper((srcP.valid +: queues.map(_.io.in.ready).toSeq):_*)
+    for (q <- queues) {
+      q.io.in.bits := srcP.bits
+      q.io.in.valid := helper.fire(q.io.in.ready)
     }
-    channel
+    srcP.ready := helper.fire(srcP.valid)
+
+    queues
   }
 
   // Helper functions to attach legacy SimReadyValidIO to true, dual-channel implementations of target ready-valid
@@ -405,7 +457,7 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   def genReadyValidChannel(chAnno: FAMEChannelConnectionAnnotation): ReadyValidChannel[Data] = {
       val chName = chAnno.globalName
       val strippedName = chName.stripSuffix("_fwd")
-      // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by an bridge)
+      // A channel is considered "flipped" if it's sunk by the tranformed RTL (sourced by a bridge)
       val channel = Module(new ReadyValidChannel(getReadyValidChannelType(chAnno).cloneType))
 
       channel.suggestName(s"ReadyValidChannel_$strippedName")
@@ -433,12 +485,22 @@ class SimWrapper(config: SimWrapperConfig)(implicit val p: Parameters) extends M
   })
 
   // Generate all other non-RV channels
-  chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(latency),_,_,_)  => genPipeChannel(ch, latency)
-    case ch @ FAMEChannelConnectionAnnotation(_, fame.ClockControlChannel,_,_,_)  => genPipeChannel(ch, 0)
-    case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => genPipeChannel(ch, 0)
-    case ch @ FAMEChannelConnectionAnnotation(_, fame.AsyncResetChannel,_,_,_)  => genPipeChannel(ch, 0)
-  })
+  val pipeLikeChannelFCCAs  = chAnnos.collect {
+    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(_),_,_,_)  => ch 
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.ClockControlChannel,_,_,_)  => ch 
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => ch
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.AsyncResetChannel,_,_,_)  => ch
+  }
+
+  // Pipe channels can have multiple sinks for each source. Group FCCAs that
+  // fanout using the first channel name in the [[FAMEChannelFanoutAnnotation]] as the unique
+  // identifier for each group.
+  val channelToFanoutName = fanoutAnnos.flatMap({ anno => anno.channelNames.map {
+    name => name -> anno.channelNames.head
+  }}).toMap
+  val channelGroups = pipeLikeChannelFCCAs.groupBy { anno =>
+    channelToFanoutName.getOrElse(anno.globalName, anno.globalName) }
+  channelGroups foreach { case (name,  annos) => genPipeChannel(annos, name) }
 
   // Connect hub control IF
   for ((elementName, PortMetadata(rT, fDir, _)) <- ctrlAnno.signals) {

@@ -9,12 +9,20 @@ import annotations._
 import collection.mutable.{ArrayBuffer, LinkedHashSet}
 
 import midas.targetutils.FAMEAnnotation
+/**
+  *  Assumes:
+  *    - AQB form (target module hierachy matches eventually LI-BDN graph, with
+  *      connectivity still in place.)
+  *    - Only extant FCCAs are on top-level I/O
+  *
+  *  Run after ExtractModel
+  *  Label all unbound top-level ports as wire channels
+  *  Label *all* model-to-model connections as wire channels
+  *  Label all children of the top model to be FAME1 transformed
+  */
 
-// Assumes: AQB form
-// Run after ExtractModel
-// Label all unbound top-level ports as wire channels
-// Label *all* model-to-model connections as wire channels
-// Label all children of the top model to be FAME1 transformed
+
+
 
 class FAMEDefaults extends Transform {
   def inputForm = LowForm

@@ -26,5 +26,5 @@ int main(int argc, char** argv) {
     firesim_f1_t firesim(argc, argv);
     firesim.init(argc, argv);
     firesim.run();
-    return firesim.finish();
+    return firesim.teardown();
 }

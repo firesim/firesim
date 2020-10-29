@@ -2,6 +2,7 @@
 package firesim.midasexamples
 
 import java.io.File
+import scala.util.matching.Regex
 import scala.io.Source
 import org.scalatest.Suites
 
@@ -84,6 +85,20 @@ abstract class TutorialSuite(
       val verilatedOutput = extractLines(verilatedLogFile, stdoutPrefix).sorted
       val synthPrintOutput = extractLines(synthLogFile, synthPrefix, synthLinesToDrop).sorted
       diffLines(verilatedOutput, synthPrintOutput)
+    }
+  }
+
+  def expectedFMR(expectedValue: Double, error: Double = 0.0) {
+    it should s"run with an FMR between ${expectedValue - error} and ${expectedValue + error}" in {
+      val verilatedLogFile = new File(outDir,  s"/${targetName}.${backendSimulator}.out")
+      val lines = Source.fromFile(verilatedLogFile).getLines.toList.reverse
+      val fmrRegex = raw"^FMR: (\d*\.\d*)".r
+      val fmr = lines.collectFirst {
+        case fmrRegex(value) => value.toDouble
+      }
+      assert(fmr.nonEmpty, "FMR value not found.")
+      assert(fmr.get >= expectedValue - error)
+      assert(fmr.get <= expectedValue + error)
     }
   }
 
@@ -182,6 +197,17 @@ class NestedModelsF1Test extends TutorialSuite("NestedModels")
 
 class MultiRegF1Test extends TutorialSuite("MultiReg")
 
+class PassthroughModelTest extends TutorialSuite("PassthroughModel") {
+  expectedFMR(2.0)
+}
+
+class PassthroughModelNestedTest extends TutorialSuite("PassthroughModelNested") {
+  expectedFMR(2.0)
+}
+
+class PassthroughModelBridgeSourceTest extends TutorialSuite("PassthroughModelBridgeSource") {
+  expectedFMR(1.0)
+}
 
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
