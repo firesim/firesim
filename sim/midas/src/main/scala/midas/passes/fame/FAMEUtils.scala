@@ -28,6 +28,13 @@ object RTRenamer {
     }
   }
 
+  def nonZero(renames: RenameMap): (ReferenceTarget => Seq[ReferenceTarget]) = {
+    { rt =>
+      val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
+      assert(renameMatches.length >= 1, s"No renameMatches for ${rt}")
+      renameMatches
+    }
+  }
   def apply(renames: RenameMap): (ReferenceTarget => Seq[ReferenceTarget]) = {
     { rt => renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt }) }
   }
@@ -276,7 +283,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   lazy val modelPorts = {
     val mPorts = new LinkedHashMap[ModuleTarget, mutable.Set[FAMEChannelPortsAnnotation]] with MultiMap[ModuleTarget, FAMEChannelPortsAnnotation]
     state.annotations.collect({
-      case fcp @ FAMEChannelPortsAnnotation(_, _, port :: ps) => mPorts.addBinding(port.moduleTarget, fcp)
+      case fcp @ FAMEChannelPortsAnnotation(_, _, port :: ps, _) => mPorts.addBinding(port.moduleTarget, fcp)
     })
     mPorts
   }
@@ -286,7 +293,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   // Note: This can only be run after [[InferModelPorts]] has been executed.
   private def genModelChannelPortMap(direction: Option[Direction])(mTarget: ModuleTarget): Map[String, (Option[Port], Seq[Port])] = {
     modelPorts(mTarget).collect({
-      case FAMEChannelPortsAnnotation(name, clock, ports) if direction == None || portNodes(ports.head).direction == direction.get =>
+      case FAMEChannelPortsAnnotation(name, clock, ports, _) if direction == None || portNodes(ports.head).direction == direction.get =>
         (name, (clock.map(portNodes(_)), ports.map(portNodes(_))))
     }).toMap
   }
@@ -294,6 +301,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   def modelInputChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])]  = genModelChannelPortMap(Some(Input))
   def modelOutputChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])] = genModelChannelPortMap(Some(Output))
   def modelChannelPortMap: ModuleTarget => Map[String, (Option[Port], Seq[Port])]       = genModelChannelPortMap(None)
+
+  lazy val timestampedModelPorts = modelPorts.map { case (mT, portAnnos) =>
+    mT -> portAnnos.filter(_.timestamped).map(_.localName).toSet
+  }
 
   def getSinkHostDecoupledChannelType(cName: String): Type = {
     FAMEChannelAnalysis.getHostDecoupledChannelType(cName, sinkPorts(cName).map(portNodes(_)), channelHasTimestamp(cName))
@@ -327,6 +338,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
 
     val inputChannelDedups = new LinkedHashMap[String, String]
     val outputChannelDedups = new LinkedHashMap[String, String]
+    val portIsTimestamped = new LinkedHashSet[String]
 
     private val visitedLeafPort = new LinkedHashSet[Port]()
     private val visitedChannelPort = new LinkedHashMap[(Option[Port], Seq[Port]), String]()
@@ -343,6 +355,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       case (cName, clockAndPorts) if channelSharesPorts(clockAndPorts) && !channelIsDuplicate(clockAndPorts) =>
         throw new RuntimeException("Channel definition has partially overlapping ports with existing channel definition")
       case (cName, clockAndPorts) if channelIsDuplicate(clockAndPorts) =>
+        require(channelHasTimestamp(cName) == portIsTimestamped(visitedChannelPort(clockAndPorts)))
         dedups(cName) = visitedChannelPort(clockAndPorts)
         None
       case (cName, (clock, ports)) =>
@@ -360,6 +373,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
         visitedLeafPort ++= clock
         visitedLeafPort ++= ports
         dedups(cName) = chPortName
+        portIsTimestamped(chPortName) = channelHasTimestamp(cName)
         Some(chPortName, (clock, ports))
       }).toMap
 
@@ -383,10 +397,11 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
       val outputPreamble = s"  Output Ports"
       val inputPreamble = s"  Input Ports"
       val outputs = outputChannelDedups.groupBy(_._2).map { case (pName, channels) => 
-        Seq(s"    Port ${pName} drives channels:") ++: channels.map { case (ch, _) =>  s"      ${ch}" }
+        Seq(s"    Port ${pName}, Timestamped = ${portIsTimestamped(pName)},  drives channels:") ++:
+          channels.map { case (ch, _) =>  s"      ${ch}" }
       }
       val inputs = inputChannelDedups.groupBy(_._2).map { case (pName, channels) => 
-        s"""|    Port ${pName} sinks channel:
+        s"""|    Port ${pName}, Timestamped = ${portIsTimestamped(pName)}, sinks channel:
             |      ${channels.head._1}""".stripMargin
       }
       val lines = Seq(modulePreamble, inputPreamble) ++: inputs ++: Seq(outputPreamble) ++: outputs.flatten

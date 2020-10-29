@@ -30,10 +30,19 @@ import midas.widgets.RationalClock
 case class FAMEChannelPortsAnnotation(
   localName: String,
   clockPort: Option[ReferenceTarget],
-  ports: Seq[ReferenceTarget]) extends Annotation with FAMEAnnotation {
+  ports: Seq[ReferenceTarget],
+  timestamped: Boolean) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), ports.map(renamer)))
+    val nonZeroRenamer = RTRenamer.nonZero(renames)
+    val updatedPorts = if (timestamped) {
+      // Timestamped ports are transformed to include aggregates
+      ports.flatMap(nonZeroRenamer)
+    } else {
+      ports.map(renamer)
+    }
+
+    Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), updatedPorts, timestamped))
   }
   override def getTargets: Seq[ReferenceTarget] = clockPort ++: ports
 }

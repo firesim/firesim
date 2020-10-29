@@ -168,13 +168,14 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     }
 
     val existingClockChannels = new mutable.ArrayBuffer[FAME1ClockChannel]
+    val isTimestampedPort  = analysis.timestampedModelPorts(mTarget)
     val timestampedInputChannels = new mutable.ArrayBuffer[FAME1TimestampedInputChannel]
 
     analysis.modelInputChannelPortMap(mTarget).collect {
       case chInfo if isClockChannel(chInfo) =>
         existingClockChannels += FAME1ClockChannel(chInfo._1, chInfo._2._2)
-      case (name, (clockOpt, ports)) if analysis.channelHasTimestamp(name) =>
-        require(clockOpt.isEmpty, s"Unexpected clock in Timestamped channel ${name}")
+      case (name, (clockOpt, ports)) if isTimestampedPort(name) =>
+        require(clockOpt.isEmpty, s"Unexpected clock in Timestamped port ${name}")
         require(ports.size == 1, s"Timestamped input channel must carry only a single field. Got ${ports.size}.")
         timestampedInputChannels += FAME1TimestampedInputChannel(name, ports)
     }
@@ -323,7 +324,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
 
     def genMetadata(info: (String, (Option[Port], Seq[Port]))) = info match {
       case (cName, (Some(clock), ports)) =>
-        assert(isHubModel || !analysis.channelHasTimestamp(cName),
+        assert(isHubModel || !isTimestampedPort(cName),
           s"Channel ${cName} connected to satellite model must not be timestamped.\n")
         // must be driven by one clock input port
         // TODO: this should not include muxes in connectivity!
@@ -332,8 +333,8 @@ object FAMEModuleTransformer extends HasTimestampConstants {
         val clockRef = WRef(srcClockPorts.head)
         val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockEnableMap(clockRef)), Nil, BoolType)
         val firedReg = HostFlagRegister(s"${cName}_fired")
-        (cName, clockFlag, ports, firedReg, analysis.channelHasTimestamp(cName))
-      case (cName, (None, ports)) if analysis.channelHasTimestamp(cName) =>
+        (cName, clockFlag, ports, firedReg, isTimestampedPort(cName))
+      case (cName, (None, ports)) if isTimestampedPort(cName) =>
         val firedReg = HostFlagRegister(s"${cName}_fired")
         // Reset timestamped channels whenever making forward progress (any clock is about to fire)
         (cName, s1_valid, ports, firedReg, true)
@@ -351,7 +352,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
 
     // Filter out timestamped input channels since their handshakes are managed by the front-end of the scheduler.
     val inChannelInfo = analysis.modelInputChannelPortMap(mTarget)
-      .filterNot({ case (name, _) => analysis.channelHasTimestamp(name) })
+      .filterNot({ case (name, _) => isTimestampedPort(name) })
     val inChannelMetadata = inChannelInfo.map(genMetadata)
     val inChannels = inChannelMetadata.map(m => (FAME1InputChannel(m._1, m._2, m._3)))
     val inChannelMap = stableMap(inChannels.flatMap(c => c.ports.map(p => p.name -> c)))

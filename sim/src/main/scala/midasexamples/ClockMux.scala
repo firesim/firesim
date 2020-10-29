@@ -5,17 +5,29 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.config.{Parameters, Field}
 
-import midas.widgets.{RationalClockBridge, RationalClock, PeekPokeBridge, BridgeableClockMux}
+import midas.widgets.{RationalClockBridge, RationalClock, PeekPokeBridge, BridgeableClockMux, BridgeableClockDivider}
 
 class ClockMux(implicit p: Parameters) extends RawModule {
-  val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2))
-  val Seq(fullRate, halfRate) = clockBridge.io.clocks.toSeq
+  val fullRate = RationalClockBridge().io.clocks.head
+
+  val clockDivider = Module(new freechips.rocketchip.util.ClockDivider2)
+  clockDivider.io.clk_in := fullRate
+  val halfRate = clockDivider.io.clk_out
+
+  // Annotate the divider indicating it can be replaced with a model
+  BridgeableClockDivider(
+    clockDivider,
+    clockDivider.io.clk_in,
+    clockDivider.io.clk_out,
+    div = 2)
 
   val clockMux = Module(new testchipip.ClockMux2)
-  clockMux.io.clocksIn := clockBridge.io.clocks
+  clockMux.io.clocksIn(0) := fullRate
+  clockMux.io.clocksIn(1) := halfRate
 
   // Annotate the CMux indicating it can be replaced with a model
-  BridgeableClockMux(clockMux,
+  BridgeableClockMux(
+    clockMux,
     clockMux.io.clocksIn(0),
     clockMux.io.clocksIn(1),
     clockMux.io.clockOut,

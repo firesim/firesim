@@ -4,6 +4,7 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.BaseModule
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.unittest.{UnitTest}
@@ -93,4 +94,49 @@ class RocketChipClockDivider3Test(
   val clockTuple = ClockSource.instantiateAgainstReference(clockPeriodPS, initValue = false)
   val (reference, model) = ClockDivider3.instantiateAgainstReference(clockTuple)
   io.finished := TimestampedTokenTraceEquivalence(reference, model, timeout)
+}
+
+case class ClockDividerParams(div: Int)
+
+class ClockDividerHostIO(
+    private val tClockIn: Clock = Clock(),
+    private val tClockOut: Clock = Clock()) extends Bundle with TimestampedHostPortIO {
+  val clockIn = InputClockChannel(tClockIn)
+  val clockOut = OutputClockChannel(tClockOut)
+}
+
+private[midas] class BridgeableClockDivider (
+    mod: BaseModule,
+    clockIn: Clock,
+    clockOut: Clock,
+    params: ClockDividerParams) extends Bridgeable[ClockDividerHostIO, ClockDividerBridgeModule] {
+  def target = mod.toNamed.toTarget
+  def bridgeIO = new ClockDividerHostIO(clockIn, clockOut)
+  require(params.div == 1 || params.div == 2 || params.div == 3)
+  def constructorArg = Some(params)
+}
+
+object BridgeableClockDivider {
+  def apply(mod: BaseModule, clockIn: Clock, clockOut: Clock, div: Int): Unit = {
+    val annotator = new BridgeableClockDivider(mod, clockIn, clockOut, ClockDividerParams(div))
+    annotator.generateAnnotations()
+  }
+}
+
+class ClockDividerBridgeModule(params: ClockDividerParams)(implicit p: Parameters) extends BridgeModule[ClockDividerHostIO] {
+  lazy val module = new BridgeModuleImp(this) {
+    val io = IO(new WidgetIO())
+    val hPort = IO(new ClockDividerHostIO)
+    params.div match {
+      case 1 => hPort.clockOut <> hPort.clockIn
+      case 2 =>
+        val cd = Module(new ClockDivider2)
+        cd.clk_in <> TimestampedSource(hPort.clockIn)
+        hPort.clockOut <> TimestampedSink(cd.clk_out)
+      case 3 =>
+        val cd = Module(new ClockDivider3)
+        cd.clk_in <> TimestampedSource(hPort.clockIn)
+        hPort.clockOut <> TimestampedSink(cd.clk_out)
+    }
+  }
 }
