@@ -44,18 +44,9 @@ class CombinationalAndTest(timeout: Int = 50000)(implicit p: Parameters) extends
   val aPeriodPS = 10
   val bPeriodPS = 5
   // Use a clock source to provide data-input stimulus to resuse code we already have
-  val refInputA = Module(new ClockSourceReference(aPeriodPS, initValue = 0))
-  val refInputB = Module(new ClockSourceReference(bPeriodPS, initValue = 0))
-  val refAnd = refInputA.io.clockOut && refInputB.io.clockOut
-
-
-  val modelInputA = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(aPeriodPS, initValue = false)).clockOut,
-     0.5))
-
-  val modelInputB = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(bPeriodPS, initValue = false)).clockOut,
-    0.5))
+  val (refInputA, modelInputA) = ClockSource.instantiateAgainstReference(aPeriodPS, initValue = false)
+  val (refInputB, modelInputB) = ClockSource.instantiateAgainstReference(bPeriodPS, initValue = false)
+  val refAnd = refInputA && refInputB
 
   val and = new CombLogic(Bool(), modelInputA, modelInputB) {
     out.latest.bits.data := valueOf(modelInputA) && valueOf(modelInputB)

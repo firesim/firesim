@@ -44,7 +44,7 @@ class WithTimestampTests extends Config((site, here, up) => {
     implicit val p = q
     import midas.widgets._
     Seq(
-      Module(new ClockSourceTest(1000, true)),
+      Module(new ClockSourceTest(ClockSourceParams(1000, initValue = true))),
       //Module(new TimestampedRegisterTest(Posedge)),
     )
   }
@@ -56,7 +56,7 @@ class WithTimestampRegisterTests extends Config((site, here, up) => {
     implicit val p = q
     import midas.widgets._
     Seq(
-      Module(new ClockSourceTest(1000, true)),
+      Module(new ClockSourceTest(ClockSourceParams(1000, initValue = true))),
       Module(new FanOutTest),
       Module(new CombinationalAndTest),
       Module(new TimestampedRegisterTest(Posedge, 5, 4)),

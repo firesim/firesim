@@ -67,13 +67,10 @@ object PipeStage {
 class FanOutTest(timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
   val clockPeriodPS = 500
   // Use a clock source to provide data-input stimulus to resuse code we already have
-  val refInput = Module(new ClockSourceReference(clockPeriodPS, initValue = 0))
-  val modelInput = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(clockPeriodPS, initValue = false)).clockOut,
-    0.5))
+  val (refInput, modelInput)  = ClockSource.instantiateAgainstReference(clockPeriodPS, initValue = false)
   val Seq(modelOutA, modelOutB) = FanOut(modelInput, 2).map(o => DecoupledDelayer(TimestampedSink(PipeStage(o)), 0.5))
-  val aFinished = TimestampedTokenTraceEquivalence(refInput.io.clockOut, modelOutA, timeout)
-  val bFinished = TimestampedTokenTraceEquivalence(refInput.io.clockOut, modelOutB, timeout)
+  val aFinished = TimestampedTokenTraceEquivalence(refInput, modelOutA, timeout)
+  val bFinished = TimestampedTokenTraceEquivalence(refInput, modelOutB, timeout)
   io.finished := aFinished && bFinished
 }
 

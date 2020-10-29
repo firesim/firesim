@@ -113,7 +113,7 @@ class ClockBridgeModule(arg: ClockBridgeCtorArgument)(implicit p: Parameters)
     assert(arg.baseClockPeriodPS % clockPeriodicity.head == 0)
     val virtualClockPeriod = arg.baseClockPeriodPS / clockPeriodicity.head
     for ((clockChannel, multiple) <- hPort.clocks.zip(clockPeriodicity)) {
-      val clockSource = Module(new ClockSource(virtualClockPeriod * multiple))
+      val clockSource = Module(new ClockSource(ClockSourceParams(virtualClockPeriod * multiple)))
       clockChannel <> clockSource.clockOut
     }
   }

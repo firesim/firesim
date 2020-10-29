@@ -145,22 +145,14 @@ class TimestampedRegisterTest(
     clockPeriodPS: Int,
     inputPeriodPS: Int,
     timeout: Int = 50000)(implicit p: Parameters) extends UnitTest(timeout) {
-  val refClock = Module(new ClockSourceReference(clockPeriodPS, initValue = 0))
-  // Use a clock source to provide data-input stimulus to resuse code we already have
-  val refInput = Module(new ClockSourceReference(inputPeriodPS, initValue = 0))
-
-  val modelClock = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(clockPeriodPS, initValue = false)).clockOut,
-    0.5))
-  val modelInput = TimestampedSource(DecoupledDelayer(
-    Module(new ClockSource(inputPeriodPS, initValue = false)).clockOut,
-    0.25))
+  val clockTuple = ClockSource.instantiateAgainstReference(clockPeriodPS, initValue = false)
+  val inputTuple = ClockSource.instantiateAgainstReference(inputPeriodPS, initValue = false)
   val (refReg, modelReg) = TimestampedRegister.instantiateAgainstReference(
     Bool(),
     edgeSensitivity,
     initValue = None,
-    clocks = (refClock.io.clockOut, modelClock),
-    d = Some((refInput.io.clockOut, modelInput)))
+    clocks = clockTuple,
+    d = Some(inputTuple))
 
   io.finished := TimestampedTokenTraceEquivalence(refReg.q, modelReg.q, timeout)
 }
