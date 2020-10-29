@@ -127,6 +127,9 @@ class ChannelExcision extends Transform {
       case fta@ FAMEChannelConnectionAnnotation(name, PipeChannel(_), _, None, Some(sinks)) =>
         sinks.foreach({ bridgeSourcedPipeChannels(_) = name })
         bridgeSourcedFCCAs += fta
+      case fta@ FAMEChannelConnectionAnnotation(name, chInfo: Timestamped, _, None, Some(sinks)) =>
+        sinks.foreach({ bridgeSourcedPipeChannels(_) = name })
+        bridgeSourcedFCCAs += fta
     }
 
     // Step 2: Generate new ports, find and replace connections

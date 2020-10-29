@@ -77,7 +77,7 @@ trait UnpackedWrapperConfig {
   val chAnnos     = new mutable.ArrayBuffer[FAMEChannelConnectionAnnotation]()
   val bridgeAnnos = new mutable.ArrayBuffer[BridgeIOAnnotation]()
   val fanoutAnnos = new mutable.ArrayBuffer[FAMEChannelFanoutAnnotation]()
-  private val ctrlAnnos: SimulationControlAnnotation
+  private val ctrlAnnos = new mutable.ArrayBuffer[SimulationControlAnnotation]()
   config.annotations collect {
     case fcca: FAMEChannelConnectionAnnotation => chAnnos += fcca
     case ba: BridgeIOAnnotation => bridgeAnnos += ba
@@ -174,7 +174,7 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig) extends Record
       ch -> regenPayloadType(sinks.filterNot(_ == vsink))
   }).toMap
 
-  val wireElements = ArrayBuffer[(String, ReadyValidIO[Data])]()
+  val wireElements = mutable.ArrayBuffer[(String, ReadyValidIO[Data])]()
   val wireLikeFCCAs = chAnnos.collect {
     case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,_,_) => ch
     case ch @ FAMEChannelConnectionAnnotation(_,fame.ClockControlChannel,_,_,_) => ch
@@ -383,15 +383,16 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
     */
   def genPipeChannel(chAnnos: Iterable[FAMEChannelConnectionAnnotation], primaryChannelName: String):
       Iterable[PipeChannel[ChLeafType]] = {
+    val channelType = getPipeChannelType(chAnnos.find(_.globalName == primaryChannelName).get)
     // Generate a channel queue for each annotation, leaving enq disconnected
     val queues = for (chAnno <- chAnnos) yield {
       require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
       require(chAnno.sinks   == None || chAnno.sinks  .get.size == 1, "Can't aggregate wire-type channels yet")
       val latency = chAnno.channelInfo match {
-        case PipeChannel(latency) => latency
+        case fame.PipeChannel(latency) => latency
         case o => 0
       }
-      val channel = Module(new PipeChannel(getPipeChannelType(chAnno), latency))
+      val channel = Module(new PipeChannel(channelType, latency))
       channel suggestName s"PipeChannel_${chAnno.globalName}"
 
       target.io.wirePortMap(chAnno.globalName).sink match {
@@ -414,7 +415,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
    // channels can accept a new one.
     val helper = DecoupledHelper((srcP.valid +: queues.map(_.io.in.ready).toSeq):_*)
     for (q <- queues) {
-      q.io.in.bits := srcP.bits
+      q.io.in.bits := srcP.bits.asTypeOf(q.io.in.bits)
       q.io.in.valid := helper.fire(q.io.in.ready)
     }
     srcP.ready := helper.fire(srcP.valid)

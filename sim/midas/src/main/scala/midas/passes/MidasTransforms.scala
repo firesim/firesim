@@ -95,7 +95,7 @@ private[midas] class MidasTransforms extends Transform {
       fame.HubModelControlWiring,
       new fame.EmitFAMEAnnotations("post-fame-transform.json"),
       new ResolveAndCheck,
-      fame.MultiThreadFAME5Models,
+      // fame.MultiThreadFAME5Models,
       new ResolveAndCheck,
       new fame.EmitAndWrapRAMModels,
       new EmitFirrtl("post-gen-sram-models.fir"),
