@@ -6,10 +6,16 @@ CC_LINUX=riscv64-unknown-linux-gnu-gcc
 CFLAGS_LINUX=-Wall -O2
 LDFLAGS_LINUX=-lrt
 
-check-rtc-linux: check-rtc-linux.c
+default: check-rtc-linux
+
+baremetal_bins = $(addsuffix -bare, check-rtc check-tile-cmuxing)
+$(info $(baremetal_bins))
+linux_bins = $(addsuffix -linux, check-rtc)
+
+%-linux: %-linux.c
 	$(CC_LINUX) $(CFLAGS_LINUX) $(LDFLAGS_LINUX) $< -o $@
 
-check-rtc: check-rtc.o crt.o syscalls.o
+%-bare: %-bare.o crt.o syscalls.o
 	$(CC) -T link.ld $(LDFLAGS) $^ -o $@
 
 print-mcycle-linux: print-mcycle.c
@@ -21,3 +27,13 @@ print-mcycle-linux: print-mcycle.c
 %.o: %.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
+
+baremetal: $(baremetal_bins)
+linux: $(linux_bins)
+
+clean:
+	rm -f $(baremetal_bins)
+	rm -f $(linux_bins)
+	rm -f *.o
+
+.PHONY: clean baremetal linux
