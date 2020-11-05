@@ -54,10 +54,7 @@ case class ThreadedSyncReadMem(
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 
-object ImplementThreadedSyncReadMems extends Transform {
-  def inputForm = HighForm
-  def outputForm = HighForm
-
+object ImplementThreadedSyncReadMems {
   private def implement(tMem: ThreadedSyncReadMem, moduleName: String): Module = {
     val info = FAME5Info.info
     val tIdxMax = UIntLiteral(tMem.nThreads-1)
@@ -156,14 +153,14 @@ object ImplementThreadedSyncReadMems extends Transform {
     }
   }
 
-  override def execute(state: CircuitState): CircuitState = {
-    val moduleNS = Namespace(state.circuit)
+  def apply(circuit: Circuit): Circuit = {
+    val moduleNS = Namespace(circuit)
     val tMemImplementations = new mutable.LinkedHashMap[ThreadedSyncReadMem, Module]
-    val modulesX = state.circuit.modules.map {
+    val modulesX = circuit.modules.map {
       case m: Module => m.copy(body = onStmt(moduleNS, tMemImplementations)(m.body))
       case m => m
     }
     val tMemMods = tMemImplementations.map { case (k, v) => v }
-    state.copy(circuit = state.circuit.copy(modules = modulesX ++ tMemMods))
+    circuit.copy(modules = modulesX ++ tMemMods)
   }
 }
