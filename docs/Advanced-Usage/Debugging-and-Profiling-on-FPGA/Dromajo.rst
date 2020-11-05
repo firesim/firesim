@@ -60,13 +60,11 @@ Both files are found in your generated sources and should be moved into the work
 
 .. code-block:: shell
 
-    cd $CHIPYARD
-
     # copy/rename the rom file and put in the proper folder
-    cp sim/generated-src/f1/<LONG_NAME>/<LONG_NAME>.rom $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.rom
+    cp $FIRESIM/sim/generated-src/f1/<LONG_NAME>/bootrom.rv64.img $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.rom
 
     # copy/rename the dtb file and put in the proper folder
-    cp sim/generated-src/f1/<LONG_NAME>/<LONG_NAME>.dtb $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.dtb
+    cp $FIRESIM/sim/generated-src/f1/<LONG_NAME>/<LONG_NAME>.dtb $FIRESIM/deploy/workloads/br-base-dromajo/br-base-bin.dtb
 
 After this process, you should see the following ``workloads/br-base-dromajo`` folder layout:
 

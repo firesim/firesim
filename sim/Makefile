@@ -28,6 +28,11 @@ TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJEC
 # The host-platform type (currently only f1 supported)
 PLATFORM ?= f1
 
+# If TARGET_PROJECT_MAKEFRAG requires additional PROJECT-specific artifacts in GENERATED_DIR before
+# Chisel->FIRRTL->Verilog is run, register them as prereqs of the pre-elaboration target.  
+# See src/main/makefrag/firesim/Makefrag's BOOTROM_TARGETS for an example
+PRE_ELABORATION_TARGETS =
+
 ifdef FIRESIM_STANDALONE
 
 base_dir := $(firesim_base_dir)
@@ -62,7 +67,6 @@ define run_scala_main
 endef
 # recipes for generator and gg using sbt are calls out to FAT_JAR instead of SBT
 run_main = cd $(base_dir) && java $(JAVA_ARGS) -cp $(FAT_JAR) $(2) $(3)
-RUN_MAIN_DEPS = $(FAT_JAR)
 
 ##############################################################################
 # SBT Server Setup (start server / rebuild proj. defs. if SBT_SOURCES change)
@@ -83,7 +87,7 @@ shutdown-sbt-server:
 start-sbt-server:
 	cd $(base_dir) && $(SBT) "exit"
 
-else
+else # not FIRESIM_STANDALONE
 # Chipyard make variables
 base_dir := $(abspath ../../..)
 sim_dir := $(firesim_base_dir)

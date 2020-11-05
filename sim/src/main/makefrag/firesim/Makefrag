@@ -15,9 +15,9 @@ TARGET_CONFIG ?= FireSimRocketConfig
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
 PLATFORM_CONFIG ?= BaseF1Config
 
-name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
-GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
-OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
+name_tuple    ?= $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+GENERATED_DIR ?= $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    ?= $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
 ##################
 # RTL Generation #
@@ -30,14 +30,36 @@ VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${chipyard_dir}}firechip
+	firesim_sbt_project ?= {file:${chipyard_dir}}firechip
 
 	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print 2> /dev/null)
-	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
-	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
+	SOURCE_DIRS ?= $(chipyard_dir)/generators $(firesim_base_dir)
+	SCALA_SOURCES ?= $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
-	firesim_sbt_project := firechip
+	firesim_sbt_project ?= firechip
 endif
+
+BOOTROM_FILES = bootrom.rv32.img bootrom.rv64.img
+CHIPYARD_ROMDIR ?= $(chipyard_dir)/generators/testchipip/bootrom
+# pattern rule to handle copying bootrom images into GENERATED_DIR so that they are available for
+# - distributed elaboration on a build host
+# - dromajo co-sim
+BOOTROM_TARGETS = $(addprefix $(GENERATED_DIR)/, $(BOOTROM_FILES))
+$(BOOTROM_TARGETS): $(GENERATED_DIR)/bootrom.%.img: $(CHIPYARD_ROMDIR)/bootrom.%.img | $(GENERATED_DIR)
+	cp -f $< $@
+
+# ensure the BOOTROM_TARGETS are available for Chisel to Verilog elaboration
+PRE_ELABORATION_TARGETS += $(BOOTROM_TARGETS)
+
+# Don't search for implicit rules to build the scala sources or bootrom sources (reduces useless output in --debug)
+$(SCALA_SOURCES) $(addprefix $(CHIPYARD_ROMDIR)/, $(BOOTROM_FILES)): ;
+
+GENERATOR_NAME ?= chipyard.Generator
+GENERATOR_ARGS ?= \
+		--target-dir $(GENERATED_DIR) \
+		--name $(long_name) \
+		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
+		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG)
 
 FAT_JAR ?= $(firesim_base_dir)/generated-src/firechip.jar
 FAT_JAR_DEPS ?= $(SCALA_SOURCES) $(SCALA_BUILDTOOL_DEPS)
@@ -60,6 +82,7 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(FIRRTL_FILE).intermediate ;
 $(FIRRTL_FILE).intermediate: $(SCALA_SOURCES) $(PRE_ELABORATION_TARGETS) | $(GENERATED_DIR)
 	$(call run_main,$(firesim_sbt_project),$(GENERATOR_NAME),$(GENERATOR_ARGS))
 
+
 # DOC include start: Bridge Build System Changes
 ##########################
 # Driver Sources & Flags #
@@ -76,9 +99,6 @@ DROMAJO_LONG_H = $(GENERATED_DIR)/$(long_name).dromajo_params.h
 
 TESTCHIPIP_CSRC_DIR = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
 
-CHIPYARD_ROM = $(chipyard_dir)/generators/testchipip/bootrom/bootrom.rv64.img
-DROMAJO_ROM = $(GENERATED_DIR)/$(long_name).rom
-
 DTS_FILE = $(GENERATED_DIR)/$(long_name).dts
 DROMAJO_DTB = $(GENERATED_DIR)/$(long_name).dtb
 
@@ -94,11 +114,8 @@ $(DROMAJO_H): $(DROMAJO_LONG_H)
 $(DROMAJO_DTB): $(DTS_FILE)
 	dtc -I dts -O dtb -o $(DROMAJO_DTB) $(DTS_FILE)
 
-$(DROMAJO_ROM): $(CHIPYARD_ROM)
-	rm -rf $(DROMAJO_ROM)
-	ln -s $(CHIPYARD_ROM) $(DROMAJO_ROM)
 
-DROMAJO_REQS = $(DROMAJO_H) $(DROMAJO_ROM) $(DROMAJO_DTB)
+DROMAJO_REQS = $(DROMAJO_H) $(BOOTROM_TARGETS) $(DROMAJO_DTB)
 
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
@@ -107,11 +124,16 @@ DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
 	$(DROMAJO_REQS) \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
 
-DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
-	    $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
-	    $(RISCV)/lib/libfesvr.a \
-	    $(DROMAJO_LIB) \
-	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
+DRIVER_CC_SOURCEFILES = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
+			$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
+			$(RISCV)/lib/libfesvr.a \
+			$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
+
+# don't look for implicit rules for DRIVER_CC_SOURCEFILES because they are assumed to either come
+# from version-control or having been built as a part of build-setup.sh
+$(DRIVER_CC_SOURCEFILES): ;
+
+DRIVER_CC = $(DRIVER_CC_SOURCEFILES) $(DROMAJO_LIB)
 
 TARGET_CXX_FLAGS := -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost -I$(DROMAJO_DIR) -I$(GENERATED_DIR)
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz -L$(DROMAJO_DIR) -l$(DROMAJO_LIB_NAME)
@@ -137,7 +159,7 @@ CVA6_VERILATOR_FLAGS = \
 	-Wall
 
 # normal flags used for midas builds (that are incompatible with cva6)
-DEFAULT_MIDAS_VERILATOR_FLAGS = \
+DEFAULT_MIDAS_VERILATOR_FLAGS ?= \
 	--assert
 
 # AJG: this must be evaluated after verilog generation to work (hence the =)
@@ -187,7 +209,7 @@ vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
-sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
+sim_binary_basename = $(basename $(notdir $(SIM_BINARY)))
 
 run-verilator: $(verilator)
 	cd $(dir $<) && \
@@ -237,7 +259,9 @@ endif
 disasm := 2>
 which_disasm := $(shell which spike-dasm 2> /dev/null)
 ifneq ($(which_disasm),)
-        disasm := 3>&1 1>&2 2>&3 | $(which_disasm) $(DISASM_EXTENSION) >
+    # Default to no extra spike-dasm arguments, Allowing cmdline addition
+    DISASM_EXTENSION ?=
+    disasm := 3>&1 1>&2 2>&3 | $(which_disasm) $(DISASM_EXTENSION) >
 endif
 
 # Some of the generated suites use specific plus args, that are prefixed with

@@ -26,12 +26,21 @@ if _no_agent ; then
     } 3<> ~/.ssh-agent
 fi
 
+echoi() {
+    # only print if being sourced into an interactive shell, otherwise, be quiet
+    # https://www.gnu.org/software/bash/manual/html_node/Is-this-Shell-Interactive_003f.html
+    case "$-" in
+	*i*) echo "$@" ;;
+    esac
+}
+
 # if key is available, print success, else add it
+# only print success if being sourced into an interactive shell, otherwise, be quiet
 if ssh-add -l | grep -q 'firesim\.pem'; then
-    echo "success: firesim.pem available in ssh-agent"
+    echoi "success: firesim.pem available in ssh-agent"
 else
     if ssh-add ~/firesim.pem; then
-        echo "success: firesim.pem added to ssh-agent"
+        echoi "success: firesim.pem added to ssh-agent"
     else
         echo "FAIL: ERROR adding ~/firesim.pem to ssh-agent. does it exist?"
     fi

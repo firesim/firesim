@@ -34,7 +34,7 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
     logger.info(targetLoweringCompiler.prettyPrint("  "))
     val loweredTarget = targetLoweringCompiler.execute(state)
 
-    // Run Golden Gate transformations, introducing host-decoupling and generating additional imulator RTL
+    // Run Golden Gate transformations, introducing host-decoupling and generating additional simulator RTL
     val simulator = new Compiler(
       Forms.LowForm ++ Seq(Dependency[InferReadWrite], Dependency[MidasTransforms]),
       Forms.LowForm).execute(loweredTarget)

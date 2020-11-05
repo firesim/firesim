@@ -102,6 +102,9 @@ verilator_harness := emul/verilator-harness.cc
 top_module := verilator_top
 include rtlsim/Makefrag-verilator
 
+# tell make not to look for implicit rules for verilator sourcefiles (helps --debug=i output)
+$(verilator_wrapper_v) $(verilator_harness): ;
+
 verilator: $(OUT_DIR)/V$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 verilator-debug: $(OUT_DIR)/V$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 
@@ -111,6 +114,9 @@ vcs_harness := emul/vcs-harness.cc
 TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs
+
+# tell make not to look for implicit rules for vcs sourcefiles (helps --debug=i output)
+$(vcs_wrapper_v) $(vcs_harness): ;
 
 vcs: $(OUT_DIR)/$(DESIGN) $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini
 vcs-debug: $(OUT_DIR)/$(DESIGN)-debug $(OUT_DIR)/$(DESIGN).chain $(OUT_DIR)/dramsim2_ini

@@ -312,6 +312,16 @@ to set your max to the on-demand price for the instance.
 (Optional) Provide an a script to run on the results copied back from a _single_ build instance. Upon completion of each design's build, the manager invokes this script and passing the absolute path to that instance's build-results directory as it's first argument. 
 
 
+``distributed-elaboration``
+"""""""""""""""""""""""""""
+
+Boolean controlling whether the Chisel to Verilog compilation should be distributed to the build
+host.  When true, a sbt-assembly fat jar of your SBT project will be built and sent to the build
+host.  The build host will run FIRRTL generation and then GoldenGate before starting the Vivado
+build.  When false, the Chisel->Verilog compilation will run on the local host in sequence for each 
+config before starting the build hosts.
+
+
 ``[builds]``
 ^^^^^^^^^^^^^^^^^^^^^
 

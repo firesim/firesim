@@ -110,6 +110,7 @@ class GlobalBuildConfig:
         self.spot_max_price = \
                      global_build_configfile.get('afibuild', 'spotmaxprice')
         self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
+        self.distributed_elaboration = global_build_configfile.getboolean('afibuild', 'distributed-elaboration')
 
         # this is a list of actual builds to run
         builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))

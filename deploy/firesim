@@ -132,8 +132,13 @@ def buildafi(globalbuildconf):
 
     signal.signal(signal.SIGINT, terminate_instances_handler)
 
+    if globalbuildconf.distributed_elaboration:
+	prep_config = gen_replace_rtl_script
+    else:
+	prep_config = replace_rtl_local
+
     for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+        execute(prep_config, globalbuildconf, buildconf, hosts=['localhost'])
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves

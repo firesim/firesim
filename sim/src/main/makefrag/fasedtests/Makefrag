@@ -43,7 +43,10 @@ chisel_src_dirs = \
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
-$(FAT_JAR): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
+# don't search for implicit rules to make the chisel_srcs (reduces useless output in --debug=i)
+$(chisel_srcs): ;
+
+$(FAT_JAR): $(chisel_srcs) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
 	$(SBT) "project $(firesim_sbt_project)" 'set assemblyOutputPath in assembly := file("$(FAT_JAR)")' assembly
 

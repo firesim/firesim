@@ -53,10 +53,18 @@ firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 
+$(GENERATED_DIR):
+	mkdir -p $@
+
+# empty recipe to help make understand multiple targets come from single recipe invocation
+# without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
+$(VERILOG) $(HEADER) $(fame_annos): $(VERILOG).intermediate ;
+
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
-$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(RUN_MAIN_DEPS)
+.SECONDARY: $(VERILOG).intermediate
+$(VERILOG).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(PRE_ELABORATION_TARGETS)
 	$(call run_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
@@ -98,8 +106,8 @@ VERILATOR_MAKEFLAGS ?= -j8 VM_PARALLEL_BUILDS=1
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 
-$(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VERILATOR_CXXOPTS) -D RTLSIM
-$(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
+$(verilator) $(verilator_debug): export CXXFLAGS += $(common_cxx_flags) $(VERILATOR_CXXOPTS) -D RTLSIM
+$(verilator) $(verilator_debug): export LDFLAGS += $(common_ld_flags)
 
 $(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILOG)
 	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
@@ -122,8 +130,8 @@ VCS_CXXOPTS ?= -O2
 vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 
-$(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VCS_CXXOPTS) -I$(VCS_HOME)/include -D RTLSIM
-$(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
+$(vcs) $(vcs_debug): export CXXFLAGS += $(common_cxx_flags) $(VCS_CXXOPTS) -I$(VCS_HOME)/include -D RTLSIM
+$(vcs) $(vcs_debug): export LDFLAGS += $(common_ld_flags)
 
 $(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILOG)
 	$(MAKE) -C $(simif_dir) vcs PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
@@ -151,12 +159,12 @@ $(PLATFORM): $($(PLATFORM)) $(OUTPUT_DIR)/$(DESIGN).chain
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
-$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
+$(f1): export CXXFLAGS += $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
-$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
+$(f1): export LDFLAGS += $(common_ld_flags) -lfpga_mgmt
 
 # Compile Driver
-$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
+$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(HEADER) $(OUTPUT_DIR)/build/
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
@@ -176,14 +184,23 @@ ila_work_dir   := $(fpga_work_dir)/design/ila_files/
 fpga_vh        := $(fpga_work_dir)/design/cl_firesim_generated_defines.vh
 fpga_tcl_env   := $(fpga_work_dir)/design/cl_firesim_generated_env.tcl
 repo_state     := $(fpga_work_dir)/design/repo_state
+cl_firesim_files := $(shell find $(board_dir)/cl_firesim -name '*')
 
-$(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
+#  ensures that the replace-rtl.sh will be generated including the recipe for $(fpga_work_dir)/stamp.  
+#  This is needed because  distributed-elaboration mode of 'firesim buildafi' assumes that it will 
+#  rsync $(board_dir)/cl_firesim to build host and replace-rtl.sh is responsible for creating $(fpga_work_dir) from the template.
+PRE_ELABORATION_TARGETS += $(firstword $(cl_firesim_files))
+
+# don't search for implicit rules to make the cl_firesim_files (reduces useless output in --debug=i)
+$(cl_firesim_files): ;
+
+$(fpga_work_dir)/stamp: $(cl_firesim_files)
 	mkdir -p $(@D)
 	cp -rf $(board_dir)/cl_firesim -T $(fpga_work_dir)
 	touch $@
 
 $(fpga_v): $(VERILOG) $(fpga_work_dir)/stamp
-	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
+	cp -f $(GENERATED_DIR)/repo_state $(repo_state) || $(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 	cp -f $< $@
 	sed -i "s/\$$random/64'b0/g" $@
 	sed -i "s/\(^ *\)fatal;\( *$$\)/\1fatal(0, \"\");\2/g" $@
@@ -195,7 +212,7 @@ $(fpga_tcl_env): $(VERILOG) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
 .PHONY: $(ila_work_dir)
-$(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
+$(ila_work_dir): $(VERILOG) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/firesim_ila_insert_* $(fpga_work_dir)/design/ila_files/
 	sed -i "s/\$$random/64'b0/g" $(fpga_work_dir)/design/ila_files/*
 	sed -i "s/\(^ *\)fatal;\( *$$\)/\1fatal(0, \"\");\2/g" $(fpga_work_dir)/design/ila_files/*
@@ -206,14 +223,30 @@ replace-rtl: $(fpga_v) $(ila_work_dir) $(fpga_vh) $(fpga_tcl_env)
 
 .PHONY: replace-rtl
 
-$(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/stamp
+$(firesim_base_dir)/scripts/checkpoints/$(name_tuple): $(fpga_work_dir)/stamp
 	mkdir -p $(@D)
 	ln -sf $(fpga_build_dir)/checkpoints/to_aws $@
 
 # Runs a local fpga-bitstream build. Strongly consider using the manager instead.
 fpga: export CL_DIR := $(fpga_work_dir)
-fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
+fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(name_tuple)
 	cd $(fpga_build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
+
+# Generate a script that can be run remotely on a build host by manager assuming only the following
+# are copied (recursively with Fabric's rsync_project) to the build-host:
+# - $(FAT_JAR)
+# - $(GENERATED_DIR)
+# - $(board_dir)/cl_firesim
+# The script will be run with 'bash -xe' to approximate the behavior of make shell execution
+#  --no-print-directory avoids some info print statements that aren't actual commands
+#  --assume-new=$(FAT_JAR) ensures that the script consistently generates the commands for
+#  $(FAT_JAR) -> replace-rtl, regardless of whether they need to be done.  This is done so that
+#  replace-rtl.sh should always be legit commands and we don't have to handle shortcuts for output
+#  that look like "make: Nothing to be done for `replace-rtl'."
+.PHONY: gen-replace-rtl-script
+gen-replace-rtl-script: $(PRE_ELABORATION_TARGETS) | $(GENERATED_DIR)
+	$(MAKE) replace-rtl -n  --no-print-directory $(addprefix --assume-new=, $(PRE_ELABORATION_TARGETS)) > $(GENERATED_DIR)/replace-rtl.sh
+	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(GENERATED_DIR)/repo_state
 
 
 #############################
@@ -228,8 +261,8 @@ xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 # Compile XSIM Driver #
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
-$(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D SIMULATION_XSIM -D NO_MAIN
-$(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
+$(xsim): export CXXFLAGS += $(common_cxx_flags) -D SIMULATION_XSIM -D NO_MAIN
+$(xsim): export LDFLAGS += $(common_ld_flags)
 $(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
 	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" \
@@ -256,15 +289,15 @@ unittest_args = \
 		TOP_DIR=$(chipyard_dir)
 
 .PHONY:compile-midas-unittests
-compile-midas-unittests: $(chisel_srcs)
+compile-midas-unittests:
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $(unittest_args)
 
 .PHONY:run-midas-unittests
-run-midas-unittests: $(chisel_srcs)
+run-midas-unittests:
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
 .PHONY:run-midas-unittests-debug
-run-midas-unittests-debug: $(chisel_srcs)
+run-midas-unittests-debug:
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
 #########################
