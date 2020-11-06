@@ -108,8 +108,8 @@ TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz -L$(DROMAJO_DI
 # Setup Extra Verilator Compile Flags #
 #######################################
 
-## default flags added for ariane
-ARIANE_VERILATOR_FLAGS = \
+## default flags added for cva6
+CVA6_VERILATOR_FLAGS = \
 	--unroll-count 256 \
 	-Werror-PINMISSING \
 	-Werror-IMPLICIT \
@@ -123,13 +123,13 @@ ARIANE_VERILATOR_FLAGS = \
 	-Wno-style \
 	-Wall
 
-# normal flags used for midas builds (that are incompatible with ariane)
+# normal flags used for midas builds (that are incompatible with cva6)
 DEFAULT_MIDAS_VERILATOR_FLAGS = \
 	--assert
 
 # AJG: this must be evaluated after verilog generation to work (hence the =)
 EXTRA_VERILATOR_FLAGS = \
-	$(shell if ! grep -iq "module.*ariane" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi)
+	$(shell if ! grep -iq "module.*cva6" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(CVA6_VERILATOR_FLAGS)"; fi)
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #
