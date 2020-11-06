@@ -167,6 +167,10 @@
                         <a href="EmitFAMEAnnotations.html" title="A pass that dumps all FAME annotations to a file for debugging.">EmitFAMEAnnotations</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="Eq$.html" title=""></a>
+                        <a href="Eq$.html" title="">Eq</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="class" href="ExtractModel.html" title=""></a>
                         <a href="ExtractModel.html" title="">ExtractModel</a>
                       </li><li class="current-entities indented3">
@@ -249,6 +253,10 @@
                         <span class="separator"></span>
                         <a class="trait" href="HasModelPort.html" title=""></a>
                         <a href="HasModelPort.html" title="">HasModelPort</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ImplementThreadedSyncReadMems$.html" title=""></a>
+                        <a href="ImplementThreadedSyncReadMems$.html" title="">ImplementThreadedSyncReadMems</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="class" href="InferModelPorts.html" title=""></a>
@@ -381,6 +389,10 @@
                         <span class="separator"></span>
                         <a class="class" href="TargetClockChannel.html" title="Indicates that a channel connection carries target clocks"></a>
                         <a href="TargetClockChannel.html" title="Indicates that a channel connection carries target clocks">TargetClockChannel</a>
+                      </li><li class="current-entities indented3">
+                        <a class="object" href="ThreadedSyncReadMem$.html" title=""></a>
+                        <a class="class" href="ThreadedSyncReadMem.html" title=""></a>
+                        <a href="ThreadedSyncReadMem.html" title="">ThreadedSyncReadMem</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="Toggle$.html" title=""></a>
@@ -1238,6 +1250,22 @@ after the PromoteSubmodule transform has run.
       
       <p class="shortcomment cmt">Indicates that a channel connection carries target clocks
 </p>
+    </li><li name="midas.passes.fame.ThreadedSyncReadMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ThreadedSyncReadMemextendsStatementwithIsDeclarationwithProductwithSerializable"></a><a id="ThreadedSyncReadMem:ThreadedSyncReadMem"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedSyncReadMem.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ThreadedSyncReadMem.html"><span class="name">ThreadedSyncReadMem</span></a><span class="params">(<span name="nThreads">nThreads: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="info">info: <span class="extype" name="firrtl.ir.Info">Info</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <span class="extype" name="firrtl.ir.Type">Type</span></span>, <span name="depth">depth: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="readers">readers: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="writers">writers: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="readwriters">readwriters: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="readUnderWrite">readUnderWrite: <span class="extype" name="scala.Enumeration.Value">firrtl.ir.ReadUnderWrite.Value</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.ir.Statement">Statement</span> with <span class="extype" name="firrtl.ir.IsDeclaration">IsDeclaration</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
     </li><li name="midas.passes.fame.TrivialChannelExcision" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TrivialChannelExcisionextendsTransform"></a><a id="TrivialChannelExcision:TrivialChannelExcision"></a>
       <span class="permalink">
@@ -1427,6 +1455,22 @@ a decoupled target connection. Since the forward half incorporates
 references to the ready signals, this channel contains no signal
 references.
 </p></div></div>
+    </li><li name="midas.passes.fame.Eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Eq"></a><a id="Eq:Eq"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/Eq$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="Eq$.html"><span class="name">Eq</span></a><span class="result"> extends <a href="BinaryBooleanOp.html" class="extype" name="midas.passes.fame.BinaryBooleanOp">BinaryBooleanOp</a></span>
+      </span>
+      
+      
     </li><li name="midas.passes.fame.FAME1Transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FAME1Transform"></a><a id="FAME1Transform:FAME1Transform"></a>
       <span class="permalink">
@@ -1516,6 +1560,22 @@ clock, so this pass finds the top-level clock connection that drives the single 
 model and associates the clock output of the hub model driving this clock with all channels connecting the hub and
 the satellite. Channels between satellite models are not changed.
 </p></div></div>
+    </li><li name="midas.passes.fame.ImplementThreadedSyncReadMems" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ImplementThreadedSyncReadMems"></a><a id="ImplementThreadedSyncReadMems:ImplementThreadedSyncReadMems"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ImplementThreadedSyncReadMems$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ImplementThreadedSyncReadMems$.html"><span class="name">ImplementThreadedSyncReadMems</span></a>
+      </span>
+      
+      
     </li><li name="midas.passes.fame.Instantiate" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Instantiate"></a><a id="Instantiate:Instantiate"></a>
       <span class="permalink">
@@ -1787,6 +1847,22 @@ to preset the register to 0
       </span>
       <span class="symbol">
         <a title="" href="SeparateInstanceDecls$.html"><span class="name">SeparateInstanceDecls</span></a>
+      </span>
+      
+      
+    </li><li name="midas.passes.fame.ThreadedSyncReadMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ThreadedSyncReadMem"></a><a id="ThreadedSyncReadMem:ThreadedSyncReadMem"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ThreadedSyncReadMem$.html"><span class="name">ThreadedSyncReadMem</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
