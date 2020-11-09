@@ -122,7 +122,8 @@ case class FirrtlFAMEModelAnnotation(
   */
 case class EnableModelMultiThreadingAnnotation(target: BaseModule) extends chisel3.experimental.ChiselAnnotation {
   def toFirrtl: FirrtlEnableModelMultiThreadingAnnotation = {
-    FirrtlEnableModelMultiThreadingAnnotation(target.toNamed.toTarget)
+    val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+    FirrtlEnableModelMultiThreadingAnnotation(parent.instOf(target.instanceName, target.name))
   }
 }
 
@@ -130,9 +131,9 @@ case class EnableModelMultiThreadingAnnotation(target: BaseModule) extends chise
   * This specifies that the module should be automatically multi-threaded (FIRRTL annotation).
   */
 case class FirrtlEnableModelMultiThreadingAnnotation(
-  target: ModuleTarget) extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation {
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
   def targets = Seq(target)
-  def duplicate(n: ModuleTarget) = this.copy(n)
+  def duplicate(n: InstanceTarget) = this.copy(n)
 }
 
 /**

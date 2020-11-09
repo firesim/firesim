@@ -35,6 +35,10 @@ import chisel3.util.isPow2
   */
 case class MemorySlaveConstraints(address: Seq[AddressSet], supportsRead: TransferSizes, supportsWrite: TransferSizes)
 
+object GetMemoryRegionOffsetConstName {
+  def apply(memoryRegionName: String) = s"${memoryRegionName}_offset"
+}
+
 /**
   * A common trait for referring collateral in the generated header.
   *
@@ -50,7 +54,7 @@ trait HostDramHeaderConsts {
    *
    */
   def memoryRegionName: String
-  def offsetConstName = s"${memoryRegionName}_offset"
+  def offsetConstName = GetMemoryRegionOffsetConstName(memoryRegionName)
 }
 
 /**
