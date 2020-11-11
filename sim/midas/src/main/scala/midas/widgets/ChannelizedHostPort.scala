@@ -15,6 +15,9 @@ import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 
+/**
+  * A container for all of the data required to build a [[fame.FAMEChannelConnectionAnnotation]]
+  */
 trait ChannelMetadata {
   def clockRT(): Option[ReferenceTarget]
   def chInfo(): FAMEChannelInfo
@@ -39,60 +42,23 @@ case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, l
   def chInfo = midas.passes.fame.PipeChannel(latency)
 }
 
-case class ClockChannelMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
-  def fieldRTs = field match {
-    case c: Clock => Seq(c.toTarget)
-    case v: Vec[Clock] => v.map(_.toTarget)
-    case o => ???
-  }
-  def clockRT = None
-  def chInfo = midas.passes.fame.TargetClockChannel(Seq.tabulate(fieldRTs.length)(i => RationalClock(s"clock_$i",1, 1)))
-}
-
-case class AsyncResetMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
-  def fieldRTs = Seq(field.toTarget)
-  def clockRT = None
-  def chInfo = midas.passes.fame.AsyncResetChannel
-}
-
-case class ClockControlChannelMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
-  def fieldRTs = Seq(field.toTarget)
-  def clockRT = None
-  def chInfo = midas.passes.fame.ClockControlChannel
-}
-
-trait IndependentChannels extends HasChannels { this: Record =>
-  type ChannelType[A <: Data] <: Data
-  def payloadWrapper[A <: Data](payload: A): ChannelType[A]
-
-  protected val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], ChannelMetadata)]()
+private [midas] trait IndependentChannels extends HasChannels { this: Record =>
+  /**
+    * Contains the mapping from target interface elements to channels
+    * _._1 -> A reference to the target signal
+    * _._2 -> A reference to the channel element in this record
+    * _._3 -> Metadata associated with the channel (used for FCCA generation
+    */
+  protected val channels = mutable.ArrayBuffer[(Data, DecoupledIO[Data], ChannelMetadata)]()
   lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)):_*)
   def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName  }).toMap
 
   protected def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock => Seq(directionOf(c))//throw new Exception("Data tokens cannot contain clock fields")
+    case c: Clock => Seq(directionOf(c))
     case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
     case v: Vec[_] => v.flatMap(getLeafDirs)
     case b: Bits => Seq(directionOf(b))
   }
-
-  //// Call in port definition to register a field as belonging to a unique channel
-  //private def checkAllFieldsAssignedToChannels(): Unit = {
-  //  def prefixWith(prefix: String, base: Any): String =
-  //    if (prefix != "")  s"${prefix}.${base}" else base.toString
-
-  //  def loop(name: String, field: Data): Seq[(String, Boolean)] = field match {
-  //    case c: Clock => Seq(name -> true)
-  //    case b: Record if fieldToChannelMap.isDefinedAt(b) => Seq(name -> true)
-  //    case b: Record => b.elements.flatMap({ case (n, e) => loop(prefixWith(name, n), e) }).toSeq
-  //    case v: Vec[_] if fieldToChannelMap.isDefinedAt(v) => Seq(name -> true)
-  //    case v: Vec[_] => (v.zipWithIndex).flatMap({ case (e, i) => loop(s"${name}_$i", e) })
-  //    case b: Bits => Seq(name -> fieldToChannelMap.isDefinedAt(b))
-  //  }
-  //  val messages = loop("", targetPortProto).collect({ case (name, assigned) if !assigned =>
-  //    "Field ${name} of bridge IO is not assigned to a channel"})
-  //  assert(messages.isEmpty, messages.mkString("\n"))
-  //}
 
   def checkFieldDirection(field: Data, direction: Direction): Unit = {
     val directions = getLeafDirs(field)
@@ -103,13 +69,9 @@ trait IndependentChannels extends HasChannels { this: Record =>
 
   // Simplifying assumption: if the user wants to aggregate a bunch of wires
   // into a single channel they should aggregate them into a Bundle on their record
-  protected def channelField[T <: Data](direction: Direction, field: T): ChannelType[T] = {
-    //checkFieldDirection(field, direction)
-    val ch = direction match {
-      case Direction.Input => Flipped(payloadWrapper(field.cloneType))
-      case Direction.Output => payloadWrapper(field.cloneType)
-    }
-    ch
+  protected def channelField[T <: Data](gen: => T, direction: Direction): DecoupledIO[T] = direction match {
+    case Direction.Input => Flipped(Decoupled(gen))
+    case Direction.Output => Decoupled(gen)
   }
 
   def generateAnnotations(): Unit = {
@@ -130,68 +92,19 @@ trait IndependentChannels extends HasChannels { this: Record =>
     }
   }
 
-  def allChannelNames() = channels.map(ch => reverseElementMap(ch._2))
+  def allChannelNames: Seq[String] = channels.map(ch => reverseElementMap(ch._2))
 }
 
+/* 
 trait ChannelizedHostPortIO extends IndependentChannels { this: Record =>
   def targetClockRef: Clock
-  type ChannelType[A <: Data] = DecoupledIO[A]
-  def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(payload)
-  def InputChannel[A <: Data](field: A): ChannelType[A] = {
-    val ch = channelField(Direction.Input, field)
-    channels.append((field, ch, PipeChannelMetadata(field, targetClockRef, bridgeSunk = true)))
-    ch
-  }
-  def OutputChannel[A <: Data](field: A): ChannelType[A] = {
-    val ch = channelField(Direction.Output, field)
-    channels.append((field, ch, PipeChannelMetadata(field, targetClockRef, bridgeSunk = false)))
-    ch
-  }
-}
-
-trait TimestampedHostPortIO extends IndependentChannels { this: Record =>
-  type ChannelType[A <: Data] = DecoupledIO[TimestampedToken[A]]
-  def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(new TimestampedToken(payload))
-
-  /**
-    * This is used for channels whose underlying target type is special in some
-    * way, like AsyncReset and Clock, that makes it hard to manipulate as data
-    * (i.e., as a bool). For these types we convert the underlying channel to
-    * use a Bool.
-    */
-  protected def coerceToBoolChannel(direction: Direction, field: Element): DecoupledIO[TimestampedToken[Bool]] = {
-    // FIXME: WHen the target interface is regenerated during compilation direction information is lost.
-    //checkFieldDirection(field, direction)
-    val ch = direction match {
-      case Direction.Input => Flipped(Decoupled(new TimestampedToken(Bool())))
-      case Direction.Output => Decoupled(new TimestampedToken(Bool()))
-    }
-    val meta = field match {
-      case c: Clock => ClockChannelMetadata(c, direction == Direction.Input)
-      case a: AsyncReset => AsyncResetMetadata(a, direction == Direction.Input)
-      case o => throw new Exception(s"Unexpected field type ${o}. Perhaps use non-clock, non-AsyncReset Input/Output channel")
-    }
+  private def channel[A <: Data](direction: Direction, field: A): DecoupledIO[A] = {
+    val ch = channelField(field.cloneType, direction)
+    val meta = PipeChannelMetadata(field, targetClockRef, bridgeSunk = direction == Direction.Output)
     channels.append((field, ch, meta))
     ch
   }
 
-  def InputClockChannel(field: Clock): ChannelType[Bool] = coerceToBoolChannel(Direction.Input, field)
-  def OutputClockChannel(field: Clock): ChannelType[Bool] = coerceToBoolChannel(Direction.Output, field)
-  def InputAsyncResetChannel(field: AsyncReset): ChannelType[Bool] = coerceToBoolChannel(Direction.Input, field)
-  def OutputAsyncResetChannel(field: AsyncReset): ChannelType[Bool] = coerceToBoolChannel(Direction.Output, field)
-
-  // For non-clock, non-async reset channels
-  def InputChannel[A <: Data](field: A): ChannelType[A] = {
-    val ch = channelField(Direction.Input, field)
-    // TODO:check that there isn't an async reset or clock nested in the field
-    val meta = ClockControlChannelMetadata(field, bridgeSunk = true)
-    channels.append((field, ch, meta))
-    ch
-  }
-  def OutputChannel[A <: Data](field: A): ChannelType[A] = {
-    val ch = channelField(Direction.Output, field)
-    val meta = ClockControlChannelMetadata(field, bridgeSunk = false)
-    channels.append((field, ch, meta))
-    ch
-  }
+  def OutputChannel[A <: Data](field: A): DecoupledIO[A] = channel(Direction.Output, field)
+  def InputChannel[A <: Data](field: A): DecoupledIO[A] = channel(Direction.Input, field)
 }
