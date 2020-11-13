@@ -370,9 +370,9 @@ class UserTopologies(object):
     # Spins up all of the precompiled, unnetworked targets
     def all_no_net_targets_config(self):
         hwdb_entries = [
-            "firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3",
             "firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3",
-            "firesim-rocket-singlecore-no-nic-l2-llc4mb-ddr3-half-freq-uncore",
+            "pdes-rocket-singlecore-no-nic-l2-llc4mb-ddr3-120",
+            "pdes-rocket-singlecore-clock-mux-120"
         ]
         assert len(hwdb_entries) == self.no_net_num_nodes
         self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
