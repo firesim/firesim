@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "multiplex-check",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "../../../sw/pdes-software/images/multiplex-check-bin",
+	"common_rootfs": "../../../sw/pdes-software/images/multiplex-check.img"
+}
