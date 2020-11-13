@@ -29,7 +29,7 @@ int main(void)
 	// WFI pauses the cycle count
 	do {
 		clock_gettime(CLOCK_REALTIME, &ts2);
-	} while (timediff(&ts1, &ts2) < 1e9);
+	} while (timediff(&ts1, &ts2) < 1e7);
 
 	cycles += rdcycle();
 	nanos = timediff(&ts1, &ts2);
