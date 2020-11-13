@@ -9,7 +9,6 @@ LDFLAGS_LINUX=-lrt
 default: check-rtc-linux
 
 baremetal_bins = $(addsuffix -bare, check-rtc check-tile-cmuxing)
-$(info $(baremetal_bins))
 linux_bins = $(addsuffix -linux, check-rtc)
 
 %-linux: %-linux.c
