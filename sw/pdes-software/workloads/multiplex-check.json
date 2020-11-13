@@ -1,0 +1,8 @@
+{
+  "name" : "multiplex-check",
+  "base" : "pdes-br-base.json",
+  "rootfs-size" : "3GiB",
+  "files" : [ ["../../../check-rtc/check-rtc-linux", "/check-rtc-linux"], ["run.sh", "/run.sh"]],
+  "command" : "/run.sh"
+}
+

@@ -1,0 +1,16 @@
+diff --git a/arch/riscv/Kconfig b/arch/riscv/Kconfig
+index 4e8204d49cda..463ceda1897a 100644
+--- a/arch/riscv/Kconfig
++++ b/arch/riscv/Kconfig
+@@ -391,3 +391,11 @@ menu "Power management options"
+ source "kernel/power/Kconfig"
+ 
+ endmenu
++
++menu "CPU Power Management"
++
++source "drivers/cpufreq/Kconfig"
++
++source "drivers/cpuidle/Kconfig"
++
++endmenu

@@ -1,0 +1,5 @@
+firesim-dir: '../../'
+image-dir: 'images'
+boards-dir: 'boards/pdes-baseline'
+workload-dirs: ["workloads", "boards/pdes-baseline/workloads"]
+jlevel: 16

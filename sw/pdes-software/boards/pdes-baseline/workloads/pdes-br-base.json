@@ -1,0 +1,11 @@
+{
+  "name" : "pdes-br-base",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "linux" : {
+      "config" : "linux-config",
+      "modules" : {
+          "firechip-cpufreq" : "../../drivers/firechip-cpufreq"
+      }
+  }
+}
