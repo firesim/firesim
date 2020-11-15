@@ -51,6 +51,7 @@ abstract class FASEDTest(
   runTest("verilator", false)
 }
 
+class AXI4StrideLBPTest extends FASEDTest("AXI4Strider", "DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_QuadChannel_DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
