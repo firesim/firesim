@@ -85,7 +85,8 @@ run-verilator: $(verilator)
 	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
 
 run-verilator-debug: $(verilator_debug)
-	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err && python3 ../../../scripts/recouple.py dump.vcd recoupled_dump.vcd
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+
 run-vcs: $(vcs)
 	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
 
