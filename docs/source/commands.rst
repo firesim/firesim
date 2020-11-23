@@ -122,12 +122,12 @@ workload test.
 
 install
 --------------------------------------
+Install the workload to an external service (e.g. an RTL simulator). The
+available installation targets depends on your board.
 
-Creates a firesim workload definition file in ``firesim/deploy/workloads`` with
-all appropriate links to the generated workload. This allows you to launch the
-workload in firesim using standard commands.
-
-.. Note:: The install command assumes that FireMarshal was cloned as a
+.. Note:: If FireMarshal was cloned as a
   submodule of either `FireSim <https://www.fires.im>`_ or `Chipyard
-  <https://chipyard.readthedocs.io/en/latest/>`_. See the documentation for
-  those projects for more details. 
+  <https://chipyard.readthedocs.io/en/latest/>`_, and you are using the default
+  'firechip' board, the 'firesim' installation target should work out of the
+  box. Otherwise, you will need to configure your installation targets in
+  marshal-config.yaml.
