@@ -64,6 +64,7 @@ def main():
     install_parser = subparsers.add_parser(
             'install', help="Install this workload to firesim (create configs in firesim/deploy/workloads)")
     install_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
+    install_parser.add_argument("-t", "--target", default='firesim', type=str, help="Target to install to. See your board's documentation for available targets")
 
     args = parser.parse_args()
     
@@ -193,7 +194,8 @@ def main():
 
         elif args.command == 'install':
             try:
-                wlutil.installWorkload(cfgName, cfgs)
+                # wlutil.installWorkload(cfgName, cfgs)
+                wlutil.installWorkload(cfgs[cfgName], installer=args.target)
             except wlutil.ConfigurationError as e:
                 print(e)
                 sys.exit(1)

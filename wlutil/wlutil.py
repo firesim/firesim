@@ -305,6 +305,7 @@ class marshalCtx(collections.MutableMapping):
         self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
         self['opensbi-dir'] = self['board-dir'] / 'firmware' / 'opensbi'
         self['linux-dir'] = self['board-dir'] / 'linux'
+        self['installers'] = self['board-dir'] / 'installers'
 
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
         self['linux-make-args'] = ["ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-"]
