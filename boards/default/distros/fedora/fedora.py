@@ -19,12 +19,23 @@ fed_dir=pathlib.Path(__file__).resolve().parent
 # Temporary overlay used for applying init scripts
 overlay=fed_dir / 'overlay'
 
+# Fedora doesn't support any options
+def hashOpts(opts):
+    return ""
+
+# Fedora doesn't support any options
+def mergeOpts(base, new):
+    return base
+
 class Builder:
-    def baseConfig(self):
+    def __init__(self, opts):
+        return
+
+    def getWorkload(self):
         return {
                 'name' : 'fedora-base',
+                'isDistro' : True,
                 'workdir' : fed_dir,
-                'distro' : 'fedora',
                 'builder' : self,
                 'img' : fed_dir / "rootfs.img"
                 }

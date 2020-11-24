@@ -9,10 +9,6 @@ import pathlib as pth
 import copy
 import importlib
 
-# from .br import br
-# from .fedora import fedora as fed
-# from .baremetal import bare
-
 # This is a comprehensive list of all user-defined config options
 # Note that paths direct from a config file are relative to workdir, but will
 # be converted to absolute during parsing. All paths after loading a config
@@ -38,6 +34,8 @@ configUser = [
         'linux',
         # Grouped firmware-related options
         'firmware',
+        # Grouped distro-related options
+        'distro',
         # Path to script to run on host before building this config
         'host-init',
         # Path to script to run on host after building the binary
@@ -73,12 +71,18 @@ configUser = [
         # converted to bytes as int after loading.
         'mem',
         # Testing-related options
-        'testing'
+        'testing',
+        # Flag to indicate the workload is a distro (rather than a derived workload).
+        'isDistro'
         ]
 
 # Config options only used internally by distro internal configs (defined in the distro python package itself)
 configDistro = [
-        'distro',
+        # Name of the distribution (e.g. 'br', 'fedora', etc)
+        'name',
+        # Any options to pass to the builder, the value is opaque to marshal core
+        'opts',
+        # Derived: the builder object from the distro
         'builder'
 ]
 
@@ -97,11 +101,9 @@ configDerived = [
         'img-sz', # Desired size of image in bytes (optional)
         'bin', # Path to output binary (e.g. bbl-vmlinux)
         'dwarf', # Additional debugging symbols for the kernel (bbl strips them from 'bin')
-        'builder', # A handle to the base-distro object (e.g. br.Builder)
         'base-img', # The filesystem image to use when building this workload
         'base-format', # The format of base-img
         'cfg-file', # Path to this workloads raw config file
-        'distro', # Base linux distribution (either 'fedora' or 'br')
         'initramfs', # boolean: should we use an initramfs with this config?
         'jobs', # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
         'base-deps', # A list of tasks that this workload needs from its base (a potentially empty list)
@@ -471,6 +473,11 @@ class Config(collections.MutableMapping):
         else:
             self.cfg['cpus'] = configDefaults['cpus']
 
+        # A leaf has customized the distro in some way (rather than just
+        # inheriting a distro config)
+        if 'distro' in self.cfg:
+            self.cfg['distro']['leaf'] = True
+
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
             jList = self.cfg['jobs']
@@ -604,19 +611,12 @@ class ConfigManager(collections.MutableMapping):
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
 
-        # Load default distros
-        distros = {}
+        # Load default distros. More may be added by workloads that have custom
+        # distros.
+        self.distroMods = {}
         for dPath in (getOpt('board-dir') / 'distros').glob("*"):
             m = importDistro(dPath)
-            distros[m.__name__] = m.Builder()
-
-        # First, load the base-configs specially. Note that these are indexed
-        # by their names instead of a config path so that users can just pass
-        # that instead of a path to a config
-        for dName,dBuilder in distros.items():
-            log.debug("Loading distro " + dName)
-            self.cfgs[dName] = Config(cfgDict=dBuilder.baseConfig())
-            self.cfgs[dName].initialized = True
+            self.distroMods[m.__name__] = m
 
         # Read all the configs from their files
         for f in cfgPaths:
@@ -636,10 +636,24 @@ class ConfigManager(collections.MutableMapping):
                 log.warning("\t" + repr(e))
                 del self.cfgs[cfgName]
                 raise
-                continue
 
-        # Now we recursively fill in defaults from base configs
+        # Distro options essentially fork the inheritance tree at the root
+        # since they modify a parent from the child. For every child with a
+        # custom distro configuration, we create new configs for its parents
+        # all the way down to the distro. After this, they are separate
+        # workloads for all intents and purposes.
         for cfgName in list(self.cfgs.keys()):
+            cfg = self.cfgs[cfgName]
+
+            # Leafs modified the distro config in some way and need to fork the
+            # inheritance chain
+            if 'distro' in cfg and cfg['distro']['leaf']:
+                self._forkDistro(cfg)
+
+        # Now we recursively fill in defaults from base configs.
+        for cfgName in list(self.cfgs.keys()):
+            cfg = self.cfgs[cfgName]
+
             try:
                 self._initializeFromBase(self.cfgs[cfgName])
 
@@ -657,14 +671,70 @@ class ConfigManager(collections.MutableMapping):
 
             log.debug("Loaded " + str(cfgName))
 
-        # Distro options essentially fork the inheritance tree at the root
-        # since they modify a parent from the child. For every child with a
-        # custom distro configuration, we create new configs for its parents
-        # all the way down to the distro. After this, they are separate
-        # workloads for all intents and purposes.
-        # for cfgName in list(self.cfgs.keys()):
-        #     cfg = self.cfgs[cfgName]
-        #     if 'distro-opts' in cfg:
+
+    def _forkDistro(self, cfg):
+        """Starting from cfg, create new versions of every base that have this
+        config's distro options. After this, cfg will inherit from distro-opt
+        specific configs."""
+        log = logging.getLogger()
+
+        distCfg = cfg['distro']
+        distMod = self.distroMods[distCfg['name']]
+
+
+        def mergeOptsRecursive(distMod, cfg):
+            if 'isDistro' in cfg:
+                return None
+            elif 'base' not in cfg:
+                return cfg['distro']['opts']
+            else:
+                baseOpts = mergeOptsRecursive(distMod, self.cfgs[cfg['base']])
+                if baseOpts is None:
+                    return cfg['distro']['opts']
+                else:
+                    return distMod.mergeOpts(baseOpts, cfg['distro']['opts'])
+
+        distCfg['opts'] = mergeOptsRecursive(distMod, cfg)
+        distID = distMod.hashOpts(distCfg['opts'])
+
+        def forkRecursive(cfg, distID):
+            # If there is no explicit base, the workload must be inheriting from a
+            # distro directly, find or create the distro workload for it.
+            if 'base' not in cfg or 'isDistro' in self.cfgs[cfg['base']]:
+                if 'distro' not in cfg:
+                    raise ValueError("The 'distro' option is required for workloads that do not have a base")
+
+                distName = cfg['distro']['name']
+                distMod = self.distroMods[distName]
+
+                baseName = distName + distID
+                if baseName not in self.cfgs.keys():
+                    log.debug("Creating distro {} : {}".format(distName, distID))
+                    distObj = distMod.Builder(cfg['distro']['opts'])
+                    distWorkload = Config(cfgDict=distObj.getWorkload())
+                    distWorkload.initialized = True
+                    self.cfgs[baseName] = distWorkload
+
+                cfg['base'] = baseName
+                return
+            else:
+                forkedBaseName = cfg['base'] + distID
+
+                if forkedBaseName in self.cfgs:
+                    cfg['base'] = forkedBaseName
+                    return
+
+                forkedBase = copy.deepcopy(self.cfgs[cfg['base']])
+                forkedBase['name'] = forkedBaseName
+                forkedBase['distro'] = cfg['distro']
+
+                self.cfgs[forkedBaseName] = forkedBase
+                cfg['base'] = forkedBaseName
+
+                forkRecursive(self.cfgs[cfg['base']], distID)
+                return
+
+        forkRecursive(cfg, distID)
 
 
     # Finish initializing this config from it's base config. Will recursively

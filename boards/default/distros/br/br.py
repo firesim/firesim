@@ -78,16 +78,35 @@ def buildBuildRoot():
     env.pop('PERL_MM_OPT', None)
     wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
 
+
+def hashOpts(opts):
+    """Return a unique description of this builder, based on the provided opts"""
+    if 'configs' in opts:
+        #XXX need a more compact hash eventually
+        return "-".join(opts['configs'])
+    else:
+        return ""
+
+
+def mergeOpts(base, new):
+    return { "configs" : base['configs'] + new['configs'] }
+
+
 class Builder:
 
-    def baseConfig(self):
+    def __init__(self, opts):
+        self.opts = opts
+
+
+    def getWorkload(self):
         return {
-                'name' : 'buildroot-base',
-                'distro' : 'br',
+                'name' : 'br' + hashOpts(self.opts),
+                'isDistro' : True,
                 'workdir' : br_dir,
                 'builder' : self,
                 'img' : str(br_image)
                 }
+
 
     # Build a base image in the requested format and return an absolute path to that image
     def buildBaseImage(self):
@@ -100,6 +119,7 @@ class Builder:
         except wlutil.SubmoduleError as e:
             return doit.exceptions.TaskFailed(e)
 
+
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate
         deps = []
@@ -109,10 +129,12 @@ class Builder:
 
         return deps
 
+
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
         return [wlutil.config_changed(wlutil.checkGitStatus(br_dir / 'buildroot'))]
+
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
