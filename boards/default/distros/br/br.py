@@ -6,7 +6,7 @@ import string
 import pathlib
 import git
 import doit
-from .. import wlutil
+import wlutil
 
 # Note: All argument paths are expected to be absolute paths
 

@@ -1,7 +1,4 @@
 import glob
-from .br import br
-from .fedora import fedora as fed
-from .baremetal import bare
 import collections
 import json
 import pprint
@@ -10,6 +7,11 @@ import humanfriendly as hf
 from .wlutil import *
 import pathlib as pth
 import copy
+import importlib
+
+# from .br import br
+# from .fedora import fedora as fed
+# from .baremetal import bare
 
 # This is a comprehensive list of all user-defined config options
 # Note that paths direct from a config file are relative to workdir, but will
@@ -138,12 +140,10 @@ configInherit = [
         'mem']
 
 
-# These are the permissible base-distributions to use (they get treated special)
-distros = {
-        'fedora' : fed.Builder(),
-        'br' : br.Builder(),
-        'bare' : bare.Builder()
-        }
+# These are the permissible base-distributions to use (they get treated
+# special). They will be generated during the configuration loading process.
+distros = {}
+
 
 # Default constants, may be overridden by the user
 # These take the post-processing form (e.g. if the user can provide a string,
@@ -570,6 +570,18 @@ class Config(collections.MutableMapping):
     def __repr__(self):
         return repr(self.cfg)
 
+
+def importDistro(distroPath):
+    spec = importlib.util.spec_from_file_location(distroPath.stem, distroPath / "__init__.py",
+            submodule_search_locations=[str(getOpt('wlutil-dir')), str(distroPath)])
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module 
+    spec.loader.exec_module(module)
+
+    return module
+
+
 # The configuration of sw-manager is derived from the *.json files in workloads/
 class ConfigManager(collections.MutableMapping):
     # This contains all currently loaded configs, indexed by config file path
@@ -591,6 +603,12 @@ class ConfigManager(collections.MutableMapping):
             for d in dirs:
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
+
+        # Load default distros
+        distros = {}
+        for dPath in (getOpt('board-dir') / 'distros').glob("*"):
+            m = importDistro(dPath)
+            distros[m.__name__] = m.Builder()
 
         # First, load the base-configs specially. Note that these are indexed
         # by their names instead of a config path so that users can just pass
@@ -621,23 +639,33 @@ class ConfigManager(collections.MutableMapping):
                 continue
 
         # Now we recursively fill in defaults from base configs
-        for f in list(self.cfgs.keys()):
+        for cfgName in list(self.cfgs.keys()):
             try:
-                self._initializeFromBase(self.cfgs[f])
+                self._initializeFromBase(self.cfgs[cfgName])
 
             except KeyError as e:
-                log.warning("Skipping " + str(f) + ":")
+                log.warning("Skipping " + str(cfgName) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
-                del self.cfgs[f]
+                del self.cfgs[cfgName]
                 continue
             except Exception as e:
-                log.warning("Skipping " + str(f) + ": Unable to parse config:")
+                log.warning("Skipping " + str(cfgName) + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                del self.cfgs[f]
+                del self.cfgs[cfgName]
                 raise
                 continue
 
-            log.debug("Loaded " + str(f))
+            log.debug("Loaded " + str(cfgName))
+
+        # Distro options essentially fork the inheritance tree at the root
+        # since they modify a parent from the child. For every child with a
+        # custom distro configuration, we create new configs for its parents
+        # all the way down to the distro. After this, they are separate
+        # workloads for all intents and purposes.
+        # for cfgName in list(self.cfgs.keys()):
+        #     cfg = self.cfgs[cfgName]
+        #     if 'distro-opts' in cfg:
+
 
     # Finish initializing this config from it's base config. Will recursively
     # initialize any needed bases.
