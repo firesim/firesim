@@ -8,7 +8,7 @@ hang. Debugging this is especially daunting in FireSim because it's not immediat
 obvious if it's a bug in the target, or somewhere in the host. To make it easier to
 identify the problem, the simulation driver includes a polling watchdog that
 tracks for simulation progress, and periodically updates an output file,
-``heartbeat.csv``, with a target cycle count and a timestamp.  When debugging
+``heartbeat.csv``, with a target cycle count and a timestamp. When debugging
 these issues, we always encourage the use of MIDAS-level simulation to try
 reproducing the failure if possible. We outline three common cases in the
 section below.
@@ -34,8 +34,9 @@ and trace back the failure to a bridge if applicable.
 Case 2: Simulator hang due to FPGA-side token starvation.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-**Symptoms:** The watchdog detects the simulator is not making forward progress and
-tears down the simulation.
+**Symptoms:** The driver's main loop spins freely, as no bridge gets new
+work to do.  As a result, the polling interval quickly elapses and the
+simulation is torn down due to a lack of forward progress.
 
 **Causes:** Generally, a bug in a bridge implementation (ex. the BridgeModule has accidentally dequeued a
 token without producing a new output token; the BridgeModule is waiting on a driver interaction that never occurs).
@@ -59,3 +60,9 @@ stalled waiting for tokens.
 running simulator using GDB.
 
 
+Simulator Heartbeat PlusArgs
+++++++++++++++++++++++++++++
+
+``+heartbeat-polling-interval=<int>``: Specifies the number of round trips through
+the simulator main loop before polling the FPGA's target cycle counter. Disable
+the heartbeat by setting this to -1.
