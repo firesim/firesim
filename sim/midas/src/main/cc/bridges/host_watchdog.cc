@@ -5,7 +5,7 @@ host_watchdog_t::host_watchdog_t(simif_t* sim, std::vector<std::string> &args):
         sim(sim) {
     log.open("heartbeat.csv", std::ios_base::out);
     if (!log.is_open()) {
-        fprintf(stderr, "Could not heartbeat output file.\n");
+        fprintf(stderr, "Could not open heartbeat output file.\n");
         abort();
     }
     log << "Target Cycle (fastest), Seconds Since Start" << std::endl;
