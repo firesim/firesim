@@ -258,6 +258,10 @@
                         <a class="object" href="MemConfReader$.html" title=""></a>
                         <a href="MemConfReader$.html" title="">MemConfReader</a>
                       </li><li class="current-entities indented2">
+                        <a class="object" href="MemDelayAndReadwriteTransformer$.html" title=""></a>
+                        <a class="class" href="MemDelayAndReadwriteTransformer.html" title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines."></a>
+                        <a href="MemDelayAndReadwriteTransformer.html" title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines.">MemDelayAndReadwriteTransformer</a>
+                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ModelFame1Transform.html" title=""></a>
                         <a href="ModelFame1Transform.html" title="">ModelFame1Transform</a>
@@ -313,6 +317,10 @@
                         <span class="separator"></span>
                         <a class="object" href="Utils$.html" title=""></a>
                         <a href="Utils$.html" title="">Utils</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="VerilogMemDelays$.html" title=""></a>
+                        <a href="VerilogMemDelays$.html" title="">VerilogMemDelays</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="postorder$.html" title=""></a>
@@ -794,6 +802,28 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
       </span>
       
       
+    </li><li name="midas.passes.MemDelayAndReadwriteTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MemDelayAndReadwriteTransformerextendsAnyRef"></a><a id="MemDelayAndReadwriteTransformer:MemDelayAndReadwriteTransformer"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/MemDelayAndReadwriteTransformer.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines." href="MemDelayAndReadwriteTransformer.html"><span class="name">MemDelayAndReadwriteTransformer</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">This class performs the primary work of the transform: splitting readwrite ports into separate
+read and write ports while simultaneously compiling memory latencies to combinational-read
+memories with delay pipelines.</p><div class="fullcomment"><div class="comment cmt"><p>This class performs the primary work of the transform: splitting readwrite ports into separate
+read and write ports while simultaneously compiling memory latencies to combinational-read
+memories with delay pipelines. It is represented as a class that takes a module as a constructor
+argument, as it encapsulates the mutable state required to analyze and transform one module.
+</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>The final transformed module is found in the (sole public) field <a href="MemDelayAndReadwriteTransformer.html#transformed:firrtl.ir.DefModule" class="extmbr" name="midas.passes.MemDelayAndReadwriteTransformer#transformed">transformed</a></p></span></dd></dl></div>
     </li><li name="midas.passes.ModelFame1Transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModelFame1TransformextendsFame1Transform"></a><a id="ModelFame1Transform:ModelFame1Transform"></a>
       <span class="permalink">
@@ -1041,6 +1071,22 @@ circuit.
       </span>
       
       
+    </li><li name="midas.passes.MemDelayAndReadwriteTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemDelayAndReadwriteTransformer"></a><a id="MemDelayAndReadwriteTransformer:MemDelayAndReadwriteTransformer"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="MemDelayAndReadwriteTransformer$.html"><span class="name">MemDelayAndReadwriteTransformer</span></a>
+      </span>
+      
+      
     </li><li name="midas.passes.ModuleTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModuleTransformer"></a><a id="ModuleTransformer:ModuleTransformer"></a>
       <span class="permalink">
@@ -1193,6 +1239,22 @@ to include it's domain clock info.</p>
       </span>
       <span class="symbol">
         <a title="" href="Utils$.html"><span class="name">Utils</span></a>
+      </span>
+      
+      
+    </li><li name="midas.passes.VerilogMemDelays" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VerilogMemDelays"></a><a id="VerilogMemDelays:VerilogMemDelays"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/VerilogMemDelays$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="VerilogMemDelays$.html"><span class="name">VerilogMemDelays</span></a><span class="result"> extends <span class="extype" name="firrtl.passes.Pass">Pass</span></span>
       </span>
       
       

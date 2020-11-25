@@ -191,6 +191,10 @@
                         <a href="SerialBridgeModule.html" title="">SerialBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="SerialBridgeParams.html" title="Class which parameterizes the SerialBridge"></a>
+                        <a href="SerialBridgeParams.html" title="Class which parameterizes the SerialBridge">SerialBridgeParams</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="SerialBridgeTargetIO.html" title=""></a>
                         <a href="SerialBridgeTargetIO.html" title="">SerialBridgeTargetIO</a>
                       </li><li class="current-entities indented2">
@@ -666,7 +670,7 @@
       
       
     </li><li name="firesim.bridges.SerialBridgeModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SerialBridgeModuleextendsBridgeModule[midas.widgets.HostPortIO[firesim.bridges.SerialBridgeTargetIO]]withHostDramHeaderConsts"></a><a id="SerialBridgeModule:SerialBridgeModule"></a>
+      <a id="SerialBridgeModuleextendsBridgeModule[midas.widgets.HostPortIO[firesim.bridges.SerialBridgeTargetIO]]"></a><a id="SerialBridgeModule:SerialBridgeModule"></a>
       <span class="permalink">
       <a href="../../firesim/bridges/SerialBridgeModule.html" title="Permalink">
         <i class="material-icons"></i>
@@ -677,10 +681,30 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="SerialBridgeModule.html"><span class="name">SerialBridgeModule</span></a><span class="result"> extends <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]] with <a href="../../midas/widgets/HostDramHeaderConsts.html" class="extype" name="midas.widgets.HostDramHeaderConsts">HostDramHeaderConsts</a></span>
+        <a title="" href="SerialBridgeModule.html"><span class="name">SerialBridgeModule</span></a><span class="result"> extends <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="SerialBridgeTargetIO.html" class="extype" name="firesim.bridges.SerialBridgeTargetIO">SerialBridgeTargetIO</a>]]</span>
       </span>
       
       
+    </li><li name="firesim.bridges.SerialBridgeParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SerialBridgeParamsextendsProductwithSerializable"></a><a id="SerialBridgeParams:SerialBridgeParams"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/SerialBridgeParams.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Class which parameterizes the SerialBridge" href="SerialBridgeParams.html"><span class="name">SerialBridgeParams</span></a><span class="params">(<span name="memoryRegionNameOpt">memoryRegionNameOpt: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Class which parameterizes the SerialBridge</p><div class="fullcomment"><div class="comment cmt"><p>Class which parameterizes the SerialBridge</p><p>memoryRegionNameOpt, if unset, indicates that firesim-fesvr should not attempt to write a payload into DRAM through the loadmem unit.
+This is suitable for target designs which do not use the FASED DRAM model.
+If a FASEDBridge for the backing AXI4 memory is present, then memoryRegionNameOpt should be set to the same memory region name which is passed
+to the FASEDBridge. This enables fast payload loading in firesim-fesvr through the loadmem unit.
+</p></div></div>
     </li><li name="firesim.bridges.SerialBridgeTargetIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SerialBridgeTargetIOextendsBundle"></a><a id="SerialBridgeTargetIO:SerialBridgeTargetIO"></a>
       <span class="permalink">
