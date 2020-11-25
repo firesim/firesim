@@ -51,5 +51,5 @@ No.
 Unless you've intentionally introduced a side-channel (e.g., you're running an
 interactive simulation, or you've connected the NIC to the internet), this is
 likely a bug in one of your custom bridge implementations or in FireSim. In
-fact, for the same target-design enabling printf and assertion sythesis,
-autocounter, Auto ILA, should not change the simulated behavior of the machine.
+fact, for a given target-design, enabling printf synthesis, assertion synthesis,
+autocounter, or Auto ILA, should not change the simulated behavior of the machine.
