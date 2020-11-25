@@ -8,7 +8,7 @@
 // cycle count, which it writes out to a file.
 //
 // The causes of an apparently hung simulator can be coarsely deduced from the
-// behavior of this class and whether thhe simulation terminates. The three
+// behavior of this class and whether the simulation terminates. The three
 // most common cases are:
 //
 //  1) The target itself has hung. Simulation time will continue advance (will
