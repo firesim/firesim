@@ -1,6 +1,6 @@
-#include "host_watchdog.h"
+#include "heartbeat.h"
 
-host_watchdog_t::host_watchdog_t(simif_t* sim, std::vector<std::string> &args):
+heartbeat_t::heartbeat_t(simif_t* sim, std::vector<std::string> &args):
         bridge_driver_t(sim),
         sim(sim) {
     log.open("heartbeat.csv", std::ios_base::out);
@@ -12,7 +12,7 @@ host_watchdog_t::host_watchdog_t(simif_t* sim, std::vector<std::string> &args):
     time(&start_time);
 }
 
-void host_watchdog_t::tick(){
+void heartbeat_t::tick(){
     if (trip_count == polling_interval)  {
         trip_count = 0;
         uint64_t current_cycle = sim->actual_tcycle();
