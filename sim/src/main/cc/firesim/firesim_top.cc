@@ -17,6 +17,7 @@
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
+#include "bridges/heartbeat.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
@@ -36,6 +37,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
             do_zero_out_dram = true;
         }
     }
+
+    add_bridge_driver(new heartbeat_t(this, args));
 
 
 // DOC include start: UART Bridge Driver Registration
