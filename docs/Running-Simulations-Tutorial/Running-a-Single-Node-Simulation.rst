@@ -22,6 +22,7 @@ distribution. You can do this like so:
 ::
 
     cd firesim/sw/firesim-software
+    ./init-submodules.sh
     ./marshal -v build br-base.json
 
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
