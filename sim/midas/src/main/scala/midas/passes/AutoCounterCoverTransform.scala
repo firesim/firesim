@@ -231,7 +231,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
     //extract the module names from the methods mentioned previously
     val covermodulesnames = moduleAnnos.map(_.target.module).distinct
-    println("[AutoCounter] covermodulesnames are:")
+    println("[AutoCounter] selected modules for cover-function based annotation:")
     covermodulesnames.foreach({ i => println(s"  ${i}") })
 
     //collect annotations for manually annotated AutoCounter perf counters
