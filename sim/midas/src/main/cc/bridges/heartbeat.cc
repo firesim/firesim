@@ -3,6 +3,14 @@
 heartbeat_t::heartbeat_t(simif_t* sim, std::vector<std::string> &args):
         bridge_driver_t(sim),
         sim(sim) {
+    auto interval_arg = std::string("+heartbeat-polling-interval=");
+    for (auto arg: args) {
+        if (arg.find(interval_arg) == 0) {
+            char *str = const_cast<char*>(arg.c_str()) + interval_arg.length();
+            polling_interval = atol(str);
+        }
+    }
+
     log.open("heartbeat.csv", std::ios_base::out);
     if (!log.is_open()) {
         fprintf(stderr, "Could not open heartbeat output file.\n");

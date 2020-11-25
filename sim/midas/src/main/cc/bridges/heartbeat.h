@@ -29,7 +29,7 @@ class heartbeat_t: public bridge_driver_t
 
         bool has_timed_out = false;
         // Arbitrary selection; O(10) wallclock seconds for default targets during linux boot
-        const uint64_t polling_interval = 10e5;
+        uint64_t polling_interval = 10e5;
         uint64_t trip_count = 0;
         uint64_t last_cycle = 0;
 };
