@@ -31,6 +31,10 @@ void heartbeat_t::tick(){
         struct tm * tm_local = localtime(&current_time);
         log << current_cycle << ", " << current_time - start_time << std::endl;
         last_cycle = current_cycle;
+
+        if (has_timed_out) {
+            fprintf(stderr, "Simulator deadlock detected at target cycle %lld. Terminating.\n", current_cycle);
+        }
     } else {
         trip_count++;
     }
