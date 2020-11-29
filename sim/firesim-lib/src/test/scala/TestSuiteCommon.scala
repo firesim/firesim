@@ -4,7 +4,7 @@ package firesim
 import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 
-abstract class TestSuiteCommon extends org.scalatest.FlatSpec {
+abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
 
   def targetTuple: String
   def commonMakeArgs: Seq[String]

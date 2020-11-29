@@ -10,10 +10,10 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.12.10",
   traceLevel   := 15,
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
   // Remove after bump to FIRRTL 1.3
-  libraryDependencies += "org.scalatestplus" %% "scalacheck-1-14" % "3.1.0.1" % "test",
-  libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1",
+  libraryDependencies += "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
+  libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   // ScalaDoc
