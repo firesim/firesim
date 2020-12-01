@@ -7,7 +7,6 @@ import humanfriendly as hf
 from .wlutil import *
 import pathlib as pth
 import copy
-import importlib
 
 # This is a comprehensive list of all user-defined config options
 # Note that paths direct from a config file are relative to workdir, but will
@@ -73,7 +72,9 @@ configUser = [
         # Testing-related options
         'testing',
         # Flag to indicate the workload is a distro (rather than a derived workload).
-        'isDistro'
+        'isDistro',
+        # The builder object from the distro. This option is only set by distros.
+        'builder'
         ]
 
 # Config options only used internally by distro internal configs (defined in the distro python package itself)
@@ -82,8 +83,6 @@ configDistro = [
         'name',
         # Any options to pass to the builder, the value is opaque to marshal core
         'opts',
-        # Derived: the builder object from the distro
-        'builder'
 ]
 
 # Deprecated options, will be translated to current equivalents early on in
@@ -140,12 +139,6 @@ configInherit = [
         'qemu-args',
         'cpus',
         'mem']
-
-
-# These are the permissible base-distributions to use (they get treated
-# special). They will be generated during the configuration loading process.
-distros = {}
-
 
 # Default constants, may be overridden by the user
 # These take the post-processing form (e.g. if the user can provide a string,
@@ -427,6 +420,12 @@ class Config(collections.MutableMapping):
         self.cfg['base-deps'] = []
         self.cfg['use-parent-bin'] = False
 
+        if 'isDistro' not in self.cfg:
+            self.cfg['isDistro'] = False
+
+        if 'distro' in self.cfg:
+            getOpt('distro-mods')[self.cfg['distro']['name']].initOpts(self)
+
         if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
             self.cfg['nodisk'] = False
@@ -578,17 +577,6 @@ class Config(collections.MutableMapping):
         return repr(self.cfg)
 
 
-def importDistro(distroPath):
-    spec = importlib.util.spec_from_file_location(distroPath.stem, distroPath / "__init__.py",
-            submodule_search_locations=[str(getOpt('wlutil-dir')), str(distroPath)])
-
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module 
-    spec.loader.exec_module(module)
-
-    return module
-
-
 # The configuration of sw-manager is derived from the *.json files in workloads/
 class ConfigManager(collections.MutableMapping):
     # This contains all currently loaded configs, indexed by config file path
@@ -610,13 +598,6 @@ class ConfigManager(collections.MutableMapping):
             for d in dirs:
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
-
-        # Load default distros. More may be added by workloads that have custom
-        # distros.
-        self.distroMods = {}
-        for dPath in (getOpt('board-dir') / 'distros').glob("*"):
-            m = importDistro(dPath)
-            self.distroMods[m.__name__] = m
 
         # Read all the configs from their files
         for f in cfgPaths:
@@ -679,11 +660,11 @@ class ConfigManager(collections.MutableMapping):
         log = logging.getLogger()
 
         distCfg = cfg['distro']
-        distMod = self.distroMods[distCfg['name']]
+        distMod = getOpt('distro-mods')[distCfg['name']]
 
 
         def mergeOptsRecursive(distMod, cfg):
-            if 'isDistro' in cfg:
+            if cfg['isDistro']:
                 return None
             elif 'base' not in cfg:
                 return cfg['distro']['opts']
@@ -700,14 +681,18 @@ class ConfigManager(collections.MutableMapping):
         def forkRecursive(cfg, distID):
             # If there is no explicit base, the workload must be inheriting from a
             # distro directly, find or create the distro workload for it.
-            if 'base' not in cfg or 'isDistro' in self.cfgs[cfg['base']]:
+            if 'base' not in cfg or self.cfgs[cfg['base']]['isDistro']:
                 if 'distro' not in cfg:
                     raise ValueError("The 'distro' option is required for workloads that do not have a base")
 
                 distName = cfg['distro']['name']
-                distMod = self.distroMods[distName]
+                distMod = getOpt('distro-mods')[distName]
 
-                baseName = distName + distID
+                if distID is not None:
+                    baseName = distName + "." + distID
+                else:
+                    baseName = distName
+
                 if baseName not in self.cfgs.keys():
                     log.debug("Creating distro {} : {}".format(distName, distID))
                     distObj = distMod.Builder(cfg['distro']['opts'])
@@ -718,7 +703,10 @@ class ConfigManager(collections.MutableMapping):
                 cfg['base'] = baseName
                 return
             else:
-                forkedBaseName = cfg['base'] + distID
+                if distID is not None:
+                    forkedBaseName = cfg['base'] + "." + distID
+                else:
+                    forkedBaseName = cfg['base']
 
                 if forkedBaseName in self.cfgs:
                     cfg['base'] = forkedBaseName

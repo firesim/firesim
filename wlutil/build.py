@@ -269,6 +269,7 @@ def addDep(loader, config):
             'calc_dep' : img_calc_deps
             })
 
+
 # Generate a task-graph loader for the doit "Run" command
 # Note: this doesn't depend on the config or runtime args at all. In theory, it
 # could be cached, but I'm not going to bother unless it becomes a performance
@@ -285,29 +286,27 @@ def buildDepGraph(cfgs):
             config_changed(getToolVersions())]
         })
 
-    # Define the base-distro tasks
-    for d in distros:
-        dCfg = cfgs[d]
-        if 'img' in dCfg:
+    for cfgPath in cfgs.keys():
+        config = cfgs[cfgPath]
+
+        if config['isDistro'] and 'img' in config:
             loader.workloads.append({
-                    'name' : str(dCfg['img']),
-                    'actions' : [(dCfg['builder'].buildBaseImage, [])],
-                    'targets' : [dCfg['img']],
-                    'file_dep' : dCfg['builder'].fileDeps(),
-                    'uptodate': dCfg['builder'].upToDate() +
+                    'name' : str(config['img']),
+                    'actions' : [(config['builder'].buildBaseImage, [])],
+                    'targets' : [config['img']],
+                    'file_dep' : config['builder'].fileDeps(),
+                    'uptodate': config['builder'].upToDate() +
                         [config_changed(getToolVersions())]
                 })
+        else:
+            addDep(loader, config)
 
-    # Non-distro configs
-    for cfgPath in (set(cfgs.keys()) - set(distros)):
-        config = cfgs[cfgPath]
-        addDep(loader, config)
-
-        if 'jobs' in config.keys():
-            for jCfg in config['jobs'].values():
-                addDep(loader, jCfg)
+            if 'jobs' in config.keys():
+                for jCfg in config['jobs'].values():
+                    addDep(loader, jCfg)
 
     return loader
+
 
 def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     # This should only be built once (multiple builds will mess up doit)

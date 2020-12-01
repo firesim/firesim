@@ -6,6 +6,7 @@ import string
 import pathlib
 import git
 import doit
+import hashlib
 import wlutil
 
 # Note: All argument paths are expected to be absolute paths
@@ -13,7 +14,9 @@ import wlutil
 # Some common directories for this module (all absolute paths)
 br_dir = pathlib.Path(__file__).parent
 overlay = br_dir / 'overlay'
-br_image = br_dir / 'buildroot' / 'output' / 'images' / 'rootfs.ext2'
+
+# Buildroot puts its output images here
+img_dir = br_dir / 'buildroot' / 'output' / 'images'
 
 initTemplate = string.Template("""#!/bin/sh
 
@@ -41,71 +44,100 @@ esac
 
 exit""")
 
-def buildConfig():
-    """Construct the final buildroot configuration for this environment. After
-    calling this, it is safe to call 'make' in the buildroot directory."""
-
-    toolVer = wlutil.getToolVersions()
-    # Contains options specific to the build enviornment (br is touchy about this stuff)
-    toolKfrag = wlutil.getOpt('gen-dir') / 'brToolKfrag'
-    with open(toolKfrag, 'w') as f:
-        f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
-        f.write("BR2_TOOLCHAIN_HEADERS_AT_LEAST_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
-        f.write('BR2_TOOLCHAIN_HEADERS_AT_LEAST="'+toolVer['linuxMaj']+"."+toolVer['linuxMin']+'"\n')
-        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer['gcc']+'=y\n')
-        f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer['gcc']+'"\n')
-        f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer['gcc']+'=y\n')
-        f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
-
-    # Default Configuration (allows us to bump BR independently of our configs)
-    defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
-    wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'))
-    shutil.copy(br_dir / 'buildroot' / '.config', defconfig)
-
-    # Our config fragment, specifies differences from the default
-    marshalKfrag = br_dir / 'buildroot-config'
-
-    mergeScript = br_dir / 'merge_config.sh'
-    wlutil.run([mergeScript, str(defconfig), str(toolKfrag), str(marshalKfrag)],
-            cwd=(br_dir / 'buildroot'))
-    
-def buildBuildRoot():
-    wlutil.checkSubmodule(br_dir / 'buildroot')
-    buildConfig()
-
-    # Buildroot complains about some common PERL configurations
-    env = os.environ.copy()
-    env.pop('PERL_MM_OPT', None)
-    wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
-
 
 def hashOpts(opts):
     """Return a unique description of this builder, based on the provided opts"""
+
     if 'configs' in opts:
-        #XXX need a more compact hash eventually
-        return "-".join(opts['configs'])
+        h = hashlib.md5()
+        for c in opts['configs']:
+            with open(c, 'rb') as cf:
+                h.update(cf.read())
+
+        key = h.digest()[0:2] 
+
+        return key.hex()
     else:
-        return ""
+        return None 
 
 
 def mergeOpts(base, new):
+    """Given two ['distro']['opts'] objects, return a merged version"""
     return { "configs" : base['configs'] + new['configs'] }
 
 
+def initOpts(cfg):
+    """Given a raw marshal config object, perform any distro-specific
+    intialization (using the cfg['distro']['opts'] field."""
+
+    if cfg['distro']['name'] != "br":
+        raise ValueError("Wrong config type for BuildRoot: " + cfg['distro']['name'])
+
+    cleanPaths = []
+    for p in cfg['distro']['opts']['configs']:
+        p = pathlib.Path(p)
+        if p.is_absolute():
+            cleanPaths.append(p)
+        else:
+            cleanPaths.append(cfg['workdir'] / p)
+
+    cfg['distro']['opts']['configs'] = cleanPaths
+
+
 class Builder:
+    """A builder object will be created for each unique set of options (as
+    identified by hashOpts) and used to construct the base rootfs for this
+    distro."""
 
     def __init__(self, opts):
         self.opts = opts
+        hashed = hashOpts(self.opts)
+        if hashed is not None:
+            self.name = 'br.' + hashed
+        else:
+            self.name = 'br'
+
+        self.outputImg = wlutil.getOpt('image-dir') / (self.name + ".img")
 
 
     def getWorkload(self):
         return {
-                'name' : 'br' + hashOpts(self.opts),
+                'name' : self.name,
                 'isDistro' : True,
+                'distro' : {
+                    'name' : 'br',
+                    'opts' : { 'configs' : [] }
+                },
                 'workdir' : br_dir,
                 'builder' : self,
-                'img' : str(br_image)
+                'img' : self.outputImg
                 }
+
+
+    def configure(self):
+        """Construct the final buildroot configuration for this environment. After
+        calling this, it is safe to call 'make' in the buildroot directory."""
+
+        toolVer = wlutil.getToolVersions()
+        # Contains options specific to the build enviornment (br is touchy about this stuff)
+        toolKfrag = wlutil.getOpt('gen-dir') / 'brToolKfrag'
+        with open(toolKfrag, 'w') as f:
+            f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
+            f.write("BR2_TOOLCHAIN_HEADERS_AT_LEAST_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
+            f.write('BR2_TOOLCHAIN_HEADERS_AT_LEAST="'+toolVer['linuxMaj']+"."+toolVer['linuxMin']+'"\n')
+            f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer['gcc']+'=y\n')
+            f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer['gcc']+'"\n')
+            f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer['gcc']+'=y\n')
+            f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
+
+        # Default Configuration (allows us to bump BR independently of our configs)
+        defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
+        wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'))
+        shutil.copy(br_dir / 'buildroot' / '.config', defconfig)
+
+        kFrags = [ defconfig, toolKfrag ] + self.opts['configs']
+        mergeScript = br_dir / 'merge_config.sh'
+        wlutil.run([mergeScript] + kFrags, cwd=(br_dir / 'buildroot'))
 
 
     # Build a base image in the requested format and return an absolute path to that image
@@ -115,7 +147,15 @@ class Builder:
         This is called as a doit task.
         """
         try:
-            buildBuildRoot()
+            wlutil.checkSubmodule(br_dir / 'buildroot')
+            self.configure()
+
+            # Buildroot complains about some common PERL configurations
+            env = os.environ.copy()
+            env.pop('PERL_MM_OPT', None)
+            wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
+            shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
+
         except wlutil.SubmoduleError as e:
             return doit.exceptions.TaskFailed(e)
 
@@ -123,7 +163,6 @@ class Builder:
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate
         deps = []
-        deps.append(br_dir / 'buildroot-config')
         deps.append(br_dir / 'busybox-config')
         deps.append(pathlib.Path(__file__))
 
@@ -133,7 +172,8 @@ class Builder:
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
-        return [wlutil.config_changed(wlutil.checkGitStatus(br_dir / 'buildroot'))]
+        return [wlutil.config_changed(wlutil.checkGitStatus(br_dir / 'buildroot')),
+                wlutil.config_changed(hashOpts(self.opts))]
 
 
     # Set up the image such that, when run in qemu, it will run the script "script"

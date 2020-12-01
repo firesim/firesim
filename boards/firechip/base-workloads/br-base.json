@@ -3,7 +3,7 @@
   "distro" : {
       "name" : "br",
       "opts" : {
-          "configs" : ["BaseDistOpt"]
+          "configs" : ["buildroot-config"]
       }
   },
   "overlay" : "overlay",

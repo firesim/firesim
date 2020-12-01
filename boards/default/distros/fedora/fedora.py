@@ -21,11 +21,14 @@ overlay=fed_dir / 'overlay'
 
 # Fedora doesn't support any options
 def hashOpts(opts):
-    return ""
+    return None
 
 # Fedora doesn't support any options
 def mergeOpts(base, new):
     return base
+
+def initOpts(cfg):
+    return
 
 class Builder:
     def __init__(self, opts):
@@ -35,6 +38,10 @@ class Builder:
         return {
                 'name' : 'fedora-base',
                 'isDistro' : True,
+                'distro' : {
+                    'name' : 'fedora',
+                    'opts' : {}
+                },
                 'workdir' : fed_dir,
                 'builder' : self,
                 'img' : fed_dir / "rootfs.img"

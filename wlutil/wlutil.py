@@ -19,6 +19,7 @@ import yaml
 import re
 import pprint
 import doit
+import importlib
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
@@ -90,6 +91,7 @@ class ConfigurationFileError(ConfigurationError):
     def __str__(self):
         return "Failed to load configuration file: " + str(self.missingFile) + "\n" + \
                 str(self.cause)
+
 
 def cleanPaths(opts, baseDir=pathlib.Path('.')):
     """Clean all user-defined paths in an options dictionary by converting them
@@ -286,6 +288,18 @@ class marshalCtx(collections.MutableMapping):
         cleanPaths(envCfg)
         self.add(envCfg)
 
+
+    def importDistro(self, distroPath):
+        spec = importlib.util.spec_from_file_location(distroPath.stem, distroPath / "__init__.py",
+                submodule_search_locations=[self['wlutil-dir'], str(distroPath)])
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        return module
+
+
     def deriveOpts(self):
         """Update or initialize all derived options. This assumes all
         user-defined options have been set already. See the 'derivedOpts' list
@@ -312,6 +326,12 @@ class marshalCtx(collections.MutableMapping):
 
         if self['doitOpts']['dep_file'] == '':
             self['doitOpts']['dep_file'] = str(self['gen-dir'] / 'marshaldb')
+
+        self['distro-mods'] = {}
+        for dPath in (self['board-dir'] / 'distros').glob("*"):
+            m = self.importDistro(dPath)
+            self['distro-mods'][m.__name__] = m
+
 
     def setRunName(self, configPath, operation):
         """Helper function for formatting a  unique run name. You are free to
