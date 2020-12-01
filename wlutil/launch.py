@@ -83,9 +83,11 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
     """
     log = logging.getLogger()
 
-    # Bare-metal tests don't work on qemu yet
-    if baseConfig.get('distro') == 'bare' and spike != True:
-        raise RuntimeError("Bare-metal workloads do not currently support Qemu. Please run this workload under spike.")
+    if spike and baseConfig.get('spike', True) is None:
+        raise RuntimeError("This workload does not support spike")
+    
+    if not spike and baseConfig.get('qemu', True) is None:
+        raise RuntimeError("This workload does not support qemu")
 
     if jobs == None:
         configs = [ baseConfig ]

@@ -224,9 +224,10 @@ class RunSpec():
 def cleanPath(path, workdir):
     """Take a string or pathlib path argument and return a pathlib.Path
     representing the final absolute path to that option"""
-    path = pathlib.Path(path)
-    if not path.is_absolute():
-        path = workdir / path
+    if path is not None:
+        path = pathlib.Path(path)
+        if not path.is_absolute():
+            path = workdir / path
     return path
 
 
@@ -523,7 +524,9 @@ class Config(collections.MutableMapping):
         inheritLinuxOpts(self.cfg, baseCfg)
         inheritFirmwareOpts(self.cfg, baseCfg)
 
-        if 'linux' in self.cfg or 'bin' not in self.cfg:
+        #XXX why is the 'bin' not in self.cfg clause in here?
+        # if 'linux' in self.cfg or 'bin' not in self.cfg:
+        if 'linux' in self.cfg:
             # Linux workloads get their own binary, whether from scratch or a
             # copy of their parent's
             self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
