@@ -31,7 +31,7 @@ object EC2F1Artefacts extends Transform {
   // Capture FPGA-toolflow related verilog defines
   def generateHostVerilogHeader(targetDir: File) {
     val headerName = "cl_firesim_generated_defines.vh"
-    writeOutputFile(new File(targetDir, headerName), s"\n")
+    writeOutputFile(new File(targetDir, headerName), s"`define SYNTHESIS\n")
   }
 
   // Emit TCL variables to control the FPGA compilation flow
