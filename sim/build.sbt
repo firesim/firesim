@@ -42,7 +42,7 @@ lazy val chipyardDir = if(firesimAsLibrary) {
 
 lazy val chipyardRoot  = ProjectRef(chipyardDir, "chipyardRoot")
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
-lazy val chisel        = ProjectRef(chipyardDir, "chisel")
+lazy val chisel        = ProjectRef(chipyardDir / "tools/chisel3", "chisel")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val barstools     = ProjectRef(chipyardDir, "barstoolsMacros")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
