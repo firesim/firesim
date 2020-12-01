@@ -33,48 +33,6 @@ class TestFailure(Exception):
         return self.msg
 
 
-# Fedora run output can be tricky to compare due to lots of non-deterministic
-# output (e.g. timestamps, pids) This function takes the entire uartlog from a
-# fedora run and returns only the output of auto-run scripts
-def stripFedoraUart(lines):
-    stripped = []
-    pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
-    for l in lines:
-        match = pat.match(l)
-        if match:
-            stripped.append(match.group(1))
-
-    return stripped
-
-
-def stripBrUart(lines):
-    stripped = []
-    inBody = False
-    for l in lines:
-        if not inBody:
-            if re.match("launching firesim workload run/command", l):
-                inBody = True
-        else:
-            if re.match("firesim workload run/command done", l):
-                break
-            stripped.append(l)
-
-    return stripped
-          
-
-def stripUartlog(config, uartlog):
-    if 'distro' in config:
-        if config['distro'] == 'fedora':
-            strippedUart = stripFedoraUart(uartlog)
-        elif config['distro'] == 'br':
-            strippedUart = stripBrUart(uartlog)
-        else:
-            strippedUart = uartlog
-    else:
-        strippedUart = uartlog
-
-    return strippedUart
-
 # Compares two runOutput directories. Returns None if they match or a message
 # describing the difference if they don't.
 #   - Directory structures are compared directly (same folders in the same
@@ -111,7 +69,7 @@ def cmpOutput(config, testDir, refDir, strip=False):
                         # newlines.
                         tLines = [ line.replace("\r", "") for line in tLines]
                         if strip:
-                            tLines = stripUartlog(config, tLines)
+                            tLines = config['builder'].stripUart(tLines)
 
                         matcher = difflib.SequenceMatcher(None, rLines, tLines)
                         m = matcher.find_longest_match(0, len(rLines), 0, len(tLines))

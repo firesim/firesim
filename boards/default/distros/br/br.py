@@ -8,6 +8,7 @@ import git
 import doit
 import hashlib
 import wlutil
+import re
 
 # Note: All argument paths are expected to be absolute paths
 
@@ -203,3 +204,18 @@ class Builder:
                 f.write(initTemplate.substitute(args=' '.join(args)))
         
         return overlay
+
+
+    def stripUart(self, lines):
+        stripped = []
+        inBody = False
+        for l in lines:
+            if not inBody:
+                if re.match("launching firesim workload run/command", l):
+                    inBody = True
+            else:
+                if re.match("firesim workload run/command done", l):
+                    break
+                stripped.append(l)
+
+        return stripped

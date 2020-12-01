@@ -524,8 +524,6 @@ class Config(collections.MutableMapping):
         inheritLinuxOpts(self.cfg, baseCfg)
         inheritFirmwareOpts(self.cfg, baseCfg)
 
-        #XXX why is the 'bin' not in self.cfg clause in here?
-        # if 'linux' in self.cfg or 'bin' not in self.cfg:
         if 'linux' in self.cfg:
             # Linux workloads get their own binary, whether from scratch or a
             # copy of their parent's
@@ -673,7 +671,9 @@ class ConfigManager(collections.MutableMapping):
                 return cfg['distro']['opts']
             else:
                 baseOpts = mergeOptsRecursive(distMod, self.cfgs[cfg['base']])
-                if baseOpts is None:
+                if 'distro' not in cfg:
+                    return baseOpts
+                elif baseOpts is None:
                     return cfg['distro']['opts']
                 else:
                     return distMod.mergeOpts(baseOpts, cfg['distro']['opts'])

@@ -2,6 +2,7 @@ import subprocess as sp
 import shutil
 import pathlib
 import wlutil
+import re
 
 serviceTemplate = """[Unit]
 Requires=multi-user.target
@@ -93,3 +94,13 @@ class Builder:
             f.write(serviceScript)
 
         return overlay
+
+    def stripUart(self, lines):
+        stripped = []
+        pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
+        for l in lines:
+            match = pat.match(l)
+            if match:
+                stripped.append(match.group(1))
+
+        return stripped

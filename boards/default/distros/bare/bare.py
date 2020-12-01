@@ -48,3 +48,6 @@ class Builder:
     @staticmethod
     def generateBootScriptOverlay(script):
         raise NotImplementedError("Baremetal code does not currently support 'run', 'init', or 'overlay'")
+
+    def stripUart(self, lines):
+        return lines
