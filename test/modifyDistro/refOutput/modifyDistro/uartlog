@@ -1,4 +1,8 @@
 Starting Test
-adduser: user 'testUser' in use
+Checking if the password changed
+adduser: /home/testUser: No such file or directory
 Password: 
+PASS
+Checking if vim was removed
+vim detected 1
 PASS

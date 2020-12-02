@@ -154,6 +154,12 @@ class Builder:
             # Buildroot complains about some common PERL configurations
             env = os.environ.copy()
             env.pop('PERL_MM_OPT', None)
+
+            # This is unfortunate but buildroot can't remove things from the
+            # image without rebuilding everything from scratch. It adds 20min
+            # to the unit tests and anyone who builds a custom buildroot.
+            wlutil.run(['make', 'clean'], cwd=br_dir / "buildroot", env=env)
+
             wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
             shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
 

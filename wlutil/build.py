@@ -244,6 +244,7 @@ def addDep(loader, config):
     img_file_deps = []
     img_task_deps = [] + hostInit + postBin + config['base-deps']
     img_calc_deps = []
+    img_uptodate  = []
     if 'img' in config:
         if 'files' in config or 'overlay' in config:
             # We delay calculation of files and overlay dependencies to runtime
@@ -259,6 +260,8 @@ def addDep(loader, config):
             img_file_deps.append(config['runSpec'].path)
         if 'cfg-file' in config:
             img_file_deps.append(config['cfg-file'])
+        if 'distro' in config:
+            img_uptodate += config['builder'].upToDate()
 
         loader.addTask({
             'name' : str(config['img']),
@@ -266,7 +269,8 @@ def addDep(loader, config):
             'targets' : [config['img']],
             'file_dep' : img_file_deps,
             'task_dep' : img_task_deps,
-            'calc_dep' : img_calc_deps
+            'calc_dep' : img_calc_deps,
+            'uptodate' : img_uptodate
             })
 
 
