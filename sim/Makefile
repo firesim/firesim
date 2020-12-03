@@ -72,6 +72,10 @@ else
 	touch $@
 endif
 
+.PHONY: shutdown
+shutdown:
+	cd $(base_dir) && $(SBT) "shutdown"
+
 else
 # Chipyard make variables
 base_dir := $(abspath ../../..)
