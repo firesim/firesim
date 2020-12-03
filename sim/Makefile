@@ -66,10 +66,10 @@ endef
 #########################################################################################
 $(SBT_THIN_CLIENT_TIMESTAMP): $(SBT_SOURCES)
 ifneq (,$(wildcard $(SBT_THIN_CLIENT_TIMESTAMP)))
-    cd $(base_dir) && $(SBT) "reload"
-    touch $@
+	cd $(base_dir) && $(SBT) "reload"
+	touch $@
 else
-    touch $@
+	touch $@
 endif
 
 else
