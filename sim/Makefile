@@ -44,7 +44,7 @@ JAVA_OPTS ?= -Xmx$(JVM_MEMORY) -Dsbt.supershell=false
 sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
 SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
-SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/active.json
+SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/target/active.json
 
 # by default build chisel3/firrtl and other subprojects from source
 override SBT_OPTS += -Dsbt.sourcemode=true -Dsbt.workspace=$(chipyard_dir)/tools
