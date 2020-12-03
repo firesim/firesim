@@ -5,7 +5,8 @@
   "distro" : {
       "name" : "br",
       "opts" : {
-          "configs" : ["distroCfg"]
+          "configs" : ["distroCfg"],
+          "environment" : { "MODIFYDISTRO_TEST_VAR" : "modifiedBusybox" }
       }
   },
   "testing" : {

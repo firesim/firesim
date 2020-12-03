@@ -64,7 +64,12 @@ def hashOpts(opts):
 
 def mergeOpts(base, new):
     """Given two ['distro']['opts'] objects, return a merged version"""
-    return { "configs" : base['configs'] + new['configs'] }
+    merged = {
+            "configs" : base['configs'] + new['configs'],
+            "environment" : {**base['environment'], **new['environment']}
+    }
+
+    return merged
 
 
 def initOpts(cfg):
@@ -74,15 +79,24 @@ def initOpts(cfg):
     if cfg['distro']['name'] != "br":
         raise ValueError("Wrong config type for BuildRoot: " + cfg['distro']['name'])
 
-    cleanPaths = []
-    for p in cfg['distro']['opts']['configs']:
-        p = pathlib.Path(p)
-        if p.is_absolute():
-            cleanPaths.append(p)
-        else:
-            cleanPaths.append(cfg['workdir'] / p)
+    opts = cfg['distro']['opts']
+    if 'configs' in opts:
+        cleanPaths = []
+        for p in opts['configs']:
+            p = pathlib.Path(p)
+            if p.is_absolute():
+                cleanPaths.append(p)
+            else:
+                cleanPaths.append(cfg['workdir'] / p)
 
-    cfg['distro']['opts']['configs'] = cleanPaths
+        opts['configs'] = cleanPaths
+    else:
+        opts['configs'] = []
+
+    if 'environment' not in opts:
+        opts['environment'] = {}
+
+    opts['environment'][cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
 
 
 class Builder:
@@ -154,6 +168,7 @@ class Builder:
             # Buildroot complains about some common PERL configurations
             env = os.environ.copy()
             env.pop('PERL_MM_OPT', None)
+            env = {**env, **self.opts['environment']}
 
             # This is unfortunate but buildroot can't remove things from the
             # image without rebuilding everything from scratch. It adds 20min
@@ -170,8 +185,8 @@ class Builder:
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate
         deps = []
-        deps.append(br_dir / 'busybox-config')
         deps.append(pathlib.Path(__file__))
+        deps += self.opts['configs']
 
         return deps
 

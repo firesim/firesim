@@ -1,8 +1,11 @@
 Starting Test
-Checking if the password changed
-adduser: /home/testUser: No such file or directory
+Checking if the password changed (changing something simple in buildroot config test)
+adduser: user 'testUser' in use
 Password: 
 PASS
-Checking if vim was removed
-vim detected 1
+Checking if vim was removed (removing packages from buildroot config test)
+PASS
+Checking if depmod showed up (environment variables test)
+iceblk.ko:
+icenet.ko:
 PASS
