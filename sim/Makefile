@@ -93,15 +93,16 @@ compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 SBT_COMMAND ?= shell
+SBT_NON_THIN ?= $(shell echo $(SBT) | sed 's/$(SBT_CLIENT_FLAG)//')
 .PHONY: sbt
 sbt:
-	cd $(base_dir) && $(SBT) ";project $(firesim_sbt_project); $(SBT_COMMAND)"
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); $(SBT_COMMAND)"
 .PHONY: test
 test:
-	cd $(base_dir) && $(SBT) ";project $(firesim_sbt_project); test"
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); test"
 .PHONY: testOnly
 testOnly:
-	cd $(base_dir) && $(SBT) ";project $(firesim_sbt_project); testOnly $(SCALA_TEST)"
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); testOnly $(SCALA_TEST)"
 
 # All target-agnostic firesim recipes are defined here
 include target-agnostic.mk
