@@ -93,7 +93,7 @@ compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 SBT_COMMAND ?= shell
-SBT_NON_THIN ?= $(shell echo $(SBT) | sed 's/$(SBT_CLIENT_FLAG)//')
+SBT_NON_THIN ?= $(subst $(SBT_CLIENT_FLAG),,$(SBT))
 .PHONY: sbt
 sbt:
 	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); $(SBT_COMMAND)"
