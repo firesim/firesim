@@ -61,15 +61,15 @@ define run_scala_main
 	cd $(base_dir) && $(SBT) ";project $(1); runMain $(2) $(3)"
 endef
 
-#########################################################################################
-# SBT Server Setup (needed to rebuild project correctly)
-#########################################################################################
+##############################################################################
+# SBT Server Setup (start server / rebuild proj. defs. if SBT_SOURCES change)
+##############################################################################
 $(SBT_THIN_CLIENT_TIMESTAMP): $(SBT_SOURCES)
 ifneq (,$(wildcard $(SBT_THIN_CLIENT_TIMESTAMP)))
 	cd $(base_dir) && $(SBT) "reload"
 	touch $@
 else
-	touch $@
+	cd $(base_dir) && $(SBT) "exit"
 endif
 
 .PHONY: shutdown
