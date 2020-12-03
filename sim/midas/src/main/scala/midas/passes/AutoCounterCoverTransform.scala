@@ -261,6 +261,14 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val enableTransform         = p(EnableAutoCounter)
     val usePrintfImplementation = p(AutoCounterUsePrintfImpl)
 
-    if (enableTransform) doTransform(state, usePrintfImplementation) else state
+    val updatedState = if (enableTransform) doTransform(state, usePrintfImplementation) else state
+    // Clean up autocounter annotations so that their ReferenceTargets, which
+    // are implicitly marked as DontTouch, can be optimized across
+    updatedState.copy(
+      annotations = updatedState.annotations.filter {
+        case AutoCounterCoverModuleFirrtlAnnotation(_) => false
+        case AutoCounterFirrtlAnnotation(_,_,_,_,_,_) => false
+        case o => true
+      })
   }
 }
