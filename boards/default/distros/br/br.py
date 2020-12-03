@@ -49,17 +49,19 @@ exit""")
 def hashOpts(opts):
     """Return a unique description of this builder, based on the provided opts"""
 
+    if len(opts) == 0:
+        return None
+
+    h = hashlib.md5()
     if 'configs' in opts:
-        h = hashlib.md5()
         for c in opts['configs']:
             with open(c, 'rb') as cf:
                 h.update(cf.read())
 
-        key = h.digest()[0:2] 
+    if 'environemnt' in opts:
+        h.update(str(opts['environment']).encode('utf-8'))
 
-        return key.hex()
-    else:
-        return None 
+    return h.hexdigest()[0:4]
 
 
 def mergeOpts(base, new):
