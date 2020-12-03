@@ -74,6 +74,25 @@ This directory will contain:
 - ``cl_firesim_generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
 
 
+.. _firesim-tar2afi:
+
+``firesim tar2afi``
+----------------------
+
+This command can be used to run only steps 9 & 10 from an aborted ``firesim buildafi`` that has been
+manually corrected. ``firesim tar2afi`` assumes that you have a 
+``firesim/deploy/results-build/LAUNCHTIME-CONFIG_TRIPLET-BUILD_NAME/cl_firesim``
+directory tree that can be submitted to the AWS backend for conversion to an AFI.
+
+When using this command, you need to also provide the ``--launchtime LAUNCHTIME`` cmdline argument,
+specifying an already existing LAUNCHTIME.  
+
+This command will run for the configurations specified in :ref:`config-build` and 
+:ref:`config-build-recipes` as with :ref:`firesim-buildafi`.  It is likely that you may want
+to comment out ``BUILD_NAME`` that successfully completed :ref:`firesim-builafi` before
+running this command.
+
+
 .. _firesim-shareagfi:
 
 ``firesim shareagfi``
