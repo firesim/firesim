@@ -4,6 +4,9 @@ import Tests._
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
 apiDirectory := "latest"
 
+// Ignore linting for traceLevel
+Global / excludeLintKeys += traceLevel
+
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
