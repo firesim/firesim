@@ -4,14 +4,10 @@ import Tests._
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
 apiDirectory := "latest"
 
-// Ignore linting for traceLevel
-Global / excludeLintKeys += traceLevel
-
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
   scalaVersion := "2.12.10",
-  traceLevel   := 15,
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
   // Remove after bump to FIRRTL 1.3
@@ -45,7 +41,7 @@ lazy val chipyardDir = if(firesimAsLibrary) {
 
 lazy val chipyardRoot  = ProjectRef(chipyardDir, "chipyardRoot")
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
-lazy val chisel        = ProjectRef(chipyardDir / "tools/chisel3", "chisel")
+lazy val chisel        = ProjectRef(workspaceDirectory / "chisel3", "chisel")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val barstools     = ProjectRef(chipyardDir, "barstoolsMacros")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
