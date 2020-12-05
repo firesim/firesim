@@ -8,7 +8,7 @@
 #include <utility>
 #include <map>
 
-constexpr size_t multireg_n_copies = 4;
+constexpr size_t multireg_n_copies = 5;
 constexpr size_t multireg_n_reads = 2;
 constexpr size_t multireg_n_writes = 2;
 
@@ -16,31 +16,36 @@ const size_t multireg_w_addr_ios[multireg_n_copies][multireg_n_writes] =
   { { io_accesses_0_writes_0_addr, io_accesses_0_writes_1_addr },
     { io_accesses_1_writes_0_addr, io_accesses_1_writes_1_addr },
     { io_accesses_2_writes_0_addr, io_accesses_2_writes_1_addr },
-    { io_accesses_3_writes_0_addr, io_accesses_3_writes_1_addr } };
+    { io_accesses_3_writes_0_addr, io_accesses_3_writes_1_addr },
+    { io_accesses_4_writes_0_addr, io_accesses_4_writes_1_addr } };
 
 const size_t multireg_w_data_ios[multireg_n_copies][multireg_n_writes] =
   { { io_accesses_0_writes_0_data, io_accesses_0_writes_1_data },
     { io_accesses_1_writes_0_data, io_accesses_1_writes_1_data },
     { io_accesses_2_writes_0_data, io_accesses_2_writes_1_data },
-    { io_accesses_3_writes_0_data, io_accesses_3_writes_1_data } };
+    { io_accesses_3_writes_0_data, io_accesses_3_writes_1_data },
+    { io_accesses_4_writes_0_data, io_accesses_4_writes_1_data } };
 
 const size_t multireg_w_en_ios[multireg_n_copies][multireg_n_writes] =
   { { io_accesses_0_writes_0_en, io_accesses_0_writes_1_en },
     { io_accesses_1_writes_0_en, io_accesses_1_writes_1_en },
     { io_accesses_2_writes_0_en, io_accesses_2_writes_1_en },
-    { io_accesses_3_writes_0_en, io_accesses_3_writes_1_en } };
+    { io_accesses_3_writes_0_en, io_accesses_3_writes_1_en },
+    { io_accesses_4_writes_0_en, io_accesses_4_writes_1_en } };
 
 const size_t multireg_r_addr_ios[multireg_n_copies][multireg_n_reads] =
   { { io_accesses_0_reads_0_addr, io_accesses_0_reads_1_addr },
     { io_accesses_1_reads_0_addr, io_accesses_1_reads_1_addr },
     { io_accesses_2_reads_0_addr, io_accesses_2_reads_1_addr },
-    { io_accesses_3_reads_0_addr, io_accesses_3_reads_1_addr } };
+    { io_accesses_3_reads_0_addr, io_accesses_3_reads_1_addr },
+    { io_accesses_4_reads_0_addr, io_accesses_4_reads_1_addr } };
 
 const size_t multireg_r_data_ios[multireg_n_copies][multireg_n_reads] =
   { { io_accesses_0_reads_0_data, io_accesses_0_reads_1_data },
     { io_accesses_1_reads_0_data, io_accesses_1_reads_1_data },
     { io_accesses_2_reads_0_data, io_accesses_2_reads_1_data },
-    { io_accesses_3_reads_0_data, io_accesses_3_reads_1_data } };
+    { io_accesses_3_reads_0_data, io_accesses_3_reads_1_data },
+    { io_accesses_4_reads_0_data, io_accesses_4_reads_1_data } };
 
 class MultiRegfile_t: virtual simif_t
 {
@@ -57,7 +62,7 @@ public:
 
 protected:
 
-  size_t mem_depth = 32;
+  size_t mem_depth = 21;
 
   bool write_first = true;
 

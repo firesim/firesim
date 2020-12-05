@@ -12,7 +12,7 @@ import midas.targetutils._
 
 class RegfileInner extends Module {
   val io = IO(new RegfileIO)
-  val mem = Mem(32, UInt(64.W))
+  val mem = Mem(21, UInt(64.W))
   annotate(MemModelAnnotation(mem))
   io.reads.foreach {
     rp => rp.data := mem.read(RegNext(rp.addr))
@@ -22,12 +22,15 @@ class RegfileInner extends Module {
   }
 }
 
+object MultiRegfile {
+  val nCopies = 5
+}
+
 class MultiRegfileDUT extends Module {
-  val nCopies = 4
   val io = IO(new Bundle {
-    val accesses = Vec(nCopies, new RegfileIO)
+    val accesses = Vec(MultiRegfile.nCopies, new RegfileIO)
   })
-  val rfs = Seq.fill(nCopies)(Module(new RegfileInner))
+  val rfs = Seq.fill(MultiRegfile.nCopies)(Module(new RegfileInner))
   rfs.zip(io.accesses).foreach {
     case (rf, rfio) =>
       rf.io <> rfio
