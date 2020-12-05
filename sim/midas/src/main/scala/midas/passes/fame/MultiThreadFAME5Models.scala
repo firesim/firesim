@@ -219,7 +219,7 @@ object MultiThreadFAME5Models extends Transform {
     // TODO: Renames!
 
     val threadedCircuit = state.circuit.copy(modules = transformedModules)
-    val withMemImpls = ImplementThreadedSyncReadMems(threadedCircuit)
+    val withMemImpls = ImplementThreadedMems(threadedCircuit)
     state.copy(circuit = withMemImpls)
   }
 }
