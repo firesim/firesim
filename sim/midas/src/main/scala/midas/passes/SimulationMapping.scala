@@ -99,6 +99,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     val annos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: c3circuit.annotations.map(_.toFirrtl)
 
     val transforms = Seq(
+      Dependency[midas.passes.DedupModules],
       Dependency[Fame1Instances],
       Dependency(PreLinkRenaming))
     val outerState = new Compiler(Forms.LowForm ++ transforms)

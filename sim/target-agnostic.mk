@@ -51,12 +51,16 @@ firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 
+# Disable FIRRTL 1.4 deduplication because it creates multiple failures
+# Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
+# pass --no-legacy-dedup as well
 $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
 	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
+		--no-dedup \
 		-E verilog \
 	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
