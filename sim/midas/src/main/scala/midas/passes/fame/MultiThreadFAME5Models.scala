@@ -6,9 +6,10 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations.ModuleTarget
+import firrtl.annotations.{ModuleTarget, ModuleName, CircuitName}
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.Utils.BoolType
+import firrtl.passes.InlineAnnotation
 
 import midas.targetutils.FirrtlEnableModelMultiThreadingAnnotation
 
@@ -220,6 +221,9 @@ object MultiThreadFAME5Models extends Transform {
 
     val threadedCircuit = state.circuit.copy(modules = transformedModules)
     val withMemImpls = ImplementThreadedMems(threadedCircuit)
-    state.copy(circuit = withMemImpls)
+
+    val inlineThreadedMemAnnos = withMemImpls.modules.map(m => m.name).filter(s => s.startsWith("ThreadedMem")).map(s => InlineAnnotation(ModuleName(s, CircuitName(withMemImpls.main))))
+
+    state.copy(circuit = withMemImpls, annotations = state.annotations ++ inlineThreadedMemAnnos)
   }
 }

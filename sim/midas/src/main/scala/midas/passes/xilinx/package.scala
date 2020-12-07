@@ -4,6 +4,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.annotations.{CircuitTarget, CompleteTarget}
 import firrtl.passes.Pass
+import firrtl.passes.MemPortUtils._
 import firrtl.Utils.BoolType
 
 package object xilinx {
@@ -30,6 +31,7 @@ package object xilinx {
   object HostSpecialization extends SeqTransform {
     val inputForm = LowForm
     val outputForm = LowForm
-    val transforms = Seq(DefineBUFGCE, ReplaceAbstractClockGates, FPGAFriendlyMems)
+    val transforms = Seq(DefineBUFGCE, ReplaceAbstractClockGates, FPGAFriendlyMems, CanonicalizeBRAM, new ResolveAndCheck, passes.LowerTypes)
   }
+
 }

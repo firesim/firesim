@@ -16,44 +16,22 @@ import collection.mutable
  * This pass finds them, replaces them with blackbox instances, and implements the blackboxes.
  */
 
-object ThreadedMem {
-  def apply(nThreads: BigInt, proto: DefMemory): ThreadedMem = {
-    ThreadedMem(nThreads, proto.info, proto.name, proto.dataType, proto.depth, proto.readLatency,
-      proto.readers, proto.writers, proto.readwriters, proto.readUnderWrite)
-  }
-}
+case class ThreadedMem(nThreads: BigInt, proto: DefMemory) extends Statement with IsDeclaration {
+  require(proto.readLatency == 0 || proto.readLatency == 1)
 
-case class ThreadedMem(
-  nThreads: BigInt,
-  info: Info,
-  name: String,
-  dataType: Type,
-  depth: BigInt,
-  readLatency: Int,
-  readers: Seq[String],
-  writers: Seq[String],
-  readwriters: Seq[String],
-  readUnderWrite: ReadUnderWrite.Value) extends Statement with IsDeclaration {
-
-  require(readLatency == 0 || readLatency == 1)
-
-  def flatImpl(desiredName: String): DefMemory = {
-    DefMemory(info, desiredName, dataType, nThreads * depth, 1, readLatency, readers, writers, readwriters, readUnderWrite)
-  }
-
-  def tpe: BundleType = memType(flatImpl(""))
-
+  val name = proto.name
+  val info = proto.info
   def serialize = ???
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
-  def mapType(f: Type => Type): Statement = this.copy(dataType = f(dataType))
-  def mapString(f: String => String): Statement = this.copy(name = f(name))
-  def mapInfo(f: Info => Info): Statement = this.copy(info = f(info))
+  def mapType(f: Type => Type): Statement = this.copy(proto = proto.copy(dataType = f(proto.dataType)))
+  def mapString(f: String => String): Statement = this.copy(proto = proto.copy(name = f(proto.name)))
+  def mapInfo(f: Info => Info): Statement = this.copy(proto = proto.copy(info = f(proto.info)))
   def foreachExpr(f: Expression => Unit): Unit = ()
   def foreachStmt(f: Statement => Unit): Unit = ()
-  def foreachType(f: Type => Unit): Unit = f(dataType)
-  def foreachString(f: String => Unit): Unit = f(name)
-  def foreachInfo(f: Info => Unit): Unit = f(info)
+  def foreachType(f: Type => Unit): Unit = proto.foreachType(f)
+  def foreachString(f: String => Unit): Unit = proto.foreachString(f)
+  def foreachInfo(f: Info => Unit): Unit = proto.foreachInfo(f)
 }
 
 object ImplementThreadedMems {
@@ -70,8 +48,8 @@ object ImplementThreadedMems {
     val hostClockPort = Port(info, WrapTop.hostClockName, Input, ClockType)
     val tIdxPort = Port(info, MuxingMultiThreader.tIdxName, Input, tIdxMax.tpe)
 
-    val accessors = tMem.readers ++ tMem.writers ++ tMem.readwriters
-    val ports = hostClockPort +: tIdxPort +: tMem.tpe.fields.map {
+    val accessors = tMem.proto.readers ++ tMem.proto.writers ++ tMem.proto.readwriters
+    val ports = hostClockPort +: tIdxPort +: memType(tMem.proto).fields.map {
       case Field(name, Flip, tpe) => Port(info, name, Input, tpe)
     }
 
@@ -93,36 +71,35 @@ object ImplementThreadedMems {
 
     // Useful expressions: tidx is carried in the bottom of input addr (part of interface definition)
     val targetClock = wsf(WRef(accessors.head), "clk")
-    val tLocalAddrWidth = BigInt((tMem.depth - 1).bitLength)
     val targetClockCounterName = ns.newName("edgeCount")
 
-    val mem = tMem.flatImpl(ns.newName("mem"))
+    val mem = tMem.proto.copy(depth = tMem.proto.depth * tMem.nThreads)
     val addrTranslations = accessors.flatMap {
       p =>
         if (tMem.nThreads.bitCount == 1) {
           Seq(Connect(info, wssf(WRef(mem), p, "addr"), prim(PrimOps.Cat, Seq(wsf(WRef(p), "addr"), WRef(tIdxPort)))))
         } else {
-          val maxBase = UIntLiteral((tMem.nThreads-1)*tMem.depth)
+          val maxBase = UIntLiteral((tMem.nThreads-1)*tMem.proto.depth)
           val baseName = ns.newName("base_addr_counter")
           val baseRef = WRef(baseName)
           val baseDecl = DefRegister(info, baseName, maxBase.tpe, WRef(hostClockPort), UIntLiteral(0), baseRef)
           val baseUpdate = Connect(
             info,
             baseRef,
-            Mux(prim(PrimOps.Geq, Seq(baseRef, maxBase)), UIntLiteral(0), prim(PrimOps.Add, Seq(baseRef, UIntLiteral(tMem.depth))))
+            Mux(prim(PrimOps.Geq, Seq(baseRef, maxBase)), UIntLiteral(0), prim(PrimOps.Add, Seq(baseRef, UIntLiteral(tMem.proto.depth))))
           )
           Seq(baseDecl, baseUpdate, Connect(info, wssf(WRef(mem), p, "addr"), prim(PrimOps.Add, Seq(baseRef, wsf(WRef(p), "addr")))))
         }
     }
 
-    if (tMem.readLatency == 0) {
+    if (tMem.proto.readLatency == 0) {
       val defaultConns = accessors.map(p => Connect(info, wsf(WRef(mem), p), WRef(p)))
       val body = Block(Seq(mem) ++ defaultConns ++ addrTranslations)
       Module(info, moduleName, ports, body)
     } else {
       // Name the memories used to store read data
-      val rdMemNames = tMem.readers.map(r => r -> ns.newName(s"${r}_datas")).toMap
-      val rwdMemNames = tMem.readwriters.map(rw => rw -> ns.newName(s"${rw}_rdatas")).toMap
+      val rdMemNames = tMem.proto.readers.map(r => r -> ns.newName(s"${r}_datas")).toMap
+      val rwdMemNames = tMem.proto.readwriters.map(rw => rw -> ns.newName(s"${rw}_rdatas")).toMap
 
       // Now all the statements
       val targetClockCounter = DefRegister(info, targetClockCounterName, BoolType, targetClock, UIntLiteral(0), WRef(targetClockCounterName))
@@ -151,7 +128,7 @@ object ImplementThreadedMems {
           val tmpNodeName = ns.newName(s"${topPName}_${doutName}_node")
 
           val doutNode = DefNode(info, tmpNodeName, wssf(WRef(mem), topPName, doutName))
-          val (doutPipe, doutPipedRef) = pipeline(bramToBufferPipeDepth, WRef(tmpNodeName, tMem.dataType, NodeKind, SourceFlow))
+          val (doutPipe, doutPipedRef) = pipeline(bramToBufferPipeDepth, WRef(tmpNodeName, tMem.proto.dataType, NodeKind, SourceFlow))
           Seq(doutNode,
               doutPipe,
               Connect(info, wssf(doutMemRef, "r", "clk"), WRef(hostClockPort)),
@@ -175,8 +152,9 @@ object ImplementThreadedMems {
   private def onStmt(ns: Namespace, implementations: mutable.Map[ThreadedMem, Module])(stmt: Statement): Statement = {
     stmt match {
       case tMem: ThreadedMem =>
-        val impl = implementations.getOrElseUpdate(tMem.copy(name = ""), implement(tMem, ns.newName("ThreadedMem")))
-        WDefInstance(tMem.name, impl.name)
+        val anon = tMem.copy(proto = tMem.proto.copy(name = ""))
+        val impl = implementations.getOrElseUpdate(anon, implement(tMem, ns.newName("ThreadedMem")))
+        WDefInstance(tMem.proto.name, impl.name)
       case s => s.map(onStmt(ns, implementations)(_))
     }
   }
