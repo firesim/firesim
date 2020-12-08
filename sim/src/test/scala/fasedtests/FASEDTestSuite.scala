@@ -46,7 +46,6 @@ abstract class FASEDTest(
     //runTest("vcs", true)
   }
 
-  clean
   behavior of s"FASED Instance configured with ${platformConfigs} driven by target: ${topModuleClass}"
   runTest("verilator", false)
 }
