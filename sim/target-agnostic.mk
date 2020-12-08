@@ -248,13 +248,20 @@ unittest_args = \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
-		SBT="$(SBT) \"project $(firesim_root_sbt_project)\" " \
+		SBT="$(SBT)" \
+		SBT_PROJECT=$(firesim_root_sbt_project) \
 		CONFIG=$(UNITTEST_CONFIG) \
 		TOP_DIR=$(chipyard_dir)
 
+.PHONY:compile-midas-unittests
+compile-midas-unittests: $(chisel_srcs)
+	$(MAKE) -f $(simif_dir)/unittest/Makefrag $(unittest_args)
+
+.PHONY:run-midas-unittests
 run-midas-unittests: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
+.PHONY:run-midas-unittests-debug
 run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
