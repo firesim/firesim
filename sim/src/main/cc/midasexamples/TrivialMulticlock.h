@@ -7,28 +7,26 @@ class MulticlockChecker {
    simif_t * sim;
    uint32_t field_address;
    int numerator, denominator;
-   int cycle = -1;
+   int cycle = 0;
    uint32_t expected_value;
-   uint32_t fast_domain_reg, slow_domain_reg, fast_domain_reg_out;
+   uint32_t fast_domain_reg = 0;
+   uint32_t slow_domain_reg = 0;
+   uint32_t fast_domain_reg_out = 0;
 
    MulticlockChecker(simif_t * sim, uint32_t field_address, int numerator, int denominator):
      sim(sim), field_address(field_address), numerator(numerator), denominator(denominator) {};
    void expect_and_update(uint64_t poked_value){
-      if (cycle > 1 ) sim->expect(field_address, fast_domain_reg_out);
-      if (cycle < 1) {
-        fast_domain_reg_out = slow_domain_reg;
-        slow_domain_reg = fast_domain_reg;
-      } else {
-        fast_domain_reg_out =  slow_domain_reg;
-        if (((cycle * numerator) / denominator) > (((cycle - 1) * numerator)/ denominator)) {
-          // TODO: Handle the case where numerator * cycle is not a multiple of the division
-          //if (((cycle * numerator) % denominator) != 0) {
-          //  fast_domain_reg_out = slow_domain_reg;
-          //  slow_domain_reg = poked_value;
-          //} else {
-          slow_domain_reg = fast_domain_reg;
-          //}
-        }
+    sim->expect(field_address, fast_domain_reg_out);
+    fast_domain_reg_out =  slow_domain_reg;
+    int slow_clock_cycle = (cycle * numerator) / denominator;
+    if (cycle == 0 || (slow_clock_cycle > (((cycle - 1) * numerator) / denominator))) {
+      // TODO: Handle the case where numerator * cycle is not a multiple of the division
+      //if (((cycle * numerator) % denominator) != 0) {
+      //  fast_domain_reg_out = slow_domain_reg;
+      //  slow_domain_reg = poked_value;
+      //} else {
+      slow_domain_reg = fast_domain_reg;
+      //}
       }
       fast_domain_reg = poked_value;
       cycle++;
@@ -47,11 +45,9 @@ public:
     // Resolve bug in PeekPoke Bridge
     //checkers.push_back(new MulticlockChecker(this, threeSeventhsOut, 3, 7));
 
-    uint32_t current = rand_next(limit);
     for(int i = 1; i < 1024; i++){
       for(auto checker: checkers) checker->expect_and_update(i);
       poke(in, i);
-      current = rand_next(limit);
       step(1);
     }
   }
