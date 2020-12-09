@@ -70,8 +70,8 @@ Further documentation can be found in the source
 The Base Clock
 =================
 By convention, target time is specified in cycles of the `base clock`,
-which is defined to be the zeroth output clock of the ``RationalClockBridge``.
-While we suggest making the base clock the fastest clock in your system, as in any
+which is defined to be the clock of the ``RationalClockBridge`` whose clock ratio (multiplier / divisor)
+is one.  While we suggest making the base clock the fastest clock in your system, as in any
 microprocessor-based system it will likely correspond to your core clock
 frequency, this is not a constraint.
 
