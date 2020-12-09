@@ -12,7 +12,7 @@ import Console.{UNDERLINED, RESET}
 case class FIFOMASConfig(
     dramKey: DramOrganizationParams,
     transactionQueueDepth: Int,
-    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
+    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.backendLatencyBits),
     params: BaseParams)
   extends DRAMBaseConfig {
 
