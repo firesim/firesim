@@ -19,6 +19,7 @@ trait HasDRAMMASConstants {
   val tREFIWidth = 14       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
   val tREFIBits = 14       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
   val tRFCBits = 10
+  val backendLatencyBits = 12
   val numBankStates = 2
   val numRankStates = 2
 }
