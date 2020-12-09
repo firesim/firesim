@@ -8,18 +8,28 @@ import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 
-import testchipip.SerialIO
+import testchipip.{SerialIO, SerialAdapter}
 
-class SerialBridge(memoryRegionName: String) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
+/**
+  * Class which parameterizes the SerialBridge
+  *
+  * memoryRegionNameOpt, if unset, indicates that firesim-fesvr should not attempt to write a payload into DRAM through the loadmem unit.
+  * This is suitable for target designs which do not use the FASED DRAM model.
+  * If a FASEDBridge for the backing AXI4 memory is present, then memoryRegionNameOpt should be set to the same memory region name which is passed
+  * to the FASEDBridge. This enables fast payload loading in firesim-fesvr through the loadmem unit.
+  */
+case class SerialBridgeParams(memoryRegionNameOpt: Option[String])
+
+class SerialBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
   val io = IO(new SerialBridgeTargetIO)
   val bridgeIO = HostPort(io)
-  val constructorArg = Some(memoryRegionName)
+  val constructorArg = Some(SerialBridgeParams(memoryRegionNameOpt))
   generateAnnotations()
 }
 
 object SerialBridge {
-  def apply(clock: Clock, port: SerialIO, memoryRegionName: String)(implicit p: Parameters): SerialBridge = {
-    val ep = Module(new SerialBridge(memoryRegionName))
+  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String])(implicit p: Parameters): SerialBridge = {
+    val ep = Module(new SerialBridge(memoryRegionNameOpt))
     ep.io.serial <> port
     ep.io.clock := clock
     ep
@@ -27,18 +37,18 @@ object SerialBridge {
 }
 
 class SerialBridgeTargetIO extends Bundle {
-  val serial = Flipped(new SerialIO(testchipip.SerialAdapter.SERIAL_IF_WIDTH))
+  val serial = Flipped(new SerialIO(SerialAdapter.SERIAL_TSI_WIDTH))
   val reset = Input(Bool())
   val clock = Input(Clock())
 }
 
-class SerialBridgeModule(val memoryRegionName: String)(implicit p: Parameters)
-    extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) with HostDramHeaderConsts {
+class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Parameters)
+    extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new SerialBridgeTargetIO))
 
-    val serialBits = testchipip.SerialAdapter.SERIAL_IF_WIDTH
+    val serialBits = SerialAdapter.SERIAL_TSI_WIDTH
     val inBuf  = Module(new Queue(UInt(serialBits.W), 16))
     val outBuf = Module(new Queue(UInt(serialBits.W), 16))
     val tokensToEnqueue = RegInit(0.U(32.W))
@@ -83,6 +93,9 @@ class SerialBridgeModule(val memoryRegionName: String)(implicit p: Parameters)
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
+      val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
+      val offsetConstName = memoryRegionNameOpt.map(GetMemoryRegionOffsetConstName(_)).getOrElse("0")
+      sb.append(genMacro(s"${headerWidgetName}_has_memory", memoryRegionNameOpt.isDefined.toString))
       sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
     }
   }

@@ -40,8 +40,6 @@ class NestedModelsDUT extends Module {
   })
   val midA = Module(new Mid)
   val midB = Module(new Mid)
-  annotate(FAMEModelAnnotation(midA))
-  annotate(FAMEModelAnnotation(midB))
   annotate(EnableModelMultiThreadingAnnotation(midA))
   annotate(EnableModelMultiThreadingAnnotation(midB))
   midA.io <> io.a

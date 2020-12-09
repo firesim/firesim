@@ -3,7 +3,7 @@
 #define __SERIAL_H
 
 #include "bridges/bridge_driver.h"
-#include "fesvr/firesim_fesvr.h"
+#include "fesvr/firesim_tsi.h"
 
 template<class T>
 struct serial_data_t {
@@ -29,13 +29,14 @@ struct serial_data_t {
                       args, \
                       SERIALBRIDGEMODULE_ ## IDX ## _substruct, \
                       IDX, \
+                      SERIALBRIDGEMODULE_ ## IDX ## _has_memory, \
                       SERIALBRIDGEMODULE_ ## IDX ## _memory_offset)); \
 
 #ifdef SERIALBRIDGEMODULE_struct_guard
 class serial_t: public bridge_driver_t
 {
     public:
-        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, int64_t mem_host_offset);
+        serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, bool has_mem, int64_t mem_host_offset);
         ~serial_t();
         virtual void init();
         virtual void tick();
@@ -46,7 +47,8 @@ class serial_t: public bridge_driver_t
     private:
         SERIALBRIDGEMODULE_struct * mmio_addrs;
         simif_t* sim;
-        firesim_fesvr_t* fesvr;
+        firesim_tsi_t* fesvr;
+        bool has_mem;
         // host memory offset based on the number of memory models and their size
         int64_t mem_host_offset;
         // Number of target cycles between fesvr interactions
@@ -58,8 +60,8 @@ class serial_t: public bridge_driver_t
         void recv(); // Widget -> FESVR
 
         // Helper functions to handoff fesvr requests to the loadmem unit
-        void handle_loadmem_read(fesvr_loadmem_t loadmem);
-        void handle_loadmem_write(fesvr_loadmem_t loadmem);
+        void handle_loadmem_read(firesim_loadmem_t loadmem);
+        void handle_loadmem_write(firesim_loadmem_t loadmem);
         void serial_bypass_via_loadmem();
 };
 #endif // SERIALBRIDGEMODULE_struct_guard
