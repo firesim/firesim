@@ -14,12 +14,12 @@ struct target_args_t {
   char** argv;
 };
 
-int target_thread(void *arg) {
+void target_thread(void *arg) {
   target_args_t* targs = reinterpret_cast<target_args_t*>(arg);
   int argc = targs->argc;
   char** argv = targs->argv;
   delete targs;
-  return vcs_main(argc, argv);
+  vcs_main(argc, argv);
 }
 
 #endif // __VCS_MAIN

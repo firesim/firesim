@@ -10,24 +10,30 @@ import freechips.rocketchip.config.Parameters
 import midas.widgets.PeekPokeBridge
 import midas.targetutils._
 
-class RegfileInner extends Module {
+class SRAMInner extends Module {
   val io = IO(new RegfileIO)
-  val mem = Mem(32, UInt(64.W))
-  annotate(MemModelAnnotation(mem))
+  val mem = SyncReadMem(32, UInt(64.W))
   io.reads.foreach {
-    rp => rp.data := mem.read(RegNext(rp.addr))
+    rp => rp.data := mem.read(rp.addr)
   }
   io.writes.foreach {
-    wp => when (wp.en) { mem.write(wp.addr, wp.data) }
+    wp =>
+      val underlyingRW = mem(wp.addr)
+      when (wp.en) {
+        underlyingRW := wp.data
+      } .otherwise {
+        val unusedRD = Wire(UInt())
+	unusedRD := underlyingRW
+      }
   }
 }
 
-class MultiRegfileDUT extends Module {
+class MultiSRAMDUT extends Module {
   val nCopies = 4
   val io = IO(new Bundle {
     val accesses = Vec(nCopies, new RegfileIO)
   })
-  val rfs = Seq.fill(nCopies)(Module(new RegfileInner))
+  val rfs = Seq.fill(nCopies)(Module(new SRAMInner))
   rfs.zip(io.accesses).foreach {
     case (rf, rfio) =>
       rf.io <> rfio
@@ -35,4 +41,4 @@ class MultiRegfileDUT extends Module {
   }
 }
 
-class MultiRegfile(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegfileDUT)
+class MultiSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT)

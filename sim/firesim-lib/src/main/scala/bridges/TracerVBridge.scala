@@ -50,7 +50,7 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
 object TracerVBridge {
   def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
     val ep = Module(new TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
-    ep.generateTriggerAnnotations
+    withClockAndReset(tracedInsns.clock, tracedInsns.reset) { ep.generateTriggerAnnotations }
     ep.io.trace := tracedInsns
     ep
   }
