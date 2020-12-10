@@ -8,13 +8,16 @@ class TriggerWiringModule_t: virtual simif_t
 public:
   std::vector<synthesized_assertions_t *> assert_endpoints;
   TriggerWiringModule_t(int argc, char** argv) {
+    std::vector<std::string> args(argv + 1, argv + argc);
     ASSERTBRIDGEMODULE_0_substruct_create;
     ASSERTBRIDGEMODULE_1_substruct_create;
-    assert_endpoints.push_back(new synthesized_assertions_t(this,
+    assert_endpoints.push_back(new synthesized_assertions_t(
+      this, args,
       ASSERTBRIDGEMODULE_0_substruct,
       ASSERTBRIDGEMODULE_0_assert_count,
       ASSERTBRIDGEMODULE_0_assert_messages));
-    assert_endpoints.push_back(new synthesized_assertions_t(this,
+    assert_endpoints.push_back(new synthesized_assertions_t(
+      this, args,
       ASSERTBRIDGEMODULE_1_substruct,
       ASSERTBRIDGEMODULE_1_assert_count,
       ASSERTBRIDGEMODULE_1_assert_messages));
@@ -35,6 +38,10 @@ public:
   }
   void run() {
     int assertions_thrown = 0;
+
+    for (auto ep: assert_endpoints)
+      ep->init();
+
     poke(reset, 1);
     step(1);
     poke(reset, 0);

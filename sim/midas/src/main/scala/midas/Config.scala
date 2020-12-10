@@ -42,6 +42,10 @@ case object HasDMAChannel extends Field[Boolean]
 
 // Enables multi-cycle RAM model generation (as demonstrated in the ICCAD2019 paper)
 case object GenerateMultiCycleRamModels extends Field[Boolean](false)
+
+// Enables multithreading of repeated instances of annotated models
+case object EnableModelMultiThreading extends Field[Boolean](false)
+
 // User provided transforms to run before Golden Gate transformations
 // These are constructor functions accept a Parameters instance and produce a
 // sequence of firrtl Transforms to run
@@ -59,7 +63,6 @@ class SimConfig extends Config (new Config((site, here, up) => {
   case SynthAsserts     => false
   case SynthPrints      => false
   case DMANastiKey      => NastiParameters(512, 64, 6)
-  case FpgaMMIOSize     => BigInt(1) << 12 // 4 KB
   case AXIDebugPrint    => false
 
   // Remove once AXI4 port is complete

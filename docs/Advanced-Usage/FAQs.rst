@@ -37,3 +37,19 @@ After querying an AGFI, you can find the commit hash of the FireSim repository u
 field. 
 
 For more information, you can reference the AWS documentation at https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-fpga-images.html.
+
+Help, My Simulation Hangs!
+----------------------------
+Oof. It can be difficult to pin this one down, read through
+:ref:`debugging-hanging-simulators` for some tips to get you started.
+
+Should My Simulator Produce Different Results Across Runs?
+----------------------------------------------------------
+
+No.
+
+Unless you've intentionally introduced a side-channel (e.g., you're running an
+interactive simulation, or you've connected the NIC to the internet), this is
+likely a bug in one of your custom bridge implementations or in FireSim. In
+fact, for a given target-design, enabling printf synthesis, assertion synthesis,
+autocounter, or Auto ILA, should not change the simulated behavior of the machine.

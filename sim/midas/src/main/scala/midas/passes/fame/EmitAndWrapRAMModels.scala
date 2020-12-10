@@ -89,12 +89,15 @@ class ReadPort(val anno: ModelReadPort, val ports: Seq[Port]) extends IsMemoryPo
   def attachChannels(readCmd: Decoupled, readData: Decoupled): Seq[Statement] = {
     val iSignals = Seq(anno.addr, anno.en)
     val iValids  = iSignals.map(valid)
+    def iReady(i: ReferenceTarget) = {
+      And.reduce(readCmd.ready +: iSignals.filterNot(_ == i).map(valid))
+    }
     Seq(
       Connect(NoInfo, readCmd.valid, And.reduce(iValids)),
       Connect(NoInfo, readCmd.bits("en"), bits(anno.en)),
       Connect(NoInfo, readCmd.bits("addr"), bits(anno.addr)),
-      Connect(NoInfo, ready(anno.addr), readCmd.ready),
-      Connect(NoInfo, ready(anno.en), readCmd.ready),
+      Connect(NoInfo, ready(anno.addr), iReady(anno.addr)),
+      Connect(NoInfo, ready(anno.en), iReady(anno.en)),
       Connect(NoInfo, bits(anno.data), readData.bits()),
       Connect(NoInfo, valid(anno.data), readData.valid),
       Connect(NoInfo, readData.ready, ready(anno.data))
@@ -107,8 +110,11 @@ class WritePort(val anno: ModelWritePort, val ports: Seq[Port]) extends IsMemory
   def attachChannels(writeCmd: Decoupled): Seq[Statement] = {
     val iSignals = Seq(anno.data, anno.mask, anno.addr, anno.en)
     val iValids  = iSignals.map(valid)
+    def iReady(i: ReferenceTarget) = {
+      And.reduce(writeCmd.ready +: iSignals.filterNot(_ == i).map(valid))
+    }
     iSignals.flatMap(rT => Seq(
-      Connect(NoInfo, ready(rT), writeCmd.ready)
+      Connect(NoInfo, ready(rT), iReady(rT))
     )) ++ Seq(
       Connect(NoInfo, writeCmd.valid, And.reduce(iValids)),
       Connect(NoInfo, writeCmd.bits("en"), bits(anno.en)),

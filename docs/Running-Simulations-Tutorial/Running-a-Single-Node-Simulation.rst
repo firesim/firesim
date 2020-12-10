@@ -22,6 +22,7 @@ distribution. You can do this like so:
 ::
 
     cd firesim/sw/firesim-software
+    ./init-submodules.sh
     ./marshal -v build br-base.json
 
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
@@ -90,6 +91,7 @@ to change a few items in this section:
     linklatency=6405
     switchinglatency=10
     netbandwidth=200
+    profileinterval=-1
 
     # This references a section from config_hwconfigs.ini
     # In homogeneous configurations, use this to set the hardware config deployed
@@ -137,6 +139,7 @@ As a final sanity check, your ``config_runtime.ini`` file should now look like t
 	linklatency=6405
 	switchinglatency=10
 	netbandwidth=200
+    profileinterval=-1
 
 	# This references a section from config_hwconfigs.ini
 	# In homogeneous configurations, use this to set the hardware config deployed

@@ -5,9 +5,9 @@
 #include <cassert>
 #include <cmath>
 #include <DirectC.h>
-#include "midas_context.h"
+#include <fesvr/context.h>
 
-extern midas_context_t* host;
+extern context_t* host;
 extern bool vcs_fin;
 extern bool vcs_rst;
 extern uint64_t main_time;

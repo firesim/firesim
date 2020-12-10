@@ -147,35 +147,82 @@ object FAMEModuleTransformer {
      */
     val nReset = DoPrim(PrimOps.Not, Seq(WRef(hostReset)), Seq.empty, BoolType)
 
+    /**
+      * Bundles together four critical elements for managing multiclock processing.
+      *
+      * @param Port The reference to the original target port
+      *
+      * @param outputChannelEnable A boolean that, when asserted alongside
+      * targetCycleFinishing, serves to reset output channels in the associated
+      * clock domain so that new output tokens may be enqueued.
+      *
+      * @param inputChannelEnable Ditto, above. This is asserted one pipeline
+      * stage earlier, ensuring that all inputs are dequeued synchronously with
+      * the launching of the target clock.
+      *
+      * @param clockBuffer Holds a reference to the gated target-clock (+ associated statements)
+      */
+    case class TargetClockMetadata(
+      targetSourcePort: Port,
+      outputChannelEnable: Expression,
+      inputChannelEnable: Expression,
+      clockBuffer: SignalInfo)
+
     // Multi-clock management step 4: Generate clock buffers for all target clocks
-    val targetClockBufs: Seq[SignalInfo] = clockChannel.ports.map { en =>
-      val enableReg = hostFlagReg(s"${en.name}_enabled", resetVal = UIntLiteral(1))
+    val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.map { en =>
+      val enableReg = hostFlagReg(s"${en.name}_enabled")
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
       val connects = Block(Seq(
         Connect(NoInfo, WRef(enableReg), Mux(WRef(finishing), clockFlag, WRef(enableReg), BoolType)),
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
-        Connect(NoInfo, WSubField(WRef(buf), "CE"), And(And(WRef(enableReg), WRef(finishing)), nReset))))
-      SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, SourceFlow))
+        Connect(NoInfo, WSubField(WRef(buf), "CE"),
+          And.reduce(Seq(WRef(enableReg), WRef(finishing), nReset)))))
+      TargetClockMetadata(
+        en,
+        WRef(enableReg),
+        clockChannel.replacePortRef(WRef(en)),
+        SignalInfo(Block(Seq(enableReg, buf)), connects, WSubField(WRef(buf), "O", ClockType, SourceFlow))
+      )
     }
 
+    val targetClockBufs = clockMetadata.map(_.clockBuffer)
     // Multi-clock management step 5: Generate target clock substitution map
     def asWE(p: Port) = WrappedExpression.we(WRef(p))
     val replaceClocksMap = (clockChannel.ports.map(p => asWE(p)) zip targetClockBufs.map(_.ref)).toMap
+    /**
+      * These provide a mapping from a clock reference to signals that indicate if the channel FSM (isFired)
+      * should be reset for the next cycle which will permit a new handshake.
+      */
+    val outputChannelEnableMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.outputChannelEnable).toMap
+    val inputChannelEnableMap = clockMetadata.map(c => WRef(c.targetSourcePort) -> c.inputChannelEnable).toMap
 
     // LI-BDN transformation step 1: Build channels
     // TODO: get rid of the analysis calls; we just need connectivity & annotations
     val portDeps = analysis.connectivity(m.name)
 
-    def genMetadata(info: (String, (Option[Port], Seq[Port]))) = info match {
+    def genMetadata(isInput: Boolean)(info: (String, (Option[Port], Seq[Port]))) = info match {
       case (cName, (Some(clock), ports)) =>
         // must be driven by one clock input port
         // TODO: this should not include muxes in connectivity!
         val srcClockPorts = portDeps.getEdges(clock.name).map(portsByName(_))
         assert(srcClockPorts.size == 1)
         val clockRef = WRef(srcClockPorts.head)
-        val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(clockRef)), Nil, BoolType)
-        val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
+        val clockFlag = if (isInput) {
+          DoPrim(PrimOps.AsUInt, Seq(inputChannelEnableMap(clockRef)), Nil, BoolType)
+        } else {
+          DoPrim(PrimOps.AsUInt, Seq(outputChannelEnableMap(clockRef)), Nil, BoolType)
+        }
+        /**
+          * Let output channels reset to "unfired". This allows combinational paths to resolve
+          * at time 0 before the first clock token is resolved based on initialization values.
+          *
+          * Which input tokens are dequeued depends on the first clock token. Mark these as fired
+          * until the first clock token is resolved.
+          */
+        val firedReg = hostFlagReg(
+          suggestName = ns.newName(s"${cName}_fired"),
+          resetVal = UIntLiteral(if (isInput) 1 else 0))
         (cName, clockFlag, ports, firedReg)
       case (cName, (None, ports)) => clockChannel match {
         case vc: VirtualClockChannel =>
@@ -191,12 +238,12 @@ object FAMEModuleTransformer {
 
     // Have to filter out the clock channel from the input channels
     val inChannelInfo = analysis.modelInputChannelPortMap(mTarget).filterNot(isClockChannel(_)).toSeq
-    val inChannelMetadata = inChannelInfo.map(genMetadata(_))
+    val inChannelMetadata = inChannelInfo.map(genMetadata(isInput = true))
     val inChannels = inChannelMetadata.map((FAME1InputChannel.apply _).tupled)
     val inChannelMap = stableMap(inChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
     val outChannelInfo = analysis.modelOutputChannelPortMap(mTarget).toSeq
-    val outChannelMetadata = outChannelInfo.map(genMetadata(_))
+    val outChannelMetadata = outChannelInfo.map(genMetadata(isInput = false))
     val outChannels = outChannelMetadata.map((FAME1OutputChannel.apply _).tupled)
     val outChannelMap = stableMap(outChannels.flatMap(c => c.ports.map(p => p.name -> c)))
 
@@ -314,7 +361,7 @@ class FAMETransform extends Transform {
 
   def transformTop(top: DefModule, analysis: FAMEChannelAnalysis): Module = top match {
     case Module(info, name, ports, body) =>
-      val transformedPorts = ports.filterNot(p => staleTopPort(p, analysis)) ++ 
+      val transformedPorts = ports.filterNot(p => staleTopPort(p, analysis)) ++
         analysis.transformedSinks.map(c => Port(NoInfo, s"${c}_sink", Input, analysis.getSinkHostDecoupledChannelType(c))) ++
         analysis.transformedSources.map(c => Port(NoInfo, s"${c}_source", Output, analysis.getSourceHostDecoupledChannelType(c)))
       val transformedStmts = Seq(body.map(updateNonChannelConnects(analysis))) ++

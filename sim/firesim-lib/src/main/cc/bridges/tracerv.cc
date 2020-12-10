@@ -155,22 +155,20 @@ tracerv_t::~tracerv_t() {
 
 void tracerv_t::init() {
     if (!this->trace_enabled) {
-      // Explicitly disable token collection inthe bridge by only collecting
-      // tokens from cycle 0 to cycle 0, saving DMA bandwidth and improving FMR
-      write(this->mmio_addrs->triggerSelector, 1);
-      write(this->mmio_addrs->hostTriggerCycleCountStartHigh, 0);
-      write(this->mmio_addrs->hostTriggerCycleCountStartLow, 0);
-      write(this->mmio_addrs->hostTriggerCycleCountEndHigh, 0);
-      write(this->mmio_addrs->hostTriggerCycleCountEndLow, 0);
+      // Explicitly disable token collection in the bridge if no tracefile was provided to improve FMR
+      write(this->mmio_addrs->traceEnable, 0);
     }
-    else if (this->trigger_selector == 1)
+
+    // Configure the trigger even if tracing is disabled, as other
+    // instrumentation, like autocounter, may use tracerv-hosted trigger sources.
+    if (this->trigger_selector == 1)
     {
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
       write(this->mmio_addrs->hostTriggerCycleCountStartHigh, this->trace_trigger_start >> 32);
       write(this->mmio_addrs->hostTriggerCycleCountStartLow, this->trace_trigger_start & ((1ULL << 32) - 1));
       write(this->mmio_addrs->hostTriggerCycleCountEndHigh, this->trace_trigger_end >> 32);
       write(this->mmio_addrs->hostTriggerCycleCountEndLow, this->trace_trigger_end & ((1ULL << 32) - 1));
-      printf("TracerV: Collect trace from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
+      printf("TracerV: Trigger enabled from %lu to %lu cycles\n", trace_trigger_start, trace_trigger_end);
     }
     else if (this->trigger_selector == 2)
     {
@@ -179,7 +177,7 @@ void tracerv_t::init() {
       write(this->mmio_addrs->hostTriggerPCStartLow, this->trigger_start_pc & ((1ULL << 32) - 1));
       write(this->mmio_addrs->hostTriggerPCEndHigh, this->trigger_stop_pc >> 32);
       write(this->mmio_addrs->hostTriggerPCEndLow, this->trigger_stop_pc & ((1ULL << 32) - 1));
-      printf("TracerV: Collect trace from instruction address %lx to %lx\n", trigger_start_pc, trigger_stop_pc);
+      printf("TracerV: Trigger enabled from instruction address %lx to %lx\n", trigger_start_pc, trigger_stop_pc);
     }
     else if (this->trigger_selector == 3)
     {
@@ -188,15 +186,15 @@ void tracerv_t::init() {
       write(this->mmio_addrs->hostTriggerStartInstMask, this->trigger_start_insn_mask);
       write(this->mmio_addrs->hostTriggerEndInst, this->trigger_stop_insn);
       write(this->mmio_addrs->hostTriggerEndInstMask, this->trigger_stop_insn_mask);
-      printf("TracerV: Collect trace with start trigger instruction %x masked with %x, and end trigger instruction %x masked with %x\n",
+      printf("TracerV: Trigger enabled from start trigger instruction %x masked with %x, to end trigger instruction %x masked with %x\n",
               this->trigger_start_insn, this->trigger_start_insn_mask,
               this->trigger_stop_insn, this->trigger_stop_insn_mask);
     }
     else
     {
-      // Biancolin: should we not error here?
+      // Writing 0 to triggerSelector permanently enables the trigger
       write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-      printf("TracerV: No trigger selected. Collecting trace from %lu to %lu cycles\n", 0, ULONG_MAX);
+      printf("TracerV: No trigger selected. Trigger enabled from %lu to %lu cycles\n", 0, ULONG_MAX);
     }
     write(this->mmio_addrs->initDone, true);
 }

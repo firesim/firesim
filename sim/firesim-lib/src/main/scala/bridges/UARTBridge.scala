@@ -45,7 +45,7 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
 
   // Do some intermediate work to compute our host-side BridgeModule's constructor argument
   val frequency = p(PeripheryBusKey).dtsFrequency.get
-  val baudrate = 3686400L
+  val baudrate = uParams.initBaudRate
   val div = (frequency / baudrate).toInt
 
   // And then implement the constructorArg member

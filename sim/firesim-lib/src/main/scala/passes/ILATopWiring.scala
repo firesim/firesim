@@ -10,6 +10,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.annotations._
+import firrtl.stage.Forms
 import firrtl.transforms.TopWiring._
 import freechips.rocketchip.config.{Parameters, Field}
 
@@ -23,9 +24,7 @@ case object ILADepthKey extends Field[Int](1024)
     This also has an option to pass a function as a parmeter to generate custom output files as a result of the additional ports
   * @note This *does* work for deduped modules
   */
-class ILATopWiringTransform extends Transform {
-  def inputForm: CircuitForm = LowForm
-  def outputForm: CircuitForm = LowForm
+class ILATopWiringTransform extends Transform with DependencyAPIMigration {
   override def name = "[FireSim] ILA Top Wiring Transform"
 
   type InstPath = Seq[String]
@@ -129,6 +128,16 @@ class ILATopWiringTransform extends Transform {
     ilaInstOutputFile.close()
 
     state
+  }
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  // We want this pass to run before any emitters
+  override def optionalPrerequisiteOf = Forms.HighEmitters ++ Forms.LowFormOptimized.filterNot(Forms.LowForm.contains)
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case InferTypes | ResolveKinds | ResolveFlows | ExpandConnects => true
+    case _ => false
   }
 
   def execute(state: CircuitState): CircuitState = {
