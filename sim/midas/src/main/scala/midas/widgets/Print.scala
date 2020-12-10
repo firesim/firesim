@@ -17,7 +17,6 @@ class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) exte
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
     case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)
     case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => SInt(width.width.toInt.W)
-    case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => SInt(width.width.toInt.W)
     case badType => throw new RuntimeException(s"Unexpected type in PrintBundle: ${badType}")
   }
 

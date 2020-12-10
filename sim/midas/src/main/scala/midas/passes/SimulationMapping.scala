@@ -23,7 +23,6 @@ import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.core._
 import midas.platform.PlatformShim
-import midas.widgets.BridgeIOAnnotation
 
 private[passes] class SimulationMapping(targetName: String) extends firrtl.Transform {
   def inputForm = LowForm
@@ -117,7 +116,6 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
 
     val innerAnnos = loweredInnerState.annotations.filter(_ match {
       case _: midas.targetutils.FAMEAnnotation => false
-      case _: BridgeIOAnnotation => false
       case _ => true
     })
 
