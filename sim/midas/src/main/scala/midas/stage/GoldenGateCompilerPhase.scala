@@ -41,7 +41,6 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
 
     // Lower and emit simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      Dependency(midas.passes.VerilogMemDelays) +:
       Dependency[firrtl.VerilogEmitter] +:
       p(HostTransforms),Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
