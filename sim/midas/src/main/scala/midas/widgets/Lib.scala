@@ -208,7 +208,7 @@ class MCRFileMap() {
   private val regList = ArrayBuffer[MCRMapEntry]()
 
   def allocate(entry: MCRMapEntry): Int = {
-    Predef.assert(!name2addr.contains(entry.name), "name already allocated")
+    Predef.assert(!name2addr.contains(entry.name), s"name already allocated '${entry.name}'")
     val address = name2addr.size
     name2addr += (entry.name -> address)
     regList.append(entry)
