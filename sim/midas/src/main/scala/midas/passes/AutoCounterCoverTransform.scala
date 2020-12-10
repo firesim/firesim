@@ -214,6 +214,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val counterAnnos    = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
     val remainingAnnos  = new mutable.ArrayBuffer[Annotation]()
     if (modulesfile.exists()) {
+      println("[AutoCounter] Reading " + modulesfile.getPath())
       val sourcefile = scala.io.Source.fromFile(modulesfile.getPath())
       val covermodulesnames = (for (line <- sourcefile.getLines()) yield line).toList
       sourcefile.close()
@@ -225,17 +226,24 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       case o => remainingAnnos += o
     }
 
+    println(s"[AutoCounter] There are ${counterAnnos.length} counterAnnos available for selection in the following modules:")
+    counterAnnos.map(_.target.module).distinct.foreach({ i => println(s"  ${i}") })
+
     //extract the module names from the methods mentioned previously
     val covermodulesnames = moduleAnnos.map(_.target.module).distinct
+    println("[AutoCounter] selected modules for cover-function based annotation:")
+    covermodulesnames.foreach({ i => println(s"  ${i}") })
 
     //collect annotations for manually annotated AutoCounter perf counters
     val filteredCounterAnnos =  counterAnnos.filter(_.shouldBeIncluded(covermodulesnames))
+    println(s"[AutoCounter] selected ${filteredCounterAnnos.length} signals for instrumentation")
+    filteredCounterAnnos.foreach({ i => println(s"  ${i}") })
 
     // group the selected signal by modules, and attach label from the cover point to each signal
     val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule)
 
     if (!selectedsignals.isEmpty) {
-      println("[AutoCounter] AutoCounter signals are:")
+      println(s"[AutoCounter] signals are:")
       selectedsignals.foreach({ case (modName, localEvents) =>
         println(s"  Module ${modName}")
         localEvents.foreach({ anno => println(s"   ${anno.label}: ${anno.message}") })

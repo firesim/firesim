@@ -16,7 +16,7 @@ case class FirstReadyFCFSConfig(
     dramKey: DramOrganizationParams,
     schedulerWindowSize: Int,
     transactionQueueDepth: Int,
-    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
+    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.backendLatencyBits),
     params: BaseParams)
   extends DRAMBaseConfig {
 
