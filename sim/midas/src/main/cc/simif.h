@@ -41,11 +41,29 @@ class simif_t
     CLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
     midas_time_t sim_start_time;
 
+    std::string blocking_fail = "The test environment has starved the simulator, preventing forward progress.";
+
     inline void take_steps(size_t n, bool blocking) {
       write(this->master_mmio_addrs->STEP, n);
       if (blocking) while(!done());
     }
     virtual void load_mem(std::string filename);
+
+    bool wait_on(size_t flag_addr, double timeout) {
+      midas_time_t start = timestamp();
+      while (!read(flag_addr))
+        if (diff_secs(timestamp(), start) > timeout)
+          return false;
+      return true;
+    }
+
+    bool wait_on_ready(double timeout) {
+      return wait_on(this->defaultiowidget_mmio_addrs->READY, timeout);
+    }
+
+    bool wait_on_stable_peeks(double timeout) {
+      return wait_on(this->defaultiowidget_mmio_addrs->PRECISE_PEEKABLE, timeout);
+    }
 
   public:
     // Simulation APIs
@@ -60,24 +78,46 @@ class simif_t
     virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
     virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
 
-    inline void poke(size_t id, data_t value) {
-      if (log) fprintf(stderr, "* POKE %s.%s <- 0x%x *\n",
-        TARGET_NAME, INPUT_NAMES[id], value);
+    inline void poke(size_t id, data_t value, bool blocking = true) {
+      if (blocking && !wait_on_ready(10.0)) {
+        if (log) {
+          std::string fmt = "* FAIL : POKE on %s.%s has timed out. %s : FAIL\n";
+          fprintf(stderr, fmt.c_str(), TARGET_NAME, (const char*) INPUT_NAMES[id], blocking_fail.c_str());
+        }
+        throw;
+      }
+      if (log)
+        fprintf(stderr, "* POKE %s.%s <- 0x%x *\n", TARGET_NAME, INPUT_NAMES[id], value);
       write(INPUT_ADDRS[id], value);
     }
 
-    inline data_t peek(size_t id) {
-      data_t value = read(((unsigned int*)OUTPUT_ADDRS)[id]);
-      if (log) fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n",
-        TARGET_NAME, (const char*)OUTPUT_NAMES[id], value);
+    inline data_t peek(size_t id, bool blocking = true) {
+      if (blocking && !wait_on_ready(10.0)) {
+        if (log) {
+          std::string fmt = "* FAIL : PEEK on %s.%s has timed out. %s : FAIL\n";
+          fprintf(stderr, fmt.c_str(), TARGET_NAME, (const char*) INPUT_NAMES[id], blocking_fail.c_str());
+        }
+        throw;
+      }
+      if (log && blocking && !wait_on_stable_peeks(0.1))
+        fprintf(stderr, "* WARNING : The following peek is on an unstable value!\n");
+      data_t value = read(((unsigned int*) OUTPUT_ADDRS)[id]);
+      if (log)
+        fprintf(stderr, "* PEEK %s.%s -> 0x%x *\n", TARGET_NAME, (const char*) OUTPUT_NAMES[id], value);
       return value;
+    }
+
+    inline data_t sample_value(size_t id) {
+      return peek(id, false);
     }
 
     inline bool expect(size_t id, data_t expected) {
       data_t value = peek(id);
       bool pass = value == expected;
-      if (log) fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
-        TARGET_NAME, (const char*)OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");
+      if (log) {
+        fprintf(stderr, "* EXPECT %s.%s -> 0x%x ?= 0x%x : %s\n",
+                TARGET_NAME, (const char*)OUTPUT_NAMES[id], value, expected, pass ? "PASS" : "FAIL");
+      }
       return expect(pass, NULL);
     }
 

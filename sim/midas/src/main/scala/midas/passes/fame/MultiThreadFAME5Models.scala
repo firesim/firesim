@@ -121,6 +121,15 @@ object MultiThreadFAME5Models extends Transform {
   }
 
   override def execute(state: CircuitState): CircuitState = {
+    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
+    if (p(midas.EnableModelMultiThreading)) {
+      doTransform(state)
+    } else {
+      state
+    }
+  }
+
+  private def doTransform(state: CircuitState): CircuitState = {
     val moduleDefs = state.circuit.modules.collect({ case m: Module => OfModule(m.name) -> m}).toMap
 
     val top = moduleDefs(OfModule(state.circuit.main))
@@ -132,8 +141,9 @@ object MultiThreadFAME5Models extends Transform {
     // Populate keys from annotations, values from traversing statements
     val fame5RawInstances = new mutable.LinkedHashMap[OfModule, mutable.LinkedHashSet[Instance]]
     state.annotations.foreach {
-      case FirrtlEnableModelMultiThreadingAnnotation(ModuleTarget(_, m)) =>
-        fame5RawInstances(OfModule(m)) = new mutable.LinkedHashSet[Instance]
+      case FirrtlEnableModelMultiThreadingAnnotation(it) =>
+        // TODO: why not use instance name from here?
+        fame5RawInstances(OfModule(it.ofModule)) = new mutable.LinkedHashSet[Instance]
       case _ =>
     }
 
@@ -208,6 +218,8 @@ object MultiThreadFAME5Models extends Transform {
 
     // TODO: Renames!
 
-    state.copy(circuit = state.circuit.copy(modules = transformedModules))
+    val threadedCircuit = state.circuit.copy(modules = transformedModules)
+    val withMemImpls = ImplementThreadedSyncReadMems(threadedCircuit)
+    state.copy(circuit = withMemImpls)
   }
 }

@@ -101,7 +101,7 @@ object ReferenceSourceCounters {
 // implement in FIRRTL. The test fails if the firrtl-generated trigger-enables,
 // as seen by all nodes with a trigger sink, fail to match their references.
 class TriggerWiringModule(implicit p: Parameters) extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
+  val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2))
   val refClock :: div2Clock :: _ = clockBridge.io.clocks.toList
   val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
   val refSinks = new mutable.ArrayBuffer[Bool]()

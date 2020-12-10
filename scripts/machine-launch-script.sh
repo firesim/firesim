@@ -10,7 +10,7 @@ sudo yum install -y mosh
 sudo yum groupinstall -y "Development tools"
 sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
 curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
-sudo yum install -y sbt texinfo gengetopt
+sudo yum install -y sbt texinfo gengetopt libffi-devel
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
 # deps for poky
 sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
@@ -46,6 +46,12 @@ sudo yum -y install graphviz python-devel
 
 # used for CI
 sudo yum -y install expect
+
+# Optional: install bloop for fast scala builds on EC2 / CI
+curl -fLo coursier https://git.io/coursier-cli-linux &&
+sudo cp -f coursier /usr/local/bin
+sudo chmod 755 /usr/local/bin/coursier
+coursier install bloop --only-prebuilt=true
 
 # these need to match what's in deploy/requirements.txt
 sudo pip2 install fabric==1.14.0

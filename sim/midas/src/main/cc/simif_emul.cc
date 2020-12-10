@@ -2,8 +2,8 @@
 
 #include "simif_emul.h"
 #ifdef VCS
-#include "midas_context.h"
 #include "emul/vcs_main.h"
+#include <fesvr/context.h>
 #else
 #include <verilated.h>
 #if VM_TRACE
@@ -17,8 +17,8 @@ std::unique_ptr<mmio_t> master;
 std::unique_ptr<mmio_t> dma;
 
 #ifdef VCS
-midas_context_t* host;
-midas_context_t target;
+context_t* host;
+context_t target;
 bool vcs_rst = false;
 bool vcs_fin = false;
 #else
@@ -79,16 +79,15 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
     }
   }
 
-  void* mems[1];
-  mems[0] = ::init(memsize, dramsim);
-  if (mems[0] && fastloadmem && !loadmem.empty()) {
+  ::init(memsize, dramsim);
+  if (fastloadmem && !loadmem.empty()) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem.c_str());
-    ::load_mem(mems, loadmem.c_str(), MEM_DATA_BITS / 8, 1);
+    ::load_mems(loadmem.c_str());
   }
 
   signal(SIGTERM, handle_sigterm);
 #ifdef VCS
-  host = midas_context_t::current();
+  host = context_t::current();
   target_args_t *targs = new target_args_t(argc, argv);
   target.init(target_thread, targs);
   vcs_rst = true;

@@ -34,10 +34,46 @@ base_dir := $(firesim_base_dir)
 chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
+# Scala invocation options
 JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.10
-JAVA_ARGS ?= -Xmx$(JVM_MEMORY)
+# Disable the SBT supershell as interacts poorly with scalatest output and breaks
+# the runtime config generator.
+JAVA_ARGS ?= -Xmx$(JVM_MEMORY) -Dsbt.supershell=false
 SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar
+
+BLOOP ?= bloop
+BLOOP_CONFIG_DIR ?= $(base_dir)/.bloop
+# This mirrors the bloop default. Set to a system-unique port in a multi-user environment
+BLOOP_NAILGUN_PORT ?= 8212
+
+SCALA_BUILDTOOL_DEPS ?= build.sbt
+
+ifdef ENABLE_BLOOP
+override SCALA_BUILDTOOL_DEPS += $(BLOOP_CONFIG_DIR)/TIMESTAMP
+# Two notes about the bloop invocation:
+# 1) the sed removes a leading {file:<path>} that sometimes needs to be
+#    provided to SBT when a project but not for bloop.
+# 2) Generally, one could could pass '--' to indicate all remaining arguments are
+# 	 destined for the scala Main, however a bug in Bloop's argument parsing causes the
+#    --nailgun-port argument to be lost in this case. Workaround this by prefixing
+#    every main-destined argument with "--args"
+define run_scala_main
+	cd $(base_dir) && bloop --nailgun-port $(BLOOP_NAILGUN_PORT) run $(shell echo $(1) | sed 's/{.*}//') --main $(2)  $(addprefix --args ,$3)
+endef
+else
+define run_scala_main
+	cd $(base_dir) && $(SBT) "project $(1)" "runMain $(2) $(3)"
+endef
+endif
+
+#########################
+# Bloop Project Defs    #
+#########################
+sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
+$(BLOOP_CONFIG_DIR)/TIMESTAMP: $(sbt_sources)
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "bloopInstall"
+	touch $@
 
 # Manage the FIRRTL dependency manually
 FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl

@@ -37,7 +37,7 @@ class FireSimTopologyWithPasses:
                  defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
                  defaulttraceoutputformat,
                  defaultautocounterreadrate, terminateoncompletion,
-                 defaultzerooutdram,
+                 defaultzerooutdram, defaultdisableasserts,
                  defaultprintstart, defaultprintend, defaultprintcycleprefix):
         self.passes_used = []
         self.user_topology_name = user_topology_name
@@ -58,6 +58,7 @@ class FireSimTopologyWithPasses:
         self.defaulttraceoutputformat = defaulttraceoutputformat
         self.defaultautocounterreadrate = defaultautocounterreadrate
         self.defaultzerooutdram = defaultzerooutdram
+        self.defaultdisableasserts = defaultdisableasserts
         self.defaultprintstart = defaultprintstart
         self.defaultprintend = defaultprintend
         self.defaultprintcycleprefix = defaultprintcycleprefix
@@ -325,6 +326,8 @@ class FireSimTopologyWithPasses:
                     node.autocounter_readrate = self.defaultautocounterreadrate
                 if node.zerooutdram is None:
                     node.zerooutdram = self.defaultzerooutdram
+                if node.disable_asserts is None:
+                    node.disable_asserts = self.defaultdisableasserts
                 if node.print_start is None:
                     node.print_start = self.defaultprintstart
                 if node.print_end is None:

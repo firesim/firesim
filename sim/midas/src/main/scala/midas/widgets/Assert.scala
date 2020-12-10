@@ -21,29 +21,38 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     val io = IO(new WidgetIO())
     val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
     val resume = WireInit(false.B)
+    val enable = RegInit(false.B)
     val cycles = RegInit(0.U(64.W))
-    val asserts = hPort.hBits
+    val q = Module(new Queue(hPort.hBits.cloneType, 2))
+    q.io.enq.valid := hPort.toHost.hValid
+    hPort.toHost.hReady := q.io.enq.ready
+    q.io.enq.bits := hPort.hBits
+    // We only sink tokens, so tie off the return channel
+    hPort.fromHost.hValid := true.B
+
+    val asserts = q.io.deq.bits
+
     val assertId = PriorityEncoder(asserts)
     val assertFire = asserts.orR
 
-    val stallN = (!assertFire || resume)
-    val dummyPredicate = true.B
+    // Tokens will stall when an assertion is firing unless
+    // resume is pulsed or assertions are disabled
+    val stallN = (!assertFire || resume || !enable)
 
-    val tFireHelper = DecoupledHelper(hPort.toHost.hValid, stallN, dummyPredicate)
-    val targetFire = tFireHelper.fire() // FIXME: On next RC bump
-    hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
-    // We only sink tokens, so tie off the return channel
-    hPort.fromHost.hValid := true.B
+    val tFireHelper = DecoupledHelper(q.io.deq.valid, stallN)
+    val targetFire = tFireHelper.fire
+    q.io.deq.ready := tFireHelper.fire(q.io.deq.valid)
     when (targetFire) {
       cycles := cycles + 1.U
     }
 
     genROReg(assertId, "id")
-    genROReg(assertFire, "fire")
+    genROReg(assertFire && q.io.deq.valid, "fire")
     // FIXME: no hardcode
     genROReg(cycles(31, 0), "cycle_low")
     genROReg(cycles >> 32, "cycle_high")
     Pulsify(genWORegInit(resume, "resume", false.B), pulseLength = 1)
+    attach(enable, "enable")
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
