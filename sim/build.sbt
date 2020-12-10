@@ -10,8 +10,6 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.12.10",
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
-  // Remove after bump to FIRRTL 1.3
-  libraryDependencies += "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
@@ -39,9 +37,9 @@ lazy val chipyardDir = if(firesimAsLibrary) {
   file("../target-design/chipyard")
 }
 
-lazy val chipyardRoot  = ProjectRef(chipyardDir, "chipyardRoot")
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
 lazy val chisel        = ProjectRef(workspaceDirectory / "chisel3", "chisel")
+lazy val firrtl        = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val barstools     = ProjectRef(chipyardDir, "barstoolsMacros")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
@@ -59,10 +57,8 @@ lazy val targetutils   = (project in file("midas/targetutils"))
 lazy val firesimRef = ProjectRef(file("."), "firesim")
 
 lazy val midas = (project in file("midas"))
-  .dependsOn(barstools, rocketchip)
-  .settings(commonSettings,
-    Test / unmanagedBase := (chipyardRoot / baseDirectory).value / "test_lib",
-  )
+  .dependsOn(barstools, rocketchip, firrtl % "test->test")
+  .settings(commonSettings)
 
 lazy val firesimLib = (project in file("firesim-lib"))
   .settings(commonSettings).dependsOn(midas, icenet, testchipip, sifive_blocks)
