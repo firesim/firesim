@@ -31,7 +31,7 @@ $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 		--target-dir $(GEN_DIR) \
 		--name $(DESIGN) \
 		--top-module freechips.rocketchip.unittest.TestHarness \
-		--legacy-configs midas.unittest.$(CONFIG)"
+		--legacy-configs midas.unittest:$(CONFIG)"
 	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
 
 $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir

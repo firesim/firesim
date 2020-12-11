@@ -4,14 +4,15 @@
 #include <assert.h>
 #include "serial.h"
 
-serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, int64_t mem_host_offset):
-        bridge_driver_t(sim), sim(sim), mem_host_offset(mem_host_offset) {
+serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRIDGEMODULE_struct * mmio_addrs, int serialno, bool has_mem, int64_t mem_host_offset):
+        bridge_driver_t(sim), sim(sim), has_mem(has_mem), mem_host_offset(mem_host_offset) {
 
     this->mmio_addrs = mmio_addrs;
 
     std::string num_equals = std::to_string(serialno) + std::string("=");
     std::string prog_arg =         std::string("+prog") + num_equals;
     std::vector<std::string> args_vec;
+    args_vec.push_back("firesim_tsi");
     char** argv_arr;
     int argc_count = 0;
 
@@ -52,11 +53,10 @@ serial_t::serial_t(simif_t* sim, const std::vector<std::string>& args, SERIALBRI
 
     //debug for command line arguments
     printf("command line for program %d. argc=%d:\n", serialno, argc_count);
-    for(int i = 0; i < argc_count; i++)  { printf("%s ", (argv_arr)[i]);  }
+    for(int i = 0; i < argc_count; i++)  { printf("%s ", (argv_arr)[i+1]);  }
     printf("\n");
 
-   std::vector<std::string> args_new(argv_arr, argv_arr + argc_count);
-   fesvr = new firesim_fesvr_t(args_new);
+    fesvr = new firesim_tsi_t(argc_count+1, argv_arr, has_mem);
 }
 
 serial_t::~serial_t() {
@@ -87,8 +87,9 @@ void serial_t::recv() {
     }
 }
 
-void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
+void serial_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
     assert(loadmem.size % sizeof(uint32_t) == 0);
+    assert(has_mem);
     // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
     mpz_t buf;
     mpz_init(buf);
@@ -104,9 +105,9 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
         uint32_t* data = (uint32_t*)mpz_export(NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
         for (size_t j = 0; j < beats_requested; j++) {
             if (j < non_zero_beats) {
-                fesvr->send_word(data[j]);
+                fesvr->send_loadmem_word(data[j]);
             } else {
-                fesvr->send_word(0);
+                fesvr->send_loadmem_word(0);
             }
         }
         loadmem.size -= beats_requested * sizeof(uint32_t);
@@ -116,8 +117,9 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
     fesvr->tick();
 }
 
-void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
+void serial_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
     assert(loadmem.size <= 1024);
+    assert(has_mem);
     static char buf[1024];
     fesvr->recv_loadmem_data(buf, loadmem.size);
     mpz_t data;
@@ -128,7 +130,7 @@ void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
 }
 
 void serial_t::serial_bypass_via_loadmem() {
-    fesvr_loadmem_t loadmem;
+    firesim_loadmem_t loadmem;
     while (fesvr->has_loadmem_reqs()) {
         // Check for reads first as they preceed a narrow write;
         if (fesvr->recv_loadmem_read_req(loadmem)) handle_loadmem_read(loadmem);

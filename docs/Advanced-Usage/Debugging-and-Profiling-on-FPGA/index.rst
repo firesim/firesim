@@ -18,3 +18,4 @@ features.
    AutoCounter.rst
    TracerV-with-FlameGraph.rst
    Dromajo.rst
+   Debugging-Hanging-Simulators.rst

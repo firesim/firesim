@@ -53,7 +53,7 @@ Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` co
 
 ::
    
-   PLATFORM_CONFIG=BaseF1Config_ILADepth8192
+   PLATFORM_CONFIG=ILADepth8192_BaseF1Config
 
 
 
