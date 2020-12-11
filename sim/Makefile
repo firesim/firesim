@@ -72,9 +72,13 @@ else
 	cd $(base_dir) && $(SBT) "exit"
 endif
 
-.PHONY: shutdown
-shutdown:
+.PHONY: shutdown-sbt-server
+shutdown-sbt-server:
 	cd $(base_dir) && $(SBT) "shutdown"
+
+.PHONY: start-sbt-server
+start-sbt-server:
+	cd $(base_dir) && $(SBT) "exit"
 
 else
 # Chipyard make variables
