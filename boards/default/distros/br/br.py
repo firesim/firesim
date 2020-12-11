@@ -76,7 +76,7 @@ def mergeOpts(base, new):
 
 def initOpts(cfg):
     """Given a raw marshal config object, perform any distro-specific
-    intialization (using the cfg['distro']['opts'] field."""
+    intialization (using the cfg['distro']['opts'] field)."""
 
     if cfg['distro']['name'] != "br":
         raise ValueError("Wrong config type for BuildRoot: " + cfg['distro']['name'])
