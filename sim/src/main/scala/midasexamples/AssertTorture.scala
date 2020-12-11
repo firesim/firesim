@@ -83,7 +83,7 @@ class AssertTortureModule(
 class AssertTorture(implicit p: Parameters) extends RawModule {
   val clockInfo = Seq.tabulate(p(AssertionClockCount))(i => RationalClock(s"By${i+1}", 1, i+1))
   // Drop the first clock because the RCB generates it implicitly
-  val clockBridge = Module(new RationalClockBridge((clockInfo.tail):_*))
+  val clockBridge = RationalClockBridge((clockInfo.tail):_*)
   val baseClock = clockBridge.io.clocks.head
   val reset = WireInit(false.B)
   withClockAndReset(baseClock, reset) {
