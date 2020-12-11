@@ -19,7 +19,7 @@ import yaml
 import re
 import pprint
 import doit
-import importlib
+import importlib.util
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
@@ -81,7 +81,7 @@ class ConfigurationOptionError(ConfigurationError):
 
     def __str__(self):
         return "Error with configuration option '" + self.opt + "': " + str(self.cause)
-        
+
 class ConfigurationFileError(ConfigurationError):
     """Error representing issues with loading the configuration"""
     def __init__(self, missingFile, cause):
@@ -168,7 +168,7 @@ derivedOpts = [
         # Empty directory used for mounting images
         'mnt-dir',
 
-        # Path to basic template for user-specified commands (the "command:" option) 
+        # Path to basic template for user-specified commands (the "command:" option)
         'command-script',
 
         # Gets set uniquely for each logical invocation of this library
@@ -195,7 +195,7 @@ derivedOpts = [
 
 class marshalCtx(collections.MutableMapping):
     """Global FireMarshal context (configuration)."""
-    
+
     # Actual internal storage for all options
     opts = {}
 
@@ -203,7 +203,7 @@ class marshalCtx(collections.MutableMapping):
         """On init, we search for and load all sources of options.
 
         The order in which options are added here is the order of precidence.
-        
+
         Attributes:
             opts: Dictonary containing all configuration options (static values
                 set by the user or statically derived from those). Option
@@ -219,7 +219,7 @@ class marshalCtx(collections.MutableMapping):
         # overwritten by other user-defined configs
         defaultCfg = self['wlutil-dir'] / 'default-config.yaml'
         self.addPath(defaultCfg)
-        
+
         # These are mutually-exlusive search paths (only one will be loaded)
         cfgSources = [
             # pwd
@@ -249,11 +249,11 @@ class marshalCtx(collections.MutableMapping):
     def add(self, newOpts):
         """Add options to this configuration, opts will override any
         conflicting options.
-        
+
         newOpts: dictionary containing new options to add"""
-        
+
         self.opts = dict(self.opts, **newOpts)
-        
+
     def addPath(self, path):
         """Add the yaml file at path to the config."""
 
@@ -268,7 +268,7 @@ class marshalCtx(collections.MutableMapping):
 
     def addEnv(self):
         """Find all marshal options in the environment and load them.
-        
+
         Environment options take the form MARSHAL_OPT where "OPT" will be
         converted as follows:
             1) convert to lower-case
@@ -339,7 +339,7 @@ class marshalCtx(collections.MutableMapping):
 
         Args:
             configPath (pathlike): Config file used for this run
-            operation (str): The operation being performed on this run (e.g. 'build') 
+            operation (str): The operation being performed on this run (e.g. 'build')
         """
 
         if configPath:
@@ -402,9 +402,9 @@ def initialize():
 def getCtx():
     """Return the global confguration object (ctx). This is only valid after
     calling initialize().
-    
+
     Returns (marshalCtx)
-    """ 
+    """
     return ctx
 
 def getOpt(opt):
@@ -441,14 +441,14 @@ def initLogging(verbose, logPath=None, werr=False):
 
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
-    
+
     if werr:
         rootLogger.addFilter(WErrFilt)
 
     # Create a unique log name
     if logPath is None:
         logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
-    
+
     # formatting for log to file
     if fileHandler is not None:
         rootLogger.removeHandler(fileHandler)
@@ -619,7 +619,7 @@ def applyOverlay(img, overlay):
         flist.append(FileSpec(src=f, dst=pathlib.Path('/')))
 
     copyImgFiles(img, flist, 'in')
- 
+
 
 _toolVersions = None
 def getToolVersions():
@@ -720,9 +720,9 @@ def checkSubmodule(s):
 
     s: Pathlib path to submodule
 
-    raises SubmoduleError if submodule not ready 
+    raises SubmoduleError if submodule not ready
     """
-    
+
     if not s.exists() or not any(os.scandir(s)):
         raise SubmoduleError(s)
 

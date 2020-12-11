@@ -10,5 +10,5 @@ git submodule update --init \
   boards/default/firmware/riscv-pk \
   boards/default/firmware/opensbi \
   wlutil/busybox \
-  wlutil/br/buildroot \
+  boards/default/distros/br/buildroot \
   boards/firechip/drivers/*

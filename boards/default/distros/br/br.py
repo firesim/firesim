@@ -58,7 +58,7 @@ def hashOpts(opts):
             with open(c, 'rb') as cf:
                 h.update(cf.read())
 
-    if 'environemnt' in opts:
+    if 'environment' in opts:
         h.update(str(opts['environment']).encode('utf-8'))
 
     return h.hexdigest()[0:4]
@@ -217,7 +217,7 @@ class Builder:
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
             scriptDst.touch()
-        
+
         scriptDst.chmod(0o755)
 
         with open(overlay / 'etc/init.d/S99run', 'w') as f:
@@ -225,7 +225,7 @@ class Builder:
                 f.write(initTemplate.substitute(args=''))
             else:
                 f.write(initTemplate.substitute(args=' '.join(args)))
-        
+
         return overlay
 
 
