@@ -398,6 +398,9 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       attach(writeEgressStalls, "writeStalled", ReadOnly)
       attach(readEgressStalls, "readStalled", ReadOnly)
       attach(tokenStalls, "tokenStalled", ReadOnly)
+      attach(hostMemoryIdleCycles, "hostMemIdleCycles", ReadOnly)
+      attach(hOutstandingWrites.value, "hostWritesOutstanding", ReadOnly)
+      attach(hOutstandingReads.value, "hostReadsOutstanding", ReadOnly)
     }
 
     if (cfg.params.detectAddressCollisions) {
@@ -439,7 +442,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiOutputs.ar.fire,
         ingress.io.nastiOutputs.ar.bits.id,
         readEgress.io.enq.fire && newHRead,
-        readEgress.io.enq.bits.id
+        readEgress.io.enq.bits.id,
+        cfg.maxReadsPerID
       )
       attachIO(hReadLatencyHist, "hostReadLatencyHist_")
 
@@ -447,7 +451,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiOutputs.aw.fire,
         ingress.io.nastiOutputs.aw.bits.id,
         writeEgress.io.enq.fire,
-        writeEgress.io.enq.bits.id
+        writeEgress.io.enq.bits.id,
+        cfg.maxWritesPerID
       )
       attachIO(hWriteLatencyHist, "hostWriteLatencyHist_")
 
@@ -468,6 +473,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.ar.bits.id,
         model.tNasti.r.fire && targetFire && newTRead,
         model.tNasti.r.bits.id,
+        maxFlight = cfg.maxReadsPerID,
         cycleCountEnable = targetFire
       )
       attachIO(tReadLatencyHist, "targetReadLatencyHist_")
@@ -477,6 +483,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.aw.bits.id,
         model.tNasti.b.fire && targetFire,
         model.tNasti.b.bits.id,
+        maxFlight = cfg.maxWritesPerID,
         cycleCountEnable = targetFire
       )
       attachIO(tWriteLatencyHist, "targetWriteLatencyHist_")
@@ -486,7 +493,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.ar.fire && targetFire,
         model.tNasti.ar.bits.id,
         model.tNasti.r.fire && targetFire && newTRead,
-        model.tNasti.r.bits.id
+        model.tNasti.r.bits.id,
+        maxFlight = cfg.maxReadsPerID
       )
       attachIO(totalReadLatencyHist, "totalReadLatencyHist_")
 
@@ -494,7 +502,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.aw.fire && targetFire,
         model.tNasti.aw.bits.id,
         model.tNasti.b.fire && targetFire,
-        model.tNasti.b.bits.id
+        model.tNasti.b.bits.id,
+        maxFlight = cfg.maxWritesPerID
       )
       attachIO(totalWriteLatencyHist, "totalWriteLatencyHist_")
 
@@ -503,7 +512,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiInputs.hBits.ar.fire() && targetFire,
         ingress.io.nastiInputs.hBits.ar.bits.id,
         ingress.io.nastiOutputs.ar.fire,
-        ingress.io.nastiOutputs.ar.bits.id
+        ingress.io.nastiOutputs.ar.bits.id,
+        maxFlight = cfg.maxReadsPerID,
       )
       attachIO(iReadLatencyHist, "ingressReadLatencyHist_")
 
@@ -511,7 +521,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiInputs.hBits.aw.fire() && targetFire,
         ingress.io.nastiInputs.hBits.aw.bits.id,
         ingress.io.nastiOutputs.aw.fire,
-        ingress.io.nastiOutputs.aw.bits.id
+        ingress.io.nastiOutputs.aw.bits.id,
+        maxFlight = cfg.maxWritesPerID,
       )
       attachIO(iWriteLatencyHist, "ingressWriteLatencyHist_")
     }
