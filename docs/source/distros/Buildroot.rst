@@ -35,6 +35,11 @@ buildroot configuration fragment with the following option:
 
    BR2_PACKAGE_BUSYBOX_CONFIG=$(FOO_BAR_PATH)/myBusyBoxConfig
 
+.. Note:: Because the custom busybox configuration is referenced only by the
+   buildroot configuration, FireMarshal cannot detect changes to that file. You
+   will have to explicitly clean and rebuild the workload to pick up changes to
+   dependencies like that.
+
 environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 In addition to the provided ``$(WORKLOAD_NAME_PATH)`` variable, users may
