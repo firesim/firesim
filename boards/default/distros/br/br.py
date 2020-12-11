@@ -136,7 +136,7 @@ class Builder:
         calling this, it is safe to call 'make' in the buildroot directory."""
 
         toolVer = wlutil.getToolVersions()
-        # Contains options specific to the build enviornment (br is touchy about this stuff)
+        # Contains options specific to the build environment (br is touchy about this stuff)
         toolKfrag = wlutil.getOpt('gen-dir') / 'brToolKfrag'
         with open(toolKfrag, 'w') as f:
             f.write("BR2_TOOLCHAIN_EXTERNAL_HEADERS_"+toolVer['linuxMaj']+"_"+toolVer['linuxMin']+"=y\n")
