@@ -247,8 +247,8 @@
                         <a href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit.">NoCircuitDedupClassicAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="NoDedupAnnotation.html" title="A component, e.g."></a>
-                        <a href="NoDedupAnnotation.html" title="A component, e.g.">NoDedupAnnotation</a>
+                        <a class="class" href="" title="A component, e.g."></a>
+                        <a href="" title="A component, e.g.">NoDedupAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$OrElseIdentity$.html" title="Adds a default to a partial function."></a>
@@ -263,8 +263,8 @@
                         <a href="RemoveTrivialPartialConnects$.html" title="">RemoveTrivialPartialConnects</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="" title="A utility for matching and replacing FIRRTL expression trees"></a>
-                        <a href="" title="A utility for matching and replacing FIRRTL expression trees">ReplaceExpression</a>
+                        <a class="object" href="package$$ReplaceExpression$.html" title="A utility for matching and replacing FIRRTL expression trees"></a>
+                        <a href="package$$ReplaceExpression$.html" title="A utility for matching and replacing FIRRTL expression trees">ReplaceExpression</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="package$$SignalInfo.html" title="A utility for keeping statements defining and connecting signals to a piece of hardware together with a reference to the component."></a>
@@ -306,12 +306,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="object value">
+            <body class="class type">
       <div id="definition">
-        <div class="big-circle object">o</div>
+        <div class="big-circle class">c</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.passes">passes</a></p>
-        <h1>ReplaceExpression<span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html" title="Permalink">
+        <h1>NoDedupAnnotation<span class="permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -321,20 +321,19 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ReplaceExpression</span>
+        <span class="name">NoDedupAnnotation</span><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A utility for matching and replacing FIRRTL expression trees
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A component, e.g. register etc. Must be declared only once under the TopAnnotation</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span>], <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -360,7 +359,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.passes.ReplaceExpression"><span>ReplaceExpression</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.NoDedupAnnotation"><span>NoDedupAnnotation</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="firrtl.annotations.SingleTargetAnnotation"><span>SingleTargetAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -378,7 +377,26 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="midas.passes.NoDedupAnnotation#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(target:firrtl.annotations.ModuleName):midas.passes.NoDedupAnnotation"></a><a id="&lt;init&gt;:NoDedupAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#&lt;init&gt;(target:firrtl.annotations.ModuleName):midas.passes.NoDedupAnnotation" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">NoDedupAnnotation</span><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>)</span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
 
         
 
@@ -390,7 +408,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -406,7 +424,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html###():Int" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -422,7 +440,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -435,29 +453,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.ReplaceExpression#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(repls:Map[firrtl.WrappedExpression,firrtl.ir.Expression])(s:firrtl.ir.Statement):firrtl.ir.Statement"></a><a id="apply(Map[WrappedExpression,Expression])(Statement):Statement"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#apply(repls:Map[firrtl.WrappedExpression,firrtl.ir.Expression])(s:firrtl.ir.Statement):firrtl.ir.Statement" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="repls">repls: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.WrappedExpression">WrappedExpression</span>, <span class="extype" name="firrtl.ir.Expression">Expression</span>]</span>)</span><span class="params">(<span name="s">s: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
-      </span>
-      
-      <p class="shortcomment cmt">Recursively replace expressions in a Statement tree according to a map.</p><div class="fullcomment"><div class="comment cmt"><p>Recursively replace expressions in a Statement tree according to a map. Since the keys are
-of type WrappedExpression, the matching is based on &quot;WrappedExpression equality,&quot; which
-ignores metadata that may be present in the nodes, like info, type, or kind.
-</p></div><dl class="paramcmts block"><dt class="param">repls</dt><dd class="cmt"><p>A map defining how each expression (in wrapped form) is replaced by a matching value, if any</p></dd><dt class="param">s</dt><dd class="cmt"><p>The input statement to transform</p></dd><dt>returns</dt><dd class="cmt"><p>Returns a statement tree transformed by substitution according to the replacement map</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -473,7 +472,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#clone():Object" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -494,10 +493,26 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.passes.NoDedupAnnotation#duplicate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="duplicate(n:firrtl.annotations.ModuleName):midas.passes.NoDedupAnnotation"></a><a id="duplicate(ModuleName):NoDedupAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#duplicate(n:firrtl.annotations.ModuleName):midas.passes.NoDedupAnnotation" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">duplicate</span><span class="params">(<span name="n">n: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>)</span><span class="result">: <a href="" class="extype" name="midas.passes.NoDedupAnnotation">NoDedupAnnotation</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.NoDedupAnnotation">NoDedupAnnotation</a> → SingleTargetAnnotation</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -510,26 +525,10 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#equals(x$1:Any):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -551,7 +550,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -567,10 +566,10 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
+    </li><li name="firrtl.annotations.Annotation#getTargets" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTargets:Seq[firrtl.annotations.Target]"></a><a id="getTargets:Seq[Target]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#getTargets:Seq[firrtl.annotations.Target]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -579,17 +578,14 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">getTargets</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Target">Target</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
-                <span class="name">@native</span><span class="args">()</span>
-              
-        </dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Annotation</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -605,7 +601,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -621,7 +617,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#notify():Unit" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -640,7 +636,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -656,10 +652,26 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="firrtl.annotations.Annotation#serialize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serialize:String"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#serialize:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serialize</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Annotation</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -672,10 +684,26 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
+    </li><li name="midas.passes.NoDedupAnnotation#target" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="target:firrtl.annotations.ModuleName"></a><a id="target:ModuleName"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#toString():String" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#target:firrtl.annotations.ModuleName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">target</span><span class="result">: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.NoDedupAnnotation">NoDedupAnnotation</a> → SingleTargetAnnotation</dd></dl></div>
+    </li><li name="firrtl.annotations.SingleTargetAnnotation#update" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="update(renames:firrtl.RenameMap):Seq[firrtl.annotations.Annotation]"></a><a id="update(RenameMap):Seq[Annotation]"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#update(renames:firrtl.RenameMap):Seq[firrtl.annotations.Annotation]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -684,14 +712,14 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">update</span><span class="params">(<span name="renames">renames: <span class="extype" name="firrtl.RenameMap">RenameMap</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SingleTargetAnnotation → Annotation</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#wait():Unit" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -713,7 +741,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -735,7 +763,7 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/package$$ReplaceExpression$.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -766,7 +794,19 @@ ignores metadata that may be present in the nodes, like info, type, or kind.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="firrtl.annotations.SingleTargetAnnotation">
+              <h3>Inherited from <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span>]</h3>
+            </div><div class="parent" name="firrtl.annotations.Annotation">
+              <h3>Inherited from <span class="extype" name="firrtl.annotations.Annotation">Annotation</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>

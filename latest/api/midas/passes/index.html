@@ -206,6 +206,10 @@
                         <a class="class" href="ConfToJSON.html" title=""></a>
                         <a href="ConfToJSON.html" title="">ConfToJSON</a>
                       </li><li class="current-entities indented2">
+                        <a class="object" href="DedupModules$.html" title="Utility functions for DedupModules"></a>
+                        <a class="class" href="DedupModules.html" title="Only use on legal Firrtl."></a>
+                        <a href="DedupModules.html" title="Only use on legal Firrtl.">DedupModules</a>
+                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated."></a>
                         <a href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated.">DefineAbstractClockGate</a>
@@ -258,10 +262,6 @@
                         <a class="object" href="MemConfReader$.html" title=""></a>
                         <a href="MemConfReader$.html" title="">MemConfReader</a>
                       </li><li class="current-entities indented2">
-                        <a class="object" href="MemDelayAndReadwriteTransformer$.html" title=""></a>
-                        <a class="class" href="MemDelayAndReadwriteTransformer.html" title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines."></a>
-                        <a href="MemDelayAndReadwriteTransformer.html" title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines.">MemDelayAndReadwriteTransformer</a>
-                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ModelFame1Transform.html" title=""></a>
                         <a href="ModelFame1Transform.html" title="">ModelFame1Transform</a>
@@ -273,6 +273,14 @@
                         <span class="separator"></span>
                         <a class="trait" href="package$$NoAnalysisPass.html" title="A pass that simply applies a (Circuit) =&gt; Circuit function."></a>
                         <a href="package$$NoAnalysisPass.html" title="A pass that simply applies a (Circuit) =&gt; Circuit function.">NoAnalysisPass</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit."></a>
+                        <a href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit.">NoCircuitDedupClassicAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="NoDedupAnnotation.html" title="A component, e.g."></a>
+                        <a href="NoDedupAnnotation.html" title="A component, e.g.">NoDedupAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$OrElseIdentity$.html" title="Adds a default to a partial function."></a>
@@ -317,10 +325,6 @@
                         <span class="separator"></span>
                         <a class="object" href="Utils$.html" title=""></a>
                         <a href="Utils$.html" title="">Utils</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="object" href="VerilogMemDelays$.html" title=""></a>
-                        <a href="VerilogMemDelays$.html" title="">VerilogMemDelays</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="postorder$.html" title=""></a>
@@ -549,7 +553,7 @@ correctly, the clock bridge must already be extracted.</p><p>For each BridgeTopW
 1) Loop that clock back to a new output port (Bridge FCCAs will point at this clock)</p><p>Finally emit a <a href="BridgeTopWiringOutputAnnotation.html" class="extype" name="midas.passes.BridgeTopWiringOutputAnnotation">BridgeTopWiringOutputAnnotation</a> for each created data-output port.
 </p></div></div>
     </li><li name="midas.passes.BridgeTopWiringAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="BridgeTopWiringAnnotationextendsAnnotationwithFAMEAnnotationwithProductwithSerializable"></a><a id="BridgeTopWiringAnnotation:BridgeTopWiringAnnotation"></a>
+      <a id="BridgeTopWiringAnnotationextendsAnnotationwithFAMEAnnotationwithDontTouchAllTargetswithProductwithSerializable"></a><a id="BridgeTopWiringAnnotation:BridgeTopWiringAnnotation"></a>
       <span class="permalink">
       <a href="../../midas/passes/BridgeTopWiringAnnotation.html" title="Permalink">
         <i class="material-icons"></i>
@@ -560,7 +564,7 @@ correctly, the clock bridge must already be extracted.</p><p>For each BridgeTopW
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Provides signals for the transform to wire to the top-level of hte module hierarchy." href="BridgeTopWiringAnnotation.html"><span class="name">BridgeTopWiringAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="clock">clock: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="Provides signals for the transform to wire to the top-level of hte module hierarchy." href="BridgeTopWiringAnnotation.html"><span class="name">BridgeTopWiringAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="clock">clock: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <span class="extype" name="firrtl.transforms.DontTouchAllTargets">DontTouchAllTargets</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">Provides signals for the transform to wire to the top-level of hte module hierarchy.</p><div class="fullcomment"><div class="comment cmt"><p>Provides signals for the transform to wire to the top-level of hte module hierarchy.
@@ -654,6 +658,24 @@ find and return that input port.
       </span>
       
       
+    </li><li name="midas.passes.DedupModules" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DedupModulesextendsTransformwithDependencyAPIMigrationwithPreservesAll[firrtl.Transform]"></a><a id="DedupModules:DedupModules"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Only use on legal Firrtl." href="DedupModules.html"><span class="name">DedupModules</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span> with <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Only use on legal Firrtl.</p><div class="fullcomment"><div class="comment cmt"><p>Only use on legal Firrtl.</p><p>Specifically, the restriction of instance loops must have been checked, or else this pass can
+ infinitely recurse
+</p></div></div>
     </li><li name="midas.passes.EmitFirrtl" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="EmitFirrtlextendsTransform"></a><a id="EmitFirrtl:EmitFirrtl"></a>
       <span class="permalink">
@@ -802,28 +824,6 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
       </span>
       
       
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="MemDelayAndReadwriteTransformerextendsAnyRef"></a><a id="MemDelayAndReadwriteTransformer:MemDelayAndReadwriteTransformer"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines." href="MemDelayAndReadwriteTransformer.html"><span class="name">MemDelayAndReadwriteTransformer</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">This class performs the primary work of the transform: splitting readwrite ports into separate
-read and write ports while simultaneously compiling memory latencies to combinational-read
-memories with delay pipelines.</p><div class="fullcomment"><div class="comment cmt"><p>This class performs the primary work of the transform: splitting readwrite ports into separate
-read and write ports while simultaneously compiling memory latencies to combinational-read
-memories with delay pipelines. It is represented as a class that takes a module as a constructor
-argument, as it encapsulates the mutable state required to analyze and transform one module.
-</p></div><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>The final transformed module is found in the (sole public) field <a href="MemDelayAndReadwriteTransformer.html#transformed:firrtl.ir.DefModule" class="extmbr" name="midas.passes.MemDelayAndReadwriteTransformer#transformed">transformed</a></p></span></dd></dl></div>
     </li><li name="midas.passes.ModelFame1Transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModelFame1TransformextendsFame1Transform"></a><a id="ModelFame1Transform:ModelFame1Transform"></a>
       <span class="permalink">
@@ -856,6 +856,22 @@ argument, as it encapsulates the mutable state required to analyze and transform
       </span>
       
       <p class="shortcomment cmt">A pass that simply applies a (Circuit) =&gt; Circuit function.</p>
+    </li><li name="midas.passes.NoDedupAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NoDedupAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleName]withProductwithSerializable"></a><a id="NoDedupAnnotation:NoDedupAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/NoDedupAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="A component, e.g." href="NoDedupAnnotation.html"><span class="name">NoDedupAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A component, e.g.</p><div class="fullcomment"><div class="comment cmt"><p>A component, e.g. register etc. Must be declared only once under the TopAnnotation</p></div></div>
     </li><li name="midas.passes.SignalInfo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SignalInfoextendsProductwithSerializable"></a><a id="SignalInfo:SignalInfo"></a>
       <span class="permalink">
@@ -1000,6 +1016,22 @@ since the &quot;collateral&quot; of that object can be kept in one place.
       </span>
       
       <p class="shortcomment cmt">Replaces all AsyncResets and Reset types with Bools (synchronous reset).</p>
+    </li><li name="midas.passes.DedupModules" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DedupModules"></a><a id="DedupModules:DedupModules"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Utility functions for DedupModules" href="DedupModules$.html"><span class="name">DedupModules</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Utility functions for <a href="DedupModules.html" class="extype" name="midas.passes.DedupModules">DedupModules</a></p>
     </li><li name="midas.passes.DefineAbstractClockGate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DefineAbstractClockGate"></a><a id="DefineAbstractClockGate:DefineAbstractClockGate"></a>
       <span class="permalink">
@@ -1071,22 +1103,6 @@ circuit.
       </span>
       
       
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="MemDelayAndReadwriteTransformer"></a><a id="MemDelayAndReadwriteTransformer:MemDelayAndReadwriteTransformer"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="MemDelayAndReadwriteTransformer$.html"><span class="name">MemDelayAndReadwriteTransformer</span></a>
-      </span>
-      
-      
     </li><li name="midas.passes.ModuleTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModuleTransformer"></a><a id="ModuleTransformer:ModuleTransformer"></a>
       <span class="permalink">
@@ -1104,6 +1120,25 @@ circuit.
       
       <p class="shortcomment cmt">Generates a function transforming a circuit from a partial function describing how each
 module, if matched, is transformed.</p>
+    </li><li name="midas.passes.NoCircuitDedupClassicAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NoCircuitDedupClassicAnnotation"></a><a id="NoCircuitDedupClassicAnnotation:NoCircuitDedupClassicAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/NoCircuitDedupClassicAnnotation$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit." href="NoCircuitDedupClassicAnnotation$.html"><span class="name">NoCircuitDedupClassicAnnotation</span></a><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <span class="extype" name="firrtl.options.HasShellOptions">HasShellOptions</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">If this <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> exists in an <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>,
+then the <span class="extype" name="firrtl.transforms.DedupModules">firrtl.transforms.DedupModules</span> transform will *NOT* be run on the circuit.</p><div class="fullcomment"><div class="comment cmt"><p>If this <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> exists in an <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>,
+then the <span class="extype" name="firrtl.transforms.DedupModules">firrtl.transforms.DedupModules</span> transform will *NOT* be run on the circuit.</p><ul><li>set with '--no-dedup'
+</li></ul></div></div>
     </li><li name="midas.passes.OrElseIdentity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="OrElseIdentity"></a><a id="OrElseIdentity:OrElseIdentity"></a>
       <span class="permalink">
@@ -1239,22 +1274,6 @@ to include it's domain clock info.</p>
       </span>
       <span class="symbol">
         <a title="" href="Utils$.html"><span class="name">Utils</span></a>
-      </span>
-      
-      
-    </li><li name="midas.passes.VerilogMemDelays" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="VerilogMemDelays"></a><a id="VerilogMemDelays:VerilogMemDelays"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/VerilogMemDelays$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="VerilogMemDelays$.html"><span class="name">VerilogMemDelays</span></a><span class="result"> extends <span class="extype" name="firrtl.passes.Pass">Pass</span></span>
       </span>
       
       

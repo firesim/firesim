@@ -174,6 +174,10 @@
                         <a class="class" href="ConfToJSON.html" title=""></a>
                         <a href="ConfToJSON.html" title="">ConfToJSON</a>
                       </li><li class="current-entities indented2">
+                        <a class="object" href="DedupModules$.html" title="Utility functions for DedupModules"></a>
+                        <a class="class" href="" title="Only use on legal Firrtl."></a>
+                        <a href="" title="Only use on legal Firrtl.">DedupModules</a>
+                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated."></a>
                         <a href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated.">DefineAbstractClockGate</a>
@@ -226,10 +230,6 @@
                         <a class="object" href="MemConfReader$.html" title=""></a>
                         <a href="MemConfReader$.html" title="">MemConfReader</a>
                       </li><li class="current-entities indented2">
-                        <a class="object" href="" title=""></a>
-                        <a class="class" href="MemDelayAndReadwriteTransformer.html" title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines."></a>
-                        <a href="MemDelayAndReadwriteTransformer.html" title="This class performs the primary work of the transform: splitting readwrite ports into separate read and write ports while simultaneously compiling memory latencies to combinational-read memories with delay pipelines.">MemDelayAndReadwriteTransformer</a>
-                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ModelFame1Transform.html" title=""></a>
                         <a href="ModelFame1Transform.html" title="">ModelFame1Transform</a>
@@ -241,6 +241,14 @@
                         <span class="separator"></span>
                         <a class="trait" href="package$$NoAnalysisPass.html" title="A pass that simply applies a (Circuit) =&gt; Circuit function."></a>
                         <a href="package$$NoAnalysisPass.html" title="A pass that simply applies a (Circuit) =&gt; Circuit function.">NoAnalysisPass</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit."></a>
+                        <a href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit.">NoCircuitDedupClassicAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="NoDedupAnnotation.html" title="A component, e.g."></a>
+                        <a href="NoDedupAnnotation.html" title="A component, e.g.">NoDedupAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$OrElseIdentity$.html" title="Adds a default to a partial function."></a>
@@ -287,10 +295,6 @@
                         <a href="Utils$.html" title="">Utils</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="VerilogMemDelays$.html" title=""></a>
-                        <a href="VerilogMemDelays$.html" title="">VerilogMemDelays</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="object" href="postorder$.html" title=""></a>
                         <a href="postorder$.html" title="">postorder</a>
                       </li><li class="current-entities indented2">
@@ -302,36 +306,38 @@
             </div>
           </div>
           <div id="content">
-            <body class="object value">
+            <body class="class type">
       <div id="definition">
-        <a href="MemDelayAndReadwriteTransformer.html" title="See companion class"><div class="big-circle object-companion-class">o</div></a>
+        <a href="DedupModules$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.passes">passes</a></p>
-        <h1><a href="MemDelayAndReadwriteTransformer.html" title="See companion class">MemDelayAndReadwriteTransformer</a><span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html" title="Permalink">
+        <h1><a href="DedupModules$.html" title="See companion object">DedupModules</a><span class="permalink">
+      <a href="../../midas/passes/DedupModules.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
         <h3><span class="morelinks"><div>
-            Companion <a href="MemDelayAndReadwriteTransformer.html" title="See companion class">class MemDelayAndReadwriteTransformer</a>
+            Companion <a href="DedupModules$.html" title="See companion object">object DedupModules</a>
           </div></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">MemDelayAndReadwriteTransformer</span>
+        <span class="name">DedupModules</span><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span> with <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Only use on legal Firrtl.</p><p>Specifically, the restriction of instance loops must have been checked, or else this pass can
+ infinitely recurse
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.Transform">Transform</span>], <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span>, <span class="extype" name="firrtl.Transform">Transform</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -357,7 +363,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.passes.MemDelayAndReadwriteTransformer"><span>MemDelayAndReadwriteTransformer</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.DedupModules"><span>DedupModules</span></li><li class="in" name="firrtl.options.PreservesAll"><span>PreservesAll</span></li><li class="in" name="firrtl.DependencyAPIMigration"><span>DependencyAPIMigration</span></li><li class="in" name="firrtl.Transform"><span>Transform</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -375,44 +381,28 @@
 
       <div id="template">
         <div id="allMembers">
-        
-
-        <div id="types" class="types members">
-              <h3>Type Members</h3>
-              <ol><li name="midas.passes.MemDelayAndReadwriteTransformer.SplitStatements" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SplitStatementsextendsProductwithSerializable"></a><a id="SplitStatements:SplitStatements"></a>
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="midas.passes.DedupModules#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():midas.passes.DedupModules"></a><a id="&lt;init&gt;:DedupModules"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$$SplitStatements.html" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#&lt;init&gt;():midas.passes.DedupModules" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">case class</span>
+        <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <a title="" href="MemDelayAndReadwriteTransformer$$SplitStatements.html"><span class="name">SplitStatements</span></a><span class="params">(<span name="decls">decls: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Statement">Statement</span>]</span>, <span name="conns">conns: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Connect">Connect</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer.WithValid" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="WithValidextendsProductwithSerializable"></a><a id="WithValid:WithValid"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$$WithValid.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="MemDelayAndReadwriteTransformer$$WithValid.html"><span class="name">WithValid</span></a><span class="params">(<span name="valid">valid: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>, <span name="payload">payload: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Expression">Expression</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">DedupModules</span><span class="params">()</span>
       </span>
       
       
     </li></ol>
             </div>
+
+        
 
         
 
@@ -422,7 +412,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -438,7 +428,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html###():Int" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -454,7 +444,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -467,42 +457,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#AND" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AND(e1:firrtl.ir.Expression,e2:firrtl.ir.Expression):firrtl.ir.DoPrim"></a><a id="AND(Expression,Expression):DoPrim"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#AND(e1:firrtl.ir.Expression,e2:firrtl.ir.Expression):firrtl.ir.DoPrim" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">AND</span><span class="params">(<span name="e1">e1: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>, <span name="e2">e2: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.DoPrim">DoPrim</span></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#NOT" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="NOT(e:firrtl.ir.Expression):firrtl.ir.DoPrim"></a><a id="NOT(Expression):DoPrim"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#NOT(e:firrtl.ir.Expression):firrtl.ir.DoPrim" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">NOT</span><span class="params">(<span name="e">e: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.DoPrim">DoPrim</span></span>
-      </span>
-      
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -518,7 +476,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#clone():Object" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -539,74 +497,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#condConnect" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="condConnect(l:midas.passes.MemDelayAndReadwriteTransformer.WithValid,r:midas.passes.MemDelayAndReadwriteTransformer.WithValid):Seq[firrtl.ir.Connect]"></a><a id="condConnect(WithValid,WithValid):Seq[Connect]"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#condConnect(l:midas.passes.MemDelayAndReadwriteTransformer.WithValid,r:midas.passes.MemDelayAndReadwriteTransformer.WithValid):Seq[firrtl.ir.Connect]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">condConnect</span><span class="params">(<span name="l">l: <a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a></span>, <span name="r">r: <a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Connect">Connect</span>]</span>
-      </span>
-      
-      
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#condConnect" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="condConnect(c:firrtl.ir.Expression)(l:firrtl.ir.Expression,r:firrtl.ir.Expression):firrtl.ir.Connect"></a><a id="condConnect(Expression)(Expression,Expression):Connect"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#condConnect(c:firrtl.ir.Expression)(l:firrtl.ir.Expression,r:firrtl.ir.Expression):firrtl.ir.Connect" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">condConnect</span><span class="params">(<span name="c">c: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="params">(<span name="l">l: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>, <span name="r">r: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Connect">Connect</span></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#connect" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="connect(l:midas.passes.MemDelayAndReadwriteTransformer.WithValid,r:midas.passes.MemDelayAndReadwriteTransformer.WithValid):Seq[firrtl.ir.Connect]"></a><a id="connect(WithValid,WithValid):Seq[Connect]"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#connect(l:midas.passes.MemDelayAndReadwriteTransformer.WithValid,r:midas.passes.MemDelayAndReadwriteTransformer.WithValid):Seq[firrtl.ir.Connect]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">connect</span><span class="params">(<span name="l">l: <a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a></span>, <span name="r">r: <a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Connect">Connect</span>]</span>
-      </span>
-      
-      
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#connect" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="connect(l:firrtl.ir.Expression,r:firrtl.ir.Expression):firrtl.ir.Connect"></a><a id="connect(Expression,Expression):Connect"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#connect(l:firrtl.ir.Expression,r:firrtl.ir.Expression):firrtl.ir.Connect" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">connect</span><span class="params">(<span name="l">l: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>, <span name="r">r: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Connect">Connect</span></span>
-      </span>
-      
-      
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -622,7 +516,7 @@
     </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#equals(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#equals(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -635,10 +529,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.passes.DedupModules#execute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="execute(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="execute(CircuitState):CircuitState"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#execute(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">execute</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Deduplicate a Circuit</p><div class="fullcomment"><div class="comment cmt"><p>Deduplicate a Circuit</p></div><dl class="paramcmts block"><dt class="param">state</dt><dd class="cmt"><p>Input Firrtl AST</p></dd><dt>returns</dt><dd class="cmt"><p>A transformed Firrtl AST</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.DedupModules">DedupModules</a> → Transform</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -660,7 +570,7 @@
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -679,7 +589,7 @@
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#hashCode():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -695,10 +605,26 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="firrtl.options.PreservesAll#invalidates" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="invalidates(a:A):Boolean"></a><a id="invalidates(Transform):Boolean"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#invalidates(a:A):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">invalidates</span><span class="params">(<span name="a">a: <span class="extype" name="firrtl.Transform">Transform</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PreservesAll</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -711,10 +637,42 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="logger.LazyLogging#logger" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logger:logger.Logger"></a><a id="logger:Logger"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#logger:logger.Logger" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logger</span><span class="result">: <span class="extype" name="logger.Logger">Logger</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
+    </li><li name="firrtl.Transform#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="name:String"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#name:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -730,7 +688,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#notify():Unit" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -749,7 +707,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -765,10 +723,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.passes.MemDelayAndReadwriteTransformer#pipelineWithValid" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="pipelineWithValid(ns:firrtl.Namespace)(clock:firrtl.ir.Expression,depth:Int,src:midas.passes.MemDelayAndReadwriteTransformer.WithValid,nameTemplate:Option[midas.passes.MemDelayAndReadwriteTransformer.WithValid]):(midas.passes.MemDelayAndReadwriteTransformer.WithValid,Seq[firrtl.ir.Statement],Seq[firrtl.ir.Connect])"></a><a id="pipelineWithValid(Namespace)(Expression,Int,WithValid,Option[WithValid]):(WithValid,Seq[Statement],Seq[Connect])"></a>
+    </li><li name="midas.passes.DedupModules#optionalPrerequisiteOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="optionalPrerequisiteOf:Seq[Nothing]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#pipelineWithValid(ns:firrtl.Namespace)(clock:firrtl.ir.Expression,depth:Int,src:midas.passes.MemDelayAndReadwriteTransformer.WithValid,nameTemplate:Option[midas.passes.MemDelayAndReadwriteTransformer.WithValid]):(midas.passes.MemDelayAndReadwriteTransformer.WithValid,Seq[firrtl.ir.Statement],Seq[firrtl.ir.Connect])" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#optionalPrerequisiteOf:Seq[Nothing]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -777,14 +735,78 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pipelineWithValid</span><span class="params">(<span name="ns">ns: <span class="extype" name="firrtl.Namespace">Namespace</span></span>)</span><span class="params">(<span name="clock">clock: <span class="extype" name="firrtl.ir.Expression">Expression</span></span>, <span name="depth">depth: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="src">src: <a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a></span>, <span name="nameTemplate">nameTemplate: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a>] = <span class="symbol">None</span></span>)</span><span class="result">: (<a href="MemDelayAndReadwriteTransformer$$WithValid.html" class="extype" name="midas.passes.MemDelayAndReadwriteTransformer.WithValid">WithValid</a>, <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Statement">Statement</span>], <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Connect">Connect</span>])</span>
+        <span class="name">optionalPrerequisiteOf</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a>]</span>
       </span>
       
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.DedupModules">DedupModules</a> → DependencyAPIMigration → Transform → DependencyAPI</dd></dl></div>
+    </li><li name="firrtl.DependencyAPIMigration#optionalPrerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="optionalPrerequisites:Seq[firrtl.stage.TransformManager.TransformDependency]"></a><a id="optionalPrerequisites:Seq[TransformDependency]"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#optionalPrerequisites:Seq[firrtl.stage.TransformManager.TransformDependency]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">optionalPrerequisites</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.stage.TransformManager.TransformDependency">TransformDependency</span>]</span>
+      </span>
       
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd></dl></div>
+    </li><li name="midas.passes.DedupModules#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="prerequisites:Seq[firrtl.stage.TransformManager.TransformDependency]"></a><a id="prerequisites:Seq[TransformDependency]"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#prerequisites:Seq[firrtl.stage.TransformManager.TransformDependency]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prerequisites</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.stage.TransformManager.TransformDependency">TransformDependency</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.DedupModules">DedupModules</a> → DependencyAPIMigration → Transform → DependencyAPI</dd></dl></div>
+    </li><li name="midas.passes.DedupModules#run" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="run(c:firrtl.ir.Circuit,noDedups:Seq[String],annos:Seq[firrtl.annotations.Annotation]):(firrtl.ir.Circuit,firrtl.RenameMap)"></a><a id="run(Circuit,Seq[String],Seq[Annotation]):(Circuit,RenameMap)"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#run(c:firrtl.ir.Circuit,noDedups:Seq[String],annos:Seq[firrtl.annotations.Annotation]):(firrtl.ir.Circuit,firrtl.RenameMap)" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">run</span><span class="params">(<span name="c">c: <span class="extype" name="firrtl.ir.Circuit">Circuit</span></span>, <span name="noDedups">noDedups: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="annos">annos: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>)</span><span class="result">: (<span class="extype" name="firrtl.ir.Circuit">Circuit</span>, <span class="extype" name="firrtl.RenameMap">RenameMap</span>)</span>
+      </span>
+      
+      <p class="shortcomment cmt">Deduplicates a circuit, and records renaming</p><div class="fullcomment"><div class="comment cmt"><p>Deduplicates a circuit, and records renaming</p></div><dl class="paramcmts block"><dt class="param">c</dt><dd class="cmt"><p>Circuit to dedup</p></dd><dt class="param">noDedups</dt><dd class="cmt"><p>Modules not to dedup</p></dd><dt>returns</dt><dd class="cmt"><p>Deduped Circuit and corresponding RenameMap</p></dd></dl></div>
+    </li><li name="firrtl.Transform#runTransform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="runTransform(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="runTransform(CircuitState):CircuitState"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#runTransform(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">runTransform</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -800,7 +822,7 @@
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#toString():String" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#toString():String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -813,10 +835,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="firrtl.Transform#transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="transform(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="transform(CircuitState):CircuitState"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#transform(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">transform</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#wait():Unit" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -838,7 +876,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -860,7 +898,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/MemDelayAndReadwriteTransformer$.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/passes/DedupModules.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -887,11 +925,83 @@
 
         
 
-        
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="firrtl.options.DependencyAPI#dependents" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dependents:Seq[firrtl.options.Dependency[A]]"></a><a id="dependents:Seq[Dependency[Transform]]"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#dependents:Seq[firrtl.options.Dependency[A]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.">dependents</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.Transform">Transform</span>]]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.</p></dd></dl></div>
+    </li><li name="firrtl.DependencyAPIMigration#inputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inputForm:firrtl.CircuitForm"></a><a id="inputForm:CircuitForm"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#inputForm:firrtl.CircuitForm" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">inputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre</p></dd></dl></div>
+    </li><li name="firrtl.DependencyAPIMigration#outputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="outputForm:firrtl.CircuitForm"></a><a id="outputForm:CircuitForm"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/DedupModules.html#outputForm:firrtl.CircuitForm" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">outputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="firrtl.options.PreservesAll">
+              <h3>Inherited from <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</h3>
+            </div><div class="parent" name="firrtl.DependencyAPIMigration">
+              <h3>Inherited from <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></h3>
+            </div><div class="parent" name="firrtl.Transform">
+              <h3>Inherited from <span class="extype" name="firrtl.Transform">Transform</span></h3>
+            </div><div class="parent" name="firrtl.options.DependencyAPI">
+              <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</h3>
+            </div><div class="parent" name="firrtl.options.TransformLike">
+              <h3>Inherited from <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>]</h3>
+            </div><div class="parent" name="logger.LazyLogging">
+              <h3>Inherited from <span class="extype" name="logger.LazyLogging">LazyLogging</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
