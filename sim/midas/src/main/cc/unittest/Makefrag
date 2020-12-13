@@ -6,6 +6,7 @@
 # ROCKETCHIP_DIR: Location of rocket chip source -- to grab verilog sources and simulation makefrags
 # 	TODO: These are provided as resources -- fix.
 # SBT: command to invoke sbt
+# SBT_PROJECT: the project in which to run sbt commands
 # GEN_DIR: Directory into which to emit generate verilog
 
 DESIGN := TestHarness
@@ -14,6 +15,8 @@ OUT_DIR ?= $(GEN_DIR)
 TB ?= TestDriver
 EMUL ?= vcs
 CLOCK_PERIOD ?= 1.0
+
+default: $(GEN_DIR)/$(DESIGN).v
 
 MAKEFRAG_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 sim_makefrag_dir := $(MAKEFRAG_DIR)/../rtlsim
@@ -27,7 +30,7 @@ scala_srcs := $(shell find $(BASE_DIR) -name "*.scala")
 
 $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	mkdir -p $(@D)
-	cd $(BASE_DIR) && $(SBT) "runMain chipyard.Generator \
+	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); runMain chipyard.Generator \
 		--target-dir $(GEN_DIR) \
 		--name $(DESIGN) \
 		--top-module freechips.rocketchip.unittest.TestHarness \
@@ -35,20 +38,11 @@ $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
 
 $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
-	cd $(BASE_DIR) && $(SBT) "runMain firrtl.stage.FirrtlMain -i $< -o $@ \
+	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); \
+		runMain firrtl.stage.FirrtlMain -i $< -o $@ \
 		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
 
-# Common SW RTL simulation Makefrag arguments
-# These aren't required as yet, but will be in the future
-#bb_vsrcs = \
-#    $(vsrc)/ClockDivider2.v \
-#    $(vsrc)/ClockDivider3.v \
-#    $(vsrc)/AsyncResetReg.v \
-#
-#sim_vsrcs = \
-#    $(bb_vsrcs)
-
-emul_v     := $(GEN_DIR)/$(DESIGN).v #$(sim_vsrcs)
+emul_v     := $(GEN_DIR)/$(DESIGN).v
 emul_h     :=
 emul_cc    :=
 
