@@ -18,14 +18,14 @@ class MulticlockPrintfModule(implicit p: Parameters) extends RawModule {
   val reset = WireInit(false.B)
   val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
   withClockAndReset(refClock, reset) {
-    val lfsr = chisel3.util.LFSR16()
+    val lfsr = chisel3.util.random.LFSR(16)
     val fullRateMod = Module(new PrintfModuleDUT)
     fullRateMod.io.a := lfsr(0)
     fullRateMod.io.b := ~lfsr(0)
     val peekPokeBridge = PeekPokeBridge(refClock, reset)
   }
   withClockAndReset(div2Clock, resetHalfRate) {
-    val lfsr = chisel3.util.LFSR16()
+    val lfsr = chisel3.util.random.LFSR(16)
     val fullRateMod = Module(new PrintfModuleDUT("SYNTHESIZED_PRINT_HALFRATE "))
     fullRateMod.io.a := lfsr(0)
     fullRateMod.io.b := ~lfsr(0)

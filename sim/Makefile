@@ -39,63 +39,46 @@ JVM_MEMORY ?= 16G
 SCALA_VERSION ?= 2.12.10
 # Disable the SBT supershell as interacts poorly with scalatest output and breaks
 # the runtime config generator.
-JAVA_ARGS ?= -Xmx$(JVM_MEMORY) -Dsbt.supershell=false
-SBT ?= java $(JAVA_ARGS) -jar $(rocketchip_dir)/sbt-launch.jar
+JAVA_OPTS ?= -Xmx$(JVM_MEMORY) -Dsbt.supershell=false
 
-BLOOP ?= bloop
-BLOOP_CONFIG_DIR ?= $(base_dir)/.bloop
-# This mirrors the bloop default. Set to a system-unique port in a multi-user environment
-BLOOP_NAILGUN_PORT ?= 8212
+sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
+SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
-SCALA_BUILDTOOL_DEPS ?= build.sbt
+SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/target/active.json
 
-ifdef ENABLE_BLOOP
-override SCALA_BUILDTOOL_DEPS += $(BLOOP_CONFIG_DIR)/TIMESTAMP
-# Two notes about the bloop invocation:
-# 1) the sed removes a leading {file:<path>} that sometimes needs to be
-#    provided to SBT when a project but not for bloop.
-# 2) Generally, one could could pass '--' to indicate all remaining arguments are
-# 	 destined for the scala Main, however a bug in Bloop's argument parsing causes the
-#    --nailgun-port argument to be lost in this case. Workaround this by prefixing
-#    every main-destined argument with "--args"
-define run_scala_main
-	cd $(base_dir) && bloop --nailgun-port $(BLOOP_NAILGUN_PORT) run $(shell echo $(1) | sed 's/{.*}//') --main $(2)  $(addprefix --args ,$3)
-endef
-else
-define run_scala_main
-	cd $(base_dir) && $(SBT) "project $(1)" "runMain $(2) $(3)"
-endef
+# by default build chisel3/firrtl and other subprojects from source
+override SBT_OPTS += -Dsbt.sourcemode=true -Dsbt.workspace=$(chipyard_dir)/tools
+
+ifdef ENABLE_SBT_THIN_CLIENT
+override SCALA_BUILDTOOL_DEPS += $(SBT_THIN_CLIENT_TIMESTAMP)
+# enabling speeds up sbt loading
+SBT_CLIENT_FLAG = --client
 endif
 
-#########################
-# Bloop Project Defs    #
-#########################
-sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
-$(BLOOP_CONFIG_DIR)/TIMESTAMP: $(sbt_sources)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "bloopInstall"
+SBT ?= java $(JAVA_OPTS) -jar $(rocketchip_dir)/sbt-launch.jar $(SBT_OPTS) $(SBT_CLIENT_FLAG)
+
+define run_scala_main
+	cd $(base_dir) && $(SBT) ";project $(1); runMain $(2) $(3)"
+endef
+
+##############################################################################
+# SBT Server Setup (start server / rebuild proj. defs. if SBT_SOURCES change)
+##############################################################################
+$(SBT_THIN_CLIENT_TIMESTAMP): $(SBT_SOURCES)
+ifneq (,$(wildcard $(SBT_THIN_CLIENT_TIMESTAMP)))
+	cd $(base_dir) && $(SBT) "reload"
 	touch $@
+else
+	cd $(base_dir) && $(SBT) "exit"
+endif
 
-# Manage the FIRRTL dependency manually
-FIRRTL_SUBMODULE_DIR ?= $(chipyard_dir)/tools/firrtl
-FIRRTL_JAR ?= $(chipyard_dir)/lib/firrtl.jar
-FIRRTL_TEST_JAR ?= $(chipyard_dir)/test_lib/firrtl.jar
+.PHONY: shutdown-sbt-server
+shutdown-sbt-server:
+	cd $(base_dir) && $(SBT) "shutdown"
 
-firrtl_srcs := $(shell find $(FIRRTL_SUBMODULE_DIR) -iname "[!.]*.scala")
-
-$(FIRRTL_JAR): $(firrtl_srcs)
-	$(MAKE) -C $(FIRRTL_SUBMODULE_DIR) SBT="$(SBT)" root_dir=$(FIRRTL_SUBMODULE_DIR) build-scala
-	mkdir -p $(@D)
-	touch $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar
-	cp -p $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl.jar $@
-
-$(FIRRTL_TEST_JAR): $(firrtl_srcs)
-	cd $(FIRRTL_SUBMODULE_DIR) && $(SBT) "test:assembly"
-	mkdir -p $(@D)
-	touch $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl-test.jar
-	cp -p $(FIRRTL_SUBMODULE_DIR)/utils/bin/firrtl-test.jar $@
-
-firrtl: $(FIRRTL_JAR)
-.PHONY: firrtl
+.PHONY: start-sbt-server
+start-sbt-server:
+	cd $(base_dir) && $(SBT) "exit"
 
 else
 # Chipyard make variables
@@ -114,15 +97,17 @@ compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 SBT_COMMAND ?= shell
+SBT_NON_THIN ?= $(subst $(SBT_CLIENT_FLAG),,$(SBT))
 .PHONY: sbt
-sbt: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "$(SBT_COMMAND)"
+sbt:
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); $(SBT_COMMAND)"
 .PHONY: test
-test: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "test"
+test:
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); test"
 .PHONY: testOnly
-testOnly: $(FIRRTL_JAR) $(FIRRTL_TEST_JAR)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "testOnly $(SCALA_TEST)"
+testOnly:
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); testOnly $(SCALA_TEST)"
+
 # All target-agnostic firesim recipes are defined here
 include target-agnostic.mk
 
