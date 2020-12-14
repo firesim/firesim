@@ -480,12 +480,13 @@ class HostLatencyHistogramIO(val idBits: Int, val binAddrBits: Int) extends Bund
 // Defaults Will fit in a 36K BRAM
 class HostLatencyHistogram (
     idBits: Int,
+    maxFlight: Int,
     cycleCountBits: Int = 10
   ) extends Module {
   val io = IO(new HostLatencyHistogramIO(idBits, cycleCountBits))
   val binSize = 36
   // Need a queue for each ID to track the host cycle a request was issued.
-  val queues = Seq.fill(1 << idBits)(Module(new Queue(UInt(cycleCountBits.W), 1)))
+  val queues = Seq.fill(1 << idBits)(Module(new Queue(UInt(cycleCountBits.W), maxFlight)))
 
   val cycle = RegInit(0.U(cycleCountBits.W))
   when (io.cycleCountEnable) { cycle := cycle + 1.U }
@@ -518,6 +519,7 @@ object HostLatencyHistogram {
       reqId: UInt,
       respValid: UInt,
       respId: UInt,
+      maxFlight: Int,
       cycleCountEnable: Bool = true.B,
       binAddrBits: Int = 10): CounterReadoutIO = {
     require(reqId.getWidth == respId.getWidth)
