@@ -38,9 +38,8 @@ abstract class TutorialSuite(
 
 
   def runTest(b: String, debug: Boolean = false) {
-    behavior of s"$targetName in $b"
     compileMlSimulator(b, debug)
-    val testEnv = "MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
+    val testEnv = s"${b} MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
     if (isCmdAvailable(b)) {
       it should s"pass in ${testEnv}" in {
         assert(run(b, debug, args = simulationArgs) == 0)
@@ -87,7 +86,9 @@ abstract class TutorialSuite(
     }
   }
 
-  clean
+  mkdirs()
+  behavior of s"$targetName"
+  elaborateAndCompile()
   runTest(backendSimulator)
 }
 

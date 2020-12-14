@@ -4,4 +4,4 @@ version := "1.0-SNAPSHOT"
 
 name := "midas"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.10"
