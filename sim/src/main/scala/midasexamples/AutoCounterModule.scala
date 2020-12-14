@@ -4,7 +4,6 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.config.Parameters
-import chisel3.util.LFSR16
 import chisel3.core.MultiIOModule
 
 import midas.targetutils.{PerfCounter, AutoCounterCoverModuleAnnotation}
@@ -55,7 +54,7 @@ class AutoCounterModuleChild extends MultiIOModule {
     val oddlfsr = Output(Bool())
   })
 
-  val lfsr = chisel3.util.LFSR16(io.c)
+  val lfsr = chisel3.util.random.LFSR(16, io.c)
 
   val odd_lfsr = lfsr(0)
 
@@ -114,7 +113,7 @@ class AutoCounterPrintfDUT extends Module {
   val cycle_print = Reg(UInt(39.W))
   cycle_print := cycle_print + 1.U
   when (childInst.io.oddlfsr) {
-    printf("SYNTHESIZED_PRINT CYCLE: %d [AutoCounter] ODD_LFSR: %d\n", cycle_print, oddlfsr_printcount) 
+    printf("SYNTHESIZED_PRINT CYCLE: %d [AutoCounter] ODD_LFSR: %d\n", cycle_print, oddlfsr_printcount)
   }
 }
 
