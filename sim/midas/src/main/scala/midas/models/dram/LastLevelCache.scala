@@ -224,7 +224,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   val fill_empty_way = !hit_valid && empty_valid
 
-  val lsfr = LFSR16(true.B)
+  val lsfr = Chisel.LFSR16(true.B)
   val evict_way_sel = UIntToOH(lsfr(llcKey.ways.maxBits - 1, 0) & ((1.U << io.settings.wayBits) - 1.U))
   val evict_way_is_dirty = (VecInit(s1_metadata.map(_.dirty)).asUInt & evict_way_sel).orR
   val evict_way_tag = Mux1H(evict_way_sel, s1_metadata.map(_.tag))

@@ -7,6 +7,7 @@ import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
 import firrtl.{RenameMap}
 import firrtl.annotations._
+import firrtl.transforms.DontTouchAllTargets
 
 // This is currently consumed by a transformation that runs after MIDAS's core
 // transformations In FireSim, targeting an F1 host, these are consumed by the
@@ -17,14 +18,13 @@ case class FpgaDebugAnnotation(target: chisel3.Data) extends ChiselAnnotation {
 }
 
 case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
-    SingleTargetAnnotation[ComponentName] {
+    SingleTargetAnnotation[ComponentName] with DontTouchAllTargets {
   def duplicate(n: ComponentName) = this.copy(target = n)
 }
 
 object FpgaDebug {
   def apply(targets: chisel3.Data*): Unit = {
     targets.map({ t => chisel3.experimental.annotate(FpgaDebugAnnotation(t)) })
-    targets.map(dontTouch(_))
   }
 }
 
@@ -175,7 +175,7 @@ case class AutoCounterFirrtlAnnotation(
   label: String,
   message: String,
   coverGenerated: Boolean = false)
-    extends firrtl.annotations.Annotation {
+    extends firrtl.annotations.Annotation with DontTouchAllTargets {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -222,9 +222,6 @@ object PerfCounter {
             reset: Reset,
             label: String,
             message: String): Unit = {
-    dontTouch(reset)
-    dontTouch(target)
-    dontTouch(clock)
     annotate(new ChiselAnnotation {
       def toFirrtl = AutoCounterFirrtlAnnotation(target.toTarget, clock.toTarget,
         reset.toTarget, label, message)
@@ -248,7 +245,7 @@ case class TriggerSourceAnnotation(
     target: ReferenceTarget,
     clock: ReferenceTarget,
     reset: Option[ReferenceTarget],
-    sourceType: Boolean) extends Annotation with FAMEAnnotation{
+    sourceType: Boolean) extends Annotation with FAMEAnnotation with DontTouchAllTargets {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -263,7 +260,7 @@ case class TriggerSourceAnnotation(
 
 case class TriggerSinkAnnotation(
     target: ReferenceTarget,
-    clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
+    clock: ReferenceTarget) extends Annotation with FAMEAnnotation with DontTouchAllTargets {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -277,8 +274,6 @@ object TriggerSource {
   private def annotateTrigger(tpe: Boolean)(target: Bool, reset: Option[Bool]): Unit = {
     // Hack: Create dummy nodes until chisel-side instance annotations have been improved
     val clock = WireDefault(Module.clock)
-    dontTouch(target)
-    dontTouch(clock)
     reset.map(dontTouch.apply)
     annotate(new ChiselAnnotation {
       def toFirrtl = TriggerSourceAnnotation(target.toNamed.toTarget, clock.toNamed.toTarget, reset.map(_.toTarget), tpe)
@@ -341,11 +336,9 @@ object TriggerSink {
     val targetWire = WireDefault(noSourceDefault)
     val clock = Module.clock
     target := targetWire
-    dontTouch(targetWire)
     // Both the provided node and the generated one need to be dontTouched to stop
     // constProp from optimizing the down stream logic(?)
     dontTouch(target)
-    dontTouch(clock)
     annotate(new ChiselAnnotation {
       def toFirrtl = TriggerSinkAnnotation(targetWire.toTarget, clock.toTarget)
     })

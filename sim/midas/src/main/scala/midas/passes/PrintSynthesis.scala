@@ -144,10 +144,12 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
         anno
     })
 
-    if (printfAnnos.length > 0 && p(SynthPrints)) {
+    val updatedState = if (printfAnnos.length > 0 && p(SynthPrints)) {
       synthesizePrints(state, printfAnnos)
     } else {
       state
     }
+
+    updatedState.copy(annotations = updatedState.annotations.filterNot(printfAnnos.toSet))
   }
 }

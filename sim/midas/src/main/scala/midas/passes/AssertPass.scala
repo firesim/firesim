@@ -49,8 +49,7 @@ private[passes] class AssertPass extends firrtl.Transform {
         val idx = asserts(mname).size
         val name = namespace newName s"assert_$idx"
         val clockName = clk match {
-          case Reference(name, _) => name
-          case WRef(name, _, _, _) => name
+          case Reference(name, _, _, _) => name
           case o => throw new RuntimeException(s"$clk")
         }
         asserts(mname)(en.serialize) = (idx, name, clockName)
