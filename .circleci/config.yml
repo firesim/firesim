@@ -6,7 +6,7 @@ executors:
       - image: firesim/firesim-ci:v1.0
         user: "centos"
     environment:
-        JVM_MEMORY: 2200M # Default JVM maximum heap limit
+        JVM_MEMORY: 3500M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
 
 commands:
@@ -75,16 +75,30 @@ commands:
       test-package:
         type: string
         default: "firesim.midasexamples"
+      separate-elaboration:
+        description: Runs separate elaboration step to avoid multiple invocations of SBT.
+        type: boolean
+        default: true
       timeout:
         type: string
         default: "120m"
     steps:
-        - run:
-            command: |
-                source env.sh
-                make -C sim TARGET_PROJECT=midasexamples sbt \
-                    SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >>"
-            no_output_timeout: << parameters.timeout >>
+      - when:
+          condition: <<parameters.separate-elaboration>>
+          steps:
+          - run:
+              command: |
+                  source env.sh
+                  make -C sim TARGET_PROJECT=midasexamples sbt \
+                      SBT_COMMAND="project << parameters.project >>; Test / runMain firesim.EmitCIElaborationScript elaborate.sh << parameters.test-package >>.<< parameters.test-name >>"
+                  bash -x sim/elaborate.sh || true
+              no_output_timeout: << parameters.timeout >>
+      - run:
+          command: |
+              source env.sh
+              make -C sim TARGET_PROJECT=midasexamples sbt \
+                  SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >> -- -Dci-skip-elaboration=true"
+          no_output_timeout: << parameters.timeout >>
 
   repo-setup:
     description: "Runs all baseline setup tasks up to scala compilation."
@@ -116,6 +130,7 @@ jobs:
            project: "midas"
            test-package: "*"
            test-name: "*"
+           separate-elaboration: false
 
   publish-scala-doc:
     executor: main-env
