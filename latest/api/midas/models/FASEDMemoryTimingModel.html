@@ -587,10 +587,6 @@
                         <a href="StoredBeat.html" title="">StoredBeat</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="TargetToHostAXI4Converter.html" title=""></a>
-                        <a href="TargetToHostAXI4Converter.html" title="">TargetToHostAXI4Converter</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="TimingModel.html" title=""></a>
                         <a href="TimingModel.html" title="">TimingModel</a>
                       </li><li class="current-entities indented2">
@@ -1117,6 +1113,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
+    </li><li name="midas.models.FASEDMemoryTimingModel#hostWidthBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="hostWidthBytes:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/models/FASEDMemoryTimingModel.html#hostWidthBytes:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hostWidthBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#inModuleBody" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inModuleBody:List[()=&gt;Unit]"></a><a id="inModuleBody:List[()⇒Unit]"></a>
       <span class="permalink">
@@ -1214,9 +1226,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="midas.models.FASEDMemoryTimingModel#memoryMasterNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="memoryMasterNode:freechips.rocketchip.amba.axi4.AXI4MasterNode"></a><a id="memoryMasterNode:AXI4MasterNode"></a>
+      <a id="memoryMasterNode:freechips.rocketchip.diplomacy.NodeHandle[_&gt;:freechips.rocketchip.amba.axi4.AXI4MasterPortParameterswithfreechips.rocketchip.tilelink.TLMasterPortParameters&lt;:Product,_&gt;:freechips.rocketchip.amba.axi4.AXI4SlavePortParameterswithfreechips.rocketchip.tilelink.TLSlavePortParameters&lt;:Product,_&gt;:freechips.rocketchip.amba.axi4.AXI4EdgeParameterswithfreechips.rocketchip.tilelink.TLEdgeIn&lt;:ProductwithSerializable,_&gt;:freechips.rocketchip.amba.axi4.AXI4Bundlewithfreechips.rocketchip.tilelink.TLBundle&lt;:chisel3.Record,freechips.rocketchip.amba.axi4.AXI4MasterPortParameters,freechips.rocketchip.amba.axi4.AXI4SlavePortParameters,freechips.rocketchip.amba.axi4.AXI4EdgeParameters,freechips.rocketchip.amba.axi4.AXI4Bundle]"></a><a id="memoryMasterNode:NodeHandle[_&gt;:AXI4MasterPortParameterswithTLMasterPortParameters&lt;:Product,_&gt;:AXI4SlavePortParameterswithTLSlavePortParameters&lt;:Product,_&gt;:AXI4EdgeParameterswithTLEdgeIn&lt;:ProductwithSerializable,_&gt;:AXI4BundlewithTLBundle&lt;:Record,AXI4MasterPortParameters,AXI4SlavePortParameters,AXI4EdgeParameters,AXI4Bundle]"></a>
       <span class="permalink">
-      <a href="../../midas/models/FASEDMemoryTimingModel.html#memoryMasterNode:freechips.rocketchip.amba.axi4.AXI4MasterNode" title="Permalink">
+      <a href="../../midas/models/FASEDMemoryTimingModel.html#memoryMasterNode:freechips.rocketchip.diplomacy.NodeHandle[_&gt;:freechips.rocketchip.amba.axi4.AXI4MasterPortParameterswithfreechips.rocketchip.tilelink.TLMasterPortParameters&lt;:Product,_&gt;:freechips.rocketchip.amba.axi4.AXI4SlavePortParameterswithfreechips.rocketchip.tilelink.TLSlavePortParameters&lt;:Product,_&gt;:freechips.rocketchip.amba.axi4.AXI4EdgeParameterswithfreechips.rocketchip.tilelink.TLEdgeIn&lt;:ProductwithSerializable,_&gt;:freechips.rocketchip.amba.axi4.AXI4Bundlewithfreechips.rocketchip.tilelink.TLBundle&lt;:chisel3.Record,freechips.rocketchip.amba.axi4.AXI4MasterPortParameters,freechips.rocketchip.amba.axi4.AXI4SlavePortParameters,freechips.rocketchip.amba.axi4.AXI4EdgeParameters,freechips.rocketchip.amba.axi4.AXI4Bundle]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1225,7 +1237,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">memoryMasterNode</span><span class="result">: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterNode">AXI4MasterNode</span></span>
+        <span class="name">memoryMasterNode</span><span class="result">: <span class="extype" name="freechips.rocketchip.diplomacy.NodeHandle">NodeHandle</span>[_ &gt;: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterPortParameters">AXI4MasterPortParameters</span> with <span class="extype" name="freechips.rocketchip.tilelink.TLMasterPortParameters">TLMasterPortParameters</span> &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, _ &gt;: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4SlavePortParameters">AXI4SlavePortParameters</span> with <span class="extype" name="freechips.rocketchip.tilelink.TLSlavePortParameters">TLSlavePortParameters</span> &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, _ &gt;: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4EdgeParameters">AXI4EdgeParameters</span> with <span class="extype" name="freechips.rocketchip.tilelink.TLEdgeIn">TLEdgeIn</span> &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, _ &gt;: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4Bundle">AXI4Bundle</span> with <span class="extype" name="freechips.rocketchip.tilelink.TLBundle">TLBundle</span> &lt;: <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterPortParameters">AXI4MasterPortParameters</span>, <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4SlavePortParameters">AXI4SlavePortParameters</span>, <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4EdgeParameters">AXI4EdgeParameters</span>, <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4Bundle">AXI4Bundle</span>]</span>
       </span>
       
       <p class="shortcomment cmt">The AXI4 master node the Bridge will use to present memory requests to
@@ -1267,9 +1279,9 @@ its allocated DRAM.
 See <span class="extype" name="MemorySlaveConstraints">MemorySlaveConstraints</span> for more explanation.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.models.FASEDMemoryTimingModel">FASEDMemoryTimingModel</a> → <a href="../widgets/UsesHostDRAM.html" class="extype" name="midas.widgets.UsesHostDRAM">UsesHostDRAM</a></dd></dl></div>
     </li><li name="midas.models.FASEDMemoryTimingModel#module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.models.FASEDTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.models.FASEDTargetIO];valtoHostDRAM:freechips.rocketchip.amba.axi4.AXI4Bundle;valtNasti:junctions.NastiIO;valtReset:chisel3.Bool;valmodel:midas.models.TimingModel;valfuncModelRegs:midas.models.FuncModelProgrammableRegs;valingress:midas.models.IngressModule;valwidthAdapter:freechips.rocketchip.diplomacy.LazyModuleImp{valmAxi4:freechips.rocketchip.amba.axi4.AXI4Bundle;valsAxi4:freechips.rocketchip.amba.axi4.AXI4Bundle};valtoWidthAdapter:junctions.NastiIO;valreadEgress:midas.models.ReadEgress;valwriteEgress:midas.models.WriteEgress;valhOutstandingReads:midas.widgets.SatUpDownCounterIO;valhOutstandingWrites:midas.widgets.SatUpDownCounterIO;valhost_mem_idle:chisel3.Bool;valingressReady:chisel3.Bool;valrReady:chisel3.Bool;valbReady:chisel3.Bool;valtResetReady:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valrrespError:chisel3.UInt;valbrespError:chisel3.UInt;defgetSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit;defgetDefaultSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit}"></a><a id="module:BridgeModuleImp[HostPortIO[FASEDTargetIO]]{.../*25definitionsintyperefinement*/}"></a>
+      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.models.FASEDTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.models.FASEDTargetIO];valtoHostDRAM:freechips.rocketchip.amba.axi4.AXI4Bundle;valtNasti:junctions.NastiIO;valtReset:chisel3.Bool;valmodel:midas.models.TimingModel;valfuncModelRegs:midas.models.FuncModelProgrammableRegs;valingress:midas.models.IngressModule;valnastiToHostDRAM:junctions.NastiIO;valreadEgress:midas.models.ReadEgress;valwriteEgress:midas.models.WriteEgress;valhOutstandingReads:midas.widgets.SatUpDownCounterIO;valhOutstandingWrites:midas.widgets.SatUpDownCounterIO;valhost_mem_idle:chisel3.Bool;valingressReady:chisel3.Bool;valrReady:chisel3.Bool;valbReady:chisel3.Bool;valtResetReady:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valrrespError:chisel3.UInt;valbrespError:chisel3.UInt;defgetSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit;defgetDefaultSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit}"></a><a id="module:BridgeModuleImp[HostPortIO[FASEDTargetIO]]{.../*24definitionsintyperefinement*/}"></a>
       <span class="permalink">
-      <a href="../../midas/models/FASEDMemoryTimingModel.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.models.FASEDTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.models.FASEDTargetIO];valtoHostDRAM:freechips.rocketchip.amba.axi4.AXI4Bundle;valtNasti:junctions.NastiIO;valtReset:chisel3.Bool;valmodel:midas.models.TimingModel;valfuncModelRegs:midas.models.FuncModelProgrammableRegs;valingress:midas.models.IngressModule;valwidthAdapter:freechips.rocketchip.diplomacy.LazyModuleImp{valmAxi4:freechips.rocketchip.amba.axi4.AXI4Bundle;valsAxi4:freechips.rocketchip.amba.axi4.AXI4Bundle};valtoWidthAdapter:junctions.NastiIO;valreadEgress:midas.models.ReadEgress;valwriteEgress:midas.models.WriteEgress;valhOutstandingReads:midas.widgets.SatUpDownCounterIO;valhOutstandingWrites:midas.widgets.SatUpDownCounterIO;valhost_mem_idle:chisel3.Bool;valingressReady:chisel3.Bool;valrReady:chisel3.Bool;valbReady:chisel3.Bool;valtResetReady:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valrrespError:chisel3.UInt;valbrespError:chisel3.UInt;defgetSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit;defgetDefaultSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit}" title="Permalink">
+      <a href="../../midas/models/FASEDMemoryTimingModel.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.models.FASEDTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.models.FASEDTargetIO];valtoHostDRAM:freechips.rocketchip.amba.axi4.AXI4Bundle;valtNasti:junctions.NastiIO;valtReset:chisel3.Bool;valmodel:midas.models.TimingModel;valfuncModelRegs:midas.models.FuncModelProgrammableRegs;valingress:midas.models.IngressModule;valnastiToHostDRAM:junctions.NastiIO;valreadEgress:midas.models.ReadEgress;valwriteEgress:midas.models.WriteEgress;valhOutstandingReads:midas.widgets.SatUpDownCounterIO;valhOutstandingWrites:midas.widgets.SatUpDownCounterIO;valhost_mem_idle:chisel3.Bool;valingressReady:chisel3.Bool;valrReady:chisel3.Bool;valbReady:chisel3.Bool;valtResetReady:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valrrespError:chisel3.UInt;valbrespError:chisel3.UInt;defgetSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit;defgetDefaultSettings(fileName:String)(implicitp:freechips.rocketchip.config.Parameters):Unit}" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1278,7 +1290,7 @@ See <span class="extype" name="MemorySlaveConstraints">MemorySlaveConstraints</s
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">module</span><span class="result">: <a href="../widgets/BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="../widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="FASEDTargetIO.html" class="extype" name="midas.models.FASEDTargetIO">FASEDTargetIO</a>]] { ... /* 25 definitions in type refinement */ }</span>
+        <span class="name">module</span><span class="result">: <a href="../widgets/BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="../widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="FASEDTargetIO.html" class="extype" name="midas.models.FASEDTargetIO">FASEDTargetIO</a>]] { ... /* 24 definitions in type refinement */ }</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.models.FASEDMemoryTimingModel">FASEDMemoryTimingModel</a> → <a href="../widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a> → <a href="../widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a> → LazyModule</dd></dl></div>
@@ -1592,6 +1604,38 @@ See <span class="extype" name="MemorySlaveConstraints">MemorySlaveConstraints</s
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="midas.models.FASEDMemoryTimingModel#targetWidthBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="targetWidthBytes:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/models/FASEDMemoryTimingModel.html#targetWidthBytes:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">targetWidthBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
+    </li><li name="midas.models.FASEDMemoryTimingModel#toHostDRAMNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toHostDRAMNode:freechips.rocketchip.amba.axi4.AXI4MasterNode"></a><a id="toHostDRAMNode:AXI4MasterNode"></a>
+      <span class="permalink">
+      <a href="../../midas/models/FASEDMemoryTimingModel.html#toHostDRAMNode:freechips.rocketchip.amba.axi4.AXI4MasterNode" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toHostDRAMNode</span><span class="result">: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterNode">AXI4MasterNode</span></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
