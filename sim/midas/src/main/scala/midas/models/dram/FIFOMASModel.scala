@@ -121,7 +121,7 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
     }
   }
 
-  rankStateTrackers.zip(UIntToOH(cmdRank).toBools) foreach { case (state, cmdUsesThisRank)  =>
+  rankStateTrackers.zip(UIntToOH(cmdRank).asBools) foreach { case (state, cmdUsesThisRank)  =>
     state.io.selectedCmd := selectedCmd
     state.io.cmdBankOH := cmdBankOH
     state.io.cmdRow := cmdRow
@@ -159,7 +159,7 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
   cmdMonitor.io.row := cmdRow
   cmdMonitor.io.autoPRE := casAutoPRE
 
-  val powerStats = (rankStateTrackers).zip(UIntToOH(cmdRank).toBools) map {
+  val powerStats = (rankStateTrackers).zip(UIntToOH(cmdRank).asBools) map {
     case (rankState, cmdUsesThisRank) =>
       val powerMonitor = Module(new RankPowerMonitor(cfg.dramKey))
       powerMonitor.io.selectedCmd := selectedCmd

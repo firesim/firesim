@@ -546,7 +546,7 @@ class RankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMM
   val bankTrackers = Seq.fill(key.maxBanks)(Module(new BankStateTracker(key)).io)
   io.rank.banks.zip(bankTrackers) foreach { case (out, bank) => out := bank.out }
 
-  bankTrackers.zip(io.cmdBankOH.toBools) foreach { case (bank, cmdUsesThisBank)  =>
+  bankTrackers.zip(io.cmdBankOH.asBools) foreach { case (bank, cmdUsesThisBank)  =>
     bank.timings := io.timings
     bank.selectedCmd := io.selectedCmd
     bank.cmdUsesThisBank := cmdUsesThisBank && io.cmdUsesThisRank
