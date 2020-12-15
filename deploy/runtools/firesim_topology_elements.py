@@ -312,7 +312,7 @@ class FireSimServerNode(FireSimNode):
         ## e.g. uartlog, memory_stats.csv, etc
         remote_sim_run_dir = """/home/centos/sim_slot_{}/""".format(simserverindex)
         for simoutputfile in jobinfo.simoutputs:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
+            with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
                 get(remote_path=remote_sim_run_dir + simoutputfile, local_path=job_dir)
 
     def get_sim_kill_command(self, slotno):
