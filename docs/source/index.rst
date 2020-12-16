@@ -32,6 +32,7 @@ supported).
    commands
    workloadConfig
    marshalConfig
+   distros/index
    internal/index
 
 

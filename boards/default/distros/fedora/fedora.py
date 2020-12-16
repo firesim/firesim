@@ -1,7 +1,8 @@
 import subprocess as sp
 import shutil
 import pathlib
-from .. import wlutil
+import wlutil
+import re
 
 serviceTemplate = """[Unit]
 Requires=multi-user.target
@@ -19,12 +20,30 @@ fed_dir=pathlib.Path(__file__).resolve().parent
 # Temporary overlay used for applying init scripts
 overlay=fed_dir / 'overlay'
 
+# Fedora doesn't support any options
+def hashOpts(opts):
+    return None
+
+# Fedora doesn't support any options
+def mergeOpts(base, new):
+    return base
+
+def initOpts(cfg):
+    return
+
 class Builder:
-    def baseConfig(self):
+    def __init__(self, opts):
+        return
+
+    def getWorkload(self):
         return {
                 'name' : 'fedora-base',
+                'isDistro' : True,
+                'distro' : {
+                    'name' : 'fedora',
+                    'opts' : {}
+                },
                 'workdir' : fed_dir,
-                'distro' : 'fedora',
                 'builder' : self,
                 'img' : fed_dir / "rootfs.img"
                 }
@@ -75,3 +94,13 @@ class Builder:
             f.write(serviceScript)
 
         return overlay
+
+    def stripUart(self, lines):
+        stripped = []
+        pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
+        for l in lines:
+            match = pat.match(l)
+            if match:
+                stripped.append(match.group(1))
+
+        return stripped

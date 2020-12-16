@@ -1,7 +1,4 @@
 import glob
-from .br import br
-from .fedora import fedora as fed
-from .baremetal import bare
 import collections
 import json
 import pprint
@@ -36,6 +33,8 @@ configUser = [
         'linux',
         # Grouped firmware-related options
         'firmware',
+        # Grouped distro-related options
+        'distro',
         # Path to script to run on host before building this config
         'host-init',
         # Path to script to run on host after building the binary
@@ -71,13 +70,19 @@ configUser = [
         # converted to bytes as int after loading.
         'mem',
         # Testing-related options
-        'testing'
+        'testing',
+        # Flag to indicate the workload is a distro (rather than a derived workload).
+        'isDistro',
+        # The builder object from the distro. This option is only set by distros.
+        'builder'
         ]
 
 # Config options only used internally by distro internal configs (defined in the distro python package itself)
 configDistro = [
-        'distro',
-        'builder'
+        # Name of the distribution (e.g. 'br', 'fedora', etc)
+        'name',
+        # Any options to pass to the builder, the value is opaque to marshal core
+        'opts',
 ]
 
 # Deprecated options, will be translated to current equivalents early on in
@@ -95,11 +100,9 @@ configDerived = [
         'img-sz', # Desired size of image in bytes (optional)
         'bin', # Path to output binary (e.g. bbl-vmlinux)
         'dwarf', # Additional debugging symbols for the kernel (bbl strips them from 'bin')
-        'builder', # A handle to the base-distro object (e.g. br.Builder)
         'base-img', # The filesystem image to use when building this workload
         'base-format', # The format of base-img
         'cfg-file', # Path to this workloads raw config file
-        'distro', # Base linux distribution (either 'fedora' or 'br')
         'initramfs', # boolean: should we use an initramfs with this config?
         'jobs', # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
         'base-deps', # A list of tasks that this workload needs from its base (a potentially empty list)
@@ -136,14 +139,6 @@ configInherit = [
         'qemu-args',
         'cpus',
         'mem']
-
-
-# These are the permissible base-distributions to use (they get treated special)
-distros = {
-        'fedora' : fed.Builder(),
-        'br' : br.Builder(),
-        'bare' : bare.Builder()
-        }
 
 # Default constants, may be overridden by the user
 # These take the post-processing form (e.g. if the user can provide a string,
@@ -229,9 +224,10 @@ class RunSpec():
 def cleanPath(path, workdir):
     """Take a string or pathlib path argument and return a pathlib.Path
     representing the final absolute path to that option"""
-    path = pathlib.Path(path)
-    if not path.is_absolute():
-        path = workdir / path
+    if path is not None:
+        path = pathlib.Path(path)
+        if not path.is_absolute():
+            path = workdir / path
     return path
 
 
@@ -425,6 +421,12 @@ class Config(collections.MutableMapping):
         self.cfg['base-deps'] = []
         self.cfg['use-parent-bin'] = False
 
+        if 'isDistro' not in self.cfg:
+            self.cfg['isDistro'] = False
+
+        if 'distro' in self.cfg:
+            getOpt('distro-mods')[self.cfg['distro']['name']].initOpts(self)
+
         if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
             self.cfg['nodisk'] = False
@@ -470,6 +472,11 @@ class Config(collections.MutableMapping):
             self.cfg['cpus'] = int(self.cfg['cpus'])
         else:
             self.cfg['cpus'] = configDefaults['cpus']
+
+        # A leaf has customized the distro in some way (rather than just
+        # inheriting a distro config)
+        if 'distro' in self.cfg:
+            self.cfg['distro']['leaf'] = True
 
         # Convert jobs to standalone configs
         if 'jobs' in self.cfg:
@@ -517,7 +524,7 @@ class Config(collections.MutableMapping):
         inheritLinuxOpts(self.cfg, baseCfg)
         inheritFirmwareOpts(self.cfg, baseCfg)
 
-        if 'linux' in self.cfg or 'bin' not in self.cfg:
+        if 'linux' in self.cfg:
             # Linux workloads get their own binary, whether from scratch or a
             # copy of their parent's
             self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
@@ -570,6 +577,7 @@ class Config(collections.MutableMapping):
     def __repr__(self):
         return repr(self.cfg)
 
+
 # The configuration of sw-manager is derived from the *.json files in workloads/
 class ConfigManager(collections.MutableMapping):
     # This contains all currently loaded configs, indexed by config file path
@@ -592,14 +600,6 @@ class ConfigManager(collections.MutableMapping):
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
 
-        # First, load the base-configs specially. Note that these are indexed
-        # by their names instead of a config path so that users can just pass
-        # that instead of a path to a config
-        for dName,dBuilder in distros.items():
-            log.debug("Loading distro " + dName)
-            self.cfgs[dName] = Config(cfgDict=dBuilder.baseConfig())
-            self.cfgs[dName].initialized = True
-
         # Read all the configs from their files
         for f in cfgPaths:
             cfgName = f.name
@@ -618,26 +618,115 @@ class ConfigManager(collections.MutableMapping):
                 log.warning("\t" + repr(e))
                 del self.cfgs[cfgName]
                 raise
-                continue
 
-        # Now we recursively fill in defaults from base configs
-        for f in list(self.cfgs.keys()):
+        # Distro options essentially fork the inheritance tree at the root
+        # since they modify a parent from the child. For every child with a
+        # custom distro configuration, we create new configs for its parents
+        # all the way down to the distro. After this, they are separate
+        # workloads for all intents and purposes.
+        for cfgName in list(self.cfgs.keys()):
+            cfg = self.cfgs[cfgName]
+
+            # Leafs modified the distro config in some way and need to fork the
+            # inheritance chain
+            if 'distro' in cfg and cfg['distro']['leaf']:
+                self._forkDistro(cfg)
+
+        # Now we recursively fill in defaults from base configs.
+        for cfgName in list(self.cfgs.keys()):
+            cfg = self.cfgs[cfgName]
+
             try:
-                self._initializeFromBase(self.cfgs[f])
+                self._initializeFromBase(self.cfgs[cfgName])
 
             except KeyError as e:
-                log.warning("Skipping " + str(f) + ":")
+                log.warning("Skipping " + str(cfgName) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
-                del self.cfgs[f]
+                del self.cfgs[cfgName]
                 continue
             except Exception as e:
-                log.warning("Skipping " + str(f) + ": Unable to parse config:")
+                log.warning("Skipping " + str(cfgName) + ": Unable to parse config:")
                 log.warning("\t" + repr(e))
-                del self.cfgs[f]
+                del self.cfgs[cfgName]
                 raise
                 continue
 
-            log.debug("Loaded " + str(f))
+            log.debug("Loaded " + str(cfgName))
+
+
+    def _forkDistro(self, cfg):
+        """Starting from cfg, create new versions of every base that have this
+        config's distro options. After this, cfg will inherit from distro-opt
+        specific configs."""
+        log = logging.getLogger()
+
+        distCfg = cfg['distro']
+        distMod = getOpt('distro-mods')[distCfg['name']]
+
+
+        def mergeOptsRecursive(distMod, cfg):
+            if cfg['isDistro']:
+                return None
+            elif 'base' not in cfg:
+                return cfg['distro']['opts']
+            else:
+                baseOpts = mergeOptsRecursive(distMod, self.cfgs[cfg['base']])
+                if 'distro' not in cfg:
+                    return baseOpts
+                elif baseOpts is None:
+                    return cfg['distro']['opts']
+                else:
+                    return distMod.mergeOpts(baseOpts, cfg['distro']['opts'])
+
+        distCfg['opts'] = mergeOptsRecursive(distMod, cfg)
+        distID = distMod.hashOpts(distCfg['opts'])
+
+        def forkRecursive(cfg, distID):
+            # If there is no explicit base, the workload must be inheriting from a
+            # distro directly, find or create the distro workload for it.
+            if 'base' not in cfg or self.cfgs[cfg['base']]['isDistro']:
+                if 'distro' not in cfg:
+                    raise ValueError("The 'distro' option is required for workloads that do not have a base")
+
+                distName = cfg['distro']['name']
+                distMod = getOpt('distro-mods')[distName]
+
+                if distID is not None:
+                    baseName = distName + "." + distID
+                else:
+                    baseName = distName
+
+                if baseName not in self.cfgs.keys():
+                    log.debug("Creating distro {} : {}".format(distName, distID))
+                    distObj = distMod.Builder(cfg['distro']['opts'])
+                    distWorkload = Config(cfgDict=distObj.getWorkload())
+                    distWorkload.initialized = True
+                    self.cfgs[baseName] = distWorkload
+
+                cfg['base'] = baseName
+                return
+            else:
+                if distID is not None:
+                    forkedBaseName = cfg['base'] + "." + distID
+                else:
+                    forkedBaseName = cfg['base']
+
+                if forkedBaseName in self.cfgs:
+                    cfg['base'] = forkedBaseName
+                    return
+
+                forkedBase = copy.deepcopy(self.cfgs[cfg['base']])
+                forkedBase['name'] = forkedBaseName
+                forkedBase['distro'] = cfg['distro']
+
+                self.cfgs[forkedBaseName] = forkedBase
+                cfg['base'] = forkedBaseName
+
+                forkRecursive(self.cfgs[cfg['base']], distID)
+                return
+
+        forkRecursive(cfg, distID)
+
 
     # Finish initializing this config from it's base config. Will recursively
     # initialize any needed bases.
