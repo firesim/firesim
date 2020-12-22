@@ -65,7 +65,7 @@ class ProgrammableSubAddr(
   // Used to produce a bit vector of enables from a mask
   def maskToOH(): UInt = {
     val decodings = Seq.tabulate(maskBits)({ i => ((1 << (1 << (i + 1))) - 1).U})
-    MuxCase(1.U, (mask.toBools.zip(decodings)).reverse)
+    MuxCase(1.U, (mask.asBools.zip(decodings)).reverse)
   }
 
   val registers = Seq(
@@ -154,7 +154,7 @@ class DynamicLatencyPipe[T <: Data] (
 
   when (do_enq) {
     latencies(enq_ptr.value) := io.tCycle + io.latency
-    pendingRegisters(enq_ptr.value) := io.latency != 1.U
+    pendingRegisters(enq_ptr.value) := io.latency =/= 1.U
   }
 
   io.deq.valid := !empty && done(deq_ptr.value)
@@ -238,7 +238,7 @@ class CollapsingBuffer[T <: Data](gen: T, depth: Int) extends Module {
     }
   }
 
-  val lastEntry = UIntToOH(io.programmableDepth).toBools.take(depth).reverse
+  val lastEntry = UIntToOH(io.programmableDepth).asBools.take(depth).reverse
   val entries = Seq.fill(depth)(
     RegInit({val w = Wire(Valid(gen.cloneType)); w.valid := false.B; w.bits := DontCare; w}))
   io.entries := entries
@@ -492,7 +492,7 @@ class HostLatencyHistogram (
   when (io.cycleCountEnable) { cycle := cycle + 1.U }
 
   // When the host accepts an AW/AR enq the current cycle
-  (queues map { _.io.enq }).zip(UIntToOH(io.reqId.bits).toBools).foreach({ case (enq, sel) =>
+  (queues map { _.io.enq }).zip(UIntToOH(io.reqId.bits).asBools).foreach({ case (enq, sel) =>
      enq.valid := io.reqId.valid && sel
      enq.bits := cycle
      assert(!(enq.valid && !enq.ready), "Multiple requests issued to same ID")
@@ -500,7 +500,7 @@ class HostLatencyHistogram (
 
   val deqAddrOH = UIntToOH(io.respId.bits)
   val reqCycle = Mux1H(deqAddrOH, (queues map { _.io.deq.bits }))
-  (queues map { _.io.deq }).zip(deqAddrOH.toBools).foreach({ case (deq, sel) =>
+  (queues map { _.io.deq }).zip(deqAddrOH.asBools).foreach({ case (deq, sel) =>
     deq.ready := io.respId.valid && sel
     assert(deq.valid || !deq.ready, "Received an unexpected response")
   })
