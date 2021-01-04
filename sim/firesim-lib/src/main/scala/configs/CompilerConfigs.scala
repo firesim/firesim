@@ -3,6 +3,7 @@ package firesim.configs
 
 import firrtl.options.Dependency
 import freechips.rocketchip.config.{Parameters, Config, Field}
+import freechips.rocketchip.amba.axi4
 import midas.{TargetTransforms, HostTransforms}
 import firesim.bridges._
 
@@ -29,6 +30,13 @@ class WithModelMultiThreading extends Config((site, here, up) => {
 class MCRams extends WithMultiCycleRamModels
 
 class MTModels extends WithModelMultiThreading
+
+
+class WithAXI4ILAMonitors extends  Config((site, here, up) => {
+  case axi4.AXI4MonitorBuilder =>
+    (args: axi4.AXI4MonitorArgs) => new midas.widgets.AXI4ILAMonitor(args)
+  case midas.widgets.EnableAXI4ILATaps => true
+})
 
 // Enables NIC loopback the NIC widget
 class WithNICWidgetLoopback  extends Config((site, here, up) => {

@@ -243,10 +243,10 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       := TLWidthWidget(targetWidthBytes)
       := TLFIFOFixer()
       := AXI4ToTL()
-      := AXI4Buffer()
-      := toHostDRAMNode )
+      := AXI4Monitor(p(EnableAXI4ILATaps), AXI4Buffer())
+      := toHostDRAMNode)
     error.node := xbar.node
-    (AXI4Buffer()
+    (AXI4Monitor(p(EnableAXI4ILATaps), AXI4Buffer())
        := AXI4UserYanker()
        := TLToAXI4()
        := xbar.node)
