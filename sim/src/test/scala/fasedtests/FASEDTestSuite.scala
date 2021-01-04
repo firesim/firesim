@@ -68,6 +68,8 @@ class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "De
   //   })
   //}
 }
+class WideTargetTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_NT1e6_BusWidth32B_DefaultConfig", "DefaultF1Config")
+
 
 // Generate a target memory system that uses the whole host memory system.
 class BaselineMultichannelTest extends FASEDTest(

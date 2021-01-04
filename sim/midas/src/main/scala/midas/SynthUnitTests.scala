@@ -23,7 +23,8 @@ class WithAllUnitTests extends Config((site, here, up) => {
       Module(new ReadyValidChannelUnitTest(timeout = timeout)),
       Module(new CounterTableUnitTest),
       Module(new LatencyHistogramUnitTest),
-      Module(new AddressRangeCounterUnitTest)
+      Module(new AddressRangeCounterUnitTest),
+      Module(new midas.models.AXI4WidthWidgetTest)
     )
   }
 })

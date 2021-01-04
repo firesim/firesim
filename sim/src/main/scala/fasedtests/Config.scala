@@ -54,9 +54,9 @@ class WithNTransactions(num: Int) extends Config((site, here, up) => {
   case NumTransactions => num
 })
 
-class NT10e5 extends WithNTransactions(100000)
-class NT10e6 extends WithNTransactions(1000000)
-class NT10e7 extends WithNTransactions(10000000)
+class NT1e5 extends WithNTransactions(100000)
+class NT1e6 extends WithNTransactions(1000000)
+class NT1e7 extends WithNTransactions(10000000)
 
 // Provides an address mask to fuzzer to constrain generated addresses
 class WithFuzzerMask(mask: BigInt) extends Config((site, here, up) => {
@@ -86,6 +86,14 @@ class AddrBits22 extends WithNAddressBits(22)
 
 // Number of target memory channels -> number of FASED instances
 class QuadChannel extends WithNMemoryChannels(4)
+
+// Width of the memory interface
+class WithNByteBeats(numBytes: Int) extends Config((site, here, up) => {
+  case BeatBytes => numBytes
+})
+class BusWidth16B extends WithNByteBeats(16)
+class BusWidth32B extends WithNByteBeats(32)
+
 
 /**
   * Complete target configurations
