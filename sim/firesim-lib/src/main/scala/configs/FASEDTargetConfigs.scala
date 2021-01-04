@@ -79,6 +79,14 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
   )
 })
 
+class WithAllHostInstrumentation extends Config((site, here, up) => {
+  case BaseParamsKey => up(BaseParamsKey, site).copy(
+    stallEventCounters = true, // To track causes of target-time stalls
+    localHCycleCount = true, // Host Cycle Counter
+    latencyHistograms = true // Creates a BRAM histogram of various system latencies
+  )
+})
+
 /*******************************************************************************
 * Complete Memory-Timing Model Configurations
 *******************************************************************************/

@@ -185,6 +185,15 @@ void FASEDMemoryTimingModel::finish() {
     }
     rangectr_file.close();
   }
-  
+
+  if (addr_map.r_reg_exists("writeStalled")) {
+      fprintf(stderr, "Write stalls: %lld\n", read(addr_map.r_addr("writeStalled")));
+      fprintf(stderr, "Read stalls: %lld\n", read(addr_map.r_addr("readStalled")));
+      fprintf(stderr, "Token stalls: %lld\n", read(addr_map.r_addr("tokenStalled")));
+      fprintf(stderr, "Host Mem Idle Cycles: %lld\n", read(addr_map.r_addr("hostMemoryIdleCycles")));
+      fprintf(stderr, "Host Reads Outstanding: %lld\n", read(addr_map.r_addr("hostWritesOutstanding")));
+      fprintf(stderr, "Host Writes Outstanding: %lld\n", read(addr_map.r_addr("hostReadsOutstanding")));
+  }
+
   stats_file.close();
 }
