@@ -164,7 +164,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   d_array_busy.io.set.bits := DontCare
   d_array_busy.io.decr := false.B
 
-  val mshr_mask_vec = UIntToOH1(io.settings.activeMSHRs, llcKey.mshrs.max).toBools
+  val mshr_mask_vec = UIntToOH1(io.settings.activeMSHRs, llcKey.mshrs.max).asBools
   val mshrs =  RegInit(VecInit(Seq.fill(llcKey.mshrs.max)(MSHR(llcKey))))
   // Enable only active MSHRs as requested in the runtime configuration
   mshrs.zipWithIndex.foreach({ case (m, idx) => m.enabled := mshr_mask_vec(idx) })
@@ -233,7 +233,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val evict_dirty_way  = do_evict && evict_way_is_dirty
   val dirty_line_addr  = io.settings.regenPhysicalAddress(s1_set_addr, evict_way_tag)
 
-  val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).toBools
+  val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).asBools
 
   val md_update = s1_metadata.zip(selected_way_OH) map { case (md, sel) =>
     val next = WireInit(md)
