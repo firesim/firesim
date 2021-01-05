@@ -42,6 +42,8 @@ object ImplementThreadedMems {
   private def implement(tMem: ThreadedMem, moduleName: String): Module = {
     val info = FAME5Info.info
     val tIdxMax = UIntLiteral(tMem.nThreads-1)
+
+    // If there are at least 4 threads, we can extend the latency of read data propagation
     val bramToBufferPipeDepth = if (tMem.nThreads < 4) 0 else 1
     val bufferReadLatency = if (tMem.nThreads < 4) 0 else 1
 
