@@ -12,7 +12,7 @@ import midas.targetutils._
 
 class SRAMInner extends Module {
   val io = IO(new RegfileIO)
-  val mem = SyncReadMem(32, UInt(64.W))
+  val mem = SyncReadMem(21, UInt(64.W))
   io.reads.foreach {
     rp => rp.data := mem.read(rp.addr)
   }
@@ -29,11 +29,10 @@ class SRAMInner extends Module {
 }
 
 class MultiSRAMDUT extends Module {
-  val nCopies = 4
   val io = IO(new Bundle {
-    val accesses = Vec(nCopies, new RegfileIO)
+    val accesses = Vec(MultiRegfile.nCopies, new RegfileIO)
   })
-  val rfs = Seq.fill(nCopies)(Module(new SRAMInner))
+  val rfs = Seq.fill(MultiRegfile.nCopies)(Module(new SRAMInner))
   rfs.zip(io.accesses).foreach {
     case (rf, rfio) =>
       rf.io <> rfio
