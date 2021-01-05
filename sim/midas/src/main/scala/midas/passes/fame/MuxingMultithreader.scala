@@ -40,7 +40,8 @@ object MuxingMultiThreader {
   def onStmt(newResets: ArrayBuffer[Statement], nThreads: BigInt, tIdx: Expression)(stmt: Statement): Statement = stmt match {
     case DefRegister(info, name, tpe, clock, reset, init) =>
       val infos = FAME5Info.info ++ info
-      val mem = DefMemory(infos, name, tpe, nThreads, 1, 0, Seq(rPortName), Seq(wPortName), Nil)
+      val depthBumped = if (nThreads < 4) 4 else nThreads
+      val mem = DefMemory(infos, name, tpe, depthBumped, 1, 0, Seq(rPortName), Seq(wPortName), Nil)
       val rClockConn = Connect(infos, rField(mem, "clk"), clock)
       val rEnConn = Connect(infos, rField(mem, "en"), UIntLiteral(1))
       val rAddrConn = Connect(infos, rField(mem, "addr"), tIdx)
