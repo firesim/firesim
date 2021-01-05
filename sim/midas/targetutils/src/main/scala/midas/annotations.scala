@@ -202,10 +202,15 @@ case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnota
 
 object PerfCounter {
   /**
-    * Annotates a Bool representing a target event (ex. L1 D$ miss)  that
-    * should be tracked by AutoCounter
+    * Labels a signal as an event for which an host-side counter (an
+    * "AutoCounter") should be generated).  Events can be multi-bit to encode
+    * multiple occurances in a cycle (e.g., the number of instructions retired
+    * in a superscalar processor). NB: Golden Gate will not generate the
+    * coutner unless AutoCounter is enabled in your the platform config. See
+    * the docs for more info.
     *
-    * @param target The event
+    *
+    * @param target The number of occurances of the event (in the current cycle) 
     *
     * @param clock The clock to which this event is sychronized.
     *
@@ -217,7 +222,7 @@ object PerfCounter {
     * @param message A description of the event.
     *
     */
-  def apply(target: chisel3.Bool,
+  def apply(target: chisel3.UInt,
             clock: chisel3.Clock,
             reset: Reset,
             label: String,
@@ -232,7 +237,7 @@ object PerfCounter {
     * A simplified variation of the full apply method above that uses the
     * implicit clock and reset.
     */
-  def apply(target: chisel3.Bool, label: String, message: String): Unit =
+  def apply(target: chisel3.UInt, label: String, message: String): Unit =
     apply(target, Module.clock, Module.reset, label, message)
 }
 

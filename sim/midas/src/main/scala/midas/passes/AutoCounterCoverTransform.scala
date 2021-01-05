@@ -6,7 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.passes.wiring._
-import firrtl.Utils.{throwInternalError, BoolType, one}
+import firrtl.Utils.{throwInternalError, BoolType, one, zero}
 import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import firrtl.transforms.TopWiring._
@@ -17,7 +17,7 @@ import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
 import midas.widgets._
 import midas.targetutils._
 import midas.passes.Utils.{widx, wsub}
-import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Or, Negate}
+import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Or, Negate, Neq}
 
 import java.io._
 import scala.io.Source
@@ -68,8 +68,8 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       val addedStmts = coverAnnos.flatMap({ anno =>
         val eventName = moduleNS.newName(anno.label)
         updatedAnnos += anno.copy(target = mT.ref(eventName))
-        Seq(DefWire(NoInfo, eventName, BoolType),
-            Connect(NoInfo, WRef(eventName), And(Negate(WRef(anno.reset.ref)), WRef(anno.target.ref))))
+        Seq(DefWire(NoInfo, eventName, UIntType(UnknownWidth)),
+            Connect(NoInfo, WRef(eventName), Mux(WRef(anno.reset.ref), zero,  WRef(anno.target.ref))))
       })
       m.copy(body = Block(m.body, addedStmts:_*))
       case o => o
@@ -86,14 +86,13 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
       val countType = UIntType(IntWidth(64))
       val zeroLit = UIntLiteral(0, IntWidth(64))
-      val oneLit = UIntLiteral(1, IntWidth(64))
 
       addedStmts ++= coverAnnos.flatMap({ case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, _) =>
         val countName = moduleNS.newName(label + "_counter")
         val count = DefRegister(NoInfo, countName, countType, WRef(clock.ref), WRef(reset.ref), zeroLit)
-        val plusOneName = moduleNS.newName(label + "_plusOne")
-        val plusOne = DefNode(NoInfo, plusOneName, DoPrim(PrimOps.Add, Seq(WRef(count), oneLit), Seq.empty, countType))
-        val countUpdate = Connect(NoInfo, WRef(count), Mux(WRef(target.ref), WRef(plusOne), WRef(count), countType))
+        val nextName = moduleNS.newName(label + "_next")
+        val next = DefNode(NoInfo, nextName, DoPrim(PrimOps.Add, Seq(WRef(count), WRef(target.ref)), Seq.empty, countType))
+        val countUpdate = Connect(NoInfo, WRef(count), WRef(next))
 
         // Generate a trigger sink and annotate it
         val triggerName = moduleNS.newName("trigger")
@@ -104,9 +103,9 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         // Now emit a printf using all the generated hardware
         val printFormat = StringLit(s"""[AutoCounter] $label: %d\n""")
         val printStmt = Print(NoInfo, printFormat, Seq(WRef(count)),
-                              WRef(clock.ref), And(WRef(trigger), WRef(target.ref)))
+                              WRef(clock.ref), And(WRef(trigger), Neq(WRef(target.ref), zero)))
         addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(countName))), mT, printFormat.string, Some(target.ref + "_print"))
-        Seq(count, plusOne, printStmt, countUpdate)
+        Seq(count, next, printStmt, countUpdate)
       })
       m.copy(body = Block(m.body, addedStmts:_*))
     case o => o
@@ -145,6 +144,10 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val topNS = Namespace(topModule)
     val addedPorts = mutable.ArrayBuffer[Port]()
     val addedStmts = mutable.ArrayBuffer[Statement]()
+    // Needed to pass out the widths for each autocoutner event; sufficient to grab just uint ports
+    val portWidthMap = topModule.ports.collect {
+      case Port(_, name, _, UIntType(IntWidth(w))) => name -> w.toInt
+    }.toMap
 
     val bridgeAnnos = for ((srcClockRT, oAnnos) <- groupedOutputs.toSeq.sortBy(_._1.ref)) yield {
       val sinkClockRT = oAnnos.head.sinkClockPort
@@ -156,10 +159,11 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
           Seq(anno.topSink))
       })
 
-      val labels = oAnnos.map({ anno =>
+      val eventMetadata = oAnnos.map({ anno =>
         val pathlessLabel = labelMap(anno.pathlessSource)
         val instPath = anno.absoluteSource.circuit +: anno.absoluteSource.asPath.map(_._1.value)
-        anno.topSink.ref -> (pathlessLabel +: instPath).mkString("_")
+        val eventWidth = portWidthMap(anno.topSink.ref)
+        EventMetadata(anno.topSink.ref, (pathlessLabel +: instPath).mkString("_"), eventWidth)
       })
 
       // Step 2b. Manually add a boolean channel to carry the trigger signal to the bridge
@@ -184,7 +188,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         target = topMT.ref(topWiringPrefix),
         // We need to pass the name of the trigger port so each bridge can
         // disambiguate between them and connect to the correct one in simulation mapping
-        widget = (p: Parameters) => new AutoCounterBridgeModule(labels, triggerPortName)(p),
+        widget = (p: Parameters) => new AutoCounterBridgeModule(eventMetadata, triggerPortName)(p),
         channelNames = (triggerFcca +: fccas).map(_.globalName)
       )
       Seq(bridgeAnno, triggerSinkAnno, triggerFcca) ++ fccas
@@ -250,8 +254,9 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       val updatedAnnos = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
       val updatedModules = state.circuit.modules.map((gateEventsWithReset(selectedsignals, updatedAnnos)))
       val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule)
-      val preppedState = state.copy(circuit = state.circuit.copy(modules = updatedModules),
-                                    annotations = remainingAnnos)
+      val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos)
+
+      val preppedState = (new ResolveAndCheck).runTransform(gatedState)
 
       if (usePrintfImplementation) {
         implementViaPrintf(preppedState, eventModuleMap)
