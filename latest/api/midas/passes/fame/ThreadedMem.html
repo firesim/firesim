@@ -255,8 +255,8 @@
                         <a href="HasModelPort.html" title="">HasModelPort</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="object" href="ImplementThreadedSyncReadMems$.html" title=""></a>
-                        <a href="ImplementThreadedSyncReadMems$.html" title="">ImplementThreadedSyncReadMems</a>
+                        <a class="object" href="ImplementThreadedMems$.html" title=""></a>
+                        <a href="ImplementThreadedMems$.html" title="">ImplementThreadedMems</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="class" href="InferModelPorts.html" title=""></a>
@@ -390,9 +390,9 @@
                         <a class="class" href="TargetClockChannel.html" title="Indicates that a channel connection carries target clocks"></a>
                         <a href="TargetClockChannel.html" title="Indicates that a channel connection carries target clocks">TargetClockChannel</a>
                       </li><li class="current-entities indented3">
-                        <a class="object" href="" title=""></a>
-                        <a class="class" href="ThreadedSyncReadMem.html" title=""></a>
-                        <a href="ThreadedSyncReadMem.html" title="">ThreadedSyncReadMem</a>
+                        <span class="separator"></span>
+                        <a class="class" href="" title=""></a>
+                        <a href="" title="">ThreadedMem</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="Toggle$.html" title=""></a>
@@ -422,27 +422,25 @@
             </div>
           </div>
           <div id="content">
-            <body class="object value">
+            <body class="class type">
       <div id="definition">
-        <a href="ThreadedSyncReadMem.html" title="See companion class"><div class="big-circle object-companion-class">o</div></a>
+        <div class="big-circle class">c</div>
         <p id="owner"><a href="../../index.html" class="extype" name="midas">midas</a>.<a href="../index.html" class="extype" name="midas.passes">passes</a>.<a href="index.html" class="extype" name="midas.passes.fame">fame</a></p>
-        <h1><a href="ThreadedSyncReadMem.html" title="See companion class">ThreadedSyncReadMem</a><span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html" title="Permalink">
+        <h1>ThreadedMem<span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"><div>
-            Companion <a href="ThreadedSyncReadMem.html" title="See companion class">class ThreadedSyncReadMem</a>
-          </div></span></h3>
+        <h3><span class="morelinks"></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ThreadedSyncReadMem</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">ThreadedMem</span><span class="params">(<span name="nThreads">nThreads: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="proto">proto: <span class="extype" name="firrtl.ir.DefMemory">DefMemory</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.ir.Statement">Statement</span> with <span class="extype" name="firrtl.ir.IsDeclaration">IsDeclaration</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
@@ -451,7 +449,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <span class="extype" name="firrtl.ir.IsDeclaration">IsDeclaration</span>, <span class="extype" name="firrtl.ir.HasInfo">HasInfo</span>, <span class="extype" name="firrtl.ir.HasName">HasName</span>, <span class="extype" name="firrtl.ir.Statement">Statement</span>, <span class="extype" name="firrtl.ir.FirrtlNode">FirrtlNode</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -477,7 +475,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.passes.fame.ThreadedSyncReadMem"><span>ThreadedSyncReadMem</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.fame.ThreadedMem"><span>ThreadedMem</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="firrtl.ir.IsDeclaration"><span>IsDeclaration</span></li><li class="in" name="firrtl.ir.HasInfo"><span>HasInfo</span></li><li class="in" name="firrtl.ir.HasName"><span>HasName</span></li><li class="in" name="firrtl.ir.Statement"><span>Statement</span></li><li class="in" name="firrtl.ir.FirrtlNode"><span>FirrtlNode</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -495,7 +493,26 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="midas.passes.fame.ThreadedMem#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(nThreads:BigInt,proto:firrtl.ir.DefMemory):midas.passes.fame.ThreadedMem"></a><a id="&lt;init&gt;:ThreadedMem"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#&lt;init&gt;(nThreads:BigInt,proto:firrtl.ir.DefMemory):midas.passes.fame.ThreadedMem" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ThreadedMem</span><span class="params">(<span name="nThreads">nThreads: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="proto">proto: <span class="extype" name="firrtl.ir.DefMemory">DefMemory</span></span>)</span>
+      </span>
+      
+      
+    </li></ol>
+            </div>
 
         
 
@@ -507,7 +524,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -523,7 +540,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html###():Int" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -539,7 +556,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -552,26 +569,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.fame.ThreadedSyncReadMem#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(nThreads:BigInt,proto:firrtl.ir.DefMemory):midas.passes.fame.ThreadedSyncReadMem"></a><a id="apply(BigInt,DefMemory):ThreadedSyncReadMem"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#apply(nThreads:BigInt,proto:firrtl.ir.DefMemory):midas.passes.fame.ThreadedSyncReadMem" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="nThreads">nThreads: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="proto">proto: <span class="extype" name="firrtl.ir.DefMemory">DefMemory</span></span>)</span><span class="result">: <a href="ThreadedSyncReadMem.html" class="extype" name="midas.passes.fame.ThreadedSyncReadMem">ThreadedSyncReadMem</a></span>
-      </span>
-      
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -587,7 +588,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#clone():Object" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -611,7 +612,7 @@
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -624,26 +625,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#equals(x$1:Any):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#finalize():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -662,10 +647,90 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#foreachExpr" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreachExpr(f:firrtl.ir.Expression=&gt;Unit):Unit"></a><a id="foreachExpr((Expression)⇒Unit):Unit"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#foreachExpr(f:firrtl.ir.Expression=&gt;Unit):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachExpr</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Expression">Expression</span>) ⇒ <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#foreachInfo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreachInfo(f:firrtl.ir.Info=&gt;Unit):Unit"></a><a id="foreachInfo((Info)⇒Unit):Unit"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#foreachInfo(f:firrtl.ir.Info=&gt;Unit):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachInfo</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Info">Info</span>) ⇒ <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#foreachStmt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreachStmt(f:firrtl.ir.Statement=&gt;Unit):Unit"></a><a id="foreachStmt((Statement)⇒Unit):Unit"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#foreachStmt(f:firrtl.ir.Statement=&gt;Unit):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachStmt</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Statement">Statement</span>) ⇒ <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#foreachString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreachString(f:String=&gt;Unit):Unit"></a><a id="foreachString((String)⇒Unit):Unit"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#foreachString(f:String=&gt;Unit):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachString</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#foreachType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foreachType(f:firrtl.ir.Type=&gt;Unit):Unit"></a><a id="foreachType((Type)⇒Unit):Unit"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#foreachType(f:firrtl.ir.Type=&gt;Unit):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foreachType</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Type">Type</span>) ⇒ <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#getClass():Class[_]" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -681,29 +746,26 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
+    </li><li name="midas.passes.fame.ThreadedMem#info" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="info:firrtl.ir.Info"></a><a id="info:Info"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#hashCode():Int" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#info:firrtl.ir.Info" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">info</span><span class="result">: <span class="extype" name="firrtl.ir.Info">Info</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
-                <span class="name">@native</span><span class="args">()</span>
-              
-        </dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → HasInfo</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -716,10 +778,122 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#mapExpr" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapExpr(f:firrtl.ir.Expression=&gt;firrtl.ir.Expression):firrtl.ir.Statement"></a><a id="mapExpr((Expression)⇒Expression):Statement"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#mapExpr(f:firrtl.ir.Expression=&gt;firrtl.ir.Expression):firrtl.ir.Statement" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapExpr</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Expression">Expression</span>) ⇒ <span class="extype" name="firrtl.ir.Expression">Expression</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#mapInfo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapInfo(f:firrtl.ir.Info=&gt;firrtl.ir.Info):firrtl.ir.Statement"></a><a id="mapInfo((Info)⇒Info):Statement"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#mapInfo(f:firrtl.ir.Info=&gt;firrtl.ir.Info):firrtl.ir.Statement" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapInfo</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Info">Info</span>) ⇒ <span class="extype" name="firrtl.ir.Info">Info</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#mapStmt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapStmt(f:firrtl.ir.Statement=&gt;firrtl.ir.Statement):firrtl.ir.Statement"></a><a id="mapStmt((Statement)⇒Statement):Statement"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#mapStmt(f:firrtl.ir.Statement=&gt;firrtl.ir.Statement):firrtl.ir.Statement" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapStmt</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Statement">Statement</span>) ⇒ <span class="extype" name="firrtl.ir.Statement">Statement</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#mapString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapString(f:String=&gt;String):firrtl.ir.Statement"></a><a id="mapString((String)⇒String):Statement"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#mapString(f:String=&gt;String):firrtl.ir.Statement" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapString</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#mapType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapType(f:firrtl.ir.Type=&gt;firrtl.ir.Type):firrtl.ir.Statement"></a><a id="mapType((Type)⇒Type):Statement"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#mapType(f:firrtl.ir.Type=&gt;firrtl.ir.Type):firrtl.ir.Statement" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapType</span><span class="params">(<span name="f">f: (<span class="extype" name="firrtl.ir.Type">Type</span>) ⇒ <span class="extype" name="firrtl.ir.Type">Type</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.Statement">Statement</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → Statement</dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#nThreads" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="nThreads:BigInt"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#nThreads:BigInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nThreads</span><span class="result">: <span class="extype" name="scala.BigInt">BigInt</span></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.fame.ThreadedMem#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="name:String"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#name:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → HasName</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -735,7 +909,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#notify():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -754,7 +928,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#notifyAll():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -770,10 +944,42 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.passes.fame.ThreadedMem#proto" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="proto:firrtl.ir.DefMemory"></a><a id="proto:DefMemory"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#proto:firrtl.ir.DefMemory" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">proto</span><span class="result">: <span class="extype" name="firrtl.ir.DefMemory">DefMemory</span></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.fame.ThreadedMem#serialize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serialize:Nothing"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#serialize:Nothing" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serialize</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ThreadedMem">ThreadedMem</a> → FirrtlNode</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -786,42 +992,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="midas.passes.fame.ThreadedSyncReadMem#tIdxName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tIdxName:String"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#tIdxName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">tIdxName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      
-    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#toString():String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#wait():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -843,7 +1017,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -865,7 +1039,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/ThreadedSyncReadMem$.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/ThreadedMem.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -900,6 +1074,20 @@
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
+            </div><div class="parent" name="firrtl.ir.IsDeclaration">
+              <h3>Inherited from <span class="extype" name="firrtl.ir.IsDeclaration">IsDeclaration</span></h3>
+            </div><div class="parent" name="firrtl.ir.HasInfo">
+              <h3>Inherited from <span class="extype" name="firrtl.ir.HasInfo">HasInfo</span></h3>
+            </div><div class="parent" name="firrtl.ir.HasName">
+              <h3>Inherited from <span class="extype" name="firrtl.ir.HasName">HasName</span></h3>
+            </div><div class="parent" name="firrtl.ir.Statement">
+              <h3>Inherited from <span class="extype" name="firrtl.ir.Statement">Statement</span></h3>
+            </div><div class="parent" name="firrtl.ir.FirrtlNode">
+              <h3>Inherited from <span class="extype" name="firrtl.ir.FirrtlNode">FirrtlNode</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
