@@ -202,10 +202,15 @@ case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnota
 
 object PerfCounter {
   /**
-    * Annotates a UInt how many times an event has triggered in the current cycle (ex. L1 D$ miss). This
-    * delta is added to a running sum by AutoCounter.
+    * Labels a signal as an event for which an host-side counter (an
+    * "AutoCounter") should be generated).  Events can be multi-bit to encode
+    * multiple occurances in a cycle (e.g., the number of instructions retired
+    * in a superscalar processor). NB: Golden Gate will not generate the
+    * coutner unless AutoCounter is enabled in your the platform config. See
+    * the docs for more info.
     *
-    * @param target The number of occurances of the event
+    *
+    * @param target The number of occurances of the event (in the current cycle) 
     *
     * @param clock The clock to which this event is sychronized.
     *

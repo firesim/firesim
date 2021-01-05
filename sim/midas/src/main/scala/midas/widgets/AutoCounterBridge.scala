@@ -12,9 +12,18 @@ trait AutoCounterConsts {
   val counterWidth = 64
 }
 
-case class CounterMetadata(portName: String, label: String, width: Int)
+/**
+  * Captures target-side information about an annotated event
+  *
+  * @param portName the name of the IF exposed to the bridge by the autocounter transform
+  *
+  * @param label provides more detail about the nature of the event
+  *
+  * @param width the bitwidth of the event
+  */
+case class EventMetadata(portName: String, label: String, width: Int)
 
-class AutoCounterBundle(eventMetadata: Seq[CounterMetadata], triggerName: String) extends Record {
+class AutoCounterBundle(eventMetadata: Seq[EventMetadata], triggerName: String) extends Record {
   val triggerEnable = Input(Bool())
   val events = eventMetadata.map(e => e.portName -> Input(UInt(e.width.W)))
   val elements = collection.immutable.ListMap(((triggerName, triggerEnable) +:
@@ -27,7 +36,7 @@ class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCount
   val cycle = UInt(counterWidth.W)
 }
 
-class AutoCounterBridgeModule(eventMetadata: Seq[CounterMetadata], triggerName: String)(implicit p: Parameters)
+class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: String)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) with AutoCounterConsts {
   lazy val module = new BridgeModuleImp(this) {
     val numCounters = eventMetadata.size

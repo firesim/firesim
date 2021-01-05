@@ -68,8 +68,8 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       val addedStmts = coverAnnos.flatMap({ anno =>
         val eventName = moduleNS.newName(anno.label)
         updatedAnnos += anno.copy(target = mT.ref(eventName))
-        Seq(DefWire(NoInfo, eventName, BoolType),
-            Connect(NoInfo, WRef(eventName), And(Negate(WRef(anno.reset.ref)), WRef(anno.target.ref))))
+        Seq(DefWire(NoInfo, eventName, UIntType(UnknownWidth)),
+            Connect(NoInfo, WRef(eventName), Mux(WRef(anno.reset.ref), zero,  WRef(anno.target.ref))))
       })
       m.copy(body = Block(m.body, addedStmts:_*))
       case o => o
@@ -86,7 +86,6 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
       val countType = UIntType(IntWidth(64))
       val zeroLit = UIntLiteral(0, IntWidth(64))
-      val oneLit = UIntLiteral(1, IntWidth(64))
 
       addedStmts ++= coverAnnos.flatMap({ case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, _) =>
         val countName = moduleNS.newName(label + "_counter")
@@ -164,7 +163,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         val pathlessLabel = labelMap(anno.pathlessSource)
         val instPath = anno.absoluteSource.circuit +: anno.absoluteSource.asPath.map(_._1.value)
         val eventWidth = portWidthMap(anno.topSink.ref)
-        CounterMetadata(anno.topSink.ref, (pathlessLabel +: instPath).mkString("_"), eventWidth)
+        EventMetadata(anno.topSink.ref, (pathlessLabel +: instPath).mkString("_"), eventWidth)
       })
 
       // Step 2b. Manually add a boolean channel to carry the trigger signal to the bridge
@@ -255,8 +254,9 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       val updatedAnnos = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
       val updatedModules = state.circuit.modules.map((gateEventsWithReset(selectedsignals, updatedAnnos)))
       val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule)
-      val preppedState = state.copy(circuit = state.circuit.copy(modules = updatedModules),
-                                    annotations = remainingAnnos)
+      val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos)
+
+      val preppedState = (new ResolveAndCheck).runTransform(gatedState)
 
       if (usePrintfImplementation) {
         implementViaPrintf(preppedState, eventModuleMap)
