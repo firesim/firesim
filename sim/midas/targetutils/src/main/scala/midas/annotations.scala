@@ -202,10 +202,10 @@ case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnota
 
 object PerfCounter {
   /**
-    * Annotates a Bool representing a target event (ex. L1 D$ miss)  that
-    * should be tracked by AutoCounter
+    * Annotates a UInt how many times an event has triggered in the current cycle (ex. L1 D$ miss). This
+    * delta is added to a running sum by AutoCounter.
     *
-    * @param target The event
+    * @param target The number of occurances of the event
     *
     * @param clock The clock to which this event is sychronized.
     *
@@ -217,7 +217,7 @@ object PerfCounter {
     * @param message A description of the event.
     *
     */
-  def apply(target: chisel3.Bool,
+  def apply(target: chisel3.UInt,
             clock: chisel3.Clock,
             reset: Reset,
             label: String,
@@ -235,7 +235,7 @@ object PerfCounter {
     * A simplified variation of the full apply method above that uses the
     * implicit clock and reset.
     */
-  def apply(target: chisel3.Bool, label: String, message: String): Unit =
+  def apply(target: chisel3.UInt, label: String, message: String): Unit =
     apply(target, Module.clock, Module.reset, label, message)
 }
 
