@@ -3,6 +3,46 @@
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 Versioning follows semantic versioning as described here: https://semver.org/spec/v2.0.0.html
 
+## [1.11.0] - 2021-01-12
+This release coordinates with Chipyard v1.4.0 and includes several
+board-related features, improving customizability of the hard-coded base
+components. Another important change to note is the inclusion of an updated
+default icenet driver that requires a recent version of that device in
+RocketChip (see details below). Finally, the Fedora distribution has been
+updated to a more recent version.
+
+### Added
+* PR #174 adds the ability to run multiple jobs from a single call to marshal.
+  This is useful for testing multi-node workloads, although we still lack a
+  simulated network.
+* PR #181 modularizes simulator integration (the 'install' command). We can now
+  add custom installation targets as part of the board specification.
+* PR #182 Allows users to customize the distro for their workload. This is
+  particularly important for buildroot which has many options that are hard to
+  modify in a child workload. Workloads that based directly on a distro (rather
+  than one of the board's base workloads like 'br-base.json') will need to be
+  updated to use the new 'distro' option, users are discouraged from doing this.
+  Along with the new 'distro' workload option, board/distro handling was
+  overhauled significantly internally. The result of this is that boards (the
+  bottom of the inheritance tree along with all the basic default components) are
+  much more self-contained and it's easier to specify new ones.
+
+### Changed
+* PR #175 updates the Fedora distro base image to Fedora 31
+* PR #177 allows you to explicitly disable device drivers in parent workloads
+  (e.g. to disable the icenet driver in br-base).
+* PR #178 adds warning messages when workloads include unrecognized options.
+  This helps avoid subtle bugs in workloads.
+* PR #180 updates the default icenet driver to support changes in the icenet
+  device. These changes are not backwards compatible, this FireMarshal release
+  is coordinated with Chipyard 1.4.0 to ensure compatiblity. The specific version
+  was introduced in https://github.com/firesim/icenet-driver/pull/3. However,
+  users may still explicitly provide the old driver in their workload description
+  using the linux/modules option.
+
+### Fixed
+
+
 ## [1.10.0] - 2020-10-05
 The biggest change in this release is the introduction of OpenSBI as the
 default firmware. BBL is still supported, but no longer the default. Other

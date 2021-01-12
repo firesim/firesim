@@ -71,6 +71,43 @@ instructions or hardware models. Defaults to the version of spike on your PATH.
 
 .. _workload-linux-src:
 
+
+.. _distro-configuration:
+
+distro
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Controls options related to your base distribution (e.g. buildroot or fedora).
+See :ref:`Base Distributions <distros>` for more information on distributions.
+
+Since distributions sit at the bottom of the inheritance chain, changing
+distro-related options creates a fork of all parents. This new set of parents
+will be suffixed by a unique identifier for this distro configuration (the
+identifier is distro specific). For example, suppose we have a buildroot-based
+workload called 'example.json' that changes some buildroot options. In this
+case, we would have two copies of br-base (the board's base workload) and br
+(the distro itself), one for the default configuration and one for this new
+configuration (identified by 0FD2 in this example):
+
+::
+
+   br     -> br-base.json
+   br0FD2 -> br-base.json0FD2 -> example.json
+
+These forked parents are simply intermediates in the build process, they aren't
+full workloads in the convential sense (e.g. you can't ``marshal launch
+br-base.json0FD2``).
+
+name
++++++++++++++++++
+Which distro you are based on. This option is required but is mostly for
+documentation purposes and to aid in parsing the configuration. You should not
+generally change this option (it is used by the base workloads in your board). 
+
+opts
++++++++++++++++++
+Options to pass to your distribution. The details of this option are
+distro-specific (documented in :ref:`Base Distributions <distros>`).
+
 linux-src (Deprecated)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 See the 'linux/source' option for the new equivalent.
@@ -87,6 +124,8 @@ source
 +++++++++++++++++
 Path to linux source directory to use when building the boot-binary for
 this workload. Will default to your board's linux source. 
+
+.. _linux-config:
 
 config
 ++++++++++++++++++
@@ -110,9 +149,11 @@ Kernel modules to compile and load automatically in your workload. Modules will
 be loaded in the initramfs before loading the main user root. Modules are
 identified by the .ko file name (the name listed by lsmod). Workload-defined
 modules with the same name as an inherited module will take precidence,
-allowing you to override system default drivers. If you need to manually load a
-module (it shouldn't be automatically loaded), you should manually compile it in a
-post-bin script instead.
+allowing you to override system default drivers. If the path is null, the
+module will not be included. This is useful for disabling inherited modules.
+
+If you need to manually load a module (it shouldn't be automatically loaded),
+you should manually compile it in a post-bin script instead.
 
 The specified module directory must contain a Makefile that can be invoked as:
 

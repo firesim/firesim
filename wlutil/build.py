@@ -244,6 +244,7 @@ def addDep(loader, config):
     img_file_deps = []
     img_task_deps = [] + hostInit + postBin + config['base-deps']
     img_calc_deps = []
+    img_uptodate  = []
     if 'img' in config:
         if 'files' in config or 'overlay' in config:
             # We delay calculation of files and overlay dependencies to runtime
@@ -259,6 +260,8 @@ def addDep(loader, config):
             img_file_deps.append(config['runSpec'].path)
         if 'cfg-file' in config:
             img_file_deps.append(config['cfg-file'])
+        if 'distro' in config:
+            img_uptodate += config['builder'].upToDate()
 
         loader.addTask({
             'name' : str(config['img']),
@@ -266,8 +269,10 @@ def addDep(loader, config):
             'targets' : [config['img']],
             'file_dep' : img_file_deps,
             'task_dep' : img_task_deps,
-            'calc_dep' : img_calc_deps
+            'calc_dep' : img_calc_deps,
+            'uptodate' : img_uptodate
             })
+
 
 # Generate a task-graph loader for the doit "Run" command
 # Note: this doesn't depend on the config or runtime args at all. In theory, it
@@ -285,29 +290,27 @@ def buildDepGraph(cfgs):
             config_changed(getToolVersions())]
         })
 
-    # Define the base-distro tasks
-    for d in distros:
-        dCfg = cfgs[d]
-        if 'img' in dCfg:
+    for cfgPath in cfgs.keys():
+        config = cfgs[cfgPath]
+
+        if config['isDistro'] and 'img' in config:
             loader.workloads.append({
-                    'name' : str(dCfg['img']),
-                    'actions' : [(dCfg['builder'].buildBaseImage, [])],
-                    'targets' : [dCfg['img']],
-                    'file_dep' : dCfg['builder'].fileDeps(),
-                    'uptodate': dCfg['builder'].upToDate() +
+                    'name' : str(config['img']),
+                    'actions' : [(config['builder'].buildBaseImage, [])],
+                    'targets' : [config['img']],
+                    'file_dep' : config['builder'].fileDeps(),
+                    'uptodate': config['builder'].upToDate() +
                         [config_changed(getToolVersions())]
                 })
+        else:
+            addDep(loader, config)
 
-    # Non-distro configs
-    for cfgPath in (set(cfgs.keys()) - set(distros)):
-        config = cfgs[cfgPath]
-        addDep(loader, config)
-
-        if 'jobs' in config.keys():
-            for jCfg in config['jobs'].values():
-                addDep(loader, jCfg)
+            if 'jobs' in config.keys():
+                for jCfg in config['jobs'].values():
+                    addDep(loader, jCfg)
 
     return loader
+
 
 def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
     # This should only be built once (multiple builds will mess up doit)
@@ -403,6 +406,9 @@ def makeModules(cfg):
     put in the appropriate location in the initramfs staging area."""
 
     linCfg = cfg['linux']
+
+    if len(linCfg['modules']) == 0:
+        return
 
     makeCmd = "make LINUXSRC=" + str(linCfg['source'])
 

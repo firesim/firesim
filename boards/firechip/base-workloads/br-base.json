@@ -1,6 +1,11 @@
 {
   "name" : "br-base",
-  "base" : "br",
+  "distro" : {
+      "name" : "br",
+      "opts" : {
+          "configs" : ["buildroot-config"]
+      }
+  },
   "overlay" : "overlay",
   "linux" : {
       "source" : "../../linux",

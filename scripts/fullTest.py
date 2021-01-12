@@ -55,7 +55,6 @@ categoryTests = {
             'flist',
             'generateFiles',
             'guest-init',
-            'hard',
             'host-init',
             'jobs',
             'kfrag',
@@ -70,6 +69,8 @@ categoryTests = {
             'qemu',
             'run',
             'simArgs',
+            'noDrivers',
+            'modifyDistro'
         ],
 
         # This tests both no-disk and spike. In theory, most (maybe all?) tests
@@ -100,14 +101,16 @@ categoryTests = {
         # These tests aren't run directly. Instead they include a testing
         # script that is run.
         "special" : [
-                'clean',
-                'incremental',
-                'inherit',
-                'sameWorkdir',
-                'fsSize',
-                'makefile',
-                'testWorkdir',
-                'workload-dirs' 
+                # 'clean',
+                # 'incremental',
+                # 'inherit',
+                # 'sameWorkdir',
+                # 'fsSize',
+                # 'makefile',
+                # 'testWorkdir',
+                # 'workload-dirs',
+                'jobs',
+                'undefinedOpt'
         ]
 }
 

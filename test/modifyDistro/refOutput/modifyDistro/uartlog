@@ -1,0 +1,10 @@
+Starting Test
+Checking if the password changed (changing something simple in buildroot config test)
+Password: 
+PASS
+Checking if vim was removed (removing packages from buildroot config test)
+PASS
+Checking if depmod showed up (environment variables test)
+iceblk.ko:
+icenet.ko:
+PASS

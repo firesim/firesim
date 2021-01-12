@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--workdir', help='Use a custom workload directory (defaults to the same directory as the first config file)', type=pathlib.Path)
     parser.add_argument('-v', '--verbose',
                         help='Print all output of subcommands to stdout as well as the logs', action='store_true')
+    parser.add_argument("--werr", action="store_true", help="Warnings will cause a fatal runtime error")
     parser.add_argument('-i', '--initramfs', action='store_true', help="Alias for --no-disk")
     parser.add_argument('-d', '--no-disk', action='store_true', help="Use the no-disk version of this workload (the rootfs will be included as an initramfs in the boot binary)")
     subparsers = parser.add_subparsers(title='Commands', dest='command')
@@ -39,8 +40,9 @@ def main():
         'launch', help='Launch an image on a software simulator (defaults to qemu)')
     launch_parser.add_argument('-s', '--spike', action='store_true',
             help="Use the spike isa simulator instead of qemu")
-    launch_parser.add_argument('-j', '--job', nargs='?', default='all',
-            help="Launch the specified job. Defaults to running the base image.")
+    launch_parser.add_argument('-j', '--job', action='append', default=None,
+            help="Launch the specified job. Multiple --job arguments may be passed to launch multiple jobs. Use --all to launch all jobs.")
+    launch_parser.add_argument('-a', '--all', action='store_true', help="Run all jobs in the workload")
     # the type= option here allows us to only accept one argument but store it
     # in a list so it matches the "build" behavior
     launch_parser.add_argument('config_files', metavar='config', nargs='?', type=(lambda c: [ pathlib.Path(c) ]), help="Configuration file to use.")
@@ -62,6 +64,7 @@ def main():
     install_parser = subparsers.add_parser(
             'install', help="Install this workload to firesim (create configs in firesim/deploy/workloads)")
     install_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
+    install_parser.add_argument("-t", "--target", default='firesim', type=str, help="Target to install to. See your board's documentation for available targets")
 
     args = parser.parse_args()
     
@@ -75,7 +78,7 @@ def main():
 
     ctx = wlutil.getCtx()
 
-    wlutil.initLogging(args.verbose)
+    wlutil.initLogging(args.verbose, werr=args.werr)
 
     # Load all the configs from the workload directories
     # Order matters here, duplicate workload files found in later search paths
@@ -111,7 +114,7 @@ def main():
     for cfgPath in args.config_files:
         # Each config gets it's own logging output and results directory
         ctx.setRunName(cfgPath, args.command)
-        wlutil.initLogging(args.verbose)
+        wlutil.initLogging(args.verbose, werr=args.werr)
         cfgName = cfgPath.name
 
         log = logging.getLogger()
@@ -143,12 +146,10 @@ def main():
 
         elif args.command == "launch":
             # job-configs are named special internally
-            if args.job != 'all':
-                if 'jobs' in targetCfg: 
-                    args.job = targetCfg['name'] + '-' + args.job
-                else:
-                    log.error("Job " + args.job + " requested, but no jobs specified in config file\n")
-                    parser.print_help()
+            if args.all:
+                args.job = targetCfg['jobs']
+            elif args.job is not None:
+                args.job = [ targetCfg['name'] + '-' + job for job in args.job ]
 
             try:
                 outputPath = wlutil.launchWorkload(targetCfg, args.job, args.spike)
@@ -193,7 +194,8 @@ def main():
 
         elif args.command == 'install':
             try:
-                wlutil.installWorkload(cfgName, cfgs)
+                # wlutil.installWorkload(cfgName, cfgs)
+                wlutil.installWorkload(cfgs[cfgName], installer=args.target)
             except wlutil.ConfigurationError as e:
                 print(e)
                 sys.exit(1)

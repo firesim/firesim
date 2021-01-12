@@ -1,6 +1,9 @@
 {
   "name" : "fedora-base",
-  "base" : "fedora",
+  "distro" : {
+      "name" : "fedora",
+      "opts" : {}
+  },
   "overlay" : "overlay",
   "linux" : {
       "source" : "../../linux",

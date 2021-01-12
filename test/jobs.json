@@ -1,6 +1,7 @@
 {
   "name" : "jobs",
   "base" : "br-base.json",
+  "command" : "echo root : run",
   "testing" : {
     "refDir" : "refOutput",
     "strip" : true

@@ -2,7 +2,7 @@ FireMarshal
 ==================================
 
 This tool builds base images for several linux-based distros that work with qemu,
-spike, and firesim. 
+spike, and firesim.
 
 This is just a quick primer. To see full documentation, please see the official
 documentation:
@@ -55,15 +55,15 @@ submodules. Otherwise, you should update the required submodules by running:
 
 Building workloads:
 
-    ./marshal build workloads/br-base.json
+    ./marshal build br-base.json
 
 To run in qemu:
 
-    ./marshal launch workloads/br-base.json
+    ./marshal launch br-base.json
 
 To install into FireSim (assuming you cloned this as a submodule of firesim or chipyard):
 
-    ./marshal install workloads/br-base.json
+    ./marshal install br-base.json
 
 # Security Note
 Be advised that FireMarshal will run initialization scripts provided by

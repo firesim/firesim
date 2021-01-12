@@ -19,6 +19,7 @@ import yaml
 import re
 import pprint
 import doit
+import importlib.util
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', [ 'src', 'dst' ])
@@ -80,7 +81,7 @@ class ConfigurationOptionError(ConfigurationError):
 
     def __str__(self):
         return "Error with configuration option '" + self.opt + "': " + str(self.cause)
-        
+
 class ConfigurationFileError(ConfigurationError):
     """Error representing issues with loading the configuration"""
     def __init__(self, missingFile, cause):
@@ -90,6 +91,7 @@ class ConfigurationFileError(ConfigurationError):
     def __str__(self):
         return "Failed to load configuration file: " + str(self.missingFile) + "\n" + \
                 str(self.cause)
+
 
 def cleanPaths(opts, baseDir=pathlib.Path('.')):
     """Clean all user-defined paths in an options dictionary by converting them
@@ -166,7 +168,7 @@ derivedOpts = [
         # Empty directory used for mounting images
         'mnt-dir',
 
-        # Path to basic template for user-specified commands (the "command:" option) 
+        # Path to basic template for user-specified commands (the "command:" option)
         'command-script',
 
         # Gets set uniquely for each logical invocation of this library
@@ -193,7 +195,7 @@ derivedOpts = [
 
 class marshalCtx(collections.MutableMapping):
     """Global FireMarshal context (configuration)."""
-    
+
     # Actual internal storage for all options
     opts = {}
 
@@ -201,7 +203,7 @@ class marshalCtx(collections.MutableMapping):
         """On init, we search for and load all sources of options.
 
         The order in which options are added here is the order of precidence.
-        
+
         Attributes:
             opts: Dictonary containing all configuration options (static values
                 set by the user or statically derived from those). Option
@@ -217,7 +219,7 @@ class marshalCtx(collections.MutableMapping):
         # overwritten by other user-defined configs
         defaultCfg = self['wlutil-dir'] / 'default-config.yaml'
         self.addPath(defaultCfg)
-        
+
         # These are mutually-exlusive search paths (only one will be loaded)
         cfgSources = [
             # pwd
@@ -247,11 +249,11 @@ class marshalCtx(collections.MutableMapping):
     def add(self, newOpts):
         """Add options to this configuration, opts will override any
         conflicting options.
-        
+
         newOpts: dictionary containing new options to add"""
-        
+
         self.opts = dict(self.opts, **newOpts)
-        
+
     def addPath(self, path):
         """Add the yaml file at path to the config."""
 
@@ -266,7 +268,7 @@ class marshalCtx(collections.MutableMapping):
 
     def addEnv(self):
         """Find all marshal options in the environment and load them.
-        
+
         Environment options take the form MARSHAL_OPT where "OPT" will be
         converted as follows:
             1) convert to lower-case
@@ -285,6 +287,18 @@ class marshalCtx(collections.MutableMapping):
 
         cleanPaths(envCfg)
         self.add(envCfg)
+
+
+    def importDistro(self, distroPath):
+        spec = importlib.util.spec_from_file_location(distroPath.stem, distroPath / "__init__.py",
+                submodule_search_locations=[self['wlutil-dir'], str(distroPath)])
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        return module
+
 
     def deriveOpts(self):
         """Update or initialize all derived options. This assumes all
@@ -305,6 +319,7 @@ class marshalCtx(collections.MutableMapping):
         self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
         self['opensbi-dir'] = self['board-dir'] / 'firmware' / 'opensbi'
         self['linux-dir'] = self['board-dir'] / 'linux'
+        self['installers'] = self['board-dir'] / 'installers'
 
         self['buildroot-dir'] = self['wlutil-dir'] / 'br' / 'buildroot'
         self['linux-make-args'] = ["ARCH=riscv", "CROSS_COMPILE=riscv64-unknown-linux-gnu-"]
@@ -312,13 +327,19 @@ class marshalCtx(collections.MutableMapping):
         if self['doitOpts']['dep_file'] == '':
             self['doitOpts']['dep_file'] = str(self['gen-dir'] / 'marshaldb')
 
+        self['distro-mods'] = {}
+        for dPath in (self['board-dir'] / 'distros').glob("*"):
+            m = self.importDistro(dPath)
+            self['distro-mods'][m.__name__] = m
+
+
     def setRunName(self, configPath, operation):
         """Helper function for formatting a  unique run name. You are free to
         set the 'run-name' option directly if you don't need the help.
 
         Args:
             configPath (pathlike): Config file used for this run
-            operation (str): The operation being performed on this run (e.g. 'build') 
+            operation (str): The operation being performed on this run (e.g. 'build')
         """
 
         if configPath:
@@ -381,9 +402,9 @@ def initialize():
 def getCtx():
     """Return the global confguration object (ctx). This is only valid after
     calling initialize().
-    
+
     Returns (marshalCtx)
-    """ 
+    """
     return ctx
 
 def getOpt(opt):
@@ -392,9 +413,25 @@ def getOpt(opt):
     else:
         return ctx[opt]
 
+
+def WErrFilt(r):
+    if r.levelno == logging.WARN:
+        raise RuntimeError("WErr ({}:{}): {}".format(r.pathname, r.lineno, r.msg % r.args))
+
+
+class consoleFormatter(logging.Formatter):
+    """A concise format for console output"""
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            self._style._fmt = "%(message)s"
+        else:
+            self._style._fmt = "%(levelname)s: %(message)s"
+        return super().format(record)
+
+
 fileHandler = None
 consoleHandler = None
-def initLogging(verbose, logPath=None):
+def initLogging(verbose, logPath=None, werr=False):
     """logging setup: You can call this multiple times to reset logging (e.g. if you
        change the RunName). If 'logPath' is set, that path will be used.
        Otherwise the name will be derived from the current configuration."""
@@ -404,18 +441,21 @@ def initLogging(verbose, logPath=None):
 
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
-    
+
+    if werr:
+        rootLogger.addFilter(WErrFilt)
+
     # Create a unique log name
     if logPath is None:
         logPath = getOpt('log-dir') / (getOpt('run-name') + '.log')
-    
+
     # formatting for log to file
     if fileHandler is not None:
         rootLogger.removeHandler(fileHandler)
 
     fileHandler = logging.FileHandler(str(logPath))
-    logFormatter = logging.Formatter("%(asctime)s [%(funcName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-    fileHandler.setFormatter(logFormatter)
+    fileLogFormatter = logging.Formatter("%(asctime)s [%(funcName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    fileHandler.setFormatter(fileLogFormatter)
     fileHandler.setLevel(logging.NOTSET) # log everything to file
     rootLogger.addHandler(fileHandler)
 
@@ -424,6 +464,7 @@ def initLogging(verbose, logPath=None):
         rootLogger.removeHandler(consoleHandler)
 
     consoleHandler = logging.StreamHandler(stream=sys.stdout)
+    consoleHandler.setFormatter(consoleFormatter())
     if verbose:
         consoleHandler.setLevel(logging.NOTSET) # show everything
     else:
@@ -578,7 +619,7 @@ def applyOverlay(img, overlay):
         flist.append(FileSpec(src=f, dst=pathlib.Path('/')))
 
     copyImgFiles(img, flist, 'in')
- 
+
 
 _toolVersions = None
 def getToolVersions():
@@ -679,9 +720,9 @@ def checkSubmodule(s):
 
     s: Pathlib path to submodule
 
-    raises SubmoduleError if submodule not ready 
+    raises SubmoduleError if submodule not ready
     """
-    
+
     if not s.exists() or not any(os.scandir(s)):
         raise SubmoduleError(s)
 
