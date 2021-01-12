@@ -55,7 +55,6 @@ categoryTests = {
             'flist',
             'generateFiles',
             'guest-init',
-            'hard',
             'host-init',
             'jobs',
             'kfrag',

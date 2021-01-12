@@ -13,7 +13,7 @@ echo "Checking if the password changed (changing something simple in buildroot c
 
 # This will print an error if testUser already exists but it doesn't break the
 # test.
-adduser -D testUser
+adduser -D testUser 2> /dev/null
 
 su testUser -c "echo marshalTestPwd | su root -c true"
 test_pass=$?

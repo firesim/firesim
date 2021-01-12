@@ -1,6 +1,5 @@
 Starting Test
 Checking if the password changed (changing something simple in buildroot config test)
-adduser: user 'testUser' in use
 Password: 
 PASS
 Checking if vim was removed (removing packages from buildroot config test)
