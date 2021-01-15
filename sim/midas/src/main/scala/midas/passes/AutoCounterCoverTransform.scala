@@ -31,9 +31,6 @@ class FireSimPropertyLibrary extends BasePropertyLibrary {
   def generateProperty(prop_param: BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
-      dontTouch(prop_param.cond)
-      dontTouch(chisel3.Module.reset)
-      dontTouch(chisel3.Module.clock)
       annotate(new ChiselAnnotation {
         val implicitClock = chisel3.Module.clock
         val implicitReset = chisel3.Module.reset

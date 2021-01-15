@@ -7,11 +7,14 @@ import firrtl.transforms._
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.analyses.InstanceGraph
+import firrtl.traversals.Foreachers._
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations._
 import firrtl.passes.{InferTypes, MemPortUtils}
-import firrtl.Utils.throwInternalError
+import firrtl.Utils.{kind, splitRef, throwInternalError}
 import firrtl.options.{HasShellOptions, PreservesAll, ShellOption}
+
+import scala.annotation.tailrec
 
 // Datastructures
 import scala.collection.mutable
@@ -65,11 +68,11 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
   def run(c: Circuit, noDedups: Seq[String], annos: Seq[Annotation]): (Circuit, RenameMap) = {
 
     // RenameMap
-    val componentRenameMap = RenameMap()
-    componentRenameMap.setCircuit(c.main)
+    val renameMap = RenameMap()
+    renameMap.setCircuit(c.main)
 
     // Maps module name to corresponding dedup module
-    val dedupMap = DedupModules.deduplicate(c, noDedups.toSet, annos, componentRenameMap)
+    val dedupMap = DedupModules.deduplicate(c, noDedups.toSet, annos, renameMap)
 
     // Use old module list to preserve ordering
     // Lookup what a module deduped to, if its a duplicate, remove it
@@ -83,14 +86,13 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
       logger.debug(s"[Dedup] $from -> ${to.name}")
       ModuleName(from, cname) -> List(ModuleName(to.name, cname))
     }
-    val moduleRenameMap = RenameMap()
-    moduleRenameMap.recordAll(
+    renameMap.recordAll(
       map.map {
         case (k: ModuleName, v: List[ModuleName]) => Target.convertNamed2Target(k) -> v.map(Target.convertNamed2Target)
       }
     )
 
-    (InferTypes.run(c.copy(modules = dedupedModules)), componentRenameMap.andThen(moduleRenameMap))
+    (InferTypes.run(c.copy(modules = dedupedModules)), renameMap)
   }
 }
 
@@ -172,8 +174,7 @@ object DedupModules {
     */
   def agnostify(top: CircuitTarget,
                 module: DefModule,
-                renameMap: RenameMap,
-                agnosticModuleName: String
+                renameMap: RenameMap
                ): DefModule = {
 
 
@@ -182,12 +183,11 @@ object DedupModules {
     val nameMap = mutable.HashMap[String, String]()
 
     val mod = top.module(module.name)
-    val agnosticMod = top.module(agnosticModuleName)
 
     def rename(name: String): String = {
       nameMap.getOrElseUpdate(name, {
         val newName = namespace.newTemp
-        renameMap.record(mod.ref(name), agnosticMod.ref(newName))
+        renameMap.record(mod.ref(name), mod.ref(newName))
         newName
       })
     }
@@ -241,8 +241,7 @@ object DedupModules {
 
 
     // Get all instances to know what to rename in the module
-    val instances = mutable.Set[WDefInstance]()
-    InstanceGraph.collectInstances(instances)(module.asInstanceOf[Module].body)
+    val instances = InstanceKeyGraph.collectInstances(module)
     val instanceModuleMap = instances.map(i => i.name -> i.module).toMap
 
     def getNewModule(old: String): DefModule = {
@@ -276,6 +275,48 @@ object DedupModules {
     renameMap.setModule(module.name)
     // Change module internals
     changeInternals({n => n}, retype, {i => i}, renameOfModule)(module)
+  }
+
+  @tailrec
+  private def hasBundleType(tpe: Type): Boolean = tpe match {
+    case _: BundleType => true
+    case _: GroundType => false
+    case VectorType(t, _) => hasBundleType(t)
+  }
+
+  // Find modules that should not have their ports agnostified to avoid bug in
+  // https://github.com/freechipsproject/firrtl/issues/1703
+  // Marks modules that have a port of BundleType that are connected via an aggregate connect or
+  // partial connect in an instantiating parent
+  // Order of modules does not matter
+  private def modsToNotAgnostifyPorts(modules: Seq[DefModule]): Set[String] = {
+    val dontDedup = mutable.HashSet.empty[String]
+    def onModule(mod: DefModule): Unit = {
+      val instToModule = mutable.HashMap.empty[String, String]
+      def markAggregatePorts(expr: Expression): Unit = {
+        if (kind(expr) == InstanceKind && hasBundleType(expr.tpe)) {
+          val (WRef(inst, _, _, _), _) = splitRef(expr)
+          dontDedup += instToModule(inst)
+        }
+      }
+      def onStmt(stmt: Statement): Unit = {
+        stmt.foreach(onStmt)
+        stmt match {
+          case inst: WDefInstance =>
+            instToModule(inst.name) = inst.module
+          case Connect(_, lhs, rhs) =>
+            markAggregatePorts(lhs)
+            markAggregatePorts(rhs)
+          case PartialConnect(_, lhs, rhs) =>
+            markAggregatePorts(lhs)
+            markAggregatePorts(rhs)
+          case _ =>
+        }
+      }
+      mod.foreach(onStmt)
+    }
+    modules.foreach(onModule)
+    dontDedup.toSet
   }
 
   //scalastyle:off
@@ -342,6 +383,8 @@ object DedupModules {
 
     val agnosticRename = RenameMap()
 
+    val dontAgnostifyPorts = modsToNotAgnostifyPorts(moduleLinearization)
+
     moduleLinearization.foreach { originalModule =>
       // Replace instance references to new deduped modules
       val dontcare = RenameMap()
@@ -353,7 +396,7 @@ object DedupModules {
       } else { // Try to dedup
 
         // Build name-agnostic module
-        val agnosticModule = DedupModules.agnostify(top, originalModule, agnosticRename, "thisModule")
+        val agnosticModule = DedupModules.agnostify(top, originalModule, agnosticRename)
         agnosticRename.record(top.module(originalModule.name), top.module("thisModule"))
         val agnosticAnnos = module2Annotations.getOrElse(
           originalModule.name, mutable.HashSet.empty[Annotation]
@@ -362,8 +405,14 @@ object DedupModules {
 
         // Build tag
         val builder = new mutable.ArrayBuffer[Any]()
-        agnosticModule.ports.foreach { builder ++= _.serialize }
         builder += agnosticAnnos
+
+        // It may seem weird to use non-agnostified ports with an agnostified body because
+        // technically it would be invalid FIRRTL, but it is logically sound for the purpose of
+        // calculating deduplication tags
+        val ports =
+          if (dontAgnostifyPorts(originalModule.name)) originalModule.ports else agnosticModule.ports
+        ports.foreach { builder ++= _.serialize }
 
         agnosticModule match {
           case Module(i, n, ps, b) => builder ++= fastSerializedHash(b).toString()//.serialize
@@ -398,7 +447,7 @@ object DedupModules {
                   renameMap: RenameMap): Map[String, DefModule] = {
 
     val (moduleMap, moduleLinearization) = {
-      val iGraph = new InstanceGraph(circuit)
+      val iGraph = InstanceKeyGraph(circuit)
       (iGraph.moduleMap, iGraph.moduleOrder.reverse)
     }
     val main = circuit.main

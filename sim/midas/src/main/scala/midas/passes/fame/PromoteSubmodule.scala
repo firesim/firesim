@@ -38,7 +38,7 @@ class PromoteSubmodule extends Transform {
          * Otherwise, the parent (and possibly grandparent) would potentially
          * need to be replicated into versions with and without the promoted child.
          */
-        assert(instTarget.isLocal)
+        assert(instTarget.isLocal, s"InstanceTarget ${instTarget} must be local")
         (instTarget.module, instTarget.instance)
     }
     val annotatedInstanceSet = annotatedInstances.toSet
