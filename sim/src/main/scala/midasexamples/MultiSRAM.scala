@@ -1,0 +1,43 @@
+// See LICENSE for license details
+
+package firesim.midasexamples
+
+import chisel3._
+import chisel3.experimental.annotate
+
+import freechips.rocketchip.config.Parameters
+
+import midas.widgets.PeekPokeBridge
+import midas.targetutils._
+
+class SRAMInner extends Module {
+  val io = IO(new RegfileIO)
+  val mem = SyncReadMem(21, UInt(64.W))
+  io.reads.foreach {
+    rp => rp.data := mem.read(rp.addr)
+  }
+  io.writes.foreach {
+    wp =>
+      val underlyingRW = mem(wp.addr)
+      when (wp.en) {
+        underlyingRW := wp.data
+      } .otherwise {
+        val unusedRD = Wire(UInt())
+	unusedRD := underlyingRW
+      }
+  }
+}
+
+class MultiSRAMDUT extends Module {
+  val io = IO(new Bundle {
+    val accesses = Vec(MultiRegfile.nCopies, new RegfileIO)
+  })
+  val rfs = Seq.fill(MultiRegfile.nCopies)(Module(new SRAMInner))
+  rfs.zip(io.accesses).foreach {
+    case (rf, rfio) =>
+      rf.io <> rfio
+      annotate(EnableModelMultiThreadingAnnotation(rf))
+  }
+}
+
+class MultiSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT)

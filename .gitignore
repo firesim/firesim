@@ -8,3 +8,4 @@ build-setup-log
 tags
 build
 scala-doc-env.sh
+*.swp

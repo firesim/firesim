@@ -39,13 +39,13 @@ else
 	firesim_sbt_project := firechip
 endif
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator,\
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
+		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
 
 # DOC include start: Bridge Build System Changes
 ##########################
@@ -60,6 +60,8 @@ DROMAJO_LIB = $(DROMAJO_DIR)/lib$(DROMAJO_LIB_NAME).a
 
 DROMAJO_H = $(GENERATED_DIR)/dromajo_params.h
 DROMAJO_LONG_H = $(GENERATED_DIR)/$(long_name).dromajo_params.h
+
+TESTCHIPIP_CSRC_DIR = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
 
 CHIPYARD_ROM = $(chipyard_dir)/generators/testchipip/bootrom/bootrom.rv64.img
 DROMAJO_ROM = $(GENERATED_DIR)/$(long_name).rom
@@ -88,15 +90,17 @@ DROMAJO_REQS = $(DROMAJO_H) $(DROMAJO_ROM) $(DROMAJO_DTB)
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
-		   $(shell find $(firesim_lib_dir) -name "*.h") \
-		   $(DROMAJO_REQS)
+	$(shell find $(firesim_lib_dir) -name "*.h") \
+	$(DROMAJO_REQS) \
+	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
 
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
-            $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
-			$(RISCV)/lib/libfesvr.a \
-			$(DROMAJO_LIB)
+	    $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
+	    $(RISCV)/lib/libfesvr.a \
+	    $(DROMAJO_LIB) \
+	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
-TARGET_CXX_FLAGS := -g -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost -I$(DROMAJO_DIR) -I$(GENERATED_DIR)
+TARGET_CXX_FLAGS := -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(firesim_lib_dir)/lib/boost -I$(DROMAJO_DIR) -I$(GENERATED_DIR)
 TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz -L$(DROMAJO_DIR) -l$(DROMAJO_LIB_NAME)
 # DOC include end: Bridge Build System Changes
 
@@ -104,8 +108,8 @@ TARGET_LD_FLAGS := -L$(RISCV)/lib -l:libdwarf.so -l:libelf.so -lz -L$(DROMAJO_DI
 # Setup Extra Verilator Compile Flags #
 #######################################
 
-## default flags added for ariane
-ARIANE_VERILATOR_FLAGS = \
+## default flags added for cva6
+CVA6_VERILATOR_FLAGS = \
 	--unroll-count 256 \
 	-Werror-PINMISSING \
 	-Werror-IMPLICIT \
@@ -119,13 +123,13 @@ ARIANE_VERILATOR_FLAGS = \
 	-Wno-style \
 	-Wall
 
-# normal flags used for midas builds (that are incompatible with ariane)
+# normal flags used for midas builds (that are incompatible with cva6)
 DEFAULT_MIDAS_VERILATOR_FLAGS = \
 	--assert
 
 # AJG: this must be evaluated after verilog generation to work (hence the =)
 EXTRA_VERILATOR_FLAGS = \
-	$(shell if ! grep -iq "module.*ariane" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi)
+	$(shell if ! grep -iq "module.*cva6" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(CVA6_VERILATOR_FLAGS)"; fi)
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #

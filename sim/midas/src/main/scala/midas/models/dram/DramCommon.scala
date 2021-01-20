@@ -19,6 +19,7 @@ trait HasDRAMMASConstants {
   val tREFIWidth = 14       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
   val tREFIBits = 14       // Refresh interval. Suffices up to tCK = ~0.5ns (for 64ms, 8192 refresh commands)
   val tRFCBits = 10
+  val backendLatencyBits = 12
   val numBankStates = 2
   val numRankStates = 2
 }
@@ -545,7 +546,7 @@ class RankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMM
   val bankTrackers = Seq.fill(key.maxBanks)(Module(new BankStateTracker(key)).io)
   io.rank.banks.zip(bankTrackers) foreach { case (out, bank) => out := bank.out }
 
-  bankTrackers.zip(io.cmdBankOH.toBools) foreach { case (bank, cmdUsesThisBank)  =>
+  bankTrackers.zip(io.cmdBankOH.asBools) foreach { case (bank, cmdUsesThisBank)  =>
     bank.timings := io.timings
     bank.selectedCmd := io.selectedCmd
     bank.cmdUsesThisBank := cmdUsesThisBank && io.cmdUsesThisRank

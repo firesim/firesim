@@ -67,6 +67,21 @@ def aws_build(global_build_config, bypass=False):
         buildconfig.terminate_build_instance(buildconfig)
         return
 
+    # The default error-handling procedure. Send an email and teardown instance
+    def on_build_failure():
+        message_title = "FireSim FPGA Build Failed"
+
+        message_body = "Your FPGA build failed for triplet: " + buildconfig.get_chisel_triplet()
+        message_body += ".\nInspect the log output from IP address " + env.host_string + " for more information."
+
+        send_firesim_notification(message_title, message_body)
+
+        rootLogger.info(message_title)
+        rootLogger.info(message_body)
+        rootLogger.info("Terminating the build instance now.")
+        buildconfig.terminate_build_instance()
+
+
     rootLogger.info("Running process to build AGFI from verilog.")
 
     # First, Produce dcp/tar for design. Runs on remote machines, out of
@@ -102,11 +117,13 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.debug(rsync_cap.stderr)
 
     # run the Vivado build
+    vivado_result = 0
     with prefix('cd /home/centos/firesim-build/platforms/f1/aws-fpga'), \
          prefix('source hdk_setup.sh'), \
          prefix('export CL_DIR=/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir), \
-         prefix('cd $CL_DIR/build/scripts/'), InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-        run('./aws_build_dcp_from_cl.sh -foreground')
+         prefix('cd $CL_DIR/build/scripts/'), InfoStreamLogger('stdout'), InfoStreamLogger('stderr'), \
+         settings(warn_only=True):
+        vivado_result = run('./aws_build_dcp_from_cl.sh -foreground').return_code
 
     # rsync in the reverse direction to get build results
     with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -116,6 +133,10 @@ def aws_build(global_build_config, bypass=False):
                       capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
+
+    if vivado_result != 0:
+        on_build_failure()
+        return
 
     ## next, do tar -> AGFI
     ## This is done on the local copy
@@ -214,17 +235,8 @@ def aws_build(global_build_config, bypass=False):
 
         rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
     else:
-        # Something went awry. This is generally due to some underlying vivado
-        # build problem that is only promoted to a failure during bitstream creation
-        message_title = "FireSim FPGA Build Failed"
-
-        message_body = "Your FPGA build failed for triplet: " + buildconfig.get_chisel_triplet()
-        message_body += ".\nInspect the log output from IP address " + env.host_string + " for more information."
-
-        send_firesim_notification(message_title, message_body)
-
-        rootLogger.info(message_title)
-        rootLogger.info(message_body)
+        on_build_failure()
+        return
 
     rootLogger.info("Terminating the build instance now.")
     buildconfig.terminate_build_instance()

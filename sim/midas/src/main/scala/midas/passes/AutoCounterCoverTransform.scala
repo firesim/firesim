@@ -31,9 +31,6 @@ class FireSimPropertyLibrary extends BasePropertyLibrary {
   def generateProperty(prop_param: BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
-      dontTouch(prop_param.cond)
-      dontTouch(chisel3.Module.reset)
-      dontTouch(chisel3.Module.clock)
       annotate(new ChiselAnnotation {
         val implicitClock = chisel3.Module.clock
         val implicitReset = chisel3.Module.reset
@@ -214,6 +211,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val counterAnnos    = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
     val remainingAnnos  = new mutable.ArrayBuffer[Annotation]()
     if (modulesfile.exists()) {
+      println("[AutoCounter] Reading " + modulesfile.getPath())
       val sourcefile = scala.io.Source.fromFile(modulesfile.getPath())
       val covermodulesnames = (for (line <- sourcefile.getLines()) yield line).toList
       sourcefile.close()
@@ -225,17 +223,24 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       case o => remainingAnnos += o
     }
 
+    println(s"[AutoCounter] There are ${counterAnnos.length} counterAnnos available for selection in the following modules:")
+    counterAnnos.map(_.target.module).distinct.foreach({ i => println(s"  ${i}") })
+
     //extract the module names from the methods mentioned previously
     val covermodulesnames = moduleAnnos.map(_.target.module).distinct
+    println("[AutoCounter] selected modules for cover-function based annotation:")
+    covermodulesnames.foreach({ i => println(s"  ${i}") })
 
     //collect annotations for manually annotated AutoCounter perf counters
     val filteredCounterAnnos =  counterAnnos.filter(_.shouldBeIncluded(covermodulesnames))
+    println(s"[AutoCounter] selected ${filteredCounterAnnos.length} signals for instrumentation")
+    filteredCounterAnnos.foreach({ i => println(s"  ${i}") })
 
     // group the selected signal by modules, and attach label from the cover point to each signal
     val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule)
 
     if (!selectedsignals.isEmpty) {
-      println("[AutoCounter] AutoCounter signals are:")
+      println(s"[AutoCounter] signals are:")
       selectedsignals.foreach({ case (modName, localEvents) =>
         println(s"  Module ${modName}")
         localEvents.foreach({ anno => println(s"   ${anno.label}: ${anno.message}") })
@@ -261,6 +266,14 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val enableTransform         = p(EnableAutoCounter)
     val usePrintfImplementation = p(AutoCounterUsePrintfImpl)
 
-    if (enableTransform) doTransform(state, usePrintfImplementation) else state
+    val updatedState = if (enableTransform) doTransform(state, usePrintfImplementation) else state
+    // Clean up autocounter annotations so that their ReferenceTargets, which
+    // are implicitly marked as DontTouch, can be optimized across
+    updatedState.copy(
+      annotations = updatedState.annotations.filter {
+        case AutoCounterCoverModuleFirrtlAnnotation(_) => false
+        case AutoCounterFirrtlAnnotation(_,_,_,_,_,_) => false
+        case o => true
+      })
   }
 }

@@ -30,12 +30,7 @@ VERILOG := $(GENERATED_DIR)/FPGATop.v
 HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 CONF_NAME ?= runtime.conf
-
-ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := firesim
-else
-	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
-endif
+firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
 		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
@@ -43,13 +38,13 @@ chisel_src_dirs = \
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR)
+$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain chipyard.Generator \
+	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator, \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG)"
+		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
 
 ##########################
 # Driver Sources & Flags #

@@ -21,8 +21,14 @@ class WithMultiCycleRamModels extends Config((site, here, up) => {
   case midas.GenerateMultiCycleRamModels => true
 })
 
-// Short name alias for above
+class WithModelMultiThreading extends Config((site, here, up) => {
+  case midas.EnableModelMultiThreading => true
+})
+
+// Short name aliases for above
 class MCRams extends WithMultiCycleRamModels
+
+class MTModels extends WithModelMultiThreading
 
 // Enables NIC loopback the NIC widget
 class WithNICWidgetLoopback  extends Config((site, here, up) => {
@@ -41,6 +47,12 @@ class WithAsyncResetReplacement extends Config((site, here, up) => {
 class WithPlusArgReaderRemoval extends Config((site, here, up) => {
   case TargetTransforms => Dependency(firesim.passes.PlusArgReaderPass) +: up(TargetTransforms, site)
 })
+
+// The wiring transform is normally only run as part of ReplSeqMem
+class WithWiringTransform extends Config((site, here, up) => {
+  case TargetTransforms => Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)
+})
+
 
 // ADDITIONAL HOST TRANSFORMATIONS
 // These run on the generated simulator(after all Golden Gate transformations:
@@ -69,8 +81,8 @@ class WithAutoCounterPrintf extends Config((site, here, up) => {
 })
 
 class BaseF1Config extends Config(
+  new WithWiringTransform ++
   new WithAsyncResetReplacement ++
-  new WithPlusArgReaderRemoval ++
   new WithEC2F1Artefacts ++
   new WithILATopWiringTransform ++
   new midas.F1Config

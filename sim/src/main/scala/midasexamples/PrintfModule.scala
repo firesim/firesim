@@ -3,8 +3,8 @@
 package firesim.midasexamples
 
 import chisel3._
+import chisel3.util.random.LFSR
 import freechips.rocketchip.config.Parameters
-import chisel3.util.LFSR16
 
 import midas.targetutils.SynthesizePrintf
 
@@ -36,7 +36,7 @@ class PrintfModuleChild(printfPrefix: String) extends MultiIOModule {
   val c = IO(Input(Bool()))
   val cycle = IO(Input(UInt(16.W)))
 
-  val lfsr = chisel3.util.LFSR16(c)
+  val lfsr = LFSR(16, c)
   printf(SynthesizePrintf(s"${printfPrefix}CYCLE: %d LFSR: %x\n", cycle, lfsr))
 
   //when (lsfr(0)) {
@@ -53,7 +53,7 @@ class NarrowPrintfModuleDUT extends Module {
 
   val cycle = RegInit(0.U(12.W))
   cycle := cycle + 1.U
-  when(LFSR16()(0) & LFSR16()(0) & io.enable) {
+  when(LFSR(16)(0) & LFSR(16)(0) & io.enable) {
     printf(SynthesizePrintf("SYNTHESIZED_PRINT CYCLE: %d\n", cycle(5,0)))
   }
 }

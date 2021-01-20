@@ -17,10 +17,12 @@
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
+#include "bridges/heartbeat.h"
 
 firesim_top_t::firesim_top_t(int argc, char** argv)
 {
     std::vector<std::string> args(argv + 1, argv + argc);
+
     max_cycles = -1;
     profile_interval = max_cycles;
 
@@ -35,6 +37,8 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
             do_zero_out_dram = true;
         }
     }
+
+    add_bridge_driver(new heartbeat_t(this, args));
 
 
 // DOC include start: UART Bridge Driver Registration
@@ -298,6 +302,54 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     #ifdef TRACERVBRIDGEMODULE_15_PRESENT
     INSTANTIATE_TRACERV(add_bridge_driver, 15)
     #endif
+    #ifdef TRACERVBRIDGEMODULE_16_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 16)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_17_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 17)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_18_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 18)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_19_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 19)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_20_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 20)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_21_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 21)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_22_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 22)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_23_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 23)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_24_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 24)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_25_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 25)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_26_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 26)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_27_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 27)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_28_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 28)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_29_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 29)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_30_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 30)
+    #endif
+    #ifdef TRACERVBRIDGEMODULE_31_PRESENT
+    INSTANTIATE_TRACERV(add_bridge_driver, 31)
+    #endif
 #endif
 
 #ifdef DROMAJOBRIDGEMODULE_struct_guard
@@ -386,56 +438,56 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
     ASSERTBRIDGEMODULE_0_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_0_substruct,
                                                    ASSERTBRIDGEMODULE_0_assert_count,
                                                    ASSERTBRIDGEMODULE_0_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_1_PRESENT
     ASSERTBRIDGEMODULE_1_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_1_substruct,
                                                    ASSERTBRIDGEMODULE_1_assert_count,
                                                    ASSERTBRIDGEMODULE_1_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_2_PRESENT
     ASSERTBRIDGEMODULE_2_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_2_substruct,
                                                    ASSERTBRIDGEMODULE_2_assert_count,
                                                    ASSERTBRIDGEMODULE_2_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_3_PRESENT
     ASSERTBRIDGEMODULE_3_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_3_substruct,
                                                    ASSERTBRIDGEMODULE_3_assert_count,
                                                    ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
     ASSERTBRIDGEMODULE_4_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_4_substruct,
                                                    ASSERTBRIDGEMODULE_4_assert_count,
                                                    ASSERTBRIDGEMODULE_4_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_5_PRESENT
     ASSERTBRIDGEMODULE_5_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_5_substruct,
                                                    ASSERTBRIDGEMODULE_5_assert_count,
                                                    ASSERTBRIDGEMODULE_5_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_6_PRESENT
     ASSERTBRIDGEMODULE_6_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_6_substruct,
                                                    ASSERTBRIDGEMODULE_6_assert_count,
                                                    ASSERTBRIDGEMODULE_6_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_7_PRESENT
     ASSERTBRIDGEMODULE_7_substruct_create
-    add_bridge_driver(new synthesized_assertions_t(this,
+    add_bridge_driver(new synthesized_assertions_t(this, args,
                                                    ASSERTBRIDGEMODULE_7_substruct,
                                                    ASSERTBRIDGEMODULE_7_assert_count,
                                                    ASSERTBRIDGEMODULE_7_assert_messages));

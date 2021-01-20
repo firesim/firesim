@@ -55,7 +55,9 @@ package object passes {
       params = Nil)
 
     val impl =
-      s"""module ${blackboxName}(
+      s"""|`ifndef ${blackboxName.toUpperCase()}
+          |`define ${blackboxName.toUpperCase()}
+          |module ${blackboxName}(
           |  input      I,
           |  input      CE,
           |  output reg O
@@ -67,14 +69,20 @@ package object passes {
           |  assign O = (I & enable);
           |  /* verilator lint_on COMBDLY */
           |endmodule
+          |`endif
           |""".stripMargin
 
     def analyze(cs: CircuitState): CircuitName = CircuitName(cs.circuit.main)
-    def transformer(cName: CircuitName) = { c: Circuit => c.copy(modules = c.modules :+ blackbox) }
+
+    def transformer(cName: CircuitName) = {
+      c: Circuit =>
+        c.copy(modules = c.modules ++ Some(blackbox).filterNot(bb => c.modules.contains(blackbox)))
+    }
+
     def annotater(cName: CircuitName) = {
       anns: AnnotationSeq =>
         val blackboxAnn = BlackBoxInlineAnno(ModuleName(blackboxName, cName), s"${blackboxName}.v", impl)
-        anns :+ blackboxAnn
+        anns ++ Some(blackboxAnn).filterNot(a => anns.contains(blackboxAnn))
     }
   }
 

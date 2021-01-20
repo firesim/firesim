@@ -104,7 +104,7 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     val readLatency = genWORegInit(Wire(UInt(latencyBits.W)), "read_latency", defaultReadLatency)
     val writeLatency = genWORegInit(Wire(UInt(latencyBits.W)), "write_latency", defaultWriteLatency)
 
-    chisel3.experimental.withReset(reset.toBool || targetReset) {
+    withReset(reset.toBool || targetReset) {
       when (tFire) {
         assert(!target.req.fire || ((dataBeats.U * target.req.bits.len) < ((BigInt(1) << sectorBits) - 1).U),
                "Transaction length exceeds timing model maximum supported length")

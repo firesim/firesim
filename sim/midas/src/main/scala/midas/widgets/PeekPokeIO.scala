@@ -63,6 +63,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
 
     // Asserted by a channel when it is advancing or has advanced ahead of tCycle
     val channelDecouplingFlags = mutable.ArrayBuffer[Bool]()
+    val outputPrecisePeekableFlags = mutable.ArrayBuffer[Bool]()
     val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
     @chiselName
@@ -120,11 +121,16 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       }
 
       channelDecouplingFlags += isAhead
+      outputPrecisePeekableFlags += cyclesAhead.value === 1.U
       reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
     }
 
     val inputAddrs = hPort.ins.map(elm => bindInputs(elm._1, elm._2))
     val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
+
+    // Every output one token "ahead" (current cycle value available) <=> entire PeekPoke state "precisely" peekable
+    genRORegInit((io.idle +: outputPrecisePeekableFlags).reduce(_ && _), "PRECISE_PEEKABLE", 0.U)
+    genRORegInit(io.idle, "READY", 0.U)
 
     val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
     // tCycleWouldAdvance will be asserted if all inputs have been poked; but only increment

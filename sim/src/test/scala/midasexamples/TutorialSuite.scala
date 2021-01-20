@@ -38,9 +38,8 @@ abstract class TutorialSuite(
 
 
   def runTest(b: String, debug: Boolean = false) {
-    behavior of s"$targetName in $b"
     compileMlSimulator(b, debug)
-    val testEnv = "MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
+    val testEnv = s"${b} MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
     if (isCmdAvailable(b)) {
       it should s"pass in ${testEnv}" in {
         assert(run(b, debug, args = simulationArgs) == 0)
@@ -87,7 +86,9 @@ abstract class TutorialSuite(
     }
   }
 
-  clean
+  mkdirs()
+  behavior of s"$targetName"
+  elaborateAndCompile()
   runTest(backendSimulator)
 }
 
@@ -172,6 +173,16 @@ class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterMo
 // Basic test for deduplicated extracted models
 class TwoAddersF1Test extends TutorialSuite("TwoAdders")
 
+class RegfileF1Test extends TutorialSuite("Regfile")
+
+class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
+
+class MultiSRAMF1Test extends TutorialSuite("MultiSRAM")
+
+class NestedModelsF1Test extends TutorialSuite("NestedModels")
+
+class MultiRegF1Test extends TutorialSuite("MultiReg")
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
@@ -206,7 +217,12 @@ class GoldenGateMiscCITests extends Suites(
   new TwoAddersF1Test,
   new TriggerWiringModuleF1Test,
   new WireInterconnectF1Test,
-  new TrivialMulticlockF1Test
+  new TrivialMulticlockF1Test,
+  new RegfileF1Test,
+  new MultiRegfileF1Test,
+  new MultiSRAMF1Test,
+  new NestedModelsF1Test,
+  new MultiRegF1Test
 )
 
 // Each group runs on a single worker instance

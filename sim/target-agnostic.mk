@@ -46,19 +46,23 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 ####################################
 # Golden Gate Invocation           #
 ####################################
-midas_sbt_project := {file:$(firesim_base_dir)}midas
 firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # Pre-simulation-mapping annotations which includes all Bridge Annotations
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 
-$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
-	cd $(base_dir) && $(SBT) "project $(midas_sbt_project)" "runMain midas.stage.GoldenGateMain \
+# Disable FIRRTL 1.4 deduplication because it creates multiple failures
+# Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
+# pass --no-legacy-dedup as well
+$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
+	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
 		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
-		-E verilog"
+		--no-dedup \
+		-E verilog \
+	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(VERILOG) # Append blackboxes to FPGA wrapper, if any
 
@@ -73,10 +77,11 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE)
 .PHONY: conf
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && \
-	$(SBT) "project $(midas_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	# Runtime configuration generator must run under SBT currently; When
+	# launched via bloop some Console input and output is lost.
+	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
-		-ggaf $(fame_annos) \
+		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		-ggrc $(CONF_NAME)"
@@ -243,13 +248,20 @@ unittest_args = \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
-		SBT="$(SBT) \"project $(firesim_root_sbt_project)\" " \
+		SBT="$(SBT)" \
+		SBT_PROJECT=$(firesim_root_sbt_project) \
 		CONFIG=$(UNITTEST_CONFIG) \
 		TOP_DIR=$(chipyard_dir)
 
+.PHONY:compile-midas-unittests
+compile-midas-unittests: $(chisel_srcs)
+	$(MAKE) -f $(simif_dir)/unittest/Makefrag $(unittest_args)
+
+.PHONY:run-midas-unittests
 run-midas-unittests: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
+.PHONY:run-midas-unittests-debug
 run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 

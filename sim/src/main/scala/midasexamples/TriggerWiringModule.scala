@@ -29,7 +29,7 @@ class TriggerSinkModule extends MultiIOModule {
 class TriggerSourceModule extends MultiIOModule {
   val referenceCredit = IO(Output(Bool()))
   val referenceDebit = IO(Output(Bool()))
-  private val lfsr = LFSR16()
+  private val lfsr = random.LFSR(16)
 
   // DOC include start: TriggerSource Usage
   // Some arbitarily logic to drive the credit source and sink. Replace with your own!
@@ -50,7 +50,7 @@ class TriggerSourceModule extends MultiIOModule {
 class LevelSensitiveTriggerSourceModule extends MultiIOModule {
   val referenceCredit = IO(Output(Bool()))
   val referenceDebit = IO(Output(Bool()))
-  private val enable = LFSR16()(0)
+  private val enable = random.LFSR(16)(0)
 
   // DOC include start: TriggerSource Level-Sensitive Usage
   import midas.targetutils.TriggerSource
@@ -101,7 +101,7 @@ object ReferenceSourceCounters {
 // implement in FIRRTL. The test fails if the firrtl-generated trigger-enables,
 // as seen by all nodes with a trigger sink, fail to match their references.
 class TriggerWiringModule(implicit p: Parameters) extends RawModule {
-  val clockBridge = Module(new RationalClockBridge(RationalClock("HalfRate", 1, 2)))
+  val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2))
   val refClock :: div2Clock :: _ = clockBridge.io.clocks.toList
   val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
   val refSinks = new mutable.ArrayBuffer[Bool]()
