@@ -80,7 +80,7 @@ sequentially. Jobs are identified by their ``name`` attribute. Multiple ``-j``
 options may be passed to invoke multiple jobs. Use ``--all`` to launch all jobs
 in the workload. If neither ``--job`` nor ``--all`` are provided, the root
 workload will be run. The root workload is the parent of all the jobs (i.e. the
-top level config in your JSON). This can be useful for debugging a multi-job
+top level config in your workload). This can be useful for debugging a multi-job
 workload.
 
 ``-s --spike``

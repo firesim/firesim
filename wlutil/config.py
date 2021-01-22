@@ -1,6 +1,7 @@
 import glob
 import collections
 import json
+import yaml
 import pprint
 import logging
 import humanfriendly as hf
@@ -388,7 +389,8 @@ class Config(collections.MutableMapping):
 
         if cfgFile != None:
             with open(cfgFile, 'r') as f:
-                self.cfg = json.load(f)
+                # self.cfg = json.load(f)
+                self.cfg = yaml.safe_load(f)
             self.cfg['cfg-file'] = cfgFile
         else:
             self.cfg = cfgDict
@@ -598,6 +600,8 @@ class ConfigManager(collections.MutableMapping):
         if dirs != None:
             for d in dirs:
                 for cfgFile in d.glob('*.json'):
+                    cfgPaths.append(cfgFile)
+                for cfgFile in d.glob('*.yaml'):
                     cfgPaths.append(cfgFile)
 
         # Read all the configs from their files
