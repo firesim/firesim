@@ -1,7 +1,7 @@
 {
   "name" : "inherit-childOwnBin",
   "workdir" : "inherit",
-  "base" : "inherit-parent.json",
+  "base" : "inherit-parent.yaml",
   "linux" : {
       "config" : "linux.kfrag"
   },

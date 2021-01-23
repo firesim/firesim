@@ -5,7 +5,7 @@ import pathlib as pth
 import tempfile
 
 testSrc = pth.Path(__file__).parent.resolve()
-testCfg = testSrc.parent / "fsSize.json"
+testCfg = testSrc.parent / "fsSize.yaml"
 marshalBin = pth.Path(sys.argv[1])
 
 

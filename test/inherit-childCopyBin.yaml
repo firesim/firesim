@@ -1,7 +1,7 @@
 {
   "name" : "inherit-childCopyBin",
   "workdir" : "inherit",
-  "base" : "inherit-parent.json",
+  "base" : "inherit-parent.yaml",
   "command" : "cat /root/runOutput",
   "testing" : {
     "refDir" : "refOutput/childCopyBin",

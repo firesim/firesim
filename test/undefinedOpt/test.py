@@ -9,7 +9,7 @@ import re
 
 # Should be the directory containing the test
 testSrc = pth.Path(__file__).parent.resolve()
-testCfg = testSrc.parent / "undefinedOpt.json"
+testCfg = testSrc.parent / "undefinedOpt.yaml"
 
 if len(sys.argv) > 1:
     managerPath = pth.Path(sys.argv[1])

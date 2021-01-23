@@ -27,7 +27,7 @@ categoryArgs = {
 
 # lists of test names to run for each category, each name
 # should correspond to a test in FireMarshal/tests. E.G. "command" means
-# "FireMarshal/test/command.json". 
+# "FireMarshal/test/command.yaml". 
 categoryTests = {
         # Run on spike. These tests depend only on an installed toolchain, you
         # don't need to initialize Marshal's submodules to run this category
@@ -126,7 +126,7 @@ def runTests(testNames, categoryName, marshalArgs=[], cmdArgs=[]):
 
     for tName in testNames:
         log.log(logging.INFO, "[{}] {}:".format(categoryName, tName))
-        tPath = testDir / (tName + ".json")
+        tPath = testDir / (tName + ".yaml")
 
         try:
             # These log at level DEBUG (go to log file but not stdout)

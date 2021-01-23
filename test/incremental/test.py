@@ -15,7 +15,7 @@ usage = """Usage: ./test.py PATH/TO/MARSHAL"""
 
 # Should be the directory containing the incremental test
 testSrc = pth.Path(__file__).parent
-testCfg = testSrc.parent / "incremental.json"
+testCfg = testSrc.parent / "incremental.yaml"
 
 # Should be the directory containing marshal
 if len(sys.argv) != 2:

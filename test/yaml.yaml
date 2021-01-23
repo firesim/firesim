@@ -1,0 +1,9 @@
+{
+  # This wouldn't work in a JSON file!
+  "name" : "yaml",
+  "base" : "br-base.json",
+  "command" : "echo Global: command",
+  "testing" : {
+      "refDir" : "refOutput"
+  }
+}
