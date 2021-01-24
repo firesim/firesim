@@ -43,7 +43,7 @@ class PassthroughModule[T <: Data](gen: T) extends Module {
 
 class PassthroughModelDUT extends Module {
   val io = IO(new Bundle {})
-  val lfsr = chisel3.util.LFSR16()
+  val lfsr = chisel3.util.random.LFSR(16)
 
   val passthru = Module(new PassthroughModule(UInt(16.W)))
   annotate(FAMEModelAnnotation(passthru))
@@ -54,7 +54,7 @@ class PassthroughModel(implicit p: Parameters) extends PeekPokeMidasExampleHarne
 
 class PassthroughModelNestedDUT extends Module {
   val io = IO(new Bundle {})
-  val lfsr = chisel3.util.LFSR16()
+  val lfsr = chisel3.util.random.LFSR(16)
 
   val passthru = Module(new ModuleNester(() => new PassthroughModule(UInt(16.W))))
   annotate(FAMEModelAnnotation(passthru))
