@@ -20,7 +20,7 @@ Ad-hoc Performance Counters
 ------------------------------
 
 AutoCounter enables the addition of ad-hoc counters using the ``PerfCounter``
-function.  The ``PerfCounter`` function takes 3 arguments: A boolean signal to
+function.  The ``PerfCounter`` function takes 3 arguments: A UInt signal to
 be counted, a counter label, and the counter description. Here is an example
 counter declaration:
 
