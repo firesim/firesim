@@ -84,4 +84,4 @@ lazy val firesim    = (project in file("."))
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
-  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", firechip % "test->test;compile->compile")

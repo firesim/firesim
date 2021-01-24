@@ -95,9 +95,7 @@ abstract class TutorialSuite(
 //class PointerChaserF1Test extends TutorialSuite(
 //  "PointerChaser", "PointerChaserConfig", simulationArgs = Seq("`cat runtime.conf`"))
 class GCDF1Test extends TutorialSuite("GCD")
-// Hijack Parity to test all of the Midas-level backends
 class ParityF1Test extends TutorialSuite("Parity") {
-  runTest("verilator", true)
   runTest("vcs", true)
 }
 class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister")
@@ -229,7 +227,7 @@ class GoldenGateMiscCITests extends Suites(
 class CIGroupA extends Suites(
   new ChiselExampleDesigns,
   new PrintfSynthesisCITests,
-  new firesim.fasedtests.CIGroupA,
+  new firesim.fasedtests.CIGroupA
 )
 
 class CIGroupB extends Suites(

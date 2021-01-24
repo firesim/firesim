@@ -67,7 +67,10 @@ commands:
   run-scala-test:
     description: "Runs the scala test with name <test-package>.<test-name>"
     parameters:
-      project:
+      target-project:
+        type: string
+        default: "midasexamples"
+      sbt-project:
         type: string
         default: "firesim"
       test-name:
@@ -89,15 +92,15 @@ commands:
           - run:
               command: |
                   source env.sh
-                  make -C sim TARGET_PROJECT=midasexamples sbt \
-                      SBT_COMMAND="project << parameters.project >>; Test / runMain firesim.EmitCIElaborationScript elaborate.sh << parameters.test-package >>.<< parameters.test-name >>"
+                  make -C sim TARGET_PROJECT=<< parameters.target-project >> sbt \
+                      SBT_COMMAND="project << parameters.sbt-project >>; Test / runMain firesim.EmitCIElaborationScript elaborate.sh << parameters.test-package >>.<< parameters.test-name >>"
                   bash -x sim/elaborate.sh || true
               no_output_timeout: << parameters.timeout >>
       - run:
           command: |
               source env.sh
-              make -C sim TARGET_PROJECT=midasexamples sbt \
-                  SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >> -- -Dci-skip-elaboration=true"
+              make -C sim TARGET_PROJECT=<< parameters.target-project >> sbt \
+                  SBT_COMMAND="project << parameters.sbt-project >>; testOnly << parameters.test-package >>.<< parameters.test-name >> -- -Dci-skip-elaboration=true"
           no_output_timeout: << parameters.timeout >>
 
   repo-setup:
@@ -118,6 +121,11 @@ jobs:
       - repo-setup
       - run-scala-test:
           test-name: "CIGroupA"
+      - run-scala-test:
+          target-project: "firesim"
+          sbt-project: "firechip"
+          test-package: "firesim.firesim"
+          test-name: "RocketF1Tests"
       - build-scala-doc
 
   run-test-groupB:
@@ -127,7 +135,7 @@ jobs:
       - run-scala-test:
           test-name: "CIGroupB"
       - run-scala-test:
-           project: "midas"
+           sbt-project: "midas"
            test-package: "*"
            test-name: "*"
            separate-elaboration: false

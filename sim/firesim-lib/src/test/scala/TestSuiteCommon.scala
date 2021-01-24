@@ -49,9 +49,10 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
 
   implicit def toStr(f: File): String = f.toString replace (File.separator, "/")
 
-  // Defines a make target that will build all prerequistes for downstream
-  // tests that require a Scala invocation.
-  def elaborateMakeTarget: Seq[String] = Seq("compile")
+  // Defines a make target that will build all memory intensive prerequistes before
+  // invoking scalatest in earnest. Circle CI's 4GiB limit cannot support
+  // running both a Chisel/GG/Verilator task + having a whole JVMa running scalatest
+  def ciPrereqTarget: Seq[String] = Seq("verilator")
 
   def makeCommand(makeArgs: String*): Seq[String] = {
     Seq("make", "-C", s"$firesimDir") ++ makeArgs.toSeq ++ commonMakeArgs ++ platformMakeArgs
@@ -68,6 +69,7 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
   // is used to prevent re-invoking make on a target with a dependency on the
   // result of this recipe. Which would lead to a second failure.
   def makeCriticalDependency(makeArgs: String*): Int = {
+    val target = (if (ciSkipElaboration) Seq("-q") else Seq()) ++ makeArgs
     val returnCode = make(makeArgs:_*)
     transitiveFailure = returnCode != 0
     returnCode
@@ -83,18 +85,18 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
   // Generally elaboration + GG compilation.
   def elaborateAndCompile(behaviorDescription: String = "elaborate and compile through GG sucessfully") {
     it should behaviorDescription in {
-      // Under CI, if make failed during elaboration we catch it here without
-      // attempting to rebuild
-      val target = (if (ciSkipElaboration) Seq("-q") else Seq()) ++ elaborateMakeTarget
-      assert(makeCriticalDependency(target:_*) == 0)
+      assert(makeCriticalDependency("compile") == 0)
     }
   }
 
   // Compiles a MIDAS-level RTL simulator of the target
   def compileMlSimulator(b: String, debug: Boolean = false) {
-    if (isCmdAvailable(b)) {
+    // Skip building verilator-debug targets in CI until there is support for building two targets
+    // in the out-of-context elaboraiton
+    if (isCmdAvailable(b) && (!ciSkipElaboration || (b == "verilator" && !debug))) {
       it should s"compile sucessfully to ${b}" + { if (debug) " with waves enabled" else "" } in {
-        assert(makeCriticalDependency(s"$b%s".format(if (debug) "-debug" else "")) == 0)
+        val simTarget = s"$b%s".format(if (debug) "-debug" else "")
+        assert(makeCriticalDependency(simTarget) == 0)
       }
     }
   }
@@ -110,7 +112,13 @@ abstract class MidasUnitTestSuite(unitTestConfig: String, shouldFail: Boolean = 
 
   // Use the default recipe which also will compile verilator since there's no
   // separate target for just elaboration
-  override def elaborateMakeTarget = Seq("compile-midas-unittests")
+  override def ciPrereqTarget = Seq("compile-midas-unittests")
+
+  def compile(behaviorDescription: String = "elaborate and compile successfully") {
+    it should behaviorDescription in {
+      assert(makeCriticalDependency(ciPrereqTarget:_*) == 0)
+    }
+  }
   override lazy val genDir  = new File(s"generated-src/unittests/${targetTuple}")
   override lazy val outDir = new File(s"output/unittests/${targetTuple}")
 
@@ -130,7 +138,7 @@ abstract class MidasUnitTestSuite(unitTestConfig: String, shouldFail: Boolean = 
 
   mkdirs
   behavior of s"MIDAS unittest: ${unitTestConfig}"
-  elaborateAndCompile("elaborate sucessfully")
+  compile("elaborate sucessfully")
   runUnitTestSuite("verilator")
 }
 
