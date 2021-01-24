@@ -18,10 +18,10 @@ import scala.collection.mutable
   *  CheckCombLoops to return only passthrough connectivity (this represents
   *  subset of of all combinationally connected paths).
   *
-  * @param state the CircuitState to simplify
+  * @param circuit the circuit to simplify
   */
 object RemoveNonWirePrimitives {
-  def apply(state: CircuitState): CircuitState = {
+  def apply(circuit: Circuit): Circuit = {
     def onExpr(e: Expression): Expression = e.map(onExpr) match {
       // Reject all subfield accesses on a memory
       // case WSubField(WSubField(_,_,_,_),_,_,_) => EmptyExpression
@@ -41,16 +41,16 @@ object RemoveNonWirePrimitives {
     }
 
     def onModule(m: DefModule): DefModule = m.map(onStmt)
-    state.copy(circuit = state.circuit.map(onModule))
+    circuit.map(onModule)
   }
 }
 
 /**
   * After [[ExtractModel]] it is common to have passthrough paths (i.e.,
-  * Identity combinational paths) that snake through the hub and multiple
+  * identity combinational paths) that snake through the hub and multiple
   * satellites, potentially increasing FMR.
   *
-  * This pass pulls these into the top-level module so that they can be
+  * This pass pulls these into the FAME wrapper module so that they can be
   * excised, and eventually implemented with a set of channels that fanout from
   * the actual source driver.
   *
@@ -70,9 +70,8 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
     def collectInstances(insts: mutable.ArrayBuffer[WDefInstance])(s: Statement): Unit = {
       s match {
         case wdef: WDefInstance => insts += wdef
-        case o => Nil
+        case o => o.foreach(collectInstances(insts))
       }
-      s.foreach(collectInstances(insts))
     }
 
     val modelInstances = new mutable.ArrayBuffer[WDefInstance]()
@@ -97,7 +96,8 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
     val allSinks = modelSinks ++ bridgeSinks
     val allSources = modelSources ++ bridgeSources
 
-    val connectivity = new CheckCombLoops().analyzeFull(RemoveNonWirePrimitives(state))(state.circuit.main)
+    val simplifiedState = state.copy(circuit = RemoveNonWirePrimitives(state.circuit))
+    val connectivity = new CheckCombLoops().analyzeFull(simplifiedState)(state.circuit.main)
     val originalSources = allSources.filter { s => connectivity.reachableFrom(s).isEmpty }.toSet
 
     val sink2sourceMap = (for (sink <- allSinks) yield {
