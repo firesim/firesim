@@ -9,7 +9,7 @@
     },
     {
       "name" : "dummy",
-      "base" : "dummy.json"
+      "base" : "dummy.yaml"
     }
   ],
   "testing" : {

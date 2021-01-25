@@ -3,9 +3,10 @@
 Workload Specification
 =================================
 
-Workloads are defined by a JSON-formatted configuration file and corresponding workload source
-directory. These files can be anywhere on your filesystem. Most paths in the
-configuration file are assumed to be relative to the workload source directory.
+Workloads are defined by a JSON or YAML-formatted configuration file and
+corresponding workload source directory. These files can be anywhere on your
+filesystem. Most paths in the configuration file are assumed to be relative to
+the workload source directory.
 
 .. _workload-search-paths:
 

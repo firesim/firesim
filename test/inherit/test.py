@@ -8,9 +8,9 @@ import re
 
 # Should be the directory containing the test
 testSrc = pth.Path(__file__).parent.resolve()
-copyBinCfg = testSrc.parent / "inherit-childCopyBin.json"
-ownBinCfg = testSrc.parent / "inherit-childOwnBin.json"
-parentCfg = testSrc.parent / "inherit-parent.json"
+copyBinCfg = testSrc.parent / "inherit-childCopyBin.yaml"
+ownBinCfg = testSrc.parent / "inherit-childOwnBin.yaml"
+parentCfg = testSrc.parent / "inherit-parent.yaml"
 
 if len(sys.argv) > 1:
     managerPath = pth.Path(sys.argv[1])
