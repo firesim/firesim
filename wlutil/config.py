@@ -1,6 +1,5 @@
 import glob
 import collections
-import json
 import yaml
 import pprint
 import logging
@@ -615,7 +614,7 @@ class ConfigManager(collections.MutableMapping):
             except KeyError as e:
                 log.warning("Skipping " + str(f) + ":")
                 log.warning("\tMissing required option '" + e.args[0] + "'")
-                del self.cfgs[cfgName]
+                self.cfgs.pop(cfgName, None)
                 continue
             except Exception as e:
                 log.warning("Skipping " + str(f) + ": Unable to parse config:")
