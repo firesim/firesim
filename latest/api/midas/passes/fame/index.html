@@ -123,6 +123,10 @@
                         <a href="AddHostClockAndReset$.html" title="">AddHostClockAndReset</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="AddRemainingFanoutAnnotations$.html" title="This transform adds FAMEChannelFanoutAnnotations to collections of channels that have a common set of sources (they are driven by the same model)."></a>
+                        <a href="AddRemainingFanoutAnnotations$.html" title="This transform adds FAMEChannelFanoutAnnotations to collections of channels that have a common set of sources (they are driven by the same model).">AddRemainingFanoutAnnotations</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="object" href="And$.html" title=""></a>
                         <a href="And$.html" title="">And</a>
                       </li><li class="current-entities indented3">
@@ -133,6 +137,18 @@
                         <span class="separator"></span>
                         <a class="class" href="ChannelExcision.html" title=""></a>
                         <a href="ChannelExcision.html" title="">ChannelExcision</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelFlow.html" title=""></a>
+                        <a href="ChannelFlow.html" title="">ChannelFlow</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ChannelSink$.html" title=""></a>
+                        <a href="ChannelSink$.html" title="">ChannelSink</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ChannelSource$.html" title=""></a>
+                        <a href="ChannelSource$.html" title="">ChannelSource</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="ConditionalConnect$.html" title=""></a>
@@ -207,6 +223,10 @@
                         <a href="FAMEChannelConnectionAnnotation.html" title="An annotation that describes the top-level connectivity of channels on different model instances.">FAMEChannelConnectionAnnotation</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="class" href="FAMEChannelFanoutAnnotation.html" title="An annotation that lables a set of FAMEChannelConnectionAnnotations as originating from the same source."></a>
+                        <a href="FAMEChannelFanoutAnnotation.html" title="An annotation that lables a set of FAMEChannelConnectionAnnotations as originating from the same source.">FAMEChannelFanoutAnnotation</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="trait" href="FAMEChannelInfo.html" title="Describes the type of the channel (Wire, Forward/Reverse Decoupled)"></a>
                         <a href="FAMEChannelInfo.html" title="Describes the type of the channel (Wire, Forward/Reverse Decoupled)">FAMEChannelInfo</a>
                       </li><li class="current-entities indented3">
@@ -215,8 +235,8 @@
                         <a href="FAMEChannelPortsAnnotation.html" title="An annotation that describes the ports that constitute one channel from the perspective of a particular module that will be replaced by a simulation model.">FAMEChannelPortsAnnotation</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="class" href="FAMEDefaults.html" title=""></a>
-                        <a href="FAMEDefaults.html" title="">FAMEDefaults</a>
+                        <a class="class" href="FAMEDefaults.html" title="Assumes:"></a>
+                        <a href="FAMEDefaults.html" title="Assumes:">FAMEDefaults</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="class" href="FAMEGlobalSignal.html" title=""></a>
@@ -339,6 +359,10 @@
                         <a href="PipeChannel.html" title="Indicates that a channel connection is a pipe with &lt;latency&gt; register stages Setting latency = 0 models a wire">PipeChannel</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="PromotePassthroughConnections$.html" title="After ExtractModel it is common to have passthrough paths (i.e., identity combinational paths) that snake through the hub and multiple satellites, potentially increasing FMR."></a>
+                        <a href="PromotePassthroughConnections$.html" title="After ExtractModel it is common to have passthrough paths (i.e., identity combinational paths) that snake through the hub and multiple satellites, potentially increasing FMR.">PromotePassthroughConnections</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="class" href="PromoteSubmodule.html" title="Takes PromoteSubmodule annotations for instantiations and causes each corresponding instance to be removed; ports are added to the parent module and the submodule is added as a peer instance to all modules instantiating the parent module."></a>
                         <a href="PromoteSubmodule.html" title="Takes PromoteSubmodule annotations for instantiations and causes each corresponding instance to be removed; ports are added to the parent module and the submodule is added as a peer instance to all modules instantiating the parent module.">PromoteSubmodule</a>
                       </li><li class="current-entities indented3">
@@ -377,6 +401,10 @@
                         <span class="separator"></span>
                         <a class="object" href="RegZeroPreset$.html" title="Generates a DefRegister with no reset, relying instead on FPGA programming to preset the register to 0"></a>
                         <a href="RegZeroPreset$.html" title="Generates a DefRegister with no reset, relying instead on FPGA programming to preset the register to 0">RegZeroPreset</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="RemoveNonWirePrimitives$.html" title="Removes all non-passthrough expressions in a circuit so that we can use CheckCombLoops to return only passthrough connectivity (this represents subset of of all combinationally connected paths)."></a>
+                        <a href="RemoveNonWirePrimitives$.html" title="Removes all non-passthrough expressions in a circuit so that we can use CheckCombLoops to return only passthrough connectivity (this represents subset of of all combinationally connected paths).">RemoveNonWirePrimitives</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="SeparateInstanceDecls$.html" title=""></a>
@@ -542,6 +570,22 @@
       </span>
       <span class="symbol">
         <a title="" href="ChannelExcision.html"><span class="name">ChannelExcision</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.fame.ChannelFlow" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ChannelFlowextendsAnyRef"></a><a id="ChannelFlow:ChannelFlow"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ChannelFlow.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ChannelFlow.html"><span class="name">ChannelFlow</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
       </span>
       
       
@@ -733,6 +777,27 @@ channels on different model instances.</p><div class="fullcomment"><div class="c
 channels on different model instances.
 </p></div><dl class="paramcmts block"><dt class="param">globalName</dt><dd class="cmt"><p>a globally unique name for this channel connection</p></dd><dt class="param">channelInfo</dt><dd class="cmt"><p>describes the type of the channel (Wire, Forward/Reverse
  Decoupled)</p></dd><dt class="param">clock</dt><dd class="cmt"><p>the *source* of the clock (if any) associated with this channel</p></dd></dl><dl class="attributes block"> <dt>Note</dt><dd><span class="cmt"><p>The clock source must be a port on the model side of the channel</p></span></dd></dl></div>
+    </li><li name="midas.passes.fame.FAMEChannelFanoutAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FAMEChannelFanoutAnnotationextendsNoTargetAnnotationwithFAMEAnnotationwithProductwithSerializable"></a><a id="FAMEChannelFanoutAnnotation:FAMEChannelFanoutAnnotation"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/FAMEChannelFanoutAnnotation.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="An annotation that lables a set of FAMEChannelConnectionAnnotations as originating from the same source." href="FAMEChannelFanoutAnnotation.html"><span class="name">FAMEChannelFanoutAnnotation</span></a><span class="params">(<span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <a href="../../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">An annotation that lables a set of <a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s as originating from
+the same source.</p><div class="fullcomment"><div class="comment cmt"><p>An annotation that lables a set of <a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s as originating from
+the same source. For channels sourced by a model (non-bridge) <a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s that fanout
+should share identical sources. However, channels sourced by bridge currently have their sources param set to None, and so
+this annotation is necessary to re-associate them.
+</p></div><dl class="paramcmts block"><dt class="param">channelNames</dt><dd class="cmt"><p>The list of fanout channels</p></dd></dl></div>
     </li><li name="midas.passes.fame.FAMEChannelInfo" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="FAMEChannelInfoextendsAnyRef"></a><a id="FAMEChannelInfo:FAMEChannelInfo"></a>
       <span class="permalink">
@@ -782,7 +847,7 @@ model. This module must only be instantiated at the top level.
  ReferenceTargets should be rooted at M, since this information is
  local to the module. This is also what associates the annotation
  with a given module M</p></dd></dl></div>
-    </li><li name="midas.passes.fame.FAMEDefaults" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="midas.passes.fame.FAMEDefaults" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="FAMEDefaultsextendsTransform"></a><a id="FAMEDefaults:FAMEDefaults"></a>
       <span class="permalink">
       <a href="../../../midas/passes/fame/FAMEDefaults.html" title="Permalink">
@@ -794,10 +859,15 @@ model. This module must only be instantiated at the top level.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="FAMEDefaults.html"><span class="name">FAMEDefaults</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
+        <a title="Assumes:" href="FAMEDefaults.html"><span class="name">FAMEDefaults</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       
-      
+      <p class="shortcomment cmt"> Assumes:</p><div class="fullcomment"><div class="comment cmt"><p> Assumes:</p><ul><li>AQB form (target module hierachy matches eventually LI-BDN graph, with
+     connectivity still in place.)</li><li>Only extant FCCAs are on top-level I/O</li></ul><p> Run after ExtractModel
+ Label all unbound top-level ports as wire channels
+ Label *all* model-to-model connections as wire channels
+ Label all children of the top model to be FAME1 transformed
+</p></div></div>
     </li><li name="midas.passes.fame.FAMEGlobalSignal" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="FAMEGlobalSignalextendsSingleTargetAnnotation[firrtl.annotations.ReferenceTarget]withFAMEAnnotation"></a><a id="FAMEGlobalSignal:FAMEGlobalSignal"></a>
       <span class="permalink">
@@ -1354,6 +1424,26 @@ after the PromoteSubmodule transform has run.
       </span>
       
       
+    </li><li name="midas.passes.fame.AddRemainingFanoutAnnotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AddRemainingFanoutAnnotations"></a><a id="AddRemainingFanoutAnnotations:AddRemainingFanoutAnnotations"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/AddRemainingFanoutAnnotations$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="This transform adds FAMEChannelFanoutAnnotations to collections of channels that have a common set of sources (they are driven by the same model)." href="AddRemainingFanoutAnnotations$.html"><span class="name">AddRemainingFanoutAnnotations</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">This transform adds <span class="extype" name="FAMEChannelFanoutAnnotations">FAMEChannelFanoutAnnotations</span> to collections of channels
+that have a common set of sources (they are driven by the same model).</p><div class="fullcomment"><div class="comment cmt"><p>This transform adds <span class="extype" name="FAMEChannelFanoutAnnotations">FAMEChannelFanoutAnnotations</span> to collections of channels
+that have a common set of sources (they are driven by the same model). This is later used
+in SimulationMapping to emit forking channels.
+</p></div></div>
     </li><li name="midas.passes.fame.And" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="And"></a><a id="And:And"></a>
       <span class="permalink">
@@ -1367,6 +1457,38 @@ after the PromoteSubmodule transform has run.
       </span>
       <span class="symbol">
         <a title="" href="And$.html"><span class="name">And</span></a><span class="result"> extends <a href="BinaryBooleanOp.html" class="extype" name="midas.passes.fame.BinaryBooleanOp">BinaryBooleanOp</a></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.fame.ChannelSink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChannelSink"></a><a id="ChannelSink:ChannelSink"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ChannelSink$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ChannelSink$.html"><span class="name">ChannelSink</span></a><span class="result"> extends <a href="ChannelFlow.html" class="extype" name="midas.passes.fame.ChannelFlow">ChannelFlow</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.fame.ChannelSource" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChannelSource"></a><a id="ChannelSource:ChannelSource"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ChannelSource$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ChannelSource$.html"><span class="name">ChannelSource</span></a><span class="result"> extends <a href="ChannelFlow.html" class="extype" name="midas.passes.fame.ChannelFlow">ChannelFlow</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -1554,11 +1676,13 @@ compliant FAME1 transform.</p>
       
       <p class="shortcomment cmt">In general, multi-clock Golden Gate simulations contain exactly one &quot;hub&quot; model that coordinates the clock domains
 and has a clock channel.</p><div class="fullcomment"><div class="comment cmt"><p>In general, multi-clock Golden Gate simulations contain exactly one &quot;hub&quot; model that coordinates the clock domains
-and has a clock channel. Before this pass runs, loopback channels (those that run from one model to another) have no
-associated clock. The FAME transform expects that all channels that connect to the hub model have an associated
-clock, so this pass finds the top-level clock connection that drives the single clock of each &quot;satellite&quot; (non-hub)
-model and associates the clock output of the hub model driving this clock with all channels connecting the hub and
-the satellite. Channels between satellite models are not changed.
+and has a clock channel. All other non-hub models have a single clock domain.</p><p>Before this pass runs, channels (encoded by <a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s)
+that run between models have no associated clock. The FAME transform
+expects that all channels that connect to the hub model have an associated
+clock. This pass builds a graph of clock connectivity between models and
+uses that to populate the the clock field of inter-model
+<span class="extype" name="FAMEChannelConnectionAnnotations">FAMEChannelConnectionAnnotations</span> that are sourced or sinked by the hub
+model.</p><p><a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s between non-hub models are not changed.
 </p></div></div>
     </li><li name="midas.passes.fame.ImplementThreadedMems" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ImplementThreadedMems"></a><a id="ImplementThreadedMems:ImplementThreadedMems"></a>
@@ -1800,6 +1924,28 @@ the satellite. Channels between satellite models are not changed.
       </span>
       
       
+    </li><li name="midas.passes.fame.PromotePassthroughConnections" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PromotePassthroughConnections"></a><a id="PromotePassthroughConnections:PromotePassthroughConnections"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/PromotePassthroughConnections$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="After ExtractModel it is common to have passthrough paths (i.e., identity combinational paths) that snake through the hub and multiple satellites, potentially increasing FMR." href="PromotePassthroughConnections$.html"><span class="name">PromotePassthroughConnections</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">After <a href="ExtractModel.html" class="extype" name="midas.passes.fame.ExtractModel">ExtractModel</a> it is common to have passthrough paths (i.e.,
+identity combinational paths) that snake through the hub and multiple
+satellites, potentially increasing FMR.</p><div class="fullcomment"><div class="comment cmt"><p>After <a href="ExtractModel.html" class="extype" name="midas.passes.fame.ExtractModel">ExtractModel</a> it is common to have passthrough paths (i.e.,
+identity combinational paths) that snake through the hub and multiple
+satellites, potentially increasing FMR.</p><p>This pass pulls these into the FAME wrapper module so that they can be
+excised, and eventually implemented with a set of channels that fanout from
+the actual source driver.</p></div></div>
     </li><li name="midas.passes.fame.RTRenamer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RTRenamer"></a><a id="RTRenamer:RTRenamer"></a>
       <span class="permalink">
@@ -1834,6 +1980,24 @@ the satellite. Channels between satellite models are not changed.
       <p class="shortcomment cmt">Generates a DefRegister with no reset, relying instead on FPGA programming
 to preset the register to 0
 </p>
+    </li><li name="midas.passes.fame.RemoveNonWirePrimitives" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RemoveNonWirePrimitives"></a><a id="RemoveNonWirePrimitives:RemoveNonWirePrimitives"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/RemoveNonWirePrimitives$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Removes all non-passthrough expressions in a circuit so that we can use CheckCombLoops to return only passthrough connectivity (this represents subset of of all combinationally connected paths)." href="RemoveNonWirePrimitives$.html"><span class="name">RemoveNonWirePrimitives</span></a>
+      </span>
+      
+      <p class="shortcomment cmt">Removes all non-passthrough expressions in a circuit so that we can use
+ CheckCombLoops to return only passthrough connectivity (this represents
+ subset of of all combinationally connected paths).</p>
     </li><li name="midas.passes.fame.SeparateInstanceDecls" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SeparateInstanceDecls"></a><a id="SeparateInstanceDecls:SeparateInstanceDecls"></a>
       <span class="permalink">

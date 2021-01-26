@@ -111,8 +111,8 @@
                         <a href="AssertTokenIrrevocable$.html" title="">AssertTokenIrrevocable</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedWrapperIO.html" title=""></a>
-                        <a href="ChannelizedWrapperIO.html" title="">ChannelizedWrapperIO</a>
+                        <a class="class" href="ChannelizedWrapperIO.html" title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations."></a>
+                        <a href="ChannelizedWrapperIO.html" title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations.">ChannelizedWrapperIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockRecord.html" title=""></a>
@@ -227,16 +227,16 @@
                         <a href="SimUtils$.html" title="">SimUtils</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="SimWrapper.html" title=""></a>
-                        <a href="SimWrapper.html" title="">SimWrapper</a>
+                        <a class="class" href="SimWrapper.html" title="The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator collateral."></a>
+                        <a href="SimWrapper.html" title="The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator collateral.">SimWrapper</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="SimWrapperChannels.html" title=""></a>
                         <a href="SimWrapperChannels.html" title="">SimWrapperChannels</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="SimWrapperConfig.html" title=""></a>
-                        <a href="SimWrapperConfig.html" title="">SimWrapperConfig</a>
+                        <a class="class" href="SimWrapperConfig.html" title="The metadata required to generate the simulation wrapper."></a>
+                        <a href="SimWrapperConfig.html" title="The metadata required to generate the simulation wrapper.">SimWrapperConfig</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="SimWrapperKey$.html" title=""></a>
@@ -253,6 +253,10 @@
                         <span class="separator"></span>
                         <a class="object" href="TokenComparisonFunctions$.html" title=""></a>
                         <a href="TokenComparisonFunctions$.html" title="">TokenComparisonFunctions</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="UnpackedWrapperConfig.html" title="A convienence mixin that preprocesses the SimWrapperConfig"></a>
+                        <a href="UnpackedWrapperConfig.html" title="A convienence mixin that preprocesses the SimWrapperConfig">UnpackedWrapperConfig</a>
                       </li><li name="midas.models" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="models"></a><a id="models:models"></a>
       <span class="permalink">
@@ -464,8 +468,8 @@
  as how many requests are issued per id. This generates hardware
  proportional to (2^idBits) * maxFlight.
 </p></div><dl class="paramcmts block"><dt class="param">idBits</dt><dd class="cmt"><p>The number of lower idBits of the host memory channel to use.</p></dd><dt class="param">maxFlight</dt><dd class="cmt"><p>A bound on the number of requests the simulator will make per id.</p></dd></dl></div>
-    </li><li name="midas.core.ChannelizedWrapperIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="ChannelizedWrapperIOextendsRecord"></a><a id="ChannelizedWrapperIO:ChannelizedWrapperIO"></a>
+    </li><li name="midas.core.ChannelizedWrapperIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ChannelizedWrapperIOextendsRecordwithUnpackedWrapperConfig"></a><a id="ChannelizedWrapperIO:ChannelizedWrapperIO"></a>
       <span class="permalink">
       <a href="../../midas/core/ChannelizedWrapperIO.html" title="Permalink">
         <i class="material-icons"></i>
@@ -476,10 +480,17 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="ChannelizedWrapperIO.html"><span class="name">ChannelizedWrapperIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span></span>
+        <a title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations." href="ChannelizedWrapperIO.html"><span class="name">ChannelizedWrapperIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">Builds a Record of tokenized interfaces based on a set of <span class="extype" name="FAMEChannelConnectionAnnotations">FAMEChannelConnectionAnnotations</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Record of tokenized interfaces based on a set of <span class="extype" name="FAMEChannelConnectionAnnotations">FAMEChannelConnectionAnnotations</span>.
+Chisel-types are reconstructed by looking up a FIRRTL type in <span class="extype" name="SimWrapperConfig].leafTypeMap">which can then be mapped back into a primitive chisel type.</span></p><p>This is instantiated twice:
+1) On the <a href="TargetBox.html" class="extype" name="midas.core.TargetBox">TargetBox</a>, to build a chisel-interface that can link against the FIRRTL
+2) To build the SimWrapper's IO. This has the subset of channel interfaces present on the <a href="TargetBox.html" class="extype" name="midas.core.TargetBox">TargetBox</a>
+that are connected to bridges.</p><p>This class includes many members that permit looking up record elements by
+channel type, and by channel name instead of using the underlying Chisel element
+name.
+</p></div></div>
     </li><li name="midas.core.ClockRecord" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ClockRecordextendsRecord"></a><a id="ClockRecord:ClockRecord"></a>
       <span class="permalink">
@@ -497,7 +508,7 @@
       
       
     </li><li name="midas.core.FPGATop" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FPGATopextendsLazyModulewithHasWidgets"></a><a id="FPGATop:FPGATop"></a>
+      <a id="FPGATopextendsLazyModulewithUnpackedWrapperConfigwithHasWidgets"></a><a id="FPGATop:FPGATop"></a>
       <span class="permalink">
       <a href="../../midas/core/FPGATop.html" title="Permalink">
         <i class="material-icons"></i>
@@ -508,7 +519,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="FPGATop.html"><span class="name">FPGATop</span></a><span class="result"> extends <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span> with <a href="../widgets/HasWidgets.html" class="extype" name="midas.widgets.HasWidgets">HasWidgets</a></span>
+        <a title="" href="FPGATop.html"><span class="name">FPGATop</span></a><span class="result"> extends <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a> with <a href="../widgets/HasWidgets.html" class="extype" name="midas.widgets.HasWidgets">HasWidgets</a></span>
       </span>
       
       
@@ -768,8 +779,8 @@
       </span>
       
       
-    </li><li name="midas.core.SimWrapper" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SimWrapperextendsMultiIOModule"></a><a id="SimWrapper:SimWrapper"></a>
+    </li><li name="midas.core.SimWrapper" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SimWrapperextendsMultiIOModulewithUnpackedWrapperConfig"></a><a id="SimWrapper:SimWrapper"></a>
       <span class="permalink">
       <a href="../../midas/core/SimWrapper.html" title="Permalink">
         <i class="material-icons"></i>
@@ -780,10 +791,16 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="SimWrapper.html"><span class="name">SimWrapper</span></a><span class="result"> extends <span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span></span>
+        <a title="The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator collateral." href="SimWrapper.html"><span class="name">SimWrapper</span></a><span class="result"> extends <span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator
+collateral.</p><div class="fullcomment"><div class="comment cmt"><p>The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator
+collateral.
+1) It instantiates the tranformed target (now a collection of unconnected, decoupled models)
+2) Generates channels to interconnect those models and bridges by analyzing <span class="extype" name="FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</span>s.
+3) Exposes ReadyValid interfaces for all channels sourced or sunk by a bridge as I/O
+</p></div></div>
     </li><li name="midas.core.SimWrapperChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SimWrapperChannelsextendsChannelizedWrapperIO"></a><a id="SimWrapperChannels:SimWrapperChannels"></a>
       <span class="permalink">
@@ -800,7 +817,7 @@
       </span>
       
       
-    </li><li name="midas.core.SimWrapperConfig" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="midas.core.SimWrapperConfig" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SimWrapperConfigextendsProductwithSerializable"></a><a id="SimWrapperConfig:SimWrapperConfig"></a>
       <span class="permalink">
       <a href="../../midas/core/SimWrapperConfig.html" title="Permalink">
@@ -812,10 +829,14 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="SimWrapperConfig.html"><span class="name">SimWrapperConfig</span></a><span class="params">(<span name="chAnnos">chAnnos: <span class="extype" name="scala.Seq">Seq</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>, <span name="bridgeAnnos">bridgeAnnos: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span>]</span>, <span name="leafTypeMap">leafTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="The metadata required to generate the simulation wrapper." href="SimWrapperConfig.html"><span class="name">SimWrapperConfig</span></a><span class="params">(<span name="annotations">annotations: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>, <span name="leafTypeMap">leafTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">The metadata required to generate the simulation wrapper.</p><div class="fullcomment"><div class="comment cmt"><p>The metadata required to generate the simulation wrapper.
+</p></div><dl class="paramcmts block"><dt class="param">annotations</dt><dd class="cmt"><p>Notably <span class="extype" name="FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</span>,
+<span class="extype" name="FAMEChannelFanoutAnnotation">FAMEChannelFanoutAnnotation</span>, <span class="extype" name="BridgeIOAnnotation">BridgeIOAnnotation</span>s</p></dd><dt class="param">leafTypeMap</dt><dd class="cmt"><p>Provides the means to rebuild chisel-types that can
+&quot;link&quot; against the transformed RTL (FIRRTL), and associate specific
+annotations with those types..</p></dd></dl></div>
     </li><li name="midas.core.TargetBox" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TargetBoxextendsBlackBox"></a><a id="TargetBox:TargetBox"></a>
       <span class="permalink">
@@ -848,6 +869,23 @@
       </span>
       
       
+    </li><li name="midas.core.UnpackedWrapperConfig" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="UnpackedWrapperConfigextendsAnyRef"></a><a id="UnpackedWrapperConfig:UnpackedWrapperConfig"></a>
+      <span class="permalink">
+      <a href="../../midas/core/UnpackedWrapperConfig.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="A convienence mixin that preprocesses the SimWrapperConfig" href="UnpackedWrapperConfig.html"><span class="name">UnpackedWrapperConfig</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A convienence mixin that preprocesses the <a href="SimWrapperConfig.html" class="extype" name="midas.core.SimWrapperConfig">SimWrapperConfig</a>
+</p>
     </li></ol>
             </div>
 

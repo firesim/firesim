@@ -134,20 +134,18 @@
       
       <p class="shortcomment cmt">In general, multi-clock Golden Gate simulations contain exactly one &quot;hub&quot; model that coordinates the clock domains
 and has a clock channel.</p><div class="fullcomment"><div class="comment cmt"><p>In general, multi-clock Golden Gate simulations contain exactly one &quot;hub&quot; model that coordinates the clock domains
-and has a clock channel. Before this pass runs, loopback channels (those that run from one model to another) have no
-associated clock. The FAME transform expects that all channels that connect to the hub model have an associated
-clock, so this pass finds the top-level clock connection that drives the single clock of each &quot;satellite&quot; (non-hub)
-model and associates the clock output of the hub model driving this clock with all channels connecting the hub and
-the satellite. Channels between satellite models are not changed.
+and has a clock channel. All other non-hub models have a single clock domain.</p><p>Before this pass runs, channels (encoded by <a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s)
+that run between models have no associated clock. The FAME transform
+expects that all channels that connect to the hub model have an associated
+clock. This pass builds a graph of clock connectivity between models and
+uses that to populate the the clock field of inter-model
+<span class="extype" name="FAMEChannelConnectionAnnotations">FAMEChannelConnectionAnnotations</span> that are sourced or sinked by the hub
+model.</p><p><a href="FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>s between non-hub models are not changed.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="index.html" class="extype" name="midas.passes.fame">fame</a></dd></dl></div>
     </li><li class="current-entities indented4">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">ClockConnection</a>
-                      </li><li class="current-entities indented4">
-                        <span class="separator"></span>
-                        <a class="class" href="FindDefaultClocks$$ModelInstance.html" title=""></a>
-                        <a href="FindDefaultClocks$$ModelInstance.html" title="">ModelInstance</a>
+                        <a class="class" href="" title="Used to encode clock connectivity."></a>
+                        <a href="" title="Used to encode clock connectivity.">ClockConnNode</a>
                       </li>
               </ul>
             </div>
@@ -157,8 +155,8 @@ the satellite. Channels between satellite models are not changed.
       <div id="definition">
         <div class="big-circle class">c</div>
         <p id="owner"><a href="../../index.html" class="extype" name="midas">midas</a>.<a href="../index.html" class="extype" name="midas.passes">passes</a>.<a href="index.html" class="extype" name="midas.passes.fame">fame</a>.<a href="FindDefaultClocks$.html" class="extype" name="midas.passes.fame.FindDefaultClocks">FindDefaultClocks</a></p>
-        <h1>ClockConnection<span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html" title="Permalink">
+        <h1>ClockConnNode<span class="permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -171,12 +169,17 @@ the satellite. Channels between satellite models are not changed.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ClockConnection</span><span class="params">(<span name="source">source: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="sink">sink: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">ClockConnNode</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="clockPort">clockPort: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Used to encode clock connectivity. The setting of the clockPort param defines two classes of node:
+- clockPort = None: A non-hub model instance (these have a single clock),
+                    so we need not track an additional port reference.
+- clockPort = Some(RT): Sources and sinks on the hub model. Since the hub has multiple target clocks the
+                        clockPort disambiguates the clock of the hub
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -206,7 +209,7 @@ the satellite. Channels between satellite models are not changed.
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.passes.fame.FindDefaultClocks.ClockConnection"><span>ClockConnection</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.fame.FindDefaultClocks.ClockConnNode"><span>ClockConnNode</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -226,10 +229,10 @@ the satellite. Channels between satellite models are not changed.
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="midas.passes.fame.FindDefaultClocks.ClockConnection#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(source:firrtl.annotations.ReferenceTarget,sink:firrtl.annotations.ReferenceTarget):midas.passes.fame.FindDefaultClocks.ClockConnection"></a><a id="&lt;init&gt;:ClockConnection"></a>
+              <ol><li name="midas.passes.fame.FindDefaultClocks.ClockConnNode#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(name:String,clockPort:Option[firrtl.annotations.ReferenceTarget]):midas.passes.fame.FindDefaultClocks.ClockConnNode"></a><a id="&lt;init&gt;:ClockConnNode"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#&lt;init&gt;(source:firrtl.annotations.ReferenceTarget,sink:firrtl.annotations.ReferenceTarget):midas.passes.fame.FindDefaultClocks.ClockConnection" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#&lt;init&gt;(name:String,clockPort:Option[firrtl.annotations.ReferenceTarget]):midas.passes.fame.FindDefaultClocks.ClockConnNode" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -238,7 +241,7 @@ the satellite. Channels between satellite models are not changed.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ClockConnection</span><span class="params">(<span name="source">source: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="sink">sink: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span>
+        <span class="name">ClockConnNode</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="clockPort">clockPort: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>] = <span class="symbol">None</span></span>)</span>
       </span>
       
       
@@ -255,7 +258,7 @@ the satellite. Channels between satellite models are not changed.
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -271,7 +274,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html###():Int" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -287,7 +290,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -303,7 +306,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -316,10 +319,26 @@ the satellite. Channels between satellite models are not changed.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.passes.fame.FindDefaultClocks.ClockConnNode#clockPort" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="clockPort:Option[firrtl.annotations.ReferenceTarget]"></a><a id="clockPort:Option[ReferenceTarget]"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#clockPort:Option[firrtl.annotations.ReferenceTarget]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clockPort</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#clone():Object" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -343,7 +362,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -359,7 +378,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#finalize():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -381,7 +400,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#getClass():Class[_]" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -400,7 +419,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -413,10 +432,26 @@ the satellite. Channels between satellite models are not changed.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.passes.fame.FindDefaultClocks.ClockConnNode#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="name:String"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#name:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -432,7 +467,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#notify():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -451,7 +486,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#notifyAll():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -467,42 +502,10 @@ the satellite. Channels between satellite models are not changed.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.passes.fame.FindDefaultClocks.ClockConnection#sink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sink:firrtl.annotations.ReferenceTarget"></a><a id="sink:ReferenceTarget"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#sink:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">sink</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.fame.FindDefaultClocks.ClockConnection#source" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="source:firrtl.annotations.ReferenceTarget"></a><a id="source:ReferenceTarget"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#source:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">source</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -518,7 +521,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#wait():Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -540,7 +543,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -562,7 +565,7 @@ the satellite. Channels between satellite models are not changed.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnection.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../../midas/passes/fame/FindDefaultClocks$$ClockConnNode.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>

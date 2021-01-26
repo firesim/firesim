@@ -111,8 +111,8 @@
                         <a href="AssertTokenIrrevocable$.html" title="">AssertTokenIrrevocable</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedWrapperIO.html" title=""></a>
-                        <a href="ChannelizedWrapperIO.html" title="">ChannelizedWrapperIO</a>
+                        <a class="class" href="ChannelizedWrapperIO.html" title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations."></a>
+                        <a href="ChannelizedWrapperIO.html" title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations.">ChannelizedWrapperIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockRecord.html" title=""></a>
@@ -227,16 +227,16 @@
                         <a href="SimUtils$.html" title="">SimUtils</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">SimWrapper</a>
+                        <a class="class" href="" title="The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator collateral."></a>
+                        <a href="" title="The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator collateral.">SimWrapper</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="SimWrapperChannels.html" title=""></a>
                         <a href="SimWrapperChannels.html" title="">SimWrapperChannels</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="SimWrapperConfig.html" title=""></a>
-                        <a href="SimWrapperConfig.html" title="">SimWrapperConfig</a>
+                        <a class="class" href="SimWrapperConfig.html" title="The metadata required to generate the simulation wrapper."></a>
+                        <a href="SimWrapperConfig.html" title="The metadata required to generate the simulation wrapper.">SimWrapperConfig</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="SimWrapperKey$.html" title=""></a>
@@ -253,6 +253,10 @@
                         <span class="separator"></span>
                         <a class="object" href="TokenComparisonFunctions$.html" title=""></a>
                         <a href="TokenComparisonFunctions$.html" title="">TokenComparisonFunctions</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="UnpackedWrapperConfig.html" title="A convienence mixin that preprocesses the SimWrapperConfig"></a>
+                        <a href="UnpackedWrapperConfig.html" title="A convienence mixin that preprocesses the SimWrapperConfig">UnpackedWrapperConfig</a>
                       </li>
               </ul>
             </div>
@@ -276,16 +280,21 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SimWrapper</span><span class="result"> extends <span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span></span>
+        <span class="name">SimWrapper</span><span class="result"> extends <span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="midas.core.SimWrapper">SimWrapper</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The SimWrapper is the shim between the transformed RTL and the rest of the Chisel-generated simulator
+collateral.
+1) It instantiates the tranformed target (now a collection of unconnected, decoupled models)
+2) Generates channels to interconnect those models and bridges by analyzing <span class="extype" name="FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</span>s.
+3) Exposes ReadyValid interfaces for all channels sourced or sunk by a bridge as I/O
+</p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="midas.core.SimWrapper">SimWrapper</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span>, <span class="extype" name="chisel3.RawModule">RawModule</span>, <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a>, <span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span>, <span class="extype" name="chisel3.RawModule">RawModule</span>, <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -311,7 +320,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.core.SimWrapper"><span>SimWrapper</span></li><li class="in" name="chisel3.MultiIOModule"><span>MultiIOModule</span></li><li class="in" name="chisel3.RawModule"><span>RawModule</span></li><li class="in" name="chisel3.experimental.BaseModule"><span>BaseModule</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.core.SimWrapper"><span>SimWrapper</span></li><li class="in" name="midas.core.UnpackedWrapperConfig"><span>UnpackedWrapperConfig</span></li><li class="in" name="chisel3.MultiIOModule"><span>MultiIOModule</span></li><li class="in" name="chisel3.RawModule"><span>RawModule</span></li><li class="in" name="chisel3.experimental.BaseModule"><span>BaseModule</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -517,10 +526,10 @@
       </span>
       
       
-    </li><li name="midas.core.SimWrapper#bridgeAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bridgeAnnos:Seq[midas.widgets.BridgeIOAnnotation]"></a><a id="bridgeAnnos:Seq[BridgeIOAnnotation]"></a>
+    </li><li name="midas.core.UnpackedWrapperConfig#bridgeAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bridgeAnnos:scala.collection.mutable.ArrayBuffer[midas.widgets.BridgeIOAnnotation]"></a><a id="bridgeAnnos:ArrayBuffer[BridgeIOAnnotation]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapper.html#bridgeAnnos:Seq[midas.widgets.BridgeIOAnnotation]" title="Permalink">
+      <a href="../../midas/core/SimWrapper.html#bridgeAnnos:scala.collection.mutable.ArrayBuffer[midas.widgets.BridgeIOAnnotation]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -529,14 +538,14 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bridgeAnnos</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span>]</span>
+        <span class="name">bridgeAnnos</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span>]</span>
       </span>
       
-      
-    </li><li name="midas.core.SimWrapper#bridgeChAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bridgeChAnnos:Seq[midas.passes.fame.FAMEChannelConnectionAnnotation]"></a><a id="bridgeChAnnos:Seq[FAMEChannelConnectionAnnotation]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></dd></dl></div>
+    </li><li name="midas.core.UnpackedWrapperConfig#chAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="chAnnos:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]"></a><a id="chAnnos:ArrayBuffer[FAMEChannelConnectionAnnotation]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapper.html#bridgeChAnnos:Seq[midas.passes.fame.FAMEChannelConnectionAnnotation]" title="Permalink">
+      <a href="../../midas/core/SimWrapper.html#chAnnos:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -545,14 +554,14 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bridgeChAnnos</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>
+        <span class="name">chAnnos</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>
       </span>
       
-      
-    </li><li name="midas.core.SimWrapper#chAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="chAnnos:Seq[midas.passes.fame.FAMEChannelConnectionAnnotation]"></a><a id="chAnnos:Seq[FAMEChannelConnectionAnnotation]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></dd></dl></div>
+    </li><li name="midas.core.SimWrapper#channelGroups" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="channelGroups:scala.collection.immutable.Map[String,scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]]"></a><a id="channelGroups:Map[String,ArrayBuffer[FAMEChannelConnectionAnnotation]]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapper.html#chAnnos:Seq[midas.passes.fame.FAMEChannelConnectionAnnotation]" title="Permalink">
+      <a href="../../midas/core/SimWrapper.html#channelGroups:scala.collection.immutable.Map[String,scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -561,7 +570,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">chAnnos</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>
+        <span class="name">channelGroups</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/Map.html#scala.collection.immutable.Map" class="extype" name="scala.collection.immutable.Map">Map</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]]</span>
       </span>
       
       
@@ -578,6 +587,22 @@
       </span>
       <span class="symbol">
         <span class="name">channelPorts</span><span class="result">: <a href="SimWrapperChannels.html" class="extype" name="midas.core.SimWrapperChannels">SimWrapperChannels</a></span>
+      </span>
+      
+      
+    </li><li name="midas.core.SimWrapper#channelToFanoutName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="channelToFanoutName:scala.collection.immutable.Map[String,String]"></a><a id="channelToFanoutName:Map[String,String]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimWrapper.html#channelToFanoutName:scala.collection.immutable.Map[String,String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">channelToFanoutName</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/Map.html#scala.collection.immutable.Map" class="extype" name="scala.collection.immutable.Map">Map</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       
       
@@ -614,9 +639,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>MultiIOModule</dd></dl></div>
     </li><li name="midas.core.SimWrapper#clockChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="clockChannels:Seq[midas.passes.fame.FAMEChannelConnectionAnnotation]"></a><a id="clockChannels:Seq[FAMEChannelConnectionAnnotation]"></a>
+      <a id="clockChannels:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]"></a><a id="clockChannels:ArrayBuffer[FAMEChannelConnectionAnnotation]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapper.html#clockChannels:Seq[midas.passes.fame.FAMEChannelConnectionAnnotation]" title="Permalink">
+      <a href="../../midas/core/SimWrapper.html#clockChannels:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -625,7 +650,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">clockChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>
+        <span class="name">clockChannels</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>
       </span>
       
       
@@ -685,6 +710,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="midas.core.SimWrapper#config" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="config:midas.core.SimWrapperConfig"></a><a id="config:SimWrapperConfig"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimWrapper.html#config:midas.core.SimWrapperConfig" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">config</span><span class="result">: <a href="SimWrapperConfig.html" class="extype" name="midas.core.SimWrapperConfig">SimWrapperConfig</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.core.SimWrapper">SimWrapper</a> → <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></dd></dl></div>
     </li><li name="chisel3.experimental.BaseModule#desiredName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="desiredName:String"></a>
       <span class="permalink">
@@ -733,6 +774,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
+    </li><li name="midas.core.UnpackedWrapperConfig#fanoutAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fanoutAnnos:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelFanoutAnnotation]"></a><a id="fanoutAnnos:ArrayBuffer[FAMEChannelFanoutAnnotation]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimWrapper.html#fanoutAnnos:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelFanoutAnnotation]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fanoutAnnos</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../passes/fame/FAMEChannelFanoutAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelFanoutAnnotation">FAMEChannelFanoutAnnotation</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
@@ -771,10 +828,10 @@
       </span>
       
       
-    </li><li name="midas.core.SimWrapper#genPipeChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="genPipeChannel(chAnno:midas.passes.fame.FAMEChannelConnectionAnnotation,latency:Int):midas.core.PipeChannel[midas.core.SimUtils.ChLeafType]"></a><a id="genPipeChannel(FAMEChannelConnectionAnnotation,Int):PipeChannel[ChLeafType]"></a>
+    </li><li name="midas.core.SimWrapper#genPipeChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="genPipeChannel(chAnnos:Iterable[midas.passes.fame.FAMEChannelConnectionAnnotation],primaryChannelName:String):Iterable[midas.core.PipeChannel[midas.core.SimUtils.ChLeafType]]"></a><a id="genPipeChannel(Iterable[FAMEChannelConnectionAnnotation],String):Iterable[PipeChannel[ChLeafType]]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapper.html#genPipeChannel(chAnno:midas.passes.fame.FAMEChannelConnectionAnnotation,latency:Int):midas.core.PipeChannel[midas.core.SimUtils.ChLeafType]" title="Permalink">
+      <a href="../../midas/core/SimWrapper.html#genPipeChannel(chAnnos:Iterable[midas.passes.fame.FAMEChannelConnectionAnnotation],primaryChannelName:String):Iterable[midas.core.PipeChannel[midas.core.SimUtils.ChLeafType]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -783,10 +840,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">genPipeChannel</span><span class="params">(<span name="chAnno">chAnno: <a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a></span>, <span name="latency">latency: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">1</span></span>)</span><span class="result">: <a href="PipeChannel.html" class="extype" name="midas.core.PipeChannel">PipeChannel</a>[<a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>]</span>
+        <span class="name">genPipeChannel</span><span class="params">(<span name="chAnnos">chAnnos: <span class="extype" name="scala.Iterable">Iterable</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>, <span name="primaryChannelName">primaryChannelName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Iterable">Iterable</span>[<a href="PipeChannel.html" class="extype" name="midas.core.PipeChannel">PipeChannel</a>[<a href="SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>]]</span>
       </span>
       
-      
+      <p class="shortcomment cmt"> Implements a pipe channel.</p><div class="fullcomment"><div class="comment cmt"><p> Implements a pipe channel.
+</p></div><dl class="paramcmts block"><dt class="param">chAnnos</dt><dd class="cmt"><p>A group of <span class="extype" name="FAMEChannelFanoutAnnotation">FAMEChannelFanoutAnnotation</span>s that have a common source. Groups
+ with size &gt; 1 represent a fanout connection in the source RTL. Each source token will be duplicated
+ and enqueued into each channel.</p></dd><dt class="param">primaryChannelName</dt><dd class="cmt"><p>For fanouts that are sourced by a bridge, this provides
+ the unique chname used to look up the bridge-side interface in channelPorts.</p></dd></dl></div>
     </li><li name="midas.core.SimWrapper#genReadyValidChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="genReadyValidChannel(chAnno:midas.passes.fame.FAMEChannelConnectionAnnotation):midas.core.ReadyValidChannel[chisel3.Data]"></a><a id="genReadyValidChannel(FAMEChannelConnectionAnnotation):ReadyValidChannel[Data]"></a>
       <span class="permalink">
@@ -982,7 +1043,23 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.core.SimWrapper#leafTypeMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="midas.core.SimWrapper#isSecondaryFanout" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isSecondaryFanout:scala.collection.immutable.Set[String]"></a><a id="isSecondaryFanout:Set[String]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimWrapper.html#isSecondaryFanout:scala.collection.immutable.Set[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isSecondaryFanout</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/Set.html#scala.collection.immutable.Set" class="extype" name="scala.collection.immutable.Set">Set</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      
+    </li><li name="midas.core.UnpackedWrapperConfig#leafTypeMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="leafTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port]"></a><a id="leafTypeMap:Map[ReferenceTarget,Port]"></a>
       <span class="permalink">
       <a href="../../midas/core/SimWrapper.html#leafTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port]" title="Permalink">
@@ -997,7 +1074,7 @@
         <span class="name">leafTypeMap</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>
       </span>
       
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></dd></dl></div>
     </li><li name="chisel3.experimental.BaseModule#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="name:String"></a>
       <span class="permalink">
@@ -1084,6 +1161,22 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.core.SimWrapper#outerConfig" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="outerConfig:midas.core.SimWrapperConfig"></a><a id="outerConfig:SimWrapperConfig"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimWrapper.html#outerConfig:midas.core.SimWrapperConfig" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">outerConfig</span><span class="result">: <a href="SimWrapperConfig.html" class="extype" name="midas.core.SimWrapperConfig">SimWrapperConfig</a></span>
+      </span>
+      
+      
     </li><li name="midas.core.SimWrapper#p" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="p:freechips.rocketchip.config.Parameters"></a><a id="p:Parameters"></a>
       <span class="permalink">
@@ -1148,6 +1241,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="midas.core.SimWrapper#pipeChannelFCCAs" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="pipeChannelFCCAs:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]"></a><a id="pipeChannelFCCAs:ArrayBuffer[FAMEChannelConnectionAnnotation]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimWrapper.html#pipeChannelFCCAs:scala.collection.mutable.ArrayBuffer[midas.passes.fame.FAMEChannelConnectionAnnotation]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pipeChannelFCCAs</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../passes/fame/FAMEChannelConnectionAnnotation.html" class="extype" name="midas.passes.fame.FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</a>]</span>
+      </span>
+      
+      
     </li><li name="chisel3.experimental.BaseModule#portsContains" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="portsContains(elem:chisel3.Data):Boolean"></a><a id="portsContains(Data):Boolean"></a>
       <span class="permalink">
@@ -1197,9 +1306,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>MultiIOModule</dd></dl></div>
     </li><li name="midas.core.SimWrapper#rvChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="rvChannels:Seq[midas.core.ReadyValidChannel[chisel3.Data]]"></a><a id="rvChannels:Seq[ReadyValidChannel[Data]]"></a>
+      <a id="rvChannels:scala.collection.mutable.ArrayBuffer[midas.core.ReadyValidChannel[chisel3.Data]]"></a><a id="rvChannels:ArrayBuffer[ReadyValidChannel[Data]]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapper.html#rvChannels:Seq[midas.core.ReadyValidChannel[chisel3.Data]]" title="Permalink">
+      <a href="../../midas/core/SimWrapper.html#rvChannels:scala.collection.mutable.ArrayBuffer[midas.core.ReadyValidChannel[chisel3.Data]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1208,7 +1317,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">rvChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="ReadyValidChannel.html" class="extype" name="midas.core.ReadyValidChannel">ReadyValidChannel</a>[<span class="extype" name="chisel3.Data">Data</span>]]</span>
+        <span class="name">rvChannels</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="ReadyValidChannel.html" class="extype" name="midas.core.ReadyValidChannel">ReadyValidChannel</a>[<span class="extype" name="chisel3.Data">Data</span>]]</span>
       </span>
       
       
@@ -1402,7 +1511,9 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="chisel3.MultiIOModule">
+        <div class="parent" name="midas.core.UnpackedWrapperConfig">
+              <h3>Inherited from <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></h3>
+            </div><div class="parent" name="chisel3.MultiIOModule">
               <h3>Inherited from <span class="extype" name="chisel3.MultiIOModule">MultiIOModule</span></h3>
             </div><div class="parent" name="chisel3.RawModule">
               <h3>Inherited from <span class="extype" name="chisel3.RawModule">RawModule</span></h3>

@@ -123,6 +123,10 @@
                         <a href="AddHostClockAndReset$.html" title="">AddHostClockAndReset</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="AddRemainingFanoutAnnotations$.html" title="This transform adds FAMEChannelFanoutAnnotations to collections of channels that have a common set of sources (they are driven by the same model)."></a>
+                        <a href="AddRemainingFanoutAnnotations$.html" title="This transform adds FAMEChannelFanoutAnnotations to collections of channels that have a common set of sources (they are driven by the same model).">AddRemainingFanoutAnnotations</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="object" href="And$.html" title=""></a>
                         <a href="And$.html" title="">And</a>
                       </li><li class="current-entities indented3">
@@ -133,6 +137,18 @@
                         <span class="separator"></span>
                         <a class="class" href="" title=""></a>
                         <a href="" title="">ChannelExcision</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelFlow.html" title=""></a>
+                        <a href="ChannelFlow.html" title="">ChannelFlow</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ChannelSink$.html" title=""></a>
+                        <a href="ChannelSink$.html" title="">ChannelSink</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="ChannelSource$.html" title=""></a>
+                        <a href="ChannelSource$.html" title="">ChannelSource</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="ConditionalConnect$.html" title=""></a>
@@ -207,6 +223,10 @@
                         <a href="FAMEChannelConnectionAnnotation.html" title="An annotation that describes the top-level connectivity of channels on different model instances.">FAMEChannelConnectionAnnotation</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="class" href="FAMEChannelFanoutAnnotation.html" title="An annotation that lables a set of FAMEChannelConnectionAnnotations as originating from the same source."></a>
+                        <a href="FAMEChannelFanoutAnnotation.html" title="An annotation that lables a set of FAMEChannelConnectionAnnotations as originating from the same source.">FAMEChannelFanoutAnnotation</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="trait" href="FAMEChannelInfo.html" title="Describes the type of the channel (Wire, Forward/Reverse Decoupled)"></a>
                         <a href="FAMEChannelInfo.html" title="Describes the type of the channel (Wire, Forward/Reverse Decoupled)">FAMEChannelInfo</a>
                       </li><li class="current-entities indented3">
@@ -215,8 +235,8 @@
                         <a href="FAMEChannelPortsAnnotation.html" title="An annotation that describes the ports that constitute one channel from the perspective of a particular module that will be replaced by a simulation model.">FAMEChannelPortsAnnotation</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="class" href="FAMEDefaults.html" title=""></a>
-                        <a href="FAMEDefaults.html" title="">FAMEDefaults</a>
+                        <a class="class" href="FAMEDefaults.html" title="Assumes:"></a>
+                        <a href="FAMEDefaults.html" title="Assumes:">FAMEDefaults</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="class" href="FAMEGlobalSignal.html" title=""></a>
@@ -339,6 +359,10 @@
                         <a href="PipeChannel.html" title="Indicates that a channel connection is a pipe with &lt;latency&gt; register stages Setting latency = 0 models a wire">PipeChannel</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="object" href="PromotePassthroughConnections$.html" title="After ExtractModel it is common to have passthrough paths (i.e., identity combinational paths) that snake through the hub and multiple satellites, potentially increasing FMR."></a>
+                        <a href="PromotePassthroughConnections$.html" title="After ExtractModel it is common to have passthrough paths (i.e., identity combinational paths) that snake through the hub and multiple satellites, potentially increasing FMR.">PromotePassthroughConnections</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="class" href="PromoteSubmodule.html" title="Takes PromoteSubmodule annotations for instantiations and causes each corresponding instance to be removed; ports are added to the parent module and the submodule is added as a peer instance to all modules instantiating the parent module."></a>
                         <a href="PromoteSubmodule.html" title="Takes PromoteSubmodule annotations for instantiations and causes each corresponding instance to be removed; ports are added to the parent module and the submodule is added as a peer instance to all modules instantiating the parent module.">PromoteSubmodule</a>
                       </li><li class="current-entities indented3">
@@ -377,6 +401,10 @@
                         <span class="separator"></span>
                         <a class="object" href="RegZeroPreset$.html" title="Generates a DefRegister with no reset, relying instead on FPGA programming to preset the register to 0"></a>
                         <a href="RegZeroPreset$.html" title="Generates a DefRegister with no reset, relying instead on FPGA programming to preset the register to 0">RegZeroPreset</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
+                        <a class="object" href="RemoveNonWirePrimitives$.html" title="Removes all non-passthrough expressions in a circuit so that we can use CheckCombLoops to return only passthrough connectivity (this represents subset of of all combinationally connected paths)."></a>
+                        <a href="RemoveNonWirePrimitives$.html" title="Removes all non-passthrough expressions in a circuit so that we can use CheckCombLoops to return only passthrough connectivity (this represents subset of of all combinationally connected paths).">RemoveNonWirePrimitives</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="SeparateInstanceDecls$.html" title=""></a>
@@ -569,22 +597,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.fame.ChannelExcision#addedChannelAnnos" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="addedChannelAnnos:scala.collection.mutable.ArrayBuffer[midas.targetutils.FirrtlFAMEModelAnnotation]"></a><a id="addedChannelAnnos:ArrayBuffer[FirrtlFAMEModelAnnotation]"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/ChannelExcision.html#addedChannelAnnos:scala.collection.mutable.ArrayBuffer[midas.targetutils.FirrtlFAMEModelAnnotation]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">addedChannelAnnos</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="../../targetutils/FirrtlFAMEModelAnnotation.html" class="extype" name="midas.targetutils.FirrtlFAMEModelAnnotation">FirrtlFAMEModelAnnotation</a>]</span>
-      </span>
-      
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -601,6 +613,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.passes.fame.ChannelExcision#bridgeSourcedPipeChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bridgeSourcedPipeChannels:scala.collection.mutable.HashMap[firrtl.annotations.ReferenceTarget,String]"></a><a id="bridgeSourcedPipeChannels:HashMap[ReferenceTarget,String]"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ChannelExcision.html#bridgeSourcedPipeChannels:scala.collection.mutable.HashMap[firrtl.annotations.ReferenceTarget,String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bridgeSourcedPipeChannels</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
@@ -797,6 +825,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
+    </li><li name="midas.passes.fame.ChannelExcision#model2modelPipeChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="model2modelPipeChannels:scala.collection.mutable.HashMap[(firrtl.annotations.ReferenceTarget,firrtl.annotations.ReferenceTarget),String]"></a><a id="model2modelPipeChannels:HashMap[(ReferenceTarget,ReferenceTarget),String]"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ChannelExcision.html#model2modelPipeChannels:scala.collection.mutable.HashMap[(firrtl.annotations.ReferenceTarget,firrtl.annotations.ReferenceTarget),String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">model2modelPipeChannels</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[(<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>), <span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      
     </li><li name="firrtl.Transform#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="name:String"></a>
       <span class="permalink">
@@ -915,22 +959,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.fame.ChannelExcision">ChannelExcision</a> → Transform</dd></dl></div>
-    </li><li name="midas.passes.fame.ChannelExcision#pipeChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="pipeChannels:scala.collection.mutable.HashMap[(firrtl.annotations.ReferenceTarget,firrtl.annotations.ReferenceTarget),String]"></a><a id="pipeChannels:HashMap[(ReferenceTarget,ReferenceTarget),String]"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/ChannelExcision.html#pipeChannels:scala.collection.mutable.HashMap[(firrtl.annotations.ReferenceTarget,firrtl.annotations.ReferenceTarget),String]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pipeChannels</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashMap">HashMap</span>[(<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>), <span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      
-      
     </li><li name="firrtl.Transform#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prerequisites:Seq[firrtl.options.Dependency[firrtl.Transform]]"></a><a id="prerequisites:Seq[Dependency[Transform]]"></a>
       <span class="permalink">
@@ -963,6 +991,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform</dd></dl></div>
+    </li><li name="midas.passes.fame.ChannelExcision#sourcePortDups" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sourcePortDups:scala.collection.mutable.LinkedHashMap[firrtl.annotations.ReferenceTarget,scala.collection.mutable.Set[firrtl.annotations.ReferenceTarget]]withscala.collection.mutable.MultiMap[firrtl.annotations.ReferenceTarget,firrtl.annotations.ReferenceTarget]"></a><a id="sourcePortDups:LinkedHashMap[ReferenceTarget,Set[ReferenceTarget]]withMultiMap[ReferenceTarget,ReferenceTarget]"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ChannelExcision.html#sourcePortDups:scala.collection.mutable.LinkedHashMap[firrtl.annotations.ReferenceTarget,scala.collection.mutable.Set[firrtl.annotations.ReferenceTarget]]withscala.collection.mutable.MultiMap[firrtl.annotations.ReferenceTarget,firrtl.annotations.ReferenceTarget]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sourcePortDups</span><span class="result">: <span class="extype" name="scala.collection.mutable.LinkedHashMap">LinkedHashMap</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/mutable/Set.html#scala.collection.mutable.Set" class="extype" name="scala.collection.mutable.Set">Set</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]] with <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/mutable/MultiMap.html#scala.collection.mutable.MultiMap" class="extype" name="scala.collection.mutable.MultiMap">MultiMap</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
