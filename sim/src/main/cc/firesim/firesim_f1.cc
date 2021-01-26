@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     firesim_f1_t firesim(argc, argv);
     firesim.init(argc, argv);
     firesim.run();
-    return firesim.finish();
+    return firesim.teardown();
   }
   catch (std::exception& e) {
     fprintf(stderr, "Caught Exception leaving %s: %s.\n", __PRETTY_FUNCTION__, e.what());

@@ -52,6 +52,8 @@ void simif_t::init(int argc, char** argv, bool log) {
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
+  // This can be called again if a later start time is desired
+  record_start_times();
 }
 
 uint64_t simif_t::actual_tcycle() {
@@ -74,11 +76,13 @@ void simif_t::target_reset(int pulse_length) {
   poke(reset, 0);
 }
 
+// A default finish method used in simple drivers.
 int simif_t::finish() {
-  fprintf(stderr, "Ran %llu cycles (fastest target clock)\n", actual_tcycle());
+  record_end_times();
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
-  fprintf(stderr, "\nSEED: %ld\n", seed);
+  fprintf(stderr, "SEED: %ld\n", seed);
+  this->print_simulation_performance_summary();
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }
@@ -203,4 +207,46 @@ void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
 void simif_t::zero_out_dram() {
   write(this->loadmem_mmio_addrs->ZERO_OUT_DRAM, 1);
   while(!read(this->loadmem_mmio_addrs->ZERO_FINISHED));
+}
+
+void simif_t::record_start_times() {
+  this->start_hcycle = hcycle();
+  this->start_time = timestamp();
+}
+
+void simif_t::record_end_times() {
+  this->end_time = timestamp();
+  this->end_tcycle = actual_tcycle();
+  this->end_hcycle = hcycle();
+}
+void simif_t::print_simulation_performance_summary() {
+  // Must call record_start_times and record_end_times before invoking this function
+  assert(start_hcycle != -1);
+  assert(end_hcycle != 0);
+  uint64_t hcycles = end_hcycle - start_hcycle;
+  double sim_time = diff_secs(end_time, start_time);
+  double sim_speed = ((double) end_tcycle) / (sim_time * 1000.0);
+  double measured_host_frequency = ((double) hcycles) / (sim_time * 1000.0);
+  double fmr = ((double) hcycles / end_tcycle);
+
+  fprintf(stderr, "\nEmulation Performance Summary\n");
+  fprintf(stderr,   "------------------------------\n");
+  fprintf(stderr, "Wallclock Time Elapsed: %.1f s\n", sim_time);
+  // Provide enough sig-figs to let the report be useful in RTL sim
+  fprintf(stderr, "Host Frequency: ");
+  if (measured_host_frequency > 1000.0) {
+    fprintf(stderr, "%.3f MHz\n", measured_host_frequency / 1000.0);
+  } else {
+    fprintf(stderr, "%.3f KHz\n", measured_host_frequency);
+  }
+
+  fprintf(stderr, "Target Cycles Emulated: %llu\n", end_tcycle);
+  fprintf(stderr, "Effective Target Frequency: ");
+  if (sim_speed > 1000.0) {
+    fprintf(stderr,"%.3f MHz\n", sim_speed / 1000.0);
+  } else {
+    fprintf(stderr,"%.3f KHz\n", sim_speed);
+  }
+  fprintf(stderr, "FMR: %.2f\n", fmr);
+  fprintf(stderr, "Note: The latter three figures are based on the fastest target clock.\n");
 }

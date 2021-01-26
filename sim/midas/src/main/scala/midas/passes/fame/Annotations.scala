@@ -116,6 +116,16 @@ object FAMEChannelConnectionAnnotation {
 }
 
 /**
+  * An annotation that lables a set of [[FAMEChannelConnectionAnnotation]]s as originating from
+  * the same source. For channels sourced by a model (non-bridge) [[FAMEChannelConnectionAnnotation]]s that fanout
+  * should share identical sources. However, channels sourced by bridge currently have their sources param set to None, and so
+  * this annotation is necessary to re-associate them.
+  *
+  * @param channelNames  The list of fanout channels
+  */
+case class FAMEChannelFanoutAnnotation(channelNames: Seq[String]) extends NoTargetAnnotation with FAMEAnnotation
+
+/**
   * Describes the type of the channel (Wire, Forward/Reverse
   * Decoupled)
   */

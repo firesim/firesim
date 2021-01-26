@@ -39,7 +39,10 @@ class simif_t
     LOADMEMWIDGET_struct * loadmem_mmio_addrs;
     PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
     CLOCKBRIDGEMODULE_struct * clock_bridge_mmio_addrs;
-    midas_time_t sim_start_time;
+    midas_time_t start_time, end_time;
+    uint64_t start_hcycle = -1;
+    uint64_t end_hcycle = 0;
+    uint64_t end_tcycle = 0;
 
     std::string blocking_fail = "The test environment has starved the simulator, preventing forward progress.";
 
@@ -153,6 +156,10 @@ class simif_t
     uint64_t hcycle();
     uint64_t rand_next(uint64_t limit) { return gen() % limit; }
 
+    void record_start_times();
+    void record_end_times();
+    uint64_t get_end_tcycle() { return end_tcycle; }
+    void print_simulation_performance_summary();
 };
 
 #endif // __SIMIF_H
