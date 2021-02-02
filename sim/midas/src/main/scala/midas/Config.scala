@@ -19,6 +19,9 @@ case object Platform extends Field[(Parameters) => PlatformShim]
 case object SynthAsserts extends Field[Boolean]
 case object SynthPrints extends Field[Boolean]
 
+// When False FpgaDebug() annotations are ignored
+case object EnableAutoILA extends Field[Boolean](false)
+
 // Auto Counter Switches
 case object EnableAutoCounter extends Field[Boolean](false)
 /**

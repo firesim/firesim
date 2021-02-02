@@ -3,6 +3,7 @@
 
 package firesim.passes
 
+import midas.EnableAutoILA
 import midas.targetutils.FirrtlFpgaDebugAnnotation
 import midas.stage.phases.ConfigParametersAnnotation
 
@@ -141,8 +142,10 @@ class ILATopWiringTransform extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
+    val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
+    val enableTransform = p(EnableAutoILA)
     val ilaannos = state.annotations.collect {
-      case a @ (_: FirrtlFpgaDebugAnnotation) => a
+      case a @ (_: FirrtlFpgaDebugAnnotation) if enableTransform => a
     }
 
     //Take debug annotation and make them into TopWiring annotations
@@ -150,7 +153,6 @@ class ILATopWiringTransform extends Transform with DependencyAPIMigration {
       case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_")  }
     }
 
-    val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
     val dir = state.annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
 
     val dataDepth = p(ILADepthKey)
