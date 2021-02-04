@@ -6,6 +6,10 @@ import random
 import logging
 import os
 
+from datetime import datetime, timedelta
+import time
+import sys
+
 import boto3
 import botocore
 from botocore import exceptions
@@ -153,7 +157,8 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
     else:
         assert False, "INVALID INSTANCE MARKET TYPE."
 
-def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None, randomsubnet=False, user_data_file=None):
+def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None,
+                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(minutes=0)):
     """ Launch count instances of type instancetype, optionally with additional
     block devices mappings and instance tags
 
@@ -184,14 +189,20 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
     # starting with the first subnet, keep trying until you get the instances you need
     startsubnet = 0
-    instances = []
-    while len(instances) < count:
-        if not (startsubnet < len(subnets)):
-            rootLogger.critical("we tried all subnets, but there was insufficient capacity to launch your instances")
-            rootLogger.critical("""only the following {} instances were launched""".format(len(instances)))
-            rootLogger.critical(instances)
-            return
 
+    if 'fsimcluster' in tags.keys():
+        instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(tags['fsimcluster'], instancetype))
+    else:
+        instances = []
+
+    if len(instances):
+        rootLogger.info("Already have {} of {} {} instances.".format(len(instances), count, instancetype))
+        if len(instances) < count:
+            rootLogger.info("Launching remaining {} {} instances".format(count - len(instances), instancetype))
+
+    first_subnet_wraparound = None
+
+    while len(instances) < count:
         chosensubnet = subnets[startsubnet].subnet_id
         try:
             instance_args = {"ImageId":f1_image_id,
@@ -229,8 +240,27 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
         except client.exceptions.ClientError as e:
             rootLogger.info(e)
-            rootLogger.info("This probably means there was no more capacity in this availability zone. Try the next one.")
             startsubnet += 1
+            if (startsubnet < len(subnets)):
+                rootLogger.info("This probably means there was no more capacity in this availability zone. Trying the next one.")
+            else:
+                rootLogger.critical("we tried all subnets, but there was insufficient capacity to launch your instances")
+                startsubnet = 0
+                if first_subnet_wraparound is None:
+                    first_subnet_wraparound = datetime.now()
+                    time.sleep(1) # ensure first elapsed time is non-zero
+
+                time_elapsed = datetime.now() - first_subnet_wraparound
+                rootLogger.critical("have been trying for {} and using timeout of {}".format(time_elapsed, timeout))
+                rootLogger.critical("""only {} of {} {} instances have been launched""".format(len(instances), count, instancetype))
+                if time_elapsed > timeout:
+                    rootLogger.critical("""Aborting! only the following {} instances were launched""".format(len(instances)))
+                    rootLogger.critical(instances)
+                    rootLogger.critical("To continue trying to allocate instances, you can rerun launchrunfarm")
+                    sys.exit(1)
+                else:
+                    rootLogger.critical("However, we're going to be patient and keep trying after sleeping for a bit...")
+                    time.sleep(30)
     return instances
 
 def run_block_device_dict():
@@ -242,8 +272,8 @@ def run_tag_dict():
 def run_filters_list_dict():
     return [ { 'Name': 'tag:fsimcluster', 'Values': [ "defaultcluster" ] } ]
 
-def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice):
-    return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice,
+def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice, timeout):
+    return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, timeout=timeout,
         blockdevices=[
             {
                 'DeviceName': '/dev/sda1',

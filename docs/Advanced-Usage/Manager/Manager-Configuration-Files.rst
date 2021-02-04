@@ -51,6 +51,23 @@ Note that these values are ONLY used to launch instances. After launch, the
 manager will query the AWS API to find the instances of each type that have the
 ``runfarmtag`` set above assigned to them.
 
+``launch_instances_timeout_minutes``
+""""""""""""""""""""""""""""""""""""
+
+Integer number of minutes that the ``launchrunfarm`` command will attempt to
+request new instances before giving up.  This limit is used for each of the types
+of instances being requested.  For example, if you leave it set to the default of 60,
+and you are requesting all four types of instances, ``launchrunfarm`` will try
+to launch each instance type for 60 minutes, possibly trying up to a total of
+four hours.
+
+This limit starts to be applied from the first time ``launchrunfarm`` has received a
+``ClientError`` response in all AvailabilityZone's for your region.  In other words,
+if you request more instances than can possibly be requested in the given limit but AWS
+is able to satisfy all of the requests, the limit will not be enforced.
+
+To experience the old (<= 1.11) behavior, set this limit to 0 and ``launchrunfarm``
+will exit the first time it receives ``ClientError`` across all AZ's.
 
 ``runinstancemarket``
 """"""""""""""""""""""

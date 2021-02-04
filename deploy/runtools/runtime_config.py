@@ -3,6 +3,7 @@ simulation tasks. """
 
 from __future__ import print_function
 
+from datetime import timedelta
 from time import strftime, gmtime
 import configparser
 import pprint
@@ -273,6 +274,11 @@ class InnerRuntimeConfiguration:
         self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
         self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
 
+        if 'launch_instances_timeout_minutes' in runtime_dict['runfarm']:
+            self.launch_timeout = timedelta(minutes=int(runtime_dict['runfarm']['launch_instances_timeout_minutes']))
+        else:
+            self.launch_timeout = timedelta(minutes=60)
+
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
         self.spot_max_price = runtime_dict['runfarm']['spotmaxprice']
@@ -355,7 +361,8 @@ class RuntimeConfig:
                                self.innerconf.runfarmtag,
                                self.innerconf.run_instance_market,
                                self.innerconf.spot_interruption_behavior,
-                               self.innerconf.spot_max_price)
+                               self.innerconf.spot_max_price,
+                               self.innerconf.launch_timeout)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
