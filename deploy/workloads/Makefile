@@ -1,7 +1,7 @@
 
 # All the tests in here right now are based off the br-baseimage.
-BASE_IMAGE:=../../sw/firesim-software/images/br-base.img
-BASE_LINUX:=../../sw/firesim-software/images/br-base-bin
+BASE_IMAGE:=../../sw/pdes-software/images/pdes-br-base.img
+BASE_LINUX:=../../sw/pdes-software/images/pdes-br-base-bin
 
 # TODO: ideally we want to restructure this so that:
 # Proprietary benchmarks (e.g. spec) are available as separate disks that can

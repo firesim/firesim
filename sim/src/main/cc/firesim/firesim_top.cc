@@ -11,6 +11,7 @@
 #include "bridges/groundtest.h"
 #include "bridges/autocounter.h"
 #include "bridges/dromajo.h"
+#include "bridges/coretemp.h"
 
 // Golden Gate provided bridge drivers
 #include "bridges/fpga_model.h"
@@ -362,6 +363,13 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
             DROMAJOBRIDGEMODULE_0_num_traces,
             DROMAJOBRIDGEMODULE_0_substruct,
             DROMAJOBRIDGEMODULE_0_DMA_ADDR));
+    #endif
+#endif
+
+#ifdef CORETEMPERATUREBRIDGEMODULE_struct_guard
+    #ifdef CORETEMPERATUREBRIDGEMODULE_0_PRESENT
+    CORETEMPERATUREBRIDGEMODULE_0_substruct_create;
+    add_bridge_driver(new coretemp_t(this, CORETEMPERATUREBRIDGEMODULE_0_substruct, args));
     #endif
 #endif
 

@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "pdes-poweroff",
+	"common_simulation_outputs": [
+		"uartlog", "temp-stats.csv"
+	],
+	"common_bootbinary": "../../../sw/pdes-software/images/pdes-poweroff-bin",
+	"common_rootfs": "../../../sw/pdes-software/images/pdes-poweroff.img"
+}

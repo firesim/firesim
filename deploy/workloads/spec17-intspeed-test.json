@@ -1,0 +1,16 @@
+{
+	"benchmark_name": "spec17-intspeed-test",
+	"common_simulation_outputs": [
+		"uartlog", "temp-stats.csv"
+	],
+	"workloads": [
+		{
+			"name": "spec17-intspeed-test-657.xz_s-cld",
+			"bootbinary": "../../../sw/pdes-software/images/spec17-intspeed-test-657.xz_s-cld-bin",
+			"rootfs": "../../../sw/pdes-software/images/spec17-intspeed-test-657.xz_s-cld.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

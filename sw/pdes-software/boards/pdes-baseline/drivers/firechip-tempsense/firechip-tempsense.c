@@ -15,9 +15,10 @@
 #include <linux/of_platform.h>
 
 #define TEMP_ADDR 0x102000
-#define PASSIVE_DELAY 2000 /* ms */
+//#define PASSIVE_DELAY 1000 /* ms */
+#define PASSIVE_DELAY 100 /* ms */
 //#define POLLING_DELAY 1000 /* ms */
-#define POLLING_DELAY 10000 /* ms */
+#define POLLING_DELAY 100 /* ms */
 
 static volatile __u8 __iomem * tempreg;
 
@@ -35,8 +36,7 @@ enum firechip_thermal_trip {
 
 static int firechip_get_temp(struct thermal_zone_device *thermal, int *temp) {
     unsigned long reg;
-    //reg = (unsigned long) *temp / 2;
-    *temp = dummy_temp;
+    *temp = (*tempreg) / 2;
     pr_alert("Current temperature: %d C\n", *temp);
     return 0;
 }

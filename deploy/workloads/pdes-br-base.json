@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "pdes-br-base",
+	"common_simulation_outputs": [
+		"uartlog", "temp-stats.csv"
+	],
+	"common_bootbinary": "../../../sw/pdes-software/images/pdes-br-base-bin",
+	"common_rootfs": "../../../sw/pdes-software/images/pdes-br-base.img"
+}

@@ -1,0 +1,9 @@
+{
+  "name" : "pdes-poweroff",
+  "base" : "pdes-br-base.json",
+  "command" : "sleep 1",
+  "common_simulation_outputs": [
+      "uartlog", "temp-stats.csv"
+  ]
+}
+
