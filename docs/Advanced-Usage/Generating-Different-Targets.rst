@@ -119,7 +119,7 @@ resides in ``sim/``.  These projects are:
    either BOOM or rocket pipelines, and should be your starting point if you're
    building an SoC with the Rocket Chip generator.
 2. **midasexamples**: the `Golden Gate example designs
-   <https://github.com/ucb-bar/midas-examples>`_, a set of simple chisel
+   <https://github.com/firesim/firesim/tree/dev/sim/src/main/scala/midasexamples>`_, a set of simple chisel
    circuits like GCD, that demonstrate how to use Golden Gate.  These are useful test
    cases for bringing up new Golden Gate features.
 3. **fasedtests**: designs to do integration testing of FASED memory-system timing models.
