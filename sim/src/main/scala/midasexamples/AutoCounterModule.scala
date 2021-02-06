@@ -71,6 +71,15 @@ class AutoCounterModuleChild extends MultiIOModule {
   io.oddlfsr := odd_lfsr
 }
 
+/** Demonstrate explicit instrumentation of AutoCounters via PerfCounter 
+ *
+ * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
+ *
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/AutoCounter.html#ad-hoc-performance-counters
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
+ * @see AutoCounterF1Test
+ * @see PerfCounter
+ */
 class AutoCounterModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterModuleDUT)
 
 class AutoCounterCoverModuleDUT extends Module {
@@ -105,6 +114,15 @@ class AutoCounterCoverModuleDUT extends Module {
 
 }
 
+/** Demonstrate implicit instrumentation of AutoCounters via RocketChip 'cover' functions
+ *
+ * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
+ *
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/AutoCounter.html#rocket-chip-cover-functions
+ * @see freechips.rocketchip.util.property.cover
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
+ * @see AutoCounterCoverModuleF1Test
+ */
 class AutoCounterCoverModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterCoverModuleDUT)
 
 class AutoCounterPrintfDUT extends Module {
@@ -125,5 +143,13 @@ class AutoCounterPrintfDUT extends Module {
   }
 }
 
+/** Demonstrate alternative impementation of AutoCounters using event-driven SynthesizedPrintf's
+ *
+ * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
+ *
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/AutoCounter.html#autocounter-using-synthesizable-printfs
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
+ * @see AutoCounterPrintfF1Test
+ */
 class AutoCounterPrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterPrintfDUT)
 
