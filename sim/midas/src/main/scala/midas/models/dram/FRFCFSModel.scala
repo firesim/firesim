@@ -16,7 +16,7 @@ case class FirstReadyFCFSConfig(
     dramKey: DramOrganizationParams,
     schedulerWindowSize: Int,
     transactionQueueDepth: Int,
-    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.maxDRAMTimingBits),
+    backendKey: DRAMBackendKey = DRAMBackendKey(4, 4, DRAMMasEnums.backendLatencyBits),
     params: BaseParams)
   extends DRAMBaseConfig {
 
@@ -242,7 +242,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
     bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) := true.B
   }
 
-  rankStateTrackers.zip(UIntToOH(cmdRank).toBools) foreach { case (state, cmdUsesThisRank)  =>
+  rankStateTrackers.zip(UIntToOH(cmdRank).asBools) foreach { case (state, cmdUsesThisRank)  =>
     state.io.selectedCmd := selectedCmd
     state.io.cmdBankOH := cmdBankOH
     state.io.cmdRow := cmdRow
@@ -277,7 +277,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   cmdMonitor.io.row := cmdRow
   cmdMonitor.io.autoPRE := casAutoPRE
 
-  val powerStats = (rankStateTrackers).zip(UIntToOH(cmdRank).toBools) map {
+  val powerStats = (rankStateTrackers).zip(UIntToOH(cmdRank).asBools) map {
     case (rankState, cmdUsesThisRank) =>
       val powerMonitor = Module(new RankPowerMonitor(cfg.dramKey))
       powerMonitor.io.selectedCmd := selectedCmd

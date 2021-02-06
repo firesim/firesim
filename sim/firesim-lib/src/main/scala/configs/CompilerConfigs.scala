@@ -69,6 +69,11 @@ class WithILATopWiringTransform extends Config((site, here, up) => {
   case HostTransforms => Dependency[firesim.passes.ILATopWiringTransform] +: up(HostTransforms, site)
 })
 
+// Tells ILATopWiringTransform to actually populate the ILA
+class WithAutoILA extends Config((site, here, up) => {
+  case midas.EnableAutoILA => true
+})
+
 // Implements the AutoCounter performace counters features
 class WithAutoCounter extends Config((site, here, up) => {
   case midas.EnableAutoCounter => true
@@ -83,7 +88,6 @@ class WithAutoCounterPrintf extends Config((site, here, up) => {
 class BaseF1Config extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
-  new WithPlusArgReaderRemoval ++
   new WithEC2F1Artefacts ++
   new WithILATopWiringTransform ++
   new midas.F1Config

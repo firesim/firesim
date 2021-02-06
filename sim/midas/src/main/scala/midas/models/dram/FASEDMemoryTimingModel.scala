@@ -9,6 +9,8 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.diplomacy.{IdRange, LazyModule, AddressSet, TransferSizes}
 import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.devices.tilelink._
 import junctions._
 
 import chisel3._
@@ -214,14 +216,41 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     case FasedAXI4Edge => completeConfig.axi4Edge
   })
 
-  // Begin: Implementation of UsesHostDRAM
-  val memoryMasterNode = AXI4MasterNode(
+  val toHostDRAMNode = AXI4MasterNode(
     Seq(AXI4MasterPortParameters(
       masters = Seq(AXI4MasterParameters(
         name = "fased-memory-timing-model",
         id   = IdRange(0, 1 << p(NastiKey).idBits),
+        aligned = true, // This must be the case for the TL-based width adapter to work 
         maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID))
       )))))
+
+  // Begin: Implementation of UsesHostDRAM
+  val hostWidthBytes = p(MemNastiKey).dataBits / 8
+  val targetWidthBytes = p(NastiKey).dataBits / 8
+  val memoryMasterNode = if (hostWidthBytes == targetWidthBytes) {
+    toHostDRAMNode
+  } else {
+    // Since there is no diplomatic AXI4 width converter, use the TL one
+    val xbar = LazyModule(new TLXbar)
+    val error = LazyModule(new TLError(DevNullParams(
+        Seq(AddressSet(BigInt(1) << p(MemNastiKey).addrBits, 0xff)),
+        maxAtomic = 1,
+        maxTransfer = p(HostMemChannelKey).maxXferBytes),
+      beatBytes = hostWidthBytes))
+
+    (xbar.node
+      := TLWidthWidget(targetWidthBytes)
+      := TLFIFOFixer()
+      := AXI4ToTL()
+      := AXI4Buffer()
+      := toHostDRAMNode )
+    error.node := xbar.node
+    (AXI4Buffer()
+       := AXI4UserYanker()
+       := TLToAXI4()
+       := xbar.node)
+  }
 
   val memorySlaveConstraints = MemorySlaveConstraints(cfg.targetAddressSpace, cfg.targetRTransfer, cfg.targetWTransfer)
   val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
@@ -230,7 +259,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new FASEDTargetIO))
-    val toHostDRAM: AXI4Bundle = memoryMasterNode.out.head._1
+    val toHostDRAM: AXI4Bundle = toHostDRAMNode.out.head._1
     val tNasti = hPort.hBits.axi4
     val tReset = hPort.hBits.reset
 
@@ -242,26 +271,18 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     val funcModelRegs = Wire(new FuncModelProgrammableRegs)
     val ingress = Module(new IngressModule(cfg))
 
-    // Drop in a width adapter to handle differences between
-    // the host and target memory widths
-    val widthAdapter = Module(LazyModule(
-      new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
-    ).module)
-
-    toHostDRAM <> widthAdapter.sAxi4
-
-    val toWidthAdapter = Wire(new NastiIO)
-    AXI4NastiAssigner.toAXI4(widthAdapter.mAxi4, toWidthAdapter)
-    toWidthAdapter.aw <> ingress.io.nastiOutputs.aw
-    toWidthAdapter.ar <> ingress.io.nastiOutputs.ar
-    toWidthAdapter.w  <> ingress.io.nastiOutputs.w
+    val nastiToHostDRAM = Wire(new NastiIO)
+    AXI4NastiAssigner.toAXI4(toHostDRAM, nastiToHostDRAM)
+    nastiToHostDRAM.aw <> ingress.io.nastiOutputs.aw
+    nastiToHostDRAM.ar <> ingress.io.nastiOutputs.ar
+    nastiToHostDRAM.w  <> ingress.io.nastiOutputs.w
 
     val readEgress = Module(new ReadEgress(
       maxRequests = cfg.maxReads,
       maxReqLength = cfg.maxReadLength,
       maxReqsPerId = cfg.maxReadsPerID))
 
-    readEgress.io.enq <> toWidthAdapter.r
+    readEgress.io.enq <> nastiToHostDRAM.r
     readEgress.io.enq.bits.user := DontCare
 
     val writeEgress = Module(new WriteEgress(
@@ -269,7 +290,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       maxReqLength = cfg.maxWriteLength,
       maxReqsPerId = cfg.maxWritesPerID))
 
-    writeEgress.io.enq <> toWidthAdapter.b
+    writeEgress.io.enq <> nastiToHostDRAM.b
     writeEgress.io.enq.bits.user := DontCare
 
     // Track outstanding requests to the host memory system
@@ -377,6 +398,9 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       attach(writeEgressStalls, "writeStalled", ReadOnly)
       attach(readEgressStalls, "readStalled", ReadOnly)
       attach(tokenStalls, "tokenStalled", ReadOnly)
+      attach(hostMemoryIdleCycles, "hostMemIdleCycles", ReadOnly)
+      attach(hOutstandingWrites.value, "hostWritesOutstanding", ReadOnly)
+      attach(hOutstandingReads.value, "hostReadsOutstanding", ReadOnly)
     }
 
     if (cfg.params.detectAddressCollisions) {
@@ -418,7 +442,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiOutputs.ar.fire,
         ingress.io.nastiOutputs.ar.bits.id,
         readEgress.io.enq.fire && newHRead,
-        readEgress.io.enq.bits.id
+        readEgress.io.enq.bits.id,
+        cfg.maxReadsPerID
       )
       attachIO(hReadLatencyHist, "hostReadLatencyHist_")
 
@@ -426,7 +451,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiOutputs.aw.fire,
         ingress.io.nastiOutputs.aw.bits.id,
         writeEgress.io.enq.fire,
-        writeEgress.io.enq.bits.id
+        writeEgress.io.enq.bits.id,
+        cfg.maxWritesPerID
       )
       attachIO(hWriteLatencyHist, "hostWriteLatencyHist_")
 
@@ -447,6 +473,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.ar.bits.id,
         model.tNasti.r.fire && targetFire && newTRead,
         model.tNasti.r.bits.id,
+        maxFlight = cfg.maxReadsPerID,
         cycleCountEnable = targetFire
       )
       attachIO(tReadLatencyHist, "targetReadLatencyHist_")
@@ -456,6 +483,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.aw.bits.id,
         model.tNasti.b.fire && targetFire,
         model.tNasti.b.bits.id,
+        maxFlight = cfg.maxWritesPerID,
         cycleCountEnable = targetFire
       )
       attachIO(tWriteLatencyHist, "targetWriteLatencyHist_")
@@ -465,7 +493,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.ar.fire && targetFire,
         model.tNasti.ar.bits.id,
         model.tNasti.r.fire && targetFire && newTRead,
-        model.tNasti.r.bits.id
+        model.tNasti.r.bits.id,
+        maxFlight = cfg.maxReadsPerID
       )
       attachIO(totalReadLatencyHist, "totalReadLatencyHist_")
 
@@ -473,7 +502,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         model.tNasti.aw.fire && targetFire,
         model.tNasti.aw.bits.id,
         model.tNasti.b.fire && targetFire,
-        model.tNasti.b.bits.id
+        model.tNasti.b.bits.id,
+        maxFlight = cfg.maxWritesPerID
       )
       attachIO(totalWriteLatencyHist, "totalWriteLatencyHist_")
 
@@ -482,7 +512,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiInputs.hBits.ar.fire() && targetFire,
         ingress.io.nastiInputs.hBits.ar.bits.id,
         ingress.io.nastiOutputs.ar.fire,
-        ingress.io.nastiOutputs.ar.bits.id
+        ingress.io.nastiOutputs.ar.bits.id,
+        maxFlight = cfg.maxReadsPerID,
       )
       attachIO(iReadLatencyHist, "ingressReadLatencyHist_")
 
@@ -490,7 +521,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         ingress.io.nastiInputs.hBits.aw.fire() && targetFire,
         ingress.io.nastiInputs.hBits.aw.bits.id,
         ingress.io.nastiOutputs.aw.fire,
-        ingress.io.nastiOutputs.aw.bits.id
+        ingress.io.nastiOutputs.aw.bits.id,
+        maxFlight = cfg.maxWritesPerID,
       )
       attachIO(iWriteLatencyHist, "ingressWriteLatencyHist_")
     }

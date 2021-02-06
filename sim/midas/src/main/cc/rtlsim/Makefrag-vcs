@@ -18,6 +18,7 @@
 VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
 	-notice -line +lint=all,noVCDE,noONGS,noUI -quiet -debug_pp +no_notifier -cpp $(CXX) \
+	-top emul \
 	-Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc \
 	+vc+list \
 	-CFLAGS "$(CXXFLAGS) $(CFLAGS) -D_GNU_SOURCE -DVCS -I$(VCS_HOME)/include" \

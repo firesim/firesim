@@ -97,6 +97,8 @@ private[midas] class MidasTransforms extends Transform {
       new ResolveAndCheck,
       // fame.MultiThreadFAME5Models,
       new ResolveAndCheck,
+      new passes.InlineInstances,
+      passes.ResolveKinds,
       new fame.EmitAndWrapRAMModels,
       new EmitFirrtl("post-gen-sram-models.fir"),
       new ResolveAndCheck,

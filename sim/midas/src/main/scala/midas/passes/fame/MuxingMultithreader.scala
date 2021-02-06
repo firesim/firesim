@@ -19,6 +19,7 @@ object MuxingMultiThreader {
 
   val rPortName = "read"
   val wPortName = "write"
+  val tIdxName = "threadIdx"
 
   def rField(mem: DefMemory, field: String): Expression = memPortField(mem, rPortName, field)
   def wField(mem: DefMemory, field: String): Expression = memPortField(mem, wPortName, field)
@@ -53,25 +54,22 @@ object MuxingMultiThreader {
         newResets += Conditionally(infos, reset, doReset, EmptyStmt)
       }
       Block(Seq(mem, rClockConn, rEnConn, rAddrConn, wClockConn, wEnDefault, wMaskConn, wAddrConn))
-    case Connect(info, lhs @ WSubField(p: WSubField, "addr", _, _), rhs) if kind(lhs) == MemKind =>
-      Connect(FAME5Info.info ++ info, lhs, DoPrim(PrimOps.Cat, Seq(onExprRHS(rhs), tIdx), Nil, UnknownType))
     case Connect(info, WRef(name, tpe, RegKind, _), rhs) =>
       regWriteAsMemWrite(info, name, tpe, onExprRHS(rhs))
     case Connect(_, lhs, _) if (kind(lhs) == RegKind) =>
       throw CustomTransformException(new IllegalArgumentException(s"Cannot handle complex register assignment to ${lhs}"))
     case mem: DefMemory =>
-      require(mem.readLatency == 0, "Memories must be transformed with VerilogMemDelays before multithreading")
-      require(mem.readLatency == 0, "Memories must have one-cycle write latency")
-      require(nThreads.bitCount == 1, "Models may only be threaded by pow2 threads for now")
-      mem.copy(depth = mem.depth * nThreads)
+      require(mem.readLatency == 0 || mem.readLatency == 1, "Memories must have combinational or single-cycle reads")
+      require(mem.writeLatency == 1, "Memories must have one-cycle write latency")
+      Block(ThreadedMem(nThreads, mem),
+            Connect(FAME5Info.info, WSubField(WRef(mem.name), WrapTop.hostClockName), WRef(WrapTop.hostClockName)),
+            Connect(FAME5Info.info, WSubField(WRef(mem.name), tIdxName), WRef(tIdxName)))
     case s => s.map(onStmt(newResets, nThreads, tIdx)).map(onExprRHS)
   }
 
   def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
-    // TODO: this is ugly and uses copied code instead of bumping FIRRTL
     // Simplify all memories first
-    val loweredMod = (new memlib.MemDelayAndReadwriteTransformer(module)).transformed.asInstanceOf[Module]
-    val ns = Namespace(loweredMod)
+    val ns = Namespace(module)
 
     val hostClock = WRef(WrapTop.hostClockName)
     val hostReset = WRef(WrapTop.hostResetName)
@@ -89,7 +87,7 @@ object MuxingMultiThreader {
 
     // Resets transformed to conditional stores to threading RAMs
     val newResets = new ArrayBuffer[Statement]
-    val threaded = onStmt(newResets, n, tIdxRef)(loweredMod.body)
+    val threaded = onStmt(newResets, n, tIdxRef)(module.body)
 
     // Uses only threaded instances
     val (iDecls, threadedImpl) = SeparateInstanceDecls(threaded)

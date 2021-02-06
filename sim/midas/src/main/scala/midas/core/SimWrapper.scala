@@ -16,7 +16,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Direction, chiselName, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
-import firrtl.annotations.{Annotation, SingleTargetAnnotation, ReferenceTarget}
+import firrtl.annotations.{Annotation, SingleTargetAnnotation, ReferenceTarget, IsModule}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
@@ -39,8 +39,8 @@ class HubControlInterface extends Bundle with HasTimestampConstants {
   val scheduledClocks = Input(Bool())
 }
 
-private[midas] case class TargetBoxAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
-  def duplicate(rt: ReferenceTarget): TargetBoxAnnotation = TargetBoxAnnotation(rt)
+private[midas] case class TargetBoxAnnotation(target: IsModule) extends SingleTargetAnnotation[IsModule] {
+  def duplicate(rt: IsModule): TargetBoxAnnotation = TargetBoxAnnotation(rt)
 }
 
 // Regenerates the "bits" field of a target ready-valid interface from a list of flattened
@@ -354,7 +354,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
 
   // Indicates SimulationMapping which module we want to replace with the simulator
   annotate(new ChiselAnnotation { def toFirrtl =
-    TargetBoxAnnotation(outer.toNamed.toTarget.ref(target.instanceName))
+    TargetBoxAnnotation(target.toAbsoluteTarget)
   })
 
   target.io.hostReset := reset.toBool

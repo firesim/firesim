@@ -3,6 +3,8 @@
 package midas
 package widgets
 
+import scala.language.implicitConversions
+
 sealed trait CPPLiteral {
   def typeString: String
   def toC: String

@@ -7,6 +7,7 @@ import firrtl.analyses.InstanceGraph
 import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.transforms.DontTouchAllTargets
 import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
 import firrtl.options.Dependency
 import firrtl.stage.Forms
@@ -24,7 +25,7 @@ import midas.targetutils.FAMEAnnotation
   * @param clock The clock to which this signal is sychronous. This will _not_ be wired.
   *
   */
-case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
+case class BridgeTopWiringAnnotation(target: ReferenceTarget, clock: ReferenceTarget) extends Annotation with FAMEAnnotation with DontTouchAllTargets {
   def update(renames: RenameMap): Seq[BridgeTopWiringAnnotation] =
     Seq(this.copy(RTRenamer.exact(renames)(target), RTRenamer.exact(renames)(clock)))
 

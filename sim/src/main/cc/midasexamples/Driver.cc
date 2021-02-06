@@ -59,6 +59,8 @@
 #include "TwoAdders.h"
 #elif defined DESIGNNAME_ClockMux
 #include "ClockMux.h"
+#elif defined DESIGNNAME_ClockDivider
+#include "ClockMux.h"
 #elif defined DESIGNNAME_Regfile
 #include "Regfile.h"
 #elif defined DESIGNNAME_MultiRegfile

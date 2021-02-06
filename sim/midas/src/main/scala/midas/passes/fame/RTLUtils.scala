@@ -69,12 +69,12 @@ object Xor extends BinaryBooleanOp {
   val op = PrimOps.Xor
 }
 
-object Neq extends BinaryBooleanOp {
-  val op = PrimOps.Neq
-}
-
 object Eq extends BinaryBooleanOp {
   val op = PrimOps.Eq
+}
+
+object Neq extends BinaryBooleanOp {
+  val op = PrimOps.Neq
 }
 
 object Lt extends BinaryBooleanOp {

@@ -2,6 +2,56 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.11.0] - 2021-01-19
+FireSim 1.11.0 formally introduces the _instance multithreading_ optimization, the subject of Albert Magyar's dissertation work, which can be used to improve FPGA capacity by up to 8X (2 -> 16 large boom cores) for some designs. Other notable changes include: putting DRAM in its own clock domain, RC + Chisel + FIRRTL bumps + many QoL improvements. 
+
+### Added
+* SBT 1.4 native client support; removes no SBT launch time (#668 )
+* Extra queuing in the AssertBridge to improve fmax (#595)
+* Platform config to enable model multi-threading resource optimization (#636)
+* Support for designs with no AXI4 backing memory (#638)
+* A simulation heartbeat to record throughput and detect simulation deadlock (#662)
+* More informational logging during AutoCounter elaboration (#664) h/t @timsnyder-siv 
+* Separate parameter to specify width of backendLatency in FASED (#663) h/t @timsnyder-siv 
+* A 16-core LargeBOOM configuration has been added to FireChip (ucb-bar/chipyard#756)
+* A switch to disable synth asserts at runtime (#619)
+
+### Changed
+* Bump to Chipyard 1.4 (Rocket Chip, Chisel 3.4.1, FIRRTL, 1.4.1)
+* Default targets now put DRAM in it's own 1 GHz clock domain (#644)
+* UARTBridge now obtains baud rate from UARTParams passed (#598) 
+* Timing Failure and specific route_design failures promoted to fatal errors (firesim/aws-fpga-firesim#28)
+* Make memory loading compatible with new testchipip API (#617)
+* RationalClockBridge no longer assumes the zeroth clock is the base clock (#632)
+* Bumped to Chisel 3.4 and FIRRTL 1.4 (#668)
+* only warn on missing simoutputs copy back (#681) h/t @timsnyder-siv 
+* repo_state_summary introspects toplevel git repo and cd's there (#682) h/t @timsnyder-siv 
+* FIRRTL wiring transform is run in TargetTransforms by default (#625) 
+
+
+### Fixed 
+* An AssertionSynthesis where assertion causes would be misattributed  (#582) (BP to 5.10.1)
+* Merging of memory channels under RAM optimizations (#589) (BP to 5.10.1)
+* ILAWiring Transform scheduling to prevent it running after the emitter (#590, #594, #603) (BP to 5.10.1)
+* Manager now terminates build instance and notifies user if Vivado fails during buildafi (#602)
+* Ctrl bus can now address more than 1024 registers (#635) (BP to 5.10.1) h/t @timsnyder-siv 
+* Model threading (#636) by non-power-of-two factors (#671)
+* Can now specify custom runtime configs in relative paths above the default location (#665) h/t @timsnyder-siv 
+* Quiet scalac warning about `midas.widgets.CppGenerationUtils.toStrLit` implicitConversion (#677) h/t @ingallsj
+* Add try/catch blocks in toplevel driver functions to avoid VCS error DPI-UED (#684) h/t @timsnyder-siv 
+* fix compile warning: Midas code unreachable (#679) h/t @ingallsj
+* fix compile warnings: Midas Bits (#687) h/t @ingallsj
+* provide vcs -top to avoid spurious toplevel in hierarchy (#690) h/t @timsnyder-siv 
+* fix a bug where multiple BUFGCEs would be appended to generated verilog (#694)
+* fix a deadlock in FASED instances with wide data interfaces (#680)
+
+### Deprecated
+
+### Removed
+
+### Performance Enhancements
+* When using model threading (#636), resource utilization of synchronous-read memories has improved (#639)
+
 ## [1.10.0] - 2020-05-31
 Adds initial support for simulating multi-clock targets in FireSim.
 

@@ -23,4 +23,4 @@ installed to firesim for running on real RTL.
 
 For more information, see the official `FireMarshal documentation
 <https://firemarshal.readthedocs.io/en/latest/>`_, and its `quickstart
-tutorial <https://firemarshal.readthedocs.io/en/latest/quickstart.html>`_. 
+tutorial <https://firemarshal.readthedocs.io/en/latest/Tutorials/quickstart.html>`_. 

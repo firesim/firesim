@@ -2,11 +2,23 @@
 
 #include "simif.h"
 
-class ClockMux_t: virtual simif_t
+class IdleDriver: virtual simif_t
 {
 public:
-  ClockMux_t(int argc, char** argv) {}
+  IdleDriver(int argc, char** argv) {}
   void run() {
       step(128 * 1024);
     }
+};
+
+class ClockMux_t: public IdleDriver
+{
+public:
+    using IdleDriver::IdleDriver;
+};
+
+class ClockDivider_t: public IdleDriver
+{
+public:
+    using IdleDriver::IdleDriver;
 };
