@@ -280,7 +280,7 @@ class TimestampRegisterUnittests extends firesim.MidasUnitTestSuite("TimestampRe
 
 class ClockMuxTest extends TutorialSuite("ClockMux") {
   runTest("vcs", true)
-  expectedFMR(12.5)
+  expectedFMR(11, 0.1)
 }
 
 // Relies on target-side assertions to capture test failure; disable assertion synthesis
@@ -288,7 +288,8 @@ class ClockDividerTest extends TutorialSuite(
     "ClockDivider",
     platformConfigs = "DisableSynthAsserts_HostDebugFeatures_DefaultF1Config") {
   runTest("vcs", true)
-  expectedFMR(6.0)
+  runTest("verilator", true)
+  expectedFMR(3.0, 0.1)
 }
 
 // Relies on target-side assertions to capture test failure; disable assertion synthesis
