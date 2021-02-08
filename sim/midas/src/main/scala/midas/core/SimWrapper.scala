@@ -392,7 +392,14 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
         case fame.PipeChannel(latency) => latency
         case o => 0
       }
-      val channel = Module(new PipeChannel(channelType, latency))
+      val depth = chAnno.channelInfo match {
+        // On fanout channels provide extra queuing to allow sinks to decouple further WRT to each other
+        // This improves FMR on feed-forward sub-graphs originating from a clock source
+        // This needs more careful thought as the optimal selection depends on the nature of the sinks.
+        case t: midas.passes.fame.Timestamped if chAnnos.size > 1 => 16
+        case o => 2
+      }
+      val channel = Module(new PipeChannel(channelType, latency, depth))
       channel suggestName s"PipeChannel_${chAnno.globalName}"
 
       target.io.wirePortMap(chAnno.globalName).sink match {
