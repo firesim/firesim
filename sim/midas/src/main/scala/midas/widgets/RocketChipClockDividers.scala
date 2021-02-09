@@ -96,7 +96,9 @@ class RocketChipClockDivider3Test(
   io.finished := TimestampedTokenTraceEquivalence(reference, model, timeout)
 }
 
-case class ClockDividerParams(div: Int)
+case class ClockDividerParams(div: Int) {
+  require(div > 1)
+}
 
 class ClockDividerHostIO(
     private val tClockIn: Clock = Clock(),

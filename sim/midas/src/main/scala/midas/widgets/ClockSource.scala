@@ -82,11 +82,11 @@ object BridgeableClockSource {
 /**
   * A dummy target-side module
   */
-class BlackBoxClockSourceBridge(periodPS: BigInt) extends BlackBox {
+class BlackBoxClockSourceBridge(params: ClockSourceParams) extends BlackBox {
   val io = IO(new Bundle {
     val clockOut = Output(Clock())
   })
-  BridgeableClockSource(this, io.clockOut, periodPS)
+  BridgeableClockSource(this, io.clockOut, params)
 }
 
 class ClockSourceBridgeModule(params: ClockSourceParams)(implicit p: Parameters) extends BridgeModule[ClockSourceHostIO] {

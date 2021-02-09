@@ -5,11 +5,11 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.config.{Parameters, Field}
 
-import midas.widgets.{RationalClockBridge, RationalClock, PeekPokeBridge, BridgeableClockDivider}
+import midas.widgets.{BlackBoxClockSourceBridge, ClockSourceParams, PeekPokeBridge, BridgeableClockDivider}
 
 class ClockDivider(implicit p: Parameters) extends RawModule {
 
-  val fullRate = RationalClockBridge().io.clocks.head
+  val fullRate = Module(new BlackBoxClockSourceBridge(ClockSourceParams(1024, initValue = false))).io.clockOut
   val reset = WireInit(false.B)
 
   val clockDivider = Module(new freechips.rocketchip.util.ClockDivider2)
