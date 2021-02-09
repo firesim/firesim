@@ -131,12 +131,8 @@ class ClockDividerBridgeModule(params: ClockDividerParams)(implicit p: Parameter
     val hPort = IO(new ClockDividerHostIO)
     params.div match {
       case 1 => hPort.clockOut <> hPort.clockIn
-      case 2 =>
-        val cd = Module(new ClockDivider2)
-        cd.clk_in <> TimestampedSource(hPort.clockIn)
-        hPort.clockOut <> TimestampedSink(cd.clk_out)
-      case 3 =>
-        val cd = Module(new ClockDivider3)
+      case o =>
+        val cd = Module(new GenericClockDividerN(params.div))
         cd.clk_in <> TimestampedSource(hPort.clockIn)
         hPort.clockOut <> TimestampedSink(cd.clk_out)
     }

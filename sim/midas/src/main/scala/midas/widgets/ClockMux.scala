@@ -49,6 +49,7 @@ class ReferenceClockMux extends BlackBox with HasBlackBoxResource {
     val clockOut = Output(Bool())
   })
   addResource("/midas/widgets/ReferenceClockMux.sv")
+  addResource("/midas/widgets/ReferenceRegisterImpl.sv")
 }
 
 object TimestampedClockMux {

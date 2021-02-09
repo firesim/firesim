@@ -289,7 +289,7 @@ class ClockDividerTest extends TutorialSuite(
     platformConfigs = "DisableSynthAsserts_HostDebugFeatures_DefaultF1Config") {
   runTest("vcs", true)
   runTest("verilator", true)
-  expectedFMR(3.0, 0.1)
+  expectedFMR(2.0, 0.1)
 }
 
 // Relies on target-side assertions to capture test failure; disable assertion synthesis

@@ -25,7 +25,7 @@ class ClockDivider(implicit p: Parameters) extends RawModule {
 
   // Reset is only provided here because chisel needs one to instantiate a register
   val slowClockCount = withClockAndReset(halfRate, reset) {
-    val count = Reg(UInt(64.W))
+    val count = Reg(UInt(64.W)) // Assumes init value 0
     count := count + 1.U
     printf(p"Slow Clock Cycle: $count\n")
     count
@@ -33,11 +33,13 @@ class ClockDivider(implicit p: Parameters) extends RawModule {
 
   withClockAndReset(fullRate, reset) {
     val peekPokeBridge = PeekPokeBridge(fullRate, reset)
-    val count = Reg(UInt(64.W))
+    val count = Reg(UInt(64.W)) // Assumes init value 0
     count := count + 1.U
-    val slowClockCountReg = RegNext(slowClockCount)
     printf(p"Fast Clock Cycle: $count\n")
-    assert((count >> 1.U) === slowClockCountReg)
+    // Even edges will have no simultaenous slow-clock edge, so we can avoid a data race
+    when(count(0)) {
+      assert(((count + 1.U) >> 1.U) === slowClockCount)
+    }
   }
 }
 
