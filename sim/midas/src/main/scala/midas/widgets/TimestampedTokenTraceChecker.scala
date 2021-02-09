@@ -53,7 +53,7 @@ class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with
   // By convention a -> reference, b -> model when not compairing two models
   val a = IO(Flipped(new TimestampedTuple(gen)))
   val b = IO(Flipped(new TimestampedTuple(gen)))
-  val time = IO(Output(UInt(timestampWidth.W)))
+  val advancedToTime = IO(Output(UInt(timestampWidth.W)))
   // Consume null-tokens greedily but wait for both channels when there's a transition in either. 
   // These non-null messages should be indentical
   a.observed := b.latest.valid && !b.unchanged || a.unchanged
@@ -68,7 +68,7 @@ class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with
   assert((!a.old.valid || !b.old.valid) || (a.unchanged || b.unchanged) || (!a.latest.valid || !b.latest.valid) ||
      a.latest.bits.time === b.latest.bits.time,
     "Non-null messages do not arrive at the same target times")
-  time := Mux(a.old.valid && b.old.valid,
+  advancedToTime := Mux(a.old.valid && b.old.valid,
     Mux(a.old.bits.time > b.old.bits.time, a.old.bits.time, b.old.bits.time),
     0.U
   )
@@ -80,7 +80,7 @@ object TimestampedTokenTraceEquivalence {
     val checker = Module(new TimestampedTokenTraceChecker(a.underlyingType))
     checker.a <> a
     checker.b <> b
-    checker.time > (hostTimeout / 8).U
+    checker.advancedToTime > (hostTimeout / 8).U
   }
   def apply[T <: Data](a: DecoupledIO[TimestampedToken[T]], b: DecoupledIO[TimestampedToken[T]], hostTimeout: Int): Bool =
     apply(TimestampedSource(a), TimestampedSource(b), hostTimeout)
