@@ -44,6 +44,7 @@ $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir $(verilog_srcs)
 	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); \
 		runMain firrtl.stage.FirrtlMain -i $< -o $@ \
+		-td $(GEN_DIR) \
 		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
 	grep -sh ^ $(GEN_DIR)/firrtl_black_box_resource_files.f | xargs cat >> $@ # Append blackboxes to FPGA wrapper, if any
 
