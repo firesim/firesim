@@ -4,6 +4,8 @@ FROM centos:centos7.6.1810
 RUN yum -y install sudo epel-release
 # aws fpga dev ami comes with this: pip2
 RUN yum -y install python-pip
+# Match the version on the dev ami
+RUN pip2 install --upgrade pip==18.0
 # Provide a baseline of version for circle CI to use.
 # If Circle CI uses its native version to initialize the repo, future submodule
 # initializations with the machine-launch installed version of git produce very

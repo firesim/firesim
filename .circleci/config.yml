@@ -3,7 +3,7 @@ version: 2.1
 executors:
   main-env:
     docker:
-      - image: firesim/firesim-ci:v1.0
+      - image: firesim/firesim-ci:v1.1
         user: "centos"
     environment:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
