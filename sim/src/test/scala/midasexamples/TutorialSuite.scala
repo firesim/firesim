@@ -145,6 +145,36 @@ class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   diffSynthesizedLog("synthprinttest.out0")
 }
 
+class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int) extends TutorialSuite(
+  "PrintfModule",
+   simulationArgs = Seq(
+      "+print-file=synthprinttest.out",
+      s"+print-start=${startCycle}",
+      s"+print-end=${endCycle}"
+    )) {
+
+  // Check that we are extracting from the desired ROI by checking that the
+  // bridge-inserted cycle prefix matches the target-side cycle prefix
+  it should "have synthesized printfs in the desired cycles" in {
+    val synthLogFile = new File(genDir, s"/synthprinttest.out0")
+    val synthPrintOutput = extractLines(synthLogFile, prefix = "")
+    val length = synthPrintOutput.size
+    val printfsPerCycle = 4
+    assert(length  == printfsPerCycle * (endCycle - startCycle + 1))
+    for ((line, idx) <- synthPrintOutput.zipWithIndex) {
+      val currentCycle = idx / printfsPerCycle + startCycle
+      val printRegex = raw"^CYCLE:\s*(\d*) SYNTHESIZED_PRINT CYCLE:\s*(\d*).*".r
+      line match {
+        case printRegex(cycleA, cycleB) =>
+          assert(cycleA.toInt == currentCycle)
+          assert(cycleB.toInt == currentCycle)
+      }
+    }
+  }
+}
+
+class PrintfCycleBoundsF1Test extends PrintfCycleBoundsTestBase(startCycle = 172, endCycle = 9377)
+
 class WireInterconnectF1Test extends TutorialSuite("WireInterconnect")
 class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
   runTest("verilator", true)
