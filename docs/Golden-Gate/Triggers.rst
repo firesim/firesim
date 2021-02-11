@@ -87,6 +87,15 @@ provide an example of annotating a sink using the the ``TriggerSink`` object bel
     :end-before: DOC include end: TriggerSink Usage
 
 
+Alternatively, if you wish to use a trigger sink as a predicate for a Chisel
+``when`` block, you may use ``TriggerSink.whenEnabled`` instead
+
+.. literalinclude:: ../../sim/src/main/scala/midasexamples/TriggerPredicatedPrintf.scala
+    :language: scala
+    :start-after: DOC include start: TriggerSink.whenEnabled Usage
+    :end-before: DOC include end: TriggerSink.whenEnabled Usage
+
+
 .. _trigger-timing:
 
 Trigger Timing
