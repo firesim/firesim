@@ -35,6 +35,8 @@
 #include "NarrowPrintfModule.h"
 #elif defined DESIGNNAME_MulticlockPrintfModule
 #include "MulticlockPrintfModule.h"
+#elif defined DESIGNNAME_TriggerPredicatedPrintf
+#include "PrintfModule.h"
 #elif defined DESIGNNAME_AutoCounterModule
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule

@@ -72,3 +72,17 @@ public:
     };
 };
 #endif // DESIGNNAME_AutoCounterPrintf
+
+#ifdef DESIGNNAME_TriggerPredicatedPrintf
+class TriggerPredicatedPrintf_t: public print_module_t, virtual simif_t
+{
+public:
+    TriggerPredicatedPrintf_t(int argc, char** argv): print_module_t(argc, argv) {};
+    virtual void run() {
+        for (auto &print_endpoint: print_endpoints) {
+            print_endpoint->init();
+        }
+        run_and_collect_prints(16000);
+    };
+};
+#endif // DESIGNNAME_AutoCounterPrintf
