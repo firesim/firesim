@@ -48,7 +48,7 @@ public:
         step(1);
         poke(io_a, 1);
         poke(io_b, 1);
-        run_and_collect_prints(256);
+        run_and_collect_prints(16000);
     };
 };
 #endif //DESIGNNAME_PrintfModule
@@ -68,7 +68,7 @@ public:
         poke(reset, 0);
         step(1);
         poke(io_a, 1);
-        run_and_collect_prints(3000);
+        run_and_collect_prints(16000);
     };
 };
 #endif // DESIGNNAME_AutoCounterPrintf
