@@ -264,7 +264,8 @@ class PrintfSynthesisCITests extends Suites(
   new PrintfModuleF1Test,
   new NarrowPrintfModuleF1Test,
   new MulticlockPrintF1Test,
-  new PrintfCycleBoundsF1Test
+  new PrintfCycleBoundsF1Test,
+  new TriggerPredicatedPrintfF1Test
 )
 
 class AssertionSynthesisCITests extends Suites(
