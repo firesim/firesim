@@ -343,4 +343,21 @@ object TriggerSink {
       def toFirrtl = TriggerSinkAnnotation(targetWire.toTarget, clock.toTarget)
     })
   }
+
+  /**
+    * Syntatic sugar for a when context that is predicated by a trigger sink.
+    * Example usage:
+    * {{{
+    * TriggerSink.whenEnabled {
+    *   printf(<...>)
+    * }
+    * }}}
+    *
+    * @param noSourceDefault See [[TriggerSink.apply]].
+    */
+  def whenEnabled(noSourceDefault: =>Bool = true.B)(elaborator: => Unit): Unit = {
+    val sinkEnable = Wire(Bool())
+    apply(sinkEnable, noSourceDefault)
+    when (sinkEnable) { elaborator }
+  }
 }
