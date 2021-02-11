@@ -8,7 +8,7 @@ import chisel3.util._
 import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import sifive.blocks.devices.uart.{UARTPortIO, PeripheryUARTKey, UARTParams}
+import sifive.blocks.devices.uart.{UARTPortIO, UARTParams}
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
 //example in the FireSim docs
