@@ -254,7 +254,8 @@ class ChiselExampleDesigns extends Suites(
 class PrintfSynthesisCITests extends Suites(
   new PrintfModuleF1Test,
   new NarrowPrintfModuleF1Test,
-  new MulticlockPrintF1Test
+  new MulticlockPrintF1Test,
+  new PrintfCycleBoundsF1Test
 )
 
 class AssertionSynthesisCITests extends Suites(
