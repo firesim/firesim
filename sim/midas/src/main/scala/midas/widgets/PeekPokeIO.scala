@@ -8,7 +8,6 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.chiselName
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
 import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
 import freechips.rocketchip.config.Parameters
@@ -66,7 +65,6 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val outputPrecisePeekableFlags = mutable.ArrayBuffer[Bool]()
     val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
-    @chiselName
     def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
@@ -99,7 +97,6 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       regAddrs
     }
 
-    @chiselName
     def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
@@ -223,7 +220,6 @@ class PeekPokeBridge(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends
 }
 
 object PeekPokeBridge {
-  @chiselName
   def apply(clock: Clock, reset: Bool, ioList: (String, Data)*): PeekPokeBridge = {
     val peekPokeBridge = Module(new PeekPokeBridge(ioList, Some(reset)))
     ioList.foreach({ case (name, field) => field <> peekPokeBridge.io.elements(name) })

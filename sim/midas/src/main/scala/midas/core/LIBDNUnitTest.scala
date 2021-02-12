@@ -6,7 +6,6 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{chiselName}
 
 // Describes an input channel / input port pair for an LI-BDN unittest
 // name: a descriptive channel name
@@ -24,7 +23,6 @@ case class IChannelDesc[T <: Data](
     Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
 
   // Generate the testing hardware for a single input channel of a model
-  @chiselName
   def genEnvironment(testLength: Int): Unit = {
     val inputGen = tokenGenFunc.getOrElse(() => tokenSequenceGenerator(reference.cloneType))()
 
@@ -61,7 +59,6 @@ case class OChannelDesc[T <: Data](
   comparisonFunc: (Data, DecoupledIO[Data]) => Bool = (a, b) => !b.fire || a.asUInt === b.bits.asUInt) {
 
   // Generate the testing hardware for a single output channel of a model
-  @chiselName
   def genEnvironment(testLength: Int): Bool = {
     val refOutputs = Module(new Queue(reference.cloneType, testLength, flow = true))
     val refIdx   = RegInit(0.U(log2Ceil(testLength + 1).W))
@@ -103,7 +100,6 @@ object TokenComparisonFunctions{
 }
 
 object DirectedLIBDNTestHelper{
-  @chiselName
   def apply(
       inputChannelMapping:  Seq[IChannelDesc[_]],
       outputChannelMapping: Seq[OChannelDesc[_]],

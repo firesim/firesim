@@ -10,7 +10,6 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{chiselName}
 
 import midas.core.SimUtils.{ChLeafType}
 
@@ -228,7 +227,6 @@ class ReadyValidChannel[T <: Data](
   }
 }
 
-@chiselName
 class ReadyValidChannelUnitTest(
     numTokens: Int = 4096,
     queueDepth: Int = 2,
