@@ -9,7 +9,7 @@ import freechips.rocketchip.diplomacy.{LazyModule}
 
 import midas.Platform
 import midas.core._
-import midas.passes.fame.{FAMEChannelConnectionAnnotation}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, SimulationControlAnnotation}
 import midas.widgets.{CStrLit, UInt32, BridgeIOAnnotation}
 import midas.widgets.CppGenerationUtils._
 

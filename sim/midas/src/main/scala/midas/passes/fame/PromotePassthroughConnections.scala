@@ -86,12 +86,9 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
     val modelSources = modelNodes.collect { case (Output, ln) => ln }
     val modelSinks   = modelNodes.collect { case (Input, ln) => ln }
 
-    val bridgeSources = topModule.ports.collect {
-      case Port(_, name, Input, tpe) if tpe != ClockType => LogicNode(name)
-    }
-    val bridgeSinks   = topModule.ports.collect {
-      case Port(_, name, Output, tpe) if tpe != ClockType => LogicNode(name)
-    }
+    val fccaAnnos = state.annotations.collect { case a: FAMEChannelConnectionAnnotation => a }
+    val bridgeSources = fccaAnnos.flatMap(_.sinks).flatMap(_.map(rt => LogicNode(rt.ref)))
+    val bridgeSinks = fccaAnnos.flatMap(_.sources).flatMap(_.map(rt => LogicNode(rt.ref)))
 
     val allSinks = modelSinks ++ bridgeSinks
     val allSources = modelSources ++ bridgeSources
@@ -112,7 +109,8 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
         val sinkNode = lhs match {
           case WSubField(WRef(instName,_,InstanceKind,_), portName, tpe, _) if tpe != ClockType =>
             Some(LogicNode(portName, Some(instName)))
-          case WRef(name, tpe, _, _) if tpe != ClockType => Some(LogicNode(name))
+          // Pull out clock passthroughs that might feed into bridges
+          case WRef(name, _, _, _)  =>  bridgeSinks.find(_.name == name)
           case o => None
         }
         sinkNode match {

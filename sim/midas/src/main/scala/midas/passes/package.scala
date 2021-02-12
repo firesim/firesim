@@ -16,11 +16,19 @@ import scala.language.implicitConversions
 
 package object passes {
   /**
-    * A utility for keeping statements defining and connecting signals to a piece of hardware
-    * together with a reference to the component. This is useful for passes that insert hardware,
-    * since the "collateral" of that object can be kept in one place.
+    * A utility for keeping statements defining and connecting signals to a
+    * piece of hardware.  This is useful for passes that insert hardware, since
+    * the "collateral" of that object can be kept in one place.
     */
-  case class SignalInfo(decl: Statement, assigns: Statement, ref: Expression)
+  trait HasFirrtlCollateral {
+    def decl: Statement
+    def assigns: Statement
+  }
+  /**
+    * A form of the above useful when we need only a single reference from the
+    * generated hw -- i.e., the tip of the resulting logic cone.
+    */
+  case class SignalInfo(decl: Statement, assigns: Statement, ref: Expression) extends HasFirrtlCollateral
 
   /**
     * A utility for creating a wire that "echoes" the value of an existing expression.

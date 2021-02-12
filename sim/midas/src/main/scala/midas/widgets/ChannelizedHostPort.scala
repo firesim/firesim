@@ -4,95 +4,194 @@ package midas.widgets
 
 import midas.core.SimWrapperChannels
 
+import midas.passes.fame.{FAMEChannelInfo, FAMEChannelConnectionAnnotation}
+
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction}
+import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
+
+import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 
-abstract class ChannelizedHostPortIO(protected val targetPortProto: Data) extends TokenizedRecord {
-  // Call in port definition to register a field as belonging to a unique channel
-  def InputChannel[T <: Data](field: T) = channel(Direction.Input)(field)
-  def OutputChannel[T <: Data](field: T) = channel(Direction.Output)(field)
+trait ChannelMetadata {
+  def clockRT(): Option[ReferenceTarget]
+  def chInfo(): FAMEChannelInfo
+  def fieldRTs(): Seq[ReferenceTarget]
+  def bridgeSunk: Boolean
+  // Channel name is passed as an argument here because it is determined reflexively after the record
+  // is constructed -- it's not avaiable when the metadata instance is created
+  def generateAnnotations(chName: String): Seq[ChiselAnnotation] = {
+    Seq(new ChiselAnnotation { def toFirrtl =
+      if (bridgeSunk) {
+        FAMEChannelConnectionAnnotation.source(chName, chInfo, clockRT, fieldRTs)
+      } else {
+        FAMEChannelConnectionAnnotation.sink(chName, chInfo, clockRT, fieldRTs)
+      }
+    })
+  }
+}
 
-  private val _inputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
-  private val _outputWireChannels = mutable.ArrayBuffer[(Data, ReadyValidIO[Data])]()
-  lazy val fieldToChannelMap = Map((_inputWireChannels ++ _outputWireChannels):_*)
+case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, latency: Int = 0) extends ChannelMetadata {
+  def fieldRTs = Seq(field.toTarget)
+  def clockRT = Some(clock.toTarget)
+  def chInfo = midas.passes.fame.PipeChannel(latency)
+}
 
-  private def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock => throw new Exception("Tokens cannot contain clock fields")
+case class ClockChannelMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
+  def fieldRTs = field match {
+    case c: Clock => Seq(c.toTarget)
+    case v: Vec[Clock] => v.map(_.toTarget)
+    case o => ???
+  }
+  def clockRT = None
+  def chInfo = midas.passes.fame.TargetClockChannel(Seq.tabulate(fieldRTs.length)(i => RationalClock(s"clock_$i",1, 1)))
+}
+
+case class AsyncResetMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
+  def fieldRTs = Seq(field.toTarget)
+  def clockRT = None
+  def chInfo = midas.passes.fame.AsyncResetChannel
+}
+
+case class ClockControlChannelMetadata(field: Data, bridgeSunk: Boolean) extends ChannelMetadata {
+  def fieldRTs = Seq(field.toTarget)
+  def clockRT = None
+  def chInfo = midas.passes.fame.ClockControlChannel
+}
+
+trait IndependentChannels extends HasChannels { this: Record =>
+  type ChannelType[A <: Data] <: Data
+  def payloadWrapper[A <: Data](payload: A): ChannelType[A]
+
+  protected val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], ChannelMetadata)]()
+  lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)):_*)
+  def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName  }).toMap
+
+  protected def getLeafDirs(token: Data): Seq[Direction] = token match {
+    case c: Clock => Seq(directionOf(c))//throw new Exception("Data tokens cannot contain clock fields")
     case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
     case v: Vec[_] => v.flatMap(getLeafDirs)
     case b: Bits => Seq(directionOf(b))
   }
-  // Simplifying assumption: if the user wants to aggregate a bunch of wires
-  // into a single channel they should aggregate them into a Bundle on their record
-  private def channel[T <: Data](direction: Direction)(field: T): DecoupledIO[T] = {
+
+  //// Call in port definition to register a field as belonging to a unique channel
+  //private def checkAllFieldsAssignedToChannels(): Unit = {
+  //  def prefixWith(prefix: String, base: Any): String =
+  //    if (prefix != "")  s"${prefix}.${base}" else base.toString
+
+  //  def loop(name: String, field: Data): Seq[(String, Boolean)] = field match {
+  //    case c: Clock => Seq(name -> true)
+  //    case b: Record if fieldToChannelMap.isDefinedAt(b) => Seq(name -> true)
+  //    case b: Record => b.elements.flatMap({ case (n, e) => loop(prefixWith(name, n), e) }).toSeq
+  //    case v: Vec[_] if fieldToChannelMap.isDefinedAt(v) => Seq(name -> true)
+  //    case v: Vec[_] => (v.zipWithIndex).flatMap({ case (e, i) => loop(s"${name}_$i", e) })
+  //    case b: Bits => Seq(name -> fieldToChannelMap.isDefinedAt(b))
+  //  }
+  //  val messages = loop("", targetPortProto).collect({ case (name, assigned) if !assigned =>
+  //    "Field ${name} of bridge IO is not assigned to a channel"})
+  //  assert(messages.isEmpty, messages.mkString("\n"))
+  //}
+
+  def checkFieldDirection(field: Data, direction: Direction): Unit = {
     val directions = getLeafDirs(field)
-    val isUnidirectional = directions.zip(directions.tail).map({ case (a, b) => a == b })
-                                                          .foldLeft(true)(_ && _)
+    val isUnidirectional = directions.zip(directions.tail).map({ case (a, b) => a == b }).foldLeft(true)(_ && _)
     require(isUnidirectional, "Token channels must have a unidirectioned payload")
     require(directions.head == direction)
+  }
 
-    directions.head match {
-      case Direction.Input => {
-        val ch = Flipped(Decoupled(field.cloneType))
-        _inputWireChannels += (field -> ch)
-        ch
-      }
-      case Direction.Output => {
-        val ch = Decoupled(field.cloneType)
-        _outputWireChannels += (field -> ch)
-        ch
-      }
+  // Simplifying assumption: if the user wants to aggregate a bunch of wires
+  // into a single channel they should aggregate them into a Bundle on their record
+  protected def channelField[T <: Data](direction: Direction, field: T): ChannelType[T] = {
+    //checkFieldDirection(field, direction)
+    val ch = direction match {
+      case Direction.Input => Flipped(payloadWrapper(field.cloneType))
+      case Direction.Output => payloadWrapper(field.cloneType)
     }
+    ch
   }
-
-  private def checkAllFieldsAssignedToChannels(): Unit = {
-    def prefixWith(prefix: String, base: Any): String =
-      if (prefix != "")  s"${prefix}.${base}" else base.toString
-
-    def loop(name: String, field: Data): Seq[(String, Boolean)] = field match {
-      case c: Clock => Seq(name -> true)
-      case b: Record if fieldToChannelMap.isDefinedAt(b) => Seq(name -> true)
-      case b: Record => b.elements.flatMap({ case (n, e) => loop(prefixWith(name, n), e) }).toSeq
-      case v: Vec[_] if fieldToChannelMap.isDefinedAt(v) => Seq(name -> true)
-      case v: Vec[_] => (v.zipWithIndex).flatMap({ case (e, i) => loop(s"${name}_$i", e) })
-      case b: Bits => Seq(name -> fieldToChannelMap.isDefinedAt(b))
-    }
-    val messages = loop("", targetPortProto).collect({ case (name, assigned) if !assigned =>
-      "Field ${name} of bridge IO is not assigned to a channel"})
-    assert(messages.isEmpty, messages.mkString("\n"))
-  }
-
-  def inputWireChannels: Seq[(Data, String)] = {
-    checkAllFieldsAssignedToChannels()
-    val reverseElementMap = elements.map({ case (name, field) => field -> name  }).toMap
-    _inputWireChannels.map({ case (tField, channel) => (tField, reverseElementMap(channel)) })  
-  }
-
-  def outputWireChannels: Seq[(Data, String)] = {
-    checkAllFieldsAssignedToChannels()
-    val reverseElementMap = elements.map({ case (name, field) => field -> name  }).toMap
-    _outputWireChannels.map({ case (tField, channel) => (tField, reverseElementMap(channel)) })  
-  }
-
-  def inputRVChannels = Seq.empty
-  def outputRVChannels = Seq.empty
 
   def generateAnnotations(): Unit = {
-    generateWireChannelFCCAs(inputWireChannels, bridgeSunk = true)
-    generateWireChannelFCCAs(outputWireChannels, bridgeSunk = false)
+    for ((targetField, channelElement, metadata) <- channels) {
+      metadata.generateAnnotations(reverseElementMap(channelElement)).map(a => annotate(a))
+    }
   }
 
-  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, channels: SimWrapperChannels): Unit = {
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simWrapper: SimWrapperChannels): Unit = {
     val local2globalName = bridgeAnno.channelMapping.toMap
-    for (localName <- inputChannelNames) {
-      elements(localName) <> channels.wireOutputPortMap(local2globalName(localName))
+    for ((_, channel, metadata) <- channels) {
+      val localName = reverseElementMap(channel)
+      if (metadata.bridgeSunk) {
+        channel <> simWrapper.wireOutputPortMap(local2globalName(localName))
+      } else {
+        simWrapper.wireInputPortMap(local2globalName(localName)) <> channel
+      }
     }
-    for (localName <- outputChannelNames) {
-      channels.wireInputPortMap(local2globalName(localName)) <> elements(localName)
+  }
+
+  def allChannelNames() = channels.map(ch => reverseElementMap(ch._2))
+}
+
+trait ChannelizedHostPortIO extends IndependentChannels { this: Record =>
+  def targetClockRef: Clock
+  type ChannelType[A <: Data] = DecoupledIO[A]
+  def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(payload)
+  def InputChannel[A <: Data](field: A): ChannelType[A] = {
+    val ch = channelField(Direction.Input, field)
+    channels.append((field, ch, PipeChannelMetadata(field, targetClockRef, bridgeSunk = true)))
+    ch
+  }
+  def OutputChannel[A <: Data](field: A): ChannelType[A] = {
+    val ch = channelField(Direction.Output, field)
+    channels.append((field, ch, PipeChannelMetadata(field, targetClockRef, bridgeSunk = false)))
+    ch
+  }
+}
+
+trait TimestampedHostPortIO extends IndependentChannels { this: Record =>
+  type ChannelType[A <: Data] = DecoupledIO[TimestampedToken[A]]
+  def payloadWrapper[A <: Data](payload: A): ChannelType[A] = Decoupled(new TimestampedToken(payload))
+
+  /**
+    * This is used for channels whose underlying target type is special in some
+    * way, like AsyncReset and Clock, that makes it hard to manipulate as data
+    * (i.e., as a bool). For these types we convert the underlying channel to
+    * use a Bool.
+    */
+  protected def coerceToBoolChannel(direction: Direction, field: Element): DecoupledIO[TimestampedToken[Bool]] = {
+    // FIXME: WHen the target interface is regenerated during compilation direction information is lost.
+    //checkFieldDirection(field, direction)
+    val ch = direction match {
+      case Direction.Input => Flipped(Decoupled(new TimestampedToken(Bool())))
+      case Direction.Output => Decoupled(new TimestampedToken(Bool()))
     }
+    val meta = field match {
+      case c: Clock => ClockChannelMetadata(c, direction == Direction.Input)
+      case a: AsyncReset => AsyncResetMetadata(a, direction == Direction.Input)
+      case o => throw new Exception(s"Unexpected field type ${o}. Perhaps use non-clock, non-AsyncReset Input/Output channel")
+    }
+    channels.append((field, ch, meta))
+    ch
+  }
+
+  def InputClockChannel(field: Clock): ChannelType[Bool] = coerceToBoolChannel(Direction.Input, field)
+  def OutputClockChannel(field: Clock): ChannelType[Bool] = coerceToBoolChannel(Direction.Output, field)
+  def InputAsyncResetChannel(field: AsyncReset): ChannelType[Bool] = coerceToBoolChannel(Direction.Input, field)
+  def OutputAsyncResetChannel(field: AsyncReset): ChannelType[Bool] = coerceToBoolChannel(Direction.Output, field)
+
+  // For non-clock, non-async reset channels
+  def InputChannel[A <: Data](field: A): ChannelType[A] = {
+    val ch = channelField(Direction.Input, field)
+    // TODO:check that there isn't an async reset or clock nested in the field
+    val meta = ClockControlChannelMetadata(field, bridgeSunk = true)
+    channels.append((field, ch, meta))
+    ch
+  }
+  def OutputChannel[A <: Data](field: A): ChannelType[A] = {
+    val ch = channelField(Direction.Output, field)
+    val meta = ClockControlChannelMetadata(field, bridgeSunk = false)
+    channels.append((field, ch, meta))
+    ch
   }
 }

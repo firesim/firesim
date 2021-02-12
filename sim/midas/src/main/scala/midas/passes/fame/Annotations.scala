@@ -30,10 +30,19 @@ import midas.widgets.RationalClock
 case class FAMEChannelPortsAnnotation(
   localName: String,
   clockPort: Option[ReferenceTarget],
-  ports: Seq[ReferenceTarget]) extends Annotation with FAMEAnnotation {
+  ports: Seq[ReferenceTarget],
+  timestamped: Boolean) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), ports.map(renamer)))
+    val nonZeroRenamer = RTRenamer.nonZero(renames)
+    val updatedPorts = if (timestamped) {
+      // Timestamped ports are transformed to include aggregates
+      ports.flatMap(nonZeroRenamer)
+    } else {
+      ports.map(renamer)
+    }
+
+    Seq(FAMEChannelPortsAnnotation(localName, clockPort.map(renamer), updatedPorts, timestamped))
   }
   override def getTargets: Seq[ReferenceTarget] = clockPort ++: ports
 }
@@ -131,16 +140,23 @@ case class FAMEChannelFanoutAnnotation(channelNames: Seq[String]) extends NoTarg
   */
 sealed trait FAMEChannelInfo {
   def update(renames: RenameMap): FAMEChannelInfo = this
+  def hasTimestamp: Boolean
 }
 
+sealed trait Untimestamped { this: FAMEChannelInfo =>
+  val hasTimestamp = false
+}
 
+sealed trait Timestamped { this: FAMEChannelInfo =>
+  val hasTimestamp = true
+}
 /**
   * Indicates that a channel connection is a pipe with <latency> register stages
   * Setting latency = 0 models a wire
   *
   * TODO: How to handle registers that are reset? Add an Option[RT]?
   */
-case class PipeChannel(val latency: Int) extends FAMEChannelInfo
+case class PipeChannel(val latency: Int) extends FAMEChannelInfo with Untimestamped
 
 /**
   * Indicates that a channel connection is the reverse (ready) half of
@@ -148,12 +164,23 @@ case class PipeChannel(val latency: Int) extends FAMEChannelInfo
   * references to the ready signals, this channel contains no signal
   * references.
   */
-case object DecoupledReverseChannel extends FAMEChannelInfo
+case object DecoupledReverseChannel extends FAMEChannelInfo with Untimestamped
 
 /**
   * Indicates that a channel connection carries target clocks
   */
-case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo
+case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo with Timestamped
+
+/**
+  * Indicates the channel is a wire-type connection with timestamped tokens. This is used to drive signals
+  * that are sunk by clock-generating models
+  */
+case object ClockControlChannel extends FAMEChannelInfo with Timestamped
+
+/**
+  * Indicates the channel carries a single asynchronous reset
+  */
+case object AsyncResetChannel extends FAMEChannelInfo with Timestamped
 
 /**
   * Indicates that a channel connection is the forward (valid) half of
@@ -173,7 +200,7 @@ case class DecoupledForwardChannel(
   readySink: Option[ReferenceTarget],
   validSource: Option[ReferenceTarget],
   readySource: Option[ReferenceTarget],
-  validSink: Option[ReferenceTarget]) extends FAMEChannelInfo {
+  validSink: Option[ReferenceTarget]) extends FAMEChannelInfo with Untimestamped {
   override def update(renames: RenameMap): DecoupledForwardChannel = {
     val renamer = RTRenamer.exact(renames)
     DecoupledForwardChannel(
@@ -343,5 +370,21 @@ class EmitFAMEAnnotations(fileName: String) extends firrtl.Transform {
     outputFile.write(JsonProtocol.serialize(fameAnnos))
     outputFile.close()
     state
+  }
+}
+
+/**
+  * Carries RTs to a series of control signals that move between the hub model and the simulation master
+  *
+  */
+case class PortMetadata(rT: ReferenceTarget, dir: firrtl.ir.Direction, tpe: firrtl.ir.Type)
+object PortMetadata {
+  def apply(mT: ModuleTarget, p: firrtl.ir.Port): PortMetadata = PortMetadata(mT.ref(p.name), p.direction, p.tpe)
+}
+case class SimulationControlAnnotation(signals: Map[String, PortMetadata]) extends Annotation with FAMEAnnotation {
+  def enclosingModuleName = signals.values.head.rT.module
+  def update(renames: RenameMap): Seq[Annotation] = {
+    val renamer = RTRenamer.exact(renames)
+    Seq(SimulationControlAnnotation(signals.map({ case (name, meta) => name -> meta.copy(rT = renamer(meta.rT)) }).toMap))
   }
 }

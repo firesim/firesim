@@ -17,9 +17,10 @@ class MulticlockChecker {
      sim(sim), field_address(field_address), numerator(numerator), denominator(denominator) {};
    void expect_and_update(uint64_t poked_value){
     sim->expect(field_address, fast_domain_reg_out);
+    cycle++;
     fast_domain_reg_out =  slow_domain_reg;
     int slow_clock_cycle = (cycle * numerator) / denominator;
-    if (cycle == 0 || (slow_clock_cycle > (((cycle - 1) * numerator) / denominator))) {
+    if (slow_clock_cycle > 0 && slow_clock_cycle > (((cycle - 1) * numerator)/ denominator)) {
       // TODO: Handle the case where numerator * cycle is not a multiple of the division
       //if (((cycle * numerator) % denominator) != 0) {
       //  fast_domain_reg_out = slow_domain_reg;
@@ -29,7 +30,6 @@ class MulticlockChecker {
       //}
       }
       fast_domain_reg = poked_value;
-      cycle++;
    };
 };
 

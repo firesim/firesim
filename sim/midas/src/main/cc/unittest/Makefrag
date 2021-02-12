@@ -20,13 +20,17 @@ default: $(GEN_DIR)/$(DESIGN).v
 
 MAKEFRAG_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 sim_makefrag_dir := $(MAKEFRAG_DIR)/../rtlsim
+midas_vsrc_dir := $(abspath $(MAKEFRAG_DIR)/../../resources/)
 
-vsrc := $(ROCKETCHIP_DIR)/src/main/resources/vsrc
-csrc := $(ROCKETCHIP_DIR)/src/main/resources/csrc
+rocketchip_vsrc_dir := $(ROCKETCHIP_DIR)/src/main/resources/vsrc
+rocketchip_csrc_dir := $(ROCKETCHIP_DIR)/src/main/resources/csrc
 
 # Stupidly guess what this test might depend on
 src_path = src/main/scala
 scala_srcs := $(shell find $(BASE_DIR) -name "*.scala")
+verilog_srcs := \
+	$(shell find $(midas_vsrc_dir) -iname "*.sv") \
+	$(shell find $(rocketchip_vsrc_dir) -iname "*.v")
 
 $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	mkdir -p $(@D)
@@ -37,10 +41,12 @@ $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 		--legacy-configs midas.unittest:$(CONFIG)"
 	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
 
-$(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
+$(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir $(verilog_srcs)
 	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); \
 		runMain firrtl.stage.FirrtlMain -i $< -o $@ \
+		-td $(GEN_DIR) \
 		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
+	grep -sh ^ $(GEN_DIR)/firrtl_black_box_resource_files.f | xargs cat >> $@ # Append blackboxes to FPGA wrapper, if any
 
 emul_v     := $(GEN_DIR)/$(DESIGN).v
 emul_h     :=
@@ -48,8 +54,11 @@ emul_cc    :=
 
 # VCS Makefrag arguments
 ifeq ($(EMUL),vcs)
-vcs_wrapper_v := $(vsrc)/TestDriver.v
-VCS_FLAGS = +verbose
+vcs_wrapper_v := $(rocketchip_vsrc_dir)/TestDriver.v
+VCS_FLAGS =  \
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
+
 include $(sim_makefrag_dir)/Makefrag-vcs
 
 vcs = $(OUT_DIR)/$(DESIGN)
@@ -63,6 +72,10 @@ else
 top_module := TestHarness
 override CFLAGS  += -I$(csrc) -include $(csrc)/verilator.h -DTEST_HARNESS=V$(top_module) -std=c++11
 override emul_cc += $(sim_makefrag_dir)/generic_vharness.cc
+VERILATOR_FLAGS =
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
+
 
 include $(sim_makefrag_dir)/Makefrag-verilator
 

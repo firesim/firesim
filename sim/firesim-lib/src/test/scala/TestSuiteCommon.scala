@@ -136,6 +136,13 @@ abstract class MidasUnitTestSuite(unitTestConfig: String, shouldFail: Boolean = 
 
 class AllMidasUnitTests extends MidasUnitTestSuite("AllUnitTests") {
   runUnitTestSuite("vcs")
+  runUnitTestSuite("verilator")
 }
 // Need to get VCS to return non-zero exitcodes when $fatal is called
-class FailingUnitTests extends MidasUnitTestSuite("TimeOutCheck", shouldFail = true)
+class FailingUnitTests extends MidasUnitTestSuite("TimeOutCheck", shouldFail = true) {
+  runUnitTestSuite("verilator")
+}
+
+class TimestampUnittests extends MidasUnitTestSuite("TimeOutCheck", shouldFail = true) {
+  runUnitTestSuite("verilator")
+}

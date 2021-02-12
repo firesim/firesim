@@ -38,6 +38,45 @@ class WithTimeOutCheck extends Config((site, here, up) => {
   }
 })
 
+// Timestamped model tests
+class WithTimestampTests extends Config((site, here, up) => {
+  case UnitTests => (q: Parameters) => {
+    implicit val p = q
+    import midas.widgets._
+    Seq(
+      Module(new ClockSourceTest(ClockSourceParams(1000, initValue = true))),
+      //Module(new TimestampedRegisterTest(Posedge)),
+    )
+  }
+})
+
+// Timestamped model tests
+class WithTimestampRegisterTests extends Config((site, here, up) => {
+  case UnitTests => (q: Parameters) => {
+    implicit val p = q
+    import midas.widgets._
+    Seq(
+      Module(new ClockSourceTest(ClockSourceParams(1000, initValue = true))),
+      Module(new FanOutTest),
+      Module(new CombinationalAndTest),
+      Module(new TimestampedRegisterTest(Posedge, 5, 4)),
+      Module(new TimestampedRegisterTest(Negedge, 5, 4)),
+      Module(new TimestampedRegisterTest(Posedge, 10, 9)),
+      Module(new TimestampedRegisterTest(Posedge, 9, 10)),
+      Module(new TimestampedRegisterTest(Negedge, 10, 9)),
+      Module(new TimestampedRegisterLoopbackTest(Posedge, 10)),
+      Module(new TimestampedClockMuxTest(3,5,10)),
+     // // These tests fail non-deterministically
+     // Module(new RocketChipClockDivider2Test(2)),
+     // Module(new RocketChipClockDivider2Test(5)),
+     // Module(new RocketChipClockDivider3Test(2)),
+     // Module(new RocketChipClockDivider3Test(5)),
+      Module(new GenericClockDividerNTest(5, 2)),
+    )
+  }
+})
 // Complete configs
 class AllUnitTests extends Config(new WithAllUnitTests ++ new midas.SimConfig)
 class TimeOutCheck extends Config(new WithTimeOutCheck ++ new midas.SimConfig)
+class TimestampTests extends Config(new WithTimestampTests ++ new midas.SimConfig)
+class TimestampRegisterTests extends Config(new WithTimestampRegisterTests ++ new midas.SimConfig)

@@ -25,8 +25,6 @@ simif_t::simif_t() {
   this->loadmem_mmio_addrs = LOADMEMWIDGET_0_substruct;
   PEEKPOKEBRIDGEMODULE_0_substruct_create;
   this->defaultiowidget_mmio_addrs = PEEKPOKEBRIDGEMODULE_0_substruct;
-  CLOCKBRIDGEMODULE_0_substruct_create;
-  this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;
 }
 
 void simif_t::init(int argc, char** argv, bool log) {
@@ -54,19 +52,38 @@ void simif_t::init(int argc, char** argv, bool log) {
   }
   // This can be called again if a later start time is desired
   record_start_times();
+  // FIXME: Let the hub model advance arbitrarily far until simifs have been ported to use
+  // the hub model controls instead of step.
+  this->free_run();
+}
+// Adds <step> picoseconds to the current time horizon
+void simif_t::advance_n_ps(uint64_t step_size) {
+  this->advance_to_time_ps(this->time_horizon + step_size);
+}
+
+// Directs the simulation to advance to time <time_horizon> in picoseconds
+void simif_t::advance_to_time_ps(uint64_t new_horizon) {
+  assert(new_horizon >= this->time_horizon);
+  this->time_horizon = new_horizon;
+  write(this->master_mmio_addrs->timeHorizon_h, new_horizon >> 32);
+  write(this->master_mmio_addrs->timeHorizon_l, (uint32_t) new_horizon);
+}
+
+void simif_t::free_run() {
+  this->advance_to_time_ps(-1);
 }
 
 uint64_t simif_t::actual_tcycle() {
-    write(this->clock_bridge_mmio_addrs->tCycle_latch, 1);
-    data_t cycle_l = read(this->clock_bridge_mmio_addrs->tCycle_0);
-    data_t cycle_h = read(this->clock_bridge_mmio_addrs->tCycle_1);
+    write(this->master_mmio_addrs->activeCycles_latch, 1);
+    data_t cycle_l = read(this->master_mmio_addrs->activeCycles_0);
+    data_t cycle_h = read(this->master_mmio_addrs->activeCycles_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
 uint64_t simif_t::hcycle() {
-    write(this->clock_bridge_mmio_addrs->hCycle_latch, 1);
-    data_t cycle_l = read(this->clock_bridge_mmio_addrs->hCycle_0);
-    data_t cycle_h = read(this->clock_bridge_mmio_addrs->hCycle_1);
+    write(this->master_mmio_addrs->hCycle_latch, 1);
+    data_t cycle_l = read(this->master_mmio_addrs->hCycle_0);
+    data_t cycle_h = read(this->master_mmio_addrs->hCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 

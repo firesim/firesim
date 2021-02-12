@@ -77,6 +77,10 @@ object Neq extends BinaryBooleanOp {
   val op = PrimOps.Neq
 }
 
+object Lt extends BinaryBooleanOp {
+  val op = PrimOps.Lt
+}
+
 /** Generates a DefRegister with no reset, relying instead on FPGA programming
   * to preset the register to 0
   */
@@ -91,4 +95,45 @@ object ConditionalConnect {
   def apply(cond: Expression, lhs: Expression, rhs: Expression): Conditionally = {
     Conditionally(NoInfo, cond, Connect(NoInfo, lhs, rhs), EmptyStmt)
   }
+}
+
+class HostReset(val name: String)(implicit ns: Namespace) {
+  assert(ns.tryName(name), "Could not use name ${name} for host reset")
+  val port = Port(NoInfo, name, Input, BoolType)
+  val ref: Expression = WRef(port)
+}
+
+class HostClock(val name: String)(implicit ns: Namespace) {
+  assert(ns.tryName(name), "Could not use name ${name} for host clock")
+  val port = Port(NoInfo, name, Input, ClockType)
+  val ref: Expression = WRef(port)
+}
+
+object HostRTLImplicitConversions {
+  implicit def hostResetToExpr(hr: HostReset): Expression = hr.ref
+  implicit def hostClockToExpr(hc: HostClock): Expression = hc.ref
+}
+
+import HostRTLImplicitConversions._
+
+object HostRegister {
+  def apply(
+      suggestedName: String,
+      tpe: Type,
+      resetVal: Option[Literal] = None)(
+      implicit ns: Namespace,
+      hostReset: HostReset,
+      hostClock: HostClock): DefRegister = {
+    val regName =  ns.newName(suggestedName)
+    val resolvedReset: Expression = if (resetVal.nonEmpty) hostReset else zero
+    val resolvedResetVal = resetVal.getOrElse(WRef(regName))
+    DefRegister(NoInfo, regName, tpe, hostClock, resolvedReset, resolvedResetVal)
+  }
+}
+
+object HostFlagRegister {
+  def apply(name: String, resetVal: Literal = UIntLiteral(0))(
+      implicit ns: Namespace,
+      hostReset: HostReset,
+      hostclock: HostClock): DefRegister = HostRegister(name, BoolType, Some(resetVal))
 }

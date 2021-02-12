@@ -55,8 +55,8 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     // needs back pressure from reset queues
     io.idle := cycleHorizon === 0.U
 
-    def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
-        (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
+    def genWideReg(name: String, field: Data): Seq[UInt] = Seq.tabulate(
+        (field.asUInt.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
       val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
       Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
     })
@@ -67,7 +67,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
     @chiselName
-    def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    def bindInputs(name: String, channel: DecoupledIO[Data]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
       val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
@@ -100,7 +100,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     }
 
     @chiselName
-    def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    def bindOutputs(name: String, channel: DecoupledIO[Data]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
       val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
@@ -116,7 +116,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       when (channel.fire) {
         reg.zipWithIndex.foreach({ case (reg, i) =>
           val msb = math.min(ctrlWidth * (i + 1) - 1, channel.bits.getWidth - 1)
-          reg := channel.bits(msb, ctrlWidth * i)
+          reg := channel.bits.asUInt()(msb, ctrlWidth * i)
         })
       }
 
@@ -179,8 +179,9 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
   }
 }
 
-class PeekPokeTokenizedIO(private val targetIO: Record) extends ChannelizedHostPortIO(targetIO) {
+class PeekPokeTokenizedIO(private val targetIO: PeekPokeTargetIO) extends Record with ChannelizedHostPortIO {
   //NB: Directions of targetIO are WRT to the bridge, but "ins" and "outs" WRT to the target RTL
+  def targetClockRef = targetIO.clock
   val (targetOutputs, targetInputs, _, _) = parsePorts(targetIO)
   val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
   val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })
@@ -194,29 +195,33 @@ object PeekPokeTokenizedIO {
   // serialiable port information
   def apply(key: PeekPokeKey): PeekPokeTokenizedIO = {
     // Instantiate a useless module from which we can get a hardware type with parsePorts
-    val dummyModule = Module(new Module {
-      val io = IO(new RegeneratedTargetIO(key.peeks, key.pokes))
+    val dummyModule = Module(new MultiIOModule {
+      // This spoofs the sources that were passed to the companion object ioList
+      // pokes and peeks are reversed because PeekPokeTargetIO is going to flip them
+      val io = IO(new RegeneratedTargetIO(key.pokes, key.peeks))
+      // This reconstitutes the targetIO in the target-side of the bridge
+      val tIO = IO(new PeekPokeTargetIO(io.elements.toSeq))
       io <> DontCare
+      tIO <> DontCare
     })
     dummyModule.io <> DontCare
-    new PeekPokeTokenizedIO(dummyModule.io)
+    dummyModule.tIO <> DontCare
+    new PeekPokeTokenizedIO(dummyModule.tIO)
   }
 }
 
-class PeekPokeTargetIO(targetIO: Seq[(String, Data)], withReset: Boolean) extends Record {
+class PeekPokeTargetIO(targetIO: Seq[(String, Data)]) extends Record {
   val clock = Input(Clock())
-  val reset = if (withReset) Some(Output(Bool())) else None
   override val elements = ListMap((
     Seq("clock" -> clock) ++
-    reset.map("reset" -> _).toSeq ++
     targetIO.map({ case (name, field) => name -> Flipped(chiselTypeOf(field)) })
   ):_*)
-  override def cloneType = new PeekPokeTargetIO(targetIO, withReset).asInstanceOf[this.type]
+  override def cloneType = new PeekPokeTargetIO(targetIO).asInstanceOf[this.type]
 }
 
-class PeekPokeBridge(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends BlackBox
+class PeekPokeBridge(targetIO: Seq[(String, Data)]) extends BlackBox
     with Bridge[PeekPokeTokenizedIO, PeekPokeBridgeModule] {
-  val io = IO(new PeekPokeTargetIO(targetIO, reset != None))
+  val io = IO(new PeekPokeTargetIO(targetIO))
   val constructorArg = Some(PeekPokeKey(io))
   val bridgeIO = new PeekPokeTokenizedIO(io)
   generateAnnotations()
@@ -225,10 +230,14 @@ class PeekPokeBridge(targetIO: Seq[(String, Data)], reset: Option[Bool]) extends
 object PeekPokeBridge {
   @chiselName
   def apply(clock: Clock, reset: Bool, ioList: (String, Data)*): PeekPokeBridge = {
-    val peekPokeBridge = Module(new PeekPokeBridge(ioList, Some(reset)))
-    ioList.foreach({ case (name, field) => field <> peekPokeBridge.io.elements(name) })
-    reset := peekPokeBridge.io.reset.get
+    // Hack: Specify the direction on the wire so that the bridge can correctly
+    // infer it will be poked.
+    val directionedReset = Wire(Input(Bool()))
+    val completeIOList = ("reset", directionedReset) +: ioList
+    val peekPokeBridge = Module(new PeekPokeBridge(completeIOList))
+    completeIOList.foreach({ case (name, field) => field <> peekPokeBridge.io.elements(name) })
     peekPokeBridge.io.clock := clock
+    reset := directionedReset
     peekPokeBridge
   }
 }

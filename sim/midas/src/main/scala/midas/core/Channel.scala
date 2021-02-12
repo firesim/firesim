@@ -28,12 +28,13 @@ class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bun
 
 class PipeChannel[T <: ChLeafType](
     val gen: T,
-    latency: Int
+    latency: Int,
+    depth: Int = 2
   )(implicit p: Parameters) extends Module {
   require(latency == 0 || latency == 1)
 
   val io = IO(new PipeChannelIO(gen))
-  val tokens = Module(new ShiftQueue(gen, 2))
+  val tokens = Module(new ShiftQueue(gen, depth))
   tokens.io.enq <> io.in
   io.out <> tokens.io.deq
 
