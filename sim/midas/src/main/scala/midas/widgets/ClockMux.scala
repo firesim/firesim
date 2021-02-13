@@ -118,11 +118,12 @@ class ClockMuxBridgeModule()(implicit p: Parameters) extends BridgeModule[ClockM
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
     val hPort = IO(new ClockMuxHostIO)
-    val clockMux = Module(new TimestampedClockMux)
+    //val clockMux = Module(new TimestampedClockMux)
+    val clockMux = Module(new MutexClockMux(2, sync = 3))
     // Unpack the tokens
     clockMux.sel <> TimestampedSource(hPort.sel)
-    clockMux.clockA <> TimestampedSource(hPort.clockA)
-    clockMux.clockB <> TimestampedSource(hPort.clockB)
+    clockMux.clocksIn(0) <> TimestampedSource(hPort.clockA)
+    clockMux.clocksIn(1) <> TimestampedSource(hPort.clockB)
     hPort.clockOut <> TimestampedSink(clockMux.clockOut)
   }
 }

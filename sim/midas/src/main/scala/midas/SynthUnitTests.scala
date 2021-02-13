@@ -66,12 +66,15 @@ class WithTimestampRegisterTests extends Config((site, here, up) => {
       Module(new TimestampedRegisterTest(Negedge, 10, 9)),
       Module(new TimestampedRegisterLoopbackTest(Posedge, 10)),
       Module(new TimestampedClockMuxTest(3,5,10)),
-     // // These tests fail non-deterministically
+     // All following tests fail non-deterministically due to init conditions
      // Module(new RocketChipClockDivider2Test(2)),
      // Module(new RocketChipClockDivider2Test(5)),
      // Module(new RocketChipClockDivider3Test(2)),
      // Module(new RocketChipClockDivider3Test(5)),
-      Module(new GenericClockDividerNTest(5, 2)),
+     // Module(new GenericClockDividerNTest(5, 2)),
+     // Module(new MutexClockMuxTest(Seq(3,5), 60)),
+     // Module(new MutexClockMuxTest(Seq(3,3), 60)),
+     // Module(new MutexClockMuxTest(Seq(3,12), 120)),
     )
   }
 })

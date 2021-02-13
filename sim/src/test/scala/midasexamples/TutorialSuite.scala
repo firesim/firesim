@@ -280,7 +280,7 @@ class TimestampRegisterUnittests extends firesim.MidasUnitTestSuite("TimestampRe
 
 class ClockMuxTest extends TutorialSuite("ClockMux") {
   runTest("vcs", true)
-  expectedFMR(11, 0.1)
+  expectedFMR(2.0, 0.1)
 }
 
 // Relies on target-side assertions to capture test failure; disable assertion synthesis

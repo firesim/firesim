@@ -11,6 +11,7 @@ trait HasTimestampConstants {
   val timestampWidth = 64
   val maxTime = (BigInt(1) << timestampWidth) - 1
   def timestampFType = firrtl.ir.UIntType(firrtl.ir.IntWidth(timestampWidth))
+  def timestampCType = UInt(timestampWidth.W)
 }
 
 class TimestampedToken[T <: Data](private val gen: T) extends Bundle with HasTimestampConstants {
@@ -37,6 +38,7 @@ class TimestampedTuple[T <: Data](private val gen: T) extends Bundle with HasTim
   }
 
   def valueBefore(time: UInt): T = valueAt(time - 1.U)
+  def valueAtHorizon(): T = Mux(latest.valid, latest.bits.data, old.bits.data)
 
   def definedUntil(): UInt = Mux(latest.valid, latest.bits.time, Mux(old.valid, old.bits.time, 0.U))
   def unchanged(): Bool = old.bits.data.asUInt === latest.bits.data.asUInt && old.valid
