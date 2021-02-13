@@ -50,7 +50,6 @@ lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
 lazy val sifive_blocks = ProjectRef(chipyardDir, "sifive_blocks")
 lazy val firechip      = ProjectRef(chipyardDir, "firechip")
 
-lazy val chiselLib = "edu.berkeley.cs" %% "chisel3" % chiselVersion
 // While not built from source, *must* be in sync with the chisel3 git submodule
 // Building from source requires extending sbt-sriracha or a similar plugin and
 //   keeping scalaVersion in sync with chisel3 to the minor version
