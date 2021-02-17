@@ -20,13 +20,15 @@ Ad-hoc Performance Counters
 ------------------------------
 
 AutoCounter enables the addition of ad-hoc counters using the ``PerfCounter``
-function.  The ``PerfCounter`` function takes 3 arguments: A UInt signal to
-be counted, a counter label, and the counter description. Here is an example
-counter declaration:
+function.  The ``PerfCounter`` function takes 3 arguments: A UInt signal encoding an event increment, a counter label, and the counter description. The increment indicates the number of times the event of occurs in a single cycle and will be added on every simulated cycle to the generated performance counter. An increment can be boolean, with true implying the event occured (once) in the cycle, or multibit, to capture events that occur more than once in a cycle. We show two examples
+of using the ``PerfCounter`` function below.
 
 .. code-block:: scala
 
-    midas.targetutils.PerfCounter(s1_pc, "s1_pc", "stage 1 program counter")
+    midas.targetutils.PerfCounter(en_clock, "gate_clock", "Core clock gated")
+    // A multibit example
+    midas.targetutils.PerfCounter(insns_ret, "iret", "Instructions retired")
+
 
 
 Building a Design with AutoCounter
