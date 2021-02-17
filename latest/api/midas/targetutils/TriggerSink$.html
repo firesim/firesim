@@ -639,6 +639,25 @@ while this apply method generates a wire. Otherwise this can be punted to the ta
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.targetutils.TriggerSink#whenEnabled" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="whenEnabled(noSourceDefault:=&gt;chisel3.Bool)(elaborator:=&gt;Unit):Unit"></a><a id="whenEnabled(⇒Bool)(⇒Unit):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/TriggerSink$.html#whenEnabled(noSourceDefault:=&gt;chisel3.Bool)(elaborator:=&gt;Unit):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">whenEnabled</span><span class="params">(<span name="noSourceDefault">noSourceDefault: ⇒ <span class="extype" name="chisel3.Bool">Bool</span> = <span class="symbol">true.B</span></span>)</span><span class="params">(<span name="elaborator">elaborator: ⇒ <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Syntatic sugar for a when context that is predicated by a trigger sink.</p><div class="fullcomment"><div class="comment cmt"><p>Syntatic sugar for a when context that is predicated by a trigger sink.
+Example usage:</p><pre>TriggerSink.whenEnabled {
+  printf(&lt;...&gt;)
+}</pre></div><dl class="paramcmts block"><dt class="param">noSourceDefault</dt><dd class="cmt"><p>See <a href="#apply(target:chisel3.Bool,noSourceDefault:=&gt;chisel3.Bool):Unit" class="extmbr" name="midas.targetutils.TriggerSink#apply">TriggerSink.apply</a>.</p></dd></dl></div>
     </li>
               </ol>
             </div>
