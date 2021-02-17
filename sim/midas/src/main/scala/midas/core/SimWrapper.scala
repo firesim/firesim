@@ -14,7 +14,7 @@ import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction, chiselName, ChiselAnnotation, annotate}
+import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
 import chisel3.experimental.DataMirror.directionOf
 import firrtl.annotations.{Annotation, SingleTargetAnnotation, ReferenceTarget, IsModule}
 
@@ -349,7 +349,6 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
     queues
   }
 
-  @chiselName
   def genClockChannel(chAnno: FAMEChannelConnectionAnnotation): Unit = {
     val clockTokens = channelPorts.clockElement._2
     target.io.clockElement._2.valid := clockTokens.valid

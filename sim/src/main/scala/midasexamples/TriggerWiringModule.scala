@@ -8,7 +8,6 @@ import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import freechips.rocketchip.config.Parameters
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.chiselName
 
 import scala.collection.mutable
 
@@ -78,7 +77,6 @@ class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends MultiIOMo
   totalCredit := doAccounting(inputCredits)
   totalDebit := doAccounting(inputDebits)
 
-  @chiselName
   def synchAndDiff(count: UInt): UInt = {
     val sync = RegNext(count)
     val syncLast = RegNext(sync)
@@ -137,7 +135,6 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
     }
   }
 
-  @chiselName
   class ReferenceImpl {
     val refTotalCredit = Reg(UInt(32.W))
     val refTotalDebit  = Reg(UInt(32.W))

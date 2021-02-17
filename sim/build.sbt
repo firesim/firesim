@@ -1,5 +1,8 @@
 import Tests._
 
+// This needs to stay in sync with the chisel3 and firrtl git submodules
+val chiselVersion = "3.4.1"
+
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
 apiDirectory := "latest"
@@ -47,6 +50,11 @@ lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
 lazy val sifive_blocks = ProjectRef(chipyardDir, "sifive_blocks")
 lazy val firechip      = ProjectRef(chipyardDir, "firechip")
 
+// While not built from source, *must* be in sync with the chisel3 git submodule
+// Building from source requires extending sbt-sriracha or a similar plugin and
+//   keeping scalaVersion in sync with chisel3 to the minor version
+lazy val chiselPluginLib = "edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full
+
 lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
   .dependsOn(chisel)
@@ -58,15 +66,23 @@ lazy val firesimRef = ProjectRef(file("."), "firesim")
 
 lazy val midas = (project in file("midas"))
   .dependsOn(barstools, rocketchip, firrtl % "test->test")
-  .settings(commonSettings)
+  .settings(
+    commonSettings,
+    addCompilerPlugin(chiselPluginLib)
+  )
 
 lazy val firesimLib = (project in file("firesim-lib"))
-  .settings(commonSettings).dependsOn(midas, icenet, testchipip, sifive_blocks)
+  .dependsOn(midas, icenet, testchipip, sifive_blocks)
+  .settings(
+    commonSettings,
+    addCompilerPlugin(chiselPluginLib)
+  )
 
 // Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, SiteScaladocPlugin)
   .settings(commonSettings,
+    addCompilerPlugin(chiselPluginLib),
     git.remoteRepo := "git@github.com:firesim/firesim.git",
     // Publish scala doc only for the library projects -- classes under this
     // project are all integration test-related
