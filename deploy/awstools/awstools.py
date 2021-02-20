@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import random
 import logging
+import os
 
 import boto3
 import botocore
@@ -42,6 +43,11 @@ def aws_resource_names():
         'snsname'      :     'FireSim',
         'runfarmprefix':     None,
     }
+
+    # The code below assumes we're running on an AWS instance. When running on a CI instance,
+    # early out with the default dictionary
+    if os.environ.has_key("CIRCLE_WORKFLOW_ID"):
+        return base_dict
 
     # first get this instance's ID
     res = None

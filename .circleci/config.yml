@@ -1,5 +1,7 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
+orbs:
+    aws-cli: circleci/aws-cli@1.0.0
 executors:
   main-env:
     docker:
@@ -8,6 +10,9 @@ executors:
     environment:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
+  aws:
+    docker:
+    - image: cimg/python:2.7-node
 
 commands:
   machinelaunchscript:
@@ -16,6 +21,14 @@ commands:
       - run:
           command: |
             cd scripts && /usr/bin/bash ./machine-launch-script.sh
+
+  install-fabric:
+    description: "Installs fabric for manager-managing CI container"
+    steps:
+      - run:
+          command: |
+            pip install fabric==1.14.0
+            pip install boto3==1.6.2
 
   buildsetup:
     description: "Run firesim's build-setup.sh"
@@ -75,45 +88,38 @@ commands:
   run-scala-test:
     description: "Runs the scala test with name <test-package>.<test-name>"
     parameters:
-      project:
+      target-project:
         type: string
-        default: "firesim"
+        default: "midasexamples"
       test-name:
         type: string
       test-package:
         type: string
         default: "firesim.midasexamples"
-      separate-elaboration:
-        description: Runs separate elaboration step to avoid multiple invocations of SBT.
-        type: boolean
-        default: true
       timeout:
         type: string
         default: "120m"
     steps:
-      - when:
-          condition: <<parameters.separate-elaboration>>
-          steps:
-          - run:
-              command: |
-                  source env.sh
-                  make -C sim TARGET_PROJECT=midasexamples sbt \
-                      SBT_COMMAND="project << parameters.project >>; Test / runMain firesim.EmitCIElaborationScript elaborate.sh << parameters.test-package >>.<< parameters.test-name >>"
-                  bash -x sim/elaborate.sh || true
-              no_output_timeout: << parameters.timeout >>
       - run:
           command: |
-              source env.sh
-              make -C sim TARGET_PROJECT=midasexamples sbt \
-                  SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >> -- -Dci-skip-elaboration=true"
+              .circleci/run-scala-test.py << parameters.target-project >> << parameters.test-package >>.<< parameters.test-name >>
           no_output_timeout: << parameters.timeout >>
+
+  initialize-manager:
+    description: "Setups the manager instance and firesim repo"
+    parameters:
+      max-runtime-seconds:
+        type: integer
+      filesystem-timeout-seconds:
+        type: integer
+    steps:
+      - run:
+          command: |
+              .circleci/initialize-manager.py  << parameters.max-runtime-seconds >> << parameters.filesystem-timeout-seconds >>
 
   repo-setup:
     description: "Runs all baseline setup tasks up to scala compilation."
     steps:
-      - add_ssh_keys:
-          fingerprint:
-            - 0e:d9:c3:3b:62:03:7a:da:17:1f:a9:5a:4f:34:50:4c
       - checkout
       - machinelaunchscript
       - buildsetup
@@ -121,25 +127,22 @@ commands:
 
 jobs:
   run-test-groupA:
-    executor: main-env
+    executor: aws
     steps:
-      - repo-setup
+      - checkout
+      - aws-cli/setup
+      - install-fabric
       - run-scala-test:
           test-name: "CIGroupA"
-      - build-scala-doc
-      - run-manager-pytest
 
   run-test-groupB:
-    executor: main-env
+    executor: aws
     steps:
-      - repo-setup
+      - checkout
+      - aws-cli/setup
+      - install-fabric
       - run-scala-test:
           test-name: "CIGroupB"
-      - run-scala-test:
-           project: "midas"
-           test-package: "*"
-           test-name: "*"
-           separate-elaboration: false
 
   publish-scala-doc:
     executor: main-env
@@ -148,19 +151,43 @@ jobs:
       - build-scala-doc
       - push-scaladoc-to-ghpages
 
+  setup-default-manager:
+      executor: aws
+      environment:
+          TERM: xterm-256color
+      steps:
+          - checkout
+          - aws-cli/setup
+          - install-fabric
+          - run:
+              name: Initialize FireSim manager
+              command: |
+                  .circleci/launch-manager-instance.py
+          - initialize-manager:
+              max-runtime-seconds: 3600
+              filesystem-timeout-seconds: 600
+
 workflows:
    version: 2
 
    firesimCIall:
      jobs:
-       - run-test-groupA
-       - run-test-groupB
-       - publish-scala-doc:
-           filters:
-             branches:
-               only:
-                 - dev
-             tags:
-               only:
-                 - /[0-9]*\.[0-9]*\.[0-9]*/
+      - setup-default-manager
+
+      - run-test-groupA:
+          requires:
+          - setup-default-manager
+
+      - run-test-groupB:
+          requires:
+          - setup-default-manager
+
+      - publish-scala-doc:
+          filters:
+            branches:
+              only:
+                - dev
+            tags:
+              only:
+                - /[0-9]*\.[0-9]*\.[0-9]*/
 
