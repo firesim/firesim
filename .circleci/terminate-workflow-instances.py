@@ -21,6 +21,7 @@ def terminate_workflow_instances(tag):
 
     for instance in instances:
         awstools.terminate_instances([instance['InstanceId']], dryrun=False)
+        print("Terminating instance:")
         print(instance_metadata_str(instance))
 
 if __name__ == "__main__":
