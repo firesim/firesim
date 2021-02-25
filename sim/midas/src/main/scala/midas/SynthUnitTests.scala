@@ -56,16 +56,17 @@ class WithTimestampRegisterTests extends Config((site, here, up) => {
     implicit val p = q
     import midas.widgets._
     Seq(
-      Module(new ClockSourceTest(ClockSourceParams(1000, initValue = true))),
-      Module(new FanOutTest),
-      Module(new CombinationalAndTest),
-      Module(new TimestampedRegisterTest(Posedge, 5, 4)),
-      Module(new TimestampedRegisterTest(Negedge, 5, 4)),
-      Module(new TimestampedRegisterTest(Posedge, 10, 9)),
-      Module(new TimestampedRegisterTest(Posedge, 9, 10)),
-      Module(new TimestampedRegisterTest(Negedge, 10, 9)),
-      Module(new TimestampedRegisterLoopbackTest(Posedge, 10)),
-      Module(new TimestampedClockMuxTest(3,5,10)),
+      //Module(new ClockSourceTest(ClockSourceParams(1000, initValue = true))),
+      //Module(new FanOutTest),
+      //Module(new CombinationalAndTest),
+      //Module(new TimestampedRegisterTest(Posedge, 5, 4)),
+      //Module(new TimestampedRegisterTest(Negedge, 5, 4)),
+      //Module(new TimestampedRegisterTest(Posedge, 10, 9)),
+      //Module(new TimestampedRegisterTest(Posedge, 9, 10)),
+      //Module(new TimestampedRegisterTest(Negedge, 10, 9)),
+      //Module(new TimestampedRegisterLoopbackTest(Posedge, 10)),
+      //Module(new TimestampedClockMuxTest(3,5,10)),
+     Module(new ClockGateTest(3,60)),
      // All following tests fail non-deterministically due to init conditions
      // Module(new RocketChipClockDivider2Test(2)),
      // Module(new RocketChipClockDivider2Test(5)),

@@ -61,6 +61,8 @@
 #include "ClockMux.h"
 #elif defined DESIGNNAME_ClockDivider
 #include "ClockMux.h"
+#elif defined DESIGNNAME_ClockGateExample
+#include "ClockMux.h"
 #elif defined DESIGNNAME_Regfile
 #include "Regfile.h"
 #elif defined DESIGNNAME_MultiRegfile

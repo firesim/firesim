@@ -22,3 +22,9 @@ class ClockDivider_t: public IdleDriver
 public:
     using IdleDriver::IdleDriver;
 };
+
+class ClockGateExample_t: public IdleDriver
+{
+public:
+    using IdleDriver::IdleDriver;
+};
