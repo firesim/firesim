@@ -13,13 +13,13 @@ import firesim.configs.WithDefaultMemModel
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
 class DefaultF1Config extends Config(new Config((site, here, up) => {
-  case DesiredHostFrequency => 75
+  case DesiredHostFrequency => 100
   case SynthAsserts => true
   case GenerateMultiCycleRamModels => true
   case EnableModelMultiThreading => true
   case SynthPrints => true
   case EnableAutoCounter => true
-}) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
+}) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new firesim.configs.WithILATopWiringTransform ++ new WithDefaultMemModel ++ new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {
   case MemSize => BigInt(1 << 30) // 1 GB
