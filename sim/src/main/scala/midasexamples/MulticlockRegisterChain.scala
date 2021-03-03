@@ -1,4 +1,3 @@
-
 //See LICENSE for license details.
 
 package firesim.midasexamples
@@ -6,7 +5,7 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.config.{Field, Parameters, Config}
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import midas.widgets.{RationalClockBridge, RationalClock, PeekPokeBridge, BridgeableClockMux, BridgeableClockDivider}
 
 case object NumClockDomains extends Field[Int](3)
 
@@ -39,18 +38,29 @@ class MulticlockRegisterChain(implicit p: Parameters) extends RawModule {
   }
 
   val reset = WireInit(false.B)
-  val clockBridge = Module(new RationalClockBridge(
-    Seq.tabulate(p(NumClockDomains)){ i => RationalClock(s"DivBy$i", 1, i) }
-  ))
+  val fullRate = RationalClockBridge().io.clocks.head
 
-  val regMods = clockBridge.io.clocks.map { clock =>
-    withClockAndReset(clock, reset) {
+  val regMods = Seq.tabulate(p(NumClockDomains)){ i =>
+    // Placeholder target module
+    val clockDivider = Module(new freechips.rocketchip.util.ClockDivider2)
+    clockDivider.io.clk_in := fullRate
+    val localClock = clockDivider.io.clk_out
+
+    // Annotate the divider indicating it can be replaced with a model
+    BridgeableClockDivider(
+      clockDivider,
+      clockDivider.io.clk_in,
+      clockDivider.io.clk_out,
+      div = i + 1)
+
+    withClockAndReset(localClock, reset) {
       val regMod = Module(new RegisterModule())
       regMod
     }
   }
 
   def connect(mods: List[RegisterModule]): Unit = mods match {
+    case Nil => Nil
     case modA :: Nil => Nil
     case modA :: mods =>
       mods.head.in := modA.out
@@ -58,8 +68,8 @@ class MulticlockRegisterChain(implicit p: Parameters) extends RawModule {
   }
   connect(regMods.toList)
 
-  withClock(clockBridge.io.clocks.head) {
-    val peekPokeBridge = PeekPokeBridge(clockBridge.io.clocks.head,
+  withClock(fullRate) {
+    val peekPokeBridge = PeekPokeBridge(fullRate,
                                         reset,
                                         ("in", regMods.head.in),
                                         ("out", regMods.last.out))

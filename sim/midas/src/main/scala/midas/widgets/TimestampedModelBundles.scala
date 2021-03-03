@@ -8,7 +8,7 @@ import chisel3.util._
 import freechips.rocketchip.tilelink.{LFSRNoiseMaker}
 
 trait HasTimestampConstants {
-  val timestampWidth = 64
+  val timestampWidth = 48
   val maxTime = (BigInt(1) << timestampWidth) - 1
   def timestampFType = firrtl.ir.UIntType(firrtl.ir.IntWidth(timestampWidth))
   def timestampCType = UInt(timestampWidth.W)

@@ -285,7 +285,17 @@ class ClockMuxTest extends TutorialSuite("ClockMux") {
 
 class ClockGateTest extends TutorialSuite("ClockGateExample") {
   runTest("vcs", true)
-  expectedFMR(6, 0.1)
+  expectedFMR(4, 0.1)
+}
+
+class MulticlockRegisterChainTest extends TutorialSuite("MulticlockRegisterChain") {
+  runTest("vcs", true)
+  expectedFMR(2.0, 0.1)
+}
+
+class ClockMuxCascadeTest extends TutorialSuite("ClockMuxCascade") {
+  runTest("vcs", true)
+  expectedFMR(2.0, 0.1)
 }
 
 // Relies on target-side assertions to capture test failure; disable assertion synthesis

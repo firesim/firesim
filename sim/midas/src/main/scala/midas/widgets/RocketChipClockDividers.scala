@@ -97,7 +97,7 @@ class RocketChipClockDivider3Test(
 }
 
 case class ClockDividerParams(div: Int) {
-  require(div > 1)
+  require(div >= 1)
 }
 
 class ClockDividerHostIO(
@@ -114,7 +114,6 @@ private[midas] class BridgeableClockDivider (
     params: ClockDividerParams) extends Bridgeable[ClockDividerHostIO, ClockDividerBridgeModule] {
   def target = mod.toNamed.toTarget
   def bridgeIO = new ClockDividerHostIO(clockIn, clockOut)
-  require(params.div == 1 || params.div == 2 || params.div == 3)
   def constructorArg = Some(params)
 }
 

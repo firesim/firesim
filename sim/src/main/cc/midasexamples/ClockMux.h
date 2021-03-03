@@ -2,6 +2,8 @@
 
 #include "simif.h"
 
+// This just advances the simulator under the expectation that
+// there are no bridge / peekpoke interactions.
 class IdleDriver: virtual simif_t
 {
 public:
@@ -24,6 +26,18 @@ public:
 };
 
 class ClockGateExample_t: public IdleDriver
+{
+public:
+    using IdleDriver::IdleDriver;
+};
+
+class MulticlockRegisterChain_t: public IdleDriver
+{
+public:
+    using IdleDriver::IdleDriver;
+};
+
+class ClockMuxCascade_t: public IdleDriver
 {
 public:
     using IdleDriver::IdleDriver;
