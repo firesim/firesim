@@ -75,7 +75,6 @@ class TimestampedTokenTraceChecker[T <: Data](gen: T) extends MultiIOModule with
 }
 
 object TimestampedTokenTraceEquivalence {
-  @chiselName
   def apply[T <: Data](a: TimestampedTuple[T], b: TimestampedTuple[T], hostTimeout: Int): Bool = {
     val checker = Module(new TimestampedTokenTraceChecker(a.underlyingType))
     checker.a <> a
