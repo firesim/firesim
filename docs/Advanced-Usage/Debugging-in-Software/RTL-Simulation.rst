@@ -64,7 +64,7 @@ MIDAS-Level Simulation
 
 MIDAS-level simulations are run out of the ``firesim/sim`` directory. Currently, FireSim
 lacks support for MIDAS-level simulation of the NIC since DMA\_PCIS is not yet
-supported. 
+supported.
 
 ::
 
@@ -98,6 +98,13 @@ Specifically:
 A ``.vpd`` target will use (and, if required, build) a simulator with waveform dumping enabled,
 whereas a ``.out`` target will use the faster waveform-less simulator.
 
+Additionally, you can run a unique binary in the following way:
+
+::
+
+    make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>
+    make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>-debug
+
 
 --------
 Examples
@@ -111,7 +118,7 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
     make
     make -j run-asm-tests
     make -j run-bmark-tests
-    
+
 Run all RISCV-tools assembly and benchmark tests on a verilated simulator with waveform dumping.
 
 ::
