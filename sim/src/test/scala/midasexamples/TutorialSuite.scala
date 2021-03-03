@@ -96,7 +96,7 @@ abstract class TutorialSuite(
         case fmrRegex(value) => value.toDouble
       }
       assert(fmr.nonEmpty, "FMR value not found.")
-      assert(fmr.get >= expectedValue - error)
+      assert(fmr.get >= expectedValue)
       assert(fmr.get <= expectedValue + error)
     }
   }
