@@ -60,7 +60,7 @@ Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` co
 Using the ILA at Runtime
 ------------------------
 
-Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the FireSim AWS security group.
+Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the "firesim" AWS security group.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance.
 In the past, AWS had a custom ``setup_gui.sh`` script. However, this was recently deprecated due to compatibility
@@ -95,4 +95,3 @@ The probes file can be found in the manager instance under the path
 
 Select the ILA with the description of `WRAPPER_INST/CL/CL_FIRESIM_DEBUG_WIRING_TRANSFORM`, and you may now use the ILA just as if it was on
 a local FPGA.
-
