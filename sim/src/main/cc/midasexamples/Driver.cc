@@ -67,6 +67,8 @@
 #include "ClockMux.h"
 #elif defined DESIGNNAME_MulticlockRegisterChain
 #include "ClockMux.h"
+#elif defined DESIGNNAME_ClockMuxAndGate
+#include "ClockMux.h"
 #elif defined DESIGNNAME_Regfile
 #include "Regfile.h"
 #elif defined DESIGNNAME_MultiRegfile

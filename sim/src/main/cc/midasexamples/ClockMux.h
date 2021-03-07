@@ -42,3 +42,9 @@ class ClockMuxCascade_t: public IdleDriver
 public:
     using IdleDriver::IdleDriver;
 };
+
+class ClockMuxAndGate_t: public IdleDriver
+{
+public:
+    using IdleDriver::IdleDriver;
+};

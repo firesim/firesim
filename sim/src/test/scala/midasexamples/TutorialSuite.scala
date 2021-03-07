@@ -298,6 +298,11 @@ class ClockMuxCascadeTest extends TutorialSuite("ClockMuxCascade") {
   expectedFMR(2.0, 0.1)
 }
 
+class ClockMuxAndGateTest extends TutorialSuite("ClockMuxAndGate") {
+  runTest("vcs", true)
+  expectedFMR(2.0, 0.1)
+}
+
 // Relies on target-side assertions to capture test failure; disable assertion synthesis
 class ClockDividerTest extends TutorialSuite(
     "ClockDivider",
