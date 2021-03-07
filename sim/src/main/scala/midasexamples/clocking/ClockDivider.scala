@@ -21,7 +21,8 @@ class ClockDivider(implicit p: Parameters) extends RawModule {
     clockDivider,
     clockDivider.io.clk_in,
     clockDivider.io.clk_out,
-    div = 2)
+    2,
+    p(ClockDividerStyleKey))
 
   // Reset is only provided here because chisel needs one to instantiate a register
   val slowClockCount = withClockAndReset(halfRate, reset) {

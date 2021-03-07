@@ -46,7 +46,9 @@ class ClockMuxCascade(implicit p: Parameters) extends RawModule {
         clockDivider,
         clockDivider.io.clk_in,
         clockDivider.io.clk_out,
-        div = idx + 1)
+        div = idx + 1,
+        p(ClockDividerStyleKey)
+      )
 
       // Placeholder target module
       val clockMux = Module(new testchipip.ClockMux2)
@@ -59,7 +61,8 @@ class ClockMuxCascade(implicit p: Parameters) extends RawModule {
         clockMux.io.clocksIn(0),
         clockMux.io.clocksIn(1),
         clockMux.io.clockOut,
-        clockMux.io.sel)
+        clockMux.io.sel,
+        p(ClockMuxStyleKey))
 
       val regMod = withClockAndReset(localClock, reset) {
         val regMod = Module(new RegisterModule())

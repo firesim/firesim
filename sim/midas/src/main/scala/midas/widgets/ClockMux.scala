@@ -9,6 +9,12 @@ import chisel3.experimental.BaseModule
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.unittest.{UnitTest}
 
+sealed trait ClockMuxImplStyle
+object MuxStyle {
+  case class Mutex(sync: Int) extends ClockMuxImplStyle
+  case object Baseline extends ClockMuxImplStyle
+}
+
 
 class TimestampedClockMux extends MultiIOModule {
   val clockA   = IO(Flipped(new TimestampedTuple(Bool())))
@@ -101,29 +107,44 @@ private[midas] class BridgeableClockMux (
     clockA: Clock,
     clockB: Clock,
     clockOut: Clock,
-    sel: Bool) extends Bridgeable[ClockMuxHostIO, ClockMuxBridgeModule] {
+    sel: Bool,
+    implStyle: ClockMuxImplStyle
+  ) extends Bridgeable[ClockMuxHostIO, ClockMuxBridgeModule] {
   def target = mod.toNamed.toTarget
   def bridgeIO = new ClockMuxHostIO(clockA, clockB, clockOut, sel)
-  def constructorArg = None
+  def constructorArg = Some(implStyle)
 }
 
 object BridgeableClockMux {
-  def apply(mod: BaseModule, clockA: Clock, clockB: Clock, clockOut: Clock, sel: Bool): Unit = {
-    val annotator = new BridgeableClockMux(mod, clockA, clockB, clockOut, sel)
+  def apply(
+     mod: BaseModule,
+     clockA: Clock,
+     clockB: Clock,
+     clockOut: Clock,
+     sel: Bool,
+     implStyle: ClockMuxImplStyle = MuxStyle.Mutex(3)): Unit = {
+    val annotator = new BridgeableClockMux(mod, clockA, clockB, clockOut, sel, implStyle)
     annotator.generateAnnotations()
   }
 }
 
-class ClockMuxBridgeModule()(implicit p: Parameters) extends BridgeModule[ClockMuxHostIO] {
+class ClockMuxBridgeModule(style: ClockMuxImplStyle)(implicit p: Parameters) extends BridgeModule[ClockMuxHostIO] {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
     val hPort = IO(new ClockMuxHostIO)
-    //val clockMux = Module(new TimestampedClockMux)
-    val clockMux = Module(new MutexClockMux(2, sync = 3))
-    // Unpack the tokens
-    clockMux.sel <> TimestampedSource(hPort.sel)
-    clockMux.clocksIn(0) <> TimestampedSource(hPort.clockA)
-    clockMux.clocksIn(1) <> TimestampedSource(hPort.clockB)
-    hPort.clockOut <> TimestampedSink(clockMux.clockOut)
+    style match {
+      case MuxStyle.Mutex(sync) =>
+        val clockMux = Module(new MutexClockMux(2, sync))
+        clockMux.sel <> TimestampedSource(hPort.sel)
+        clockMux.clocksIn(0) <> TimestampedSource(hPort.clockA)
+        clockMux.clocksIn(1) <> TimestampedSource(hPort.clockB)
+        hPort.clockOut <> TimestampedSink(clockMux.clockOut)
+      case MuxStyle.Baseline =>
+        val clockMux = Module(new TimestampedClockMux)
+        clockMux.sel <> TimestampedSource(hPort.sel)
+        clockMux.clockA <> TimestampedSource(hPort.clockA)
+        clockMux.clockB <> TimestampedSource(hPort.clockB)
+        hPort.clockOut <> TimestampedSink(clockMux.clockOut)
+    }
   }
 }

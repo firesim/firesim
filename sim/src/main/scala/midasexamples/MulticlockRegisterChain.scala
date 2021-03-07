@@ -7,20 +7,6 @@ import freechips.rocketchip.config.{Field, Parameters, Config}
 
 import midas.widgets.{RationalClockBridge, RationalClock, PeekPokeBridge, BridgeableClockMux, BridgeableClockDivider}
 
-case object NumClockDomains extends Field[Int](3)
-
-class WithNDomains(n: Int) extends Config((site, here, up) => {
-  case NumClockDomains => n
-})
-
-class D8 extends WithNDomains(8)
-class D12 extends WithNDomains(12)
-class D16 extends WithNDomains(16)
-class D24 extends WithNDomains(24)
-class D32 extends WithNDomains(32)
-class D48 extends WithNDomains(48)
-class D64 extends WithNDomains(64)
-
 /**
   * Creates a scan chain in which each successive stage is placed in a different
   * clock domain.  This serves as a simple test of the scalability of FireSim's multiclock 

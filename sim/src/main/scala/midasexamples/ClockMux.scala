@@ -31,7 +31,8 @@ class ClockMux(implicit p: Parameters) extends RawModule {
     clockMux.io.clocksIn(0),
     clockMux.io.clocksIn(1),
     clockMux.io.clockOut,
-    clockMux.io.sel)
+    clockMux.io.sel,
+    p(ClockMuxStyleKey))
 
   val reset = WireInit(false.B)
 

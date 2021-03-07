@@ -9,6 +9,28 @@ import chisel3.experimental.BaseModule
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.unittest.{UnitTest}
 
+import firrtl.annotations.HasSerializationHints
+
+
+sealed trait ClockDividerImplStyle {
+  def checkDiv(div: Int): Unit
+}
+
+case class ClockDividerParams[T <: ClockDividerImplStyle](div: Int, implStyle: T) extends HasSerializationHints {
+  def typeHints(): Seq[Class[_]] = Seq(implStyle.getClass)
+  implStyle.checkDiv(div)
+
+}
+
+
+case object BaselineDivider extends ClockDividerImplStyle {
+  def checkDiv(div: Int): Unit = require(div >= 1 && div <= 4)
+}
+
+case object GenericDivider extends ClockDividerImplStyle {
+  def checkDiv(div: Int): Unit = require(div >= 1)
+}
+
 /**
   * NB: The RC clock dividers are non-deterministic; their initial output value
   * can differ across simulations, causing these tests to fail randomly.
@@ -96,10 +118,6 @@ class RocketChipClockDivider3Test(
   io.finished := TimestampedTokenTraceEquivalence(reference, model, timeout)
 }
 
-case class ClockDividerParams(div: Int) {
-  require(div >= 1)
-}
-
 class ClockDividerHostIO(
     private val tClockIn: Clock = Clock(),
     private val tClockOut: Clock = Clock()) extends Bundle with TimestampedHostPortIO {
@@ -107,33 +125,61 @@ class ClockDividerHostIO(
   val clockOut = OutputClockChannel(tClockOut)
 }
 
-private[midas] class BridgeableClockDivider (
+private[midas] class BridgeableClockDivider[T <: ClockDividerImplStyle] (
     mod: BaseModule,
     clockIn: Clock,
     clockOut: Clock,
-    params: ClockDividerParams) extends Bridgeable[ClockDividerHostIO, ClockDividerBridgeModule] {
+    div: Int,
+    implStyle: T) extends Bridgeable[ClockDividerHostIO, ClockDividerBridgeModule] {
   def target = mod.toNamed.toTarget
   def bridgeIO = new ClockDividerHostIO(clockIn, clockOut)
-  def constructorArg = Some(params)
+  def constructorArg = Some(ClockDividerParams(div, implStyle))
 }
 
 object BridgeableClockDivider {
-  def apply(mod: BaseModule, clockIn: Clock, clockOut: Clock, div: Int): Unit = {
-    val annotator = new BridgeableClockDivider(mod, clockIn, clockOut, ClockDividerParams(div))
+  def apply[T <: ClockDividerImplStyle](
+      mod: BaseModule,
+      clockIn: Clock,
+      clockOut: Clock,
+      div: Int,
+      implStyle: T): Unit = {
+    val annotator = new BridgeableClockDivider(mod, clockIn, clockOut, div, implStyle)
     annotator.generateAnnotations()
   }
+  def apply(mod: BaseModule, clockIn: Clock, clockOut: Clock, div: Int): Unit =
+    apply(mod, clockIn, clockOut, div, GenericDivider)
 }
 
-class ClockDividerBridgeModule(params: ClockDividerParams)(implicit p: Parameters) extends BridgeModule[ClockDividerHostIO] {
+class ClockDividerBridgeModule(params: ClockDividerParams[_ <: ClockDividerImplStyle])(implicit p: Parameters) extends BridgeModule[ClockDividerHostIO] {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
     val hPort = IO(new ClockDividerHostIO)
-    params.div match {
-      case 1 => hPort.clockOut <> hPort.clockIn
-      case o =>
-        val cd = Module(new GenericClockDividerN(params.div))
-        cd.clk_in <> TimestampedSource(hPort.clockIn)
-        hPort.clockOut <> TimestampedSink(cd.clk_out)
+    if (params.div == 1) {
+      hPort.clockOut <> hPort.clockIn
+    } else {
+      params.implStyle match {
+        case BaselineDivider =>
+          if (params.div == 2) {
+            val cd = Module(new ClockDivider2)
+            cd.clk_in <> TimestampedSource(hPort.clockIn)
+            hPort.clockOut <> TimestampedSink(cd.clk_out)
+          } else if  (params.div == 3) {
+            val cd = Module(new ClockDivider3)
+            cd.clk_in <> TimestampedSource(hPort.clockIn)
+            hPort.clockOut <> TimestampedSink(cd.clk_out)
+          } else {
+            val cd0 = Module(new ClockDivider2)
+            val cd1 = Module(new ClockDivider2)
+            cd0.clk_in <> TimestampedSource(hPort.clockIn)
+            cd1.clk_in <> cd0.clk_out
+            hPort.clockOut <> TimestampedSink(cd1.clk_out)
+
+          }
+        case GenericDivider =>
+          val cd = Module(new GenericClockDividerN(params.div))
+          cd.clk_in <> TimestampedSource(hPort.clockIn)
+          hPort.clockOut <> TimestampedSink(cd.clk_out)
+      }
     }
   }
 }
