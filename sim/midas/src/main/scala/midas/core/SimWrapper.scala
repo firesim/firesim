@@ -23,20 +23,21 @@ import scala.collection.mutable
 
 case object SimWrapperKey extends Field[SimWrapperConfig]
 
+case class HubControlParameters(numClocks: Int)
 /**
   * Driven to the hub model (The main FAME-1 transformed model), to regulate
   * the advance of simulation time.
   */
-class HubControlInterface extends Bundle with HasTimestampConstants {
-  // The furthest time in picoseconds the model may advance to
+class HubControlInterface(val params: HubControlParameters) extends Bundle with HasTimestampConstants {
+  // The furthest time in picoseconds the hub may advance to
   val timeHorizon = Output(UInt(timestampWidth.W))
   // Asserted if the hub is scheduling a timestep
   val simAdvancing = Input(Bool())
   // If simAdvancing is true; this is the time the hub model will advance to.
   // It will hold the current time otherwise.
   val simTime = Input(UInt(timestampWidth.W))
-  // When simAdvancing is set, scheduledClocks will be asserted if at least 1 clock is scheduled to fire.
-  val scheduledClocks = Input(Bool())
+  // A bit vector of the clocks scheduled to fire when simAdvancing is asserted
+  val scheduledClocks = Input(UInt(params.numClocks.W))
 }
 
 private[midas] case class TargetBoxAnnotation(target: IsModule) extends SingleTargetAnnotation[IsModule] {
@@ -72,13 +73,13 @@ case class SimWrapperConfig(annotations: Seq[Annotation], leafTypeMap: Map[Refer
   * A convienence mixin that preprocesses the [[SimWrapperConfig]]
   */
 trait UnpackedWrapperConfig {
-  def config: SimWrapperConfig
-  val leafTypeMap = config.leafTypeMap
+  def wrapperConfig: SimWrapperConfig
+  val leafTypeMap = wrapperConfig.leafTypeMap
   val chAnnos     = new mutable.ArrayBuffer[FAMEChannelConnectionAnnotation]()
   val bridgeAnnos = new mutable.ArrayBuffer[BridgeIOAnnotation]()
   val fanoutAnnos = new mutable.ArrayBuffer[FAMEChannelFanoutAnnotation]()
   private val ctrlAnnos = new mutable.ArrayBuffer[SimulationControlAnnotation]()
-  config.annotations collect {
+  wrapperConfig.annotations collect {
     case fcca: FAMEChannelConnectionAnnotation => chAnnos += fcca
     case ba: BridgeIOAnnotation => bridgeAnnos += ba
     case ffa: FAMEChannelFanoutAnnotation => fanoutAnnos += ffa
@@ -105,7 +106,7 @@ trait UnpackedWrapperConfig {
   * channel type, and by channel name instead of using the underlying Chisel element
   * name.
   */
-abstract class ChannelizedWrapperIO(val config: SimWrapperConfig) extends Record with UnpackedWrapperConfig {
+abstract class ChannelizedWrapperIO(val wrapperConfig: SimWrapperConfig) extends Record with UnpackedWrapperConfig {
 
   /**
     * Clocks and AsyncReset have different types coming off the target (where they retain
@@ -276,7 +277,7 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig) extends Record
   * coming off the transformed target, such that it can be linked against
   * simulation wrapper without FIRRTL type errors.
   */
-class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config) {
+class TargetBoxIO(wrapperConfig: SimWrapperConfig) extends ChannelizedWrapperIO(wrapperConfig) {
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = new TimestampedToken(refTargets.size match {
     // "Aggregate-ness" of single-field vecs and bundles are removed by the
@@ -303,14 +304,14 @@ class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config)
   override val elements = ListMap((wireElements ++ rvElements ++ ctrlElements):_*) ++
     // Untokenized ports
     ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
-  override def cloneType: this.type = new TargetBoxIO(config).asInstanceOf[this.type]
+  override def cloneType: this.type = new TargetBoxIO(wrapperConfig).asInstanceOf[this.type]
 }
 
-class TargetBox(config: SimWrapperConfig) extends BlackBox {
-  val io = IO(new TargetBoxIO(config))
+class TargetBox(wrapperConfig: SimWrapperConfig) extends BlackBox {
+  val io = IO(new TargetBoxIO(wrapperConfig))
 }
 
-class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(config) {
+class SimWrapperChannels(wrapperConfig: SimWrapperConfig) extends ChannelizedWrapperIO(wrapperConfig) {
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): TimestampedToken[Data] = {
     new TimestampedToken(if (refTargets.size == 1) Bool() else Vec(refTargets.size, Bool()))
@@ -318,7 +319,7 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   def regenAsyncResetType(): TimestampedToken[Bool] = new TimestampedToken(Bool())
 
   override val elements = ListMap((wireElements ++ rvElements):_*)
-  override def cloneType: this.type = new SimWrapperChannels(config).asInstanceOf[this.type]
+  override def cloneType: this.type = new SimWrapperChannels(wrapperConfig).asInstanceOf[this.type]
 }
 
 /**
@@ -334,7 +335,7 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   *                 Queue    =>   ModelB
   *
   */
-class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with UnpackedWrapperConfig {
+class SimWrapper(val wrapperConfig: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with UnpackedWrapperConfig {
   outer =>
   // Filter FCCAs presented to the top-level IO constructor. Remove all FCCAs:
   // - That are loopback channels (these don't connect to bridges).
@@ -342,15 +343,15 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
   //   duplication of the source port.
   val isSecondaryFanout = fanoutAnnos.flatMap(_.channelNames.tail).toSet
 
-  val outerConfig = config.copy(annotations = config.annotations.filterNot {
+  val outerConfig = wrapperConfig.copy(annotations = wrapperConfig.annotations.filterNot {
     case fca @ FAMEChannelConnectionAnnotation(_,_,_,Some(_), Some(_)) => true
     case fca @ FAMEChannelConnectionAnnotation(_,_,_,_,Some(_)) => isSecondaryFanout(fca.globalName)
     case o => false
   })
 
   val channelPorts = IO(new SimWrapperChannels(outerConfig))
-  val hubControl = IO(Flipped(new HubControlInterface))
-  val target = Module(new TargetBox(config))
+  val hubControl = IO(Flipped(new HubControlInterface(ctrlAnno.params)))
+  val target = Module(new TargetBox(wrapperConfig))
 
   // Indicates SimulationMapping which module we want to replace with the simulator
   annotate(new ChiselAnnotation { def toFirrtl =

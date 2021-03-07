@@ -74,9 +74,9 @@ void simif_t::free_run() {
 }
 
 uint64_t simif_t::actual_tcycle() {
-    write(this->master_mmio_addrs->activeCycles_latch, 1);
-    data_t cycle_l = read(this->master_mmio_addrs->activeCycles_0);
-    data_t cycle_h = read(this->master_mmio_addrs->activeCycles_1);
+    write(this->master_mmio_addrs->tCycle_latch, 1);
+    data_t cycle_l = read(this->master_mmio_addrs->tCycle_0);
+    data_t cycle_h = read(this->master_mmio_addrs->tCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 

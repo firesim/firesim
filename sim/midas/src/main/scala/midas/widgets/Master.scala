@@ -3,6 +3,8 @@
 package midas
 package widgets
 
+import midas.core.{UnpackedWrapperConfig, SimWrapperKey}
+
 import junctions._
 
 import chisel3._
@@ -15,10 +17,11 @@ import freechips.rocketchip.diplomacy._
   */
 case object MasterPrintfEnableKey extends Field[Boolean](false)
 
-class SimulationMasterIO(implicit val p: Parameters) extends WidgetIO()(p){
+class SimulationMasterIO(implicit val p: Parameters) extends WidgetIO()(p) with midas.core.UnpackedWrapperConfig {
+  def wrapperConfig = p(SimWrapperKey)
   val done = Input(Bool())
   val step = Decoupled(UInt(p(CtrlNastiKey).dataBits.W))
-  val hubControl = new midas.core.HubControlInterface
+  val hubControl = new midas.core.HubControlInterface(ctrlAnno.params)
 }
 
 object Pulsify {
@@ -58,10 +61,18 @@ class SimulationMaster(implicit p: Parameters) extends Widget()(p) with HasTimes
     val simTimeReg = genWideRORegInit(0.U(timestampWidth.W), "simulationTime")
     simTimeReg := io.hubControl.simTime
 
-    val activeCycles = genWideRORegInit(0.U(64.W), "activeCycles")
-    when (io.hubControl.simAdvancing && io.hubControl.scheduledClocks) {
+    val activeCycles = genWideRORegInit(0.U(48.W), "activeCycles")
+    when (io.hubControl.simAdvancing && io.hubControl.scheduledClocks.orR) {
       activeCycles := activeCycles + 1.U
     }
+
+    val cycleCounts = io.hubControl.scheduledClocks.toBools map { clockEn =>
+      val count = RegInit(0.U(48.W))
+      when (io.hubControl.simAdvancing && clockEn) { count := count + 1.U }
+      count
+    }
+    val largestCount = cycleCounts.reduce((a, b) => Mux(a > b, a, b))
+    genWideRORegInit(0.U(48.W), "tCycle") := largestCount
 
     if (p(MasterPrintfEnableKey)) {
       when(io.hubControl.simAdvancing) {

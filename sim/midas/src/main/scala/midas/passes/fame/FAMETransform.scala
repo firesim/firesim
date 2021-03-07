@@ -187,12 +187,14 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     val targetClockPorts = clockChannels.map(_.ports.head)
 
     // Multi-clock management step 2: Build clock flags and clock channel
-    val clockSchedulingStmts = new mutable.ArrayBuffer[Statement]
+    val clockSchedulingDecls = new mutable.ArrayBuffer[Statement]
+    val clockSchedulingAssigns = new mutable.ArrayBuffer[Statement]
     val clockSchedulingPorts = new mutable.ArrayBuffer[Port]
     val clockSchedulingAnnos = new mutable.ArrayBuffer[Annotation]
 
     // Not used in the satellite models
     val s2_time = TimestampRegister("s2_time")
+    val scheduledClocksPName = ns.newName("scheduledClocks")
 
     val (clockEnables, dataEnables, s1_valid, s2_valid) = if (isHubModel) {
       // Control signal generation to simulation master
@@ -202,7 +204,7 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       // To master: Metadata on firing clocks to calculate FMR and track simulation progress
       val simAdvancing = Port(NoInfo, ns.newName("simulationAdvancing"), Output, BoolType)
       val simTime = Port(NoInfo, ns.newName("nextSimulationTime"), Output, timestampFType)
-      val scheduledClocks = Port(NoInfo, ns.newName("scheduledClocks"), Output, BoolType)
+      val scheduledClocks = Port(NoInfo, scheduledClocksPName, Output, UIntType(IntWidth(numTargetClocks)))
 
       val s1_valid = HostFlagRegister("s1_valid")
       val s2_valid = HostFlagRegister("s2_valid")
@@ -242,23 +244,23 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       val s1_valid_update = Connect(NoInfo, WRef(s1_valid), Mux(WRef(s1_enable), WRef(willAdvance), WRef(s1_valid)))
       val s2_valid_update = Connect(NoInfo, WRef(s2_valid), Mux(WRef(finishing), WRef(s1_valid), WRef(s2_valid)))
       // Declarations
-      clockSchedulingStmts ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: s2_time +:
+      clockSchedulingDecls ++= s1_valid +: s2_valid +: s1_enable +: s1_time +: s2_time +:
         advanceToTime +: willAdvance +: clockSchedulers.flatMap(_.stmts) ++: dataSchedulers.flatMap(_.stmts) ++:
         minReductionNodes :+ allClocksDefinedUntil
-      // Connections
-      clockSchedulingStmts ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update)
       // Control port handling
       clockSchedulingPorts ++= Seq(timeHorizon, simAdvancing, scheduledClocks, simTime)
-      clockSchedulingStmts ++= Seq(
-        Connect(NoInfo, WRef(simAdvancing), And(WRef(willAdvance), WRef(s1_enable))),
-        Connect(NoInfo, WRef(simTime), WRef(advanceToTime)),
-        Connect(NoInfo, WRef(scheduledClocks), clockEnables.reduce(Or.apply)))
+      clockSchedulingAssigns ++= Seq(advanceToTimeConn, s1_time_update, s2_time_update, s1_valid_update, s2_valid_update,
+        Connect(NoInfo, WRef(simAdvancing), And(WRef(s1_valid), WRef(finishing))),
+        Connect(NoInfo, WRef(simTime), WRef(s1_time)))
 
-      clockSchedulingAnnos += SimulationControlAnnotation(Map(
+      clockSchedulingAnnos += SimulationControlAnnotation(
+        signals = Map(
           "timeHorizon" -> PortMetadata(mTarget, timeHorizon),
           "simAdvancing" -> PortMetadata(mTarget, simAdvancing),
           "simTime" -> PortMetadata(mTarget, simTime),
-          "scheduledClocks" -> PortMetadata(mTarget, scheduledClocks)))
+          "scheduledClocks" -> PortMetadata(mTarget, scheduledClocks)),
+        params = midas.core.HubControlParameters(numTargetClocks)
+      )
       (clockEnables, dataSchedulers, WRef(s1_valid), WRef(s2_valid))
     } else {
       (Seq(UIntLiteral(1)), Seq(), UIntLiteral(1), UIntLiteral(1))
@@ -287,6 +289,9 @@ object FAMEModuleTransformer extends HasTimestampConstants {
       (targetClockCtrl, Block(Seq(enableReg, buf)), Block(connects))
     }).unzip3
 
+    if (isHubModel) { clockSchedulingAssigns +=
+      Connect(NoInfo, WRef(scheduledClocksPName), firrtl.seqCat(clockMetadata.map(_.clockEnable).toSeq))
+    }
 
     /**
       * Instantiate data-driving registers for all timestamped inputs. These
@@ -419,8 +424,8 @@ object FAMEModuleTransformer extends HasTimestampConstants {
     }
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls = Seq(finishing) ++: unusedOutputsAsWires ++: clockSchedulingStmts ++: clockBufDecls ++: dataDriverDecls ++: outChannels.map(_.firedReg)
-    val assigns = clockBufAssigns ++: dataDriverAssigns ++: channelStateRules ++: inputRules ++: outputRules ++: topRules ++: outputTimestamps
+    val decls = Seq(finishing) ++: unusedOutputsAsWires ++: clockSchedulingDecls ++: clockBufDecls ++: dataDriverDecls ++: outChannels.map(_.firedReg)
+    val assigns = clockSchedulingAssigns ++: clockBufAssigns ++: dataDriverAssigns ++: channelStateRules ++: inputRules ++: outputRules ++: topRules ++: outputTimestamps
     (Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns)), clockSchedulingAnnos)
   }
 }

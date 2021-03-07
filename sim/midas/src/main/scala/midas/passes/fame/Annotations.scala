@@ -381,10 +381,11 @@ case class PortMetadata(rT: ReferenceTarget, dir: firrtl.ir.Direction, tpe: firr
 object PortMetadata {
   def apply(mT: ModuleTarget, p: firrtl.ir.Port): PortMetadata = PortMetadata(mT.ref(p.name), p.direction, p.tpe)
 }
-case class SimulationControlAnnotation(signals: Map[String, PortMetadata]) extends Annotation with FAMEAnnotation {
+case class SimulationControlAnnotation(signals: Map[String, PortMetadata], params: midas.core.HubControlParameters)
+    extends Annotation with FAMEAnnotation {
   def enclosingModuleName = signals.values.head.rT.module
   def update(renames: RenameMap): Seq[Annotation] = {
     val renamer = RTRenamer.exact(renames)
-    Seq(SimulationControlAnnotation(signals.map({ case (name, meta) => name -> meta.copy(rT = renamer(meta.rT)) }).toMap))
+    Seq(SimulationControlAnnotation(signals.map({ case (name, meta) => name -> meta.copy(rT = renamer(meta.rT)) }).toMap, params))
   }
 }

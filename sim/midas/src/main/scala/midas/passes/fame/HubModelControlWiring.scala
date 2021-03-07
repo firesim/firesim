@@ -50,7 +50,7 @@ object HubModelControlWiring extends Transform with DependencyAPIMigration {
           (promotedTuple, topPort, connect)
         }).unzip3
 
-        val updatedAnno = SimulationControlAnnotation(promotedTuples.toMap)
+        val updatedAnno = SimulationControlAnnotation(promotedTuples.toMap, controlAnno.params)
         val updatedModule = m.copy(ports = m.ports ++ ports, body = Block(m.body +: connects.toSeq))
         (updatedModule, Some(updatedAnno))
       case om => (om, None)
