@@ -17,8 +17,7 @@ class MutexClockMux(width: Int, sync: Int = 2) extends MultiIOModule with HasTim
 
   // TODO: Init
   val selOH = UIntToOH(sel.old.bits.data).asBools.map { _ && sel.old.valid }
-  val syncOccupancies = Seq.fill(width)(RegInit(0.U(log2Ceil(sync + 1).W)))
-  val syncNonEmpty = syncOccupancies.map(_ =/= 0.U)
+  val syncNonEmpty = Seq.fill(width)(Wire(Bool()))
 
   val outOld = RegInit({
     val w = Wire(ValidIO(new TimestampedToken(Bool())))
@@ -31,7 +30,9 @@ class MutexClockMux(width: Int, sync: Int = 2) extends MultiIOModule with HasTim
   class PerClockLogic(val iClock: TimestampedTuple[Bool], val enable: Bool, idx: Int) {
     val queue = Module(new Queue(timestampCType, sync, pipe = true))
     val negedgeRequired = RegInit(false.B)
-    val syncOccupancy = syncOccupancies(idx)
+    val syncOccupancy = RegInit(0.U(log2Ceil(sync + 1).W))
+    syncNonEmpty(idx) := (syncOccupancy =/= 0.U) || negedgeRequired
+
     val altSyncOccupied = syncNonEmpty.zipWithIndex
     .collect { case (sync, j) if j != idx => sync }
     .reduce { _ || _ }
@@ -134,13 +135,13 @@ class MutexClockMux(width: Int, sync: Int = 2) extends MultiIOModule with HasTim
 
       val gatedClock = c && gateReg.q
 
-      (syncIn, syncOut, gatedClock)
+      (syncIn, !gateReg.q, gatedClock)
     }
 
-    val (_, syncOuts, gatedClocks) = tuples.unzip3
+    val (_, notClockEns, gatedClocks) = tuples.unzip3
     val enables = UIntToOH(sel).asBools
-    for (((syncIn, syncOut, _), enable) <- tuples.zip(enables)) {
-      syncIn := enable && !(syncOuts.filterNot { _ == syncOut }.reduce {_ || _})
+    for (((syncIn, notClockEn, _), enable) <- tuples.zip(enables)) {
+      syncIn := enable && !(notClockEns.filterNot { _ == notClockEn }.reduce {_ || _})
     }
 
     clockOut := gatedClocks.reduce { _ || _ }
