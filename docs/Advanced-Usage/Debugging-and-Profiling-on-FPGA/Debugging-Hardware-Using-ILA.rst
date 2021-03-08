@@ -46,13 +46,13 @@ Setting a ILA Depth
 The ILA depth parameter specifies the duration in cycles to capture annotated signals
 around a trigger. Increasing this parameter may ease debugging, but will also increase
 FPGA resource utilization. The default depth is 1024 cycles. The desired depth can be
-configured much like the desired HostFrequency by appending a mixin to the 
+configured much like the desired HostFrequency by appending a mixin to the
 `PLATFORM_CONFIG`. See :ref:`Generating-Different-Targets` for details on `PLATFORM_CONFIG`.
 
 Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` config file.
 
 ::
-   
+
    PLATFORM_CONFIG=ILADepth8192_BaseF1Config
 
 
@@ -60,11 +60,11 @@ Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` co
 Using the ILA at Runtime
 ------------------------
 
-Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the firesim AWS security group.
+Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the "firesim" AWS security group.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance.
 In the past, AWS had a custom ``setup_gui.sh`` script. However, this was recently deprecated due to compatibility
-issues with various packages. Therefore, AWS currently recommends using `NICE DVC <https://docs.aws.amazon.com/dcv/latest/adminguide/what-is-dcv.html>`__ as a GUI client. You should `download a DVC client <https://docs.aws.amazon.com/dcv/latest/userguide/client.html>`__, and then run the following commands on your FireSim manager instance:
+issues with various packages. Therefore, AWS currently recommends using `NICE DCV <https://docs.aws.amazon.com/dcv/latest/adminguide/what-is-dcv.html>`__ as a GUI client. You should `download a DCV client <https://docs.aws.amazon.com/dcv/latest/userguide/client.html>`__, and then run the following commands on your FireSim manager instance:
 
 ::
 
@@ -82,8 +82,8 @@ issues with various packages. Therefore, AWS currently recommends using `NICE DV
   sudo systemctl stop firewalld
   dcv create-session --type virtual --user centos centos
 
-These commands will setup Linux desktop pre-requisites, install the NICE DVC server, ask you to setup the password to the ``centos`` user, disable firewalld,
-and finally create a DVC session. You can now connect to this session through the DVC client.
+These commands will setup Linux desktop pre-requisites, install the NICE DCV server, ask you to setup the password to the ``centos`` user, disable firewalld,
+and finally create a DCV session. You can now connect to this session through the DCV client.
 
 After access the GUI interface, open a terminal, and open ``vivado``.
 Follow the instructions in the `AWS-FPGA guide for connecting xilinx hardware manager on vivado (running on a remote machine) to the debug target  <https://github.com/aws/aws-fpga/blob/master/hdk/docs/Virtual_JTAG_XVC.md#connecting-xilinx-hardware-manager-vivado-lab-edition-running-on-a-remote-machine-to-the-debug-target-fpga-enabled-ec2-instance>`__ .
@@ -95,4 +95,3 @@ The probes file can be found in the manager instance under the path
 
 Select the ILA with the description of `WRAPPER_INST/CL/CL_FIRESIM_DEBUG_WIRING_TRANSFORM`, and you may now use the ILA just as if it was on
 a local FPGA.
-
