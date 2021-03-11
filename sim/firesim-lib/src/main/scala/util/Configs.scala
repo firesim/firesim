@@ -35,7 +35,7 @@ object BuildStrategies {
 }
 
 // Overrides the AWS default strategy with a desired one
-class WithBuildStategy(strategy: BuildStrategies.IsBuildStrategy) extends Config((site, here, up) => {
+class WithBuildStrategy(strategy: BuildStrategies.IsBuildStrategy) extends Config((site, here, up) => {
   case BuildStrategy => strategy
 })
 
@@ -72,7 +72,7 @@ class ILADepth16384 extends WithILADepth(16384)
 
 
 
-class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
-class Timing extends WithBuildStategy(BuildStrategies.Timing)
-class Explore extends WithBuildStategy(BuildStrategies.Explore)
+class Congestion extends WithBuildStrategy(BuildStrategies.Congestion)
+class Timing extends WithBuildStrategy(BuildStrategies.Timing)
+class Explore extends WithBuildStrategy(BuildStrategies.Explore)
 class NoRetiming extends WithBuildStrategy(BuildStrategies.NoRetiming)
