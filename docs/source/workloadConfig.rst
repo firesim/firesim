@@ -197,7 +197,7 @@ board will be used.
 
 host-init
 ^^^^^^^^^^^^^^
-A script to run natively on your host (i.e., them machine where you
+A script to run natively on your host (i.e., the machine where you
 invoked FireMarshal) from the workload source directory each time you
 explicitly build this workload. This option may include arguments for the script, e.g.
 ``"host-init" : "foo.sh bar baz"``.
@@ -209,7 +209,7 @@ reflected in the child.
 
 post-bin
 ^^^^^^^^^^^^^^
-A script to run natively on your host (i.e., them machine where you
+A script to run natively on your host (i.e., the machine where you
 invoked FireMarshal) from the workload source directory after you build the
 binary(s) for this workload but before the image(s) is/are built.
 This option is useful for such things as building kernel modules against the specific
