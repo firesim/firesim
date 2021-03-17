@@ -78,6 +78,10 @@ def kmodDepsTask(cfg, taskDeps=None, name=""):
 
     def checkMods(cfg):
         log = logging.getLogger()
+
+        if not 'modules' in cfg['linux']:
+            return
+
         for driverDir in cfg['linux']['modules'].values():
             if not driverDir.exists():
                 log.warn("WARNING: Required module " + str(driverDir) + " does not exist: Assuming the workload is not uptodate.")
@@ -111,7 +115,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
     """Returns a task dict for a calc_dep task that calculates the file
     dependencies representd by an overlay and/or a list of FileSpec objects.
     Either can be None.
-    
+
     taskDeps should be a list of names of tasks that must run before
     calculating dependencies (e.g. host-init)"""
 
@@ -407,12 +411,15 @@ def makeModules(cfg):
 
     linCfg = cfg['linux']
 
+    if not 'modules' in linCfg:
+        return
+
     if len(linCfg['modules']) == 0:
         return
 
     makeCmd = "make LINUXSRC=" + str(linCfg['source'])
 
-    # Prepare the linux source for building external modules 
+    # Prepare the linux source for building external modules
     generateKConfig(linCfg['config'], linCfg['source'])
     run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linCfg['source'])
     kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linCfg['source'], stdout=sp.PIPE, universal_newlines=True).stdout.strip()
@@ -475,7 +482,7 @@ def makeOpenSBI(config, nodisk=False):
     if 'opensbi-build-args' in config['firmware']:
         args += config['firmware']['opensbi-build-args']
 
-    run(['make'] + 
+    run(['make'] +
         getOpt('linux-make-args') + args,
         cwd=config['firmware']['source']
         )
