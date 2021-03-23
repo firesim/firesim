@@ -37,7 +37,7 @@ class PipeChannel[T <: ChLeafType](
   io.out <> tokens.io.deq
 
   if (latency == 1) {
-    val initializing = RegNext(reset.toBool)
+    val initializing = RegNext(reset.asBool)
     when(initializing) {
       tokens.io.enq.valid := true.B
       tokens.io.enq.bits := 0.U.asTypeOf(tokens.io.enq.bits)
@@ -213,7 +213,7 @@ class ReadyValidChannel[T <: Data](
   enqFwdQ.io.deq.ready := finishing.fire(enqFwdQ.io.deq.valid)
   deqRevQ.io.deq.ready := finishing.fire(deqRevQ.io.deq.valid)
 
-  reference.reset := reset.toBool || targetFire && io.targetReset.bits
+  reference.reset := reset.asBool || targetFire && io.targetReset.bits
   reference.io.enq.valid := targetFire && enqFwdQ.io.deq.bits.valid
   reference.io.enq.bits  := Mux(targetFire, enqFwdQ.io.deq.bits.bits, enqBitsLast)
   reference.io.deq.ready := targetFire && deqRevQ.io.deq.bits
@@ -259,7 +259,7 @@ class ReadyValidChannelUnitTest(
   // that will more closely the FPGA
   val enqCount = RegInit(0.U(log2Ceil(queueDepth + 1).W))
   val memFullyDefined = enqCount === queueDepth.U
-  enqCount := Mux(!memFullyDefined && reference.io.enq.fire && !reference.reset.toBool, enqCount + 1.U, enqCount)
+  enqCount := Mux(!memFullyDefined && reference.io.enq.fire && !reference.reset.asBool, enqCount + 1.U, enqCount)
 
   // Track the target cycle at which all entries are known
   val memFullyDefinedCycle = RegInit(1.U(log2Ceil(2*timeout).W))

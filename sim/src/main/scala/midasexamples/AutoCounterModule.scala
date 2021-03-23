@@ -4,7 +4,6 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.config.Parameters
-import chisel3.core.MultiIOModule
 
 import midas.targetutils.{PerfCounter, AutoCounterCoverModuleAnnotation}
 import freechips.rocketchip.util.property._
@@ -48,7 +47,7 @@ class AutoCounterModuleDUT(
   }
 }
 
-class AutoCounterModuleChild extends MultiIOModule {
+class AutoCounterModuleChild extends Module {
   val io =  IO(new Bundle {
     val c = Input(Bool())
     val oddlfsr = Output(Bool())
