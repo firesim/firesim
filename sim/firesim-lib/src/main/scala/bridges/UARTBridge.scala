@@ -101,8 +101,8 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
                hPort.fromHost.hReady && // We have space to enqueue a new output token
                txfifo.io.enq.ready      // We have space to capture new TX data
     val targetReset = fire & hPort.hBits.reset
-    rxfifo.reset := reset.toBool || targetReset
-    txfifo.reset := reset.toBool || targetReset
+    rxfifo.reset := reset.asBool || targetReset
+    txfifo.reset := reset.asBool || targetReset
 
     hPort.toHost.hReady := fire
     hPort.fromHost.hValid := fire

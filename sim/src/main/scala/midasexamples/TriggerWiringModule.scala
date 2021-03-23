@@ -43,8 +43,8 @@ class TriggerSourceModule extends MultiIOModule {
   // Note one could alternatively write: TriggerSource(start, stop)
   // DOC include end: TriggerSource Usage
 
-  referenceCredit := ~reset.toBool && start
-  referenceDebit := ~reset.toBool && stop
+  referenceCredit := ~reset.asBool && start
+  referenceDebit := ~reset.asBool && stop
 }
 
 class LevelSensitiveTriggerSourceModule extends MultiIOModule {
@@ -106,7 +106,7 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
   val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
   val refSinks = new mutable.ArrayBuffer[Bool]()
   val reset = WireInit(false.B)
-  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
+  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.asBool)
   withClockAndReset(refClock, reset) {
     val peekPokeBridge = PeekPokeBridge(refClock, reset)
     val src  = Module(new TriggerSourceModule)
