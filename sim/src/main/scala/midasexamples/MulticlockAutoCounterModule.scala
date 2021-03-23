@@ -16,7 +16,7 @@ class MulticlockAutoCounterModule(implicit p: Parameters) extends RawModule {
   val clockBridge = RationalClockBridge(RationalClock("ThirdRate", 1, 3))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
-  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
+  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.asBool)
   // Used to let printfs that emit the correct validation output
   val instPath = "MulticlockAutoCounterModule_AutoCounterModuleDUT"
   withClockAndReset(refClock, reset) {
