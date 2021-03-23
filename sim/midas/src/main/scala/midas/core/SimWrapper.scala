@@ -299,7 +299,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
     TargetBoxAnnotation(target.toAbsoluteTarget)
   })
 
-  target.io.hostReset := reset.toBool
+  target.io.hostReset := reset.asBool
   target.io.hostClock := clock
   import chisel3.ExplicitCompileOptions.NotStrict // FIXME
 
