@@ -358,9 +358,9 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     writeEgress.io.resp.tReady := model.io.egressResp.bReady
     model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
-    ingress.reset     := reset.toBool || tReset && tFireHelper.fire(ingressReady)
-    readEgress.reset  := reset.toBool || tReset && targetFire
-    writeEgress.reset := reset.toBool || tReset && targetFire
+    ingress.reset     := reset.asBool || tReset && tFireHelper.fire(ingressReady)
+    readEgress.reset  := reset.asBool || tReset && targetFire
+    writeEgress.reset := reset.asBool || tReset && targetFire
 
 
     if (cfg.params.localHCycleCount) {
