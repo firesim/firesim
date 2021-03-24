@@ -172,7 +172,7 @@ class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int) extends Tutorial
       s"+print-start=${startCycle}",
       s"+print-end=${endCycle}"
     )) {
-  checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 4)
+  checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 5)
 }
 
 class PrintfCycleBoundsF1Test extends PrintfCycleBoundsTestBase(startCycle = 172, endCycle = 9377)
