@@ -157,7 +157,7 @@ void synthesized_prints_t::print_format(const char* fmt, print_vars_t* vars, pri
     if (*fmt == '%' && fmt[1] != '%') {
       mpz_t* value = vars->data[k];
       char* v = NULL;
-      if (fmt[1] == 's') {
+      if (fmt[1] == 's' || fmt[1] == 'c') {
         size_t size;
         v = (char*)mpz_export(NULL, &size, 1, sizeof(char), 0, 0, *value);
         for (size_t j = 0 ; j < size ; j++) printstream->put(v[j]);
