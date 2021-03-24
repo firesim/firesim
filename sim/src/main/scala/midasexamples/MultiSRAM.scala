@@ -28,11 +28,11 @@ class SRAMInner extends Module {
   }
 }
 
-class MultiSRAMDUT extends Module {
+class MultiSRAMDUT(nCopies: Int) extends Module {
   val io = IO(new Bundle {
-    val accesses = Vec(MultiRegfile.nCopies, new RegfileIO)
+    val accesses = Vec(nCopies, new RegfileIO)
   })
-  val rfs = Seq.fill(MultiRegfile.nCopies)(Module(new SRAMInner))
+  val rfs = Seq.fill(nCopies)(Module(new SRAMInner))
   rfs.zip(io.accesses).foreach {
     case (rf, rfio) =>
       rf.io <> rfio
@@ -40,4 +40,5 @@ class MultiSRAMDUT extends Module {
   }
 }
 
-class MultiSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT)
+class MultiSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT(MultiRegfile.nCopiesToTest))
+class MultiSRAMFMR(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT(MultiRegfile.nCopiesToTime))

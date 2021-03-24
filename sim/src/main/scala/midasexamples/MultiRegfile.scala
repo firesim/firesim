@@ -22,15 +22,11 @@ class RegfileInner extends Module {
   }
 }
 
-object MultiRegfile {
-  val nCopies = 5
-}
-
-class MultiRegfileDUT extends Module {
+class MultiRegfileDUT(nCopies: Int) extends Module {
   val io = IO(new Bundle {
-    val accesses = Vec(MultiRegfile.nCopies, new RegfileIO)
+    val accesses = Vec(nCopies, new RegfileIO)
   })
-  val rfs = Seq.fill(MultiRegfile.nCopies)(Module(new RegfileInner))
+  val rfs = Seq.fill(nCopies)(Module(new RegfileInner))
   rfs.zip(io.accesses).foreach {
     case (rf, rfio) =>
       rf.io <> rfio
@@ -38,4 +34,10 @@ class MultiRegfileDUT extends Module {
   }
 }
 
-class MultiRegfile(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegfileDUT)
+object MultiRegfile {
+  val nCopiesToTest = 5
+  val nCopiesToTime = 17
+}
+
+class MultiRegfile(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegfileDUT(MultiRegfile.nCopiesToTest))
+class MultiRegfileFMR(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegfileDUT(MultiRegfile.nCopiesToTime))
