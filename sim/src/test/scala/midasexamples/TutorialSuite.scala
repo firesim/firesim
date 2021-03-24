@@ -216,7 +216,8 @@ class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   diffSynthesizedLog("synthprinttest.out1",
     stdoutPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
     synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
-    synthLinesToDrop = 4) // Corresponds to a single cycle of extra output
+    // Corresponds to a single cycle of extra output.
+    synthLinesToDrop = 5)
 }
 
 class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterModule",
