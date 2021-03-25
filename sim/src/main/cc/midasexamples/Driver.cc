@@ -63,8 +63,12 @@
 #include "Regfile.h"
 #elif defined DESIGNNAME_MultiRegfile
 #include "MultiRegfile.h"
+#elif defined DESIGNNAME_MultiRegfileFMR
+#include "MultiRegfileFMR.h"
 #elif defined DESIGNNAME_MultiSRAM
 #include "MultiSRAM.h"
+#elif defined DESIGNNAME_MultiSRAMFMR
+#include "MultiSRAMFMR.h"
 #elif defined DESIGNNAME_NestedModels
 #include "NestedModels.h"
 #elif defined DESIGNNAME_MultiReg

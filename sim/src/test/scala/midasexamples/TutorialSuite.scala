@@ -230,8 +230,14 @@ class TwoAddersF1Test extends TutorialSuite("TwoAdders")
 class RegfileF1Test extends TutorialSuite("Regfile")
 
 class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
+class MultiRegfileFMRF1Test extends TutorialSuite("MultiRegfileFMR") {
+  // TODO(albert-magyar): add expectedFMR once threading works for this test on dev again
+}
 
 class MultiSRAMF1Test extends TutorialSuite("MultiSRAM")
+class MultiSRAMFMRF1Test extends TutorialSuite("MultiSRAMFMR") {
+  expectedFMR(MultiRegfile.nCopiesToTime) // No comb paths -> 1:1
+}
 
 class NestedModelsF1Test extends TutorialSuite("NestedModels")
 
