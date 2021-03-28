@@ -11,8 +11,6 @@ import Utils._
 import firrtl.passes.MemPortUtils
 import annotations.{ModuleTarget, ReferenceTarget, Annotation, SingleTargetAnnotation}
 
-import midas.targetutils.FirrtlFAMEModelAnnotation
-
 import scala.collection.mutable
 
 class ChannelExcision extends Transform {

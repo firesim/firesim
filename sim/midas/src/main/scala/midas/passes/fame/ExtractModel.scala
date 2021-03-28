@@ -39,6 +39,9 @@ class ExtractModel extends Transform {
   }
 
   override def execute(state: CircuitState): CircuitState = {
-    promoteModels(state)
+    val transformed = promoteModels(state)
+    // At this point, the FIRRTLFAMEModelAnnotations are no longer used, so remove them for cleanup.
+    // FAMEDefaults uses structure of "AQB form" to infer that all top-level, non-channel modules are FAME models.
+    transformed.copy(annotations = transformed.annotations.filterNot(_.isInstanceOf[FirrtlFAMEModelAnnotation]))
   }
 }

@@ -9,7 +9,6 @@ import Utils._
 import annotations._
 
 import midas.passes.{PreLinkRenamingAnnotation, PreLinkRenaming}
-import midas.targetutils.FirrtlMemModelAnnotation
 
 import collection.mutable
 
