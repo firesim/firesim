@@ -27,12 +27,15 @@ object BuildStrategies {
   object Timing extends IsBuildStrategy { val flowString = "TIMING" }
   object Explore extends IsBuildStrategy { val flowString = "EXPLORE" }
   object Congestion extends IsBuildStrategy { val flowString = "CONGESTION" }
+  // This is the same as the Timing strategy, except it removes the -retiming flag to avoid Vivado crashes
+  // during explicit retiming
+  object NoRetiming extends IsBuildStrategy { val flowString = "NORETIMING" }
   // This is the strategy AWS uses if you give it a bogus strategy string
   object Default extends IsBuildStrategy { val flowString = "DEFAULT" }
 }
 
 // Overrides the AWS default strategy with a desired one
-class WithBuildStategy(strategy: BuildStrategies.IsBuildStrategy) extends Config((site, here, up) => {
+class WithBuildStrategy(strategy: BuildStrategies.IsBuildStrategy) extends Config((site, here, up) => {
   case BuildStrategy => strategy
 })
 
@@ -69,4 +72,7 @@ class ILADepth16384 extends WithILADepth(16384)
 
 
 
-class Congestion extends WithBuildStategy(BuildStrategies.Congestion)
+class Congestion extends WithBuildStrategy(BuildStrategies.Congestion)
+class Timing extends WithBuildStrategy(BuildStrategies.Timing)
+class Explore extends WithBuildStrategy(BuildStrategies.Explore)
+class NoRetiming extends WithBuildStrategy(BuildStrategies.NoRetiming)
