@@ -47,22 +47,22 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
-# these need to match what's in deploy/requirements.txt
-sudo pip2 install fabric==1.14.0
-sudo pip2 install boto3==1.6.2
-sudo pip2 install colorama==0.3.7
-sudo pip2 install argcomplete==1.9.3
-sudo pip2 install graphviz==0.8.3
+python3 -m pip install -U pip setuptools
+python3 -m pip install fabric==1.14.0
+python3 -m pip install boto3==1.6.2
+python3 -m pip install colorama==0.3.7
+python3 -m pip install argcomplete==1.9.3
+python3 -m pip install graphviz==0.8.3
 # for some of our workload plotting scripts
-sudo pip2 install --upgrade --ignore-installed pyparsing
-sudo pip2 install numpy==1.16.6
-sudo pip2 install kiwisolver==1.1.0
-sudo pip2 install matplotlib==2.2.2
-sudo pip2 install pandas==0.22.0
+python3 -m pip install --upgrade --ignore-installed pyparsing
+python3 -m pip install numpy==1.16.6
+python3 -m pip install kiwisolver==1.1.0
+python3 -m pip install matplotlib==2.2.2
+python3 -m pip install pandas==0.22.0
 # new awscli on 1.6.0 AMI is broken with our versions of boto3
-sudo pip2 install awscli==1.15.76
+python3 -m pip install awscli==1.15.76
 
-sudo activate-global-python-argcomplete
+activate-global-python-argcomplete --user
 
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 
