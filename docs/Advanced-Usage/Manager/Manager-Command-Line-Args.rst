@@ -49,6 +49,14 @@ example, if you want to use a link latency of 3003 cycles for a particular run
 can be used with any task that uses the runtime config.
 
 
+``--launchtime`` ``TIMESTAMP``
+---------------------------------------------------
+
+Specifies the "Y-m-d--H-M-S" timestamp to be used as the prefix in 
+results-build directories.  Useful when wanting to run tar2afi after an
+aborted buildafi was manually fixed.
+
+
 ``TASK``
 -------------
 

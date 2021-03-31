@@ -138,8 +138,26 @@ def aws_build(global_build_config, bypass=False):
         on_build_failure()
         return
 
+    if not aws_create_afi(global_build_config, buildconfig):
+        on_build_failure()
+        return
+
+
+    rootLogger.info("Terminating the build instance now.")
+    buildconfig.terminate_build_instance()
+
+
+def aws_create_afi(global_build_config, buildconfig):
+    """
+    Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI)
+
+    :return: None on error
+    """
     ## next, do tar -> AGFI
     ## This is done on the local copy
+
+    ddir = get_deploy_dir()
+    results_builddir = buildconfig.get_build_dir_name()
 
     afi = None
     agfi = None
@@ -171,7 +189,7 @@ def aws_build(global_build_config, bypass=False):
 
     # if we're unlucky, multiple vivado builds may launch at the same time. so we
     # append the build node IP + a random string to diff them in s3
-    global_append = "-" + env.host_string + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
+    global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
     with lcd("""{}/results-build/{}/cl_firesim/build/checkpoints/to_aws/""".format(ddir, builddir)), StreamLogger('stdout'), StreamLogger('stderr'):
         files = local('ls *.tar', capture=True)
@@ -233,10 +251,7 @@ def aws_build(global_build_config, bypass=False):
                 rootLogger.debug("[localhost] " + str(localcap))
                 rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info("Build complete! AFI ready. See AGFI_INFO.")
+        rootLogger.info("Build complete! AFI ready. See {}.".format(pjoin(hwdb_entry_file_location,afiname)))
+        return True
     else:
-        on_build_failure()
         return
-
-    rootLogger.info("Terminating the build instance now.")
-    buildconfig.terminate_build_instance()

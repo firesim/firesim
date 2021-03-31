@@ -83,7 +83,11 @@ class GlobalBuildConfig:
     sample_config_build.ini """
 
     def __init__(self, args):
-        launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
+        if args.launchtime:
+            launch_time = args.launchtime
+        else:
+            launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
+
         self.args = args
 
         global_build_configfile = ConfigParser.ConfigParser(allow_no_value=True)
