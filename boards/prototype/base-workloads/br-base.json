@@ -1,5 +1,5 @@
 {
-  "name" : "br-chip-base",
+  "name" : "br-base",
   "distro" : {
       "name" : "br",
       "opts" : {
