@@ -412,13 +412,15 @@ def makeModules(cfg):
     linCfg = cfg['linux']
     drivers = []
 
+    # Prepare the linux source with the proper config
+    generateKConfig(linCfg['config'], linCfg['source'])
+
     # Build modules (if they exist)
     if ('modules' in linCfg) and (len(linCfg['modules']) != 0):
-        makeCmd = "make LINUXSRC=" + str(linCfg['source'])
-
         # Prepare the linux source for building external modules
-        generateKConfig(linCfg['config'], linCfg['source'])
         run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linCfg['source'])
+
+        makeCmd = "make LINUXSRC=" + str(linCfg['source'])
 
         for driverDir in linCfg['modules'].values():
             checkSubmodule(driverDir)
