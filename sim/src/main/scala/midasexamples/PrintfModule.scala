@@ -40,6 +40,10 @@ class PrintfModuleDUT(printfPrefix: String = "SYNTHESIZED_PRINT ") extends Modul
   childInst.cycle := cycle
 
   printf(SynthesizePrintf("thi$!sn+taS/\neName", s"${printfPrefix}CYCLE: %d constantArgument: %x\n", cycle, 1.U(8.W)))
+  // Check character-type format specifier; restrict to printable range to play
+  // nice with our ScalaTest utilities
+  val ch = Mux(cycle(7,0) > 32.U && cycle(7,0) < 127.U, cycle(7,0), 32.U(8.W))
+  printf(SynthesizePrintf(s"${printfPrefix}CYCLE: %d Char: %c\n", cycle, ch))
 }
 
 class PrintfModuleChild(printfPrefix: String) extends MultiIOModule {

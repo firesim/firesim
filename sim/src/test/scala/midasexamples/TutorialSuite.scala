@@ -172,7 +172,7 @@ class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int) extends Tutorial
       s"+print-start=${startCycle}",
       s"+print-end=${endCycle}"
     )) {
-  checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 4)
+  checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 5)
 }
 
 class PrintfCycleBoundsF1Test extends PrintfCycleBoundsTestBase(startCycle = 172, endCycle = 9377)
@@ -216,7 +216,8 @@ class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   diffSynthesizedLog("synthprinttest.out1",
     stdoutPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
     synthPrefix = "SYNTHESIZED_PRINT_HALFRATE ",
-    synthLinesToDrop = 4) // Corresponds to a single cycle of extra output
+    // Corresponds to a single cycle of extra output.
+    synthLinesToDrop = 5)
 }
 
 class MulticlockAutoCounterF1Test extends TutorialSuite("MulticlockAutoCounterModule",
