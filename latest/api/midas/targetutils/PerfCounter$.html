@@ -319,9 +319,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="midas.targetutils.PerfCounter#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(target:chisel3.Bool,label:String,message:String):Unit"></a><a id="apply(Bool,String,String):Unit"></a>
+      <a id="apply(target:chisel3.UInt,label:String,message:String):Unit"></a><a id="apply(UInt,String,String):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.Bool,label:String,message:String):Unit" title="Permalink">
+      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.UInt,label:String,message:String):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -330,15 +330,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.Bool">Bool</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       <p class="shortcomment cmt">A simplified variation of the full apply method above that uses the
 implicit clock and reset.</p>
     </li><li name="midas.targetutils.PerfCounter#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(target:chisel3.Bool,clock:chisel3.Clock,reset:chisel3.Reset,label:String,message:String):Unit"></a><a id="apply(Bool,Clock,Reset,String,String):Unit"></a>
+      <a id="apply(target:chisel3.UInt,clock:chisel3.Clock,reset:chisel3.Reset,label:String,message:String):Unit"></a><a id="apply(UInt,Clock,Reset,String,String):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.Bool,clock:chisel3.Clock,reset:chisel3.Reset,label:String,message:String):Unit" title="Permalink">
+      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.UInt,clock:chisel3.Clock,reset:chisel3.Reset,label:String,message:String):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -347,12 +347,16 @@ implicit clock and reset.</p>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.Bool">Bool</span></span>, <span name="clock">clock: <span class="extype" name="chisel3.Clock">Clock</span></span>, <span name="reset">reset: <span class="extype" name="chisel3.Reset">Reset</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="clock">clock: <span class="extype" name="chisel3.Clock">Clock</span></span>, <span name="reset">reset: <span class="extype" name="chisel3.Reset">Reset</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <p class="shortcomment cmt">Annotates a Bool representing a target event (ex.</p><div class="fullcomment"><div class="comment cmt"><p>Annotates a Bool representing a target event (ex. L1 D$ miss)  that
-should be tracked by AutoCounter
-</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The event</p></dd><dt class="param">clock</dt><dd class="cmt"><p>The clock to which this event is sychronized.</p></dd><dt class="param">reset</dt><dd class="cmt"><p>If the event is asserted while under the provide reset, it
+      <p class="shortcomment cmt">Labels a signal as an event for which an host-side counter (an
+&quot;AutoCounter&quot;) should be generated).</p><div class="fullcomment"><div class="comment cmt"><p>Labels a signal as an event for which an host-side counter (an
+&quot;AutoCounter&quot;) should be generated).  Events can be multi-bit to encode
+multiple occurances in a cycle (e.g., the number of instructions retired
+in a superscalar processor). NB: Golden Gate will not generate the
+coutner unless AutoCounter is enabled in your the platform config. See
+the docs for more info.</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The number of occurances of the event (in the current cycle)</p></dd><dt class="param">clock</dt><dd class="cmt"><p>The clock to which this event is sychronized.</p></dd><dt class="param">reset</dt><dd class="cmt"><p>If the event is asserted while under the provide reset, it
 is not counted. TODO: This should be made optional.</p></dd><dt class="param">label</dt><dd class="cmt"><p>A verilog-friendly identifier for the event signal</p></dd><dt class="param">message</dt><dd class="cmt"><p>A description of the event.</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>

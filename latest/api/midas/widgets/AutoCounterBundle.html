@@ -227,6 +227,10 @@
                         <a href="DecoupledSourceEntry.html" title="">DecoupledSourceEntry</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="EventMetadata.html" title="Captures target-side information about an annotated event"></a>
+                        <a href="EventMetadata.html" title="Captures target-side information about an annotated event">EventMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="FlattenData$.html" title="Takes an arbtirary Data type, and flattens it (akin to .flatten())."></a>
                         <a href="FlattenData$.html" title="Takes an arbtirary Data type, and flattens it (akin to .flatten()).">FlattenData</a>
                       </li><li class="current-entities indented2">
@@ -580,9 +584,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.AutoCounterBundle#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(eventNames:Seq[String],triggerName:String):midas.widgets.AutoCounterBundle"></a><a id="&lt;init&gt;:AutoCounterBundle"></a>
+      <a id="&lt;init&gt;(eventMetadata:Seq[midas.widgets.EventMetadata],triggerName:String):midas.widgets.AutoCounterBundle"></a><a id="&lt;init&gt;:AutoCounterBundle"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterBundle.html#&lt;init&gt;(eventNames:Seq[String],triggerName:String):midas.widgets.AutoCounterBundle" title="Permalink">
+      <a href="../../midas/widgets/AutoCounterBundle.html#&lt;init&gt;(eventMetadata:Seq[midas.widgets.EventMetadata],triggerName:String):midas.widgets.AutoCounterBundle" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -591,7 +595,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AutoCounterBundle</span><span class="params">(<span name="eventNames">eventNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="triggerName">triggerName: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">AutoCounterBundle</span><span class="params">(<span name="eventMetadata">eventMetadata: <span class="extype" name="scala.Seq">Seq</span>[<a href="EventMetadata.html" class="extype" name="midas.widgets.EventMetadata">EventMetadata</a>]</span>, <span name="triggerName">triggerName: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       
       
@@ -918,9 +922,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
     </li><li name="midas.widgets.AutoCounterBundle#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.Bool]"></a><a id="elements:ListMap[String,Bool]"></a>
+      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.UInt]"></a><a id="elements:ListMap[String,UInt]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterBundle.html#elements:scala.collection.immutable.ListMap[String,chisel3.Bool]" title="Permalink">
+      <a href="../../midas/widgets/AutoCounterBundle.html#elements:scala.collection.immutable.ListMap[String,chisel3.UInt]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -929,7 +933,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Bool">Bool</span>]</span>
+        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.UInt">UInt</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.AutoCounterBundle">AutoCounterBundle</a> → Record</dd></dl></div>
@@ -966,9 +970,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
     </li><li name="midas.widgets.AutoCounterBundle#events" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="events:Seq[(String,chisel3.Bool)]"></a><a id="events:Seq[(String,Bool)]"></a>
+      <a id="events:Seq[(String,chisel3.UInt)]"></a><a id="events:Seq[(String,UInt)]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterBundle.html#events:Seq[(String,chisel3.Bool)]" title="Permalink">
+      <a href="../../midas/widgets/AutoCounterBundle.html#events:Seq[(String,chisel3.UInt)]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -977,7 +981,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">events</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Bool">Bool</span>)]</span>
+        <span class="name">events</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.UInt">UInt</span>)]</span>
       </span>
       
       

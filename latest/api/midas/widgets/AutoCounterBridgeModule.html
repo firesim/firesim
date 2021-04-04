@@ -227,6 +227,10 @@
                         <a href="DecoupledSourceEntry.html" title="">DecoupledSourceEntry</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="EventMetadata.html" title="Captures target-side information about an annotated event"></a>
+                        <a href="EventMetadata.html" title="Captures target-side information about an annotated event">EventMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="FlattenData$.html" title="Takes an arbtirary Data type, and flattens it (akin to .flatten())."></a>
                         <a href="FlattenData$.html" title="Takes an arbtirary Data type, and flattens it (akin to .flatten()).">FlattenData</a>
                       </li><li class="current-entities indented2">
@@ -580,9 +584,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.AutoCounterBridgeModule#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(events:Seq[(String,String)],triggerName:String)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule"></a><a id="&lt;init&gt;:AutoCounterBridgeModule"></a>
+      <a id="&lt;init&gt;(eventMetadata:Seq[midas.widgets.EventMetadata],triggerName:String)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule"></a><a id="&lt;init&gt;:AutoCounterBridgeModule"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterBridgeModule.html#&lt;init&gt;(events:Seq[(String,String)],triggerName:String)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule" title="Permalink">
+      <a href="../../midas/widgets/AutoCounterBridgeModule.html#&lt;init&gt;(eventMetadata:Seq[midas.widgets.EventMetadata],triggerName:String)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -591,7 +595,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AutoCounterBridgeModule</span><span class="params">(<span name="events">events: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="triggerName">triggerName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
+        <span class="name">AutoCounterBridgeModule</span><span class="params">(<span name="eventMetadata">eventMetadata: <span class="extype" name="scala.Seq">Seq</span>[<a href="EventMetadata.html" class="extype" name="midas.widgets.EventMetadata">EventMetadata</a>]</span>, <span name="triggerName">triggerName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
       </span>
       
       
@@ -1074,9 +1078,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="midas.widgets.AutoCounterBridgeModule#module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle]]{valnumCounters:Int;valportNames:Seq[String];vallabels:Seq[String];valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle];valtrigger:chisel3.Bool;valcycles:chisel3.UInt;valacc_cycles:chisel3.UInt;valhostCyclesWidthOffset:Int;valhostCyclesLowWidth:Int;valhostCyclesHighWidth:Int;valhostCounterWidthOffset:Int;valhostCounterLowWidth:Int;valhostCounterHighWidth:Int;valhostReadrateWidthOffset:Int;valhostReadrateLowWidth:Int;valhostReadrateHighWidth:Int;valreadrate_low:chisel3.UInt;valreadrate_high:chisel3.UInt;valreadrate:chisel3.UInt;valinitDone:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valcounters:Seq[chisel3.UInt];valperiodcycles:chisel3.UInt;valisSampleCycle:chisel3.Bool;valbtht_queue:chisel3.util.Queue[midas.widgets.AutoCounterToHostToken];vallowCountAddrs:IndexedSeq[Int];valhighCountAddrs:IndexedSeq[Int]}"></a><a id="module:BridgeModuleImp[HostPortIO[AutoCounterBundle]]{.../*29definitionsintyperefinement*/}"></a>
+      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle]]{valnumCounters:Int;vallabels:Seq[String];valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle];valtrigger:chisel3.Bool;valcycles:chisel3.UInt;valacc_cycles:chisel3.UInt;valhostCyclesWidthOffset:Int;valhostCyclesLowWidth:Int;valhostCyclesHighWidth:Int;valhostCounterWidthOffset:Int;valhostCounterLowWidth:Int;valhostCounterHighWidth:Int;valhostReadrateWidthOffset:Int;valhostReadrateLowWidth:Int;valhostReadrateHighWidth:Int;valreadrate_low:chisel3.UInt;valreadrate_high:chisel3.UInt;valreadrate:chisel3.UInt;valinitDone:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valcounters:Seq[chisel3.UInt];valperiodcycles:chisel3.UInt;valisSampleCycle:chisel3.Bool;valbtht_queue:chisel3.util.Queue[midas.widgets.AutoCounterToHostToken];vallowCountAddrs:IndexedSeq[Int];valhighCountAddrs:IndexedSeq[Int]}"></a><a id="module:BridgeModuleImp[HostPortIO[AutoCounterBundle]]{.../*28definitionsintyperefinement*/}"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterBridgeModule.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle]]{valnumCounters:Int;valportNames:Seq[String];vallabels:Seq[String];valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle];valtrigger:chisel3.Bool;valcycles:chisel3.UInt;valacc_cycles:chisel3.UInt;valhostCyclesWidthOffset:Int;valhostCyclesLowWidth:Int;valhostCyclesHighWidth:Int;valhostCounterWidthOffset:Int;valhostCounterLowWidth:Int;valhostCounterHighWidth:Int;valhostReadrateWidthOffset:Int;valhostReadrateLowWidth:Int;valhostReadrateHighWidth:Int;valreadrate_low:chisel3.UInt;valreadrate_high:chisel3.UInt;valreadrate:chisel3.UInt;valinitDone:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valcounters:Seq[chisel3.UInt];valperiodcycles:chisel3.UInt;valisSampleCycle:chisel3.Bool;valbtht_queue:chisel3.util.Queue[midas.widgets.AutoCounterToHostToken];vallowCountAddrs:IndexedSeq[Int];valhighCountAddrs:IndexedSeq[Int]}" title="Permalink">
+      <a href="../../midas/widgets/AutoCounterBridgeModule.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle]]{valnumCounters:Int;vallabels:Seq[String];valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.widgets.AutoCounterBundle];valtrigger:chisel3.Bool;valcycles:chisel3.UInt;valacc_cycles:chisel3.UInt;valhostCyclesWidthOffset:Int;valhostCyclesLowWidth:Int;valhostCyclesHighWidth:Int;valhostCounterWidthOffset:Int;valhostCounterLowWidth:Int;valhostCounterHighWidth:Int;valhostReadrateWidthOffset:Int;valhostReadrateLowWidth:Int;valhostReadrateHighWidth:Int;valreadrate_low:chisel3.UInt;valreadrate_high:chisel3.UInt;valreadrate:chisel3.UInt;valinitDone:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool;valcounters:Seq[chisel3.UInt];valperiodcycles:chisel3.UInt;valisSampleCycle:chisel3.Bool;valbtht_queue:chisel3.util.Queue[midas.widgets.AutoCounterToHostToken];vallowCountAddrs:IndexedSeq[Int];valhighCountAddrs:IndexedSeq[Int]}" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1085,7 +1089,7 @@
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">module</span><span class="result">: <a href="BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="AutoCounterBundle.html" class="extype" name="midas.widgets.AutoCounterBundle">AutoCounterBundle</a>]] { ... /* 29 definitions in type refinement */ }</span>
+        <span class="name">module</span><span class="result">: <a href="BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="AutoCounterBundle.html" class="extype" name="midas.widgets.AutoCounterBundle">AutoCounterBundle</a>]] { ... /* 28 definitions in type refinement */ }</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.AutoCounterBridgeModule">AutoCounterBridgeModule</a> → <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a> → <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a> → LazyModule</dd></dl></div>
