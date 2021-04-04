@@ -27,6 +27,11 @@ class AutoCounterModuleDUT(
 
   PerfCounter(enabled4, "ENABLED_DIV_4", "Count the number of times the enabled cycle count is divisible by 4. Should be equal to number of cycles minus reset cycles divided by 4")
 
+  // Multibit event
+  val count = RegInit(0.U(4.W))
+  count := count + 1.U
+  PerfCounter(count, "MULTIBIT_EVENT", "A multibit event")
+
   val childInst = Module(new AutoCounterModuleChild)
   childInst.io.c := io.a
 
@@ -36,6 +41,8 @@ class AutoCounterModuleDUT(
   val enabled_printcount = freechips.rocketchip.util.WideCounter(64, io.a)
   val enabled4_printcount = freechips.rocketchip.util.WideCounter(64, enabled4)
   val oddlfsr_printcount = freechips.rocketchip.util.WideCounter(64, childInst.io.oddlfsr)
+  val multibit_printcount = freechips.rocketchip.util.WideCounter(64, count)
+
   val cycle_print = Reg(UInt(64.W))
   cycle_print := cycle_print + 1.U
   when ((cycle_print >= (samplePeriod - 1).U) & (cycle_print % samplePeriod.U === (samplePeriod - 1).U)) {
@@ -44,6 +51,7 @@ class AutoCounterModuleDUT(
     printf(s"${printfPrefix}PerfCounter ENABLED_${instPath}: %d\n", enabled_printcount)
     printf(s"${printfPrefix}PerfCounter ENABLED_DIV_4_${instPath}: %d\n", enabled4_printcount)
     printf(s"${printfPrefix}PerfCounter ODD_LFSR_${instPath}_childInst: %d\n", oddlfsr_printcount)
+    printf(s"${printfPrefix}PerfCounter MULTIBIT_EVENT_${instPath}: %d\n", multibit_printcount)
     printf(s"${printfPrefix}\n")
   }
 }
@@ -63,6 +71,15 @@ class AutoCounterModuleChild extends MultiIOModule {
   io.oddlfsr := odd_lfsr
 }
 
+/** Demonstrate explicit instrumentation of AutoCounters via PerfCounter 
+ *
+ * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
+ *
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/AutoCounter.html#ad-hoc-performance-counters
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
+ * @see AutoCounterF1Test
+ * @see PerfCounter
+ */
 class AutoCounterModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterModuleDUT)
 
 class AutoCounterCoverModuleDUT extends Module {
@@ -97,6 +114,15 @@ class AutoCounterCoverModuleDUT extends Module {
 
 }
 
+/** Demonstrate implicit instrumentation of AutoCounters via RocketChip 'cover' functions
+ *
+ * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
+ *
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/AutoCounter.html#rocket-chip-cover-functions
+ * @see freechips.rocketchip.util.property.cover
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
+ * @see AutoCounterCoverModuleF1Test
+ */
 class AutoCounterCoverModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterCoverModuleDUT)
 
 class AutoCounterPrintfDUT extends Module {
@@ -117,5 +143,13 @@ class AutoCounterPrintfDUT extends Module {
   }
 }
 
+/** Demonstrate alternative impementation of AutoCounters using event-driven SynthesizedPrintf's
+ *
+ * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
+ *
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Debugging-and-Profiling-on-FPGA/AutoCounter.html#autocounter-using-synthesizable-printfs
+ * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
+ * @see AutoCounterPrintfF1Test
+ */
 class AutoCounterPrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterPrintfDUT)
 
