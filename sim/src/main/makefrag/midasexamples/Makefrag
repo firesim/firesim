@@ -62,8 +62,8 @@ driver_dir = $(firesim_base_dir)/src/main/cc
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc \
-			$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* )))  \
-			$(RISCV)/lib/libfesvr.a \
+		$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* )))  \
+		$(RISCV)/lib/libfesvr.a
 
 TARGET_CXX_FLAGS := -L$(RISCV)/lib -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(RISCV)/include -I$(driver_dir)/midasexamples -g
 TARGET_LD_FLAGS :=
