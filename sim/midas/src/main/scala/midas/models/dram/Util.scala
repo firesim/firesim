@@ -8,6 +8,7 @@ import freechips.rocketchip.unittest.UnitTest
 import junctions._
 
 import chisel3._
+import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util._
 
 // From MIDAS
@@ -587,7 +588,7 @@ object AddressRangeCounter {
 
 object AddressCollisionCheckMain extends App {
   implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
-  chisel3.Driver.execute(args, () => new AddressCollisionChecker(4,4,16))
+  (new chisel3.stage.ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new AddressCollisionChecker(4,4,16))))
 }
 
 class CounterTableUnitTest extends UnitTest {
