@@ -2,14 +2,14 @@
 
 package midas.stage.phases
 
+import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation, Unserializable}
+import freechips.rocketchip.config.{Config, Parameters}
 import midas.OutputDir
 import midas.stage.{ConfigPackageAnnotation, ConfigStringAnnotation}
-import firrtl.AnnotationSeq
-import firrtl.options.{Phase, PreservesAll, Unserializable, TargetDirAnnotation}
-import firrtl.annotations.NoTargetAnnotation
-import freechips.rocketchip.config.{Parameters, Config}
 
-import java.io.{File}
+import java.io.File
 
 case class ConfigParametersAnnotation(p: Parameters) extends NoTargetAnnotation with Unserializable
 
@@ -53,14 +53,14 @@ class CreateParametersInstancePhase extends Phase with PreservesAll[Phase] {
     new Config(getConfigWithFallback(packages, configClasses))
   }
 
-  override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val configPackage = annotations.collectFirst({ case ConfigPackageAnnotation(p) => p }).get
-    val configClasses = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get.split('_')
-    val targetDir = annotations.collectFirst({ case TargetDirAnnotation(t) => new File(t) }).get
-
-    // The output directory is specified on the command line; put it in the
-    // parameters object so it is visible to chisel elaborations.
-    val p = getParameters(configPackage, configClasses).alterPartial({ case OutputDir => targetDir })
-    ConfigParametersAnnotation(p) +: annotations
-  }
+  override def transform(annotations: AnnotationSeq): AnnotationSeq = 
+    ConfigParametersAnnotation(annotations.collectFirst{ case ConfigParametersAnnotation(p) => p }.getOrElse {
+      val configPackage = annotations.collectFirst({ case ConfigPackageAnnotation(p) => p }).get
+      val configClasses = annotations.collectFirst({ case ConfigStringAnnotation(s) => s }).get.split('_')
+      getParameters(configPackage, configClasses)
+    }.alterPartial({
+      // The output directory is specified on the command line; put it in the
+      // parameters object so it is visible to chisel elaborations.
+      case OutputDir => annotations.collectFirst({ case TargetDirAnnotation(t) => new File(t) }).get
+    })) +: annotations
 }
