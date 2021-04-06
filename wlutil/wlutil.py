@@ -501,7 +501,7 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
 
 def genRunScript(command):
     with open(getOpt('command-script'), 'w') as s:
-        s.write("#!/bin/bash\n")
+        s.write("#!/bin/sh\n")
         s.write(command + "\n")
         s.write("sync; poweroff -f\n")
 

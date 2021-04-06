@@ -1,0 +1,20 @@
+{
+  "name" : "br-base",
+  "distro" : {
+      "name" : "br",
+      "opts" : {
+          "configs" : ["buildroot-config"]
+      }
+  },
+  "overlay" : "overlay",
+  "linux" : {
+      "source" : "../../linux",
+      "config" : "linux-config"
+  },
+  "firmware" : {
+      "use-bbl" : false,
+      "bbl-src" : "../../firmware/riscv-pk",
+      "bbl-build-args" : "--enable-logo",
+      "opensbi-src" : "../../firmware/opensbi"
+  }
+}
