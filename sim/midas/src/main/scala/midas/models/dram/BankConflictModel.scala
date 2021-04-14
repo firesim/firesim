@@ -84,17 +84,18 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   val latency = io.mmReg.latency
   val conflictPenalty = io.mmReg.conflictPenalty
 
-  val transactionQueue = Module(new DualQueue(
-      gen = new BankQueueEntry(cfg),
-      entries = cfg.maxWrites + cfg.maxReads))
+  val transactionQueue = Module(new Queue(new BankQueueEntry(cfg), cfg.maxWrites + cfg.maxReads))
+  val transactionQueueArb = Module(new RRArbiter(new BankQueueEntry(cfg), 2))
 
-  transactionQueue.io.enqA.valid := newWReq
-  transactionQueue.io.enqA.bits.xaction := TransactionMetaData(awQueue.io.deq.bits)
-  transactionQueue.io.enqA.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
+  transactionQueueArb.io.in(0).valid := newWReq
+  transactionQueueArb.io.in(0).bits.xaction := TransactionMetaData(awQueue.io.deq.bits)
+  transactionQueueArb.io.in(0).bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
 
-  transactionQueue.io.enqB.valid := tNasti.ar.fire
-  transactionQueue.io.enqB.bits.xaction := TransactionMetaData(tNasti.ar.bits)
-  transactionQueue.io.enqB.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
+  transactionQueueArb.io.in(1).valid := tNasti.ar.fire
+  transactionQueueArb.io.in(1).bits.xaction := TransactionMetaData(tNasti.ar.bits)
+  transactionQueueArb.io.in(1).bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
+
+  transactionQueue.io.enq <> transactionQueueArb.io.out
 
   val bankBusyCycles = Seq.fill(cfg.maxBanks)(RegInit(0.U(cfg.maxLatencyBits.W)))
   val bankConflictCounts = RegInit(VecInit(Seq.fill(cfg.maxBanks)(0.U(32.W))))

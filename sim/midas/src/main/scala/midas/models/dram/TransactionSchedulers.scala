@@ -27,19 +27,21 @@ class UnifiedFIFOXactionScheduler(depth: Int, cfg: BaseConfig)(implicit p: Param
 
   import DRAMMasEnums._
 
-  val transactionQueue = Module(new DualQueue(
-      gen = new XactionSchedulerEntry,
-      entries = depth))
+  val transactionQueue = Module(new Queue(new XactionSchedulerEntry, depth))
+  val transactionQueueArb = Module(new RRArbiter(new XactionSchedulerEntry, 2))
 
-  transactionQueue.io.enqA.valid := io.req.ar.valid
-  transactionQueue.io.enqA.bits.xaction := TransactionMetaData(io.req.ar.bits)
-  transactionQueue.io.enqA.bits.addr := io.req.ar.bits.addr
-  io.req.ar.ready := transactionQueue.io.enqA.ready
+  transactionQueueArb.io.in(0).valid := io.req.ar.valid
+  io.req.ar.ready := transactionQueueArb.io.in(0).ready
+  transactionQueueArb.io.in(0).bits.xaction := TransactionMetaData(io.req.ar.bits)
+  transactionQueueArb.io.in(0).bits.addr := io.req.ar.bits.addr
 
-  transactionQueue.io.enqB.valid := io.req.aw.valid
-  transactionQueue.io.enqB.bits.xaction := TransactionMetaData(io.req.aw.bits)
-  transactionQueue.io.enqB.bits.addr := io.req.aw.bits.addr
-  io.req.aw.ready := transactionQueue.io.enqB.ready
+  transactionQueueArb.io.in(1).valid := io.req.aw.valid
+  io.req.aw.ready := transactionQueueArb.io.in(1).ready
+  transactionQueueArb.io.in(1).bits.xaction := TransactionMetaData(io.req.aw.bits)
+  transactionQueueArb.io.in(1).bits.addr := io.req.aw.bits.addr
+
+  transactionQueue.io.enq <> transactionQueueArb.io.out
+
   // Accept up to one additional write data request
   // TODO: More sensible model; maybe track a write buffer volume
   io.req.w.ready := io.pendingWReq <= io.pendingAWReq
