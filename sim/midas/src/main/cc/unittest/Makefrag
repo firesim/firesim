@@ -40,6 +40,7 @@ $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
 	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); \
 		runMain firrtl.stage.FirrtlMain -i $< -o $@ \
+		-td $(GEN_DIR) \
 		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
 
 emul_v     := $(GEN_DIR)/$(DESIGN).v
