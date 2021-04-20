@@ -48,6 +48,8 @@ sudo yum -y install graphviz python-devel
 sudo yum -y install expect
 
 # these need to match what's in deploy/requirements.txt
+# last working pip version before deprecation
+sudo pip2 install --upgrade pip==20.3.4
 sudo pip2 install fabric==1.14.0
 sudo pip2 install boto3==1.6.2
 sudo pip2 install colorama==0.3.7
