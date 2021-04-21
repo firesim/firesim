@@ -119,6 +119,16 @@ def buildafi(globalbuildconf):
 
     auto_create_bucket(globalbuildconf.s3_bucketname)
 
+    client = boto3.client('sns')
+
+    aws_resource_names_dict = aws_resource_names()
+    snsname = aws_resource_names_dict['snsname']
+
+    # this will either create the topic, if it doesn't exist, or just get the arn
+    client.create_topic(
+        Name=snsname
+    )
+
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
