@@ -359,9 +359,11 @@ def get_snsname_arn():
     except client.exceptions.ClientError as err:
         if 'AuthorizationError' in repr(err): 
             rootLogger.critical("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
-            rootLogger.critical(err)
+
         else:
             rootLogger.critical("Unknown exception is encountered while trying to perform \"Topic Creation\"")
+
+        rootLogger.critical(err)
         assert False
         
     return response['TopicArn']
