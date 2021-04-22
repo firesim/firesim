@@ -344,8 +344,8 @@ def auto_create_bucket(userbucketname):
             rootLogger.critical(repr(exc))
             assert False
 
-def subscribe_to_firesim_topic(email):
-    """ Subscribe a user to their FireSim SNS topic for notifications. """
+def create_topic():
+    """ Send a FireSim SNS Email notification. """
     client = boto3.client('sns')
 
     aws_resource_names_dict = aws_resource_names()
@@ -355,8 +355,13 @@ def subscribe_to_firesim_topic(email):
     response = client.create_topic(
         Name=snsname
     )
-    arn = response['TopicArn']
+    return response
 
+def subscribe_to_firesim_topic(email):
+    """ Subscribe a user to their FireSim SNS topic for notifications. """
+
+    arn_dict = create_topic()
+    arn = arn_dict['TopicArn']
     response = client.subscribe(
         TopicArn=arn,
         Protocol='email',
@@ -371,18 +376,9 @@ receive any notifications until you click the confirmation link.""".format(email
     rootLogger.info(message)
 
 def send_firesim_notification(subject, body):
-    """ Send a FireSim SNS Email notification. """
-    client = boto3.client('sns')
 
-    aws_resource_names_dict = aws_resource_names()
-    snsname = aws_resource_names_dict['snsname']
-
-    # this will either create the topic, if it doesn't exist, or just get the arn
-    response = client.create_topic(
-        Name=snsname
-    )
-
-    arn = response['TopicArn']
+    arn_dict = create_topic()
+    arn = arn_dict['TopicArn']
 
     response = client.publish(
         TopicArn=arn,
