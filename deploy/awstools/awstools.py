@@ -344,24 +344,32 @@ def auto_create_bucket(userbucketname):
             rootLogger.critical(repr(exc))
             assert False
 
-def create_topic():
-    """ Send a FireSim SNS Email notification. """
+def get_snsname_arn():
+    """ If the Topic doesn't exist create it, send catch exceptions while creating. Or if it exists get arn """
     client = boto3.client('sns')
 
     aws_resource_names_dict = aws_resource_names()
     snsname = aws_resource_names_dict['snsname']
 
-    # this will either create the topic, if it doesn't exist, or just get the arn
-    response = client.create_topic(
-        Name=snsname
-    )
-    return response
+    response = None
+    try: # this will either create the topic, if it doesn't exist, or just get the arn
+        response = client.create_topic(
+            Name=snsname
+        )
+    except client.exceptions.ClientError as err:
+        if 'AuthorizationError' in repr(err): 
+            rootLogger.critical("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
+            rootLogger.critical(err)
+        else:
+            rootLogger.critical("Unknown exception is encountered while trying to perform \"Topic Creation\"")
+        assert False
+        
+    return response['TopicArn']
 
 def subscribe_to_firesim_topic(email):
     """ Subscribe a user to their FireSim SNS topic for notifications. """
 
-    arn_dict = create_topic()
-    arn = arn_dict['TopicArn']
+    arn = get_snsname_arn()
     response = client.subscribe(
         TopicArn=arn,
         Protocol='email',
@@ -377,8 +385,7 @@ receive any notifications until you click the confirmation link.""".format(email
 
 def send_firesim_notification(subject, body):
 
-    arn_dict = create_topic()
-    arn = arn_dict['TopicArn']
+    arn = get_snsname_arn()
 
     response = client.publish(
         TopicArn=arn,

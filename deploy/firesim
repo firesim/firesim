@@ -118,12 +118,9 @@ def buildafi(globalbuildconf):
             run("uname -a")
 
     auto_create_bucket(globalbuildconf.s3_bucketname)
+
     #check to see email notifications can be subscribed
-    try:
-        create_topic() 
-    except :
-        rootLogger.critical("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact you IT administrator")
-        exit(1)
+    get_snsname_arn()
 
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
