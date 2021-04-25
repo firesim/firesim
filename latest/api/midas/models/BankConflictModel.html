@@ -2365,9 +2365,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>BaseModule → InstanceId</dd></dl></div>
     </li><li name="midas.models.BankConflictModel#transactionQueue" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="transactionQueue:midas.models.DualQueue[midas.models.BankQueueEntry]"></a><a id="transactionQueue:DualQueue[BankQueueEntry]"></a>
+      <a id="transactionQueue:chisel3.util.Queue[midas.models.BankQueueEntry]"></a><a id="transactionQueue:Queue[BankQueueEntry]"></a>
       <span class="permalink">
-      <a href="../../midas/models/BankConflictModel.html#transactionQueue:midas.models.DualQueue[midas.models.BankQueueEntry]" title="Permalink">
+      <a href="../../midas/models/BankConflictModel.html#transactionQueue:chisel3.util.Queue[midas.models.BankQueueEntry]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -2376,7 +2376,23 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">transactionQueue</span><span class="result">: <a href="DualQueue.html" class="extype" name="midas.models.DualQueue">DualQueue</a>[<a href="BankQueueEntry.html" class="extype" name="midas.models.BankQueueEntry">BankQueueEntry</a>]</span>
+        <span class="name">transactionQueue</span><span class="result">: <span class="extype" name="chisel3.util.Queue">Queue</span>[<a href="BankQueueEntry.html" class="extype" name="midas.models.BankQueueEntry">BankQueueEntry</a>]</span>
+      </span>
+      
+      
+    </li><li name="midas.models.BankConflictModel#transactionQueueArb" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="transactionQueueArb:chisel3.util.RRArbiter[midas.models.BankQueueEntry]"></a><a id="transactionQueueArb:RRArbiter[BankQueueEntry]"></a>
+      <span class="permalink">
+      <a href="../../midas/models/BankConflictModel.html#transactionQueueArb:chisel3.util.RRArbiter[midas.models.BankQueueEntry]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">transactionQueueArb</span><span class="result">: <span class="extype" name="chisel3.util.RRArbiter">RRArbiter</span>[<a href="BankQueueEntry.html" class="extype" name="midas.models.BankQueueEntry">BankQueueEntry</a>]</span>
       </span>
       
       
