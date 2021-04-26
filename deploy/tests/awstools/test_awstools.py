@@ -21,7 +21,7 @@ class TestSNS(object):
 
     # When we're testing awstools.get_snsname_arn(), we don't also want to be
     # testing awstools.aws_resource_names(). mainly because we're subjugating
-    # the boto3.client factory and also because we want to be able to run these
+    # the boto3.client factory (in the second test below) and also because we want to be able to run these
     # tests while not on a AWS EC2 host and aws_resource_names() assumes that it
     # can lookup the AWS instance-id via 169.254.169.254 API
     @patch('awstools.awstools.aws_resource_names', return_value={'snsname': 'Testing'})
