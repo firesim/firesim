@@ -22,14 +22,14 @@ from awstools.afitools import *
 
 # firesim buildtools
 from buildtools.buildafi import *
-from buildtools.buildconfig import GlobalBuildConfig
+from buildtools.buildglobal import GlobalBuildConfig
 
 from util.streamlogger import StreamLogger
 
 ## below are tasks that users can call
 ## to add a task, add it here and to the choices array
 
-def managerinit():
+def managerinit(args):
     """ Setup local FireSim manager components. """
 
     def valid_aws_configure_creds():
@@ -51,19 +51,20 @@ def managerinit():
             return False
         return True
 
-    valid_creds = valid_aws_configure_creds()
-    while not valid_creds:
-        # only run aws configure if we cannot already find valid creds
-        # this loops calling valid_aws_configure_creds until
-        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-        # stored in the log
-        local("aws configure")
-
-        # check again
+    if not args.localrun:
         valid_creds = valid_aws_configure_creds()
-        if not valid_creds:
-            rootLogger.info("Invalid AWS credentials. Try again.")
+        while not valid_creds:
+            # only run aws configure if we cannot already find valid creds
+            # this loops calling valid_aws_configure_creds until
+            rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
+            # DO NOT wrap this local call with StreamLogger, we don't want creds to get
+            # stored in the log
+            local("aws configure")
+
+            # check again
+            valid_creds = valid_aws_configure_creds()
+            if not valid_creds:
+                rootLogger.info("Invalid AWS credentials. Try again.")
 
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "hwdb", "runtime"]
@@ -79,15 +80,18 @@ def managerinit():
             m = local("""cp sample-backup-configs/sample_config_{}.ini config_{}.ini""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.ini""".format(get_aws_userid(), conf_file), capture=True)
-            rootLogger.debug(m)
-            rootLogger.debug(m.stderr)
+            if not args.localrun:
+                m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.ini""".format(get_aws_userid(), conf_file), capture=True)
+                rootLogger.debug(m)
+                rootLogger.debug(m.stderr)
 
-    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
-    if useremail != "":
-        subscribe_to_firesim_topic(useremail)
-    else:
-        rootLogger.info("You did not supply an email address. No notifications will be sent.")
+    if not args.localrun:
+        useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+        if useremail != "":
+            subscribe_to_firesim_topic(useremail)
+        else:
+            rootLogger.info("You did not supply an email address. No notifications will be sent.")
+
     rootLogger.info("FireSim Manager setup completed.")
 
 def infrasetup(runtime_conf):
@@ -117,8 +121,6 @@ def buildafi(globalbuildconf):
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("uname -a")
 
-    auto_create_bucket(globalbuildconf.s3_bucketname)
-
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
@@ -130,10 +132,15 @@ def buildafi(globalbuildconf):
             rootLogger.info("Termination skipped. There may still be build instances running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, terminate_instances_handler)
 
+    if globalbuildconf.host_platform == "aws":
+        signal.signal(signal.SIGINT, terminate_instances_handler)
+        auto_create_bucket(globalbuildconf.s3_bucketname)
+
+    # runs serially on the localhost
     for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+        #globalbuildconf.replace_rtl(buildconf)
+        execute(globalbuildconf.replace_rtl, buildconf, hosts=['localhost'])
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
@@ -146,8 +153,7 @@ def buildafi(globalbuildconf):
     execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
 
     # run builds, then terminate instances
-    execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
-
+    execute(globalbuildconf.fpga_build, hosts=globalbuildconf.get_build_instance_ips())
 
 def tar2afi(globalbuildconf):
     """
@@ -259,6 +265,7 @@ def construct_firesim_argparser():
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
+    parser.add_argument('-l', '--localrun', action='store_true', help='Do things locally')
 
     argcomplete.autocomplete(parser)
     return parser.parse_args()
@@ -281,7 +288,7 @@ def main(args):
 
     # tasks that have a special config/dispatch setup
     if args.task == 'managerinit':
-        managerinit()
+        managerinit(args)
 
     if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
         buildconfig = GlobalBuildConfig(args)
