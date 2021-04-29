@@ -14,7 +14,6 @@ from colorama import Fore, Style
 import types
 from functools import reduce
 
-from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
 
@@ -22,8 +21,7 @@ rootLogger = logging.getLogger()
 def instance_liveness():
     """ confirm that all instances are running first. """
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        run("uname -a")
+    run("uname -a")
 
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
@@ -459,15 +457,14 @@ class FireSimTopologyWithPasses:
                 rootLogger.info("Confirming exit...")
                 # keep checking screen until it reports that there are no screens left
                 while True:
-                    with StreamLogger('stdout'), StreamLogger('stderr'):
-                        screenoutput = run("screen -ls")
-                        # If AutoILA is enabled, use the following condition
-                        if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
-                            break
-                        # If AutoILA is disabled, use the following condition
-                        elif "No Sockets found" in screenoutput:
-                            break
-                        time.sleep(1)
+                    screenoutput = run("screen -ls")
+                    # If AutoILA is enabled, use the following condition
+                    if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
+                        break
+                    # If AutoILA is disabled, use the following condition
+                    elif "No Sockets found" in screenoutput:
+                        break 
+                    time.sleep(1)
 
         execute(screens, hosts=all_runfarm_ips)
 
@@ -481,10 +478,9 @@ class FireSimTopologyWithPasses:
         all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            localcap = local("""mkdir -p {}""".format(self.workload.job_results_dir), capture=True)
-            rootLogger.debug("[localhost] " + str(localcap))
-            rootLogger.debug("[localhost] " + str(localcap.stderr))
+        localcap = local("""mkdir -p {}""".format(self.workload.job_results_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
@@ -631,13 +627,12 @@ class FireSimTopologyWithPasses:
         # run post-workload hook, if one exists
         if self.workload.post_run_hook is not None:
             rootLogger.info("Running post_run_hook...")
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local("""cd {} && {} {}""".format(self.workload.workload_input_base_dir,
-                                                  self.workload.post_run_hook,
-                                                  self.workload.job_results_dir),
-                                                  capture=True)
-                rootLogger.debug("[localhost] " + str(localcap))
-                rootLogger.debug("[localhost] " + str(localcap.stderr))
+            localcap = local("""cd {} && {} {}""".format(self.workload.workload_input_base_dir,
+                                              self.workload.post_run_hook,
+                                              self.workload.job_results_dir),
+                                              capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         rootLogger.info("FireSim Simulation Exited Successfully. See results in:\n" + str(self.workload.job_results_dir))
 

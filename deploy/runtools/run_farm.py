@@ -6,7 +6,6 @@ import logging
 from awstools.awstools import *
 from fabric.api import *
 from fabric.contrib.project import rsync_project
-from util.streamlogger import StreamLogger
 import time
 
 rootLogger = logging.getLogger()
@@ -384,18 +383,16 @@ class InstanceDeployManager:
     def get_and_install_aws_fpga_sdk(self):
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
-        with prefix('cd ../'), \
-             StreamLogger('stdout'), \
-             StreamLogger('stderr'):
+	with prefix('cd ../'):
             # use local version of aws_fpga on runfarm nodes
             aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
             if "-dirty" in aws_fpga_upstream_version:
                 rootLogger.critical("Unable to use local changes to aws-fpga. Continuing without them.")
         self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(aws_fpga_upstream_version))
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+	with warn_only():
             run('git clone https://github.com/aws/aws-fpga')
             run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
-        with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
+	with cd('/home/centos/aws-fpga'):
             run('source sdk_setup.sh')
 
     def fpga_node_xdma(self):
@@ -403,13 +400,12 @@ class InstanceDeployManager:
         already built and that a binary exists in the directory on this machine
         """
         self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run('mkdir -p /home/centos/xdma/')
-            put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
-                '/home/centos/xdma/', mirror_local_mode=True)
-            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
-                run('make clean')
-                run('make')
+        run('mkdir -p /home/centos/xdma/')
+        put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
+            '/home/centos/xdma/', mirror_local_mode=True)
+        with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
+            run('make clean')
+            run('make')
 
     def fpga_node_qcow(self):
         """ Install qemu-img management tools and copy NBD infra to remote
@@ -417,11 +413,10 @@ class InstanceDeployManager:
         in the directory on this machine.
         """
         self.instance_logger("""Setting up remote node for qcow2 disk images.""")
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            # get qemu-nbd
-            run('sudo yum -y install qemu-img')
-            # copy over kernel module
-            put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
+        # get qemu-nbd
+        run('sudo yum -y install qemu-img')
+        # copy over kernel module
+        put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
 
     def load_nbd_module(self):
         """ load the nbd module. always unload the module first to ensure it
@@ -429,8 +424,7 @@ class InstanceDeployManager:
         self.unload_nbd_module()
         # now load xdma
         self.instance_logger("Loading NBD Kernel Module.")
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.parentnode.nbd_tracker.NBDS_MAX))
+        run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.parentnode.nbd_tracker.NBDS_MAX))
 
     def unload_nbd_module(self):
         """ unload the nbd module. """
@@ -438,7 +432,7 @@ class InstanceDeployManager:
 
         # disconnect all /dev/nbdX devices before rmmod
         self.disconnect_all_nbds_instance()
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+        with warn_only():
             run('sudo rmmod nbd')
 
     def disconnect_all_nbds_instance(self):
@@ -446,7 +440,7 @@ class InstanceDeployManager:
         self.instance_logger("Disconnecting all NBDs.")
 
         # warn_only, so we can call this even if there are no nbds
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+        with warn_only():
             # build up one large command with all the disconnects
             fullcmd = []
             for nbd_index in range(self.parentnode.nbd_tracker.NBDS_MAX):
@@ -468,7 +462,7 @@ class InstanceDeployManager:
     def unload_xdma(self):
         self.instance_logger("Unloading XDMA Driver Kernel Module.")
 
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+        with warn_only():
             # fpga mgmt tools seem to force load xocl after a flash now...
             # so we just remove everything for good measure:
             remote_kmsg("removing_xdma_start")
@@ -482,17 +476,15 @@ class InstanceDeployManager:
         # we always clear ALL fpga slots
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_kmsg("""about_to_clear_fpga{}""".format(slotno))
-                run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
-                remote_kmsg("""done_clearing_fpga{}""".format(slotno))
+            remote_kmsg("""about_to_clear_fpga{}""".format(slotno))
+            run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
+            remote_kmsg("""done_clearing_fpga{}""".format(slotno))
 
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_kmsg("""about_to_check_clear_fpga{}""".format(slotno))
-                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
-                remote_kmsg("""done_checking_clear_fpga{}""".format(slotno))
+            remote_kmsg("""about_to_check_clear_fpga{}""".format(slotno))
+            run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "cleared"; do  sleep 1;  done""".format(slotno))
+            remote_kmsg("""done_checking_clear_fpga{}""".format(slotno))
 
 
     def flash_fpgas(self):
@@ -502,9 +494,7 @@ class InstanceDeployManager:
                 agfi = firesimservernode.get_agfi()
                 dummyagfi = agfi
                 self.instance_logger("""Flashing FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
-                with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
-                        slotno, agfi))
+                run("""sudo fpga-load-local-image -S {} -I {} -A""".format(slotno, agfi))
 
         # We only do this because XDMA hangs if some of the FPGAs on the instance
         # are left in the cleared state. So, if you're only using some of the
@@ -514,20 +504,16 @@ class InstanceDeployManager:
         # break anything.
         for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Flashing FPGA Slot: {} with dummy agfi: {}.""".format(slotno, dummyagfi))
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
-                    slotno, dummyagfi))
+            run("""sudo fpga-load-local-image -S {} -I {} -A""".format(slotno, dummyagfi))
 
         for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
             if firesimservernode is not None:
                 self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
-                with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
+                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
         for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, dummyagfi))
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
+            run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
 
     def load_xdma(self):
@@ -539,23 +525,19 @@ class InstanceDeployManager:
         # now load xdma
         self.instance_logger("Loading XDMA Driver Kernel Module.")
         # TODO: can make these values automatically be chosen based on link lat
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
+        run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self):
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
         self.instance_logger("Starting Vivado hw_server.")
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""screen -S hw_server -d -m bash -c "script -f -c 'hw_server'"; sleep 1""")
+        run("""screen -S hw_server -d -m bash -c "script -f -c 'hw_server'"; sleep 1""")
         self.instance_logger("Starting Vivado virtual JTAG.")
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
-
+        run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
+  
     def kill_ila_server(self):
         """ Kill the vivado hw_server and virtual jtag """
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+        with warn_only():
             run("sudo pkill -SIGKILL hw_server")
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run("sudo pkill -SIGKILL fpga-local-cmd")
 
     def copy_sim_slot_infrastructure(self, slotno):
@@ -569,61 +551,56 @@ class InstanceDeployManager:
 
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""mkdir -p {}""".format(remote_sim_rsync_dir))
+        run("""mkdir -p {}""".format(remote_sim_rsync_dir))
 
         files_to_copy = serv.get_required_files_local_paths()
         for filename in files_to_copy:
             # here, filename is a pair of (local path, remote path)
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                # -z --inplace
-                rsync_cap = rsync_project(local_dir=filename[0], remote_dir=remote_sim_rsync_dir + '/' + filename[1],
-                              ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
-                rootLogger.debug(rsync_cap)
-                rootLogger.debug(rsync_cap.stderr)
+            # -z --inplace
+            rsync_cap = rsync_project(local_dir=filename[0], remote_dir=remote_sim_rsync_dir + '/' + filename[1],
+                          ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
 
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""cp -r {}/* {}/""".format(remote_sim_rsync_dir, remote_sim_dir), shell=True)
+        run("""cp -r {}/* {}/""".format(remote_sim_rsync_dir, remote_sim_dir), shell=True)
 
 
     def copy_switch_slot_infrastructure(self, switchslot):
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
 
         remote_switch_dir = """/home/centos/switch_slot_{}/""".format(switchslot)
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("""mkdir -p {}""".format(remote_switch_dir))
+        run("""mkdir -p {}""".format(remote_switch_dir))
 
         switch = self.parentnode.switch_slots[switchslot]
         files_to_copy = switch.get_required_files_local_paths()
         for filename in files_to_copy:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                put(filename, remote_switch_dir, mirror_local_mode=True)
+            put(filename, remote_switch_dir, mirror_local_mode=True)
 
     def start_switch_slot(self, switchslot):
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
         remote_switch_dir = """/home/centos/switch_slot_{}/""".format(switchslot)
         switch = self.parentnode.switch_slots[switchslot]
-        with cd(remote_switch_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+        with cd(remote_switch_dir):
             run(switch.get_switch_start_command())
 
     def start_sim_slot(self, slotno):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         server = self.parentnode.fpga_slots[slotno]
-        with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+        with cd(remote_sim_dir):
             server.run_sim_start_command(slotno)
 
     def kill_switch_slot(self, switchslot):
         """ kill the switch in slot switchslot. """
         self.instance_logger("""Killing switch simulation for switchslot: {}.""".format(switchslot))
         switch = self.parentnode.switch_slots[switchslot]
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+        with warn_only():
             run(switch.get_switch_kill_command())
 
     def kill_sim_slot(self, slotno):
         self.instance_logger("""Killing FPGA simulation for slot: {}.""".format(slotno))
         server = self.parentnode.fpga_slots[slotno]
-        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+        with warn_only():
             run(server.get_sim_kill_command(slotno))
 
     def instance_assigned_simulations(self):
@@ -683,8 +660,7 @@ class InstanceDeployManager:
         """ Boot up all the switches in a screen. """
         # remove shared mem pages used by switches
         if self.instance_assigned_switches():
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("sudo rm -rf /dev/shm/*")
+            run("sudo rm -rf /dev/shm/*")
 
             for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
                 self.start_switch_slot(slotno)
@@ -701,8 +677,8 @@ class InstanceDeployManager:
         if self.instance_assigned_switches():
             for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
                 self.kill_switch_slot(slotno)
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("sudo rm -rf /dev/shm/*")
+
+            run("sudo rm -rf /dev/shm/*")
 
     def kill_simulations_instance(self, disconnect_all_nbds=True):
         """ Kill all simulations on this instance. """

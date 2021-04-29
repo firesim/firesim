@@ -14,7 +14,6 @@ from awstools.afitools import *
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
-from util.streamlogger import StreamLogger
 import os
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
@@ -197,9 +196,7 @@ class RuntimeHWConfig:
              prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
              prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
              prefix('source ./sourceme-f1-manager.sh'), \
-             prefix('cd sim/'), \
-             StreamLogger('stdout'), \
-             StreamLogger('stderr'):
+             prefix('cd sim/'):
             localcap = None
             with settings(warn_only=True):
                 driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)

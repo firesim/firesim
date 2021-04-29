@@ -1,4 +1,4 @@
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import json
 import time
 import random
@@ -11,15 +11,13 @@ from fabric.contrib.console import confirm
 from fabric.contrib.project import rsync_project
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification
-from util.streamlogger import StreamLogger, InfoStreamLogger
+from util.streamlogger import InfoStreamLogger
 
 rootLogger = logging.getLogger()
 
 def get_deploy_dir():
     """ Must use local here. determine where the firesim/deploy dir is """
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        deploydir = local("pwd", capture=True)
-    return deploydir
+    return local("pwd", capture=True)
 
 def replace_rtl(conf, buildconfig):
     """ Run chisel/firrtl/fame-1, produce verilog for fpga build.
@@ -38,8 +36,7 @@ def replace_rtl(conf, buildconfig):
          prefix('source sourceme-f1-manager.sh'), \
          prefix('export CL_DIR={}/../platforms/f1/aws-fpga/{}'.format(ddir, fpgabuilddir)), \
          prefix('cd sim/'), \
-         InfoStreamLogger('stdout'), \
-         InfoStreamLogger('stderr'):
+         InfoStreamLogger('stdout'):
         run(buildconfig.make_recipe("replace-rtl"))
         run("""mkdir -p {}/results-build/{}/""".format(ddir, builddir))
         run("""cp $CL_DIR/design/FireSim-generated.sv {}/results-build/{}/FireSim-generated.sv""".format(ddir, builddir))
@@ -50,15 +47,29 @@ def replace_rtl(conf, buildconfig):
          prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
          prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
          prefix('source sourceme-f1-manager.sh'), \
-         prefix('cd sim/'), \
-         StreamLogger('stdout'), \
-         StreamLogger('stderr'):
+         prefix('cd sim/'):
         run(buildconfig.make_recipe("f1"))
 
 @parallel
 def throw_something(global_build_config, bypass=False):
-    """Just throw an exception so that we can Q/A the Fabric logging"""
+    """Print various things and then throw an exception so that we can Q/A the Fabric logging"""
+    print("Python print to stdout should only be in log")
+    with InfoStreamLogger('stdout'):
+        print("However, Python prints can wrapped in an InfoStream context to go to console and log")
+
+    import sys
+    print("Python print to stderr should go to both console and log", file=sys.stderr)
+
+
+    run("echo fabric command stdout should go only to log")
+    run("echo fabric command stderr should go to both 1>&2")
+
+
     assert False
+
+@parallel
+def run_something_that_exits_nonzero(global_build_config, bypass=False):
+    run("exit 1")
 
 
 @parallel
@@ -70,7 +81,7 @@ def aws_build(global_build_config, bypass=False):
     if bypass:
         ### This is duplicated from the end of the function.
         buildconfig = global_build_config.get_build_by_ip(env.host_string)
-        buildconfig.terminate_build_instance(buildconfig)
+        buildconfig.terminate_build_instance()
         return
 
     # The default error-handling procedure. Send an email and teardown instance
@@ -101,44 +112,41 @@ def aws_build(global_build_config, bypass=False):
 
     # first, copy aws-fpga to the build instance. it will live in
     # firesim-build/platforms/f1/
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        run('mkdir -p /home/centos/firesim-build/platforms/f1/')
+    run('mkdir -p /home/centos/firesim-build/platforms/f1/')
     # do the rsync, but ignore any checkpoints that might exist on this machine
     # (in case builds were run locally)
     # extra_opts -l preserves symlinks
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        rsync_cap = rsync_project(local_dir=ddir + "/../platforms/f1/aws-fpga",
-                      remote_dir='/home/centos/firesim-build/platforms/f1/',
-                      ssh_opts="-o StrictHostKeyChecking=no",
-                      exclude="hdk/cl/developer_designs/cl_*",
-                      extra_opts="-l", capture=True)
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
-        rsync_cap = rsync_project(local_dir=ddir + "/../platforms/f1/aws-fpga/{}/*".format(fpgabuilddir),
-                      remote_dir='/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir,
-                      exclude='build/checkpoints',
-                      ssh_opts="-o StrictHostKeyChecking=no",
-                      extra_opts="-l", capture=True)
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
+    rsync_cap = rsync_project(local_dir=ddir + "/../platforms/f1/aws-fpga",
+                  remote_dir='/home/centos/firesim-build/platforms/f1/',
+                  ssh_opts="-o StrictHostKeyChecking=no",
+                  exclude="hdk/cl/developer_designs/cl_*",
+                  extra_opts="-l", capture=True)
+    rootLogger.debug(rsync_cap)
+    rootLogger.debug(rsync_cap.stderr)
+    rsync_cap = rsync_project(local_dir=ddir + "/../platforms/f1/aws-fpga/{}/*".format(fpgabuilddir),
+                  remote_dir='/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir,
+                  exclude='build/checkpoints',
+                  ssh_opts="-o StrictHostKeyChecking=no",
+                  extra_opts="-l", capture=True)
+    rootLogger.debug(rsync_cap)
+    rootLogger.debug(rsync_cap.stderr)
 
     # run the Vivado build
     vivado_result = 0
     with prefix('cd /home/centos/firesim-build/platforms/f1/aws-fpga'), \
          prefix('source hdk_setup.sh'), \
          prefix('export CL_DIR=/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir), \
-         prefix('cd $CL_DIR/build/scripts/'), InfoStreamLogger('stdout'), InfoStreamLogger('stderr'), \
+         prefix('cd $CL_DIR/build/scripts/'), InfoStreamLogger('stdout'), \
          settings(warn_only=True):
         vivado_result = run('./aws_build_dcp_from_cl.sh -foreground').return_code
 
     # rsync in the reverse direction to get build results
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        rsync_cap = rsync_project(local_dir="""{}/results-build/{}/""".format(ddir, builddir),
-                      remote_dir='/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir,
-                      ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-                      capture=True)
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
+    rsync_cap = rsync_project(local_dir="""{}/results-build/{}/""".format(ddir, builddir),
+                  remote_dir='/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir,
+                  ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
+                  capture=True)
+    rootLogger.debug(rsync_cap)
+    rootLogger.debug(rsync_cap.stderr)
 
     if vivado_result != 0:
         on_build_failure()
@@ -183,9 +191,8 @@ def aws_create_afi(global_build_config, buildconfig):
     assert len(tag_buildtriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for buildtriplet"
     assert len(tag_deploytriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploytriplet"
 
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
-        hash = local("git rev-parse HEAD", capture=True)
+    is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
+    hash = local("git rev-parse HEAD", capture=True)
     tag_fsimcommit = hash + is_dirty_str
 
     assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
@@ -197,7 +204,7 @@ def aws_create_afi(global_build_config, buildconfig):
     # append the build node IP + a random string to diff them in s3
     global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-    with lcd("""{}/results-build/{}/cl_firesim/build/checkpoints/to_aws/""".format(ddir, builddir)), StreamLogger('stdout'), StreamLogger('stderr'):
+    with lcd("""{}/results-build/{}/cl_firesim/build/checkpoints/to_aws/""".format(ddir, builddir)):
         files = local('ls *.tar', capture=True)
         rootLogger.debug(files)
         rootLogger.debug(files.stderr)
@@ -219,7 +226,7 @@ def aws_create_afi(global_build_config, buildconfig):
     rootLogger.info("Waiting for create-fpga-image completion.")
     results_build_dir = """{}/results-build/{}/""".format(ddir, builddir)
     checkstate = "pending"
-    with lcd(results_build_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+    with lcd(results_build_dir):
         while checkstate == "pending":
             imagestate = local("""aws ec2 describe-fpga-images --fpga-image-id {} | tee AGFI_INFO""".format(afi), capture=True)
             state_as_dict = json.loads(imagestate)
@@ -250,12 +257,11 @@ def aws_create_afi(global_build_config, buildconfig):
             outputfile.write(agfi_entry)
 
         if global_build_config.post_build_hook:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local("""{} {}""".format(global_build_config.post_build_hook,
-                                                    results_build_dir,
-                                                    capture=True))
-                rootLogger.debug("[localhost] " + str(localcap))
-                rootLogger.debug("[localhost] " + str(localcap.stderr))
+            localcap = local("""{} {}""".format(global_build_config.post_build_hook,
+                                                results_build_dir,
+                                                capture=True))
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         rootLogger.info("Build complete! AFI ready. See {}.".format(os.path.join(hwdb_entry_file_location,afiname)))
         return True
