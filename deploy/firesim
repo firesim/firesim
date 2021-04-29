@@ -117,10 +117,12 @@ def fabric_exception_test(globalbuildconf):
     globalbuildconf.wait_build_instances()
 
     # confirm that we can connect to the launched instances
-    execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
+    with StreamLogger('stdout'), StreamLogger('stderr'):
+        execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
 
     # run remote callable that will throw
-    execute(throw_something, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
+    with StreamLogger('stdout'), StreamLogger('stderr'):
+        execute(throw_something, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
 
 
 def buildafi(globalbuildconf):
