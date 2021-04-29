@@ -56,6 +56,12 @@ def replace_rtl(conf, buildconfig):
         run(buildconfig.make_recipe("f1"))
 
 @parallel
+def throw_something(global_build_config, bypass=False):
+    """Just throw an exception so that we can Q/A the Fabric logging"""
+    assert False
+
+
+@parallel
 def aws_build(global_build_config, bypass=False):
     """ Run Vivado, convert tar -> AGFI/AFI. Then terminate the instance at the end.
     conf = buildconfig dicitonary

@@ -104,6 +104,25 @@ def runworkload(runtime_conf):
     """ do runworkload. """
     runtime_conf.run_workload()
 
+def fabric_exception_test(globalbuildconf):
+    @parallel
+    def instance_liveness():
+        """ confirm that all instances are running first. """
+        rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run("uname -a")
+
+    globalbuildconf.launch_build_instances()
+    # confirm that build instances have finished booting
+    globalbuildconf.wait_build_instances()
+
+    # confirm that we can connect to the launched instances
+    execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
+
+    # run remote callable that will throw
+    execute(throw_something, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
+
+
 def buildafi(globalbuildconf):
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
@@ -217,6 +236,7 @@ def construct_firesim_argparser():
                             'runworkload',
                             'shareagfi',
                             'runcheck',
+                            'fabric_exception_test',
                             'tar2afi'
                             ])
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
@@ -274,7 +294,7 @@ def main(args):
     if args.task == 'managerinit':
         managerinit()
 
-    if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
+    if args.task in ['buildafi', 'shareagfi', 'tar2afi', 'fabric_exception_test']:
         buildconfig = GlobalBuildConfig(args)
         globals()[args.task](buildconfig)
 
