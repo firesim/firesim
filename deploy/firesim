@@ -104,37 +104,6 @@ def runworkload(runtime_conf):
     """ do runworkload. """
     runtime_conf.run_workload()
 
-def fabric_exception_test(globalbuildconf):
-    @parallel
-    def instance_liveness():
-        """ confirm that all instances are running first. """
-        rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-        run("uname -a")
-
-    globalbuildconf.launch_build_instances()
-    # confirm that build instances have finished booting
-    globalbuildconf.wait_build_instances()
-
-    # confirm that we can connect to the launched instances
-    execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
-
-    # run remote callable that will throw
-    try:
-        execute(throw_something, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
-    except:
-        rootLogger.error("Caught exception from 'throw_something'", exc_info=True)
-
-    # run remote callable that calls fabric.run() with something that exits non-zero
-    try:
-        execute(run_something_that_exits_nonzero, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
-    except:
-        rootLogger.error("Caught exception from 'run_something_that_exits_nonzero'", exc_info=True)
-
-    # use aws_build in testing mode to do a teardown of the build host
-    execute(aws_build, globalbuildconf, bypass=True, hosts=globalbuildconf.get_build_instance_ips())
-
-
-
 def buildafi(globalbuildconf):
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
@@ -248,7 +217,6 @@ def construct_firesim_argparser():
                             'runworkload',
                             'shareagfi',
                             'runcheck',
-                            'fabric_exception_test',
                             'tar2afi'
                             ])
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
@@ -308,7 +276,7 @@ def main(args):
     if args.task == 'managerinit':
         managerinit()
 
-    if args.task in ['buildafi', 'shareagfi', 'tar2afi', 'fabric_exception_test']:
+    if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
         buildconfig = GlobalBuildConfig(args)
         globals()[args.task](buildconfig)
 

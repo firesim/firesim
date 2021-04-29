@@ -50,27 +50,6 @@ def replace_rtl(conf, buildconfig):
          prefix('cd sim/'):
         run(buildconfig.make_recipe("f1"))
 
-@parallel
-def throw_something(global_build_config, bypass=False):
-    """Print various things and then throw an exception so that we can Q/A the Fabric logging"""
-    print("Python print to stdout should only be in log")
-    with InfoStreamLogger('stdout'):
-        print("However, Python prints can wrapped in an InfoStream context to go to console and log")
-
-    import sys
-    print("Python print to stderr should go to both console and log", file=sys.stderr)
-
-
-    run("echo fabric command stdout should go only to log")
-    run("echo fabric command stderr should go to both 1>&2")
-
-
-    assert False
-
-@parallel
-def run_something_that_exits_nonzero(global_build_config, bypass=False):
-    run("exit 1")
-
 
 @parallel
 def aws_build(global_build_config, bypass=False):
