@@ -358,42 +358,63 @@ def get_snsname_arn():
         )
     except client.exceptions.ClientError as err:
         if 'AuthorizationError' in repr(err): 
-            rootLogger.critical("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
-
+            rootLogger.warning("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
         else:
-            rootLogger.critical("Unknown exception is encountered while trying to perform \"Topic Creation\"")
-
-        rootLogger.critical(err)
-        assert False
+            rootLogger.warning("Unknown exception is encountered while trying to perform \"Topic Creation\"")
+        rootLogger.warning(err)
+        return None
         
     return response['TopicArn']
 
 def subscribe_to_firesim_topic(email):
     """ Subscribe a user to their FireSim SNS topic for notifications. """
 
+    client = boto3.client('sns')
     arn = get_snsname_arn()
-    response = client.subscribe(
-        TopicArn=arn,
-        Protocol='email',
-        Endpoint=email
-    )
-
-    message = """You should receive a message at
-{}
+    if not arn: 
+        return None
+    try:
+        response = client.subscribe(
+            TopicArn=arn,
+            Protocol='email',
+            Endpoint=email
+        )
+        message = """You should receive a message at {}
 asking to confirm your subscription to FireSim SNS Notifications. You will not
 receive any notifications until you click the confirmation link.""".format(email)
 
-    rootLogger.info(message)
+        rootLogger.info(message)
+    except client.exceptions.ClientError as err:
+        if 'AuthorizationError' in repr(err): 
+            rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
+        else:
+            rootLogger.warning("Unknown exception is encountered while trying subscribe notifications")
+        rootLogger.warning(err)
+    rootLogger.info("Proceeding..")
+
 
 def send_firesim_notification(subject, body):
 
+    client = boto3.client('sns')
     arn = get_snsname_arn()
 
-    response = client.publish(
-        TopicArn=arn,
-        Message=body,
-        Subject=subject
-    )
+    if not arn: 
+        return None
+
+    try:
+        response = client.publish(
+            TopicArn=arn,
+            Message=body,
+            Subject=subject
+        )
+    except client.exceptions.ClientError as err:
+        if 'AuthorizationError' in repr(err): 
+            rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
+        else:
+            rootLogger.warning("Unknown exception is encountered while trying publish notifications")
+        rootLogger.warning(err)
+    rootLogger.info("Proceeding..")
+
 
 if __name__ == '__main__':
     #""" Example usage """
