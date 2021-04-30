@@ -390,7 +390,6 @@ receive any notifications until you click the confirmation link.""".format(email
         else:
             rootLogger.warning("Unknown exception is encountered while trying subscribe notifications")
         rootLogger.warning(err)
-    rootLogger.info("Proceeding..")
 
 
 def send_firesim_notification(subject, body):
@@ -409,11 +408,10 @@ def send_firesim_notification(subject, body):
         )
     except client.exceptions.ClientError as err:
         if 'AuthorizationError' in repr(err): 
-            rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
+            rootLogger.warning("You don't have permissions to publish to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
-    rootLogger.info("Proceeding..")
 
 
 if __name__ == '__main__':
