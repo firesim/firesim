@@ -40,7 +40,7 @@ def sim_local(cmdline, capture=False):
 def get_sim_makevar(buildconfig, varname):
     """ Dump make database for buildconfig returning value for varname assignment """
     cmdline = "{} | grep -E '^{} :?= '".format(
-        buildconfig.make_recipe('--dry-run --print-data-base'),
+        buildconfig.make_recipe('echo ECHOVAR="{}"'.format(varname)),
         varname
     )
 

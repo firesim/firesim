@@ -115,6 +115,23 @@ test:
 testOnly:
 	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); testOnly $(SCALA_TEST)"
 
+# Phony target for introspecting the final value of a make variable
+# see deploy/buildtools/buildafi.get_sim_makevar for a usage
+.PHONY: echo
+echo:
+ifndef ECHOVAR
+	@echo You must define ECHOVAR=varname for the var you want to print 1>&2
+	@exit 1
+else
+    ifdef $(ECHOVAR)
+	@echo $(ECHOVAR) = $($(ECHOVAR))
+    else
+	@echo Make variable $(ECHOVAR) is not defined 1>&2
+	@exit 1
+    endif
+endif
+
+
 # All target-agnostic firesim recipes are defined here
 include target-agnostic.mk
 
