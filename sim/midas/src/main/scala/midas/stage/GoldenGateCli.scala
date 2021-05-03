@@ -12,7 +12,6 @@ trait GoldenGateCli { this: Shell =>
       firrtl.stage.OutputFileAnnotation,
       firrtl.stage.FirrtlSourceAnnotation,
       firrtl.transforms.NoCircuitDedupAnnotation,
-      midas.passes.NoCircuitDedupClassicAnnotation,
       firrtl.EmitCircuitAnnotation)
     .map(_.addOptions(parser))
 }
