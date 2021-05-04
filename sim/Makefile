@@ -65,8 +65,6 @@ SBT ?= java $(JAVA_OPTS) -jar $(rocketchip_dir)/sbt-launch.jar $(SBT_OPTS) $(SBT
 define run_scala_main
 	cd $(base_dir) && $(SBT) ";project $(1); runMain $(2) $(3)"
 endef
-# recipes for generator and gg using sbt are calls out to FAT_JAR instead of SBT
-run_main = cd $(base_dir) && java $(JAVA_ARGS) -cp $(FAT_JAR) $(2) $(3)
 
 ##############################################################################
 # SBT Server Setup (start server / rebuild proj. defs. if SBT_SOURCES change)
@@ -94,6 +92,15 @@ sim_dir := $(firesim_base_dir)
 chipyard_dir := $(base_dir)
 include $(base_dir)/variables.mk
 include $(base_dir)/common.mk
+endif
+
+ifdef ENABLE_SBT_THIN_CLIENT
+    # when asking to use SBT_THIN_CLIENT (typically for faster turnaround on scala tests)
+    # continue to use SBT for main class invocations of the generator and goldengate
+    run_main = run_scala_main
+else
+    # recipes for generator and gg using sbt are calls out to FAT_JAR instead of SBT
+    run_main = cd $(base_dir) && java $(JAVA_OPTS) -cp $(FAT_JAR) $(2) $(3)
 endif
 
 # Include target-specific sources and input generation recipes

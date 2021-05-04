@@ -89,7 +89,7 @@ conf: $(fame_annos) $(FAT_JAR)
 	mkdir -p $(GENERATED_DIR)
 	# Runtime configuration generator must run under SBT currently; When
 	# launched via bloop some Console input and output is lost.
-	cd $(base_dir) && java $(JAVA_ARGS) -cp $(FAT_JAR) midas.stage.RuntimeConfigGeneratorMain \
+	cd $(base_dir) && java $(JAVA_OPTS) -cp $(FAT_JAR) midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
@@ -245,8 +245,13 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(name_tuple)
 #  that look like "make: Nothing to be done for `replace-rtl'."
 .PHONY: gen-replace-rtl-script
 gen-replace-rtl-script: $(PRE_ELABORATION_TARGETS) | $(GENERATED_DIR)
+ifdef ENABLE_SBT_THIN_CLIENT
+	@echo "Use of ENABLE_SBT_THIN_CLIENT is inconsistent with the purpose of 'gen-replace-rtl-script'. Aborting."
+	@exit 1
+else
 	$(MAKE) replace-rtl -n  --no-print-directory $(addprefix --assume-new=, $(PRE_ELABORATION_TARGETS)) > $(GENERATED_DIR)/replace-rtl.sh
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(GENERATED_DIR)/repo_state
+endif
 
 
 #############################
