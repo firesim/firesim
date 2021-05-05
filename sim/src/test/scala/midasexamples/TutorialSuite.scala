@@ -305,6 +305,7 @@ class CIGroupA extends Suites(
   new ChiselExampleDesigns,
   new PrintfSynthesisCITests,
   new firesim.fasedtests.CIGroupA,
+  new AutoCounterCITests
 )
 
 class CIGroupB extends Suites(
