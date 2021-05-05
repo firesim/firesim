@@ -54,6 +54,38 @@ PRE_ELABORATION_TARGETS += $(BOOTROM_TARGETS)
 # Don't search for implicit rules to build the scala sources or bootrom sources (reduces useless output in --debug)
 $(SCALA_SOURCES) $(addprefix $(CHIPYARD_ROMDIR)/, $(BOOTROM_FILES)): ;
 
+GEN_CLASSPATH_ORDERONLY_DEPS ?=
+
+ifndef GEN_CLASSPATH
+  GEN_CLASSPATH = $(firesim_base_dir)/generated-src/firechip.jar
+  jardir = $(dir $(GEN_CLASSPATH))
+  GEN_CLASSPATH_ORDERONLY_DEPS += $(jardir)
+
+  $(jardir):
+	mkdir -p $(@D)
+
+endif
+GEN_CLASSPATH_DEPS ?= $(chisel_srcs) $(SCALA_BUILDTOOL_DEPS)
+
+# if GEN_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
+GEN_CLASSPATH_TARGETS ?= $(subst :, ,$(GEN_CLASSPATH))
+
+ifndef ENABLE_SBT_THIN_CLIENT
+  PRE_ELABORATION_TARGETS += $(GEN_CLASSPATH_TARGETS)
+endif
+
+GEN_CLASSPATH_RECIPE ?= cd $(base_dir) && $(SBT) "project $(firesim_sbt_project); set assemblyOutputPath in assembly := file(\"$(GEN_CLASSPATH)\"); assembly"
+
+
+# empty recipe to help make understand multiple targets come from single invocation
+# without using the new (4.3) '&:' grouped targets
+# see https://stackoverflow.com/a/41710495
+$(GEN_CLASSPATH_TARGETS):  classpath.intermediate ;
+
+.SECONDARY: classpath.intermediate
+classpath.intermediate:  $(GEN_CLASSPATH_DEPS) | $(GEN_CLASSPATH_ORDERONLY_DEPS)
+	$(GEN_CLASSPATH_RECIPE)
+
 GENERATOR_NAME ?= chipyard.Generator
 GENERATOR_ARGS ?= \
 		--target-dir $(GENERATED_DIR) \
@@ -61,18 +93,7 @@ GENERATOR_ARGS ?= \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
 		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG)
 
-FAT_JAR ?= $(firesim_base_dir)/generated-src/firechip.jar
-FAT_JAR_DEPS ?= $(SCALA_SOURCES) $(SCALA_BUILDTOOL_DEPS)
-FAT_JAR_RECIPE ?= cd $(base_dir) && $(SBT) "project $(firesim_sbt_project); set assemblyOutputPath in assembly := file(\"$(FAT_JAR)\"); assembly"
 
-fat_jar_dir := $(dir $(FAT_JAR))
-$(fat_jar_dir):
-	mkdir -p $@
-
-$(FAT_JAR):  $(FAT_JAR_DEPS) | $(fat_jar_dir)
-	$(FAT_JAR_RECIPE)
-
-PRE_ELABORATION_TARGETS += $(FAT_JAR)
 
 # empty recipe to help make understand multiple targets come from single invocation
 # without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
@@ -81,7 +102,6 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(FIRRTL_FILE).intermediate ;
 .SECONDARY: $(FIRRTL_FILE).intermediate
 $(FIRRTL_FILE).intermediate: $(SCALA_SOURCES) $(PRE_ELABORATION_TARGETS) | $(GENERATED_DIR)
 	$(call run_main,$(firesim_sbt_project),$(GENERATOR_NAME),$(GENERATOR_ARGS))
-
 
 # DOC include start: Bridge Build System Changes
 ##########################

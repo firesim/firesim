@@ -1,8 +1,10 @@
 # See LICENSE for license details.
 
 # FireSim MAKEFRAG interface - Compulsory variables follow
-# The FAT JAR created using sbt assembly
-FAT_JAR ?=
+# The Generator CLASSPATH used in java invocation to run generator and goldengate. Can be:
+#  - FAT JAR created using sbt assembly
+#  - An actual Java classpath created some other way
+GEN_CLASSPATH ?=
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
 GENERATED_DIR ?=
@@ -85,11 +87,9 @@ $(VERILOG).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(PRE_ELABORATION_TARGETS)
 # to generate a runtime configuration that is compatible with the generated
 # hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
 .PHONY: conf
-conf: $(fame_annos) $(FAT_JAR)
+conf: $(fame_annos) $(GEN_CLASSPATH)
 	mkdir -p $(GENERATED_DIR)
-	# Runtime configuration generator must run under SBT currently; When
-	# launched via bloop some Console input and output is lost.
-	cd $(base_dir) && java $(JAVA_OPTS) -cp $(FAT_JAR) midas.stage.RuntimeConfigGeneratorMain \
+	cd $(base_dir) && java $(JAVA_OPTS) -cp $(GEN_CLASSPATH) midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
@@ -234,13 +234,13 @@ fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(name_tuple)
 
 # Generate a script that can be run remotely on a build host by manager assuming only the following
 # are copied (recursively with Fabric's rsync_project) to the build-host:
-# - $(FAT_JAR)
+# - $(GEN_CLASSPATH)
 # - $(GENERATED_DIR)
 # - $(board_dir)/cl_firesim
 # The script will be run with 'bash -xe' to approximate the behavior of make shell execution
 #  --no-print-directory avoids some info print statements that aren't actual commands
-#  --assume-new=$(FAT_JAR) ensures that the script consistently generates the commands for
-#  $(FAT_JAR) -> replace-rtl, regardless of whether they need to be done.  This is done so that
+#  --assume-new=$(PRE_ELABORATION_TARGETS) ensures that the script consistently generates the commands for
+#  $(PRE_ELABORATION_TARGETS) -> replace-rtl, regardless of whether they need to be done.  This is done so that
 #  replace-rtl.sh should always be legit commands and we don't have to handle shortcuts for output
 #  that look like "make: Nothing to be done for `replace-rtl'."
 .PHONY: gen-replace-rtl-script

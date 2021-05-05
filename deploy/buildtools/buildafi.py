@@ -70,12 +70,12 @@ def replace_rtl_local(conf, buildconfig):
     build_driver(conf, buildconfig)
 
 def gen_replace_rtl_script(conf, buildconfig):
-    """ Run SBT assembly to create FAT jar to send to build hosts along with config-specific shell-script
-        to execute the FAT jar
+    """ Generate config-specific replace-rtl.sh script and any prerequisites to send to build hosts
+        for running Chisel->Verilog generation and population of cl_firesim template in aws-fpga hdk
 
     THIS ALWAYS RUNS LOCALLY"""
 
-    rootLogger.info("Generating FAT jar and replace-rtl.sh for " + str(buildconfig.get_chisel_triplet()))
+    rootLogger.info("Generating replace-rtl.sh for " + str(buildconfig.get_chisel_triplet()))
     sim_local(buildconfig.make_recipe("--quiet gen-replace-rtl-script"))
 
 def build_driver(conf, buildconfig):
@@ -124,14 +124,13 @@ def aws_build(global_build_config, bypass=False):
     fpgabuilddir = "hdk/cl/developer_designs/cl_" + buildconfig.get_chisel_triplet()
     fpgatemplatedir = 'hdk/cl/developer_designs/cl_firesim'
     generated_dir = get_sim_makevar(buildconfig, 'GENERATED_DIR')
-    fat_jar = get_sim_makevar(buildconfig, 'FAT_JAR')
+    gen_classpath = get_sim_makevar(buildconfig, 'GEN_CLASSPATH')
 
     # first, copy aws-fpga to the build instance. it will live in
     # the same path on the build host as on the manager
     with StreamLogger('stdout'), StreamLogger('stderr'):
         run('mkdir -p ' + ddir)
         run('mkdir -p ' + generated_dir)
-        run('mkdir -p ' + dirname(fat_jar))
         run('mkdir -p ' + aws_fpga_root)
         run('mkdir -p ' + pjoin(aws_fpga_root, fpgatemplatedir))
         run('mkdir -p ' + pjoin(aws_fpga_root, fpgabuilddir))
@@ -164,18 +163,21 @@ def aws_build(global_build_config, bypass=False):
                           extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
-            # sync the fat jar
-            rsync_cap = rsync_project(local_dir=fat_jar,
-                          remote_dir=fat_jar,
-                          ssh_opts="-o StrictHostKeyChecking=no",
-                          extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
+            # sync all components of the generator classpath
+            # classpath members are directories or archives
+            for e in gen_classpath.split(":"):
+                run('mkdir -p ' + dirname(e))
+                rsync_cap = rsync_project(local_dir=e,
+                              remote_dir=e,
+                              ssh_opts="-o StrictHostKeyChecking=no",
+                              extra_opts="-l", capture=True)
+                rootLogger.debug(rsync_cap)
+                rootLogger.debug(rsync_cap.stderr)
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # install java and dtc on the build host
             sudo('yum install -y java dtc')
             # run the replace-rtl.sh script
-            rootLogger.info("Running process to build verilog from FAT jar.")
+            rootLogger.info("Running Verilog generation via: " + pjoin(generated_dir,'replace-rtl.sh'))
             run('bash -xe ' + pjoin(generated_dir,'replace-rtl.sh'))
         with StreamLogger('stdout'), StreamLogger('stderr'):
             # rsync generated_dir back to manager

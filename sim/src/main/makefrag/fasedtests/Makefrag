@@ -15,9 +15,9 @@ TARGET_CONFIG ?= DefaultConfig
 PLATFORM_CONFIG_PACKAGE ?= firesim.fasedtests
 PLATFORM_CONFIG ?= DefaultF1Config
 
-name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
-GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
-OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
+name_tuple    ?= $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+GENERATED_DIR ?= $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    ?= $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
 ##################
 # RTL Generation #
@@ -31,10 +31,6 @@ HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 CONF_NAME ?= runtime.conf
 firesim_sbt_project := {file:${firesim_base_dir}/}firesim
-FAT_JAR := $(firesim_base_dir)/generated-src/firesim.jar
-PRE_ELABORATION_TARGETS += $(FAT_JAR)
-
-
 
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
@@ -43,12 +39,40 @@ chisel_src_dirs = \
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
-# don't search for implicit rules to make the chisel_srcs (reduces useless output in --debug=i)
+# don't search for implicit rules to make the chisel_srcs (reduces useless output in make --debug)
 $(chisel_srcs): ;
 
-$(FAT_JAR): $(chisel_srcs) $(SCALA_BUILDTOOL_DEPS)
+GEN_CLASSPATH_ORDERONLY_DEPS ?=
+
+ifndef GEN_CLASSPATH
+  GEN_CLASSPATH = $(firesim_base_dir)/generated-src/firesim.jar
+  jardir = $(dir $(GEN_CLASSPATH))
+  GEN_CLASSPATH_ORDERONLY_DEPS += $(jardir)
+
+  $(jardir):
 	mkdir -p $(@D)
-	$(SBT) "project $(firesim_sbt_project)" 'set assemblyOutputPath in assembly := file("$(FAT_JAR)")' assembly
+
+endif
+GEN_CLASSPATH_DEPS ?= $(chisel_srcs) $(SCALA_BUILDTOOL_DEPS)
+
+# if GEN_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
+GEN_CLASSPATH_TARGETS ?= $(subst :, ,$(GEN_CLASSPATH))
+
+ifndef ENABLE_SBT_THIN_CLIENT
+  PRE_ELABORATION_TARGETS += $(GEN_CLASSPATH_TARGETS)
+endif
+
+GEN_CLASSPATH_RECIPE ?= cd $(base_dir) && $(SBT) "project $(firesim_sbt_project); set assemblyOutputPath in assembly := file(\"$(GEN_CLASSPATH)\"); assembly"
+
+
+# empty recipe to help make understand multiple targets come from single invocation
+# without using the new (4.3) '&:' grouped targets
+# see https://stackoverflow.com/a/41710495
+$(GEN_CLASSPATH_TARGETS):  classpath.intermediate ;
+
+.SECONDARY: classpath.intermediate
+classpath.intermediate:  $(GEN_CLASSPATH_DEPS) | $(GEN_CLASSPATH_ORDERONLY_DEPS)
+	$(GEN_CLASSPATH_RECIPE)
 
 # empty recipe to help make understand multiple targets come from single invocation
 # without using the new (4.3) '&:' grouped targets

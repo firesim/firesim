@@ -29,8 +29,7 @@ TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJEC
 PLATFORM ?= f1
 
 # If TARGET_PROJECT_MAKEFRAG requires additional PROJECT-specific artifacts in GENERATED_DIR before
-# Chisel->FIRRTL->Verilog is run, register them as prereqs of the pre-elaboration target.  
-# See src/main/makefrag/firesim/Makefrag's BOOTROM_TARGETS for an example
+# Chisel->FIRRTL->Verilog is run, add them to PRE_ELABORATION_TARGETS to register them as prereqs
 PRE_ELABORATION_TARGETS =
 
 ifdef FIRESIM_STANDALONE
@@ -99,8 +98,8 @@ ifdef ENABLE_SBT_THIN_CLIENT
     # continue to use SBT for main class invocations of the generator and goldengate
     run_main = run_scala_main
 else
-    # recipes for generator and gg using sbt are calls out to FAT_JAR instead of SBT
-    run_main = cd $(base_dir) && java $(JAVA_OPTS) -cp $(FAT_JAR) $(2) $(3)
+    # recipes for generator and gg are now java invocations using GEN_CLASSPATH instead of SBT
+    run_main = cd $(base_dir) && java $(JAVA_OPTS) -cp $(GEN_CLASSPATH) $(2) $(3)
 endif
 
 # Include target-specific sources and input generation recipes
