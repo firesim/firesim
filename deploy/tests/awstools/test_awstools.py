@@ -67,8 +67,9 @@ class TestSNS(object):
         # since firesim manager code doesn't take clients as method parameters
         # now we mock boto3.client to return our stubbed client
         with patch.object(boto3._get_default_session(), 'client', return_value=client) as mock_session:
-            with pytest.raises(AssertionError):
-                get_snsname_arn()
+            get_snsname_arn()
+
+            stub.assert_no_pending_responses()
 
             # TODO we could mock rootLogger.critical to capture it's calls and args and validate that we're seeing the correct "nice" message
 
