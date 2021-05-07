@@ -40,6 +40,14 @@ commands:
             source env.sh
             make -C sim scaladoc
 
+  run-manager-pytest:
+    description: "Runs all manager pytests"
+    steps:
+      - run:
+          command: |
+            source env.sh
+            cd deploy && python -m pytest
+
   push-scaladoc-to-ghpages:
     description: "Pushes scaladoc to ghphage branch"
     steps:
@@ -119,6 +127,7 @@ jobs:
       - run-scala-test:
           test-name: "CIGroupA"
       - build-scala-doc
+      - run-manager-pytest
 
   run-test-groupB:
     executor: main-env
