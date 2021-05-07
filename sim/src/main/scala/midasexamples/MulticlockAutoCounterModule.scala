@@ -21,14 +21,14 @@ class MulticlockAutoCounterModule(implicit p: Parameters) extends RawModule {
   val instPath = "MulticlockAutoCounterModule_AutoCounterModuleDUT"
   withClockAndReset(refClock, reset) {
     val lfsr = chisel3.util.random.LFSR(16)
-    val fullRateMod = Module(new AutoCounterModuleDUT(instPath = instPath))
+    val fullRateMod = Module(new AutoCounterModuleDUT(instName = "secondRate"))
     fullRateMod.io.a := lfsr(0)
     val peekPokeBridge = PeekPokeBridge(refClock, reset)
   }
   withClockAndReset(div2Clock, resetHalfRate) {
     val lfsr = chisel3.util.random.LFSR(16)
     val fullRateMod = Module(new AutoCounterModuleDUT("AUTOCOUNTER_PRINT_THIRDRATE ",
-                                                      instPath = instPath + "_1",
+                                                      instName = "thirdRate",
                                                       clockDivision = 3))
     fullRateMod.io.a := lfsr(0)
   }
