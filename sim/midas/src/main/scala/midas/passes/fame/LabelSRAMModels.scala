@@ -13,10 +13,6 @@ class LabelSRAMModels extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
 
-  val confwriter = new passes.memlib.ConfWriter("NONE")
-  val memutil = new passes.memlib.ReplaceMemMacros(confwriter)
-
-
   // Wrapper gets converted to strip clocks from ports, has one top-level clock
   def mem2Module(mem: DefMemory): Module = {
     val clockPort = Port(NoInfo, "clk", Input, ClockType)
