@@ -11,11 +11,14 @@ import freechips.rocketchip.util.property._
 
 class AutoCounterModuleDUT(
   printfPrefix: String = "AUTOCOUNTER_PRINT ",
-  instPath: String = "AutoCounterModule_AutoCounterModuleDUT",
+  instName: String = "dut",
   clockDivision: Int = 1) extends Module {
   val io = IO(new Bundle {
     val a = Input(Bool())
   })
+
+  val instPath = s"${parentPathName}_${instName}"
+  suggestName(instName)
 
   val enabled_cycles = RegInit(0.U(16.W))
 
@@ -87,6 +90,10 @@ class AutoCounterCoverModuleDUT extends Module {
   val io = IO(new Bundle {
     val a = Input(Bool())
   })
+  val instName = "dut"
+  val instPath = s"${parentPathName}_${instName}"
+  suggestName(instName)
+
 
   val cycle = RegInit(0.U(12.W))
   cycle := cycle + 1.U
@@ -108,7 +115,7 @@ class AutoCounterCoverModuleDUT extends Module {
   when ((cycle_print >= (samplePeriod - 1).U) & (cycle_print % 1000.U === (samplePeriod - 1).U)) {
     printf("AUTOCOUNTER_PRINT Cycle %d\n", cycle_print)
     printf("AUTOCOUNTER_PRINT ============================\n")
-    printf("AUTOCOUNTER_PRINT PerfCounter CYCLES_DIV_8_AutoCounterCoverModule_AutoCounterCoverModuleDUT: %d\n", cycle8_printcount)
+    printf(s"AUTOCOUNTER_PRINT PerfCounter CYCLES_DIV_8_${instPath}: %d\n", cycle8_printcount)
     printf("AUTOCOUNTER_PRINT \n")
   }
 
