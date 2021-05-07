@@ -9,6 +9,17 @@ import chisel3.core.MultiIOModule
 import midas.targetutils.{PerfCounter, AutoCounterCoverModuleAnnotation}
 import freechips.rocketchip.util.property._
 
+/**
+  * Demonstrates how to instantiate autocounters, and validates those
+  * autocounter by comparing their output against a printf that should emit the
+  * same strings
+  *
+  * @param printfPrefix Used filter simulation output for validation lines
+  * @param instName The suggested name for this instance. Used in validation printf
+  * @param clockDivision Used to scale validation output, since autocounters in
+  *        slower domains will appear to be sampled less frequently (in terms of local
+  *        cycle count).
+  */
 class AutoCounterModuleDUT(
   printfPrefix: String = "AUTOCOUNTER_PRINT ",
   instName: String = "dut",
