@@ -22,7 +22,6 @@ def initialize_manager(max_runtime, filesystem_timeout):
     try:
         put(ci_workdir + "/scripts/machine-launch-script.sh", manager_home_dir)
         with cd(manager_home_dir):
-            put(ci_workdir + "/scripts/machine-launch-script.sh", ".")
             run("chmod +x machine-launch-script.sh")
             run("sudo ./machine-launch-script.sh")
             run("git clone https://github.com/firesim/firesim.git")
