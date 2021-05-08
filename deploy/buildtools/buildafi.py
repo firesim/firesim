@@ -157,7 +157,7 @@ def aws_create_afi(global_build_config, buildconfig):
     ## This is done on the local copy
 
     ddir = get_deploy_dir()
-    results_builddir = buildconfig.get_build_dir_name()
+    builddir = buildconfig.get_build_dir_name()
 
     afi = None
     agfi = None
@@ -251,7 +251,7 @@ def aws_create_afi(global_build_config, buildconfig):
                 rootLogger.debug("[localhost] " + str(localcap))
                 rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info("Build complete! AFI ready. See {}.".format(pjoin(hwdb_entry_file_location,afiname)))
+        rootLogger.info("Build complete! AFI ready. See {}.".format(os.path.join(hwdb_entry_file_location,afiname)))
         return True
     else:
         return
