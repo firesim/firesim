@@ -1,5 +1,7 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@1.0.0
 executors:
   main-env:
     docker:
@@ -8,6 +10,9 @@ executors:
     environment:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
+  aws:
+    docker:
+    - image: cimg/python:2.7-node
 
 commands:
   machinelaunchscript:
@@ -124,6 +129,7 @@ jobs:
     executor: main-env
     steps:
       - repo-setup
+      - aws-cli/setup
       - run-scala-test:
           test-name: "CIGroupA"
       - build-scala-doc
@@ -147,6 +153,14 @@ jobs:
       - repo-setup
       - build-scala-doc
       - push-scaladoc-to-ghpages
+
+  run-pytest:
+    executor: aws
+    steps:
+      - checkout
+      - aws-cli/setup
+      - machinelaunchscript
+      - run-manager-pytest
 
 workflows:
    version: 2
