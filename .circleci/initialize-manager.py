@@ -18,7 +18,7 @@ def initialize_manager(max_runtime, filesystem_timeout):
         So here we use FS activity as a proxy for doneness
     """
 
-    # Catch any exception that occurs so that we can gracefully teardown the local jjjjjjjjjjjjjjjjjjjjjjj
+    # Catch any exception that occurs so that we can gracefully teardown
     try:
         put(ci_workdir + "/scripts/machine-launch-script.sh", manager_home_dir)
         with cd(manager_home_dir):
