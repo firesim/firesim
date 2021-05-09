@@ -105,6 +105,7 @@ commands:
               .circleci/run-scala-test.py << parameters.target-project >> << parameters.test-package >>.<< parameters.test-name >>
           no_output_timeout: << parameters.timeout >>
 
+
   initialize-manager:
     description: "Setups the manager instance and firesim repo"
     parameters:
@@ -117,32 +118,72 @@ commands:
           command: |
               .circleci/initialize-manager.py  << parameters.max-runtime-seconds >> << parameters.filesystem-timeout-seconds >>
 
+  # This avoids a race that occurs when multiple cold scala compilations are launched at the same time.
+  initial-scala-compile:
+    description: "Initial Scala Compilation"
+    parameters:
+      timeout:
+        type: string
+        default: "30m"
+    steps:
+      - run:
+          command: |
+              .circleci/run-sbt-command.py firesim test:compile
+          no_output_timeout: << parameters.timeout >>
+
   repo-setup:
-    description: "Runs all baseline setup tasks up to scala compilation."
+    description: "Runs all baseline setup tasks up to scala compilation in the CI container."
     steps:
       - checkout
       - machinelaunchscript
       - buildsetup
       - scala-build
 
-jobs:
-  run-test-groupA:
-    executor: aws
+  repo-setup-aws:
+    description: "Runs all baseline setup to interact with a AWS-hosted manager instance"
     steps:
       - checkout
       - aws-cli/setup
       - install-fabric
+
+jobs:
+  setup-default-manager:
+      executor: aws
+      environment:
+          TERM: xterm-256color
+      steps:
+          - repo-setup-aws
+          - run:
+              name: Initialize FireSim manager
+              command: |
+                  .circleci/launch-manager-instance.py
+          - initialize-manager:
+              max-runtime-seconds: 10800
+              filesystem-timeout-seconds: 1800
+          - initial-scala-compile
+
+  run-test-groupA:
+    executor: aws
+    steps:
+      - repo-setup-aws
       - run-scala-test:
           test-name: "CIGroupA"
 
   run-test-groupB:
     executor: aws
     steps:
-      - checkout
-      - aws-cli/setup
-      - install-fabric
+      - repo-setup-aws
       - run-scala-test:
           test-name: "CIGroupB"
+
+  run-chipyard-tests:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run-scala-test:
+          target-project: "firesim"
+          test-package: "firesim.firesim"
+          test-name: "CITests"
 
   publish-scala-doc:
     executor: main-env
@@ -151,21 +192,6 @@ jobs:
       - build-scala-doc
       - push-scaladoc-to-ghpages
 
-  setup-default-manager:
-      executor: aws
-      environment:
-          TERM: xterm-256color
-      steps:
-          - checkout
-          - aws-cli/setup
-          - install-fabric
-          - run:
-              name: Initialize FireSim manager
-              command: |
-                  .circleci/launch-manager-instance.py
-          - initialize-manager:
-              max-runtime-seconds: 3600
-              filesystem-timeout-seconds: 600
 
 workflows:
    version: 2
@@ -182,6 +208,11 @@ workflows:
           requires:
           - setup-default-manager
 
+      - run-chipyard-tests:
+          requires:
+          - setup-default-manager
+
+      # This uses a CI container, not a manager instance
       - publish-scala-doc:
           filters:
             branches:

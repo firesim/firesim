@@ -2,12 +2,18 @@
 
 import sys
 
-from fabric.api import execute
+from fabric.api import *
 
-from common import *
-from ci_variables import *
+from common import manager_fsim_dir
+from ci_variables import manager_hostname
 
 def run_scala_test(target_project, test_name):
+    """ Runs a scala test under the desired target project
+
+    target_project -- The make variable to select the desired target project makefrag
+
+    test_name -- the full classname of the test
+    """
     with cd(manager_fsim_dir), prefix('source env.sh'):
         run("make -C sim testOnly TARGET_PROJECT={} SCALA_TEST={}".format(target_project, test_name))
 
