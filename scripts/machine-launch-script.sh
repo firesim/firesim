@@ -72,6 +72,9 @@ sudo pip2 install moto==1.3.1
 
 sudo activate-global-python-argcomplete
 
+# Upgrading pip2 clobbers the pip3 installation paths.
+sudo yum reinstall -y python36-pip
+
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 
 # get a regular prompt
