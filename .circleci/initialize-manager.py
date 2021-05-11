@@ -41,6 +41,7 @@ def initialize_manager(max_runtime):
             # Instances will be stopped and cleaned up in a nighlty job.
             run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id))
             # TODO: python script to poll for workflow state.
+            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token))
 
     except BaseException as e:
         print(e)
