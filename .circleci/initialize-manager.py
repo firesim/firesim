@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-from fabric.api import execute
+from fabric.api import *
 
 from common import *
 # This is expected to be launch from the ci container
 from ci_variables import *
 
-def initialize_manager(max_runtime, filesystem_timeout):
+def initialize_manager(max_runtime):
     """ Preforms the prerequisite tasks for all CI jobs that will run on the manager instance
 
     max_runtime (seconds): The maximum uptime this manager should have be for it is terminated
@@ -37,15 +37,16 @@ def initialize_manager(max_runtime, filesystem_timeout):
                 os.environ["AWS_DEFAULT_REGION"]))
 
         with cd(manager_ci_dir):
-            # Set up a pair of crude checks to powerdown the instance
-            # The sleep 1 is required for the screen command to not be DOA
-            run("screen -d -m ./manager-watchdog.sh {} {} {}; sleep 1".format(max_runtime, filesystem_timeout, ci_workflow_id))
+            # Put a baseline time-to-live bound on the manager.
+            # Instances will be stopped and cleaned up in a nighlty job.
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id))
+            # TODO: python script to poll for workflow state.
+
     except BaseException as e:
         print(e)
-        local("{}/.circleci/terminate-workflow-instances.py {}".format(ci_workdir, ci_workflow_id))
+        terminate_workflow_instances(ci_workflow_id)
         sys.exit(1)
 
 if __name__ == "__main__":
     max_runtime = sys.argv[1]
-    filesystem_timeout = sys.argv[2]
-    execute(initialize_manager, max_runtime, filesystem_timeout, hosts = [manager_hostname()])
+    execute(initialize_manager, max_runtime, hosts=[manager_hostname(ci_workflow_id)])
