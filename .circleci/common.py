@@ -116,6 +116,16 @@ def change_workflow_instance_states(tag_value, state_change, dryrun=False):
     elif state_change == 'start':
         print("Starting instances: {}".format(", ".join(instance_ids)))
         client.start_instances(InstanceIds=instance_ids, DryRun=dryrun)
+
+        # If we have a manager (typical), wait for it to come up and report its IP address
+        if manager_instance is not None:
+            print("Waiting on manager instance.")
+            manager_id = manager_instance['InstanceId']
+            wait_on_instance(manager_id)
+            print("Manager ready.")
+            # Re-query the instance to get an updated IP address
+            print(instance_metadata_str(get_manager_instance(tag_value)))
+
     elif state_change == 'terminate':
         print("Terminating instances: {}".format(", ".join(instance_ids)))
         client.terminate_instances(InstanceIds=instance_ids, DryRun=dryrun)
