@@ -41,9 +41,9 @@ def initialize_manager(max_runtime):
         with cd(manager_ci_dir):
             # Put a baseline time-to-live bound on the manager.
             # Instances will be stopped and cleaned up in a nighlty job.
-            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id))
-            # TODO: python script to poll for workflow state.
-            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token))
+            # Hack: The final sleep 1 ensures the screen comes up.
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'; sleep 1".format(max_runtime, ci_workflow_id))
+            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}; sleep 1".format(ci_workflow_id, ci_api_token))
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
