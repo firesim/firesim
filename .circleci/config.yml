@@ -27,8 +27,7 @@ commands:
     steps:
       - run:
           command: |
-            pip install fabric==1.14.0
-            pip install boto3==1.6.2
+            pip install -r .circleci/requirements.txt
 
   buildsetup:
     description: "Run firesim's build-setup.sh"
