@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import traceback
+
 from fabric.api import *
 
 from common import *
@@ -44,7 +46,7 @@ def initialize_manager(max_runtime):
             run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token))
 
     except BaseException as e:
-        print(e)
+        traceback.print_exc(file=sys.stdout)
         terminate_workflow_instances(ci_workflow_id)
         sys.exit(1)
 

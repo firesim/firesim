@@ -189,33 +189,51 @@ jobs:
       - build-scala-doc
       - push-scaladoc-to-ghpages
 
+  cull-old-ci-instances:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          name: Cull Old CI AWS Instances
+          command: |
+              .circleci/cull-old-ci-instances.py
 
 workflows:
-   version: 2
+  version: 2
 
-   firesimCIall:
-     jobs:
-      - setup-default-manager
+  firesimCIall:
+    jobs:
+     - setup-default-manager
 
-      - run-test-groupA:
-          requires:
-          - setup-default-manager
+     - run-test-groupA:
+         requires:
+         - setup-default-manager
 
-      - run-test-groupB:
-          requires:
-          - setup-default-manager
+     - run-test-groupB:
+         requires:
+         - setup-default-manager
 
-      - run-chipyard-tests:
-          requires:
-          - setup-default-manager
+     - run-chipyard-tests:
+         requires:
+         - setup-default-manager
 
-      # This uses a CI container, not a manager instance
-      - publish-scala-doc:
+     # This uses a CI container, not a manager instance
+     - publish-scala-doc:
+         filters:
+           branches:
+             only:
+               - dev
+           tags:
+             only:
+               - /[0-9]*\.[0-9]*\.[0-9]*/
+
+  cull-old-ci-instances:
+    triggers:
+      - schedule:
+          cron: "0 0,12 * * *"
           filters:
             branches:
-              only:
-                - dev
-            tags:
-              only:
-                - /[0-9]*\.[0-9]*\.[0-9]*/
+              only: "/.*/"
+    jobs:
+      - cull-old-ci-instances
 
