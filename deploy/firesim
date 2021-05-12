@@ -119,6 +119,9 @@ def buildafi(globalbuildconf):
 
     auto_create_bucket(globalbuildconf.s3_bucketname)
 
+    #check to see email notifications can be subscribed
+    get_snsname_arn()
+
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")

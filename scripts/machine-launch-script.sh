@@ -63,6 +63,11 @@ sudo pip2 install matplotlib==2.2.2
 sudo pip2 install pandas==0.22.0
 # new awscli on 1.6.0 AMI is broken with our versions of boto3
 sudo pip2 install awscli==1.15.76
+# pip2 should install pytest 4.6.X as it's the last py2 release. see:
+# https://pytest.org/en/latest/py27-py34-deprecation.html#what-this-means-for-general-users
+sudo pip2 install pytest
+# moto 1.3.1 is newest version that will work with boto3 1.6.2
+sudo pip2 install moto==1.3.1
 
 sudo activate-global-python-argcomplete
 
