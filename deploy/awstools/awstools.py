@@ -44,22 +44,17 @@ def aws_resource_names():
         'runfarmprefix':     None,
     }
 
-    # The code below assumes we're running on an AWS instance. When running on a CI instance,
-    # early out with the default dictionary
-    if os.environ.has_key("CIRCLE_WORKFLOW_ID"):
-        return base_dict
-
-    # first get this instance's ID
-    res = None
-    with hide('everything'):
-        res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
-    instanceid = res.stdout
-    rootLogger.debug(instanceid)
-
-    # try to get tags. if we don't have permission for this. return False
-    client = boto3.client('ec2')
+    # first get this instance's ID, if we're not on AWS, fallback to default dictionary
     resp = None
     try:
+        res = None
+        with hide('everything'):
+            res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
+        instanceid = res.stdout
+        rootLogger.debug(instanceid)
+
+        # try to get tags. if we don't have permission for this. return False
+        client = boto3.client('ec2')
         resp = client.describe_tags(
             Filters=[
                 {
