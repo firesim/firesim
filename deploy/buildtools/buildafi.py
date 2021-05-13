@@ -173,12 +173,13 @@ def aws_build(global_build_config, bypass=False):
                               extra_opts="-l", capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
-        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+        elab_result = 0
+        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'), settings(warn_only=True):
             # install java and dtc on the build host
             sudo('yum install -y java dtc')
             # run the replace-rtl.sh script
             rootLogger.info("Running Verilog generation via: " + pjoin(generated_dir,'replace-rtl.sh'))
-            run('bash -xe ' + pjoin(generated_dir,'replace-rtl.sh'))
+            elab_result = run('bash -xe ' + pjoin(generated_dir,'replace-rtl.sh')).return_code
         with StreamLogger('stdout'), StreamLogger('stderr'):
             # rsync generated_dir back to manager
             rsync_cap = rsync_project(local_dir=generated_dir,
@@ -199,6 +200,9 @@ def aws_build(global_build_config, bypass=False):
                   pjoin(aws_fpga_root, fpgabuilddir),
                   ddir,
                   results_builddir))
+        if elab_result != 0:
+            on_build_failure()
+            return
     else:
         with StreamLogger('stdout'), StreamLogger('stderr'):
             # Verilog was built locally and fpgabuilddir is already populated, copy that over to build host
