@@ -36,8 +36,8 @@ def initialize_manager(max_runtime):
         with cd(manager_ci_dir):
             # Put a baseline time-to-live bound on the manager.
             # Instances will be stopped and cleaned up in a nightly job.
-            run("nohup screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id))
-            run("nohup screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token))
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id), pty=False)
+            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token), pty=False)
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
