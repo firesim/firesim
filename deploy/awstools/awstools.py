@@ -7,7 +7,7 @@ import os
 import boto3
 import botocore
 from botocore import exceptions
-from fabric.api import local, hide
+from fabric.api import local, hide, settings
 
 rootLogger = logging.getLogger()
 
@@ -44,17 +44,26 @@ def aws_resource_names():
         'runfarmprefix':     None,
     }
 
-    # first get this instance's ID, if we're not on AWS, fallback to default dictionary
     resp = None
+    res = None
+    # This takes multiple minutes without a timeout from the CI container. In
+    # practise it should resolve nearly instantly on an initialized EC2 instance.
+    curl_connection_timeout = 10
+    with settings(warn_only=True), hide('everything'):
+        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/meta-data/instance-id""".format(curl_connection_timeout), capture=True)
+
+    # Use the default dictionary if we're not on an EC2 instance (e.g., when a
+    # manager is launched from CI; during demos)
+    if res.return_code != 0:
+        return base_dict
+
+
+    # Look up this instance's ID, if we do not have permission to describe tags, use the default dictionary
+    client = boto3.client('ec2')
     try:
-        res = None
-        with hide('everything'):
-            res = local("""curl -s http://169.254.169.254/latest/meta-data/instance-id""", capture=True)
         instanceid = res.stdout
         rootLogger.debug(instanceid)
 
-        # try to get tags. if we don't have permission for this. return False
-        client = boto3.client('ec2')
         resp = client.describe_tags(
             Filters=[
                 {
@@ -65,8 +74,7 @@ def aws_resource_names():
                 },
             ]
         )
-    except:
-        # we do not have permission to describe tags, return False
+    except client.exceptions.ClientError:
         return base_dict
 
     resptags = {}

@@ -25,7 +25,7 @@ def main():
     for inst in all_ci_instances:
         lifetime_secs = (current_time - inst["LaunchTime"]).total_seconds()
         if lifetime_secs > (INSTANCE_LIFETIME_LIMIT_HOURS * 3600):
-            client.terminate_instances(InstanceIds=[inst["InstanceId"]], DryRun=True)
+            client.terminate_instances(InstanceIds=[inst["InstanceId"]])
             print "  " + inst["InstanceId"]
 
 if __name__ == "__main__":

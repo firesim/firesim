@@ -1,6 +1,6 @@
 import os
 
-# This file contains utilities that rely on environment variable
+# This package contains utilities that rely on environment variable
 # definitions present only on the CI container instance.
 
 # CI instance environment variables

@@ -9,15 +9,10 @@ from common import *
 from ci_variables import *
 
 def initialize_manager(max_runtime):
-    """ Preforms the prerequisite tasks for all CI jobs that will run on the manager instance
+    """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
 
     max_runtime (seconds): The maximum uptime this manager should have be for it is terminated
         This covers potential livelock scenario in one of the jobs (that produces fs activity)
-
-    filesystem_timeout (seconds):  If no fs activity is detected in ~/firesim after 2x this
-        interval, the manager is terminated.  CircleCI provides no mechanism for
-        doing cleanup after all jobs are done (even if some of those jobs fail).
-        So here we use FS activity as a proxy for doneness
     """
 
     # Catch any exception that occurs so that we can gracefully teardown
@@ -40,10 +35,9 @@ def initialize_manager(max_runtime):
 
         with cd(manager_ci_dir):
             # Put a baseline time-to-live bound on the manager.
-            # Instances will be stopped and cleaned up in a nighlty job.
-            # Hack: The final sleep 1 ensures the screen comes up.
-            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'; sleep 1".format(max_runtime, ci_workflow_id))
-            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}; sleep 1".format(ci_workflow_id, ci_api_token))
+            # Instances will be stopped and cleaned up in a nightly job.
+            run("nohup screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id))
+            run("nohup screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token))
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)

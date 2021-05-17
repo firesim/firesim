@@ -22,8 +22,8 @@ commands:
           command: |
             cd scripts && /usr/bin/bash ./machine-launch-script.sh
 
-  install-fabric:
-    description: "Installs fabric for manager-managing CI container"
+  install-ci-python-reqs:
+    description: "Installs python deps for manager-managing CI container"
     steps:
       - run:
           command: |
@@ -141,7 +141,7 @@ commands:
     steps:
       - checkout
       - aws-cli/setup
-      - install-fabric
+      - install-ci-python-reqs
 
 jobs:
   setup-default-manager:

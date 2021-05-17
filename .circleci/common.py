@@ -9,6 +9,7 @@ manager_ci_dir = manager_fsim_dir + "/.circleci"
 
 # Common fabric settings
 env.output_prefix = False
+env.abort_on_prompts = True
 
 # This tag is common to all instances launched as part of a given workflow
 unique_tag_key = 'ci-workflow-id'
@@ -47,6 +48,7 @@ def get_manager_instance(tag_value):
     """ Looks up the manager instance dict using the CI run's unique tag"""
     instances = get_instances_with_filter([get_ci_filter(tag_value), manager_filter])
     if instances:
+        assert len(instances) == 1
         return instances[0]
     else:
         return None
