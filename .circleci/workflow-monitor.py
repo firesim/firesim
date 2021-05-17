@@ -24,7 +24,13 @@ POLLING_INTERVAL_SECONDS = 60
 # Number of failed requests before stopping the instances
 QUERY_FAILURE_THRESHOLD = 10
 
+# We should never get to 'not_run' or 'unauthorized' but terminate for good measure
+TERMINATE_STATES = ['success', 'canceled', 'not_run', 'unauthorized']
+STOP_STATES = ['failed', 'error']
+NOP_STATES = ['running', 'failing']
+
 def main(workflow_id, circle_ci_token):
+
     state = None
     consecutive_failures = 0
     auth_token = base64.b64encode(b"{}:", circle_ci_token)
@@ -44,12 +50,15 @@ def main(workflow_id, circle_ci_token):
             state = res_dict["status"]
 
             print "Workflow {} status: {}".format(workflow_id, state)
-            if state == "success" or state == 'canceled':
+            if state in TERMINATE_STATES:
                 terminate_workflow_instances(workflow_id)
                 exit(0)
-            elif state == "failed":
+            elif state in STOP_STATES:
                 stop_workflow_instances(workflow_id)
                 exit(0)
+            elif state not in NOP_STATES:
+                print "Unexpected Workflow State: {}".format(state)
+                raise ValueError
 
         else:
             print "HTTP GET error: {} {}. Retrying.".format(res.status, res.reason)
