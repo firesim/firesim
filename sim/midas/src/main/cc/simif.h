@@ -32,9 +32,19 @@ class simif_t
     bool pass;
     uint64_t t;
     uint64_t fail_t;
-    // random numbers
-    uint64_t seed;
+    // Randomization.
+    // Bridges may use this seed to initalize their own RNG where
+    // necessary, but should be explicit about its effect on target behavior.
+    //
+    // Currently, no bridges or other simulation functions used during an
+    // FPGA-hosted simulation will change target behavior (e.g., assertion
+    // times, instruction traces) as a function of this seed.
+    uint64_t seed = 0;
+    bool user_provided_seed = false;
+
+    // Legacy RNG that backs simif_t::rand_next(), which be removed in a future release.
     std::mt19937_64 gen;
+
     SIMULATIONMASTER_struct * master_mmio_addrs;
     LOADMEMWIDGET_struct * loadmem_mmio_addrs;
     PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;

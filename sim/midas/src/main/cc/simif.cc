@@ -18,7 +18,6 @@ simif_t::simif_t() {
   pass = true;
   t = 0;
   fail_t = 0;
-  seed = time(NULL); // FIXME: better initail seed?
   SIMULATIONMASTER_0_substruct_create;
   this->master_mmio_addrs = SIMULATIONMASTER_0_substruct;
   LOADMEMWIDGET_0_substruct_create;
@@ -44,11 +43,11 @@ void simif_t::init(int argc, char** argv, bool log) {
     }
     if (arg.find("+seed=") == 0) {
       seed = strtoll(arg.c_str() + 6, NULL, 10);
+      user_provided_seed = true;
       fprintf(stderr, "Using custom SEED: %ld\n", seed);
     }
   }
   gen.seed(seed);
-  fprintf(stderr, "random min: 0x%llx, random max: 0x%llx\n", gen.min(), gen.max());
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
@@ -81,7 +80,9 @@ int simif_t::finish() {
   record_end_times();
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
-  fprintf(stderr, "SEED: %ld\n", seed);
+  if (this->user_provided_seed) {
+      fprintf(stderr, "User-provided SEED: %ld\n", seed);
+  }
   this->print_simulation_performance_summary();
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
