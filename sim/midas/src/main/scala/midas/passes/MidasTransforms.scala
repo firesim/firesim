@@ -74,6 +74,8 @@ private[midas] class MidasTransforms extends Transform {
       new EmitFirrtl("post-extract-model.fir"),
       new HighFirrtlToMiddleFirrtl,
       new MiddleFirrtlToLowFirrtl,
+      // Dedup here in 'AQB form' after lowering instance bulk connects
+      new midas.passes.EnableAndRunDedupOnce,
       fame.PromotePassthroughConnections,
       new ResolveAndCheck,
       new EmitFirrtl("post-promote-passthrough.fir"),
@@ -86,6 +88,7 @@ private[midas] class MidasTransforms extends Transform {
       new fame.ChannelExcision,
       new fame.EmitFAMEAnnotations("post-channel-excision.json"),
       new EmitFirrtl("post-channel-excision.fir"),
+      // We could delay adding FAMETransformAnnotations to all top modules to here (not used before this)
       new fame.InferModelPorts,
       new fame.EmitFAMEAnnotations("post-infer-model-ports.json"),
       new fame.FAMETransform,

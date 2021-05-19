@@ -232,7 +232,10 @@ class RegfileF1Test extends TutorialSuite("Regfile")
 
 class MultiRegfileF1Test extends TutorialSuite("MultiRegfile")
 class MultiRegfileFMRF1Test extends TutorialSuite("MultiRegfileFMR") {
-  // TODO(albert-magyar): add expectedFMR once threading works for this test on dev again
+  // A threaded model that relies on another model to implement an internal
+  // combinational path (like an extracted memory model) will only simulate
+  // one target thread-cycle every two host cycles.
+  expectedFMR(2.0 * MultiRegfile.nCopiesToTime)
 }
 
 class MultiSRAMF1Test extends TutorialSuite("MultiSRAM")

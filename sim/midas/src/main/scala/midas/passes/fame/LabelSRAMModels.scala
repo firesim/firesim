@@ -46,6 +46,8 @@ class LabelSRAMModels extends Transform {
             val wrapperTarget = ModuleTarget(circ.main, wrapper.name)
             memModules += wrapper
             memModelAnnotations += FirrtlFAMEModelAnnotation(mt.instOf(mem.name, wrapper.name))
+            // For now, avoid deduping mem models at the top level (annotations fragile)
+            memModelAnnotations += firrtl.transforms.NoDedupAnnotation(wrapperTarget)
             memModelAnnotations ++= mem.readers.map(rp => ModelReadPort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.writers.map(rp => ModelWritePort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.readwriters.map(rp => ModelReadWritePort(wrapperTarget.ref(rp)))
@@ -61,6 +63,8 @@ class LabelSRAMModels extends Transform {
       case m => m
     })
     val transformedCircuit = circ.copy(modules = memModules ++ transformedModules)
-    state.copy(circuit = transformedCircuit, annotations = state.annotations ++ memModelAnnotations)
+    // At this point, the FIRRTLMemModelAnnotations are no longer used, so remove them for cleanup.
+    val filteredAnnos = state.annotations.filterNot(_.isInstanceOf[FirrtlMemModelAnnotation])
+    state.copy(circuit = transformedCircuit, annotations = filteredAnnos ++ memModelAnnotations)
   }
 }
