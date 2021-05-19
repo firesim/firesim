@@ -206,10 +206,6 @@
                         <a class="class" href="ConfToJSON.html" title=""></a>
                         <a href="ConfToJSON.html" title="">ConfToJSON</a>
                       </li><li class="current-entities indented2">
-                        <a class="object" href="DedupModules$.html" title="Utility functions for DedupModules"></a>
-                        <a class="class" href="DedupModules.html" title="Only use on legal Firrtl."></a>
-                        <a href="DedupModules.html" title="Only use on legal Firrtl.">DedupModules</a>
-                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated."></a>
                         <a href="package$$DefineAbstractClockGate$.html" title="This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can later be instantiated.">DefineAbstractClockGate</a>
@@ -217,6 +213,10 @@
                         <span class="separator"></span>
                         <a class="class" href="EmitFirrtl.html" title=""></a>
                         <a href="EmitFirrtl.html" title="">EmitFirrtl</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="EnableAndRunDedupOnce.html" title="Aggressive deduplication during phases of the Golden Gate flow where the target design is still being transformed can cause issues with bridge annotations that define connectivity."></a>
+                        <a href="EnableAndRunDedupOnce.html" title="Aggressive deduplication during phases of the Golden Gate flow where the target design is still being transformed can cause issues with bridge annotations that define connectivity.">EnableAndRunDedupOnce</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$ExpressionTransformer$.html" title="Generates a function transforming a circuit from a partial function describing how each expression, if matched, is transformed."></a>
@@ -273,10 +273,6 @@
                         <span class="separator"></span>
                         <a class="trait" href="package$$NoAnalysisPass.html" title="A pass that simply applies a (Circuit) =&gt; Circuit function."></a>
                         <a href="package$$NoAnalysisPass.html" title="A pass that simply applies a (Circuit) =&gt; Circuit function.">NoAnalysisPass</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="object" href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit."></a>
-                        <a href="NoCircuitDedupClassicAnnotation$.html" title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit.">NoCircuitDedupClassicAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$OrElseIdentity$.html" title="Adds a default to a partial function."></a>
@@ -654,24 +650,6 @@ find and return that input port.
       </span>
       
       
-    </li><li name="midas.passes.DedupModules" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="DedupModulesextendsTransformwithDependencyAPIMigrationwithPreservesAll[firrtl.Transform]"></a><a id="DedupModules:DedupModules"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/DedupModules.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="Only use on legal Firrtl." href="DedupModules.html"><span class="name">DedupModules</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span> with <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</span>
-      </span>
-      
-      <p class="shortcomment cmt">Only use on legal Firrtl.</p><div class="fullcomment"><div class="comment cmt"><p>Only use on legal Firrtl.</p><p>Specifically, the restriction of instance loops must have been checked, or else this pass can
- infinitely recurse
-</p></div></div>
     </li><li name="midas.passes.EmitFirrtl" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="EmitFirrtlextendsTransform"></a><a id="EmitFirrtl:EmitFirrtl"></a>
       <span class="permalink">
@@ -688,6 +666,30 @@ find and return that input port.
       </span>
       
       
+    </li><li name="midas.passes.EnableAndRunDedupOnce" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EnableAndRunDedupOnceextendsTransformwithDependencyAPIMigration"></a><a id="EnableAndRunDedupOnce:EnableAndRunDedupOnce"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/EnableAndRunDedupOnce.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Aggressive deduplication during phases of the Golden Gate flow where the target design is still being transformed can cause issues with bridge annotations that define connectivity." href="EnableAndRunDedupOnce.html"><span class="name">EnableAndRunDedupOnce</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Aggressive deduplication during phases of the Golden Gate flow where the target
+design is still being transformed can cause issues with bridge annotations that
+define connectivity.</p><div class="fullcomment"><div class="comment cmt"><p>Aggressive deduplication during phases of the Golden Gate flow where the target
+design is still being transformed can cause issues with bridge annotations that
+define connectivity. To work around this issue, the compiler relies on a global
+NoCircuitDedupAnnotation; however, this transform ignores the annotation to run
+dedup a single time after target transformation completes rather than several
+times as it would if enabled globally.
+</p></div></div>
     </li><li name="midas.passes.Fame1Annotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Fame1AnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleName]withProductwithSerializable"></a><a id="Fame1Annotation:Fame1Annotation"></a>
       <span class="permalink">
@@ -996,22 +998,6 @@ since the &quot;collateral&quot; of that object can be kept in one place.
       </span>
       
       <p class="shortcomment cmt">Replaces all AsyncResets and Reset types with Bools (synchronous reset).</p>
-    </li><li name="midas.passes.DedupModules" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DedupModules"></a><a id="DedupModules:DedupModules"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/DedupModules$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="Utility functions for DedupModules" href="DedupModules$.html"><span class="name">DedupModules</span></a>
-      </span>
-      
-      <p class="shortcomment cmt">Utility functions for <a href="DedupModules.html" class="extype" name="midas.passes.DedupModules">DedupModules</a></p>
     </li><li name="midas.passes.DefineAbstractClockGate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DefineAbstractClockGate"></a><a id="DefineAbstractClockGate:DefineAbstractClockGate"></a>
       <span class="permalink">
@@ -1100,25 +1086,6 @@ circuit.
       
       <p class="shortcomment cmt">Generates a function transforming a circuit from a partial function describing how each
 module, if matched, is transformed.</p>
-    </li><li name="midas.passes.NoCircuitDedupClassicAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="NoCircuitDedupClassicAnnotation"></a><a id="NoCircuitDedupClassicAnnotation:NoCircuitDedupClassicAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/NoCircuitDedupClassicAnnotation$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="If this Annotation exists in an AnnotationSeq, then the firrtl.transforms.DedupModules transform will *NOT* be run on the circuit." href="NoCircuitDedupClassicAnnotation$.html"><span class="name">NoCircuitDedupClassicAnnotation</span></a><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <span class="extype" name="firrtl.options.HasShellOptions">HasShellOptions</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">If this <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> exists in an <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>,
-then the <span class="extype" name="firrtl.transforms.DedupModules">firrtl.transforms.DedupModules</span> transform will *NOT* be run on the circuit.</p><div class="fullcomment"><div class="comment cmt"><p>If this <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> exists in an <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>,
-then the <span class="extype" name="firrtl.transforms.DedupModules">firrtl.transforms.DedupModules</span> transform will *NOT* be run on the circuit.</p><ul><li>set with '--no-dedup'
-</li></ul></div></div>
     </li><li name="midas.passes.OrElseIdentity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="OrElseIdentity"></a><a id="OrElseIdentity:OrElseIdentity"></a>
       <span class="permalink">
