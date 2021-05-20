@@ -11,8 +11,9 @@ from ci_variables import *
 def initialize_manager(max_runtime):
     """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
 
-    max_runtime (seconds): The maximum uptime this manager should have be for it is terminated
-        This covers potential livelock scenario in one of the jobs (that produces fs activity)
+    max_runtime (hours): The maximum uptime this manager and its associated
+        instances should have before it is stopped. This serves as a redundant check 
+        in case the workflow-monitor is brought down for some reason.
     """
 
     # Catch any exception that occurs so that we can gracefully teardown
@@ -36,7 +37,10 @@ def initialize_manager(max_runtime):
         with cd(manager_ci_dir):
             # Put a baseline time-to-live bound on the manager.
             # Instances will be stopped and cleaned up in a nightly job.
-            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(max_runtime, ci_workflow_id), pty=False)
+
+            # Setting pty=False is required to stop the screen from being
+            # culled when the SSH session associated with teh run command ends.
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(int(max_runtime) * 3600 , ci_workflow_id), pty=False)
             run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token), pty=False)
 
     except BaseException as e:

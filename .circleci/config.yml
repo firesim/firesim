@@ -108,12 +108,12 @@ commands:
   initialize-manager:
     description: "Setups the manager instance and firesim repo"
     parameters:
-      max-runtime-seconds:
+      max-runtime-hours:
         type: integer
     steps:
       - run:
           command: |
-              .circleci/initialize-manager.py  << parameters.max-runtime-seconds >>
+              .circleci/initialize-manager.py  << parameters.max-runtime-hours >>
 
   # This avoids a race that occurs when multiple cold scala compilations are launched at the same time.
   initial-scala-compile:
@@ -155,7 +155,7 @@ jobs:
               command: |
                   .circleci/launch-manager-instance.py
           - initialize-manager:
-              max-runtime-seconds: 10800
+              max-runtime-hours: 6
           - initial-scala-compile
 
   run-test-groupA:
