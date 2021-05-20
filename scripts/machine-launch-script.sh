@@ -12,7 +12,6 @@ sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java ja
 curl https://www.scala-sbt.org/sbt-rpm.repo | sudo tee /etc/yum.repos.d/scala-sbt-rpm.repo
 sudo yum install -y sbt texinfo gengetopt libffi-devel
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
-sudo yum install -y inotify-tools
 # deps for poky
 sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
 # deps for qemu
