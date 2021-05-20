@@ -88,6 +88,7 @@ class BankedAsyncMemChiselModel(
 
   // Pick the winning write for each write bank
   //   - Hook it up to the underlying memory's corresponding port
+  //   - The target mask is effectively just part of the 'enable' -- handled by scheduler
   //   - Mark it done
   (writes.grouped(wBankMaxSize).toSeq zip physWriteCmds).foreach {
     case (wBank, underlyingWC) =>
