@@ -52,14 +52,6 @@ commands:
             source env.sh
             make -C sim scaladoc
 
-  run-manager-pytest:
-    description: "Runs all manager pytests"
-    steps:
-      - run:
-          command: |
-            source env.sh
-            cd deploy && python -m pytest
-
   push-scaladoc-to-ghpages:
     description: "Pushes scaladoc to ghphage branch"
     steps:
@@ -158,6 +150,14 @@ jobs:
               max-runtime-hours: 6
           - initial-scala-compile
 
+
+  run-manager-pytests:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          command: .circleci/run-manager-pytests.py
+
   run-test-groupA:
     executor: aws
     steps:
@@ -213,6 +213,10 @@ workflows:
          - setup-default-manager
 
      - run-chipyard-tests:
+         requires:
+         - setup-default-manager
+
+     - run-manager-pytests:
          requires:
          - setup-default-manager
 
