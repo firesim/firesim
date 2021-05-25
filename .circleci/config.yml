@@ -210,11 +210,11 @@ workflows:
 
      - run-test-groupB:
          requires:
-         - setup-default-manager
+         - run-test-groupA
 
      - run-chipyard-tests:
          requires:
-         - setup-default-manager
+         - run-test-groupB
 
      - run-manager-pytests:
          requires:
