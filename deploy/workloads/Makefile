@@ -113,9 +113,11 @@ fc-test:
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-server.riscv $@/fc-server.riscv
 
 coremark:
-	cd coremark/riscv-coremark/coremark && make CC=riscv64-unknown-linux-gnu-gcc compile
-	mv coremark/riscv-coremark/coremark/coremark.exe coremark/overlay/coremark.riscv
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	$(info Support for coremark has been ported to FireMarshal.)
+	$(info See <chipyard_dir>/software/coremark and the FireMarshal Docs.)
+	$(info https://docs.fires.im/en/latest/Advanced-Usage/Workloads/FireMarshal.html)
+	$(info https://firemarshal.readthedocs.io/en/latest/)
+	$(info https://chipyard.readthedocs.io/en/latest/Software/index.html)
 
 .PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
