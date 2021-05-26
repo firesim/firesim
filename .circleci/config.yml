@@ -1,5 +1,7 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
+orbs:
+    aws-cli: circleci/aws-cli@1.0.0
 executors:
   main-env:
     docker:
@@ -8,6 +10,9 @@ executors:
     environment:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
+  aws:
+    docker:
+    - image: cimg/python:2.7-node
 
 commands:
   machinelaunchscript:
@@ -16,6 +21,13 @@ commands:
       - run:
           command: |
             cd scripts && /usr/bin/bash ./machine-launch-script.sh
+
+  install-ci-python-reqs:
+    description: "Installs python deps for manager-managing CI container"
+    steps:
+      - run:
+          command: |
+            pip install -r .circleci/requirements.txt
 
   buildsetup:
     description: "Run firesim's build-setup.sh"
@@ -39,14 +51,6 @@ commands:
           command: |
             source env.sh
             make -C sim scaladoc
-
-  run-manager-pytest:
-    description: "Runs all manager pytests"
-    steps:
-      - run:
-          command: |
-            source env.sh
-            cd deploy && python -m pytest
 
   push-scaladoc-to-ghpages:
     description: "Pushes scaladoc to ghphage branch"
@@ -75,71 +79,107 @@ commands:
   run-scala-test:
     description: "Runs the scala test with name <test-package>.<test-name>"
     parameters:
-      project:
+      target-project:
         type: string
-        default: "firesim"
+        default: "midasexamples"
       test-name:
         type: string
       test-package:
         type: string
         default: "firesim.midasexamples"
-      separate-elaboration:
-        description: Runs separate elaboration step to avoid multiple invocations of SBT.
-        type: boolean
-        default: true
       timeout:
         type: string
         default: "120m"
     steps:
-      - when:
-          condition: <<parameters.separate-elaboration>>
-          steps:
-          - run:
-              command: |
-                  source env.sh
-                  make -C sim TARGET_PROJECT=midasexamples sbt \
-                      SBT_COMMAND="project << parameters.project >>; Test / runMain firesim.EmitCIElaborationScript elaborate.sh << parameters.test-package >>.<< parameters.test-name >>"
-                  bash -x sim/elaborate.sh || true
-              no_output_timeout: << parameters.timeout >>
       - run:
           command: |
-              source env.sh
-              make -C sim TARGET_PROJECT=midasexamples sbt \
-                  SBT_COMMAND="project << parameters.project >>; testOnly << parameters.test-package >>.<< parameters.test-name >> -- -Dci-skip-elaboration=true"
+              .circleci/run-scala-test.py << parameters.target-project >> << parameters.test-package >>.<< parameters.test-name >>
+          no_output_timeout: << parameters.timeout >>
+
+
+  initialize-manager:
+    description: "Setups the manager instance and firesim repo"
+    parameters:
+      max-runtime-hours:
+        type: integer
+    steps:
+      - run:
+          command: |
+              .circleci/initialize-manager.py  << parameters.max-runtime-hours >>
+
+  # This avoids a race that occurs when multiple cold scala compilations are launched at the same time.
+  initial-scala-compile:
+    description: "Initial Scala Compilation"
+    parameters:
+      timeout:
+        type: string
+        default: "30m"
+    steps:
+      - run:
+          command: |
+              .circleci/run-sbt-command.py firesim test:compile
           no_output_timeout: << parameters.timeout >>
 
   repo-setup:
-    description: "Runs all baseline setup tasks up to scala compilation."
+    description: "Runs all baseline setup tasks up to scala compilation in the CI container."
     steps:
-      - add_ssh_keys:
-          fingerprint:
-            - 0e:d9:c3:3b:62:03:7a:da:17:1f:a9:5a:4f:34:50:4c
       - checkout
       - machinelaunchscript
       - buildsetup
       - scala-build
 
-jobs:
-  run-test-groupA:
-    executor: main-env
+  repo-setup-aws:
+    description: "Runs all baseline setup to interact with a AWS-hosted manager instance"
     steps:
-      - repo-setup
+      - checkout
+      - aws-cli/setup
+      - install-ci-python-reqs
+
+jobs:
+  setup-default-manager:
+      executor: aws
+      environment:
+          TERM: xterm-256color
+      steps:
+          - repo-setup-aws
+          - run:
+              name: Initialize FireSim manager
+              command: |
+                  .circleci/launch-manager-instance.py
+          - initialize-manager:
+              max-runtime-hours: 6
+          - initial-scala-compile
+
+
+  run-manager-pytests:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          command: .circleci/run-manager-pytests.py
+
+  run-test-groupA:
+    executor: aws
+    steps:
+      - repo-setup-aws
       - run-scala-test:
           test-name: "CIGroupA"
-      - build-scala-doc
-      - run-manager-pytest
 
   run-test-groupB:
-    executor: main-env
+    executor: aws
     steps:
-      - repo-setup
+      - repo-setup-aws
       - run-scala-test:
           test-name: "CIGroupB"
+
+  run-chipyard-tests:
+    executor: aws
+    steps:
+      - repo-setup-aws
       - run-scala-test:
-           project: "midas"
-           test-package: "*"
-           test-name: "*"
-           separate-elaboration: false
+          target-project: "firesim"
+          test-package: "firesim.firesim"
+          test-name: "CITests"
 
   publish-scala-doc:
     executor: main-env
@@ -148,19 +188,55 @@ jobs:
       - build-scala-doc
       - push-scaladoc-to-ghpages
 
-workflows:
-   version: 2
+  cull-old-ci-instances:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          name: Cull Old CI AWS Instances
+          command: |
+              .circleci/cull-old-ci-instances.py
 
-   firesimCIall:
-     jobs:
-       - run-test-groupA
-       - run-test-groupB
-       - publish-scala-doc:
-           filters:
-             branches:
-               only:
-                 - dev
-             tags:
-               only:
-                 - /[0-9]*\.[0-9]*\.[0-9]*/
+workflows:
+  version: 2
+
+  firesimCIall:
+    jobs:
+     - setup-default-manager
+
+     - run-test-groupA:
+         requires:
+         - setup-default-manager
+
+     - run-test-groupB:
+         requires:
+         - run-test-groupA
+
+     - run-chipyard-tests:
+         requires:
+         - run-test-groupB
+
+     - run-manager-pytests:
+         requires:
+         - setup-default-manager
+
+     # This uses a CI container, not a manager instance
+     - publish-scala-doc:
+         filters:
+           branches:
+             only:
+               - dev
+           tags:
+             only:
+               - /[0-9]*\.[0-9]*\.[0-9]*/
+
+  cull-old-ci-instances:
+    triggers:
+      - schedule:
+          cron: "0 0,12 * * *"
+          filters:
+            branches:
+              only: "/.*/"
+    jobs:
+      - cull-old-ci-instances
 
