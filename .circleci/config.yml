@@ -55,6 +55,10 @@ commands:
   push-scaladoc-to-ghpages:
     description: "Pushes scaladoc to ghphage branch"
     steps:
+      # The default SSH key does not have write permissions
+      - add_ssh_keys:
+          fingerprint:
+            - 0e:d9:c3:3b:62:03:7a:da:17:1f:a9:5a:4f:34:50:4c
       - run:
           command: |
             git config --global user.email "biancolin@berkeley.edu"
