@@ -56,7 +56,7 @@ selected modules will generate counters.
 The filtered modules can be indicated using one of two methods:
 
 1. A module selection annotation within the top-level configuration
-   implementation.  To use this method, add the
+   implementation (when using Chipyard, this would usually be ``DigitalTop``, but can also be any other module).  To use this method, add the
    ``AutoCounterCoverModuleAnnotation`` annotation with the name of the module
    for which you want the cover functions to be turned into AutoCounters.  The
    following example will generate counters from cover functions within the
@@ -64,17 +64,9 @@ The filtered modules can be indicated using one of two methods:
 
 .. code-block:: scala
 
-   class FireSimDUT(implicit p: Parameters) extends Subsystem
-    with HasHierarchicalBusTopology
-    with CanHaveMasterAXI4MemPort
-    with HasPeripheryBootROM
-    with HasPeripherySerial
-    with HasPeripheryUART
-    with HasPeripheryIceNIC
-    with HasPeripheryBlockDevice
-    with HasTraceIO
+  class DigitalTop(implicit p: Parameters) extends ChipyardSystem
   {
-    override lazy val module = new FireSimModuleImp(this)
+    override lazy val module = new DigitalTopModule(this)
       
     chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("StreamWriter"))
   }
