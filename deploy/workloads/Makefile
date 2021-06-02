@@ -10,31 +10,12 @@ BASE_LINUX:=../../sw/firesim-software/images/br-base-bin
 
 allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
 
-# We use a branch of Speckle (https://github.com/ccelio/Speckle) to cross
-# compile the binaries for SPEC2017. These can be compiled locally on a machine
-# with the Spec installation, and the overlay directories
-# ($SPECKLE_DIR/build/overlay) can be moved EC2
-
-# Default to the submodule
-SPECKLE_DIR=Speckle
-GAP_DIR=runscripts/gapbs-scripts
-
-#TODO: Provide runscripts for fp{speed, rate}
-spec17_suites = intrate intspeed
-spec17_rootfs_dirs := $(patsubst %, spec17-%, $(spec17-suites))
-
-#Default to ref input size for SPEC17
-spec17-%: input = ref
-
-$(SPECKLE_DIR)/build/overlay/%/$(input):
-	cd $(SPECKLE_DIR) && ./gen_binaries.sh --compile --suite $* --input $(input)
-
-spec17-%: spec17-%.json $(SPECKLE_DIR)/build/overlay/%/$(input)
-	mkdir -p $@
-	cp $(BASE_LINUX) $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
-		-s $(SPECKLE_DIR)/build/overlay/$*/$(input)
-
+spec17-%:
+	$(info Support for SPEC2017 has been ported to FireMarshal.)
+	$(info See <chipyard_dir>/software/spec2017 and the FireMarshal Docs.)
+	$(info https://docs.fires.im/en/latest/Advanced-Usage/Workloads/FireMarshal.html)
+	$(info https://firemarshal.readthedocs.io/en/latest/)
+	$(info https://chipyard.readthedocs.io/en/latest/Software/index.html)
 #Default to test input size for GAPBS
 gapbs: input = graph500
 
@@ -113,11 +94,13 @@ fc-test:
 	ln -sf ../../../sw/network-benchmarks/fc-test/fc-server.riscv $@/fc-server.riscv
 
 coremark:
-	cd coremark/riscv-coremark/coremark && make CC=riscv64-unknown-linux-gnu-gcc compile
-	mv coremark/riscv-coremark/coremark/coremark.exe coremark/overlay/coremark.riscv
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	$(info Support for coremark has been ported to FireMarshal.)
+	$(info See <chipyard_dir>/software/coremark and the FireMarshal Docs.)
+	$(info https://docs.fires.im/en/latest/Advanced-Usage/Workloads/FireMarshal.html)
+	$(info https://firemarshal.readthedocs.io/en/latest/)
+	$(info https://chipyard.readthedocs.io/en/latest/Software/index.html)
 
-.PHONY: $(spec17_overlays) $(spec17_rootfs_dirs) gapbs fedora-uniform \
+.PHONY: gapbs fedora-uniform \
 	memcached-thread-imbalance bw-test-one-instance bw-test-two-instances \
 	ping-latency simperf-test simperf-test-latency simperf-test-scale \
 	iperf3 check-rtc check-rtc-linux allpaper checksum-test \
