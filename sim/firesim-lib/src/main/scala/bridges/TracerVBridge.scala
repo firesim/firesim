@@ -64,7 +64,7 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
   // a lowered verilog module.
   //
   // See https://github.com/firesim/firesim/issues/729.
-  val defnameSuffix = s"_${numInsns}Wide_" + insnWidths.toString.replaceAll("[(),]", "_")
+  def defnameSuffix = s"_${numInsns}Wide_" + insnWidths.toString.replaceAll("[(),]", "_")
 
   override def desiredName = super.desiredName + defnameSuffix
 }
