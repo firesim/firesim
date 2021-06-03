@@ -265,6 +265,36 @@ run-midas-unittests: $(chisel_srcs)
 run-midas-unittests-debug: $(chisel_srcs)
 	$(MAKE) -f $(simif_dir)/unittest/Makefrag $@ $(unittest_args)
 
+#################################
+# Module-level QoR Measurements #
+#################################
+
+
+QOR_CONFIG_PROJECT ?= midas.unittest
+QOR_CONFIG ?= PDESQoRTargets
+
+qor_generated_dir := $(firesim_base_dir)/generated-src/qor/$(QOR_CONFIG)
+qor_wrapper := $(qor_generated_dir)/QoRShim.v
+qor_utilization_rpt := $(qor_generated_dir)/impl_utilization.rpt
+
+
+.PHONY:module-qor
+module-qor: $(qor_utilization_rpt)
+
+$(qor_wrapper): $(SCALA_SOURCES)
+	$(call run_scala_main,$(firesim_sbt_project),midas.unittest.QoRShimGenerator,\
+		-cp $(QOR_CONFIG_PROJECT) \
+		-cs $(QOR_CONFIG) \
+		-td $(qor_generated_dir) \
+	)
+	grep -sh ^ $(qor_generated_dir)/firrtl_black_box_resource_files.f | \
+	xargs cat >> $(qor_wrapper)
+
+
+$(qor_utilization_rpt): $(qor_wrapper)
+	vivado -mode tcl -source $(firesim_base_dir)/qor-scripts/QoR.tcl -tclargs \
+	--origin_dir $(qor_generated_dir)
+
 #########################
 # ScalaDoc              #
 #########################

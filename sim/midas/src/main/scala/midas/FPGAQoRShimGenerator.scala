@@ -35,6 +35,30 @@ class Midas2QoRTargets extends Config((site, here, up) => {
   }
 })
 
+class PDESQoRTargets extends Config((site, here, up) => {
+  case QoRTargets => (q: Parameters) => {
+    implicit val p = q
+    Seq(
+      Module(new midas.widgets.TimestampedClockMux)
+    )
+  }
+})
+
+class SingleTarget(elaborator: => RawModule) extends Config((site, here, up) => {
+  case QoRTargets => (q: Parameters) => {
+    implicit val p = q
+    Seq(Module(elaborator))
+  }
+})
+
+class ClockMux extends SingleTarget(new midas.widgets.TimestampedClockMux)
+class MutexMux extends SingleTarget(new midas.widgets.MutexClockMux(2, 3))
+class RocketDivider2 extends SingleTarget(new midas.widgets.ClockDivider2)
+class RocketDivider3 extends SingleTarget(new midas.widgets.ClockDivider3)
+class GenericDividerN extends SingleTarget(new midas.widgets.GenericClockDividerN(2))
+class ClockGate extends SingleTarget(new midas.widgets.ClockGateCore(false))
+class ClockGateOpt extends SingleTarget(new midas.widgets.ClockGateCore(true))
+class ClockSource extends SingleTarget(new midas.widgets.ClockSource(midas.widgets.ClockSourceParams(1000)))
 
 // Generates synthesizable unit tests for key modules, such as simulation channels
 // See: src/main/cc/unittest/Makefile for the downstream RTL-simulation flow
@@ -58,7 +82,7 @@ object QoRShimGenerator extends App with midas.rocketchip.util.HasGeneratorUtili
       .valueName("<config-project>")
       .foreach { d => qorOptions = qorOptions.copy(configProject = d) }
     parser.opt[String]("config")
-      .abbr("conf")
+      .abbr("cs")
       .valueName("<configClassName>")
       .foreach { cfg => qorOptions = qorOptions.copy(config = cfg) }
   }

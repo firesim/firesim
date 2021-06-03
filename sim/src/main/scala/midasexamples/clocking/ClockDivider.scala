@@ -39,7 +39,7 @@ class ClockDivider(implicit p: Parameters) extends RawModule {
     printf(p"Fast Clock Cycle: $count\n")
     // Even edges will have no simultaenous slow-clock edge, so we can avoid a data race
     when(count(0)) {
-      assert(((count + 1.U) >> 1.U) === slowClockCount)
+      //assert(((count + 1.U) >> 1.U) === slowClockCount)
     }
   }
 }

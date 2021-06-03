@@ -47,6 +47,11 @@ class ClockMux(implicit p: Parameters) extends RawModule {
     val count = Reg(UInt(64.W))
     count := count + 1.U
     printf(p"Clock B Cycle: $count\n")
+    val sel = Reg(Bool())
+    when (count % 1024.U === 0.U) {
+      sel := ~sel
+    }
+    clockMux.io.sel := sel
   }
 
   // Reset is only provided here because chisel needs one to instantiate a register
@@ -55,11 +60,6 @@ class ClockMux(implicit p: Parameters) extends RawModule {
     count := count + 1.U
     printf(p"Clock Dynamic Cycle: $count\n")
 
-    val sel = Reg(Bool())
-    when (count % 1024.U === 0.U) {
-      sel := ~sel
-    }
-    clockMux.io.sel := sel
   }
 }
 
