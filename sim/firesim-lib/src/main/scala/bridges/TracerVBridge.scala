@@ -30,11 +30,19 @@ class TracerVTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extend
   val triggerCredit = Output(Bool())
   val triggerDebit = Output(Bool())
 }
-
-// Warning: If you're not going to use the companion object to instantiate this
-// bridge you must call generate trigger annotations _in the parent module_.
-//
-// TODO: Generalize a mechanism to promote annotations from extracted bridges...
+/**
+  * Target-side module for the TracerV Bridge.
+  *
+  * @param insnWidths A case class containing the widths of configurable-length
+  * fields in the trace interface.
+  *
+  * @param numInsns The number of instructions captured in a single a cycle
+  * (generally, the commit width of the pipeline)
+  *
+  * Warning: If you're not going to use the companion object to instantiate
+  * this bridge you must call [[TracerVBridge.generateTriggerAnnotations] _in
+  * the parent module_.
+  */
 class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[TracerVTargetIO], TracerVBridgeModule] {
   val io = IO(new TracerVTargetIO(insnWidths, numInsns))
@@ -45,6 +53,20 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
   // def generateTriggerAnnotations(): Unit = TriggerSource(io.triggerCredit, io.triggerDebit)
   def generateTriggerAnnotations(): Unit =
     TriggerSource.evenUnderReset(WireDefault(io.triggerCredit), WireDefault(io.triggerDebit))
+
+  // To placate CheckHighForm, uniquify blackbox module names by using the
+  // bridge's instruction count as a string suffix. This ensures that TracerV
+  // blackboxes with different instruction counts will have different defnames,
+  // preventing FIRRTL CheckHighForm failure when using a chipyard "Hetero"
+  // config. While a black box parameter relaxes the check on leaf field
+  // widths, CheckHighForm does not permit parameterizations of the length of a
+  // Vec enclosing those fields (as is the case here), since the Vec is lost in
+  // a lowered verilog module.
+  //
+  // See https://github.com/firesim/firesim/issues/729.
+  val defnameSuffix = s"_${numInsns}Wide_" + insnWidths.toString.replaceAll("[(),]", "_")
+
+  override def desiredName = super.desiredName + defnameSuffix
 }
 
 object TracerVBridge {
