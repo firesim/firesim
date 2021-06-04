@@ -141,6 +141,8 @@ class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister")
 class StackF1Test extends TutorialSuite("Stack")
 class RiscF1Test extends TutorialSuite("Risc")
 class RiscSRAMF1Test extends TutorialSuite("RiscSRAM")
+class AccumulatorF1Test extends TutorialSuite("Accumulator")
+class VerilogAccumulatorF1Test extends TutorialSuite("VerilogAccumulator")
 class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
     simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
@@ -267,7 +269,9 @@ class ChiselExampleDesigns extends Suites(
   new EnableShiftRegisterF1Test,
   new StackF1Test,
   new RiscF1Test,
-  new RiscSRAMF1Test
+  new RiscSRAMF1Test,
+  new AccumulatorF1Test,
+  new VerilogAccumulatorF1Test
 )
 
 class PrintfSynthesisCITests extends Suites(

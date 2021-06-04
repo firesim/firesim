@@ -49,7 +49,7 @@ class VerilogAccumulatorDUT extends Module {
   val io = IO(new AccumulatorIO)
   val impl = Module(new VerilogAccumulatorImpl)
   impl.io.clock := clock
-  impl.io.reset := reset
+  impl.io.reset := reset.asBool
   impl.io.in := io.in
   io.out := impl.io.out
 }
