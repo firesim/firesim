@@ -7,6 +7,8 @@ import chisel3.util._
 import chisel3.experimental.{Direction}
 import chisel3.experimental.DataMirror.directionOf
 
+import firrtl.annotations.ReferenceTarget
+
 import scala.collection.mutable.{ArrayBuffer}
 
 // A collection of useful types and methods for moving between target and host-land interfaces
@@ -86,5 +88,12 @@ object SimUtils {
     case b: Record => b.elements.flatMap({ case (_, field) => findClocks(field) }).toSeq
     case v: Vec[_] => v.flatMap(findClocks)
     case o => Seq()
+  }
+
+  // !FIXME! FCCA renamer can't handle flattening of an aggregate target; so do it manually
+  def lowerAggregateIntoLeafTargets(bits: Data): Seq[ReferenceTarget] = {
+    val (ins, outs, _, _) = SimUtils.parsePorts(bits)
+    require (ins.isEmpty || outs.isEmpty, "Aggregate should be uni-directional")
+    (ins ++ outs).map({ case (leafField, _) => leafField.toNamed.toTarget })
   }
 }

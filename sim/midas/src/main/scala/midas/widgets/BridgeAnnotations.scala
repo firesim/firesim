@@ -78,7 +78,7 @@ case class SerializableBridgeAnnotation[T <: AnyRef](
 case class InMemoryBridgeAnnotation(
     val target: ModuleTarget,
     channelNames: Seq[String],
-    widget: (Parameters) => BridgeModule[_ <: TokenizedRecord]) extends BridgeAnnotation {
+    widget: (Parameters) => BridgeModule[_ <: Record with HasChannels]) extends BridgeAnnotation {
   def duplicate(n: ModuleTarget) = this.copy(target)
   def toIOAnnotation(port: String): BridgeIOAnnotation = {
     val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
@@ -115,7 +115,7 @@ private[midas] case class BridgeIOAnnotation(
     val target: ReferenceTarget,
     channelMapping: Map[String, String],
     clockInfo: Option[RationalClock] = None,
-    widget: Option[(Parameters) => BridgeModule[_ <: TokenizedRecord]] = None,
+    widget: Option[(Parameters) => BridgeModule[_ <: Record with HasChannels]] = None,
     widgetClass: Option[String] = None,
     widgetConstructorKey: Option[_ <: AnyRef] = None)
     extends SingleTargetAnnotation[ReferenceTarget] with FAMEAnnotation with HasSerializationHints {
@@ -132,7 +132,7 @@ private[midas] case class BridgeIOAnnotation(
   // Elaborates the BridgeModule using the lambda if it exists
   // Otherwise, uses reflection to find the constructor for the class given by
   // widgetClass, passing it the widgetConstructorKey
-  def elaborateWidget(implicit p: Parameters): BridgeModule[_ <: TokenizedRecord] = {
+  def elaborateWidget(implicit p: Parameters): BridgeModule[_ <: Record with HasChannels] = {
     val px = p alterPartial { case TargetClockInfo => clockInfo }
     widget match {
       case Some(elaborator) => elaborator(px)
@@ -144,7 +144,7 @@ private[midas] case class BridgeIOAnnotation(
             println(s"  With constructor arguments: $key")
             constructor.newInstance(key, px)
           case None => constructor.newInstance(px)
-        }).asInstanceOf[BridgeModule[_ <: TokenizedRecord]]
+        }).asInstanceOf[BridgeModule[_ <: Record with HasChannels]]
     }
   }
 }
@@ -153,7 +153,7 @@ private[midas] case class BridgeIOAnnotation(
 private[midas] object BridgeIOAnnotation {
   // Useful when a pass emits these annotations directly; (they aren't promoted from BridgeAnnotation)
   def apply(target: ReferenceTarget,
-            widget: (Parameters) => BridgeModule[_ <: TokenizedRecord],
+            widget: (Parameters) => BridgeModule[_ <: Record with HasChannels],
             channelNames: Seq[String]): BridgeIOAnnotation =
    BridgeIOAnnotation(target, channelNames.map(p => p -> p).toMap, widget = Some(widget))
 }

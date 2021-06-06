@@ -4,9 +4,11 @@ package midas.widgets
 
 import midas.core.{HostReadyValid, SimWrapperChannels}
 import midas.core.SimUtils
+import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
 
 import chisel3._
 import chisel3.util.ReadyValidIO
+import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 
 import freechips.rocketchip.util.{DecoupledHelper}
 
@@ -26,7 +28,7 @@ import scala.collection.mutable
  */
 
 // We're using a Record here because reflection in Bundle prematurely initializes our lazy vals
-class HostPortIO[+T <: Data](protected val targetPortProto: T) extends TokenizedRecord {
+class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with HasChannels {
   val fromHost = new HostReadyValid
   val toHost = Flipped(new HostReadyValid)
   val hBits  = targetPortProto
@@ -34,6 +36,75 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
   val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
 
   override def cloneType: this.type = new HostPortIO(targetPortProto).asInstanceOf[this.type]
+
+  private[midas] def getClock(): Clock = {
+    val allTargetClocks = SimUtils.findClocks(targetPortProto)
+    require(allTargetClocks.nonEmpty,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has no clock field.")
+    require(allTargetClocks.size == 1,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has ${allTargetClocks.size} clocks but must define only one.")
+    allTargetClocks.head
+  }
+
+  private def getRVChannelNames(channels: Seq[SimUtils.RVChTuple]): Seq[String] =
+    channels.flatMap({ channel =>
+      val (fwd, rev) =  SimUtils.rvChannelNamePair(channel)
+      Seq(fwd, rev)
+    })
+
+  // Create a wire channel annotation
+  protected def generateWireChannelFCCAs(channels: Seq[(Data, String)], bridgeSunk: Boolean = false, latency: Int = 0): Unit = {
+    for ((field, chName) <- channels) {
+      annotate(new ChiselAnnotation { def toFirrtl =
+        if (bridgeSunk) {
+          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
+        } else {
+          FAMEChannelConnectionAnnotation.sink(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
+        }
+      })
+    }
+  }
+
+  // Create Ready Valid channel annotations assuming bridge-sourced directions
+  protected def generateRVChannelFCCAs(channels: Seq[(ReadyValidIO[Data], String)], bridgeSunk: Boolean = false): Unit = {
+    for ((field, chName) <- channels) yield {
+      // Generate the forward channel annotation
+      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
+      annotate(new ChiselAnnotation { def toFirrtl = {
+        val clockTarget = Some(getClock.toNamed.toTarget)
+        val validTarget = field.valid.toNamed.toTarget
+        val readyTarget = field.ready.toNamed.toTarget
+        val leafTargets = Seq(validTarget) ++ SimUtils.lowerAggregateIntoLeafTargets(field.bits)
+        // Bridge is the sink; it applies target backpressure
+        if (bridgeSunk) {
+          FAMEChannelConnectionAnnotation.source(
+            fwdChName,
+            DecoupledForwardChannel.source(validTarget, readyTarget),
+            clockTarget,
+            leafTargets
+          )
+        } else {
+        // Bridge is the source; it asserts target-valid and recieves target-backpressure
+          FAMEChannelConnectionAnnotation.sink(
+            fwdChName,
+            DecoupledForwardChannel.sink(validTarget, readyTarget),
+            clockTarget,
+            leafTargets
+          )
+        }
+      }})
+
+      annotate(new ChiselAnnotation { def toFirrtl = {
+        val clockTarget = Some(getClock.toNamed.toTarget)
+        val readyTarget = Seq(field.ready.toNamed.toTarget)
+        if (bridgeSunk) {
+          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
+        } else {
+          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
+        }
+      }})
+    }
+  }
 
   // These are lazy because parsePorts needs a directioned gen; these can be called once 
   // this Record has been bound to Hardware
@@ -114,6 +185,11 @@ class HostPortIO[+T <: Data](protected val targetPortProto: T) extends Tokenized
     generateWireChannelFCCAs(outputWireChannels, bridgeSunk = false, latency = 1)
     generateRVChannelFCCAs(inputRVChannels, bridgeSunk = true)
     generateRVChannelFCCAs(outputRVChannels, bridgeSunk = false)
+  }
+  def allChannelNames: Seq[String] = ins.unzip._2 ++ outs.unzip._2 ++
+  (rvIns.unzip._2 ++ rvOuts.unzip._2).flatMap { ch =>
+    val (fwd, rev) = SimUtils.rvChannelNamePair(ch)
+    Seq(fwd, rev)
   }
 }
 
