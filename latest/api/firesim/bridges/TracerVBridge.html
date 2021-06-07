@@ -207,8 +207,8 @@
                         <a href="TokenQueueConsts$.html" title="">TokenQueueConsts</a>
                       </li><li class="current-entities indented2">
                         <a class="object" href="TracerVBridge$.html" title=""></a>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">TracerVBridge</a>
+                        <a class="class" href="" title="Target-side module for the TracerV Bridge."></a>
+                        <a href="" title="Target-side module for the TracerV Bridge.">TracerVBridge</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="TracerVBridgeModule.html" title=""></a>
@@ -267,7 +267,8 @@
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Target-side module for the TracerV Bridge.
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -317,7 +318,7 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="firesim.bridges.TracerVBridge#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="firesim.bridges.TracerVBridge#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="&lt;init&gt;(insnWidths:testchipip.TracedInstructionWidths,numInsns:Int):firesim.bridges.TracerVBridge"></a><a id="&lt;init&gt;:TracerVBridge"></a>
       <span class="permalink">
       <a href="../../firesim/bridges/TracerVBridge.html#&lt;init&gt;(insnWidths:testchipip.TracedInstructionWidths,numInsns:Int):firesim.bridges.TracerVBridge" title="Permalink">
@@ -332,7 +333,12 @@
         <span class="name">TracerVBridge</span><span class="params">(<span name="insnWidths">insnWidths: <span class="extype" name="testchipip.TracedInstructionWidths">TracedInstructionWidths</span></span>, <span name="numInsns">numInsns: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
       </span>
       
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">insnWidths</dt><dd class="cmt"><p>A case class containing the widths of configurable-length
+fields in the trace interface.</p></dd><dt class="param">numInsns</dt><dd class="cmt"><p>The number of instructions captured in a single a cycle
+(generally, the commit width of the pipeline)
+Warning: If you're not going to use the companion object to instantiate
+this bridge you must call <span class="extype" name="TracerVBridge.generateTriggerAnnotations]">_in
+the parent module_.</span></p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -575,7 +581,23 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="firesim.bridges.TracerVBridge">TracerVBridge</a> → <a href="../../midas/widgets/Bridge.html" class="extype" name="midas.widgets.Bridge">Bridge</a></dd></dl></div>
-    </li><li name="chisel3.experimental.BaseModule#desiredName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="firesim.bridges.TracerVBridge#defnameSuffix" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defnameSuffix:String"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/TracerVBridge.html#defnameSuffix:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defnameSuffix</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      
+    </li><li name="firesim.bridges.TracerVBridge#desiredName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="desiredName:String"></a>
       <span class="permalink">
       <a href="../../firesim/bridges/TracerVBridge.html#desiredName:String" title="Permalink">
@@ -587,10 +609,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">desiredName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">desiredName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>BaseModule</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="firesim.bridges.TracerVBridge">TracerVBridge</a> → BaseModule</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
