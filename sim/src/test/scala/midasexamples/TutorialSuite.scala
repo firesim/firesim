@@ -38,15 +38,28 @@ abstract class TutorialSuite(
   }
 
 
-  def runTest(b: String, debug: Boolean = false) {
-    compileMlSimulator(b, debug)
-    val testEnv = s"${b} MIDAS-level simulation" + { if (debug) " with waves enabled" else "" }
+  /**
+    * Runs MIDAS-level simulation on the design.
+    *
+    * @param b Backend simulator: "verilator" or "vcs"
+    * @param debug When true, captures waves from the simulation
+    * @param args A seq of PlusArgs to pass to the simulator.
+    * @param shouldPass When false, asserts the test returns a non-zero code
+    */
+  def runTest(b: String, debug: Boolean = false, args: Seq[String] = simulationArgs, shouldPass: Boolean = true) {
+    val prefix =  if (shouldPass) "pass in " else "fail in "
+    val testEnvStr  = s"${b} MIDAS-level simulation"
+    val wavesStr = if (debug) " with waves enabled" else ""
+    val argStr = " with args: " + args.mkString(" ")
+
+    val haveThisBehavior = prefix + testEnvStr + wavesStr + argStr
+
     if (isCmdAvailable(b)) {
-      it should s"pass in ${testEnv}" in {
-        assert(run(b, debug, args = simulationArgs) == 0)
+      it should haveThisBehavior in {
+         assert((run(b, debug, args = args) == 0) == shouldPass)
       }
     } else {
-      ignore should s"pass in ${testEnv}" in { }
+      ignore should haveThisBehavior in { }
     }
   }
 
@@ -124,6 +137,7 @@ abstract class TutorialSuite(
   mkdirs()
   behavior of s"$targetName"
   elaborateAndCompile()
+  compileMlSimulator(backendSimulator)
   runTest(backendSimulator)
 }
 
