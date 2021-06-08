@@ -275,6 +275,26 @@ class PassthroughModelBridgeSourceTest extends TutorialSuite("PassthroughModelBr
   expectedFMR(1.0)
 }
 
+class ResetPulseBridgeActiveHighTest extends TutorialSuite(
+    "ResetPulseBridgeTest",
+    // Disable assertion synthesis to rely on native chisel assertions to catch bad behavior
+    platformConfigs = "NoSynthAsserts_HostDebugFeatures_DefaultF1Config",
+    simulationArgs = Seq(s"+reset-pulse-length0=${ResetPulseBridgeTestConsts.maxPulseLength}")) {
+  runTest(backendSimulator,
+    args = Seq(s"+reset-pulse-length0=${ResetPulseBridgeTestConsts.maxPulseLength + 1}"),
+    shouldPass = false)
+}
+
+class ResetPulseBridgeActiveLowTest extends TutorialSuite(
+    "ResetPulseBridgeTest",
+    targetConfigs = "ResetPulseBridgeActiveLowConfig",
+    platformConfigs = "NoSynthAsserts_HostDebugFeatures_DefaultF1Config",
+    simulationArgs = Seq(s"+reset-pulse-length0=${ResetPulseBridgeTestConsts.maxPulseLength}")) {
+  runTest(backendSimulator,
+    args = Seq(s"+reset-pulse-length0=${ResetPulseBridgeTestConsts.maxPulseLength + 1}"),
+    shouldPass = false)
+}
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
@@ -321,12 +341,14 @@ class GoldenGateMiscCITests extends Suites(
   new MultiRegF1Test
 )
 
-// Each group runs on a single worker instance
+// These groups are vestigial from CircleCI container limits
 class CIGroupA extends Suites(
   new ChiselExampleDesigns,
   new PrintfSynthesisCITests,
   new firesim.fasedtests.CIGroupA,
-  new AutoCounterCITests
+  new AutoCounterCITests,
+  new ResetPulseBridgeActiveHighTest,
+  new ResetPulseBridgeActiveLowTest,
 )
 
 class CIGroupB extends Suites(
