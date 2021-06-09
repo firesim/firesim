@@ -50,7 +50,7 @@ private[midas] class MidasTransforms extends Transform {
       new EmitFirrtl("post-autocounter.fir"),
       new fame.EmitFAMEAnnotations("post-autocounter.json"),
       new ResolveAndCheck,
-      new AssertPass,
+      new AssertionSynthesis,
       new PrintSynthesis,
       new ResolveAndCheck,
       new EmitFirrtl("post-debug-synthesis.fir"),

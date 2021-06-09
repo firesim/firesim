@@ -19,7 +19,7 @@ import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.ExcludeInstanceAssertsAnnotation
 
-private[passes] class AssertPass extends firrtl.Transform {
+private[passes] class AssertionSynthesis extends firrtl.Transform {
   def inputForm = LowForm
   def outputForm = HighForm
   override def name = "[Golden Gate] Assertion Synthesis"
