@@ -101,14 +101,14 @@ categoryTests = {
         # These tests aren't run directly. Instead they include a testing
         # script that is run.
         "special" : [
-                # 'clean',
-                # 'incremental',
-                # 'inherit',
-                # 'sameWorkdir',
-                # 'fsSize',
-                # 'makefile',
-                # 'testWorkdir',
-                # 'workload-dirs',
+                'clean',
+                'incremental',
+                'inherit',
+                'sameWorkdir',
+                'fsSize',
+                'makefile',
+                'testWorkdir',
+                'workload-dirs',
                 'jobs',
                 'undefinedOpt'
         ]
