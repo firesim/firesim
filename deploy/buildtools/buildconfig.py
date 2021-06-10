@@ -64,10 +64,10 @@ class BuildConfig:
         instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
         terminate_instances(instance_ids, dryrun=False)
 
-    def get_build_dir_name(self):
-        """" Get the name of the local build directory. """
-        return """{}-{}-{}""".format(self.launch_time,
-                                     self.get_chisel_triplet(), self.name)
+    def get_build_dir_name(self, build_name_prefix = ""):
+        """ Get the name of the local build directory. """
+        prefix = "" if build_name_prefix is "" else build_name_prefix + "-"
+        return """{}{}-{}""".format(prefix, self.launch_time, self.name)
 
     # Builds up a string for a make invocation using the tuple variables
     def make_recipe(self, recipe):
@@ -110,6 +110,7 @@ class GlobalBuildConfig:
         self.spot_max_price = \
                      global_build_configfile.get('afibuild', 'spotmaxprice')
         self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
+        self.build_name_prefix = global_build_configfile.get('afibuild', 'buildnameprefix')
 
         # this is a list of actual builds to run
         builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))

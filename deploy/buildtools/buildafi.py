@@ -25,7 +25,7 @@ def replace_rtl(conf, buildconfig):
     """ Run chisel/firrtl/fame-1, produce verilog for fpga build.
 
     THIS ALWAYS RUNS LOCALLY"""
-    builddir = buildconfig.get_build_dir_name()
+    builddir = buildconfig.get_build_dir_name(conf.build_name_prefix)
     fpgabuilddir = "hdk/cl/developer_designs/cl_" + buildconfig.get_chisel_triplet()
     ddir = get_deploy_dir()
 
@@ -88,7 +88,7 @@ def aws_build(global_build_config, bypass=False):
     # /home/centos/firesim-build/ """
     ddir = get_deploy_dir()
     buildconfig = global_build_config.get_build_by_ip(env.host_string)
-    builddir = buildconfig.get_build_dir_name()
+    builddir = buildconfig.get_build_dir_name(global_build_config.build_name_prefix)
     # local AWS build directory; might have config-specific changes to fpga flow
     fpgabuilddir = "hdk/cl/developer_designs/cl_" + buildconfig.get_chisel_triplet()
     remotefpgabuilddir = "hdk/cl/developer_designs/cl_firesim"
