@@ -98,8 +98,17 @@ def initOpts(cfg):
     if 'environment' not in opts:
         opts['environment'] = {}
 
-    opts['environment'][cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
+    # os.path.expandvars must use os.environ, we we temporarily modify it
+    envBackup = os.environ.copy()
 
+    # Expand any variables the user provided for their environment (including
+    # the workload path variable we add)
+    os.environ[cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
+    for k,v in opts['environment'].items():
+        opts['environment'][k] = os.path.expandvars(v)
+    os.environ = envBackup
+
+    opts['environment'][cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
 
 class Builder:
     """A builder object will be created for each unique set of options (as

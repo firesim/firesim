@@ -69,8 +69,7 @@ categoryTests = {
             'qemu',
             'run',
             'simArgs',
-            'noDrivers',
-            'modifyDistro'
+            'noDrivers'
         ],
 
         # This tests both no-disk and spike. In theory, most (maybe all?) tests
@@ -110,7 +109,8 @@ categoryTests = {
                 'testWorkdir',
                 'workload-dirs',
                 'jobs',
-                'undefinedOpt'
+                'undefinedOpt',
+                'modifyDistro'
         ]
 }
 

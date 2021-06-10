@@ -47,4 +47,11 @@ provide aditional environment variables to customize their buildroot
 configuration or build. These variables will be available for use in the
 workload's buildroot configuration and will be passed when invoking ``make`` on
 buildroot. Variables are provided as a dictionary of ``{ 'VARIABLE_NAME' :
-'value' }``. 
+'value' }``. You may include variable substitutions from the local environment
+or the special ``$(WORKLOAD_NAME_PATH)`` variable. Continuing with the example
+``foo-bar`` above, let's assume we've defined ``$ENV_VARIABLE`` before invoking
+FireMarshal. We can then include the following in our workload:
+
+..
+
+   { "EXAMPLE_VAR" : "${FOO_BAR_PATH}/${ENV_VARIABLE}/baz" }
