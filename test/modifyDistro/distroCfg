@@ -8,3 +8,12 @@ BR2_PACKAGE_VIM=n
 #   - marshal is supposed to set MODIFYDISTRO_PATH to the absolute path to our workdir
 #   - the test sets MODIFYDISTRO_TEST_VAR to the name of the busybox config to use
 BR2_PACKAGE_BUSYBOX_CONFIG="$(MODIFYDISTRO_PATH)/$(MODIFYDISTRO_TEST_VAR)"
+
+# This tests whether marshal can expand MODIFYDISTRO_PATH when it's specified
+# in the workload config
+BR2_PACKAGE_BUSYBOX_CONFIG_FRAGMENT_FILES="$(MODIFYDISTRO_TEST_BUSYBOXFRAG)"
+
+
+# This tests whether marshal can expand arbitrary environment variables (this
+# one's set in test.py)
+BR2_TARGET_GENERIC_HOSTNAME="$(MODIFYDISTRO_TEST_HOSTNAME)"
