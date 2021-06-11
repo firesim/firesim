@@ -11,15 +11,19 @@ import scala.collection.immutable.ListMap
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-class AssertBundle(val numAsserts: Int) extends Bundle {
+class AssertBridgeRecord(assertPortName: String, resetPortName: String, numAsserts: Int) extends Record {
   val asserts = Output(UInt(numAsserts.W))
+  val underGlobalReset = Output(Bool())
+  val elements = ListMap(assertPortName -> asserts, resetPortName -> underGlobalReset)
+  override def cloneType = new AssertBridgeRecord(assertPortName, resetPortName, numAsserts).asInstanceOf[this.type]
 }
 
-class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) extends BridgeModule[HostPortIO[UInt]]()(p) {
+class AssertBridgeModule(assertPortName: String, resetPortName: String, assertMessages: Seq[String])(implicit p: Parameters)
+    extends BridgeModule[HostPortIO[AssertBridgeRecord]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     val numAsserts = assertMessages.size
     val io = IO(new WidgetIO())
-    val hPort = IO(HostPort(Input(UInt(numAsserts.W))))
+    val hPort = IO(HostPort(Input(new AssertBridgeRecord(assertPortName, resetPortName, numAsserts))))
     val resume = WireInit(false.B)
     val enable = RegInit(false.B)
     val cycles = RegInit(0.U(64.W))
@@ -30,10 +34,11 @@ class AssertBridgeModule(assertMessages: Seq[String])(implicit p: Parameters) ex
     // We only sink tokens, so tie off the return channel
     hPort.fromHost.hValid := true.B
 
-    val asserts = q.io.deq.bits
+    val asserts = q.io.deq.bits.asserts
+    val underGlobalReset = q.io.deq.bits.underGlobalReset
 
     val assertId = PriorityEncoder(asserts)
-    val assertFire = asserts.orR
+    val assertFire = asserts.orR && !underGlobalReset
 
     // Tokens will stall when an assertion is firing unless
     // resume is pulsed or assertions are disabled

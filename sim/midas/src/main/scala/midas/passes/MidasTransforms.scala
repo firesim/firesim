@@ -59,6 +59,7 @@ private[midas] class MidasTransforms extends Transform {
       TriggerWiring,
       new EmitFirrtl("post-trigger-wiring.fir"),
       new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
+      GlobalResetConditionWiring,
       // We should consider moving these lower
       ChannelClockInfoAnalysis,
       UpdateBridgeClockInfo,

@@ -165,32 +165,39 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         EventMetadata(anno.topSink.ref, (pathlessLabel +: instPath).mkString("_"), eventWidth)
       })
 
-      // Step 2b. Manually add a boolean channel to carry the trigger signal to the bridge
+      // Step 2b. Manually add boolean channels, to carry the trigger and
+      // globalResetCondition to the bridge
       val triggerPortName = topNS.newName(s"${topWiringPrefix}_triggerEnable")
       // Introduce an extra node until TriggerWriring supports port sinks
       val triggerPortNode = topNS.newName(s"${topWiringPrefix}_triggerEnable_node")
       addedPorts += Port(NoInfo, triggerPortName, Output, BoolType)
+
+      val globalResetName = topNS.newName(s"${topWiringPrefix}_globalResetCondition")
+      addedPorts += Port(NoInfo, globalResetName, Output, BoolType)
+
       // In the event there are no trigger sources, default to enabled
       addedStmts ++= Seq(
         DefNode(NoInfo, triggerPortNode, one),
-        Connect(NoInfo, WRef(triggerPortName), WRef(triggerPortNode)))
-      val triggerPortRT  = topMT.ref(triggerPortName)
-      val triggerFcca = FAMEChannelConnectionAnnotation.source(
-        triggerPortName,
-        WireChannel,
-        Some(sinkClockRT),
-        Seq(triggerPortRT))
+        Connect(NoInfo, WRef(triggerPortName), WRef(triggerPortNode)),
+        Connect(NoInfo, WRef(globalResetName), zero),
+        )
 
+      def predicateFCCA(name: String) =
+        FAMEChannelConnectionAnnotation.source(name, WireChannel, Some(sinkClockRT), Seq(topMT.ref(name)))
+
+      val triggerFCCA = predicateFCCA(triggerPortName)
       val triggerSinkAnno = TriggerSinkAnnotation(topMT.ref(triggerPortNode), sinkClockRT)
+      val globalResetFCCA = predicateFCCA(globalResetName)
+      val globalResetSink = GlobalResetConditionSink(topMT.ref(globalResetName))
 
       val bridgeAnno = BridgeIOAnnotation(
         target = topMT.ref(topWiringPrefix),
         // We need to pass the name of the trigger port so each bridge can
         // disambiguate between them and connect to the correct one in simulation mapping
-        widget = (p: Parameters) => new AutoCounterBridgeModule(eventMetadata, triggerPortName)(p),
-        channelNames = (triggerFcca +: fccas).map(_.globalName)
+        widget = (p: Parameters) => new AutoCounterBridgeModule(eventMetadata, triggerPortName, globalResetName)(p),
+        channelNames = (triggerFCCA +: globalResetFCCA +: fccas).map(_.globalName)
       )
-      Seq(bridgeAnno, triggerSinkAnno, triggerFcca) ++ fccas
+      Seq(bridgeAnno, triggerSinkAnno, triggerFCCA, globalResetFCCA, globalResetSink) ++ fccas
     }
 
     val updatedCircuit = c.copy(modules = c.modules.map({

@@ -72,7 +72,7 @@ object BridgeTopWiring {
 }
 
 /**
-  * A utility transform used to implement features that are finely distrubuted
+  * A utility transform used to implement features that are finely distributed
   * through out the target, such as assertion and printf synthesis. This
   * transform preforms most of the circuit modifications and analysis to emit
   * BridgeIOAnnotations and FCCAs directly. For this pass to function
