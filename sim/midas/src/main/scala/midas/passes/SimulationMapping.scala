@@ -94,7 +94,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     // Generate the encapsulating simulator RTL
     lazy val shim = PlatformShim(innerState.annotations, portTypeMap)
     val c3circuit = chisel3.stage.ChiselStage.elaborate(LazyModule(shim).module)
-    val chirrtl = chisel3.stage.ChiselStage.convert(c3circuit)
+    val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
     val annos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: c3circuit.annotations.map(_.toFirrtl)
 
     val transforms = Seq(
