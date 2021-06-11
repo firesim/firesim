@@ -98,8 +98,17 @@ def initOpts(cfg):
     if 'environment' not in opts:
         opts['environment'] = {}
 
-    opts['environment'][cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
+    # os.path.expandvars must use os.environ, we we temporarily modify it
+    envBackup = os.environ.copy()
 
+    # Expand any variables the user provided for their environment (including
+    # the workload path variable we add)
+    os.environ[cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
+    for k,v in opts['environment'].items():
+        opts['environment'][k] = os.path.expandvars(v)
+    os.environ = envBackup
+
+    opts['environment'][cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
 
 class Builder:
     """A builder object will be created for each unique set of options (as
@@ -131,7 +140,7 @@ class Builder:
                 }
 
 
-    def configure(self):
+    def configure(self, env):
         """Construct the final buildroot configuration for this environment. After
         calling this, it is safe to call 'make' in the buildroot directory."""
 
@@ -149,12 +158,12 @@ class Builder:
 
         # Default Configuration (allows us to bump BR independently of our configs)
         defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
-        wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'))
+        wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'), env=env)
         shutil.copy(br_dir / 'buildroot' / '.config', defconfig)
 
         kFrags = [ defconfig, toolKfrag ] + self.opts['configs']
         mergeScript = br_dir / 'merge_config.sh'
-        wlutil.run([mergeScript] + kFrags, cwd=(br_dir / 'buildroot'))
+        wlutil.run([mergeScript] + kFrags, cwd=(br_dir / 'buildroot'), env=env)
 
 
     # Build a base image in the requested format and return an absolute path to that image
@@ -165,12 +174,13 @@ class Builder:
         """
         try:
             wlutil.checkSubmodule(br_dir / 'buildroot')
-            self.configure()
 
             # Buildroot complains about some common PERL configurations
             env = os.environ.copy()
             env.pop('PERL_MM_OPT', None)
             env = {**env, **self.opts['environment']}
+            
+            self.configure(env)
 
             # This is unfortunate but buildroot can't remove things from the
             # image without rebuilding everything from scratch. It adds 20min

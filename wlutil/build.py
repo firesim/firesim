@@ -78,6 +78,10 @@ def kmodDepsTask(cfg, taskDeps=None, name=""):
 
     def checkMods(cfg):
         log = logging.getLogger()
+
+        if not 'modules' in cfg['linux']:
+            return
+
         for driverDir in cfg['linux']['modules'].values():
             if not driverDir.exists():
                 log.warn("WARNING: Required module " + str(driverDir) + " does not exist: Assuming the workload is not uptodate.")
@@ -111,7 +115,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
     """Returns a task dict for a calc_dep task that calculates the file
     dependencies representd by an overlay and/or a list of FileSpec objects.
     Either can be None.
-    
+
     taskDeps should be a list of names of tasks that must run before
     calculating dependencies (e.g. host-init)"""
 
@@ -352,8 +356,8 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     """Generate a cpio archive containing each of the sources and store it in cpioDir.
     Return a path to the generated archive.
     srcs: are a list of paths to directories to include, sources will be
+          applied in-order (potentially overwriting duplicate files).
     cpioDir: Scratch directory to produce outputs in
-    applied in-order (potentially overwriting duplicate files).
     includeDevNodes: If true, will include '/dev/console' and '/dev/tty' special files."""
 
     # Generate individual cpios for each source
@@ -406,26 +410,27 @@ def makeModules(cfg):
     put in the appropriate location in the initramfs staging area."""
 
     linCfg = cfg['linux']
-
-    if len(linCfg['modules']) == 0:
-        return
-
-    makeCmd = "make LINUXSRC=" + str(linCfg['source'])
-
-    # Prepare the linux source for building external modules 
-    generateKConfig(linCfg['config'], linCfg['source'])
-    run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linCfg['source'])
-    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linCfg['source'], stdout=sp.PIPE, universal_newlines=True).stdout.strip()
-
     drivers = []
-    for driverDir in linCfg['modules'].values():
-        checkSubmodule(driverDir)
 
-        # Drivers don't seem to detect changes in the kernel
-        run(makeCmd + " clean", cwd=driverDir, shell=True)
-        run(makeCmd, cwd=driverDir, shell=True)
-        drivers.extend(list(driverDir.glob("*.ko")))
+    # Prepare the linux source with the proper config
+    generateKConfig(linCfg['config'], linCfg['source'])
 
+    # Build modules (if they exist)
+    if ('modules' in linCfg) and (len(linCfg['modules']) != 0):
+        # Prepare the linux source for building external modules
+        run(["make"] + getOpt('linux-make-args') + ["modules_prepare", getOpt('jlevel')], cwd=linCfg['source'])
+
+        makeCmd = "make LINUXSRC=" + str(linCfg['source'])
+
+        for driverDir in linCfg['modules'].values():
+            checkSubmodule(driverDir)
+
+            # Drivers don't seem to detect changes in the kernel
+            run(makeCmd + " clean", cwd=driverDir, shell=True)
+            run(makeCmd, cwd=driverDir, shell=True)
+            drivers.extend(list(driverDir.glob("*.ko")))
+
+    kernelVersion = sp.run(["make", "-s", "ARCH=riscv", "kernelrelease"], cwd=linCfg['source'], stdout=sp.PIPE, universal_newlines=True).stdout.strip()
     driverDir = getOpt('initramfs-dir') / "drivers" / "lib" / "modules" / kernelVersion
 
     # Always start from a clean slate
@@ -475,7 +480,7 @@ def makeOpenSBI(config, nodisk=False):
     if 'opensbi-build-args' in config['firmware']:
         args += config['firmware']['opensbi-build-args']
 
-    run(['make'] + 
+    run(['make'] +
         getOpt('linux-make-args') + args,
         cwd=config['firmware']['source']
         )

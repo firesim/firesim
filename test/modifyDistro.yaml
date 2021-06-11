@@ -1,0 +1,22 @@
+{
+  "name" : "modifyDistro",
+  "base" : "br-base.json",
+  "run" : "runTest.sh",
+  "distro" : {
+      "name" : "br",
+      "opts" : {
+          "configs" : ["distroCfg"],
+          "environment" : {
+                # This variable is used directly by distroCfg
+                "MODIFYDISTRO_TEST_VAR" : "busyboxCfg",
+                # MODIFYDISTRO_PATH will be expanded before being passed to buildroot
+                "MODIFYDISTRO_TEST_BUSYBOXFRAG" : "${MODIFYDISTRO_PATH}/busyboxFragment",
+                # MODIFYDISTRO_TEST_HOSTNAMEBASE is set in the host environment and _HOSTNAME is used by distroCfg
+                "MODIFYDISTRO_TEST_HOSTNAME" : "${MODIFYDISTRO_TEST_HOSTNAME_BASE}_fromcfg"
+          }
+      }
+  },
+  "testing" : {
+    "refDir" : "refOutput"
+  }
+}

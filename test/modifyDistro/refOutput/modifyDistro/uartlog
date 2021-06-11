@@ -4,7 +4,12 @@ Password:
 PASS
 Checking if vim was removed (removing packages from buildroot config test)
 PASS
-Checking if depmod showed up (environment variables test)
+Checking if depmod showed up
 iceblk.ko:
 icenet.ko:
+PASS
+Checking if ed showed up
+/bin/ed
+PASS
+Checking if hostname was set correctly
 PASS

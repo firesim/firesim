@@ -3,6 +3,26 @@
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 Versioning follows semantic versioning as described here: https://semver.org/spec/v2.0.0.html
 
+## [1.12.0] - 2021-04-11
+This is a fairly small release that adds initial support for a chip tapeout
+prototyping board, yaml support, and a few improvements to the buildroot distro
+options. This release coordinates with Chipyard release 1.5.0.
+
+### Added
+* PR #186 adds support for yaml workload configuration files. So far, we do not
+  use any yaml features other than comments.
+* PR #190 adds a new board for chip prototyping
+
+### Changed
+* PR #187 adds performance counters to the Linux configuration for Fedora
+* PR #191 and #193 improve handling of environment variable in buildroot
+  configuration. Shell variables will now be expanded by FireMarshal and
+variables will be available at all steps in the buildroot build process.
+
+### Fixed
+* PR #189 fixes a bug where workloads that didn't include any kernel modules
+  would not build.
+
 ## [1.11.0] - 2021-01-12
 This release coordinates with Chipyard v1.4.0 and includes several
 board-related features, improving customizability of the hard-coded base

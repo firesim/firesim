@@ -1,7 +1,7 @@
 {
   "name" : "spike-jobs",
   "workdir" : "spike",
-  "base" : "spike.json",
+  "base" : "spike.yaml",
   "testing" : {
     "refDir" : "refJobs"
   },
