@@ -10,7 +10,7 @@ import scala.collection.mutable
 import firrtl._
 import firrtl.annotations.{CircuitName, ReferenceTarget, ModuleTarget, InstanceTarget}
 import firrtl.options.Dependency
-import firrtl.stage.Forms
+import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.stage.transforms.Compiler
 import firrtl.ir._
 import firrtl.Mappers._
@@ -18,6 +18,7 @@ import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, flow, module_type}
 import firrtl.passes.wiring._
 import Utils._
+import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.LazyModule
 
@@ -93,9 +94,13 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
 
     // Generate the encapsulating simulator RTL
     lazy val shim = PlatformShim(innerState.annotations, portTypeMap)
-    val c3circuit = chisel3.stage.ChiselStage.elaborate(LazyModule(shim).module)
-    val chirrtl = chisel3.stage.ChiselStage.convert(c3circuit)
-    val annos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: c3circuit.annotations.map(_.toFirrtl)
+    val annos = (new chisel3.stage.ChiselStage).transform(
+      Seq(
+        ChiselGeneratorAnnotation(() => LazyModule(shim).module),
+        NoRunFirrtlCompilerAnnotation
+      )
+    ) :+ PreLinkRenamingAnnotation(Namespace(innerCircuit))
+    val chirrtl = annos.collectFirst { case a: FirrtlCircuitAnnotation => a }.get.circuit
 
     val transforms = Seq(
       Dependency[Fame1Instances],
