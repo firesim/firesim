@@ -22,7 +22,7 @@ configuration file for ``base`` references and the workload source directory.
 This option instructs FireMarshal to look elsewhere for these references. See
 :ref:`workload-search-paths` for details of how workloads are located.
 
-``-d --nodisk``
+``-d --no-disk``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 By default, FireMarshal assumes that your workload includes both a rootfs and a
 boot-binary. However, it may be necessary (e.g. when using spike) to build the
@@ -41,7 +41,7 @@ build
 The build command is used to generate the rootfs's and boot-binaries from the
 workload configuration file. The output will be ``images/NAME-JOBNAME-bin`` and
 ``images/NAME-JOBNAME.img`` files for each job in the workload. If you passed
-the --nodisk option to FireMarshal, a ``images/NAME-JOBNAME-bin-nodisk``
+the --no-disk option to FireMarshal, a ``images/NAME-JOBNAME-bin-nodisk``
 file will also be created.
 
 ::
@@ -88,7 +88,7 @@ workload.
 In some cases, you may need to boot your workload in spike (typically due to a
 custom ISA extension or hardware model). In that case, you may use the -s
 option. Note that spike currently does not support network or block devices.
-You must pass the --nodisk option to FireMarshal when using spike.
+You must pass the --no-disk option to FireMarshal when using spike.
 
 clean
 --------------------------------------
@@ -108,7 +108,7 @@ included in the output directory.
 
 ``-s --spike``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Test using spike instead of qemu (requires the --nodisk option to the
+Test using spike instead of qemu (requires the --no-disk option to the
 ``marshal`` command).
 
 ``-m testDir --manual testDir``
