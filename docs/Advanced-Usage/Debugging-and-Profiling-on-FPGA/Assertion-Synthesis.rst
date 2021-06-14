@@ -9,12 +9,11 @@ provide great insight into why the target may be failing.
 Enabling Assertion Synthesis
 ----------------------------
 
-To enable assertion synthesis prepend ``WithSynthAsserts`` Config to your
-PLATFORM_CONFIG.  During compilation, Golden Gate will print the
-number of assertions it's synthesized.  In the target's ``generated-src/``
-directory, you'll find a ``*.asserts`` file with the definitions of all
-synthesized assertions.  If assertion synthesis has been enabled, the
-``synthesized_assertions_t`` bridge driver will be automatically instantiated.
+To enable assertion synthesis prepend ``WithSynthAsserts`` config to your
+PLATFORM_CONFIG.  During compilation, Golden Gate will print the number of
+assertions it's synthesized.  In the generated header, you will find the
+definitions of all synthesized assertions. The ``synthesized_assertions_t``
+bridge driver will be automatically instantiated.
 
 
 Runtime Behavior
@@ -34,6 +33,15 @@ below:
     Assertion failed
         at issue_slot.scala:214 assert (!slot_p1_poisoned)
         at cycle: 2142042185
+
+
+
+Just as in a software-hosted RTL simulation using verilator or VCS, the
+reported cycle is the number of target cycles that have elapsed in the clock
+domain in which the assertion was instantiated (in Chisel specifically this is
+the implicit clock at the time you called ``assert``). If you rerun a FireSim
+simulation with identical inputs, the same assertion should fire
+deterministically at the same cycle.
 
 Related Publications
 --------------------
