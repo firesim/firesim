@@ -1,6 +1,39 @@
 # Changelog
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
+**Developers: Please add descriptions of your changes to this PR as your PRs are merged into Dev**
+
+## [1.12.0] - 2021-06-14
+Updates default AGFIs to fully utilize multiclock support, fixes a gnarly
+FIRRTL deduplication interaction.
+
+### Added
+* Promote passthrough optimization (#707) to improve FMR in multi-model targets
+* `firesim tar2afi --launchtime <time>` can be used to retry AGFI creation with the vivado design checkpoint tarball #683
+* Multibit autocounter events (#706)
+*  [ci] Add a script to build and push ci docker images #723
+* AGFI ID printed into uartlog at simulation init time #755
+* aws-fpga-firesim uses `-hierachical_percentages` on `report_utilization`, also `report_control_sets` post synthesis (firesim/aws-fpga-firesim#37)
+* Begin adding pytest-driven unit tests for `firesim` manager script #754
+* A strategy for disabling retiming firesim/aws-fpga-firesim#34
+
+### Changed
+* PLATFORM_CONFIG must mixin WithAutoILA to populate ILA #712 
+* Check sns topic permission at start of buildafi and warn user #754
+* Default AGFI target-frequency configurations #785
+  *  Unnetworked targets (1.6 GHz, 0.8GHz, 1GHz) for Tile, Uncore, DRAM respectively
+  *  Networked targets (3.2GHz , 3.2GHz, 1.0 GHz) for tile 
+* Unrouted clock nets promoted to error firesim/aws-fpga-firesim#31
+
+### Fixed
+* [printf] Support %c format specifiers (#735, resolves #592)
+* Fix VCS-related breakages in MIDASExamples, SynthUnittests #725
+* Fix breakages related to new FIRRTL 1.4 DedupModules by limiting how many times it runs (#738, see #766)
+* Replace DualQueue in the DRAM memory model scheduler with RRArbiter+Queue to prevent write starvation (#753)
+* A bug that broke tracerV when using heterogenous mixes of tiles #776 
+
+### Removed
+* Coremark and SPEC workloads moved to Chipyard
 
 ## [1.11.0] - 2021-01-19
 FireSim 1.11.0 formally introduces the _instance multithreading_ optimization, the subject of Albert Magyar's dissertation work, which can be used to improve FPGA capacity by up to 8X (2 -> 16 large boom cores) for some designs. Other notable changes include: putting DRAM in its own clock domain, RC + Chisel + FIRRTL bumps + many QoL improvements. 
