@@ -5,8 +5,7 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
+import chisel3.experimental.DataMirror
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
@@ -77,7 +76,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   //   For outputs, direct binds the wire to the map
   def attachIO(io: Record, prefix: String = ""): Unit = {
     def innerAttachIO(node: Data, name: String): Unit = node match {
-      case (b: Bits) => (directionOf(b): @unchecked) match {
+      case (b: Bits) => (DataMirror.directionOf(b): @unchecked) match {
         case ActualDirection.Output => attach(b, s"${name}", ReadOnly)
         case ActualDirection.Input => genWOReg(b, name)
       }

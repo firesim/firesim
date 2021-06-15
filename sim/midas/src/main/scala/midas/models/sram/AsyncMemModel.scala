@@ -28,7 +28,7 @@ class AsyncMemChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int = 2,
       case (detected, cmd) => detected || collides(cmd)
     }
 
-    when (write_cmd.active && !reset.toBool() && !collision_detected) {
+    when (write_cmd.active && !reset.asBool() && !collision_detected) {
       data.write(write_cmd.addr, write_cmd.data)
     }
   }
@@ -68,7 +68,7 @@ class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 
   val active_write_en = Wire(Bool())
   val read_data_async = data.read(active_read_addr)
   val read_data = RegNext(read_data_async)
-  when (active_write_en && !target_reset_value && !reset.toBool()) {
+  when (active_write_en && !target_reset_value && !reset.asBool()) {
     data.write(active_write_addr, active_write_data)
   }
 
@@ -110,7 +110,7 @@ class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 
 
   // Target reset state management
   channels.reset.ready := !target_reset_fired
-  when (advance_cycle || reset.toBool()) {
+  when (advance_cycle || reset.asBool()) {
     target_reset_fired := false.B
   } .elsewhen (channels.reset.fire) {
     target_reset_fired := true.B
@@ -126,7 +126,7 @@ class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 
     channels.read_resps(i).bits := Mux(read_state(i) === active, read_data, read_resp_data(i))
     channels.read_resps(i).valid := read_state(i) === active || read_state(i) === generated
 
-    when (advance_cycle || reset.toBool()) {
+    when (advance_cycle || reset.asBool()) {
       read_state(i) := start
     } .elsewhen (read_state(i) === start && read_access_granted(i)) {
       read_state(i) := active
@@ -144,7 +144,7 @@ class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 
   active_write_en := false.B
   for (i <- 0 until nWrites) {
     channels.write_cmds(i).ready := write_prereqs_met(i) && !write_complete(i)
-    when (advance_cycle || reset.toBool()) {
+    when (advance_cycle || reset.asBool()) {
       write_complete(i) := false.B
     } .elsewhen (channels.write_cmds(i).fire) {
       write_complete(i) := true.B

@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import chisel3._
-import chisel3.experimental.{withClock}
 
 import midas.widgets.{RationalClockBridge, PeekPokeBridge}
 
@@ -16,6 +15,8 @@ class PeekPokeMidasExampleHarness(dutGen: () => Module) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val dut = Module(dutGen())
-    val peekPokeBridge = PeekPokeBridge(clock, reset, ("io", dut.io))
+    val peekPokeBridge = PeekPokeBridge(clock, reset, chisel3.experimental.DataMirror.modulePorts(dut).filterNot {
+      case (name, _) => name == "clock" | name == "reset"
+    }:_*)
   }
 }

@@ -2,20 +2,27 @@
 
 package midas.stage
 
-import midas.{TargetTransforms, HostTransforms}
-import midas.passes.{MidasTransforms}
-import midas.stage.phases.{CreateParametersInstancePhase, ConfigParametersAnnotation}
-
-import firrtl.{CircuitState, AnnotationSeq}
-import firrtl.annotations.{Annotation}
-import firrtl.options.{Phase, Dependency}
+import midas.{HostTransforms, TargetTransforms}
+import midas.passes.MidasTransforms
+import midas.stage.phases.{ConfigParametersAnnotation, CreateParametersInstancePhase}
+import firrtl.{AnnotationSeq, CircuitState}
+import firrtl.options.{Dependency, Phase}
 import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation}
-import firrtl.stage.{Forms, FirrtlCircuitAnnotation}
+import firrtl.stage.phases.{AddCircuit, AddDefaults, AddImplicitEmitter, AddImplicitOutputFile, Checks}
+import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
 import firrtl.stage.transforms.Compiler
 
 class GoldenGateCompilerPhase extends Phase with ConfigLookup {
 
-  override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
+  override val prerequisites = Seq(
+    Dependency[AddDefaults],
+    Dependency[AddImplicitEmitter],
+    Dependency[Checks],
+    Dependency[AddCircuit],
+    Dependency[AddImplicitOutputFile],
+    Dependency[CreateParametersInstancePhase]
+  )
+
   override val optionalPrerequisiteOf = Seq(Dependency[firrtl.stage.phases.WriteEmitted])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

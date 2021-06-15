@@ -34,7 +34,7 @@ object AsyncResetRegPass extends firrtl.Transform {
   def renameClockReset(s: Statement): Statement =
     s map renameClockResetExp map renameClockReset
 
-  private val chirrtl = Parser.parse(chisel3.Driver.emit(() => new AsyncResetReg))
+  private val chirrtl = chisel3.stage.ChiselStage.convert(new AsyncResetReg)
   private val circuit = (new MiddleFirrtlCompiler).compile(
     CircuitState(chirrtl, ChirrtlForm), Nil).circuit
   private val module = (circuit.modules collect {
