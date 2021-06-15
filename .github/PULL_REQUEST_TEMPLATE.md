@@ -14,7 +14,7 @@
 <!-- Does this change the generated Verilog or the simulator memory map of the default targets?  -->
 
 ### Contributor Checklist
-
+- [ ] Did you set dev as the base branch?
 - [ ] Did you add Scaladoc to every public function/method?
 - [ ] Did you add at least one test demonstrating the PR?
 - [ ] Did you delete any extraneous prints/debugging code?
