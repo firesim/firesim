@@ -7,8 +7,8 @@ import firrtl.ir._
 import Mappers._
 import Utils._
 import annotations._
-
-import midas.passes.{PreLinkRenamingAnnotation, PreLinkRenaming}
+import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
+import midas.passes.{PreLinkRenaming, PreLinkRenamingAnnotation}
 
 import collection.mutable
 
@@ -191,8 +191,7 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
   }
 
   def elaborateModel(parentCircuitNS: Namespace): Module = {
-    val c3circuit = chisel3.stage.ChiselStage.elaborate(new midas.models.sram.AsyncMemChiselModel(depth.toInt, dataWidth, readPorts.size, writePorts.size))
-    val chirrtl = Parser.parse(chisel3.Driver.emit(c3circuit))
+    val chirrtl = chisel3.stage.ChiselStage.convert(new midas.models.sram.AsyncMemChiselModel(depth.toInt, dataWidth, readPorts.size, writePorts.size))
     val state = new MiddleFirrtlCompiler().compile(CircuitState(chirrtl, ChirrtlForm, Nil), Nil)
     require(state.circuit.modules.length == 1)
     state.circuit.modules.collectFirst({
