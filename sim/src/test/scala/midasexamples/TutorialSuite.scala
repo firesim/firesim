@@ -180,13 +180,28 @@ class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
     simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
   diffSynthesizedLog("AUTOCOUNTERFILE0", stdoutPrefix = "AUTOCOUNTER_PRINT ", synthPrefix = "")
-
 }
 class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
     simulationArgs = Seq("+print-file=synthprinttest.out"),
     platformConfigs = "AutoCounterPrintf_HostDebugFeatures_DefaultF1Config") {
   diffSynthesizedLog("synthprinttest.out0", stdoutPrefix = "SYNTHESIZED_PRINT CYCLE", synthPrefix = "CYCLE")
 }
+class AutoCounterGlobalResetConditionF1Test extends TutorialSuite("AutoCounterGlobalResetCondition",
+    simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+  def assertCountsAreZero(filename: String) {
+    val log = new File(genDir, s"/${filename}")
+    val lines = extractLines(log, "PerfCounter ")
+    s"Counts reported in ${filename}" should "always be zero" in {
+      val perfCounterRegex = raw".*: (\d*)$$".r
+      lines.foreach {
+        case perfCounterRegex(value) => assert(value.toInt == 0)
+      }
+    }
+  }
+  assertCountsAreZero("AUTOCOUNTERFILE0")
+  assertCountsAreZero("AUTOCOUNTERFILE1")
+}
+
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedLog("synthprinttest.out0")
@@ -194,6 +209,13 @@ class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedLog("synthprinttest.out0")
+}
+
+class PrintfGlobalResetConditionTest extends TutorialSuite("PrintfGlobalResetCondition",
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  // The log should be empty.
+  assertSynthesizedLogEmpty("synthprinttest.out0")
+  assertSynthesizedLogEmpty("synthprinttest.out1")
 }
 
 class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int) extends TutorialSuite(
@@ -239,6 +261,8 @@ class AssertTortureTest extends TutorialSuite("AssertTorture") with AssertTortur
   // TODO: Create a target-parameters instance we can inspect here
   Seq.tabulate(4)(i => checkClockDomainAssertionOrder(i))
 }
+
+class AssertGlobalResetConditionTest extends TutorialSuite("AssertGlobalResetCondition")
 
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   simulationArgs = Seq("+print-file=synthprinttest.out",

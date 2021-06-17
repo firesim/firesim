@@ -48,3 +48,20 @@ public:
     };
 };
 #endif //DESIGNNAME_AutoCounterModule
+
+#ifdef DESIGNNAME_AutoCounterGlobalResetCondition
+class AutoCounterGlobalResetCondition_t: public autocounter_module_t, virtual simif_t
+{
+public:
+    AutoCounterGlobalResetCondition_t(int argc, char** argv): autocounter_module_t(argc, argv) {};
+    virtual void run() {
+        for (auto &autocounter_endpoint: autocounter_endpoints) {
+            autocounter_endpoint->init();
+        }
+        poke(reset, 1);
+        step(4);
+        poke(reset, 0);
+        run_and_collect(3000);
+    };
+};
+#endif //DESIGNNAME_AutoCounterModule
