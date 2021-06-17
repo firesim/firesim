@@ -73,7 +73,7 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,
                                      axi4.ar.bits.addr.getWidth,
                                      axi4.ar.bits.id.getWidth)
-      val fasedInstance =  FASEDBridge(clock, axi4, reset.toBool,
+      val fasedInstance =  FASEDBridge(clock, axi4, reset.asBool,
         CompleteConfig(p(firesim.configs.MemModelKey),
                        nastiKey,
                        Some(AXI4EdgeSummary(edge)),

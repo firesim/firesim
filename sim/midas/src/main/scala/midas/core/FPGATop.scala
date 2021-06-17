@@ -7,8 +7,6 @@ import junctions._
 import midas.widgets._
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._

@@ -4,8 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.config.Parameters
-import chisel3.util.unless
-import chisel3.experimental.{withClock, annotate}
+import chisel3.experimental.annotate
 
 import midas.widgets.PeekPokeBridge
 import midas.targetutils._

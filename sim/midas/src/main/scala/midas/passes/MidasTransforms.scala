@@ -6,7 +6,6 @@ package passes
 import midas.core._
 
 import freechips.rocketchip.config.Parameters
-import chisel3.core.DataMirror.directionOf
 
 import firrtl._
 import firrtl.annotations._

@@ -56,8 +56,8 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
     val target = hPort.hBits.serial
     val tFire = hPort.toHost.hValid && hPort.fromHost.hReady && tokensToEnqueue =/= 0.U
     val targetReset = tFire & hPort.hBits.reset
-    inBuf.reset  := reset.toBool || targetReset
-    outBuf.reset := reset.toBool || targetReset
+    inBuf.reset  := reset.asBool || targetReset
+    outBuf.reset := reset.asBool || targetReset
 
     hPort.toHost.hReady := tFire
     hPort.fromHost.hValid := tFire

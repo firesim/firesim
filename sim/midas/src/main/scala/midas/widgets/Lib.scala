@@ -8,8 +8,7 @@ import junctions._
 
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
+import chisel3.experimental.DataMirror
 import freechips.rocketchip.config.Parameters
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
@@ -21,7 +20,7 @@ object FlattenData {
   def apply[T <: Data](gen: T): Seq[(Data, ActualDirection)] = {
     gen match {
       case a : Aggregate => a.getElements flatMap(e => this(e))
-      case e : Element => Seq((e, directionOf(e)))
+      case e : Element => Seq((e, DataMirror.directionOf(e)))
       case _ => throw new RuntimeException("Cannot handle this type")
     }
   }
@@ -37,10 +36,10 @@ object ScanRegister {
   def apply(data: Seq[Data], scanEnable: Bool, scanIn: Bool): Bool = {
     val leaves = data flatMap FlattenData.apply
     leaves.foldLeft(scanIn)((in: Bool, leaf: (Data, ActualDirection)) => {
-      val r = Reg(VecInit(leaf._1.asUInt.toBools).cloneType)
+      val r = Reg(VecInit(leaf._1.asUInt.asBools).cloneType)
       (leaf._2) match {
         case ActualDirection.Output =>
-          r := VecInit(leaf._1.asUInt.toBools)
+          r := VecInit(leaf._1.asUInt.asBools)
         case ActualDirection.Input =>
           leaf._1 := r.asUInt
         case _ => throw new RuntimeException("Directions on all elements must be specified")

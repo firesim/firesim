@@ -5,6 +5,8 @@ package midas.rocketchip.util
 import Chisel._
 import chisel3.RawModule
 import chisel3.internal.firrtl.Circuit
+import chisel3.stage.ChiselCircuitAnnotation
+import firrtl.{EmittedFirrtlCircuitAnnotation, EmittedFirrtlModuleAnnotation}
 // TODO: better job of Makefrag generation for non-RocketChip testing platforms
 import java.io.{File, FileWriter}
 
@@ -58,7 +60,7 @@ trait HasGeneratorUtilities {
         case l: LazyModule => LazyModule(l).module
       }
 
-    Driver.elaborate(top)
+    chisel3.stage.ChiselStage.elaborate(top())
   }
 
   def enumerateROMs(circuit: Circuit): String = {
@@ -110,7 +112,14 @@ trait GeneratorApp extends App with HasGeneratorUtilities {
 
   /** Output FIRRTL, which an external compiler can turn into Verilog. */
   def generateFirrtl {
-    Driver.dumpFirrtl(circuit, Some(new File(td, s"$longName.fir"))) // FIRRTL
+    val w = new FileWriter(new File(s"$longName.fir"))
+    w.write((new chisel3.stage.ChiselStage).execute(Array("-X", "high") ++ args, Seq(ChiselCircuitAnnotation(circuit)))
+      .collect {
+        case EmittedFirrtlCircuitAnnotation(a) => a
+        case EmittedFirrtlModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString(""))
+    w.close()
   }
 
   def generateAnno {

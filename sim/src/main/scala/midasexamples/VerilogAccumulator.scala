@@ -4,8 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.config.Parameters
-import chisel3.util.{unless, HasBlackBoxInline}
-import chisel3.experimental.{withClockAndReset}
+import chisel3.util.HasBlackBoxInline
 
 import midas.widgets.PeekPokeBridge
 

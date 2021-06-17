@@ -78,10 +78,10 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     // Decoupled helper can't exclude two bools unfortunately...
     val targetReset = channelCtrlSignals.reduce(_ && _) && hPort.hBits.reset
 
-    reqBuf.reset  := reset.toBool || targetReset
-    dataBuf.reset  := reset.toBool || targetReset
-    rRespBuf.reset  := reset.toBool || targetReset
-    wAckBuf.reset  := reset.toBool || targetReset
+    reqBuf.reset  := reset.asBool || targetReset
+    dataBuf.reset  := reset.asBool || targetReset
+    rRespBuf.reset  := reset.asBool || targetReset
+    wAckBuf.reset  := reset.asBool || targetReset
 
     hPort.toHost.hReady := tFireHelper.fire
     hPort.fromHost.hValid := tFireHelper.fire
@@ -104,7 +104,7 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     val readLatency = genWORegInit(Wire(UInt(latencyBits.W)), "read_latency", defaultReadLatency)
     val writeLatency = genWORegInit(Wire(UInt(latencyBits.W)), "write_latency", defaultWriteLatency)
 
-    withReset(reset.toBool || targetReset) {
+    withReset(reset.asBool || targetReset) {
       when (tFire) {
         assert(!target.req.fire || ((dataBeats.U * target.req.bits.len) < ((BigInt(1) << sectorBits) - 1).U),
                "Transaction length exceeds timing model maximum supported length")
