@@ -66,11 +66,17 @@ abstract class TutorialSuite(
   /**
     * Extracts all lines in a file that begin with a specific prefix, removing
     * extra whitespace between the prefix and the remainder of the line
+    *
+    * @param filename Input file
+    * @param prefix The per-line prefix to filter with
+    * @param linesToDrop Some number of matched lines to be removed
+    * @param headerLines An initial number of lines to drop before filtering.
+    *        Assertions, Printf output have a single line header.
+    *        MLsim stdout has some unused output, so set this to 1 by default
+    *
     */
-  def extractLines(filename: File, prefix: String, linesToDrop: Int = 0): Seq[String] = {
-    // Drop the first line from all files as it is either a header in the synthesized file,
-    // or some unrelated output from verlator
-    val lines = Source.fromFile(filename).getLines.toList.drop(1)
+  def extractLines(filename: File, prefix: String, linesToDrop: Int = 0, headerLines: Int = 1): Seq[String] = {
+    val lines = Source.fromFile(filename).getLines.toList.drop(headerLines)
     lines.filter(_.startsWith(prefix))
          .dropRight(linesToDrop)
          .map(_.stripPrefix(prefix).replaceAll(" +", " "))
@@ -97,6 +103,15 @@ abstract class TutorialSuite(
       val verilatedOutput = extractLines(verilatedLogFile, stdoutPrefix).sorted
       val synthPrintOutput = extractLines(synthLogFile, synthPrefix, synthLinesToDrop).sorted
       diffLines(verilatedOutput, synthPrintOutput)
+    }
+  }
+
+  // Checks that a bridge generated log in ${genDir}/${synthLog} is empty
+  def assertSynthesizedLogEmpty(synthLog: String) {
+    s"${synthLog}" should "be empty" in {
+      val synthLogFile = new File(genDir, s"/${synthLog}")
+      val lines = extractLines(synthLogFile, prefix = "")
+      assert(lines.isEmpty)
     }
   }
 
