@@ -189,9 +189,9 @@ class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
 class AutoCounterGlobalResetConditionF1Test extends TutorialSuite("AutoCounterGlobalResetCondition",
     simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
   def assertCountsAreZero(filename: String) {
-    val log = new File(genDir, s"/${filename}")
-    val lines = extractLines(log, "PerfCounter ")
     s"Counts reported in ${filename}" should "always be zero" in {
+      val log = new File(genDir, s"/${filename}")
+      val lines = extractLines(log, "PerfCounter ")
       val perfCounterRegex = raw".*: (\d*)$$".r
       lines.foreach {
         case perfCounterRegex(value) => assert(value.toInt == 0)
@@ -262,7 +262,7 @@ class AssertTortureTest extends TutorialSuite("AssertTorture") with AssertTortur
   Seq.tabulate(4)(i => checkClockDomainAssertionOrder(i))
 }
 
-class AssertGlobalResetConditionTest extends TutorialSuite("AssertGlobalResetCondition")
+class AssertGlobalResetConditionF1Test extends TutorialSuite("AssertGlobalResetCondition")
 
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   simulationArgs = Seq("+print-file=synthprinttest.out",
@@ -352,20 +352,23 @@ class PrintfSynthesisCITests extends Suites(
   new NarrowPrintfModuleF1Test,
   new MulticlockPrintF1Test,
   new PrintfCycleBoundsF1Test,
-  new TriggerPredicatedPrintfF1Test
+  new TriggerPredicatedPrintfF1Test,
+  new PrintfGlobalResetConditionTest,
 )
 
 class AssertionSynthesisCITests extends Suites(
   new AssertModuleF1Test,
   new MulticlockAssertF1Test,
-  new AssertTortureTest
+  new AssertTortureTest,
+  new AssertGlobalResetConditionF1Test,
 )
 
 class AutoCounterCITests extends Suites(
   new AutoCounterModuleF1Test,
   new AutoCounterCoverModuleF1Test,
   new AutoCounterPrintfF1Test,
-  new MulticlockAutoCounterF1Test
+  new MulticlockAutoCounterF1Test,
+  new AutoCounterGlobalResetConditionF1Test,
 )
 
 class GoldenGateMiscCITests extends Suites(
