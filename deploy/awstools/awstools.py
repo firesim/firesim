@@ -12,7 +12,7 @@ from fabric.api import local, hide, settings
 rootLogger = logging.getLogger()
 
 # this needs to be updated whenever the FPGA Dev AMI changes
-f1_ami_name = "FPGA Developer AMI - 1.6.1-40257ab5-6688-4c95-97d1-e251a40fd1fc-ami-01d5f32a3d517960b.4"
+f1_ami_name = "FPGA Developer AMI - 1.10.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:

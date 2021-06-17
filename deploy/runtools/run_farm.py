@@ -451,16 +451,25 @@ class InstanceDeployManager:
 
             run("; ".join(fullcmd))
 
+    def unload_xrt_and_xocl(self):
+        self.instance_logger("Unloading XRT-related Kernel Modules.")
+
+        with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
+            # fpga mgmt tools seem to force load xocl after a flash now...
+            # so we just remove everything for good measure:
+            remote_kmsg("removing_xrt_start")
+            run('sudo systemctl stop mpd')
+            run('sudo yum remove -y xrt xrt-aws')
+            remote_kmsg("removing_xrt_end")
+
     def unload_xdma(self):
-        self.instance_logger("Unloading XDMA/EDMA/XOCL Driver Kernel Module.")
+        self.instance_logger("Unloading XDMA Driver Kernel Module.")
 
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             # fpga mgmt tools seem to force load xocl after a flash now...
             # so we just remove everything for good measure:
             remote_kmsg("removing_xdma_start")
-            run('sudo rmmod xocl')
             run('sudo rmmod xdma')
-            run('sudo rmmod edma')
             remote_kmsg("removing_xdma_end")
 
         #self.instance_logger("Waiting 10 seconds after removing kernel modules (esp. xocl).")
@@ -639,7 +648,7 @@ class InstanceDeployManager:
 
             self.get_and_install_aws_fpga_sdk()
             # unload any existing edma/xdma/xocl
-            self.unload_xdma()
+            self.unload_xrt_and_xocl()
             # copy xdma driver
             self.fpga_node_xdma()
             # load xdma
