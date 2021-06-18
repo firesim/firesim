@@ -34,7 +34,7 @@ class RuntimeConfigGenerationPhase extends Phase with ConfigLookup {
     // FASED BridgeAnnotation, and use that to elaborate a memory model
     fasedBridges.headOption.map({ lm =>
       lazy val fasedBridge = lm.module
-      chisel3.Driver.elaborate(() => fasedBridge)
+      chisel3.stage.ChiselStage.elaborate(fasedBridge)
       fasedBridge.getSettings(runtimeConfigName)
     })
     annotations

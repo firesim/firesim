@@ -16,7 +16,7 @@ class MulticlockPrintfModule(implicit p: Parameters) extends RawModule {
   val clockBridge = RationalClockBridge(RationalClock("HalfRate",1 , 2))
   val List(refClock, div2Clock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
-  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
+  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.asBool)
   withClockAndReset(refClock, reset) {
     val lfsr = chisel3.util.random.LFSR(16)
     val fullRateMod = Module(new PrintfModuleDUT)

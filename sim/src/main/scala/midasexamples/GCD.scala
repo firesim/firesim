@@ -4,8 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.config.Parameters
-import chisel3.util.unless
-import chisel3.experimental.{withClock, annotate}
+import chisel3.experimental.annotate
 
 import midas.widgets.PeekPokeBridge
 import midas.targetutils.FAMEModelAnnotation
@@ -23,7 +22,7 @@ class GCDInner extends Module {
   val x  = Reg(UInt())
   val y  = Reg(UInt())
   when   (x > y) { x := x - y }
-  unless (x > y) { y := y - x }
+  when (x <= y) { y := y - x }
   when (io.e) { x := io.a; y := io.b }
   io.z := x
   io.v := y === 0.U

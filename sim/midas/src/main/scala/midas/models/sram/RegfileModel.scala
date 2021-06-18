@@ -38,7 +38,7 @@ class RegfileChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int, val 
   val data = Reg(Vec(depth, UInt(dataWidth.W)))
 
   data.foreach({
-    d => when (reset.toBool()) { d := 0.U }
+    d => when (reset.asBool()) { d := 0.U }
   })
 
   (channels.read_cmds zip channels.read_resps).foreach({
@@ -46,7 +46,7 @@ class RegfileChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int, val 
   })
 
   channels.write_cmds.foreach({
-    c => when (c.active && !reset.toBool()) { data(c.addr) := c.data }
+    c => when (c.active && !reset.asBool()) { data(c.addr) := c.data }
   })
 }
 
@@ -135,7 +135,7 @@ class RegfileChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int, va
     // reset, as it is next-ed during host reset. Regardless, early
     // reset is necessary to guard the first read.
     // Also, only reset after reads are done
-    when (reset.toBool() || (has_reset_token && read_resps_done_next_cycle && reset_token)) {
+    when (reset.asBool() || (has_reset_token && read_resps_done_next_cycle && reset_token)) {
       d := 0.U
     }
   }
@@ -146,7 +146,7 @@ class RegfileChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int, va
   // State updates
   val done = read_resps_done_next_cycle && writes_done_next_cycle && has_reset_token
   def updateState(fired: Bool, fire: Bool): Unit = {
-    fired := Mux(reset.toBool() || done, false.B, fired || fire)
+    fired := Mux(reset.asBool() || done, false.B, fired || fire)
   }
 
   (reads_cmd_fired zip reads_cmd_fire).foreach { case (fired, fire) => updateState(fired, fire) }
