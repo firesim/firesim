@@ -24,11 +24,17 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
 
     implicit val p = annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
 
-    val midasAnnos = Seq(InferReadWriteAnnotation)
+    val midasAnnos = Seq(
+      firrtl.passes.memlib.InferReadWriteAnnotation,
+      firrtl.passes.memlib.DefaultReadFirstAnnotation,
+      firrtl.passes.memlib.PassthroughSimpleSyncReadMemsAnnotation)
+
     val state = CircuitState(allCircuits.head, firrtl.ChirrtlForm, annotations ++ midasAnnos)
 
     // Lower the target design and run additional target transformations before Golden Gate xforms
-    val targetLoweringCompiler = new Compiler(Forms.LowForm ++ p(TargetTransforms))
+    val targetLoweringCompiler = new Compiler(
+      Seq(Dependency[firrtl.passes.memlib.InferReadWrite],
+          Dependency[firrtl.transforms.SimplifyMems]) ++ Forms.LowForm ++ p(TargetTransforms))
     logger.info("Pre-GG Target Transformation Ordering\n")
     logger.info(targetLoweringCompiler.prettyPrint("  "))
     val loweredTarget = targetLoweringCompiler.execute(state)
@@ -40,7 +46,9 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
 
     // Lower and emit simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      Dependency[firrtl.VerilogEmitter] +:
+      Seq(Dependency[firrtl.VerilogEmitter],
+          Dependency[firrtl.passes.memlib.SeparateWriteClocks],
+          Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite]) ++
       p(HostTransforms),Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(hostLoweringCompiler.prettyPrint("  "))

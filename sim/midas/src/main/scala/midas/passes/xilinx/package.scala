@@ -20,16 +20,9 @@ package object xilinx {
     }
   }
 
-  object FPGAFriendlyMems extends Transform with NoAnalysisPass {
-    val transformer = StatementTransformer {
-      case mem: DefMemory if (mem.readLatency == 1 && mem.readUnderWrite == ReadUnderWrite.Undefined) =>
-        mem.copy(readUnderWrite = ReadUnderWrite.Old)
-    }
-  }
-
   object HostSpecialization extends SeqTransform {
     val inputForm = LowForm
     val outputForm = LowForm
-    val transforms = Seq(DefineBUFGCE, ReplaceAbstractClockGates, FPGAFriendlyMems)
+    val transforms = Seq(DefineBUFGCE, ReplaceAbstractClockGates)
   }
 }
