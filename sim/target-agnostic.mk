@@ -60,6 +60,7 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOO
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
+		-xf cl_firesim_generated.xdc \
 		--no-dedup \
 		-E verilog \
 	)
@@ -173,6 +174,7 @@ fpga_v         := $(fpga_work_dir)/design/cl_firesim_generated.sv
 ila_work_dir   := $(fpga_work_dir)/design/ila_files/
 fpga_vh        := $(fpga_work_dir)/design/cl_firesim_generated_defines.vh
 fpga_tcl_env   := $(fpga_work_dir)/design/cl_firesim_generated_env.tcl
+fpga_gen_xdc   := $(fpga_work_dir)/design/cl_firesim_generated.xdc
 repo_state     := $(fpga_work_dir)/design/repo_state
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
@@ -192,6 +194,9 @@ $(fpga_vh): $(VERILOG) $(fpga_work_dir)/stamp
 $(fpga_tcl_env): $(VERILOG) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
+$(fpga_gen_xdc): $(VERILOG) $(fpga_work_dir)/stamp
+	cp -f $(GENERATED_DIR)/$(@F) $@
+
 .PHONY: $(ila_work_dir)
 $(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/firesim_ila_insert_* $(fpga_work_dir)/design/ila_files/
@@ -200,7 +205,7 @@ $(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
 
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_v) $(ila_work_dir) $(fpga_vh) $(fpga_tcl_env)
+replace-rtl: $(fpga_v) $(ila_work_dir) $(fpga_vh) $(fpga_tcl_env) $(fpga_gen_xdc)
 
 .PHONY: replace-rtl
 

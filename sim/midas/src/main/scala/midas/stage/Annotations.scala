@@ -45,3 +45,16 @@ object RuntimeConfigNameAnnotation extends HasShellOptions {
       shortOption = Some("ggrc"),
       helpValueName = Some("<filename>") ) )
 }
+
+case class XDCOutputNameAnnotation(name: String) extends NoTargetAnnotation
+
+object XDCOutputNameAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "xdc-filename",
+      toAnnotationSeq = (a: String) => Seq(XDCOutputNameAnnotation(a)),
+      helpText = "Specifies the filename for the generated xdc file.",
+      shortOption = Some("xf"),
+      helpValueName = Some("<filename>") ) )
+}
