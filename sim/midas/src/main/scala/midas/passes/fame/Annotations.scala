@@ -152,8 +152,16 @@ case object DecoupledReverseChannel extends FAMEChannelInfo
 
 /**
   * Indicates that a channel connection carries target clocks
+  *
+  * @param clockInfo The user specified metadata, includeing a name, and ratio
+  *        relative to the base clock
+  *
+  * @param perClockMFMR Specifies the minimum number of host cycles
+  *        between clock edges. This is a property of the clock token schedule, and
+  *        permits relaxing timing constraints on clock domains with miniumum FMRS (MFMR) > 1.
+  *
   */
-case class TargetClockChannel(clockInfo: Seq[RationalClock])  extends FAMEChannelInfo
+case class TargetClockChannel(clockInfo: Seq[RationalClock], perClockMFMR: Seq[Int]) extends FAMEChannelInfo
 
 /**
   * Indicates that a channel connection is the forward (valid) half of
