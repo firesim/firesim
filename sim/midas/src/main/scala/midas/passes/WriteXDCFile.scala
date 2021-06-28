@@ -18,7 +18,6 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
   private def formatArguments(iGraph: InstanceKeyGraph, argumentList: Iterable[ReferenceTarget]): Iterable[String] = {
     for (arg <- argumentList) yield {
       val instances = iGraph.findInstancesInHierarchy(arg.module)
-      instances foreach println
       require(instances.length == 1)
       val tokens =
         instances.head.tail.map { _.Instance.value } ++: // Path to root
