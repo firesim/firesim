@@ -2,14 +2,18 @@
 
 package midas.passes
 
-import java.io.{File, FileWriter}
 import firrtl._
 import firrtl.stage.Forms
 import firrtl.annotations._
 import firrtl.analyses.InstanceKeyGraph
 
-import midas.stage.XDCOutputNameAnnotation
+import midas.stage.{GoldenGateFileEmission}
 import midas.targetutils.{XDCAnnotation, XDCAnnotationConstants}
+
+private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[String] = Some(".xdc"))
+    extends NoTargetAnnotation with GoldenGateFileEmission {
+  def getBytes = fileBody.getBytes
+}
 
 private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration with XDCAnnotationConstants {
 	override def prerequisites = Forms.LowForm
@@ -18,7 +22,10 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
   private def formatArguments(iGraph: InstanceKeyGraph, argumentList: Iterable[ReferenceTarget]): Iterable[String] = {
     for (arg <- argumentList) yield {
       val instances = iGraph.findInstancesInHierarchy(arg.module)
-      require(instances.length == 1)
+      require(instances.length == 1,
+        s"""Provided reference targets must have exactly one instance in the design.
+           |  ${arg} has ${instances.length} instances.""".stripMargin)
+
       val tokens =
         instances.head.tail.map { _.Instance.value } ++: // Path to root
         arg.path.map { _._1.value } ++: // Path in the provided RT
@@ -35,27 +42,14 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val targetDir = state.annotations.collectFirst({
-      case TargetDirAnnotation(dir) => new File(dir)
-    }).get
-
-    val outputFile = state.annotations.collectFirst({
-      case XDCOutputNameAnnotation(name) => new File(targetDir, name)
-    }).get
-
     val iGraph = InstanceKeyGraph(state.circuit)
-
     val xdcStrings = state.annotations.collect { case a: XDCAnnotation => serializeXDC(a, iGraph) }
-
-    val fw = new FileWriter(outputFile)
-    fw.write(xdcStrings.mkString("\n"))
-    fw.close
+    val outputAnno = XDCOutputAnnotation(xdcStrings.mkString("\n"))
 
     val cleanedAnnotations = state.annotations.filterNot {
-      case a: XDCOutputNameAnnotation => true
       case a: XDCAnnotation => true
       case _ => false
     }
-    state.copy(annotations = cleanedAnnotations)
+    state.copy(annotations = outputAnno +: cleanedAnnotations)
   }
 }
