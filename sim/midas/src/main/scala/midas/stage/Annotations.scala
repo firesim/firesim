@@ -2,8 +2,12 @@
 
 package midas.stage
 
-import firrtl.options.{StageOption, ShellOption, HasShellOptions}
-import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{StageOption, ShellOption, HasShellOptions, CustomFileEmission}
+import firrtl.annotations.{NoTargetAnnotation, Annotation}
+
+trait GoldenGateFileEmission extends CustomFileEmission { this: Annotation =>
+  override def baseFileName(annotations: firrtl.AnnotationSeq) = "FireSim-generated"
+}
 
 case class ConfigPackageAnnotation(packageName: String) extends NoTargetAnnotation
 
