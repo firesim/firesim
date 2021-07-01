@@ -87,7 +87,7 @@ $(VERILOG).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(PRE_ELABORATION_TARGETS)
 # to generate a runtime configuration that is compatible with the generated
 # hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
 .PHONY: conf
-conf: $(fame_annos) $(GEN_CLASSPATH)
+conf: $(fame_annos) $(subst :, ,$(GEN_CLASSPATH))
 	mkdir -p $(GENERATED_DIR)
 	cd $(base_dir) && java $(JAVA_OPTS) -cp $(GEN_CLASSPATH) midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
