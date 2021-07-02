@@ -2,10 +2,13 @@
 
 package midas.stage
 
-import firrtl.options.{StageOption, ShellOption, HasShellOptions}
-import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{StageOption, ShellOption, HasShellOptions, CustomFileEmission, Unserializable}
+import firrtl.annotations.{NoTargetAnnotation, Annotation}
 
-case class ConfigPackageAnnotation(packageName: String) extends NoTargetAnnotation
+// Prevent configuration annotations from propagating out.
+sealed trait GoldenGateOption extends Unserializable { this: Annotation => }
+
+case class ConfigPackageAnnotation(packageName: String) extends NoTargetAnnotation with GoldenGateOption
 
 object ConfigPackageAnnotation extends HasShellOptions {
 
@@ -18,7 +21,7 @@ object ConfigPackageAnnotation extends HasShellOptions {
       helpValueName = Some("<scala package>") ) )
 }
 
-case class ConfigStringAnnotation(configString: String) extends NoTargetAnnotation
+case class ConfigStringAnnotation(configString: String) extends NoTargetAnnotation with GoldenGateOption
 
 object ConfigStringAnnotation extends HasShellOptions {
 
@@ -33,7 +36,7 @@ object ConfigStringAnnotation extends HasShellOptions {
 
 // Used to specify the name of the desired runtime configuration
 // file.  Will be emitted in the TargetDir
-case class RuntimeConfigNameAnnotation(configString: String) extends NoTargetAnnotation
+case class RuntimeConfigNameAnnotation(configString: String) extends NoTargetAnnotation with GoldenGateOption
 
 object RuntimeConfigNameAnnotation extends HasShellOptions {
 
