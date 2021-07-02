@@ -26,9 +26,6 @@ long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
-VERILOG := $(GENERATED_DIR)/FPGATop.v
-HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
-
 CONF_NAME ?= runtime.conf
 firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 chisel_src_dirs = \

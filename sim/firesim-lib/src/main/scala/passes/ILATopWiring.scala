@@ -5,6 +5,7 @@ package firesim.passes
 
 import midas.EnableAutoILA
 import midas.targetutils.FirrtlFpgaDebugAnnotation
+import midas.stage.{OutputFileBuilder, GoldenGateOutputFileAnnotation}
 import midas.stage.phases.ConfigParametersAnnotation
 
 import firrtl._
@@ -30,26 +31,23 @@ class ILATopWiringTransform extends Transform with DependencyAPIMigration {
 
   type InstPath = Seq[String]
 
+  val addedFileAnnos = new mutable.ArrayBuffer[GoldenGateOutputFileAnnotation]
+
   def ILAWiringOutputFiles(dataDepth: Int)(
         dir: String,
         mapping: Seq[((ComponentName, Type, Boolean, InstPath, String), Int)],
         state: CircuitState): CircuitState = {
 
-    //val targetFile: Option[String] = state.annotations.collectFirst { case ILADebugFileAnnotation(fn) => fn }
-
-    //output vivado tcl file
-    val tclOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_vivado.tcl" ))
-    //output verilog 'include' file with ports
-    val portsOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_ports.v" ))
-    //output verilog 'include' file with wires
-    val wiresOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_wires.v" ))
-    //output verilog 'include' file with ila instantiation
-    val ilaInstOutputFile = new PrintWriter(new File(dir, "firesim_ila_insert_inst.v" ))
-
     // vivado >2017.4 encrypt chokes on empty .v files, so put something there...
-    portsOutputFile.append(s" \n \n \n")
-    wiresOutputFile.append(s" \n \n \n")
-    ilaInstOutputFile.append(s" \n \n \n")
+    def fileHeader = " \n \n \n"
+    //output vivado tcl file
+    val tclOutputFile = new OutputFileBuilder(fileHeader, "_ila_insert_vivado.tcl")
+    //output verilog 'include' file with ports
+    val portsOutputFile = new OutputFileBuilder(fileHeader, "_ila_insert_ports.v")
+    //output verilog 'include' file with wires
+    val wiresOutputFile = new OutputFileBuilder(fileHeader, "_ila_insert_wires.v")
+    //output verilog 'include' file with ila instantiation
+    val ilaInstOutputFile = new OutputFileBuilder(fileHeader, "_ila_insert_inst.v")
 
     //vivado tcl prologue
     tclOutputFile.append(s"create_project managed_ip_project $$CL_DIR/ip/firesim_ila_ip/managed_ip_project -part xcvu9p-flgb2104-2-i -ip -force\n")
@@ -123,11 +121,12 @@ class ILATopWiringTransform extends Transform with DependencyAPIMigration {
       ilaInstOutputFile.append(s"\n);\n")
     }
 
-    tclOutputFile.close()
-    portsOutputFile.close()
-    wiresOutputFile.close()
-    ilaInstOutputFile.close()
-
+    addedFileAnnos ++= Seq(
+      tclOutputFile.toAnnotation,
+      portsOutputFile.toAnnotation,
+      wiresOutputFile.toAnnotation,
+      ilaInstOutputFile.toAnnotation
+    )
     state
   }
 
@@ -153,14 +152,16 @@ class ILATopWiringTransform extends Transform with DependencyAPIMigration {
       case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_")  }
     }
 
-    val dir = state.annotations.collectFirst({ case TargetDirAnnotation(targetDir) => new File(targetDir) }).get
-
     val dataDepth = p(ILADepthKey)
     //dirname should be some aws-fpga synthesis directory
-    val topwiringannos = targetannos :+
-      TopWiringOutputFilesAnnotation(dir.getPath(), ILAWiringOutputFiles(dataDepth))
+    val topwiringannos = targetannos :+ TopWiringOutputFilesAnnotation("", ILAWiringOutputFiles(dataDepth))
+    val wiredState = (new TopWiringTransform).execute(state.copy(annotations = state.annotations ++ topwiringannos))
+    val cleanedAnnos = wiredState.annotations.filter {
+      case a: TopWiringOutputFilesAnnotation => false
+      case a: FirrtlFpgaDebugAnnotation => false
+      case _ => true
+    }
 
-    def topwiringtransform = new TopWiringTransform
-    topwiringtransform.execute(state.copy(annotations = state.annotations ++ topwiringannos))
+    wiredState.copy(annotations = wiredState.annotations ++ addedFileAnnos)
   }
 }

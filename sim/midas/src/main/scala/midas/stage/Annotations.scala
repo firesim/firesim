@@ -2,14 +2,13 @@
 
 package midas.stage
 
-import firrtl.options.{StageOption, ShellOption, HasShellOptions, CustomFileEmission}
+import firrtl.options.{StageOption, ShellOption, HasShellOptions, CustomFileEmission, Unserializable}
 import firrtl.annotations.{NoTargetAnnotation, Annotation}
 
-trait GoldenGateFileEmission extends CustomFileEmission { this: Annotation =>
-  override def baseFileName(annotations: firrtl.AnnotationSeq) = "FireSim-generated"
-}
+// Prevent configuration annotations from propagating out.
+sealed trait GoldenGateOption extends Unserializable { this: Annotation => }
 
-case class ConfigPackageAnnotation(packageName: String) extends NoTargetAnnotation
+case class ConfigPackageAnnotation(packageName: String) extends NoTargetAnnotation with GoldenGateOption
 
 object ConfigPackageAnnotation extends HasShellOptions {
 
@@ -22,7 +21,7 @@ object ConfigPackageAnnotation extends HasShellOptions {
       helpValueName = Some("<scala package>") ) )
 }
 
-case class ConfigStringAnnotation(configString: String) extends NoTargetAnnotation
+case class ConfigStringAnnotation(configString: String) extends NoTargetAnnotation with GoldenGateOption
 
 object ConfigStringAnnotation extends HasShellOptions {
 
@@ -37,7 +36,7 @@ object ConfigStringAnnotation extends HasShellOptions {
 
 // Used to specify the name of the desired runtime configuration
 // file.  Will be emitted in the TargetDir
-case class RuntimeConfigNameAnnotation(configString: String) extends NoTargetAnnotation
+case class RuntimeConfigNameAnnotation(configString: String) extends NoTargetAnnotation with GoldenGateOption
 
 object RuntimeConfigNameAnnotation extends HasShellOptions {
 
@@ -50,15 +49,15 @@ object RuntimeConfigNameAnnotation extends HasShellOptions {
       helpValueName = Some("<filename>") ) )
 }
 
-case class XDCOutputNameAnnotation(name: String) extends NoTargetAnnotation
+case class OutputBaseFileNameAnnotation(name: String) extends NoTargetAnnotation with GoldenGateOption
 
-object XDCOutputNameAnnotation extends HasShellOptions {
-
+object OutputBaseFileNameAnnotation extends HasShellOptions {
   val options = Seq(
     new ShellOption[String](
-      longOption = "xdc-filename",
-      toAnnotationSeq = (a: String) => Seq(XDCOutputNameAnnotation(a)),
-      helpText = "Specifies the filename for the generated xdc file.",
-      shortOption = Some("xf"),
-      helpValueName = Some("<filename>") ) )
+      longOption = "--base-output-filename",
+      toAnnotationSeq = (a: String) => Seq(OutputBaseFileNameAnnotation(a)),
+      helpText = "Specifies the base (prefix) used on most Golden Gate generated files.",
+      shortOption = Some("bof"),
+      helpValueName = Some("<filename-base>") ) )
 }
+

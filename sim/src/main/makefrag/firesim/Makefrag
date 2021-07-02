@@ -26,9 +26,6 @@ long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
-VERILOG := $(GENERATED_DIR)/FPGATop.v
-HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
-
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := {file:${chipyard_dir}}firechip
 
