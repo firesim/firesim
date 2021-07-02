@@ -1,3 +1,5 @@
+.. _auto-ila:
+
 AutoILA: Simple Integrated Logic Analyzer (ILA) Insertion
 ===================================================================
 

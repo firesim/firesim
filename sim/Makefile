@@ -6,19 +6,20 @@ endif
 
 firesim_base_dir := $(abspath .)
 
+.PHONY: default
 default: compile
 
 ##################
 #   Parameters   #
 ##################
 
-# Multiple target-projects, each with it's own chisel generator, co-exist in firesim.
+# Multiple target-projects, each with their own chisel generator, co-exist in firesim.
 # Their sources exist in:
 # src/main/{cc, scala, makefrag}/<target-project-name>
 #
 # Currently these projects are:
-# 	firesim: the default, rocket-chip-based target-designs
-# 	midasexamples: simple chisel designs demonstrating how to build midas-style simulators
+# 	firesim: the default, Chipyard-based target-designs
+# 	midasexamples: simple chisel designs demonstrating FireSim's features
 TARGET_PROJECT ?= firesim
 
 # Users can override this to point at a makefrag defined in a parent project
@@ -92,8 +93,6 @@ endif
 # Include target-specific sources and input generation recipes
 include $(TARGET_PROJECT_MAKEFRAG)
 
-verilog: $(VERILOG)
-compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 SBT_COMMAND ?= shell

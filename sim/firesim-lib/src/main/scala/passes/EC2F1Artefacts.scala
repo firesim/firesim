@@ -4,6 +4,7 @@ package firesim.passes
 
 import firesim.util.{DesiredHostFrequency, BuildStrategy}
 import midas.stage.phases.ConfigParametersAnnotation
+import midas.stage.GoldenGateOutputFileAnnotation
 
 import freechips.rocketchip.config.Parameters
 
@@ -19,40 +20,28 @@ import java.io.{File, FileWriter}
 object EC2F1Artefacts extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = LowForm
-  override def name = "[FireSim] EC2 F1 Artefact Generation"
-
-  def writeOutputFile(f: File, contents: String): File = {
-    val fw = new FileWriter(f)
-    fw.write(contents)
-    fw.close
-    f
-  }
+  override def name = "[Golden Gate] EC2 F1 Artefact Generation"
 
   // Capture FPGA-toolflow related verilog defines
-  def generateHostVerilogHeader(targetDir: File) {
-    val headerName = "cl_firesim_generated_defines.vh"
-    writeOutputFile(new File(targetDir, headerName), s"\n")
-  }
+  def verilogHeaderAnno = GoldenGateOutputFileAnnotation(
+    """| // Don't let Vivado see $random, which is the default if this is not set
+       | `define RANDOM 64'b0
+       |""".stripMargin,
+    fileSuffix = ".defines.vh")
 
   // Emit TCL variables to control the FPGA compilation flow
-  def generateTclEnvFile(targetDir: File)(implicit hostParams: Parameters) {
-    val headerName = "cl_firesim_generated_env.tcl"
+  def tclEnvAnno(implicit hostParams: Parameters): GoldenGateOutputFileAnnotation =  {
     val requestedFrequency = hostParams(DesiredHostFrequency)
     val buildStrategy      = hostParams(BuildStrategy)
     val constraints = s"""# FireSim Generated Environment Variables
 set desired_host_frequency ${requestedFrequency}
 ${buildStrategy.emitTcl}
 """
-    writeOutputFile(new File(targetDir, headerName), constraints)
+    GoldenGateOutputFileAnnotation(constraints, fileSuffix = ".env.tcl")
   }
 
   def execute(state: CircuitState): CircuitState = {
     implicit val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
-    val targetDir = state.annotations.collectFirst({
-      case TargetDirAnnotation(dir) => new File(dir)
-    }).get
-    generateHostVerilogHeader(targetDir)
-    generateTclEnvFile(targetDir)
-    state
+    state.copy(annotations = verilogHeaderAnno +: tclEnvAnno +: state.annotations)
   }
 }

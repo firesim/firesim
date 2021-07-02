@@ -48,3 +48,16 @@ object RuntimeConfigNameAnnotation extends HasShellOptions {
       shortOption = Some("ggrc"),
       helpValueName = Some("<filename>") ) )
 }
+
+case class OutputBaseFilenameAnnotation(name: String) extends NoTargetAnnotation with GoldenGateOption
+
+object OutputBaseFilenameAnnotation extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "output-filename-base",
+      toAnnotationSeq = (a: String) => Seq(OutputBaseFilenameAnnotation(a)),
+      helpText = "Specifies the base (prefix) used on Golden Gate generated files.",
+      shortOption = Some("ofb"),
+      helpValueName = Some("<output-filename-base>") ) )
+}
+

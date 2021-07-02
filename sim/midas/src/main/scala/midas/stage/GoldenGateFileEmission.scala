@@ -5,26 +5,34 @@ package midas.stage
 import firrtl.annotations.{NoTargetAnnotation, Annotation}
 import firrtl.options.{CustomFileEmission}
 
+import chisel3.experimental.{annotate, ChiselAnnotation}
+
 trait GoldenGateFileEmission extends CustomFileEmission { this: Annotation =>
-
-  // workaround CustomFileEmission's requirement that suffixes begin with ".".
-  // by shadowing the same feature, and appending it ourselves. This is the
-  // easiest way to preserve most of the existing output file names.
-  def fileSuffix: String
-  final def suffix = None
-
   override def baseFileName(annotations: firrtl.AnnotationSeq) = {
-    val baseName = annotations.collectFirst{ case OutputBaseFileNameAnnotation(name) => name }.get
-    baseName + fileSuffix
+    annotations.collectFirst{ case OutputBaseFilenameAnnotation(name) => name }.get
   }
 }
 
 /**
   * A generic wrapper for output files that have no targets.
+  *
+  * @param body the body of the file
+  * @param fileSuffix The string to append to base output file name
+  *
   */
 case class GoldenGateOutputFileAnnotation(body: String, fileSuffix: String)
     extends NoTargetAnnotation with GoldenGateFileEmission {
+  def suffix = Some(fileSuffix)
   def getBytes = body.getBytes
+}
+
+object GoldenGateOutputFileAnnotation {
+  /**
+    * Sugar to add a new output file from a chisel source (e.g., in a bridge, platform shim)
+    */
+  def annotateFromChisel(body: String, fileSuffix: String): Unit = {
+    annotate(new ChiselAnnotation { def toFirrtl = GoldenGateOutputFileAnnotation(body, fileSuffix) })
+  }
 }
 
 /**

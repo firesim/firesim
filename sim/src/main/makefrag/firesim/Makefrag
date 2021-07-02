@@ -19,15 +19,15 @@ name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
+# This is prefix is currently assumed by the fpga build flow
+BASE_FILE_NAME := FireSim-generated
+
 ##################
 # RTL Generation #
 ##################
 long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
-
-VERILOG := $(GENERATED_DIR)/FPGATop.v
-HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := {file:${chipyard_dir}}firechip
@@ -72,7 +72,7 @@ DROMAJO_DTB = $(GENERATED_DIR)/$(long_name).dtb
 $(DROMAJO_LIB):
 	$(MAKE) -C $(DROMAJO_DIR)
 
-$(DROMAJO_LONG_H) $(DTS_FILE): $(VERILOG)
+$(DROMAJO_LONG_H) $(DTS_FILE): $(simulator_verilog)
 
 $(DROMAJO_H): $(DROMAJO_LONG_H)
 	rm -rf $(DROMAJO_H)
@@ -133,7 +133,7 @@ DEFAULT_MIDAS_VERILATOR_FLAGS = \
 
 # AJG: this must be evaluated after verilog generation to work (hence the =)
 EXTRA_VERILATOR_FLAGS = \
-	$(shell if ! grep -iq "module.*cva6" $(VERILOG); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(CVA6_VERILATOR_FLAGS)"; fi)
+	$(shell if ! grep -iq "module.*cva6" $(simulator_verilog); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(CVA6_VERILATOR_FLAGS)"; fi)
 
 ################################################################
 # SW RTL Simulation Args -- for MIDAS- & FPGA-level Simulation #

@@ -42,7 +42,7 @@ def replace_rtl(conf, buildconfig):
          InfoStreamLogger('stderr'):
         run(buildconfig.make_recipe("replace-rtl"))
         run("""mkdir -p {}/results-build/{}/""".format(ddir, builddir))
-        run("""cp $CL_DIR/design/cl_firesim_generated.sv {}/results-build/{}/cl_firesim_generated.sv""".format(ddir, builddir))
+        run("""cp $CL_DIR/design/FireSim-generated.sv {}/results-build/{}/FireSim-generated.sv""".format(ddir, builddir))
 
     # build the fpga driver that corresponds with this version of the RTL
     with prefix('cd ' + ddir + '/../'), \

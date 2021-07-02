@@ -1,6 +1,18 @@
 # See LICENSE for license details.
 
-# FireSim MAKEFRAG interface - Compulsory variables follow
+# FireSim Target Agnostic Make Fragment
+#
+# Defines make targets for:
+# - invoking Golden Gate (phony: verilog / compile)
+# - building a simulation driver (phony: f1)
+# - populating an FPGA build directory (phony: replace-rtl)
+# - generating new runtime configurations (phony: conf)
+# - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug)
+#
+
+# The prefix used for all Golden Gate-generated files
+BASE_FILE_NAME ?=
+
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
 GENERATED_DIR ?=
@@ -9,16 +21,7 @@ OUTPUT_DIR ?=
 # Root name for generated binaries
 DESIGN ?=
 
-# SOURCE FILES
-# Driver source files
-DRIVER_CC ?=
-DRIVER_H ?=
-# Simulation memory map emitted by the MIDAS compiler
-HEADER ?=
-# The midas-generated simulator RTL which will be baked into the FPGA shell project
-VERILOG ?=
-
-# The target's FIRRTL and associated anotations
+# The target's FIRRTL and associated anotations; inputs to Golden Gate
 FIRRTL_FILE ?=
 ANNO_FILE ?=
 
@@ -27,12 +30,16 @@ PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
 PLATFORM_CONFIG ?= DefaultF1Config
 
 # The name of the generated runtime configuration file
-CONF_NAME ?= runtime.conf
+CONF_NAME ?= $(BASE_FILE_NAME).runtime.conf
 
-# The host platform type
-PLATFORM ?= f1
+# The host platform type, currently only f1 is supported
+PLATFORM ?=
 
-# Target-specific CXX and LD flags
+# Driver source files
+DRIVER_CC ?=
+DRIVER_H ?=
+
+# Target-specific CXX and LD flags for compiling the driver and meta-simulators
 TARGET_CXX_FLAGS ?=
 TARGET_LD_FLAGS ?=
 
@@ -43,6 +50,11 @@ midas_cc = $(shell find $(simif_dir) -name "*.cc")
 common_cxx_flags := $(TARGET_CXX_FLAGS) -Wno-unused-variable
 common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 
+# Simulation memory map emitted by the MIDAS compiler
+header := $(GENERATED_DIR)/$(BASE_FILE_NAME).const.h
+# The midas-generated simulator RTL which will be baked into the FPGA shell project
+simulator_verilog := $(GENERATED_DIR)/$(BASE_FILE_NAME).sv
+
 ####################################
 # Golden Gate Invocation           #
 ####################################
@@ -51,20 +63,30 @@ firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 # extracted used to generate new runtime configurations.
 fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 
+.PHONY: verilog compile
+verilog: $(simulator_verilog)
+compile: $(simulator_verilog)
+
+# empty recipe to help make understand multiple targets come from single recipe invocation
+# without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
+.SECONDARY: $(simulator_verilog).intermediate
+$(simulator_verilog) $(header) $(fame_annos): $(simulator_verilog).intermediate ;
+
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
-$(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
+$(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
 	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
-		-o $(VERILOG) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
+		-o $(simulator_verilog) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
+		--output-filename-base $(BASE_FILE_NAME) \
 		--no-dedup \
-		-E verilog \
+		-E sverilog \
 	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
-	xargs cat >> $(VERILOG) # Append blackboxes to FPGA wrapper, if any
+	xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
 
 ####################################
 # Runtime-Configuration Generation #
@@ -77,8 +99,6 @@ $(VERILOG) $(HEADER) $(fame_annos): $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOO
 .PHONY: conf
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
-	# Runtime configuration generator must run under SBT currently; When
-	# launched via bloop some Console input and output is lost.
 	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
@@ -99,12 +119,12 @@ verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 $(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VERILATOR_CXXOPTS) -D RTLSIM
 $(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
-$(verilator): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILOG)
-	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
+$(verilator): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir) VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)"
 
-$(verilator_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILOG)
-	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
+$(verilator_debug): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir) VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)"
 
 .PHONY: verilator verilator-debug
@@ -123,12 +143,12 @@ vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 $(vcs) $(vcs_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VCS_CXXOPTS) -I$(VCS_HOME)/include -D RTLSIM
 $(vcs) $(vcs_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
-$(vcs): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILOG)
-	$(MAKE) -C $(simif_dir) vcs PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
+$(vcs): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+	$(MAKE) -C $(simif_dir) vcs PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
-$(vcs_debug): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(VERILOG)
-	$(MAKE) -C $(simif_dir) vcs-debug PLATFORM=$(PLATFORM) DESIGN=$(DESIGN) \
+$(vcs_debug): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+	$(MAKE) -C $(simif_dir) vcs-debug PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir)
 
 .PHONY: vcs vcs-debug
@@ -140,12 +160,8 @@ vcs-debug: $(vcs_debug)
 ############################
 DRIVER_CXXOPTS ?= -O2
 
-$(OUTPUT_DIR)/$(DESIGN).chain: $(VERILOG)
-	mkdir -p $(OUTPUT_DIR)
-	$(if $(wildcard $(GENERATED_DIR)/$(DESIGN).chain),cp $(GENERATED_DIR)/$(DESIGN).chain $@,)
-
 $(PLATFORM) = $(OUTPUT_DIR)/$(DESIGN)-$(PLATFORM)
-$(PLATFORM): $($(PLATFORM)) $(OUTPUT_DIR)/$(DESIGN).chain
+$(PLATFORM): $($(PLATFORM))
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
@@ -154,11 +170,12 @@ $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
 
 # Compile Driver
-$(f1): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(runtime_conf)
+$(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
-	cp $(HEADER) $(OUTPUT_DIR)/build/
+	cp $(header) $(OUTPUT_DIR)/build/
+	# The manager expects to find the default conf in output/ by this name
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
-	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
+	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
@@ -169,38 +186,27 @@ board_dir 	   := $(fpga_dir)/hdk/cl/developer_designs
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
 fpga_build_dir := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
-fpga_v         := $(fpga_work_dir)/design/cl_firesim_generated.sv
-ila_work_dir   := $(fpga_work_dir)/design/ila_files/
-fpga_vh        := $(fpga_work_dir)/design/cl_firesim_generated_defines.vh
-fpga_tcl_env   := $(fpga_work_dir)/design/cl_firesim_generated_env.tcl
 repo_state     := $(fpga_work_dir)/design/repo_state
+
+# Enumerates the subset of generated files that must be copied over for FPGA compilation
+fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
+	.sv .defines.vh .env.tcl \
+	.ila_insert_inst.v .ila_insert_ports.v .ila_insert_wires.v .ila_insert_vivado.tcl)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
 	cp -rf $(board_dir)/cl_firesim -T $(fpga_work_dir)
 	touch $@
 
-$(fpga_v): $(VERILOG) $(fpga_work_dir)/stamp
+$(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
-	cp -f $< $@
-	sed -i "s/\$$random/64'b0/g" $@
-	sed -i "s/\(^ *\)fatal;\( *$$\)/\1fatal(0, \"\");\2/g" $@
 
-$(fpga_vh): $(VERILOG) $(fpga_work_dir)/stamp
+$(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/$(@F) $@
-
-$(fpga_tcl_env): $(VERILOG) $(fpga_work_dir)/stamp
-	cp -f $(GENERATED_DIR)/$(@F) $@
-
-.PHONY: $(ila_work_dir)
-$(ila_work_dir): $(verilog) $(fpga_work_dir)/stamp
-	cp -f $(GENERATED_DIR)/firesim_ila_insert_* $(fpga_work_dir)/design/ila_files/
-	sed -i "s/\$$random/64'b0/g" $(fpga_work_dir)/design/ila_files/*
-	sed -i "s/\(^ *\)fatal;\( *$$\)/\1fatal(0, \"\");\2/g" $(fpga_work_dir)/design/ila_files/*
 
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_v) $(ila_work_dir) $(fpga_vh) $(fpga_tcl_env)
+replace-rtl: $(fpga_delivery_files)
 
 .PHONY: replace-rtl
 
@@ -210,7 +216,7 @@ $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/st
 
 # Runs a local fpga-bitstream build. Strongly consider using the manager instead.
 fpga: export CL_DIR := $(fpga_work_dir)
-fpga: $(fpga_v) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
+fpga: $(fpga_delivery_files) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 	cd $(fpga_build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
 
 
@@ -228,8 +234,8 @@ xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
 $(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D SIMULATION_XSIM -D NO_MAIN
 $(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
-$(xsim): $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
-	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DESIGN=$(DESIGN) \
+$(xsim): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
@@ -287,10 +293,9 @@ clean:
 veryclean:
 	rm -rf generated-src output
 
-tags: $(HEADER) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+tags: $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .
 
-.PHONY: default verilog compile
 .PHONY: $(PLATFORM)-driver fpga
 .PHONY: mostlyclean clean
 

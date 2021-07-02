@@ -3,6 +3,8 @@
 package midas
 package widgets
 
+import midas.stage.GoldenGateOutputFileAnnotation
+
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.DataMirror
@@ -55,6 +57,8 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.io.ctrl.nastiXDataBits/8))))
 
   def printCRs = module.crRegistry.printCRs
+
+  def defaultPlusArgs: Option[String] = None
 }
 
 abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
@@ -254,4 +258,17 @@ trait HasWidgets {
     val base = (addrMap(w.getWName).start >> log2Up(channelWidth/8))
     base + w.getCRAddr(crName)
   }
+
+  /**
+    * Iterates through all bound widgets requesting default plusArgs if
+    * applicable, which are then serialized to a file.  This is mostly useful
+    * for bridges that do not have defaults baked into the driver, such as
+    * FASED, where plus args _must_ be provided.
+    */
+  def emitDefaultPlusArgsFile(): Unit =
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      // Append an extra \n to prevent the file from being empty.
+      body = widgets.map(_.defaultPlusArgs).flatten.mkString("\n") + "\n",
+      fileSuffix = ".runtime.conf"
+    )
 }
