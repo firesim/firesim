@@ -13,8 +13,6 @@ import firrtl.transforms.{DedupModules}
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
 import Utils._
-import mdf.macrolib.SRAMMacro
-import mdf.macrolib.Utils.readMDFFromString
 
 import chisel3.experimental.ChiselAnnotation
 
