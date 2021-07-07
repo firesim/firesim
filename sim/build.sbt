@@ -44,7 +44,6 @@ lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
 lazy val chisel        = ProjectRef(workspaceDirectory / "chisel3", "chisel")
 lazy val firrtl        = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
-lazy val barstools     = ProjectRef(chipyardDir, "barstoolsMacros")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
 lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
 lazy val sifive_blocks = ProjectRef(chipyardDir, "sifive_blocks")
@@ -65,7 +64,7 @@ lazy val targetutils   = (project in file("midas/targetutils"))
 lazy val firesimRef = ProjectRef(file("."), "firesim")
 
 lazy val midas = (project in file("midas"))
-  .dependsOn(barstools, rocketchip, firrtl % "test->test")
+  .dependsOn(rocketchip, firrtl % "test->test")
   .settings(
     commonSettings,
     addCompilerPlugin(chiselPluginLib)
