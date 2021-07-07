@@ -74,6 +74,16 @@ sudo activate-global-python-argcomplete
 # Upgrading pip2 clobbers the pip3 installation paths.
 sudo yum reinstall -y python36-pip
 
+# Install boost
+boost_minor_v=69
+wget https://sourceforge.net/projects/boost/files/boost/1.${boost_minor_v}.0/boost_1_${boost_minor_v}_0.tar.bz2
+tar --bzip2 -xf boost_1_${boost_minor_v}_0.tar.bz2
+cd boost_1_${boost_minor_v}_0
+sudo yum install bzip2-devel
+sudo ./bootstrap.sh
+sudo ./b2 install
+cd ..
+
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 
 # get a regular prompt
