@@ -205,10 +205,13 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     bash -c "source ./hdk_setup.sh"
 fi
 
+# Per-repository dependencies are installed under this sysroot
+firesim_local_sysroot=$RDIR/sim/lib-install
 cd $RDIR
-./scripts/build-libelf.sh
-cd $RDIR
-./scripts/build-libdwarf.sh
+mkdir -p $firesim_local_sysroot
+./scripts/build-libdwarf.sh $firesim_local_sysroot
+./scripts/build-libelf.sh $firesim_local_sysroot
+env_append "export LD_LIBRARY_PATH=$firesim_local_sysroot/lib\${LD_LIBRARY_PATH:+\":\${LD_LIBRARY_PATH}\"}"
 
 cd $RDIR
 set +e

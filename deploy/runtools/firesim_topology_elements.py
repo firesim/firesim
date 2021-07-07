@@ -335,8 +335,7 @@ class FireSimServerNode(FireSimNode):
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
 
         # shared libraries
-        all_paths.append(["$RISCV/lib/libdwarf.so", "libdwarf.so.1"])
-        all_paths.append(["$RISCV/lib/libelf.so", "libelf.so.1"])
+        all_paths += self.server_hardware_config.get_local_shared_libraries()
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
@@ -497,8 +496,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                               self.get_rootfs_name()])
 
         # shared libraries
-        all_paths.append(["$RISCV/lib/libdwarf.so", "libdwarf.so.1"])
-        all_paths.append(["$RISCV/lib/libelf.so", "libelf.so.1"])
+        all_paths += self.server_hardware_config.get_local_shared_libraries()
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
