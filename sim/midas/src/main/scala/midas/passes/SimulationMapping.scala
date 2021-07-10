@@ -94,27 +94,14 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
 
     // Generate the encapsulating simulator RTL
     lazy val shim = PlatformShim(innerState.annotations, portTypeMap)
-    // This will include runtime arguments that we must filter out to avoid
-    // polluting the downstream tranforms
-    val allChiselAnnos = (new chisel3.stage.ChiselStage).transform(
-      Seq(
-        ChiselGeneratorAnnotation(() => LazyModule(shim).module),
-        NoRunFirrtlCompilerAnnotation
-      )
-    )
-    val chirrtl = allChiselAnnos.collectFirst { case a: FirrtlCircuitAnnotation => a }.get.circuit
-    val annos = allChiselAnnos.collectFirst {
-      case chisel3.stage.ChiselCircuitAnnotation(a) =>
-        PreLinkRenamingAnnotation(Namespace(innerCircuit)) +:
-        // Grab only annotations emitted by the module under elaboration
-        a.annotations.map(_.toFirrtl)
-    }.get
+    val (chirrtl, elaboratedAnnos) = ElaborateChiselSubCircuit(LazyModule(shim).module)
 
     val transforms = Seq(
       Dependency[Fame1Instances],
       Dependency(PreLinkRenaming))
+    val outerAnnos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: elaboratedAnnos
     val outerState = new Compiler(Forms.LowForm ++ transforms)
-      .execute(CircuitState(chirrtl, ChirrtlForm, annos))
+      .execute(CircuitState(chirrtl, ChirrtlForm, outerAnnos))
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
