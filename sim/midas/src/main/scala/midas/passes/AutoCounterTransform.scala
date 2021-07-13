@@ -16,7 +16,6 @@ import freechips.rocketchip.config.{Parameters, Field}
 import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
 import midas.widgets._
 import midas.targetutils._
-import midas.passes.Utils.{widx, wsub}
 import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Or, Negate, Neq}
 
 import java.io._
