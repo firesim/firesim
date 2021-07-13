@@ -13,7 +13,7 @@ import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation}
 import firrtl.stage.{Forms, FirrtlCircuitAnnotation}
 import firrtl.stage.transforms.Compiler
 
-class GoldenGateCompilerPhase extends Phase with ConfigLookup {
+class GoldenGateCompilerPhase extends Phase {
 
   override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
   override val optionalPrerequisiteOf = Seq(Dependency[firrtl.stage.phases.WriteEmitted])
