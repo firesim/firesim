@@ -11,8 +11,7 @@ import chisel3._
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util._
 
-// From MIDAS
-import midas.widgets.{D2V, V2D, SkidRegister}
+import midas.widgets.{D2V}
 
 class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   val io = IO(new Bundle {

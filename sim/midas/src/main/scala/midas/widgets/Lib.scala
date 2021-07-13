@@ -168,20 +168,6 @@ class MultiQueue[T <: Data](
   io.deq.bits := ram.read(Cat(io.deqAddr, deqPtr))
 }
 
-// Selects one of two input host decoupled channels. Drives ready false
-// to the unselected channel.
-object HostMux {
-  def apply[T <: Data](sel: Bool, a : HostDecoupledIO[T], b : HostDecoupledIO[T]) : HostDecoupledIO[T] =
-  {
-    val output = Wire(a.cloneType)
-    output.hValid := a.hValid || b.hValid
-    output.hBits := Mux(sel, a.hBits, b.hBits)
-    a.hReady := sel && output.hReady
-    b.hReady := ~sel && output.hReady
-    output
-  }
-}
-
 case class Permissions(readable: Boolean, writeable: Boolean)
 object ReadOnly extends Permissions(true, false)
 object WriteOnly extends Permissions(false, true)
@@ -415,37 +401,13 @@ object D2V {
     v
   }
 }
+
 object V2D {
   def apply[T <: Data](in: ValidIO[T]): DecoupledIO[T] = {
     val d = Wire(Decoupled(in.bits.cloneType))
     d.bits := in.bits
     d.valid := in.valid
     d
-  }
-}
-// Holds a ValidIO in a register until it is no longer needed.
-// Not quite indentical to a Decoupled Skid register but similar
-object HoldingRegister {
-  def apply[T <: Data](in: ValidIO[T], done: Bool): (ValidIO[T], ValidIO[T]) = {
-    val reg = RegInit({val i = Wire(in.cloneType); i.valid := false.B; i})
-    val out = Mux(~reg.valid || done, in, reg)
-    reg := out
-    (out, reg)
-  }
-}
-
-object SkidRegister {
-  def apply[T <: Data](in: DecoupledIO[T]): DecoupledIO[T] = {
-    val reg = RegInit({val i = Wire(Valid(in.bits.cloneType)); i.valid := false.B; i})
-    val out = Wire(in.cloneType)
-    in.ready := ~reg.valid || out.ready
-    out.valid := reg.valid || in.valid
-    out.bits := Mux(reg.valid, reg.bits, in.bits)
-    when (out.valid && ~out.ready) {
-      reg.bits := out.bits
-      reg.valid := true.B
-    }
-    out
   }
 }
 
