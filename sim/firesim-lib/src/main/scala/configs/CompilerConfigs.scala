@@ -44,10 +44,6 @@ class WithAsyncResetReplacement extends Config((site, here, up) => {
   case TargetTransforms => Dependency(firesim.passes.AsyncResetRegPass) +: up(TargetTransforms, site)
 })
 
-class WithPlusArgReaderRemoval extends Config((site, here, up) => {
-  case TargetTransforms => Dependency(firesim.passes.PlusArgReaderPass) +: up(TargetTransforms, site)
-})
-
 // The wiring transform is normally only run as part of ReplSeqMem
 class WithWiringTransform extends Config((site, here, up) => {
   case TargetTransforms => Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)

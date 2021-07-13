@@ -17,7 +17,7 @@ import firrtl.options.{Phase, TargetDirAnnotation, Dependency}
 import java.io.{File, FileWriter, Writer}
 import logger._
 
-class RuntimeConfigGenerationPhase extends Phase with ConfigLookup {
+class RuntimeConfigGenerationPhase extends Phase {
 
   override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
 
