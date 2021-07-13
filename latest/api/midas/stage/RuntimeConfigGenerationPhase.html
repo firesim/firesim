@@ -118,10 +118,6 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="index.html" class="extype" name="midas.stage">stage</a></dd></dl></div>
     </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="ConfigLookup.html" title=""></a>
-                        <a href="ConfigLookup.html" title="">ConfigLookup</a>
-                      </li><li class="current-entities indented2">
                         <a class="object" href="ConfigPackageAnnotation$.html" title=""></a>
                         <a class="class" href="ConfigPackageAnnotation.html" title=""></a>
                         <a href="ConfigPackageAnnotation.html" title="">ConfigPackageAnnotation</a>
@@ -188,7 +184,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">RuntimeConfigGenerationPhase</span><span class="result"> extends <span class="extype" name="firrtl.options.Phase">Phase</span> with <a href="ConfigLookup.html" class="extype" name="midas.stage.ConfigLookup">ConfigLookup</a></span>
+        <span class="name">RuntimeConfigGenerationPhase</span><span class="result"> extends <span class="extype" name="firrtl.options.Phase">Phase</span></span>
       </span>
       </h4>
 
@@ -197,7 +193,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="ConfigLookup.html" class="extype" name="midas.stage.ConfigLookup">ConfigLookup</a>, <span class="extype" name="firrtl.options.Phase">Phase</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.options.Phase">Phase</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -223,7 +219,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.stage.RuntimeConfigGenerationPhase"><span>RuntimeConfigGenerationPhase</span></li><li class="in" name="midas.stage.ConfigLookup"><span>ConfigLookup</span></li><li class="in" name="firrtl.options.Phase"><span>Phase</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.stage.RuntimeConfigGenerationPhase"><span>RuntimeConfigGenerationPhase</span></li><li class="in" name="firrtl.options.Phase"><span>Phase</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -430,38 +426,6 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.stage.ConfigLookup#getConfigWithFallback" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getConfigWithFallback(packages:Seq[String],configNames:Seq[String]):freechips.rocketchip.config.Config"></a><a id="getConfigWithFallback(Seq[String],Seq[String]):Config"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGenerationPhase.html#getConfigWithFallback(packages:Seq[String],configNames:Seq[String]):freechips.rocketchip.config.Config" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getConfigWithFallback</span><span class="params">(<span name="packages">packages: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="configNames">configNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="chipsalliance.rocketchip.config.Config">Config</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ConfigLookup.html" class="extype" name="midas.stage.ConfigLookup">ConfigLookup</a></dd></dl></div>
-    </li><li name="midas.stage.ConfigLookup#getParameters" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getParameters(hostNames:midas.rocketchip.util.ParsedInputNames):freechips.rocketchip.config.Parameters"></a><a id="getParameters(ParsedInputNames):Parameters"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGenerationPhase.html#getParameters(hostNames:midas.rocketchip.util.ParsedInputNames):freechips.rocketchip.config.Parameters" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getParameters</span><span class="params">(<span name="hostNames">hostNames: <a href="../rocketchip/util/ParsedInputNames.html" class="extype" name="midas.rocketchip.util.ParsedInputNames">ParsedInputNames</a></span>)</span><span class="result">: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ConfigLookup.html" class="extype" name="midas.stage.ConfigLookup">ConfigLookup</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
@@ -795,9 +759,7 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.stage.ConfigLookup">
-              <h3>Inherited from <a href="ConfigLookup.html" class="extype" name="midas.stage.ConfigLookup">ConfigLookup</a></h3>
-            </div><div class="parent" name="firrtl.options.Phase">
+        <div class="parent" name="firrtl.options.Phase">
               <h3>Inherited from <span class="extype" name="firrtl.options.Phase">Phase</span></h3>
             </div><div class="parent" name="firrtl.options.DependencyAPI">
               <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</h3>
