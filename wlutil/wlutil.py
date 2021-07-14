@@ -499,6 +499,23 @@ def run(*args, level=logging.DEBUG, check=True, **kwargs):
 
     return p
 
+def run_with_retries(command, level=logging.DEBUG, num_attempts = 3, polling_interval_s = 1.0):
+    """ Repeatedly tries to run a command, initially tolerating failure
+        num_attempts -> The maximum number of invocations of the command
+        polling_interval_s -> The time, in seconds, between invocations """
+
+    attempt_count = 1
+    while attempt_count <= num_attempts:
+        # Permit run to throw an exception only on the final invocation
+        check_on_last_attempt = (attempt_count == num_attempts)
+        if run(command, level, check = check_on_last_attempt).returncode == 0:
+            break
+
+        log = logging.getLogger()
+        log.log(level, "Retrying last command...")
+        time.sleep(polling_interval_s)
+        attempt_count += 1
+
 def genRunScript(command):
     with open(getOpt('command-script'), 'w') as s:
         s.write("#!/bin/sh\n")
@@ -528,7 +545,7 @@ if sp.run(['/usr/bin/sudo', '-ln', 'true'], stdout=sp.DEVNULL).returncode == 0:
         try:
             yield mntPath
         finally:
-            run(sudoCmd + ['umount', mntPath])
+            run_with_retries(sudoCmd + ['umount', mntPath])
 else:
     # User doesn't have sudo (use guestmount, slow but reliable)
     sudoCmd = []
