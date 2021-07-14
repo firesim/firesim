@@ -65,7 +65,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
       case s @ WDefInstance(_, name, _, _) if name == targetInstName =>
         Block(Seq(
           s copy (module = targetModuleName), // replace TargetBox with the actual target module
-          IsInvalid(NoInfo, wref(name))
+          IsInvalid(NoInfo, WRef(name))
         ))
       case s => s map initStmt(targetModuleName, targetInstName)
     }

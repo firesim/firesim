@@ -99,14 +99,14 @@ private[passes] class AssertPass extends firrtl.Transform {
     lazy val (childAsserts, childAssertClocksRTs): (Seq[WSubField], Seq[Seq[ReferenceTarget]])  =
     (for ((childInstName, (assertPort, clockRTs)) <- assertChildren) yield {
       val childWidth = firrtl.bitWidth(assertPort.tpe).toInt
-      val assertRef = wsub(wref(childInstName), assertPort.name)
+      val assertRef = WSubField(WRef(childInstName), assertPort.name)
       val clockRefs = clockRTs.map(_.addHierarchy(m.name, childInstName))
       (assertRef, clockRefs)
     }).unzip
 
     // Get references to all module-local synthesized assertions
     val sortedLocalAsserts = asserts(m.name).values.toSeq.sortWith(_._1 < _._1)
-    val (localAsserts, localClocks) = sortedLocalAsserts.map({ case (_, en, clk) => (wref(en), mT.ref(clk)) }).unzip
+    val (localAsserts, localClocks) = sortedLocalAsserts.map({ case (_, en, clk) => (WRef(en), mT.ref(clk)) }).unzip
 
     def allAsserts = localAsserts ++ childAsserts
     def allClocks = localClocks ++ childAssertClocksRTs.flatten

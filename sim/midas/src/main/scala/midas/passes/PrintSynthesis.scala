@@ -16,7 +16,6 @@ import firrtl.WrappedExpression._
 import logger.{Logger, LogLevel}
 import freechips.rocketchip.config.{Parameters, Field}
 
-import Utils._
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule}
 import midas.targetutils.SynthPrintfAnnotation
@@ -83,10 +82,10 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
         val printName = getPrintName(p, associatedAnno, modNamespace)
         // Generate an aggregate with all of our arguments; this will be wired out
         val wire = DefWire(NoInfo, printName, genPrintBundleType(p))
-        val enableConnect = Connect(NoInfo, wsub(WRef(wire), "enable"), en)
+        val enableConnect = Connect(NoInfo, WSubField(WRef(wire), "enable"), en)
         val argumentConnects = (p.args.zipWithIndex).map({ case (arg, idx) =>
           Connect(NoInfo,
-                  wsub(WRef(wire), s"args_${idx}"),
+                  WSubField(WRef(wire), s"args_${idx}"),
                   arg)})
 
         val printBundleTarget = associatedAnno.mod.ref(printName)
