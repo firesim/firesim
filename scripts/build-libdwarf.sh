@@ -6,8 +6,17 @@ if [ -z "$RISCV" ]; then
     exit 1
 fi
 
+if [ $# -ne 1 ]; then
+    echo "$0 expects one argument, the installation prefix."
+    exit 1
+fi
+
+prefix=$1
+
 cd sim/firesim-lib/src/main/cc/lib/libdwarf
 sh scripts/FIX-CONFIGURE-TIMES
-./configure --prefix="${RISCV}" --enable-shared --disable-static CFLAGS="-g -I${RISCV}/include" LDFLAGS="-L${RISCV}/lib"
+mkdir build
+cd build
+../configure --prefix="${prefix}" --enable-shared --disable-static CFLAGS="-g -I${RISCV}/include" LDFLAGS="-L${RISCV}/lib"
 make
 make install

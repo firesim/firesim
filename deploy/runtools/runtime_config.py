@@ -19,6 +19,7 @@ import os
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
+LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
@@ -62,6 +63,14 @@ class RuntimeHWConfig:
         drivers_software_base = LOCAL_DRIVERS_BASE + "/" + my_deploytriplet + "/"
         fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
         return fpga_driver_local
+
+    def get_local_shared_libraries(self):
+        """ Returns a list of path tuples, (A, B), where:
+            A is the local file path on the manager instance to the library
+            B is the destination file path on the runfarm instance relative to the driver """
+
+        return [[LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
+                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]]
 
     def get_local_runtimeconf_binaryname(self):
         """ Get the name of the runtimeconf file. """
