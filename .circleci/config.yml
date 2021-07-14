@@ -154,6 +154,15 @@ jobs:
               max-runtime-hours: 6
           - initial-scala-compile
 
+  build-default-workloads:
+    description: "Invokes marshal to build the default rootfs."
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          command: |
+              .circleci/build-default-workloads.py
+          no_output_timeout: 30m
 
   run-manager-pytests:
     executor: aws
@@ -207,6 +216,10 @@ workflows:
   firesimCIall:
     jobs:
      - setup-default-manager
+
+     - build-default-workloads:
+         requires:
+         - setup-default-manager
 
      - run-test-groupA:
          requires:
