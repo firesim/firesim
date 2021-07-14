@@ -81,7 +81,7 @@ trait HasChannels {
   def generateAnnotations(): Unit
 
   /**
-    * Returns a list of channel names for which FAMECHannelConnectionAnnotations have been generated
+    * Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
     */
   def allChannelNames(): Seq[String]
 
