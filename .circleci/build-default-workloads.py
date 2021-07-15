@@ -8,15 +8,13 @@ from ci_variables import ci_workflow_id
 def build_default_workloads():
     """ Builds workloads that will be run on F1 instances as part of CI """
 
-    with cd(manager_fsim_dir), \
-         prefix('source env.sh'), \
-         cd("target-design/chipyard/software/firemarshal"):
+    with prefix('cd {} && source ./env.sh'.format(manager_fsim_dir)), \
+         prefix('cd target-design/chipyard/software/firemarshal'):
         run("./init-submodules.sh")
         run("./marshal -v build br-base.json")
 
-    with cd(manager_fsim_dir), \
-         prefix('source env.sh'), \
-         cd("deploy/workloads"):
+    with prefix('cd {} && source ./env.sh'.format(manager_fsim_dir)), \
+         prefix('cd deploy/workloads'):
         run("make linux-poweroff")
 
 
