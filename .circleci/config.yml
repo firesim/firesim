@@ -240,7 +240,8 @@ workflows:
           cron: "0 0,12 * * *"
           filters:
             branches:
-              only: "/.*/"
+              only:
+               - dev
     jobs:
       - cull-old-ci-instances
 
