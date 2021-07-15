@@ -9,14 +9,9 @@ def build_default_workloads():
     """ Builds workloads that will be run on F1 instances as part of CI """
 
     with prefix('cd {} && source ./env.sh'.format(manager_fsim_dir)), \
-         prefix('cd target-design/chipyard/software/firemarshal'):
-        run("./init-submodules.sh")
-        run("./marshal -v build br-base.json")
-
-    with prefix('cd {} && source ./env.sh'.format(manager_fsim_dir)), \
          prefix('cd deploy/workloads'):
+        run("marshal -v build br-base.json")
         run("make linux-poweroff")
-
 
 if __name__ == "__main__":
     execute(build_default_workloads, hosts=[manager_hostname(ci_workflow_id)])
