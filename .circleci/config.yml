@@ -10,6 +10,7 @@ executors:
     environment:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
+        MARSHAL_JLEVEL: 8 # This is unset by default, leading to starvation conditions on the manager
   aws:
     docker:
     - image: cimg/python:2.7-node
