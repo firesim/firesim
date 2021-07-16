@@ -22,13 +22,6 @@ object EC2F1Artefacts extends Transform {
   def outputForm: CircuitForm = LowForm
   override def name = "[Golden Gate] EC2 F1 Artefact Generation"
 
-  // Capture FPGA-toolflow related verilog defines
-  def verilogHeaderAnno = GoldenGateOutputFileAnnotation(
-    """| // Don't let Vivado see $random, which is the default if this is not set
-       | `define RANDOM 64'b0
-       |""".stripMargin,
-    fileSuffix = ".defines.vh")
-
   // Emit TCL variables to control the FPGA compilation flow
   def tclEnvAnno(implicit hostParams: Parameters): GoldenGateOutputFileAnnotation =  {
     val requestedFrequency = hostParams(DesiredHostFrequency)
@@ -42,6 +35,6 @@ ${buildStrategy.emitTcl}
 
   def execute(state: CircuitState): CircuitState = {
     implicit val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
-    state.copy(annotations = verilogHeaderAnno +: tclEnvAnno +: state.annotations)
+    state.copy(annotations = tclEnvAnno +: state.annotations)
   }
 }

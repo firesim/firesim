@@ -10,6 +10,7 @@ import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{DMANastiKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
+import midas.stage.GoldenGateOutputFileAnnotation
 
 case object AXIDebugPrint extends Field[Boolean]
 
@@ -39,5 +40,17 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
 
     val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 1 << p(CtrlNastiKey).idBits)
     top.module.ctrl.ar.bits.id := rCounterValue
+
+    // Capture FPGA-toolflow related verilog defines
+    def channelInUse(idx: Int): String = if (idx < top.dramChannelsRequired) "1" else "0"
+
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      s"""|// Optionally instantiate additional memory channels if required.
+          |// The first channel (C) is provided by the shell and is not optional.
+          |`define USE_DDR_CHANNEL_A ${channelInUse(1)}
+          |`define USE_DDR_CHANNEL_B ${channelInUse(2)}
+          |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
+          |""".stripMargin,
+      fileSuffix = ".defines.vh")
   }
 }
