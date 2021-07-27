@@ -15,30 +15,10 @@ r_dir = $(abspath ../resources)
 # 7) CLOCK_PERIOD(optional): clock period of tests
 # 8) VERILATOR_FLAGS(optional): set of verilator flags to add
 ########################################################################
-ifeq ($(strip $(DRIVER_NAME)),)
-$(error Define DRIVER_NAME, the base name used for compiled simulators and simulator drivers.)
-endif
-ifeq ($(strip $(GEN_FILE_BASENAME)),)
-$(error Define GEN_FILE_BASENAME, the base name used for all Golden Gate-generated files.)
-endif
-ifeq ($(strip $(GEN_DIR)),)
-$(error Define GEN_DIR, the directory containing all Golden Gate-generated files.)
-endif
-ifeq ($(strip $(TOP_DIR)),)
-$(error Define TOP_DIR, the top of the chipyard directory)
-endif
-ifeq ($(strip $(DRIVER)),)
-$(error Define DRIVER, additional source files for the simulation driver)
-endif
 
 PLATFORM ?= zynq
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 1.0
-
-$(info platform: $(PLATFORM))
-$(info generated source directory: $(GEN_DIR))
-$(info output directory: $(OUT_DIR))
-$(info clock period: $(CLOCK_PERIOD))
 
 testchip_dir=$(TOP_DIR)/generators/testchipip/src/main/resources
 testchip_csrc_dir=$(testchip_dir)/testchipip/csrc
