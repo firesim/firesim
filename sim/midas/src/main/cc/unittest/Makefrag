@@ -48,6 +48,9 @@ emul_h     :=
 emul_cc    :=
 
 # VCS Makefrag arguments
+# Since we're reusing the makefrags we use to build metasimulators, we need to
+# set DRIVER_NAME. We set it here so simulator binaries are named V$(DESIGN) / $(DESIGN)
+DRIVER_NAME := $(DESIGN)
 ifeq ($(EMUL),vcs)
 vcs_wrapper_v := $(vsrc)/TestDriver.v
 VCS_FLAGS = +verbose
