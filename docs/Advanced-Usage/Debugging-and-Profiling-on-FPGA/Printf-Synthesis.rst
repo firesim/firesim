@@ -42,7 +42,7 @@ For example, if your previous ``PLATFORM_CONFIG`` was
 ``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you
 must prepend the mixin (rather than appending).  During compilation, Golden
 Gate will print the number of printfs it has synthesized.  In the target's
-generated header (``<DESIGN>-const.h``), you'll find metadata for each of the
+generated header (``FireSim-generated.const.h``), you'll find metadata for each of the
 printfs Golden Gate synthesized.  This is passed as argument to the constructor
 of the ``synthesized_prints_t`` bridge driver, which will be automatically
 instantiated in FireSim driver.
