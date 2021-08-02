@@ -175,8 +175,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -367,6 +371,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -443,10 +451,6 @@
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="TokenizedRecord.html" title=""></a>
-                        <a href="TokenizedRecord.html" title="">TokenizedRecord</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
                         <a href="UInt32.html" title="">UInt32</a>
                       </li><li class="current-entities indented2">
@@ -516,7 +520,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">Bridge</span><span class="tparams">[<span name="HPType">HPType &lt;: <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>, <span name="WidgetType">WidgetType &lt;: <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<span class="extype" name="midas.widgets.Bridge.HPType">HPType</span>]</span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+        <span class="name">Bridge</span><span class="tparams">[<span name="HPType">HPType &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>, <span name="WidgetType">WidgetType &lt;: <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<span class="extype" name="midas.widgets.Bridge.HPType">HPType</span>]</span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4>
 

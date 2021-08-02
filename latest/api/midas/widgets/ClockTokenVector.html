@@ -175,8 +175,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -367,6 +371,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -443,10 +451,6 @@
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="TokenizedRecord.html" title=""></a>
-                        <a href="TokenizedRecord.html" title="">TokenizedRecord</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
                         <a href="UInt32.html" title="">UInt32</a>
                       </li><li class="current-entities indented2">
@@ -516,7 +520,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ClockTokenVector</span><span class="result"> extends <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a> with <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></span>
+        <span class="name">ClockTokenVector</span><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a> with <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></span>
       </span>
       </h4>
 
@@ -528,7 +532,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a>, <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>, <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a>, <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Bundle">Bundle</span>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -554,7 +558,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.ClockTokenVector"><span>ClockTokenVector</span></li><li class="in" name="midas.widgets.ClockBridgeConsts"><span>ClockBridgeConsts</span></li><li class="in" name="midas.widgets.TokenizedRecord"><span>TokenizedRecord</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.ClockTokenVector"><span>ClockTokenVector</span></li><li class="in" name="midas.widgets.ClockBridgeConsts"><span>ClockBridgeConsts</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Bundle"><span>Bundle</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -680,6 +684,24 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.widgets.ClockTokenVector#allChannelNames" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allChannelNames():Seq[String]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ClockTokenVector.html#allChannelNames():Seq[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allChannelNames</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="java.lang.String">String</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -808,7 +830,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>HasId</dd></dl></div>
-    </li><li name="chisel3.Record#className" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="chisel3.Bundle#className" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="className:String"></a>
       <span class="permalink">
       <a href="../../midas/widgets/ClockTokenVector.html#className:String" title="Permalink">
@@ -823,7 +845,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="name">className</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Record</dd></dl></div>
     </li><li name="midas.widgets.ClockBridgeConsts#clockChannelName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clockChannelName:String"></a>
       <span class="permalink">
@@ -880,10 +902,10 @@ that clock domain will fire in the simulator time step that consumes this clock 
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#cloneType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="cloneType():ClockTokenVector.this.type"></a>
+    </li><li name="chisel3.Bundle#cloneType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cloneType:Bundle.this.type"></a><a id="cloneType:ClockTokenVector.this.type"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#cloneType():ClockTokenVector.this.type" title="Permalink">
+      <a href="../../midas/widgets/ClockTokenVector.html#cloneType:Bundle.this.type" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -892,10 +914,10 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cloneType</span><span class="params">()</span><span class="result">: <a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a>.this.type</span>
+        <span class="name">cloneType</span><span class="result">: <a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a>.this.type</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → Data</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Data</dd></dl></div>
     </li><li name="chisel3.internal.HasId#computeName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]"></a><a id="computeName(Option[String],Option[String]):Option[String]"></a>
       <span class="permalink">
@@ -960,22 +982,22 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.util.DecoupledIO[chisel3.Vec[chisel3.Bool]]]"></a><a id="elements:ListMap[String,DecoupledIO[Vec[Bool]]]"></a>
+    </li><li name="chisel3.Bundle#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.Data]"></a><a id="elements:ListMap[String,Data]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#elements:scala.collection.immutable.ListMap[String,chisel3.util.DecoupledIO[chisel3.Vec[chisel3.Bool]]]" title="Permalink">
+      <a href="../../midas/widgets/ClockTokenVector.html#elements:scala.collection.immutable.ListMap[String,chisel3.Data]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="modifier">final </span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="java.lang.String">String</span>, <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.Vec">Vec</span>[<span class="extype" name="chisel3.Bool">Bool</span>]]]</span>
+        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Data">Data</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → Record</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Record</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -1045,39 +1067,10 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="name">generateAnnotations</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateRVChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit"></a><a id="generateRVChannelFCCAs(Seq[(ReadyValidIO[Data],String)],Boolean):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">generateRVChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateWireChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit"></a><a id="generateWireChannelFCCAs(Seq[(Data,String)],Boolean,Int):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">generateWireChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>, <span name="latency">latency: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">0</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+      <p class="shortcomment cmt"> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.</p><div class="fullcomment"><div class="comment cmt"><p> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
@@ -1161,10 +1154,10 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#inputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="inputRVChannels:Seq[Nothing]"></a>
+    </li><li name="chisel3.Bundle#ignoreSeq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ignoreSeq:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#inputRVChannels:Seq[Nothing]" title="Permalink">
+      <a href="../../midas/widgets/ClockTokenVector.html#ignoreSeq:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1173,26 +1166,10 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">inputRVChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a>]</span>
+        <span class="name">ignoreSeq</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#inputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="inputWireChannels:Seq[Nothing]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#inputWireChannels:Seq[Nothing]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">inputWireChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle</dd></dl></div>
     </li><li name="chisel3.internal.HasId#instanceName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="instanceName:String"></a>
       <span class="permalink">
@@ -1289,22 +1266,6 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#lowerAggregateIntoLeafTargets" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]"></a><a id="lowerAggregateIntoLeafTargets(Data):Seq[ReferenceTarget]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">lowerAggregateIntoLeafTargets</span><span class="params">(<span name="bits">bits: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -1359,38 +1320,6 @@ that clock domain will fire in the simulator time step that consumes this clock 
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#outputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outputRVChannels:Seq[Nothing]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#outputRVChannels:Seq[Nothing]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outputRVChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#outputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outputWireChannels:Seq[(chisel3.util.DecoupledIO[chisel3.Vec[chisel3.Bool]],String)]"></a><a id="outputWireChannels:Seq[(DecoupledIO[Vec[Bool]],String)]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#outputWireChannels:Seq[(chisel3.util.DecoupledIO[chisel3.Vec[chisel3.Bool]],String)]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outputWireChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[(<span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.Vec">Vec</span>[<span class="extype" name="chisel3.Bool">Bool</span>]], <span class="extype" name="java.lang.String">String</span>)]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="chisel3.internal.HasId#parentModName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parentModName:String"></a>
       <span class="permalink">
@@ -1471,22 +1400,6 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="midas.widgets.ClockTokenVector#targetPortProto" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="targetPortProto():chisel3.Vec[chisel3.Bool]"></a><a id="targetPortProto():Vec[Bool]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockTokenVector.html#targetPortProto():chisel3.Vec[chisel3.Bool]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">targetPortProto</span><span class="params">()</span><span class="result">: <span class="extype" name="chisel3.Vec">Vec</span>[<span class="extype" name="chisel3.Bool">Bool</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="chisel3.internal.NamedComponent#toAbsoluteTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toAbsoluteTarget:firrtl.annotations.ReferenceTarget"></a><a id="toAbsoluteTarget:ReferenceTarget"></a>
       <span class="permalink">
@@ -1519,7 +1432,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
-    </li><li name="chisel3.Record#toPrintable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="chisel3.Bundle#toPrintable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toPrintable:chisel3.Printable"></a><a id="toPrintable:Printable"></a>
       <span class="permalink">
       <a href="../../midas/widgets/ClockTokenVector.html#toPrintable:chisel3.Printable" title="Permalink">
@@ -1534,7 +1447,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="name">toPrintable</span><span class="result">: <span class="extype" name="chisel3.Printable">Printable</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record → Data</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Record → Data</dd></dl></div>
     </li><li name="chisel3.Record#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
@@ -1685,10 +1598,10 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <div id="inheritedMembers">
         <div class="parent" name="midas.widgets.ClockBridgeConsts">
               <h3>Inherited from <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></h3>
-            </div><div class="parent" name="midas.widgets.TokenizedRecord">
-              <h3>Inherited from <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></h3>
             </div><div class="parent" name="midas.widgets.HasChannels">
               <h3>Inherited from <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></h3>
+            </div><div class="parent" name="chisel3.Bundle">
+              <h3>Inherited from <span class="extype" name="chisel3.Bundle">Bundle</span></h3>
             </div><div class="parent" name="chisel3.Record">
               <h3>Inherited from <span class="extype" name="chisel3.Record">Record</span></h3>
             </div><div class="parent" name="chisel3.Aggregate">

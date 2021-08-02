@@ -175,8 +175,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -367,6 +371,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -443,10 +451,6 @@
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="TokenizedRecord.html" title=""></a>
-                        <a href="TokenizedRecord.html" title="">TokenizedRecord</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
                         <a href="UInt32.html" title="">UInt32</a>
                       </li><li class="current-entities indented2">
@@ -516,7 +520,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">HostPortIO</span><span class="tparams">[<span name="T">+T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="result"> extends <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>
+        <span class="name">HostPortIO</span><span class="tparams">[<span name="T">+T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>
       </span>
       </h4>
 
@@ -525,7 +529,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>, <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -551,7 +555,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.HostPortIO"><span>HostPortIO</span></li><li class="in" name="midas.widgets.TokenizedRecord"><span>TokenizedRecord</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.HostPortIO"><span>HostPortIO</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -677,6 +681,24 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.widgets.HostPortIO#allChannelNames" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allChannelNames():Seq[String]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/HostPortIO.html#allChannelNames():Seq[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allChannelNames</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -1026,8 +1048,11 @@
         <span class="name">generateAnnotations</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateRVChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <p class="shortcomment cmt"> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.</p><div class="fullcomment"><div class="comment cmt"><p> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+    </li><li name="midas.widgets.HostPortIO#generateRVChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit"></a><a id="generateRVChannelFCCAs(Seq[(ReadyValidIO[Data],String)],Boolean):Unit"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html#generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit" title="Permalink">
@@ -1042,8 +1067,8 @@
         <span class="name">generateRVChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateWireChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="midas.widgets.HostPortIO#generateWireChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit"></a><a id="generateWireChannelFCCAs(Seq[(Data,String)],Boolean,Int):Unit"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html#generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit" title="Permalink">
@@ -1058,7 +1083,7 @@
         <span class="name">generateWireChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>, <span name="latency">latency: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">0</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
@@ -1158,7 +1183,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.HostPortIO#inputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="midas.widgets.HostPortIO#inputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="inputRVChannels():Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)]"></a><a id="inputRVChannels():Seq[(ReadyValidIO[Data],String)]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html#inputRVChannels():Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)]" title="Permalink">
@@ -1173,8 +1198,8 @@
         <span class="name">inputRVChannels</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HostPortIO#inputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      
+    </li><li name="midas.widgets.HostPortIO#inputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="inputWireChannels():Seq[(chisel3.Data,String)]"></a><a id="inputWireChannels():Seq[(Data,String)]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html#inputWireChannels():Seq[(chisel3.Data,String)]" title="Permalink">
@@ -1189,7 +1214,7 @@
         <span class="name">inputWireChannels</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+      
     </li><li name="chisel3.internal.HasId#instanceName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="instanceName:String"></a>
       <span class="permalink">
@@ -1286,22 +1311,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#lowerAggregateIntoLeafTargets" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]"></a><a id="lowerAggregateIntoLeafTargets(Data):Seq[ReferenceTarget]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/HostPortIO.html#lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">lowerAggregateIntoLeafTargets</span><span class="params">(<span name="bits">bits: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="midas.widgets.HostPortIO#name2ReadyValid" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="name2ReadyValid:scala.collection.immutable.Map[String,chisel3.util.ReadyValidIO[chisel3.Data]]"></a><a id="name2ReadyValid:Map[String,ReadyValidIO[Data]]"></a>
       <span class="permalink">
@@ -1388,7 +1397,7 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.HostPortIO#outputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="midas.widgets.HostPortIO#outputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="outputRVChannels():Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)]"></a><a id="outputRVChannels():Seq[(ReadyValidIO[Data],String)]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html#outputRVChannels():Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)]" title="Permalink">
@@ -1403,8 +1412,8 @@
         <span class="name">outputRVChannels</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HostPortIO#outputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      
+    </li><li name="midas.widgets.HostPortIO#outputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="outputWireChannels():Seq[(chisel3.Data,String)]"></a><a id="outputWireChannels():Seq[(Data,String)]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html#outputWireChannels():Seq[(chisel3.Data,String)]" title="Permalink">
@@ -1419,7 +1428,7 @@
         <span class="name">outputWireChannels</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+      
     </li><li name="chisel3.internal.HasId#parentModName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="parentModName:String"></a>
       <span class="permalink">
@@ -1500,22 +1509,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="midas.widgets.HostPortIO#targetPortProto" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="targetPortProto:T"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/HostPortIO.html#targetPortProto:T" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">targetPortProto</span><span class="result">: <span class="extype" name="midas.widgets.HostPortIO.T">T</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="chisel3.internal.NamedComponent#toAbsoluteTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toAbsoluteTarget:firrtl.annotations.ReferenceTarget"></a><a id="toAbsoluteTarget:ReferenceTarget"></a>
       <span class="permalink">
@@ -1728,9 +1721,7 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.widgets.TokenizedRecord">
-              <h3>Inherited from <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></h3>
-            </div><div class="parent" name="midas.widgets.HasChannels">
+        <div class="parent" name="midas.widgets.HasChannels">
               <h3>Inherited from <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></h3>
             </div><div class="parent" name="chisel3.Record">
               <h3>Inherited from <span class="extype" name="chisel3.Record">Record</span></h3>

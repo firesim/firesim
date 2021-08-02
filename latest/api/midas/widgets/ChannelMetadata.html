@@ -175,8 +175,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -367,6 +371,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -443,10 +451,6 @@
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">TokenizedRecord</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
                         <a href="UInt32.html" title="">UInt32</a>
                       </li><li class="current-entities indented2">
@@ -498,12 +502,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="class type">
+            <body class="trait type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <div class="big-circle trait">t</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.widgets">widgets</a></p>
-        <h1>TokenizedRecord<span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html" title="Permalink">
+        <h1>ChannelMetadata<span class="permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -512,25 +516,26 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">TokenizedRecord</span><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>
+        <span class="name">ChannelMetadata</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A utility trait for translating chisel references into unidirected FCCAs
+This becomes more useful when there are channel types.</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div><div class="toggleContainer block">
             <span class="toggle">
               Known Subclasses
             </span>
-            <div class="subClasses hiddenContent"><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a>, <a href="ClockTokenVector.html" class="extype" name="midas.widgets.ClockTokenVector">ClockTokenVector</a>, <a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>, <a href="PeekPokeTokenizedIO.html" class="extype" name="midas.widgets.PeekPokeTokenizedIO">PeekPokeTokenizedIO</a></div>
+            <div class="subClasses hiddenContent"><a href="PipeChannelMetadata.html" class="extype" name="midas.widgets.PipeChannelMetadata">PipeChannelMetadata</a></div>
           </div></div>
         
 
@@ -556,7 +561,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.TokenizedRecord"><span>TokenizedRecord</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.ChannelMetadata"><span>ChannelMetadata</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -574,35 +579,16 @@
 
       <div id="template">
         <div id="allMembers">
-        <div id="constructors" class="members">
-              <h3>Instance Constructors</h3>
-              <ol><li name="midas.widgets.TokenizedRecord#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;():midas.widgets.TokenizedRecord"></a><a id="&lt;init&gt;:TokenizedRecord"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#&lt;init&gt;():midas.widgets.TokenizedRecord" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">TokenizedRecord</span><span class="params">()</span>
-      </span>
-      
-      
-    </li></ol>
-            </div>
+        
 
         
 
         <div class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="chisel3.Data#cloneType" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="cloneType:Data.this.type"></a><a id="cloneType:TokenizedRecord.this.type"></a>
+              <ol><li name="midas.widgets.ChannelMetadata#bridgeSunk" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="bridgeSunk:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#cloneType:Data.this.type" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#bridgeSunk:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -611,30 +597,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cloneType</span><span class="result">: <a href="" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>.this.type</span>
+        <span class="name">bridgeSunk</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Record#elements" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.Data]"></a><a id="elements:ListMap[String,Data]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#elements:scala.collection.immutable.ListMap[String,chisel3.Data]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Data">Data</span>]</span>
-      </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record</dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateAnnotations" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="generateAnnotations():Unit"></a>
+    </li><li name="midas.widgets.ChannelMetadata#chInfo" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="chInfo():midas.passes.fame.FAMEChannelInfo"></a><a id="chInfo():FAMEChannelInfo"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#generateAnnotations():Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#chInfo():midas.passes.fame.FAMEChannelInfo" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -643,14 +613,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateAnnotations</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">chInfo</span><span class="params">()</span><span class="result">: <a href="../passes/fame/FAMEChannelInfo.html" class="extype" name="midas.passes.fame.FAMEChannelInfo">FAMEChannelInfo</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#inputRVChannels" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="inputRVChannels:Seq[midas.core.SimUtils.RVChTuple]"></a><a id="inputRVChannels:Seq[RVChTuple]"></a>
+      
+    </li><li name="midas.widgets.ChannelMetadata#clockRT" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="clockRT():Option[firrtl.annotations.ReferenceTarget]"></a><a id="clockRT():Option[ReferenceTarget]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#inputRVChannels:Seq[midas.core.SimUtils.RVChTuple]" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#clockRT():Option[firrtl.annotations.ReferenceTarget]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -659,14 +629,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">inputRVChannels</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="../core/SimUtils$.html#RVChTuple=(chisel3.util.ReadyValidIO[chisel3.Data],String)" class="extmbr" name="midas.core.SimUtils.RVChTuple">RVChTuple</a>]</span>
+        <span class="name">clockRT</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#inputWireChannels" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="inputWireChannels:Seq[(chisel3.Data,String)]"></a><a id="inputWireChannels:Seq[(Data,String)]"></a>
+      
+    </li><li name="midas.widgets.ChannelMetadata#fieldRTs" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="fieldRTs():Seq[firrtl.annotations.ReferenceTarget]"></a><a id="fieldRTs():Seq[ReferenceTarget]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#inputWireChannels:Seq[(chisel3.Data,String)]" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#fieldRTs():Seq[firrtl.annotations.ReferenceTarget]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -675,58 +645,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">inputWireChannels</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+        <span class="name">fieldRTs</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#outputRVChannels" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="outputRVChannels:Seq[midas.core.SimUtils.RVChTuple]"></a><a id="outputRVChannels:Seq[RVChTuple]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#outputRVChannels:Seq[midas.core.SimUtils.RVChTuple]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outputRVChannels</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="../core/SimUtils$.html#RVChTuple=(chisel3.util.ReadyValidIO[chisel3.Data],String)" class="extmbr" name="midas.core.SimUtils.RVChTuple">RVChTuple</a>]</span>
-      </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#outputWireChannels" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="outputWireChannels:Seq[(chisel3.Data,String)]"></a><a id="outputWireChannels:Seq[(Data,String)]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#outputWireChannels:Seq[(chisel3.Data,String)]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outputWireChannels</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#targetPortProto" visbl="prt" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="targetPortProto:chisel3.Data"></a><a id="targetPortProto:Data"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#targetPortProto:chisel3.Data" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">targetPortProto</span><span class="result">: <span class="extype" name="chisel3.Data">Data</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -736,7 +658,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -752,7 +674,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html###():Int" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -765,42 +687,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="chisel3.Data#:=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id=":=(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit"></a><a id=":=(⇒Data)(SourceInfo,CompileOptions):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#:=(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="that">that: ⇒ <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="connectionCompileOptions">connectionCompileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Data#&lt;&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;&gt;(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit"></a><a id="&lt;&gt;(⇒Data)(SourceInfo,CompileOptions):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#&lt;&gt;(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span title="gt4s: $less$greater" class="name">&lt;&gt;</span><span class="params">(<span name="that">that: ⇒ <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="connectionCompileOptions">connectionCompileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -816,7 +706,7 @@
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -829,138 +719,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="chisel3.Data#asTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="asTypeOf[T&lt;:chisel3.Data](that:T):T"></a><a id="asTypeOf[T&lt;:Data](T):T"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#asTypeOf[T&lt;:chisel3.Data](that:T):T" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">macro </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">asTypeOf</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="that">that: <span class="extype" name="chisel3.Data.asTypeOf.T">T</span></span>)</span><span class="result">: <span class="extype" name="chisel3.Data.asTypeOf.T">T</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Data#asUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="asUInt():chisel3.UInt"></a><a id="asUInt():UInt"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#asUInt():chisel3.UInt" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final macro </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">asUInt</span><span class="params">()</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Data#autoSeed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="autoSeed(name:String):Data.this.type"></a><a id="autoSeed(String):TokenizedRecord.this.type"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#autoSeed(name:String):Data.this.type" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">autoSeed</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>.this.type</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data → HasId</dd></dl></div>
-    </li><li name="chisel3.Data#binding" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="binding:Option[chisel3.internal.Binding]"></a><a id="binding:Option[Binding]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#binding:Option[chisel3.internal.Binding]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">binding</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.internal.Binding">Binding</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="chisel3">chisel3</span>] </dd><dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Data#bindingToString" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="bindingToString:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#bindingToString:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">bindingToString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Data#binding_=" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="binding_=(target:chisel3.internal.Binding):Unit"></a><a id="binding_=(Binding):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#binding_=(target:chisel3.internal.Binding):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span title="gt4s: binding_$eq" class="name">binding_=</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.internal.Binding">Binding</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#circuitName" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="circuitName:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#circuitName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">circuitName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>HasId</dd></dl></div>
-    </li><li name="chisel3.Record#className" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="className:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#className:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">className</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#clone():Object" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -981,58 +743,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chisel3.internal.HasId#computeName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]"></a><a id="computeName(Option[String],Option[String]):Option[String]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">computeName</span><span class="params">(<span name="defaultPrefix">defaultPrefix: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="defaultSeed">defaultSeed: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
-    </li><li name="chisel3.Data#do_asTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="do_asTypeOf[T&lt;:chisel3.Data](that:T)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):T"></a><a id="do_asTypeOf[T&lt;:Data](T)(SourceInfo,CompileOptions):T"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#do_asTypeOf[T&lt;:chisel3.Data](that:T)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):T" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">do_asTypeOf</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="that">that: <span class="extype" name="chisel3.Data.do_asTypeOf.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="compileOptions">compileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <span class="extype" name="chisel3.Data.do_asTypeOf.T">T</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Aggregate#do_asUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="do_asUInt(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.UInt"></a><a id="do_asUInt(SourceInfo,CompileOptions):UInt"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#do_asUInt(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.UInt" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">do_asUInt</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="compileOptions">compileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1045,10 +759,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(that:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#equals(that:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#equals(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1057,14 +771,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="that">that: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1083,10 +797,10 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateRVChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit"></a><a id="generateRVChannelFCCAs(Seq[(ReadyValidIO[Data],String)],Boolean):Unit"></a>
+    </li><li name="midas.widgets.ChannelMetadata#generateAnnotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="generateAnnotations(chName:String):Seq[chisel3.experimental.ChiselAnnotation]"></a><a id="generateAnnotations(String):Seq[ChiselAnnotation]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#generateAnnotations(chName:String):Seq[chisel3.experimental.ChiselAnnotation]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1095,30 +809,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateRVChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">generateAnnotations</span><span class="params">(<span name="chName">chName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateWireChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit"></a><a id="generateWireChannelFCCAs(Seq[(Data,String)],Boolean,Int):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">generateWireChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>, <span name="latency">latency: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">0</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1134,58 +832,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chisel3.Record#getElements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getElements:Seq[chisel3.Data]"></a><a id="getElements:Seq[Data]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#getElements:Seq[chisel3.Data]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getElements</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="chisel3.Data">Data</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record → Aggregate</dd></dl></div>
-    </li><li name="chisel3.Data#getWidth" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getWidth:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#getWidth:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getWidth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#hasSeed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hasSeed:Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#hasSeed:Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hasSeed</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#hashCode():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1197,27 +847,14 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#instanceName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="instanceName:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#instanceName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">instanceName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1230,90 +867,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="chisel3.Data#isLit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isLit():Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#isLit():Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isLit</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Data#isWidthKnown" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isWidthKnown:Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#isWidthKnown:Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isWidthKnown</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="chisel3.Aggregate#litOption" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="litOption():Option[BigInt]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#litOption():Option[BigInt]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">litOption</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.BigInt">BigInt</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
-    </li><li name="chisel3.Data#litValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="litValue():BigInt"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#litValue():BigInt" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">litValue</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.BigInt">BigInt</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#lowerAggregateIntoLeafTargets" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]"></a><a id="lowerAggregateIntoLeafTargets(Data):Seq[ReferenceTarget]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">lowerAggregateIntoLeafTargets</span><span class="params">(<span name="bits">bits: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1329,7 +886,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#notify():Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1348,7 +905,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1364,74 +921,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chisel3.internal.HasId#parentModName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="parentModName:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#parentModName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">parentModName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#parentPathName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="parentPathName:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#parentPathName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">parentPathName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#pathName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pathName:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#pathName:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pathName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
-    </li><li name="chisel3.internal.HasId#suggestName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="suggestName(seed:=&gt;String):HasId.this.type"></a><a id="suggestName(⇒String):TokenizedRecord.this.type"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#suggestName(seed:=&gt;String):HasId.this.type" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">suggestName</span><span class="params">(<span name="seed">seed: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>.this.type</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1444,58 +937,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="chisel3.internal.NamedComponent#toAbsoluteTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toAbsoluteTarget:firrtl.annotations.ReferenceTarget"></a><a id="toAbsoluteTarget:ReferenceTarget"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#toAbsoluteTarget:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toAbsoluteTarget</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
-    </li><li name="chisel3.internal.NamedComponent#toNamed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toNamed:firrtl.annotations.ComponentName"></a><a id="toNamed:ComponentName"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#toNamed:firrtl.annotations.ComponentName" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toNamed</span><span class="result">: <span class="extype" name="firrtl.annotations.ComponentName">ComponentName</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
-    </li><li name="chisel3.Record#toPrintable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toPrintable:chisel3.Printable"></a><a id="toPrintable:Printable"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#toPrintable:chisel3.Printable" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toPrintable</span><span class="result">: <span class="extype" name="chisel3.Printable">Printable</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record → Data</dd></dl></div>
-    </li><li name="chisel3.Record#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#toString():String" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#toString():String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1504,30 +949,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record → AnyRef → Any</dd></dl></div>
-    </li><li name="chisel3.internal.NamedComponent#toTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toTarget:firrtl.annotations.ReferenceTarget"></a><a id="toTarget:ReferenceTarget"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#toTarget:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toTarget</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#wait():Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1549,7 +978,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1571,7 +1000,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1592,71 +1021,17 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chisel3.Data#widthOption" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="widthOption:Option[Int]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#widthOption:Option[Int]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">widthOption</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
     </li>
               </ol>
             </div>
 
         
 
-        <div class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="chisel3.Data#litArg" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="litArg():Option[chisel3.internal.firrtl.LitArg]"></a><a id="litArg():Option[LitArg]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html#litArg():Option[chisel3.internal.firrtl.LitArg]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version 3.2) litArg is deprecated, use litOption or litTo*Option">litArg</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.internal.firrtl.LitArg">LitArg</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> litArg is deprecated, use litOption or litTo*Option</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.widgets.HasChannels">
-              <h3>Inherited from <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></h3>
-            </div><div class="parent" name="chisel3.Record">
-              <h3>Inherited from <span class="extype" name="chisel3.Record">Record</span></h3>
-            </div><div class="parent" name="chisel3.Aggregate">
-              <h3>Inherited from <span class="extype" name="chisel3.Aggregate">Aggregate</span></h3>
-            </div><div class="parent" name="chisel3.Data">
-              <h3>Inherited from <span class="extype" name="chisel3.Data">Data</span></h3>
-            </div><div class="parent" name="chisel3.SourceInfoDoc">
-              <h3>Inherited from <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span></h3>
-            </div><div class="parent" name="chisel3.internal.NamedComponent">
-              <h3>Inherited from <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span></h3>
-            </div><div class="parent" name="chisel3.internal.HasId">
-              <h3>Inherited from <span class="extype" name="chisel3.internal.HasId">HasId</span></h3>
-            </div><div class="parent" name="chisel3.internal.InstanceId">
-              <h3>Inherited from <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span></h3>
-            </div><div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>

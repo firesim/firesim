@@ -175,8 +175,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -367,6 +371,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -441,10 +449,6 @@
                         <span class="separator"></span>
                         <a class="trait" href="TieOffDMAToHostCPU.html" title=""></a>
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="TokenizedRecord.html" title=""></a>
-                        <a href="TokenizedRecord.html" title="">TokenizedRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
@@ -572,9 +576,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.PeekPokeTargetIO#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(targetIO:Seq[(String,chisel3.Data)],withReset:Boolean):midas.widgets.PeekPokeTargetIO"></a><a id="&lt;init&gt;:PeekPokeTargetIO"></a>
+      <a id="&lt;init&gt;(targetIO:Seq[(String,chisel3.Data)]):midas.widgets.PeekPokeTargetIO"></a><a id="&lt;init&gt;:PeekPokeTargetIO"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTargetIO.html#&lt;init&gt;(targetIO:Seq[(String,chisel3.Data)],withReset:Boolean):midas.widgets.PeekPokeTargetIO" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTargetIO.html#&lt;init&gt;(targetIO:Seq[(String,chisel3.Data)]):midas.widgets.PeekPokeTargetIO" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -583,7 +587,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PeekPokeTargetIO</span><span class="params">(<span name="targetIO">targetIO: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Data">Data</span>)]</span>, <span name="withReset">withReset: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span>
+        <span class="name">PeekPokeTargetIO</span><span class="params">(<span name="targetIO">targetIO: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Data">Data</span>)]</span>)</span>
       </span>
       
       
@@ -1276,22 +1280,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
-    </li><li name="midas.widgets.PeekPokeTargetIO#reset" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="reset:Option[chisel3.Bool]"></a><a id="reset:Option[Bool]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTargetIO.html#reset:Option[chisel3.Bool]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">reset</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.Bool">Bool</span>]</span>
-      </span>
-      
-      
     </li><li name="chisel3.internal.HasId#suggestName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="suggestName(seed:=&gt;String):HasId.this.type"></a><a id="suggestName(⇒String):PeekPokeTargetIO.this.type"></a>
       <span class="permalink">

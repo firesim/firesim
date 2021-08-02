@@ -175,8 +175,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -367,6 +371,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -443,10 +451,6 @@
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="TokenizedRecord.html" title=""></a>
-                        <a href="TokenizedRecord.html" title="">TokenizedRecord</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
                         <a href="UInt32.html" title="">UInt32</a>
                       </li><li class="current-entities indented2">
@@ -518,7 +522,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">PeekPokeTokenizedIO</span><span class="result"> extends <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
+        <span class="name">PeekPokeTokenizedIO</span><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
       </span>
       </h4>
 
@@ -527,7 +531,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a>, <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>, <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a>, <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -553,7 +557,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.PeekPokeTokenizedIO"><span>PeekPokeTokenizedIO</span></li><li class="in" name="midas.widgets.ChannelizedHostPortIO"><span>ChannelizedHostPortIO</span></li><li class="in" name="midas.widgets.TokenizedRecord"><span>TokenizedRecord</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.PeekPokeTokenizedIO"><span>PeekPokeTokenizedIO</span></li><li class="in" name="midas.widgets.ChannelizedHostPortIO"><span>ChannelizedHostPortIO</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -574,9 +578,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.PeekPokeTokenizedIO#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(targetIO:chisel3.Record):midas.widgets.PeekPokeTokenizedIO"></a><a id="&lt;init&gt;:PeekPokeTokenizedIO"></a>
+      <a id="&lt;init&gt;(targetIO:midas.widgets.PeekPokeTargetIO):midas.widgets.PeekPokeTokenizedIO"></a><a id="&lt;init&gt;:PeekPokeTokenizedIO"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#&lt;init&gt;(targetIO:chisel3.Record):midas.widgets.PeekPokeTokenizedIO" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#&lt;init&gt;(targetIO:midas.widgets.PeekPokeTargetIO):midas.widgets.PeekPokeTokenizedIO" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -585,14 +589,33 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PeekPokeTokenizedIO</span><span class="params">(<span name="targetIO">targetIO: <span class="extype" name="chisel3.Record">Record</span></span>)</span>
+        <span class="name">PeekPokeTokenizedIO</span><span class="params">(<span name="targetIO">targetIO: <a href="PeekPokeTargetIO.html" class="extype" name="midas.widgets.PeekPokeTargetIO">PeekPokeTargetIO</a></span>)</span>
       </span>
       
       
     </li></ol>
             </div>
 
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="midas.widgets.ChannelizedHostPortIO.ChannelType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]"></a><a id="ChannelType[A&lt;:Data]:ChannelType[A]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ChannelType</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="result alias"> = <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.ChannelType.A">A</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+    </li></ol>
+            </div>
 
         
 
@@ -680,9 +703,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="midas.widgets.ChannelizedHostPortIO#InputChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="InputChannel[T&lt;:chisel3.Data](field:T):chisel3.util.DecoupledIO[T]"></a><a id="InputChannel[T&lt;:Data](T):DecoupledIO[T]"></a>
+      <a id="InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]"></a><a id="InputChannel[A&lt;:Data](A):ChannelType[A]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#InputChannel[T&lt;:chisel3.Data](field:T):chisel3.util.DecoupledIO[T]" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -691,14 +714,17 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">InputChannel</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="field">field: <span class="extype" name="midas.widgets.ChannelizedHostPortIO.InputChannel.T">T</span></span>)</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.InputChannel.T">T</span>]</span>
+        <span class="name">InputChannel</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="field">field: <span class="extype" name="midas.widgets.ChannelizedHostPortIO.InputChannel.A">A</span></span>)</span><span class="result">: <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.PeekPokeTokenizedIO.ChannelType">ChannelType</a>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.InputChannel.A">A</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+      <p class="shortcomment cmt">Marks an input to the bridge as being a distinct channel.</p><div class="fullcomment"><div class="comment cmt"><p>Marks an input to the bridge as being a distinct channel. It will become a
+bridge-sunk ready-valid interface on this host port definition, with the
+target datatype as its payload.
+</p></div><dl class="paramcmts block"><dt class="param">field</dt><dd class="cmt"><p>A field in the target interface that corresponds to a channel.F</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
     </li><li name="midas.widgets.ChannelizedHostPortIO#OutputChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="OutputChannel[T&lt;:chisel3.Data](field:T):chisel3.util.DecoupledIO[T]"></a><a id="OutputChannel[T&lt;:Data](T):DecoupledIO[T]"></a>
+      <a id="OutputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]"></a><a id="OutputChannel[A&lt;:Data](A):ChannelType[A]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#OutputChannel[T&lt;:chisel3.Data](field:T):chisel3.util.DecoupledIO[T]" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#OutputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -707,10 +733,31 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">OutputChannel</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="field">field: <span class="extype" name="midas.widgets.ChannelizedHostPortIO.OutputChannel.T">T</span></span>)</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.OutputChannel.T">T</span>]</span>
+        <span class="name">OutputChannel</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="field">field: <span class="extype" name="midas.widgets.ChannelizedHostPortIO.OutputChannel.A">A</span></span>)</span><span class="result">: <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.PeekPokeTokenizedIO.ChannelType">ChannelType</a>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.OutputChannel.A">A</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+      <p class="shortcomment cmt">The reverse of <a href="ChannelizedHostPortIO.html#InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" class="extmbr" name="midas.widgets.ChannelizedHostPortIO#InputChannel">ChannelizedHostPortIO.InputChannel</a>, in that it marks
+an output to the bridge as being a distinct channel.</p><div class="fullcomment"><div class="comment cmt"><p>The reverse of <a href="ChannelizedHostPortIO.html#InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" class="extmbr" name="midas.widgets.ChannelizedHostPortIO#InputChannel">ChannelizedHostPortIO.InputChannel</a>, in that it marks
+an output to the bridge as being a distinct channel.
+</p></div><dl class="paramcmts block"><dt class="param">field</dt><dd class="cmt"><p>A field in the target interface that corresponds to a channel.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+    </li><li name="midas.widgets.ChannelizedHostPortIO#allChannelNames" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allChannelNames():Seq[String]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#allChannelNames():Seq[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allChannelNames</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -912,9 +959,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
     </li><li name="midas.widgets.ChannelizedHostPortIO#connectChannels2Port" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="connectChannels2Port(bridgeAnno:midas.widgets.BridgeIOAnnotation,channels:midas.core.SimWrapperChannels):Unit"></a><a id="connectChannels2Port(BridgeIOAnnotation,SimWrapperChannels):Unit"></a>
+      <a id="connectChannels2Port(bridgeAnno:midas.widgets.BridgeIOAnnotation,simWrapper:midas.core.SimWrapperChannels):Unit"></a><a id="connectChannels2Port(BridgeIOAnnotation,SimWrapperChannels):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#connectChannels2Port(bridgeAnno:midas.widgets.BridgeIOAnnotation,channels:midas.core.SimWrapperChannels):Unit" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#connectChannels2Port(bridgeAnno:midas.widgets.BridgeIOAnnotation,simWrapper:midas.core.SimWrapperChannels):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -923,7 +970,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">connectChannels2Port</span><span class="params">(<span name="bridgeAnno">bridgeAnno: <span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span></span>, <span name="channels">channels: <a href="../core/SimWrapperChannels.html" class="extype" name="midas.core.SimWrapperChannels">SimWrapperChannels</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">connectChannels2Port</span><span class="params">(<span name="bridgeAnno">bridgeAnno: <span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span></span>, <span name="simWrapper">simWrapper: <a href="../core/SimWrapperChannels.html" class="extype" name="midas.core.SimWrapperChannels">SimWrapperChannels</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
@@ -960,9 +1007,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
     </li><li name="midas.widgets.PeekPokeTokenizedIO#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.util.DecoupledIO[midas.core.SimUtils.ChLeafType]]"></a><a id="elements:ListMap[String,DecoupledIO[ChLeafType]]"></a>
+      <a id="elements:scala.collection.immutable.ListMap[String,PeekPokeTokenizedIO.this.ChannelType[midas.core.SimUtils.ChLeafType]]"></a><a id="elements:ListMap[String,ChannelType[ChLeafType]]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#elements:scala.collection.immutable.ListMap[String,chisel3.util.DecoupledIO[midas.core.SimUtils.ChLeafType]]" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#elements:scala.collection.immutable.ListMap[String,PeekPokeTokenizedIO.this.ChannelType[midas.core.SimUtils.ChLeafType]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -971,7 +1018,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../core/SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>]]</span>
+        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.PeekPokeTokenizedIO.ChannelType">ChannelType</a>[<a href="../core/SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>]]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.PeekPokeTokenizedIO">PeekPokeTokenizedIO</a> → Record</dd></dl></div>
@@ -1007,22 +1054,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.ChannelizedHostPortIO#fieldToChannelMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="fieldToChannelMap:scala.collection.immutable.Map[chisel3.Data,chisel3.util.ReadyValidIO[chisel3.Data]]"></a><a id="fieldToChannelMap:Map[Data,ReadyValidIO[Data]]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#fieldToChannelMap:scala.collection.immutable.Map[chisel3.Data,chisel3.util.ReadyValidIO[chisel3.Data]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">fieldToChannelMap</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/Map.html#scala.collection.immutable.Map" class="extype" name="scala.collection.immutable.Map">Map</a>[<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
@@ -1060,39 +1091,10 @@
         <span class="name">generateAnnotations</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateRVChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit"></a><a id="generateRVChannelFCCAs(Seq[(ReadyValidIO[Data],String)],Boolean):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#generateRVChannelFCCAs(channels:Seq[(chisel3.util.ReadyValidIO[chisel3.Data],String)],bridgeSunk:Boolean):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">generateRVChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>], <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#generateWireChannelFCCAs" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit"></a><a id="generateWireChannelFCCAs(Seq[(Data,String)],Boolean,Int):Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#generateWireChannelFCCAs(channels:Seq[(chisel3.Data,String)],bridgeSunk:Boolean,latency:Int):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">generateWireChannelFCCAs</span><span class="params">(<span name="channels">channels: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>, <span name="latency">latency: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">0</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+      <p class="shortcomment cmt"> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.</p><div class="fullcomment"><div class="comment cmt"><p> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
@@ -1176,42 +1178,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.ChannelizedHostPortIO#inputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="inputRVChannels:Seq[Nothing]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#inputRVChannels:Seq[Nothing]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">inputRVChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.ChannelizedHostPortIO#inputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="inputWireChannels:Seq[(chisel3.Data,String)]"></a><a id="inputWireChannels:Seq[(Data,String)]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#inputWireChannels:Seq[(chisel3.Data,String)]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">inputWireChannels</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="midas.widgets.PeekPokeTokenizedIO#ins" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ins:List[(String,chisel3.util.DecoupledIO[midas.core.SimUtils.ChLeafType])]"></a><a id="ins:List[(String,DecoupledIO[ChLeafType])]"></a>
+      <a id="ins:List[(String,PeekPokeTokenizedIO.this.ChannelType[midas.core.SimUtils.ChLeafType])]"></a><a id="ins:List[(String,ChannelType[ChLeafType])]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#ins:List[(String,chisel3.util.DecoupledIO[midas.core.SimUtils.ChLeafType])]" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#ins:List[(String,PeekPokeTokenizedIO.this.ChannelType[midas.core.SimUtils.ChLeafType])]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1220,7 +1190,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">ins</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/List.html#scala.collection.immutable.List" class="extype" name="scala.collection.immutable.List">List</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../core/SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>])]</span>
+        <span class="name">ins</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/List.html#scala.collection.immutable.List" class="extype" name="scala.collection.immutable.List">List</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.PeekPokeTokenizedIO.ChannelType">ChannelType</a>[<a href="../core/SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>])]</span>
       </span>
       
       
@@ -1320,22 +1290,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
-    </li><li name="midas.widgets.HasChannels#lowerAggregateIntoLeafTargets" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]"></a><a id="lowerAggregateIntoLeafTargets(Data):Seq[ReferenceTarget]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#lowerAggregateIntoLeafTargets(bits:chisel3.Data):Seq[firrtl.annotations.ReferenceTarget]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">lowerAggregateIntoLeafTargets</span><span class="params">(<span name="bits">bits: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -1390,42 +1344,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.ChannelizedHostPortIO#outputRVChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outputRVChannels:Seq[Nothing]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#outputRVChannels:Seq[Nothing]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outputRVChannels</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Nothing.html#scala.Nothing" class="extype" name="scala.Nothing">Nothing</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
-    </li><li name="midas.widgets.ChannelizedHostPortIO#outputWireChannels" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outputWireChannels:Seq[(chisel3.Data,String)]"></a><a id="outputWireChannels:Seq[(Data,String)]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#outputWireChannels:Seq[(chisel3.Data,String)]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outputWireChannels</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="midas.widgets.PeekPokeTokenizedIO#outs" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="outs:List[(String,chisel3.util.DecoupledIO[midas.core.SimUtils.ChLeafType])]"></a><a id="outs:List[(String,DecoupledIO[ChLeafType])]"></a>
+      <a id="outs:List[(String,PeekPokeTokenizedIO.this.ChannelType[midas.core.SimUtils.ChLeafType])]"></a><a id="outs:List[(String,ChannelType[ChLeafType])]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#outs:List[(String,chisel3.util.DecoupledIO[midas.core.SimUtils.ChLeafType])]" title="Permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#outs:List[(String,PeekPokeTokenizedIO.this.ChannelType[midas.core.SimUtils.ChLeafType])]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1434,7 +1356,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">outs</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/List.html#scala.collection.immutable.List" class="extype" name="scala.collection.immutable.List">List</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../core/SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>])]</span>
+        <span class="name">outs</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/List.html#scala.collection.immutable.List" class="extype" name="scala.collection.immutable.List">List</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.PeekPokeTokenizedIO.ChannelType">ChannelType</a>[<a href="../core/SimUtils$.html#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>])]</span>
       </span>
       
       
@@ -1518,6 +1440,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="midas.widgets.PeekPokeTokenizedIO#targetClockRef" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="targetClockRef:chisel3.Clock"></a><a id="targetClockRef:Clock"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#targetClockRef:chisel3.Clock" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">targetClockRef</span><span class="result">: <span class="extype" name="chisel3.Clock">Clock</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.PeekPokeTokenizedIO">PeekPokeTokenizedIO</a> → <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
     </li><li name="midas.widgets.PeekPokeTokenizedIO#targetInputs" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="targetInputs:List[midas.core.SimUtils.ChTuple]"></a><a id="targetInputs:List[ChTuple]"></a>
       <span class="permalink">
@@ -1550,22 +1488,6 @@
       </span>
       
       
-    </li><li name="midas.widgets.ChannelizedHostPortIO#targetPortProto" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="targetPortProto:chisel3.Data"></a><a id="targetPortProto:Data"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/PeekPokeTokenizedIO.html#targetPortProto:chisel3.Data" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">targetPortProto</span><span class="result">: <span class="extype" name="chisel3.Data">Data</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="chisel3.internal.NamedComponent#toAbsoluteTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toAbsoluteTarget:firrtl.annotations.ReferenceTarget"></a><a id="toAbsoluteTarget:ReferenceTarget"></a>
       <span class="permalink">
@@ -1764,8 +1686,6 @@
         <div id="inheritedMembers">
         <div class="parent" name="midas.widgets.ChannelizedHostPortIO">
               <h3>Inherited from <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></h3>
-            </div><div class="parent" name="midas.widgets.TokenizedRecord">
-              <h3>Inherited from <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></h3>
             </div><div class="parent" name="midas.widgets.HasChannels">
               <h3>Inherited from <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></h3>
             </div><div class="parent" name="chisel3.Record">

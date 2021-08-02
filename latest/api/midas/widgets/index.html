@@ -287,8 +287,12 @@
                         <a href="CStrLit.html" title="">CStrLit</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ChannelizedHostPortIO.html" title=""></a>
-                        <a href="ChannelizedHostPortIO.html" title="">ChannelizedHostPortIO</a>
+                        <a class="trait" href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
+                        <a href="ChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">ChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
+                        <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
@@ -479,6 +483,10 @@
                         <a href="Permissions.html" title="">Permissions</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="PipeChannelMetadata.html" title=""></a>
+                        <a href="PipeChannelMetadata.html" title="">PipeChannelMetadata</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
                       </li><li class="current-entities indented2">
@@ -553,10 +561,6 @@
                         <span class="separator"></span>
                         <a class="trait" href="TieOffDMAToHostCPU.html" title=""></a>
                         <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="TokenizedRecord.html" title=""></a>
-                        <a href="TokenizedRecord.html" title="">TokenizedRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
@@ -829,7 +833,7 @@
       
       
     </li><li name="midas.widgets.Bridge" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="Bridge[HPType&lt;:midas.widgets.TokenizedRecord,WidgetType&lt;:midas.widgets.BridgeModule[HPType]]extendsAnyRef"></a><a id="Bridge[HPType&lt;:TokenizedRecord,WidgetType&lt;:BridgeModule[HPType]]:Bridge[HPType,WidgetType]"></a>
+      <a id="Bridge[HPType&lt;:chisel3.Recordwithmidas.widgets.HasChannels,WidgetType&lt;:midas.widgets.BridgeModule[HPType]]extendsAnyRef"></a><a id="Bridge[HPType&lt;:RecordwithHasChannels,WidgetType&lt;:BridgeModule[HPType]]:Bridge[HPType,WidgetType]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/Bridge.html" title="Permalink">
         <i class="material-icons"></i>
@@ -840,7 +844,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a title="" href="Bridge.html"><span class="name">Bridge</span></a><span class="tparams">[<span name="HPType">HPType &lt;: <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>, <span name="WidgetType">WidgetType &lt;: <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<span class="extype" name="midas.widgets.Bridge.HPType">HPType</span>]</span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+        <a title="" href="Bridge.html"><span class="name">Bridge</span></a><span class="tparams">[<span name="HPType">HPType &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>, <span name="WidgetType">WidgetType &lt;: <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<span class="extype" name="midas.widgets.Bridge.HPType">HPType</span>]</span>]</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
       </span>
       
       
@@ -861,7 +865,7 @@
       
       
     </li><li name="midas.widgets.BridgeModule" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="BridgeModule[HostPortType&lt;:midas.widgets.TokenizedRecord]extendsWidget"></a><a id="BridgeModule[HostPortType&lt;:TokenizedRecord]:BridgeModule[HostPortType]"></a>
+      <a id="BridgeModule[HostPortType&lt;:chisel3.Recordwithmidas.widgets.HasChannels]extendsWidget"></a><a id="BridgeModule[HostPortType&lt;:RecordwithHasChannels]:BridgeModule[HostPortType]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/BridgeModule.html" title="Permalink">
         <i class="material-icons"></i>
@@ -872,12 +876,12 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="BridgeModule.html"><span class="name">BridgeModule</span></a><span class="tparams">[<span name="HostPortType">HostPortType &lt;: <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>]</span><span class="result"> extends <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></span>
+        <a title="" href="BridgeModule.html"><span class="name">BridgeModule</span></a><span class="tparams">[<span name="HostPortType">HostPortType &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>]</span><span class="result"> extends <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></span>
       </span>
       
       
     </li><li name="midas.widgets.BridgeModuleImp" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="BridgeModuleImp[HostPortType&lt;:midas.widgets.TokenizedRecord]extendsWidgetImp"></a><a id="BridgeModuleImp[HostPortType&lt;:TokenizedRecord]:BridgeModuleImp[HostPortType]"></a>
+      <a id="BridgeModuleImp[HostPortType&lt;:chisel3.Recordwithmidas.widgets.HasChannels]extendsWidgetImp"></a><a id="BridgeModuleImp[HostPortType&lt;:RecordwithHasChannels]:BridgeModuleImp[HostPortType]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/BridgeModuleImp.html" title="Permalink">
         <i class="material-icons"></i>
@@ -888,7 +892,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="BridgeModuleImp.html"><span class="name">BridgeModuleImp</span></a><span class="tparams">[<span name="HostPortType">HostPortType &lt;: <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>]</span><span class="result"> extends <a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></span>
+        <a title="" href="BridgeModuleImp.html"><span class="name">BridgeModuleImp</span></a><span class="tparams">[<span name="HostPortType">HostPortType &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>]</span><span class="result"> extends <a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></span>
       </span>
       
       
@@ -940,22 +944,42 @@
       </span>
       
       
-    </li><li name="midas.widgets.ChannelizedHostPortIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="ChannelizedHostPortIOextendsTokenizedRecord"></a><a id="ChannelizedHostPortIO:ChannelizedHostPortIO"></a>
+    </li><li name="midas.widgets.ChannelMetadata" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ChannelMetadataextendsAnyRef"></a><a id="ChannelMetadata:ChannelMetadata"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ChannelMetadata.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types." href="ChannelMetadata.html"><span class="name">ChannelMetadata</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A utility trait for translating chisel references into unidirected FCCAs
+This becomes more useful when there are channel types.</p>
+    </li><li name="midas.widgets.ChannelizedHostPortIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ChannelizedHostPortIOextendsHasChannels"></a><a id="ChannelizedHostPortIO:ChannelizedHostPortIO"></a>
       <span class="permalink">
       <a href="../../midas/widgets/ChannelizedHostPortIO.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a title="" href="ChannelizedHostPortIO.html"><span class="name">ChannelizedHostPortIO</span></a><span class="result"> extends <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>
+        <a title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO." href="ChannelizedHostPortIO.html"><span class="name">ChannelizedHostPortIO</span></a><span class="result"> extends <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">A host-side bridge interface trait that permits finer-grained control over
+channel definition versus <a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A host-side bridge interface trait that permits finer-grained control over
+channel definition versus <a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>. Required for describing bridges
+that are combinationally coupled to the target.</p></div></div>
     </li><li name="midas.widgets.ClockBridgeAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ClockBridgeAnnotationextendsBridgeAnnotationwithClockBridgeConstswithProductwithSerializable"></a><a id="ClockBridgeAnnotation:ClockBridgeAnnotation"></a>
       <span class="permalink">
@@ -1011,7 +1035,7 @@ depend on the runtime-behavior of the target, allowing this bridge run
 ahead of the rest of the simulation.</p><p>Target and host time measurements provided by simif_t are facilitated with MMIO to this bridge
 </p></div></div>
     </li><li name="midas.widgets.ClockTokenVector" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ClockTokenVectorextendsTokenizedRecordwithClockBridgeConsts"></a><a id="ClockTokenVector:ClockTokenVector"></a>
+      <a id="ClockTokenVectorextendsBundlewithHasChannelswithClockBridgeConsts"></a><a id="ClockTokenVector:ClockTokenVector"></a>
       <span class="permalink">
       <a href="../../midas/widgets/ClockTokenVector.html" title="Permalink">
         <i class="material-icons"></i>
@@ -1022,7 +1046,7 @@ ahead of the rest of the simulation.</p><p>Target and host time measurements pro
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="The host-land clock bridge interface." href="ClockTokenVector.html"><span class="name">ClockTokenVector</span></a><span class="result"> extends <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a> with <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></span>
+        <a title="The host-land clock bridge interface." href="ClockTokenVector.html"><span class="name">ClockTokenVector</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a> with <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a></span>
       </span>
       
       <p class="shortcomment cmt">The host-land clock bridge interface.</p><div class="fullcomment"><div class="comment cmt"><p>The host-land clock bridge interface. This consists of a single channel,
@@ -1256,7 +1280,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
       
       <p class="shortcomment cmt">A common trait for referring collateral in the generated header.</p>
     </li><li name="midas.widgets.HostPortIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="HostPortIO[+T&lt;:chisel3.Data]extendsTokenizedRecord"></a><a id="HostPortIO[+T&lt;:Data]:HostPortIO[T]"></a>
+      <a id="HostPortIO[+T&lt;:chisel3.Data]extendsRecordwithHasChannels"></a><a id="HostPortIO[+T&lt;:Data]:HostPortIO[T]"></a>
       <span class="permalink">
       <a href="../../midas/widgets/HostPortIO.html" title="Permalink">
         <i class="material-icons"></i>
@@ -1267,7 +1291,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="HostPortIO.html"><span class="name">HostPortIO</span></a><span class="tparams">[<span name="T">+T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="result"> extends <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a></span>
+        <a title="" href="HostPortIO.html"><span class="name">HostPortIO</span></a><span class="tparams">[<span name="T">+T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>
       </span>
       
       
@@ -1299,7 +1323,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="A form BridgeAnnotation that can be emitted by FIRRTL transforms that run during Golden Gate compilation." href="InMemoryBridgeAnnotation.html"><span class="name">InMemoryBridgeAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widget">widget: (<span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span>) ⇒ <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[_ &lt;: <a href="TokenizedRecord.html" class="extype" name="midas.widgets.TokenizedRecord">TokenizedRecord</a>]</span>)</span><span class="result"> extends <a href="BridgeAnnotation.html" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="A form BridgeAnnotation that can be emitted by FIRRTL transforms that run during Golden Gate compilation." href="InMemoryBridgeAnnotation.html"><span class="name">InMemoryBridgeAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widget">widget: (<span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span>) ⇒ <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[_ &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>]</span>)</span><span class="result"> extends <a href="BridgeAnnotation.html" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">A form BridgeAnnotation that can be emitted by FIRRTL transforms that
@@ -1599,7 +1623,7 @@ Key assumptions:
       
       
     </li><li name="midas.widgets.PeekPokeTokenizedIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="PeekPokeTokenizedIOextendsChannelizedHostPortIO"></a><a id="PeekPokeTokenizedIO:PeekPokeTokenizedIO"></a>
+      <a id="PeekPokeTokenizedIOextendsRecordwithChannelizedHostPortIO"></a><a id="PeekPokeTokenizedIO:PeekPokeTokenizedIO"></a>
       <span class="permalink">
       <a href="../../midas/widgets/PeekPokeTokenizedIO.html" title="Permalink">
         <i class="material-icons"></i>
@@ -1610,7 +1634,7 @@ Key assumptions:
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="PeekPokeTokenizedIO.html"><span class="name">PeekPokeTokenizedIO</span></a><span class="result"> extends <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
+        <a title="" href="PeekPokeTokenizedIO.html"><span class="name">PeekPokeTokenizedIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
       </span>
       
       
@@ -1643,6 +1667,22 @@ Key assumptions:
       </span>
       <span class="symbol">
         <a title="" href="Permissions.html"><span class="name">Permissions</span></a><span class="params">(<span name="readable">readable: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="writeable">writeable: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.PipeChannelMetadata" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PipeChannelMetadataextendsChannelMetadatawithProductwithSerializable"></a><a id="PipeChannelMetadata:PipeChannelMetadata"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PipeChannelMetadata.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="PipeChannelMetadata.html"><span class="name">PipeChannelMetadata</span></a><span class="params">(<span name="field">field: <span class="extype" name="chisel3.Data">Data</span></span>, <span name="clock">clock: <span class="extype" name="chisel3.Clock">Clock</span></span>, <span name="bridgeSunk">bridgeSunk: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="latency">latency: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">0</span></span>)</span><span class="result"> extends <a href="ChannelMetadata.html" class="extype" name="midas.widgets.ChannelMetadata">ChannelMetadata</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -1865,22 +1905,6 @@ like printf synthesis, are expressed in terms of this base clock.
       </span>
       <span class="symbol">
         <a title="" href="TieOffDMAToHostCPU.html"><span class="name">TieOffDMAToHostCPU</span></a><span class="result"> extends <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></span>
-      </span>
-      
-      
-    </li><li name="midas.widgets.TokenizedRecord" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="TokenizedRecordextendsRecordwithHasChannels"></a><a id="TokenizedRecord:TokenizedRecord"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/TokenizedRecord.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="TokenizedRecord.html"><span class="name">TokenizedRecord</span></a><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></span>
       </span>
       
       
