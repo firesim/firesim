@@ -114,24 +114,12 @@ object RationalClockBridge {
   * @param numClocks The total number of clocks in the channel (inclusive of the base clock)
   *
   */
-class ClockTokenVector(numClocks: Int) extends TokenizedRecord with ClockBridgeConsts {
-  def targetPortProto(): Vec[Bool] = Vec(numClocks, Bool())
-  val clocks = new DecoupledIO(targetPortProto)
+class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with ClockBridgeConsts {
+  val clocks = new DecoupledIO(Vec(numClocks, Bool()))
 
-  def outputWireChannels = Seq(clocks -> clockChannelName)
-  def inputWireChannels = Seq()
-  def outputRVChannels = Seq()
-  def inputRVChannels = Seq()
-
-  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit = {
-    val local2globalName = bridgeAnno.channelMapping.toMap
-    for (localName <- outputChannelNames) {
-      simIo.clockElement._2 <> elements(localName)
-    }
-  }
-
-  val elements = collection.immutable.ListMap(clockChannelName -> clocks)
-  override def cloneType(): this.type = new ClockTokenVector(numClocks).asInstanceOf[this.type]
+  def allChannelNames = Seq(clockChannelName)
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit =
+    simIo.clockElement._2 <> clocks
   def generateAnnotations(): Unit = {}
 }
 
