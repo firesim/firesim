@@ -135,12 +135,32 @@
                         <a href="GoldenGateCompilerPhase.html" title="">GoldenGateCompilerPhase</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="trait" href="GoldenGateFileEmission.html" title=""></a>
+                        <a href="GoldenGateFileEmission.html" title="">GoldenGateFileEmission</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="GoldenGateMain$.html" title=""></a>
                         <a href="GoldenGateMain$.html" title="">GoldenGateMain</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="trait" href="GoldenGateOption.html" title=""></a>
+                        <a href="GoldenGateOption.html" title="">GoldenGateOption</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="GoldenGateOutputFileAnnotation$.html" title=""></a>
+                        <a class="class" href="GoldenGateOutputFileAnnotation.html" title="A generic wrapper for output files that have no targets."></a>
+                        <a href="GoldenGateOutputFileAnnotation.html" title="A generic wrapper for output files that have no targets.">GoldenGateOutputFileAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="GoldenGateStage.html" title=""></a>
                         <a href="GoldenGateStage.html" title="">GoldenGateStage</a>
+                      </li><li class="current-entities indented2">
+                        <a class="object" href="OutputBaseFilenameAnnotation$.html" title=""></a>
+                        <a class="class" href="OutputBaseFilenameAnnotation.html" title=""></a>
+                        <a href="OutputBaseFilenameAnnotation.html" title="">OutputBaseFilenameAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="OutputFileBuilder.html" title="Wraps a StringBuilder to incrementally build up an output file annotation."></a>
+                        <a href="OutputFileBuilder.html" title="Wraps a StringBuilder to incrementally build up an output file annotation.">OutputFileBuilder</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="RuntimeConfigGenerationPhase.html" title=""></a>
@@ -186,7 +206,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">RuntimeConfigNameAnnotation</span><span class="params">(<span name="configString">configString: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">RuntimeConfigNameAnnotation</span><span class="params">(<span name="configString">configString: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <a href="GoldenGateOption.html" class="extype" name="midas.stage.GoldenGateOption">GoldenGateOption</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
@@ -195,7 +215,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span>, <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="GoldenGateOption.html" class="extype" name="midas.stage.GoldenGateOption">GoldenGateOption</a>, <span class="extype" name="firrtl.options.Unserializable">Unserializable</span>, <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span>, <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -221,7 +241,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.stage.RuntimeConfigNameAnnotation"><span>RuntimeConfigNameAnnotation</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="firrtl.annotations.NoTargetAnnotation"><span>NoTargetAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.stage.RuntimeConfigNameAnnotation"><span>RuntimeConfigNameAnnotation</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="midas.stage.GoldenGateOption"><span>GoldenGateOption</span></li><li class="in" name="firrtl.options.Unserializable"><span>Unserializable</span></li><li class="in" name="firrtl.annotations.NoTargetAnnotation"><span>NoTargetAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -644,6 +664,10 @@
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="midas.stage.GoldenGateOption">
+              <h3>Inherited from <a href="GoldenGateOption.html" class="extype" name="midas.stage.GoldenGateOption">GoldenGateOption</a></h3>
+            </div><div class="parent" name="firrtl.options.Unserializable">
+              <h3>Inherited from <span class="extype" name="firrtl.options.Unserializable">Unserializable</span></h3>
             </div><div class="parent" name="firrtl.annotations.NoTargetAnnotation">
               <h3>Inherited from <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span></h3>
             </div><div class="parent" name="firrtl.annotations.Annotation">

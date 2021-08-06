@@ -147,8 +147,8 @@
                         <a href="GoldenGateOption.html" title="">GoldenGateOption</a>
                       </li><li class="current-entities indented2">
                         <a class="object" href="GoldenGateOutputFileAnnotation$.html" title=""></a>
-                        <a class="class" href="GoldenGateOutputFileAnnotation.html" title="A generic wrapper for output files that have no targets."></a>
-                        <a href="GoldenGateOutputFileAnnotation.html" title="A generic wrapper for output files that have no targets.">GoldenGateOutputFileAnnotation</a>
+                        <a class="class" href="" title="A generic wrapper for output files that have no targets."></a>
+                        <a href="" title="A generic wrapper for output files that have no targets.">GoldenGateOutputFileAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="GoldenGateStage.html" title=""></a>
@@ -175,8 +175,8 @@
                         <a href="RuntimeConfigGeneratorMain$.html" title="">RuntimeConfigGeneratorMain</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">RuntimeConfigGeneratorStage</a>
+                        <a class="class" href="RuntimeConfigGeneratorStage.html" title=""></a>
+                        <a href="RuntimeConfigGeneratorStage.html" title="">RuntimeConfigGeneratorStage</a>
                       </li><li class="current-entities indented2">
                         <a class="object" href="RuntimeConfigNameAnnotation$.html" title=""></a>
                         <a class="class" href="RuntimeConfigNameAnnotation.html" title=""></a>
@@ -188,32 +188,35 @@
           <div id="content">
             <body class="class type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <a href="GoldenGateOutputFileAnnotation$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.stage">stage</a></p>
-        <h1>RuntimeConfigGeneratorStage<span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html" title="Permalink">
+        <h1><a href="GoldenGateOutputFileAnnotation$.html" title="See companion object">GoldenGateOutputFileAnnotation</a><span class="permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"></span></h3>
+        <h3><span class="morelinks"><div>
+            Companion <a href="GoldenGateOutputFileAnnotation$.html" title="See companion object">object GoldenGateOutputFileAnnotation</a>
+          </div></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">RuntimeConfigGeneratorStage</span><span class="result"> extends <span class="extype" name="firrtl.options.Stage">Stage</span> with <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</span>
+        <span class="name">GoldenGateOutputFileAnnotation</span><span class="params">(<span name="body">body: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="fileSuffix">fileSuffix: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <a href="GoldenGateFileEmission.html" class="extype" name="midas.stage.GoldenGateFileEmission">GoldenGateFileEmission</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A generic wrapper for output files that have no targets.
+</p></div><dl class="paramcmts block"><dt class="param">body</dt><dd class="cmt"><p>the body of the file</p></dd><dt class="param">fileSuffix</dt><dd class="cmt"><p>The string to append to base output file name</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>], <span class="extype" name="firrtl.options.Stage">Stage</span>, <span class="extype" name="firrtl.options.Phase">Phase</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="GoldenGateFileEmission.html" class="extype" name="midas.stage.GoldenGateFileEmission">GoldenGateFileEmission</a>, <span class="extype" name="firrtl.options.CustomFileEmission">CustomFileEmission</span>, <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span>, <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -239,7 +242,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.stage.RuntimeConfigGeneratorStage"><span>RuntimeConfigGeneratorStage</span></li><li class="in" name="firrtl.options.PreservesAll"><span>PreservesAll</span></li><li class="in" name="firrtl.options.Stage"><span>Stage</span></li><li class="in" name="firrtl.options.Phase"><span>Phase</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.stage.GoldenGateOutputFileAnnotation"><span>GoldenGateOutputFileAnnotation</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="midas.stage.GoldenGateFileEmission"><span>GoldenGateFileEmission</span></li><li class="in" name="firrtl.options.CustomFileEmission"><span>CustomFileEmission</span></li><li class="in" name="firrtl.annotations.NoTargetAnnotation"><span>NoTargetAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -259,10 +262,10 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="midas.stage.RuntimeConfigGeneratorStage#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;():midas.stage.RuntimeConfigGeneratorStage"></a><a id="&lt;init&gt;:RuntimeConfigGeneratorStage"></a>
+              <ol><li name="midas.stage.GoldenGateOutputFileAnnotation#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(body:String,fileSuffix:String):midas.stage.GoldenGateOutputFileAnnotation"></a><a id="&lt;init&gt;:GoldenGateOutputFileAnnotation"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#&lt;init&gt;():midas.stage.RuntimeConfigGeneratorStage" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#&lt;init&gt;(body:String,fileSuffix:String):midas.stage.GoldenGateOutputFileAnnotation" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -271,10 +274,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RuntimeConfigGeneratorStage</span><span class="params">()</span>
+        <span class="name">GoldenGateOutputFileAnnotation</span><span class="params">(<span name="body">body: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="fileSuffix">fileSuffix: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">body</dt><dd class="cmt"><p>the body of the file</p></dd><dt class="param">fileSuffix</dt><dd class="cmt"><p>The string to append to base output file name</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -288,7 +291,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -304,7 +307,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html###():Int" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -320,7 +323,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -336,7 +339,7 @@
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -349,10 +352,42 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.stage.GoldenGateFileEmission#baseFileName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="baseFileName(annotations:firrtl.AnnotationSeq):String"></a><a id="baseFileName(AnnotationSeq):String"></a>
+      <span class="permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#baseFileName(annotations:firrtl.AnnotationSeq):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">baseFileName</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="GoldenGateFileEmission.html" class="extype" name="midas.stage.GoldenGateFileEmission">GoldenGateFileEmission</a> → CustomFileEmission</dd></dl></div>
+    </li><li name="midas.stage.GoldenGateOutputFileAnnotation#body" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="body:String"></a>
+      <span class="permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#body:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">body</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#clone():Object" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -376,7 +411,7 @@
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -389,26 +424,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+    </li><li name="midas.stage.GoldenGateOutputFileAnnotation#fileSuffix" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fileSuffix:String"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#equals(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#fileSuffix:String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+        <span class="name">fileSuffix</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="firrtl.options.Stage#execute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="execute(args:Array[String],annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq"></a><a id="execute(Array[String],AnnotationSeq):AnnotationSeq"></a>
+      
+    </li><li name="firrtl.options.CustomFileEmission#filename" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="filename(annotations:firrtl.AnnotationSeq):java.io.File"></a><a id="filename(AnnotationSeq):File"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#execute(args:Array[String],annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#filename(annotations:firrtl.AnnotationSeq):java.io.File" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -417,14 +452,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">execute</span><span class="params">(<span name="args">args: <a href="https://www.scala-lang.org/api/2.12.10/scala/Array.html#scala.Array" class="extype" name="scala.Array">Array</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
+        <span class="name">filename</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="java.io.File">File</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Stage</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>CustomFileEmission</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -443,10 +478,26 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="midas.stage.GoldenGateOutputFileAnnotation#getBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getBytes:scala.collection.mutable.WrappedArray[Byte]"></a><a id="getBytes:WrappedArray[Byte]"></a>
+      <span class="permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#getBytes:scala.collection.mutable.WrappedArray[Byte]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/mutable/WrappedArray.html#scala.collection.mutable.WrappedArray" class="extype" name="scala.collection.mutable.WrappedArray">WrappedArray</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Byte.html#scala.Byte" class="extype" name="scala.Byte">Byte</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.GoldenGateOutputFileAnnotation">GoldenGateOutputFileAnnotation</a> → CustomFileEmission</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -462,10 +513,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
+    </li><li name="firrtl.annotations.Annotation#getTargets" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getTargets:Seq[firrtl.annotations.Target]"></a><a id="getTargets:Seq[Target]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#getTargets:Seq[firrtl.annotations.Target]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -474,33 +525,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">getTargets</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Target">Target</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
-                <span class="name">@native</span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="firrtl.options.PreservesAll#invalidates" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="invalidates(a:A):Boolean"></a><a id="invalidates(Phase):Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#invalidates(a:A):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">invalidates</span><span class="params">(<span name="a">a: <span class="extype" name="firrtl.options.Phase">Phase</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PreservesAll</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Annotation</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -513,42 +545,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="logger.LazyLogging#logger" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logger:logger.Logger"></a><a id="logger:Logger"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#logger:logger.Logger" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logger</span><span class="result">: <span class="extype" name="logger.Logger">Logger</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
-    </li><li name="firrtl.options.Phase#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="name:String"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#name:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Phase → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -564,7 +564,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#notify():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -583,7 +583,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -599,10 +599,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="firrtl.options.DependencyAPI#optionalPrerequisiteOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="optionalPrerequisiteOf:Seq[firrtl.options.Dependency[A]]"></a><a id="optionalPrerequisiteOf:Seq[Dependency[Phase]]"></a>
+    </li><li name="firrtl.options.CustomFileEmission#replacements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replacements(file:java.io.File):firrtl.AnnotationSeq"></a><a id="replacements(File):AnnotationSeq"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#optionalPrerequisiteOf:Seq[firrtl.options.Dependency[A]]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#replacements(file:java.io.File):firrtl.AnnotationSeq" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -611,14 +611,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">optionalPrerequisiteOf</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
+        <span class="name">replacements</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
-    </li><li name="firrtl.options.DependencyAPI#optionalPrerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="optionalPrerequisites:Seq[firrtl.options.Dependency[A]]"></a><a id="optionalPrerequisites:Seq[Dependency[Phase]]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>CustomFileEmission</dd></dl></div>
+    </li><li name="firrtl.annotations.Annotation#serialize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serialize:String"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#optionalPrerequisites:Seq[firrtl.options.Dependency[A]]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#serialize:String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -627,14 +627,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">optionalPrerequisites</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
+        <span class="name">serialize</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
-    </li><li name="firrtl.options.DependencyAPI#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="prerequisites:Seq[firrtl.options.Dependency[A]]"></a><a id="prerequisites:Seq[Dependency[Phase]]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Annotation</dd></dl></div>
+    </li><li name="midas.stage.GoldenGateOutputFileAnnotation#suffix" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="suffix:Some[String]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#prerequisites:Seq[firrtl.options.Dependency[A]]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#suffix:Some[String]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -643,46 +643,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">prerequisites</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
+        <span class="name">suffix</span><span class="result">: <span class="extype" name="scala.Some">Some</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
-    </li><li name="midas.stage.RuntimeConfigGeneratorStage#run" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="run(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq"></a><a id="run(AnnotationSeq):AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#run(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">run</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.RuntimeConfigGeneratorStage">RuntimeConfigGeneratorStage</a> → Stage</dd></dl></div>
-    </li><li name="midas.stage.RuntimeConfigGeneratorStage#shell" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="shell:firrtl.options.Shell"></a><a id="shell:Shell"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#shell:firrtl.options.Shell" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">shell</span><span class="result">: <span class="extype" name="firrtl.options.Shell">Shell</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.RuntimeConfigGeneratorStage">RuntimeConfigGeneratorStage</a> → Stage</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.GoldenGateOutputFileAnnotation">GoldenGateOutputFileAnnotation</a> → CustomFileEmission</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -695,10 +663,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
+    </li><li name="firrtl.annotations.NoTargetAnnotation#update" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="update(renames:firrtl.RenameMap):Seq[firrtl.annotations.NoTargetAnnotation]"></a><a id="update(RenameMap):Seq[NoTargetAnnotation]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#toString():String" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#update(renames:firrtl.RenameMap):Seq[firrtl.annotations.NoTargetAnnotation]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -707,30 +675,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">update</span><span class="params">(<span name="renames">renames: <span class="extype" name="firrtl.RenameMap">RenameMap</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="firrtl.options.Stage#transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transform(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq"></a><a id="transform(AnnotationSeq):AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#transform(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transform</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Stage → TransformLike</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NoTargetAnnotation → Annotation</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#wait():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -752,7 +704,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -774,7 +726,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOutputFileAnnotation.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -801,44 +753,26 @@
 
         
 
-        <div class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="firrtl.options.DependencyAPI#dependents" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dependents:Seq[firrtl.options.Dependency[A]]"></a><a id="dependents:Seq[Dependency[Phase]]"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#dependents:Seq[firrtl.options.Dependency[A]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.">dependents</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="firrtl.options.PreservesAll">
-              <h3>Inherited from <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</h3>
-            </div><div class="parent" name="firrtl.options.Stage">
-              <h3>Inherited from <span class="extype" name="firrtl.options.Stage">Stage</span></h3>
-            </div><div class="parent" name="firrtl.options.Phase">
-              <h3>Inherited from <span class="extype" name="firrtl.options.Phase">Phase</span></h3>
-            </div><div class="parent" name="firrtl.options.DependencyAPI">
-              <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</h3>
-            </div><div class="parent" name="firrtl.options.TransformLike">
-              <h3>Inherited from <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>]</h3>
-            </div><div class="parent" name="logger.LazyLogging">
-              <h3>Inherited from <span class="extype" name="logger.LazyLogging">LazyLogging</span></h3>
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="midas.stage.GoldenGateFileEmission">
+              <h3>Inherited from <a href="GoldenGateFileEmission.html" class="extype" name="midas.stage.GoldenGateFileEmission">GoldenGateFileEmission</a></h3>
+            </div><div class="parent" name="firrtl.options.CustomFileEmission">
+              <h3>Inherited from <span class="extype" name="firrtl.options.CustomFileEmission">CustomFileEmission</span></h3>
+            </div><div class="parent" name="firrtl.annotations.NoTargetAnnotation">
+              <h3>Inherited from <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span></h3>
+            </div><div class="parent" name="firrtl.annotations.Annotation">
+              <h3>Inherited from <span class="extype" name="firrtl.annotations.Annotation">Annotation</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

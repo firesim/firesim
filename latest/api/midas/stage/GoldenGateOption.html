@@ -143,8 +143,8 @@
                         <a href="GoldenGateMain$.html" title="">GoldenGateMain</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="trait" href="GoldenGateOption.html" title=""></a>
-                        <a href="GoldenGateOption.html" title="">GoldenGateOption</a>
+                        <a class="trait" href="" title=""></a>
+                        <a href="" title="">GoldenGateOption</a>
                       </li><li class="current-entities indented2">
                         <a class="object" href="GoldenGateOutputFileAnnotation$.html" title=""></a>
                         <a class="class" href="GoldenGateOutputFileAnnotation.html" title="A generic wrapper for output files that have no targets."></a>
@@ -175,8 +175,8 @@
                         <a href="RuntimeConfigGeneratorMain$.html" title="">RuntimeConfigGeneratorMain</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">RuntimeConfigGeneratorStage</a>
+                        <a class="class" href="RuntimeConfigGeneratorStage.html" title=""></a>
+                        <a href="RuntimeConfigGeneratorStage.html" title="">RuntimeConfigGeneratorStage</a>
                       </li><li class="current-entities indented2">
                         <a class="object" href="RuntimeConfigNameAnnotation$.html" title=""></a>
                         <a class="class" href="RuntimeConfigNameAnnotation.html" title=""></a>
@@ -186,12 +186,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="class type">
+            <body class="trait type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <div class="big-circle trait">t</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.stage">stage</a></p>
-        <h1>RuntimeConfigGeneratorStage<span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html" title="Permalink">
+        <h1>GoldenGateOption<span class="permalink">
+      <a href="../../midas/stage/GoldenGateOption.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -200,21 +200,26 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">RuntimeConfigGeneratorStage</span><span class="result"> extends <span class="extype" name="firrtl.options.Stage">Stage</span> with <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</span>
+        <span class="name">GoldenGateOption</span><span class="result"> extends <span class="extype" name="firrtl.options.Unserializable">Unserializable</span></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="midas.stage.GoldenGateOption">GoldenGateOption</a> with <span class="extype" name="firrtl.annotations.Annotation">Annotation</span></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>], <span class="extype" name="firrtl.options.Stage">Stage</span>, <span class="extype" name="firrtl.options.Phase">Phase</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
-        </div></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.options.Unserializable">Unserializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">
+              Known Subclasses
+            </span>
+            <div class="subClasses hiddenContent"><a href="ConfigPackageAnnotation.html" class="extype" name="midas.stage.ConfigPackageAnnotation">ConfigPackageAnnotation</a>, <a href="ConfigStringAnnotation.html" class="extype" name="midas.stage.ConfigStringAnnotation">ConfigStringAnnotation</a>, <a href="OutputBaseFilenameAnnotation.html" class="extype" name="midas.stage.OutputBaseFilenameAnnotation">OutputBaseFilenameAnnotation</a>, <a href="RuntimeConfigNameAnnotation.html" class="extype" name="midas.stage.RuntimeConfigNameAnnotation">RuntimeConfigNameAnnotation</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -239,7 +244,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.stage.RuntimeConfigGeneratorStage"><span>RuntimeConfigGeneratorStage</span></li><li class="in" name="firrtl.options.PreservesAll"><span>PreservesAll</span></li><li class="in" name="firrtl.options.Stage"><span>Stage</span></li><li class="in" name="firrtl.options.Phase"><span>Phase</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.stage.GoldenGateOption"><span>GoldenGateOption</span></li><li class="in" name="firrtl.options.Unserializable"><span>Unserializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -257,26 +262,7 @@
 
       <div id="template">
         <div id="allMembers">
-        <div id="constructors" class="members">
-              <h3>Instance Constructors</h3>
-              <ol><li name="midas.stage.RuntimeConfigGeneratorStage#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;():midas.stage.RuntimeConfigGeneratorStage"></a><a id="&lt;init&gt;:RuntimeConfigGeneratorStage"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#&lt;init&gt;():midas.stage.RuntimeConfigGeneratorStage" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">RuntimeConfigGeneratorStage</span><span class="params">()</span>
-      </span>
-      
-      
-    </li></ol>
-            </div>
+        
 
         
 
@@ -288,7 +274,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -304,7 +290,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html###():Int" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -320,7 +306,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -336,7 +322,7 @@
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -352,7 +338,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#clone():Object" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -376,7 +362,7 @@
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -392,7 +378,7 @@
     </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#equals(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#equals(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -405,26 +391,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="firrtl.options.Stage#execute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="execute(args:Array[String],annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq"></a><a id="execute(Array[String],AnnotationSeq):AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#execute(args:Array[String],annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">execute</span><span class="params">(<span name="args">args: <a href="https://www.scala-lang.org/api/2.12.10/scala/Array.html#scala.Array" class="extype" name="scala.Array">Array</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Stage</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -446,7 +416,7 @@
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -465,7 +435,7 @@
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#hashCode():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -481,26 +451,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="firrtl.options.PreservesAll#invalidates" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="invalidates(a:A):Boolean"></a><a id="invalidates(Phase):Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#invalidates(a:A):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">invalidates</span><span class="params">(<span name="a">a: <span class="extype" name="firrtl.options.Phase">Phase</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>PreservesAll</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -513,42 +467,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="logger.LazyLogging#logger" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="logger:logger.Logger"></a><a id="logger:Logger"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#logger:logger.Logger" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">logger</span><span class="result">: <span class="extype" name="logger.Logger">Logger</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
-    </li><li name="firrtl.options.Phase#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="name:String"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#name:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Phase → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -564,7 +486,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#notify():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -583,7 +505,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -599,90 +521,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="firrtl.options.DependencyAPI#optionalPrerequisiteOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="optionalPrerequisiteOf:Seq[firrtl.options.Dependency[A]]"></a><a id="optionalPrerequisiteOf:Seq[Dependency[Phase]]"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#optionalPrerequisiteOf:Seq[firrtl.options.Dependency[A]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">optionalPrerequisiteOf</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
-    </li><li name="firrtl.options.DependencyAPI#optionalPrerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="optionalPrerequisites:Seq[firrtl.options.Dependency[A]]"></a><a id="optionalPrerequisites:Seq[Dependency[Phase]]"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#optionalPrerequisites:Seq[firrtl.options.Dependency[A]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">optionalPrerequisites</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
-    </li><li name="firrtl.options.DependencyAPI#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="prerequisites:Seq[firrtl.options.Dependency[A]]"></a><a id="prerequisites:Seq[Dependency[Phase]]"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#prerequisites:Seq[firrtl.options.Dependency[A]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">prerequisites</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
-    </li><li name="midas.stage.RuntimeConfigGeneratorStage#run" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="run(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq"></a><a id="run(AnnotationSeq):AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#run(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">run</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.RuntimeConfigGeneratorStage">RuntimeConfigGeneratorStage</a> → Stage</dd></dl></div>
-    </li><li name="midas.stage.RuntimeConfigGeneratorStage#shell" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="shell:firrtl.options.Shell"></a><a id="shell:Shell"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#shell:firrtl.options.Shell" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">shell</span><span class="result">: <span class="extype" name="firrtl.options.Shell">Shell</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.RuntimeConfigGeneratorStage">RuntimeConfigGeneratorStage</a> → Stage</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -698,7 +540,7 @@
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#toString():String" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#toString():String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -711,26 +553,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="firrtl.options.Stage#transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transform(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq"></a><a id="transform(AnnotationSeq):AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#transform(annotations:firrtl.AnnotationSeq):firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transform</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>)</span><span class="result">: <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Stage → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#wait():Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -752,7 +578,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -774,7 +600,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/stage/GoldenGateOption.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -801,44 +627,12 @@
 
         
 
-        <div class="values members">
-              <h3>Deprecated Value Members</h3>
-              <ol><li name="firrtl.options.DependencyAPI#dependents" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dependents:Seq[firrtl.options.Dependency[A]]"></a><a id="dependents:Seq[Dependency[Phase]]"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigGeneratorStage.html#dependents:Seq[firrtl.options.Dependency[A]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.">dependents</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd><dt>Annotations</dt><dd>
-                <span class="name">@deprecated</span>
-              
-        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="firrtl.options.PreservesAll">
-              <h3>Inherited from <span class="extype" name="firrtl.options.PreservesAll">PreservesAll</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</h3>
-            </div><div class="parent" name="firrtl.options.Stage">
-              <h3>Inherited from <span class="extype" name="firrtl.options.Stage">Stage</span></h3>
-            </div><div class="parent" name="firrtl.options.Phase">
-              <h3>Inherited from <span class="extype" name="firrtl.options.Phase">Phase</span></h3>
-            </div><div class="parent" name="firrtl.options.DependencyAPI">
-              <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]</h3>
-            </div><div class="parent" name="firrtl.options.TransformLike">
-              <h3>Inherited from <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>]</h3>
-            </div><div class="parent" name="logger.LazyLogging">
-              <h3>Inherited from <span class="extype" name="logger.LazyLogging">LazyLogging</span></h3>
+        <div class="parent" name="firrtl.options.Unserializable">
+              <h3>Inherited from <span class="extype" name="firrtl.options.Unserializable">Unserializable</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
