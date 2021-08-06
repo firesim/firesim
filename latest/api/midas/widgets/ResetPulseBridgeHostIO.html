@@ -143,8 +143,8 @@
                         <a href="BRAMQueue.html" title="">BRAMQueue</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="trait" href="" title=""></a>
-                        <a href="" title="">BidirectionalDMA</a>
+                        <a class="trait" href="BidirectionalDMA.html" title=""></a>
+                        <a href="BidirectionalDMA.html" title="">BidirectionalDMA</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="trait" href="Bridge.html" title=""></a>
@@ -415,8 +415,8 @@
                         <a href="ResetPulseBridge.html" title="">ResetPulseBridge</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="ResetPulseBridgeHostIO.html" title="The host-side interface."></a>
-                        <a href="ResetPulseBridgeHostIO.html" title="The host-side interface.">ResetPulseBridgeHostIO</a>
+                        <a class="class" href="" title="The host-side interface."></a>
+                        <a href="" title="The host-side interface.">ResetPulseBridgeHostIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ResetPulseBridgeModule.html" title=""></a>
@@ -522,12 +522,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="trait type">
+            <body class="class type">
       <div id="definition">
-        <div class="big-circle trait">t</div>
+        <div class="big-circle class">c</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.widgets">widgets</a></p>
-        <h1>BidirectionalDMA<span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html" title="Permalink">
+        <h1>ResetPulseBridgeHostIO<span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -537,19 +537,23 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">BidirectionalDMA</span><span class="result"> extends <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a> with <a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a> with <a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></span>
+        <span class="name">ResetPulseBridgeHostIO</span><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="midas.widgets.BidirectionalDMA">BidirectionalDMA</a> with <a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The host-side interface. This bridge has single channel with a bool
+payload. <a href="ChannelizedHostPortIO.html#OutputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" class="extmbr" name="midas.widgets.ChannelizedHostPortIO#OutputChannel">ChannelizedHostPortIO.OutputChannel</a> associates the reset on
+the target side IF with a channel named reset on the host-side
+BridgeModule (determined by reflection, since we're extending Bundle).
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a>, <a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a>, <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a>, <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>, <span class="extype" name="chisel3.Bundle">Bundle</span>, <span class="extype" name="chisel3.Record">Record</span>, <span class="extype" name="chisel3.Aggregate">Aggregate</span>, <span class="extype" name="chisel3.Data">Data</span>, <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span>, <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -575,7 +579,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.BidirectionalDMA"><span>BidirectionalDMA</span></li><li class="in" name="midas.widgets.DMAToHostCPU"><span>DMAToHostCPU</span></li><li class="in" name="midas.widgets.DMAFromHostCPU"><span>DMAFromHostCPU</span></li><li class="in" name="midas.widgets.HasDMA"><span>HasDMA</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.ResetPulseBridgeHostIO"><span>ResetPulseBridgeHostIO</span></li><li class="in" name="midas.widgets.ChannelizedHostPortIO"><span>ChannelizedHostPortIO</span></li><li class="in" name="midas.widgets.HasChannels"><span>HasChannels</span></li><li class="in" name="chisel3.Bundle"><span>Bundle</span></li><li class="in" name="chisel3.Record"><span>Record</span></li><li class="in" name="chisel3.Aggregate"><span>Aggregate</span></li><li class="in" name="chisel3.Data"><span>Data</span></li><li class="in" name="chisel3.SourceInfoDoc"><span>SourceInfoDoc</span></li><li class="in" name="chisel3.internal.NamedComponent"><span>NamedComponent</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -593,70 +597,64 @@
 
       <div id="template">
         <div id="allMembers">
-        
-
-        
-
-        <div class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="midas.widgets.HasDMA#dmaSize" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="dmaSize:BigInt"></a>
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="midas.widgets.ResetPulseBridgeHostIO#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(targetIO:midas.widgets.ResetPulseBridgeTargetIO):midas.widgets.ResetPulseBridgeHostIO"></a><a id="&lt;init&gt;:ResetPulseBridgeHostIO"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#dmaSize:BigInt" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#&lt;init&gt;(targetIO:midas.widgets.ResetPulseBridgeTargetIO):midas.widgets.ResetPulseBridgeHostIO" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
+        <span class="modifier"></span>
+        <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">dmaSize</span><span class="result">: <span class="extype" name="scala.BigInt">BigInt</span></span>
+        <span class="name">ResetPulseBridgeHostIO</span><span class="params">(<span name="targetIO">targetIO: <a href="ResetPulseBridgeTargetIO.html" class="extype" name="midas.widgets.ResetPulseBridgeTargetIO">ResetPulseBridgeTargetIO</a> = <span class="symbol"><span class="name"><a href="ResetPulseBridgeTargetIO.html">new ResetPulseBridgeTargetIO</a></span></span></span>)</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#fromHostCPUQueueDepth" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="fromHostCPUQueueDepth:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#fromHostCPUQueueDepth:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">fromHostCPUQueueDepth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#toHostCPUQueueDepth" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="toHostCPUQueueDepth:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#toHostCPUQueueDepth:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toHostCPUQueueDepth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">targetIO</dt><dd class="cmt"><p>A reference to the bound target-side interface. This need
+       only be a hardware type during target-side instantiation, so that the
+       direction of the channel can be properly checked, and the correct
+       annotation can be emitted. During host-side instantiation, the unbound
+       default is used --- this is OK because generateAnnotations() will not be
+       called.
+       NB: This !MUST! be a private val when extending bundle, otherwise you'll get
+       some extra elements in your host-side IF.</p></dd></dl></div>
     </li></ol>
             </div>
 
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="midas.widgets.ChannelizedHostPortIO.ChannelType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]"></a><a id="ChannelType[A&lt;:Data]:ChannelType[A]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ChannelType</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="result alias"> = <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.ChannelType.A">A</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
         <div class="values members">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol>
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -672,7 +670,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html###():Int" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -685,10 +683,42 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.Data#:=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id=":=(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit"></a><a id=":=(⇒Data)(SourceInfo,CompileOptions):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#:=(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $colon$eq" class="name">:=</span><span class="params">(<span name="that">that: ⇒ <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="connectionCompileOptions">connectionCompileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Data#&lt;&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;&gt;(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit"></a><a id="&lt;&gt;(⇒Data)(SourceInfo,CompileOptions):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#&lt;&gt;(that:=&gt;chisel3.Data)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitconnectionCompileOptions:chisel3.CompileOptions):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$greater" class="name">&lt;&gt;</span><span class="params">(<span name="that">that: ⇒ <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="connectionCompileOptions">connectionCompileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -701,26 +731,66 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#ar_queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ar_queue:chisel3.util.DecoupledIO[junctions.NastiReadAddressChannel]"></a><a id="ar_queue:DecoupledIO[NastiReadAddressChannel]"></a>
+    </li><li name="midas.widgets.ChannelizedHostPortIO#InputChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]"></a><a id="InputChannel[A&lt;:Data](A):ChannelType[A]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#ar_queue:chisel3.util.DecoupledIO[junctions.NastiReadAddressChannel]" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">ar_queue</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../../junctions/NastiReadAddressChannel.html" class="extype" name="junctions.NastiReadAddressChannel">NastiReadAddressChannel</a>]</span>
+        <span class="name">InputChannel</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="field">field: <span class="extype" name="midas.widgets.ChannelizedHostPortIO.InputChannel.A">A</span></span>)</span><span class="result">: <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.ResetPulseBridgeHostIO.ChannelType">ChannelType</a>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.InputChannel.A">A</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
+      <p class="shortcomment cmt">Marks an input to the bridge as being a distinct channel.</p><div class="fullcomment"><div class="comment cmt"><p>Marks an input to the bridge as being a distinct channel. It will become a
+bridge-sunk ready-valid interface on this host port definition, with the
+target datatype as its payload.
+</p></div><dl class="paramcmts block"><dt class="param">field</dt><dd class="cmt"><p>A field in the target interface that corresponds to a channel.F</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+    </li><li name="midas.widgets.ChannelizedHostPortIO#OutputChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OutputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]"></a><a id="OutputChannel[A&lt;:Data](A):ChannelType[A]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#OutputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">OutputChannel</span><span class="tparams">[<span name="A">A &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="field">field: <span class="extype" name="midas.widgets.ChannelizedHostPortIO.OutputChannel.A">A</span></span>)</span><span class="result">: <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.ResetPulseBridgeHostIO.ChannelType">ChannelType</a>[<span class="extype" name="midas.widgets.ChannelizedHostPortIO.OutputChannel.A">A</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">The reverse of <a href="ChannelizedHostPortIO.html#InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" class="extmbr" name="midas.widgets.ChannelizedHostPortIO#InputChannel">ChannelizedHostPortIO.InputChannel</a>, in that it marks
+an output to the bridge as being a distinct channel.</p><div class="fullcomment"><div class="comment cmt"><p>The reverse of <a href="ChannelizedHostPortIO.html#InputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" class="extmbr" name="midas.widgets.ChannelizedHostPortIO#InputChannel">ChannelizedHostPortIO.InputChannel</a>, in that it marks
+an output to the bridge as being a distinct channel.
+</p></div><dl class="paramcmts block"><dt class="param">field</dt><dd class="cmt"><p>A field in the target interface that corresponds to a channel.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+    </li><li name="midas.widgets.ChannelizedHostPortIO#allChannelNames" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allChannelNames():Seq[String]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#allChannelNames():Seq[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allChannelNames</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of channel names for which FAMEChannelConnectionAnnotations have been generated
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -733,26 +803,138 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#aw_queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="aw_queue:chisel3.util.DecoupledIO[junctions.NastiWriteAddressChannel]"></a><a id="aw_queue:DecoupledIO[NastiWriteAddressChannel]"></a>
+    </li><li name="chisel3.Data#asTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asTypeOf[T&lt;:chisel3.Data](that:T):T"></a><a id="asTypeOf[T&lt;:Data](T):T"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#aw_queue:chisel3.util.DecoupledIO[junctions.NastiWriteAddressChannel]" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#asTypeOf[T&lt;:chisel3.Data](that:T):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">macro </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asTypeOf</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="that">that: <span class="extype" name="chisel3.Data.asTypeOf.T">T</span></span>)</span><span class="result">: <span class="extype" name="chisel3.Data.asTypeOf.T">T</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Data#asUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asUInt():chisel3.UInt"></a><a id="asUInt():UInt"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#asUInt():chisel3.UInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final macro </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asUInt</span><span class="params">()</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Data#autoSeed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="autoSeed(name:String):Data.this.type"></a><a id="autoSeed(String):ResetPulseBridgeHostIO.this.type"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#autoSeed(name:String):Data.this.type" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">aw_queue</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../../junctions/NastiWriteAddressChannel.html" class="extype" name="junctions.NastiWriteAddressChannel">NastiWriteAddressChannel</a>]</span>
+        <span class="name">autoSeed</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="midas.widgets.ResetPulseBridgeHostIO">ResetPulseBridgeHostIO</a>.this.type</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data → HasId</dd></dl></div>
+    </li><li name="chisel3.Data#binding" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="binding:Option[chisel3.internal.Binding]"></a><a id="binding:Option[Binding]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#binding:Option[chisel3.internal.Binding]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">binding</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.internal.Binding">Binding</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="chisel3">chisel3</span>] </dd><dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Data#bindingToString" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bindingToString:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#bindingToString:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bindingToString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Data#binding_=" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="binding_=(target:chisel3.internal.Binding):Unit"></a><a id="binding_=(Binding):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#binding_=(target:chisel3.internal.Binding):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: binding_$eq" class="name">binding_=</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.internal.Binding">Binding</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#circuitName" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="circuitName:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#circuitName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">circuitName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="chisel3.Bundle#className" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="className:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#className:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">className</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Record</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#clone():Object" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -773,42 +955,106 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.HasDMA#dma" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dma:junctions.NastiIO"></a><a id="dma:NastiIO"></a>
+    </li><li name="chisel3.Bundle#cloneType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cloneType:Bundle.this.type"></a><a id="cloneType:ResetPulseBridgeHostIO.this.type"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#dma:junctions.NastiIO" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#cloneType:Bundle.this.type" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dma</span><span class="result">: <a href="../../junctions/NastiIO.html" class="extype" name="junctions.NastiIO">NastiIO</a></span>
+        <span class="name">cloneType</span><span class="result">: <a href="" class="extype" name="midas.widgets.ResetPulseBridgeHostIO">ResetPulseBridgeHostIO</a>.this.type</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></dd></dl></div>
-    </li><li name="midas.widgets.HasDMA#dmaBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dmaBytes:Int"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Data</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#computeName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]"></a><a id="computeName(Option[String],Option[String]):Option[String]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#dmaBytes:Int" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dmaBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">computeName</span><span class="params">(<span name="defaultPrefix">defaultPrefix: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="defaultSeed">defaultSeed: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="midas.widgets.ChannelizedHostPortIO#connectChannels2Port" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="connectChannels2Port(bridgeAnno:midas.widgets.BridgeIOAnnotation,simWrapper:midas.core.SimWrapperChannels):Unit"></a><a id="connectChannels2Port(BridgeIOAnnotation,SimWrapperChannels):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#connectChannels2Port(bridgeAnno:midas.widgets.BridgeIOAnnotation,simWrapper:midas.core.SimWrapperChannels):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">connectChannels2Port</span><span class="params">(<span name="bridgeAnno">bridgeAnno: <span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span></span>, <span name="simWrapper">simWrapper: <a href="../core/SimWrapperChannels.html" class="extype" name="midas.core.SimWrapperChannels">SimWrapperChannels</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
+    </li><li name="chisel3.Data#do_asTypeOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="do_asTypeOf[T&lt;:chisel3.Data](that:T)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):T"></a><a id="do_asTypeOf[T&lt;:Data](T)(SourceInfo,CompileOptions):T"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#do_asTypeOf[T&lt;:chisel3.Data](that:T)(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):T" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">do_asTypeOf</span><span class="tparams">[<span name="T">T &lt;: <span class="extype" name="chisel3.Data">Data</span></span>]</span><span class="params">(<span name="that">that: <span class="extype" name="chisel3.Data.do_asTypeOf.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="compileOptions">compileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <span class="extype" name="chisel3.Data.do_asTypeOf.T">T</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Aggregate#do_asUInt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="do_asUInt(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.UInt"></a><a id="do_asUInt(SourceInfo,CompileOptions):UInt"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#do_asUInt(implicitsourceInfo:chisel3.internal.sourceinfo.SourceInfo,implicitcompileOptions:chisel3.CompileOptions):chisel3.UInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">do_asUInt</span><span class="params">(<span class="implicit">implicit </span><span name="sourceInfo">sourceInfo: <span class="extype" name="chisel3.internal.sourceinfo.SourceInfo">SourceInfo</span></span>, <span name="compileOptions">compileOptions: <span class="extype" name="chisel3.CompileOptions">CompileOptions</span></span>)</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
+    </li><li name="chisel3.Bundle#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.Data]"></a><a id="elements:ListMap[String,Data]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#elements:scala.collection.immutable.ListMap[String,chisel3.Data]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Data">Data</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Record</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -821,10 +1067,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+    </li><li name="chisel3.internal.HasId#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(that:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#equals(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#equals(that:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -833,14 +1079,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+        <span class="name">equals</span><span class="params">(<span name="that">that: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -859,10 +1105,29 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="midas.widgets.ChannelizedHostPortIO#generateAnnotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generateAnnotations():Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#generateAnnotations():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateAnnotations</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt"> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.</p><div class="fullcomment"><div class="comment cmt"><p> Called to emit FCCAs in the target RTL in order to assign the target
+ port's fields to channels.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a> → <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -878,10 +1143,58 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="chisel3.Record#getElements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getElements:Seq[chisel3.Data]"></a><a id="getElements:Seq[Data]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#getElements:Seq[chisel3.Data]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getElements</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="chisel3.Data">Data</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record → Aggregate</dd></dl></div>
+    </li><li name="chisel3.Data#getWidth" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getWidth:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#getWidth:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getWidth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#hasSeed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasSeed:Boolean"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#hasSeed:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasSeed</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#hashCode():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -893,46 +1206,43 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
-                <span class="name">@native</span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#incomingCount" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="incomingCount:chisel3.UInt"></a><a id="incomingCount:UInt"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.Bundle#ignoreSeq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ignoreSeq:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#incomingCount:chisel3.UInt" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#ignoreSeq:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">incomingCount</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
+        <span class="name">ignoreSeq</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#incomingPCISdat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="incomingPCISdat:midas.widgets.BRAMQueue[chisel3.UInt]"></a><a id="incomingPCISdat:BRAMQueue[UInt]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#instanceName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="instanceName:String"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#incomingPCISdat:midas.widgets.BRAMQueue[chisel3.UInt]" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#instanceName:String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">incomingPCISdat</span><span class="result">: <a href="BRAMQueue.html" class="extype" name="midas.widgets.BRAMQueue">BRAMQueue</a>[<span class="extype" name="chisel3.UInt">UInt</span>]</span>
+        <span class="name">instanceName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -945,42 +1255,74 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#lastReadBeat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lastReadBeat:chisel3.Bool"></a><a id="lastReadBeat:Bool"></a>
+    </li><li name="chisel3.Data#isLit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isLit():Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#lastReadBeat:chisel3.Bool" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#isLit():Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">lastReadBeat</span><span class="result">: <span class="extype" name="chisel3.Bool">Bool</span></span>
+        <span class="name">isLit</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#lastWriteBeat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lastWriteBeat:chisel3.Bool"></a><a id="lastWriteBeat:Bool"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Data#isWidthKnown" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isWidthKnown:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#lastWriteBeat:chisel3.Bool" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#isWidthKnown:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isWidthKnown</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
+    </li><li name="chisel3.Aggregate#litOption" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="litOption():Option[BigInt]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#litOption():Option[BigInt]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">lastWriteBeat</span><span class="result">: <span class="extype" name="chisel3.Bool">Bool</span></span>
+        <span class="name">litOption</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.BigInt">BigInt</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
+    </li><li name="chisel3.Data#litValue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="litValue():BigInt"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#litValue():BigInt" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">litValue</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.BigInt">BigInt</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -996,7 +1338,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#notify():Unit" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1015,7 +1357,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1031,10 +1373,58 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#outgoingCount" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outgoingCount:chisel3.UInt"></a><a id="outgoingCount:UInt"></a>
+    </li><li name="chisel3.internal.HasId#parentModName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parentModName:String"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#outgoingCount:chisel3.UInt" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#parentModName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parentModName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#parentPathName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parentPathName:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#parentPathName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parentPathName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="chisel3.internal.HasId#pathName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pathName:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#pathName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pathName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
+    </li><li name="midas.widgets.ResetPulseBridgeHostIO#reset" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="reset:ResetPulseBridgeHostIO.this.ChannelType[chisel3.Bool]"></a><a id="reset:ChannelType[Bool]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#reset:ResetPulseBridgeHostIO.this.ChannelType[chisel3.Bool]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1043,62 +1433,30 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">outgoingCount</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
+        <span class="name">reset</span><span class="result">: <a href="#ChannelType[A&lt;:chisel3.Data]=chisel3.util.DecoupledIO[A]" class="extmbr" name="midas.widgets.ResetPulseBridgeHostIO.ChannelType">ChannelType</a>[<span class="extype" name="chisel3.Bool">Bool</span>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#outgoingPCISdat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outgoingPCISdat:midas.widgets.BRAMQueue[chisel3.UInt]"></a><a id="outgoingPCISdat:BRAMQueue[UInt]"></a>
+      
+    </li><li name="chisel3.internal.HasId#suggestName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="suggestName(seed:=&gt;String):HasId.this.type"></a><a id="suggestName(⇒String):ResetPulseBridgeHostIO.this.type"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#outgoingPCISdat:midas.widgets.BRAMQueue[chisel3.UInt]" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#suggestName(seed:=&gt;String):HasId.this.type" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">outgoingPCISdat</span><span class="result">: <a href="BRAMQueue.html" class="extype" name="midas.widgets.BRAMQueue">BRAMQueue</a>[<span class="extype" name="chisel3.UInt">UInt</span>]</span>
+        <span class="name">suggestName</span><span class="params">(<span name="seed">seed: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="midas.widgets.ResetPulseBridgeHostIO">ResetPulseBridgeHostIO</a>.this.type</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#readBeatCounter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="readBeatCounter:chisel3.UInt"></a><a id="readBeatCounter:UInt"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#readBeatCounter:chisel3.UInt" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">readBeatCounter</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#readHelper" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="readHelper:freechips.rocketchip.util.DecoupledHelper"></a><a id="readHelper:DecoupledHelper"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#readHelper:freechips.rocketchip.util.DecoupledHelper" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">readHelper</span><span class="result">: <span class="extype" name="freechips.rocketchip.util.DecoupledHelper">DecoupledHelper</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1111,10 +1469,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
+    </li><li name="midas.widgets.ResetPulseBridgeHostIO#targetClockRef" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="targetClockRef:chisel3.Clock"></a><a id="targetClockRef:Clock"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#toString():String" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#targetClockRef:chisel3.Clock" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1123,30 +1481,94 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">targetClockRef</span><span class="result">: <span class="extype" name="chisel3.Clock">Clock</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#w_queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="w_queue:chisel3.util.DecoupledIO[junctions.NastiWriteDataChannel]"></a><a id="w_queue:DecoupledIO[NastiWriteDataChannel]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.ResetPulseBridgeHostIO">ResetPulseBridgeHostIO</a> → <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></dd></dl></div>
+    </li><li name="chisel3.internal.NamedComponent#toAbsoluteTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toAbsoluteTarget:firrtl.annotations.ReferenceTarget"></a><a id="toAbsoluteTarget:ReferenceTarget"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#w_queue:chisel3.util.DecoupledIO[junctions.NastiWriteDataChannel]" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#toAbsoluteTarget:firrtl.annotations.ReferenceTarget" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toAbsoluteTarget</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
+    </li><li name="chisel3.internal.NamedComponent#toNamed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toNamed:firrtl.annotations.ComponentName"></a><a id="toNamed:ComponentName"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#toNamed:firrtl.annotations.ComponentName" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toNamed</span><span class="result">: <span class="extype" name="firrtl.annotations.ComponentName">ComponentName</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
+    </li><li name="chisel3.Bundle#toPrintable" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toPrintable:chisel3.Printable"></a><a id="toPrintable:Printable"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#toPrintable:chisel3.Printable" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">w_queue</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../../junctions/NastiWriteDataChannel.html" class="extype" name="junctions.NastiWriteDataChannel">NastiWriteDataChannel</a>]</span>
+        <span class="name">toPrintable</span><span class="result">: <span class="extype" name="chisel3.Printable">Printable</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bundle → Record → Data</dd></dl></div>
+    </li><li name="chisel3.Record#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Record → AnyRef → Any</dd></dl></div>
+    </li><li name="chisel3.internal.NamedComponent#toTarget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toTarget:firrtl.annotations.ReferenceTarget"></a><a id="toTarget:ReferenceTarget"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#toTarget:firrtl.annotations.ReferenceTarget" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toTarget</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#wait():Unit" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1168,7 +1590,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1190,7 +1612,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1211,54 +1633,74 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#writeBeatCounter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="writeBeatCounter:chisel3.UInt"></a><a id="writeBeatCounter:UInt"></a>
+    </li><li name="chisel3.Data#widthOption" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="widthOption:Option[Int]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#writeBeatCounter:chisel3.UInt" title="Permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#widthOption:Option[Int]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeBeatCounter</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
+        <span class="name">widthOption</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAFromHostCPU#writeHelper" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="writeHelper:freechips.rocketchip.util.DecoupledHelper"></a><a id="writeHelper:DecoupledHelper"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BidirectionalDMA.html#writeHelper:freechips.rocketchip.util.DecoupledHelper" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">writeHelper</span><span class="result">: <span class="extype" name="freechips.rocketchip.util.DecoupledHelper">DecoupledHelper</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd></dl></div>
     </li>
               </ol>
             </div>
 
         
 
-        
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="chisel3.Data#litArg" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="litArg():Option[chisel3.internal.firrtl.LitArg]"></a><a id="litArg():Option[LitArg]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html#litArg():Option[chisel3.internal.firrtl.LitArg]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 3.2) litArg is deprecated, use litOption or litTo*Option">litArg</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="chisel3.internal.firrtl.LitArg">LitArg</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 3.2)</i> litArg is deprecated, use litOption or litTo*Option</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.widgets.DMAToHostCPU">
-              <h3>Inherited from <a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></h3>
-            </div><div class="parent" name="midas.widgets.DMAFromHostCPU">
-              <h3>Inherited from <a href="DMAFromHostCPU.html" class="extype" name="midas.widgets.DMAFromHostCPU">DMAFromHostCPU</a></h3>
-            </div><div class="parent" name="midas.widgets.HasDMA">
-              <h3>Inherited from <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></h3>
+        <div class="parent" name="midas.widgets.ChannelizedHostPortIO">
+              <h3>Inherited from <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></h3>
+            </div><div class="parent" name="midas.widgets.HasChannels">
+              <h3>Inherited from <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a></h3>
+            </div><div class="parent" name="chisel3.Bundle">
+              <h3>Inherited from <span class="extype" name="chisel3.Bundle">Bundle</span></h3>
+            </div><div class="parent" name="chisel3.Record">
+              <h3>Inherited from <span class="extype" name="chisel3.Record">Record</span></h3>
+            </div><div class="parent" name="chisel3.Aggregate">
+              <h3>Inherited from <span class="extype" name="chisel3.Aggregate">Aggregate</span></h3>
+            </div><div class="parent" name="chisel3.Data">
+              <h3>Inherited from <span class="extype" name="chisel3.Data">Data</span></h3>
+            </div><div class="parent" name="chisel3.SourceInfoDoc">
+              <h3>Inherited from <span class="extype" name="chisel3.SourceInfoDoc">SourceInfoDoc</span></h3>
+            </div><div class="parent" name="chisel3.internal.NamedComponent">
+              <h3>Inherited from <span class="extype" name="chisel3.internal.NamedComponent">NamedComponent</span></h3>
+            </div><div class="parent" name="chisel3.internal.HasId">
+              <h3>Inherited from <span class="extype" name="chisel3.internal.HasId">HasId</span></h3>
+            </div><div class="parent" name="chisel3.internal.InstanceId">
+              <h3>Inherited from <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

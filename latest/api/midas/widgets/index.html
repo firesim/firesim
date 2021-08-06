@@ -522,6 +522,26 @@
                         <a class="class" href="RegisterEntry.html" title=""></a>
                         <a href="RegisterEntry.html" title="">RegisterEntry</a>
                       </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ResetPulseBridge.html" title=""></a>
+                        <a href="ResetPulseBridge.html" title="">ResetPulseBridge</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ResetPulseBridgeHostIO.html" title="The host-side interface."></a>
+                        <a href="ResetPulseBridgeHostIO.html" title="The host-side interface.">ResetPulseBridgeHostIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ResetPulseBridgeModule.html" title=""></a>
+                        <a href="ResetPulseBridgeModule.html" title="">ResetPulseBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ResetPulseBridgeParameters.html" title="The ResetPulseBridge drives a bool pulse from time zero for a runtime-configurable number of cycles."></a>
+                        <a href="ResetPulseBridgeParameters.html" title="The ResetPulseBridge drives a bool pulse from time zero for a runtime-configurable number of cycles.">ResetPulseBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ResetPulseBridgeTargetIO.html" title=""></a>
+                        <a href="ResetPulseBridgeTargetIO.html" title="">ResetPulseBridgeTargetIO</a>
+                      </li><li class="current-entities indented2">
                         <a class="object" href="SatUpDownCounter$.html" title=""></a>
                         <a class="class" href="SatUpDownCounter.html" title="A saturating up down counter."></a>
                         <a href="SatUpDownCounter.html" title="A saturating up down counter.">SatUpDownCounter</a>
@@ -1785,6 +1805,93 @@ like printf synthesis, are expressed in terms of this base clock.
       </span>
       <span class="symbol">
         <a title="" href="RegisterEntry.html"><span class="name">RegisterEntry</span></a><span class="params">(<span name="node">node: <span class="extype" name="chisel3.Data">Data</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="permissions">permissions: <a href="Permissions.html" class="extype" name="midas.widgets.Permissions">Permissions</a></span>)</span><span class="result"> extends <a href="MCRMapEntry.html" class="extype" name="midas.widgets.MCRMapEntry">MCRMapEntry</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.ResetPulseBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResetPulseBridgeextendsBlackBoxwithBridge[midas.widgets.ResetPulseBridgeHostIO,midas.widgets.ResetPulseBridgeModule]"></a><a id="ResetPulseBridge:ResetPulseBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridge.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ResetPulseBridge.html"><span class="name">ResetPulseBridge</span></a><span class="result"> extends <span class="extype" name="chisel3.BlackBox">BlackBox</span> with <a href="Bridge.html" class="extype" name="midas.widgets.Bridge">Bridge</a>[<a href="ResetPulseBridgeHostIO.html" class="extype" name="midas.widgets.ResetPulseBridgeHostIO">ResetPulseBridgeHostIO</a>, <a href="ResetPulseBridgeModule.html" class="extype" name="midas.widgets.ResetPulseBridgeModule">ResetPulseBridgeModule</a>]</span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.ResetPulseBridgeHostIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ResetPulseBridgeHostIOextendsBundlewithChannelizedHostPortIO"></a><a id="ResetPulseBridgeHostIO:ResetPulseBridgeHostIO"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeHostIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="The host-side interface." href="ResetPulseBridgeHostIO.html"><span class="name">ResetPulseBridgeHostIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">The host-side interface.</p><div class="fullcomment"><div class="comment cmt"><p>The host-side interface. This bridge has single channel with a bool
+payload. <a href="ChannelizedHostPortIO.html#OutputChannel[A&lt;:chisel3.Data](field:A):ChannelizedHostPortIO.this.ChannelType[A]" class="extmbr" name="midas.widgets.ChannelizedHostPortIO#OutputChannel">ChannelizedHostPortIO.OutputChannel</a> associates the reset on
+the target side IF with a channel named reset on the host-side
+BridgeModule (determined by reflection, since we're extending Bundle).
+</p></div></div>
+    </li><li name="midas.widgets.ResetPulseBridgeModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResetPulseBridgeModuleextendsBridgeModule[midas.widgets.ResetPulseBridgeHostIO]"></a><a id="ResetPulseBridgeModule:ResetPulseBridgeModule"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeModule.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ResetPulseBridgeModule.html"><span class="name">ResetPulseBridgeModule</span></a><span class="result"> extends <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="ResetPulseBridgeHostIO.html" class="extype" name="midas.widgets.ResetPulseBridgeHostIO">ResetPulseBridgeHostIO</a>]</span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.ResetPulseBridgeParameters" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ResetPulseBridgeParametersextendsProductwithSerializable"></a><a id="ResetPulseBridgeParameters:ResetPulseBridgeParameters"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeParameters.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="The ResetPulseBridge drives a bool pulse from time zero for a runtime-configurable number of cycles." href="ResetPulseBridgeParameters.html"><span class="name">ResetPulseBridgeParameters</span></a><span class="params">(<span name="activeHigh">activeHigh: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">true</span></span>, <span name="defaultPulseLength">defaultPulseLength: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">50</span></span>, <span name="maxPulseLength">maxPulseLength: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">1023</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">The <a href="ResetPulseBridge.html" class="extype" name="midas.widgets.ResetPulseBridge">ResetPulseBridge</a> drives a bool pulse from time zero for a
+runtime-configurable number of cycles.</p><div class="fullcomment"><div class="comment cmt"><p>The <a href="ResetPulseBridge.html" class="extype" name="midas.widgets.ResetPulseBridge">ResetPulseBridge</a> drives a bool pulse from time zero for a
+runtime-configurable number of cycles. These are its elaboration-time parameters.
+</p></div><dl class="paramcmts block"><dt class="param">activeHigh</dt><dd class="cmt"><p>When true, reset is initially set at time 0.</p></dd><dt class="param">defaultPulseLength</dt><dd class="cmt"><p>The number of cycles the reset is held at the time 0 value.</p></dd><dt class="param">maxPulseLength</dt><dd class="cmt"><p>The maximum runtime-configurable pulse length that the bridge will support.</p></dd></dl></div>
+    </li><li name="midas.widgets.ResetPulseBridgeTargetIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResetPulseBridgeTargetIOextendsBundle"></a><a id="ResetPulseBridgeTargetIO:ResetPulseBridgeTargetIO"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ResetPulseBridgeTargetIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ResetPulseBridgeTargetIO.html"><span class="name">ResetPulseBridgeTargetIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span></span>
       </span>
       
       
