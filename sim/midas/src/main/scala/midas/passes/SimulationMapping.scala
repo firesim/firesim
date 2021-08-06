@@ -24,39 +24,39 @@ import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.core._
 import midas.platform.PlatformShim
+import midas.stage.{OutputFileBuilder, GoldenGateOutputFileAnnotation}
 
 private[passes] class SimulationMapping(targetName: String) extends firrtl.Transform {
   def inputForm = LowForm
   def outputForm = HighForm
   override def name = "[Golden Gate] Simulation Mapping"
 
-  private def dumpHeader(c: PlatformShim,  dir: File) {
+  private def generateHeaderAnnos(c: PlatformShim): Seq[GoldenGateOutputFileAnnotation] = {
     def vMacro(arg: (String, Long)): String = s"`define ${arg._1} ${arg._2}\n"
 
-    val csb = new StringBuilder
+    val csb = new OutputFileBuilder(
+      """// Golden Gate-generated Driver Header
+        |// This contains target-specific preprocessor macro definitions,
+        |// and encodes all required bridge metadata to instantiate bridge drivers.
+        |""".stripMargin,
+      fileSuffix = ".const.h")
     csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
     csb append "#define __%s_H\n".format(targetName.toUpperCase)
-    c.genHeader(csb, targetName)
+    c.genHeader(csb.getBuilder, targetName)
     csb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
-    val vsb = new StringBuilder
+    val vsb = new OutputFileBuilder(
+      """// Golden Gate-generated Verilog Header
+        |// This file encodes variable width fields used in MIDAS-level simulation
+        |// and is not used in FPGA compilation flows.
+        |""".stripMargin,
+      fileSuffix = ".const.vh")
+
     vsb append "`ifndef __%s_H\n".format(targetName.toUpperCase)
     vsb append "`define __%s_H\n".format(targetName.toUpperCase)
-    c.top.module.headerConsts map vMacro addString vsb
+    c.top.module.headerConsts map vMacro foreach vsb.append
     vsb append "`endif  // __%s_H\n".format(targetName.toUpperCase)
-
-    val ch = new FileWriter(new File(dir, s"${targetName}-const.h"))
-    val vh = new FileWriter(new File(dir, s"${targetName}-const.vh"))
-
-    try {
-      ch write csb.result
-      vh write vsb.result
-    } finally {
-      ch.close
-      vh.close
-      csb.clear
-      vsb.clear
-    }
+    Seq(csb.toAnnotation, vsb.toAnnotation)
   }
 
   // Note: this only runs on the SimulationWrapper Module
@@ -94,27 +94,14 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
 
     // Generate the encapsulating simulator RTL
     lazy val shim = PlatformShim(innerState.annotations, portTypeMap)
-    // This will include runtime arguments that we must filter out to avoid
-    // polluting the downstream tranforms
-    val allChiselAnnos = (new chisel3.stage.ChiselStage).transform(
-      Seq(
-        ChiselGeneratorAnnotation(() => LazyModule(shim).module),
-        NoRunFirrtlCompilerAnnotation
-      )
-    )
-    val chirrtl = allChiselAnnos.collectFirst { case a: FirrtlCircuitAnnotation => a }.get.circuit
-    val annos = allChiselAnnos.collectFirst {
-      case chisel3.stage.ChiselCircuitAnnotation(a) =>
-        PreLinkRenamingAnnotation(Namespace(innerCircuit)) +:
-        // Grab only annotations emitted by the module under elaboration
-        a.annotations.map(_.toFirrtl)
-    }.get
+    val (chirrtl, elaboratedAnnos) = ElaborateChiselSubCircuit(LazyModule(shim).module)
 
     val transforms = Seq(
       Dependency[Fame1Instances],
       Dependency(PreLinkRenaming))
+    val outerAnnos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: elaboratedAnnos
     val outerState = new Compiler(Forms.LowForm ++ transforms)
-      .execute(CircuitState(chirrtl, ChirrtlForm, annos))
+      .execute(CircuitState(chirrtl, ChirrtlForm, outerAnnos))
 
     val outerCircuit = outerState.circuit
     val targetType = module_type((innerCircuit.modules find (_.name == innerCircuit.main)).get)
@@ -123,9 +110,9 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     }).getOrElse(throw new Exception("TargetBoxAnnotation not found or annotated top module!"))
     val targetBoxParent = targetBoxInstTarget.encapsulatingModule
     val targetBoxInst = targetBoxInstTarget.instance
-    val modules = innerCircuit.modules ++ (outerCircuit.modules flatMap
-      init(innerCircuit.info, innerCircuit.main, targetType, targetBoxParent, targetBoxInst))
-
+    val modules = (outerCircuit.modules flatMap
+      init(innerCircuit.info, innerCircuit.main, targetType, targetBoxParent, targetBoxInst)) ++
+      innerCircuit.modules
     // Rename the annotations from the inner module, which are using an obsolete CircuitName
     val renameMap = RenameMap(
       Map(CircuitName(innerCircuit.main) -> Seq(CircuitName(outerCircuit.main))))
@@ -142,8 +129,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
       renames     = Some(renameMap)
     )
     writeState(linkedState, "post-sim-mapping.fir")
-    dumpHeader(shim, p(OutputDir))
-    linkedState
+    linkedState.copy(annotations = linkedState.annotations ++ generateHeaderAnnos(shim))
   }
 }
 

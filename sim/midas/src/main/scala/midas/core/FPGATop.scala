@@ -257,7 +257,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   }
 
   outer.genCtrlIO(ctrl)
-  outer.printHostDRAMSummary
+  outer.printHostDRAMSummary()
+  outer.emitDefaultPlusArgsFile()
 
   val addrConsts = dmaAddrMap.map {
     case AddrMapEntry(name, MemRange(addr, _, _)) =>

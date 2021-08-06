@@ -19,6 +19,9 @@ name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
+# This is prefix is currently assumed by the fpga build flow
+BASE_FILE_NAME := FireSim-generated
+
 ##################
 # RTL Generation #
 ##################
@@ -26,10 +29,6 @@ long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
-VERILOG := $(GENERATED_DIR)/FPGATop.v
-HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
-
-CONF_NAME ?= runtime.conf
 firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
