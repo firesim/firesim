@@ -10,6 +10,7 @@
 #include "bridges/tracerv.h"
 #include "bridges/groundtest.h"
 #include "bridges/autocounter.h"
+#include "bridges/reset_pulse.h"
 #include "bridges/dromajo.h"
 
 // Golden Gate provided bridge drivers
@@ -40,6 +41,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 
     add_bridge_driver(new heartbeat_t(this, args));
 
+    #ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
+    INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
+    #endif
 
 // DOC include start: UART Bridge Driver Registration
     // Here we instantiate our driver once for each bridge in the target

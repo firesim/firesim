@@ -79,6 +79,8 @@
 #include "PassthroughModels.h"
 #elif defined DESIGNNAME_PassthroughModelBridgeSource
 #include "PassthroughModels.h"
+#elif defined DESIGNNAME_ResetPulseBridgeTest
+#include "ResetPulseBridgeTest.h"
 #endif
 
 class dut_emul_t:
