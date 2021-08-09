@@ -115,8 +115,8 @@
                         <a href="" title="">AssertBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="AssertBundle.html" title=""></a>
-                        <a href="AssertBundle.html" title="">AssertBundle</a>
+                        <a class="class" href="AssertBridgeRecord.html" title=""></a>
+                        <a href="AssertBridgeRecord.html" title="">AssertBridgeRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="AutoCounterBridgeModule.html" title=""></a>
@@ -540,7 +540,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">AssertBridgeModule</span><span class="result"> extends <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<span class="extype" name="chisel3.UInt">UInt</span>]]</span>
+        <span class="name">AssertBridgeModule</span><span class="result"> extends <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="AssertBridgeRecord.html" class="extype" name="midas.widgets.AssertBridgeRecord">AssertBridgeRecord</a>]]</span>
       </span>
       </h4>
 
@@ -549,7 +549,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<span class="extype" name="chisel3.UInt">UInt</span>]], <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a>, <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="AssertBridgeRecord.html" class="extype" name="midas.widgets.AssertBridgeRecord">AssertBridgeRecord</a>]], <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a>, <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -596,9 +596,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.AssertBridgeModule#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(assertMessages:Seq[String])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AssertBridgeModule"></a><a id="&lt;init&gt;:AssertBridgeModule"></a>
+      <a id="&lt;init&gt;(assertPortName:String,resetPortName:String,assertMessages:Seq[String])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AssertBridgeModule"></a><a id="&lt;init&gt;:AssertBridgeModule"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AssertBridgeModule.html#&lt;init&gt;(assertMessages:Seq[String])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AssertBridgeModule" title="Permalink">
+      <a href="../../midas/widgets/AssertBridgeModule.html#&lt;init&gt;(assertPortName:String,resetPortName:String,assertMessages:Seq[String])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AssertBridgeModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -607,7 +607,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AssertBridgeModule</span><span class="params">(<span name="assertMessages">assertMessages: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
+        <span class="name">AssertBridgeModule</span><span class="params">(<span name="assertPortName">assertPortName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="resetPortName">resetPortName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="assertMessages">assertMessages: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
       </span>
       
       
@@ -1090,9 +1090,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="midas.widgets.AssertBridgeModule#module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[chisel3.UInt]]{valnumAsserts:Int;valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[chisel3.UInt];valresume:chisel3.Bool;valenable:chisel3.Bool;valcycles:chisel3.UInt;valq:chisel3.util.Queue[chisel3.UInt];valasserts:chisel3.UInt;valassertId:chisel3.UInt;valassertFire:chisel3.Bool;valstallN:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool}"></a><a id="module:BridgeModuleImp[HostPortIO[UInt]]{.../*13definitionsintyperefinement*/}"></a>
+      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.widgets.AssertBridgeRecord]]{valnumAsserts:Int;valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.widgets.AssertBridgeRecord];valresume:chisel3.Bool;valenable:chisel3.Bool;valcycles:chisel3.UInt;valq:chisel3.util.Queue[midas.widgets.AssertBridgeRecord];valasserts:chisel3.UInt;valunderGlobalReset:chisel3.Bool;valassertId:chisel3.UInt;valassertFire:chisel3.Bool;valstallN:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool}"></a><a id="module:BridgeModuleImp[HostPortIO[AssertBridgeRecord]]{.../*14definitionsintyperefinement*/}"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AssertBridgeModule.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[chisel3.UInt]]{valnumAsserts:Int;valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[chisel3.UInt];valresume:chisel3.Bool;valenable:chisel3.Bool;valcycles:chisel3.UInt;valq:chisel3.util.Queue[chisel3.UInt];valasserts:chisel3.UInt;valassertId:chisel3.UInt;valassertFire:chisel3.Bool;valstallN:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool}" title="Permalink">
+      <a href="../../midas/widgets/AssertBridgeModule.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[midas.widgets.AssertBridgeRecord]]{valnumAsserts:Int;valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[midas.widgets.AssertBridgeRecord];valresume:chisel3.Bool;valenable:chisel3.Bool;valcycles:chisel3.UInt;valq:chisel3.util.Queue[midas.widgets.AssertBridgeRecord];valasserts:chisel3.UInt;valunderGlobalReset:chisel3.Bool;valassertId:chisel3.UInt;valassertFire:chisel3.Bool;valstallN:chisel3.Bool;valtFireHelper:freechips.rocketchip.util.DecoupledHelper;valtargetFire:Chisel.Bool}" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1101,7 +1101,7 @@
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">module</span><span class="result">: <a href="BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<span class="extype" name="chisel3.UInt">UInt</span>]] { ... /* 13 definitions in type refinement */ }</span>
+        <span class="name">module</span><span class="result">: <a href="BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="AssertBridgeRecord.html" class="extype" name="midas.widgets.AssertBridgeRecord">AssertBridgeRecord</a>]] { ... /* 14 definitions in type refinement */ }</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.AssertBridgeModule">AssertBridgeModule</a> → <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a> → <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a> → LazyModule</dd></dl></div>
@@ -1526,7 +1526,7 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="midas.widgets.BridgeModule">
-              <h3>Inherited from <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<span class="extype" name="chisel3.UInt">UInt</span>]]</h3>
+              <h3>Inherited from <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="AssertBridgeRecord.html" class="extype" name="midas.widgets.AssertBridgeRecord">AssertBridgeRecord</a>]]</h3>
             </div><div class="parent" name="midas.widgets.Widget">
               <h3>Inherited from <a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></h3>
             </div><div class="parent" name="freechips.rocketchip.diplomacy.LazyModule">

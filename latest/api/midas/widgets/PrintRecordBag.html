@@ -115,8 +115,8 @@
                         <a href="AssertBridgeModule.html" title="">AssertBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="AssertBundle.html" title=""></a>
-                        <a href="AssertBundle.html" title="">AssertBundle</a>
+                        <a class="class" href="AssertBridgeRecord.html" title=""></a>
+                        <a href="AssertBridgeRecord.html" title="">AssertBridgeRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="AutoCounterBridgeModule.html" title=""></a>
@@ -596,9 +596,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.PrintRecordBag#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(printPorts:Seq[(firrtl.ir.Port,String)]):midas.widgets.PrintRecordBag"></a><a id="&lt;init&gt;:PrintRecordBag"></a>
+      <a id="&lt;init&gt;(resetPortName:String,printPorts:Seq[(firrtl.ir.Port,String)]):midas.widgets.PrintRecordBag"></a><a id="&lt;init&gt;:PrintRecordBag"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PrintRecordBag.html#&lt;init&gt;(printPorts:Seq[(firrtl.ir.Port,String)]):midas.widgets.PrintRecordBag" title="Permalink">
+      <a href="../../midas/widgets/PrintRecordBag.html#&lt;init&gt;(resetPortName:String,printPorts:Seq[(firrtl.ir.Port,String)]):midas.widgets.PrintRecordBag" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -607,7 +607,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PrintRecordBag</span><span class="params">(<span name="printPorts">printPorts: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="firrtl.ir.Port">Port</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>)</span>
+        <span class="name">PrintRecordBag</span><span class="params">(<span name="resetPortName">resetPortName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="printPorts">printPorts: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="firrtl.ir.Port">Port</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>)</span>
       </span>
       
       
@@ -934,9 +934,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Aggregate → Data</dd></dl></div>
     </li><li name="midas.widgets.PrintRecordBag#elements" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="elements:scala.collection.immutable.ListMap[String,midas.widgets.PrintRecord]"></a><a id="elements:ListMap[String,PrintRecord]"></a>
+      <a id="elements:scala.collection.immutable.ListMap[String,chisel3.Data]"></a><a id="elements:ListMap[String,Data]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PrintRecordBag.html#elements:scala.collection.immutable.ListMap[String,midas.widgets.PrintRecord]" title="Permalink">
+      <a href="../../midas/widgets/PrintRecordBag.html#elements:scala.collection.immutable.ListMap[String,chisel3.Data]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -945,7 +945,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <a href="PrintRecord.html" class="extype" name="midas.widgets.PrintRecord">PrintRecord</a>]</span>
+        <span class="name">elements</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.Data">Data</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.PrintRecordBag">PrintRecordBag</a> → Record</dd></dl></div>
@@ -1300,10 +1300,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId → InstanceId</dd></dl></div>
-    </li><li name="midas.widgets.PrintRecordBag#ports" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ports:Seq[(String,midas.widgets.PrintRecord)]"></a><a id="ports:Seq[(String,PrintRecord)]"></a>
+    </li><li name="midas.widgets.PrintRecordBag#printRecords" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="printRecords:Seq[(String,midas.widgets.PrintRecord)]"></a><a id="printRecords:Seq[(String,PrintRecord)]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PrintRecordBag.html#ports:Seq[(String,midas.widgets.PrintRecord)]" title="Permalink">
+      <a href="../../midas/widgets/PrintRecordBag.html#printRecords:Seq[(String,midas.widgets.PrintRecord)]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1312,7 +1312,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">ports</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="PrintRecord.html" class="extype" name="midas.widgets.PrintRecord">PrintRecord</a>)]</span>
+        <span class="name">printRecords</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="PrintRecord.html" class="extype" name="midas.widgets.PrintRecord">PrintRecord</a>)]</span>
       </span>
       
       
@@ -1428,6 +1428,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
+    </li><li name="midas.widgets.PrintRecordBag#underGlobalReset" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="underGlobalReset:chisel3.Bool"></a><a id="underGlobalReset:Bool"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PrintRecordBag.html#underGlobalReset:chisel3.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">underGlobalReset</span><span class="result">: <span class="extype" name="chisel3.Bool">Bool</span></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">

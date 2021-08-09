@@ -238,9 +238,21 @@
                         <a class="class" href="FpgaDebugAnnotation.html" title=""></a>
                         <a href="FpgaDebugAnnotation.html" title="">FpgaDebugAnnotation</a>
                       </li><li class="current-entities indented2">
+                        <a class="object" href="GlobalResetCondition$.html" title=""></a>
+                        <a class="class" href="GlobalResetCondition.html" title="Masks off assertions, printfs, and autocounter events when the target bool is deasserted."></a>
+                        <a href="GlobalResetCondition.html" title="Masks off assertions, printfs, and autocounter events when the target bool is deasserted.">GlobalResetCondition</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="GlobalResetConditionSink.html" title="Indicates that this boolean target should be driven by the globalResetCondition if it is available."></a>
+                        <a href="GlobalResetConditionSink.html" title="Indicates that this boolean target should be driven by the globalResetCondition if it is available.">GlobalResetConditionSink</a>
+                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="MemModelAnnotation.html" title="This labels a target Mem so that it is extracted and replaced with a separate model."></a>
                         <a href="MemModelAnnotation.html" title="This labels a target Mem so that it is extracted and replaced with a separate model.">MemModelAnnotation</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PassthroughBlocker$.html" title=""></a>
+                        <a href="PassthroughBlocker$.html" title="">PassthroughBlocker</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="PerfCounter$.html" title=""></a>
@@ -554,6 +566,50 @@ instead.</p></div></div>
       </span>
       
       
+    </li><li name="midas.targetutils.GlobalResetCondition" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GlobalResetConditionextendsSingleTargetAnnotation[firrtl.annotations.ReferenceTarget]withDontTouchAllTargetswithProductwithSerializable"></a><a id="GlobalResetCondition:GlobalResetCondition"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/GlobalResetCondition.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Masks off assertions, printfs, and autocounter events when the target bool is deasserted." href="GlobalResetCondition.html"><span class="name">GlobalResetCondition</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>] with <span class="extype" name="firrtl.transforms.DontTouchAllTargets">DontTouchAllTargets</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Masks off assertions, printfs, and autocounter events when the target bool is deasserted.</p><div class="fullcomment"><div class="comment cmt"><p>Masks off assertions, printfs, and autocounter events when the target bool is deasserted.</p><p>Users typically wish to disable many forms instrumentation (e.g.,
+synthesized assertions and printfs, autocounters) while the target is
+under reset. By default, most of FireSim's instrumentations features mask
+off events using a module-local reset, generally Chisel's implicit reset.
+However, in some cases the module-local reset may not be asserted at the start of a
+reset sequence, leading to spurious assertion fires. This annotation
+provides a coarse-grained means to globally mask off these events until the
+target is sufficiently far in reset.</p><p>Note, while it is possible to use this signal as a replacement for
+FireSim's trigger system, it is intended to support this time-zero reset
+case, and has different timing semantics.
+See: https://docs.fires.im/en/latest/Golden-Gate/Triggers.html
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The boolean enable</p></dd></dl></div>
+    </li><li name="midas.targetutils.GlobalResetConditionSink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GlobalResetConditionSinkextendsSingleTargetAnnotation[firrtl.annotations.ReferenceTarget]withDontTouchAllTargetswithProductwithSerializable"></a><a id="GlobalResetConditionSink:GlobalResetConditionSink"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/GlobalResetConditionSink.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Indicates that this boolean target should be driven by the globalResetCondition if it is available." href="GlobalResetConditionSink.html"><span class="name">GlobalResetConditionSink</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>] with <span class="extype" name="firrtl.transforms.DontTouchAllTargets">DontTouchAllTargets</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Indicates that this boolean target should be driven by the
+globalResetCondition if it is available.</p>
     </li><li name="midas.targetutils.MemModelAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="MemModelAnnotation[T&lt;:chisel3.Data]extendsChiselAnnotationwithProductwithSerializable"></a><a id="MemModelAnnotation[T&lt;:Data]:MemModelAnnotation[T]"></a>
       <span class="permalink">
@@ -639,6 +695,38 @@ instead.</p></div></div>
       </span>
       <span class="symbol">
         <a title="" href="FpgaDebug$.html"><span class="name">FpgaDebug</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.GlobalResetCondition" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GlobalResetCondition"></a><a id="GlobalResetCondition:GlobalResetCondition"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/GlobalResetCondition$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="GlobalResetCondition$.html"><span class="name">GlobalResetCondition</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.PassthroughBlocker" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PassthroughBlocker"></a><a id="PassthroughBlocker:PassthroughBlocker"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/PassthroughBlocker$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="PassthroughBlocker$.html"><span class="name">PassthroughBlocker</span></a>
       </span>
       
       
