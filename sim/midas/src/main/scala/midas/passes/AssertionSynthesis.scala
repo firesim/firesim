@@ -9,17 +9,17 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
-import firrtl.Utils.{zero, to_flip}
+import firrtl.Utils.{zero, to_flip, BoolType}
 
 import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
-import midas.widgets.{BridgeIOAnnotation, AssertBundle, AssertBridgeModule}
+import midas.widgets.{BridgeIOAnnotation, AssertBridgeRecord, AssertBridgeModule}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
-import midas.targetutils.ExcludeInstanceAssertsAnnotation
+import midas.targetutils.{ExcludeInstanceAssertsAnnotation, GlobalResetConditionSink}
 
-private[passes] class AssertPass extends firrtl.Transform {
+private[passes] class AssertionSynthesis extends firrtl.Transform {
   def inputForm = LowForm
   def outputForm = HighForm
   override def name = "[Golden Gate] Assertion Synthesis"
@@ -207,28 +207,38 @@ private[passes] class AssertPass extends firrtl.Transform {
 
       // Step 5b: Generate unique ports for each clock
       for ((clockRT, asserts) <- groupedAsserts) {
-        val portName = namespace.newName(s"midasAsserts_${clockRT.ref}")
+        val assertPortName = namespace.newName(s"midasAsserts_${clockRT.ref}_asserts")
+        val resetPortName = namespace.newName(s"midasAsserts_${clockRT.ref}_globalResetCondition")
         val clockPortName = namespace.newName(s"midasAsserts_${clockRT.ref}_clock")
         val tpe = UIntType(IntWidth(asserts.size))
-        val port = Port(NoInfo, portName, Output, tpe)
+        val port = Port(NoInfo, assertPortName, Output, tpe)
+        val resetPort = Port(NoInfo, resetPortName, Output, BoolType)
         val clockPort = Port(NoInfo, clockPortName, Output, ClockType)
-        ports ++= Seq(port, clockPort)
+        ports ++= Seq(port, clockPort, resetPort)
         val bitExtracts = asserts.map(idx => DoPrim(PrimOps.Bits, Seq(WRef(allAssertsWire)), Seq(idx, idx), UIntType(IntWidth(1))))
         val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts.reverse))
         val connectClock   = Connect(NoInfo, WRef(clockPort), WRef(clockRT.ref))
-        stmts ++= Seq(connectClock, connectAsserts)
+        // In the event no GlobalResetCondition is provided, tie this off
+        val connectReset   = Connect(NoInfo, WRef(resetPort), zero)
+
+        stmts ++= Seq(connectClock, connectAsserts, connectReset)
 
         // Generate the bridge Annotation
-        val portRT = ModuleTarget(c.main, c.main).ref(portName)
-        val clockPortRT = ModuleTarget(c.main, c.main).ref(clockPortName)
-        val fcca = FAMEChannelConnectionAnnotation.source(portName, WireChannel, Some(clockPortRT), Seq(portRT))
+        val portRT = topMT.ref(assertPortName)
+        val clockPortRT = topMT.ref(clockPortName)
+        val assertFCCA = FAMEChannelConnectionAnnotation.source(assertPortName, WireChannel, Some(clockPortRT), Seq(portRT))
+
+        val resetPortRT = topMT.ref(resetPortName)
+        val resetFCCA = FAMEChannelConnectionAnnotation.source(resetPortName, WireChannel, Some(clockPortRT), Seq(resetPortRT))
+        val resetConditionAnno = GlobalResetConditionSink(resetPortRT)
+
         val assertMessages = asserts.map(formattedMessages(_))
         val bridgeAnno = BridgeIOAnnotation(
           target = portRT,
-          widget = Some((p: Parameters) => new AssertBridgeModule(assertMessages)(p)),
-          channelMapping = Map("" -> portName)
+          widget = (p: Parameters) => new AssertBridgeModule(assertPortName, resetPortName, assertMessages)(p),
+          channelNames = Seq(resetPortName, assertPortName)
         )
-        assertAnnos ++= Seq(fcca, bridgeAnno)
+        assertAnnos ++= Seq(resetConditionAnno, assertFCCA, resetFCCA, bridgeAnno)
       }
       val wiredTopModule = topModule.copy(ports = topModule.ports ++ ports,
                                           body = Block(topModule.body +: stmts.toSeq))

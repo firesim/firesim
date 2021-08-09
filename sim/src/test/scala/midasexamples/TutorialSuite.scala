@@ -66,11 +66,17 @@ abstract class TutorialSuite(
   /**
     * Extracts all lines in a file that begin with a specific prefix, removing
     * extra whitespace between the prefix and the remainder of the line
+    *
+    * @param filename Input file
+    * @param prefix The per-line prefix to filter with
+    * @param linesToDrop Some number of matched lines to be removed
+    * @param headerLines An initial number of lines to drop before filtering.
+    *        Assertions, Printf output have a single line header.
+    *        MLsim stdout has some unused output, so set this to 1 by default
+    *
     */
-  def extractLines(filename: File, prefix: String, linesToDrop: Int = 0): Seq[String] = {
-    // Drop the first line from all files as it is either a header in the synthesized file,
-    // or some unrelated output from verlator
-    val lines = Source.fromFile(filename).getLines.toList.drop(1)
+  def extractLines(filename: File, prefix: String, linesToDrop: Int = 0, headerLines: Int = 1): Seq[String] = {
+    val lines = Source.fromFile(filename).getLines.toList.drop(headerLines)
     lines.filter(_.startsWith(prefix))
          .dropRight(linesToDrop)
          .map(_.stripPrefix(prefix).replaceAll(" +", " "))
@@ -97,6 +103,15 @@ abstract class TutorialSuite(
       val verilatedOutput = extractLines(verilatedLogFile, stdoutPrefix).sorted
       val synthPrintOutput = extractLines(synthLogFile, synthPrefix, synthLinesToDrop).sorted
       diffLines(verilatedOutput, synthPrintOutput)
+    }
+  }
+
+  // Checks that a bridge generated log in ${genDir}/${synthLog} is empty
+  def assertSynthesizedLogEmpty(synthLog: String) {
+    s"${synthLog}" should "be empty" in {
+      val synthLogFile = new File(genDir, s"/${synthLog}")
+      val lines = extractLines(synthLogFile, prefix = "")
+      assert(lines.isEmpty)
     }
   }
 
@@ -165,13 +180,28 @@ class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
     simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
   diffSynthesizedLog("AUTOCOUNTERFILE0", stdoutPrefix = "AUTOCOUNTER_PRINT ", synthPrefix = "")
-
 }
 class AutoCounterPrintfF1Test extends TutorialSuite("AutoCounterPrintfModule",
     simulationArgs = Seq("+print-file=synthprinttest.out"),
     platformConfigs = "AutoCounterPrintf_HostDebugFeatures_DefaultF1Config") {
   diffSynthesizedLog("synthprinttest.out0", stdoutPrefix = "SYNTHESIZED_PRINT CYCLE", synthPrefix = "CYCLE")
 }
+class AutoCounterGlobalResetConditionF1Test extends TutorialSuite("AutoCounterGlobalResetCondition",
+    simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename=AUTOCOUNTERFILE")) {
+  def assertCountsAreZero(filename: String) {
+    s"Counts reported in ${filename}" should "always be zero" in {
+      val log = new File(genDir, s"/${filename}")
+      val lines = extractLines(log, "PerfCounter ")
+      val perfCounterRegex = raw".*: (\d*)$$".r
+      lines.foreach {
+        case perfCounterRegex(value) => assert(value.toInt == 0)
+      }
+    }
+  }
+  assertCountsAreZero("AUTOCOUNTERFILE0")
+  assertCountsAreZero("AUTOCOUNTERFILE1")
+}
+
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedLog("synthprinttest.out0")
@@ -179,6 +209,13 @@ class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedLog("synthprinttest.out0")
+}
+
+class PrintfGlobalResetConditionTest extends TutorialSuite("PrintfGlobalResetCondition",
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  // The log should be empty.
+  assertSynthesizedLogEmpty("synthprinttest.out0")
+  assertSynthesizedLogEmpty("synthprinttest.out1")
 }
 
 class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int) extends TutorialSuite(
@@ -224,6 +261,8 @@ class AssertTortureTest extends TutorialSuite("AssertTorture") with AssertTortur
   // TODO: Create a target-parameters instance we can inspect here
   Seq.tabulate(4)(i => checkClockDomainAssertionOrder(i))
 }
+
+class AssertGlobalResetConditionF1Test extends TutorialSuite("AssertGlobalResetCondition")
 
 class MulticlockPrintF1Test extends TutorialSuite("MulticlockPrintfModule",
   simulationArgs = Seq("+print-file=synthprinttest.out",
@@ -313,20 +352,23 @@ class PrintfSynthesisCITests extends Suites(
   new NarrowPrintfModuleF1Test,
   new MulticlockPrintF1Test,
   new PrintfCycleBoundsF1Test,
-  new TriggerPredicatedPrintfF1Test
+  new TriggerPredicatedPrintfF1Test,
+  new PrintfGlobalResetConditionTest,
 )
 
 class AssertionSynthesisCITests extends Suites(
   new AssertModuleF1Test,
   new MulticlockAssertF1Test,
-  new AssertTortureTest
+  new AssertTortureTest,
+  new AssertGlobalResetConditionF1Test,
 )
 
 class AutoCounterCITests extends Suites(
   new AutoCounterModuleF1Test,
   new AutoCounterCoverModuleF1Test,
   new AutoCounterPrintfF1Test,
-  new MulticlockAutoCounterF1Test
+  new MulticlockAutoCounterF1Test,
+  new AutoCounterGlobalResetConditionF1Test,
 )
 
 class GoldenGateMiscCITests extends Suites(

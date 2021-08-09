@@ -38,25 +38,26 @@ class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) exte
 }
 
 
-class PrintRecordBag(printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
-  val ports: Seq[(String, PrintRecord)] = printPorts.collect({
+class PrintRecordBag(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, String)]) extends Record {
+  val underGlobalReset = Input(Bool())
+  val printRecords: Seq[(String, PrintRecord)] = printPorts.collect({
     case (firrtl.ir.Port(_, name, _, tpe @ firrtl.ir.BundleType(_)), formatString) =>
-      name -> new PrintRecord(tpe, formatString)
+      name -> Input(new PrintRecord(tpe, formatString))
   })
 
-  val elements = ListMap(ports:_*)
-  override def cloneType = new PrintRecordBag(printPorts).asInstanceOf[this.type]
+  val elements = ListMap(((resetPortName -> underGlobalReset) +: printRecords):_*)
+  override def cloneType = new PrintRecordBag(resetPortName, printPorts).asInstanceOf[this.type]
 
   // Generates a Bool indicating if at least one Printf has it's enable set on this cycle
-  def hasEnabledPrint(): Bool = elements.map(_._2.enable).foldLeft(false.B)(_ || _)
+  def hasEnabledPrint(): Bool = printRecords.map(_._2.enable).foldLeft(false.B)(_ || _) && !underGlobalReset
 }
 
-class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
+class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
     extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) {
 
   lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
     val io = IO(new WidgetIO())
-    val hPort = IO(HostPort(Flipped(new PrintRecordBag(printPorts))))
+    val hPort = IO(HostPort(new PrintRecordBag(resetPortName, printPorts)))
 
     lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
     lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)
@@ -113,10 +114,9 @@ class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: P
     }
 
     // PAYLOAD HANDLING
-    // TODO: Gating the prints using reset should be done by the transformation,
-    // (using a predicate carried by the annotation(?))
     val valid = printPort.hasEnabledPrint
-    val data = Cat(printPort.asUInt, valid) | 0.U(pow2Bits.W)
+    val printsAsUInt = Cat(printPort.printRecords.map(_._2.asUInt).reverse)
+    val data = Cat(printsAsUInt, valid) | 0.U(pow2Bits.W)
 
     // Delay the valid token by a cycle so that we can first enqueue an idle-cycle-encoded token
     val dataPipe = Module(new Queue(data.cloneType, 1, pipe = true))
@@ -164,22 +164,22 @@ class PrintBridgeModule(printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: P
 
     // HEADER GENERATION
     // The LSB corresponding to the enable bit of the print
-    val widths = (printPort.elements.map(_._2.getWidth))
+    val widths = (printPort.printRecords.map(_._2.getWidth))
 
     // C-types for emission
     val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
       UInt32(offsets.head.value + width) +: offsets}).tail.reverse
 
-    val argumentCounts  = printPort.ports.map(_._2.args.size).map(UInt32(_))
-    val argumentWidths  = printPort.ports.flatMap(_._2.argumentWidths).map(UInt32(_))
-    val argumentOffsets = printPort.ports.map(_._2.argumentOffsets.map(UInt32(_)))
-    val formatStrings   = printPort.ports.map(_._2.formatString).map(CStrLit)
+    val argumentCounts  = printPort.printRecords.map(_._2.args.size).map(UInt32(_))
+    val argumentWidths  = printPort.printRecords.flatMap(_._2.argumentWidths).map(UInt32(_))
+    val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets.map(UInt32(_)))
+    val formatStrings   = printPort.printRecords.map(_._2.formatString).map(CStrLit)
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printPort.ports.size)))
+      sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printPort.printRecords.size)))
       sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
       sb.append(genConstStatic(s"${headerWidgetName}_idle_cycles_mask",
                                UInt32(((1 << idleCycleBits) - 1) << reservedBits)))

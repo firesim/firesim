@@ -29,6 +29,8 @@
 #include "WireInterconnect.h"
 #elif defined DESIGNNAME_AssertModule
 #include "AssertModule.h"
+#elif defined DESIGNNAME_AssertGlobalResetCondition
+#include "AssertTorture.h"
 #elif defined DESIGNNAME_PrintfModule
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_NarrowPrintfModule
@@ -37,7 +39,11 @@
 #include "MulticlockPrintfModule.h"
 #elif defined DESIGNNAME_TriggerPredicatedPrintf
 #include "PrintfModule.h"
+#elif defined DESIGNNAME_PrintfGlobalResetCondition
+#include "PrintfModule.h"
 #elif defined DESIGNNAME_AutoCounterModule
+#include "AutoCounterModule.h"
+#elif defined DESIGNNAME_AutoCounterGlobalResetCondition
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule
 #include "AutoCounterCoverModule.h"

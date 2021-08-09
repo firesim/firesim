@@ -5,7 +5,7 @@
 #include "bridges/synthesized_assertions.h"
 #include <vector>
 
-class AssertTorture_t: virtual simif_t
+class AssertTorture_t: public virtual simif_t
 {
 public:
     std::vector<synthesized_assertions_t *> assert_endpoints;
@@ -79,6 +79,26 @@ public:
                 ep->tick();
                 if (ep->terminate()) {
                     ep->resume();
+                }
+            }
+        }
+    };
+
+};
+
+class AssertGlobalResetCondition_t: public AssertTorture_t {
+  public:
+    AssertGlobalResetCondition_t(int argc, char** argv): AssertTorture_t(argc, argv) {};
+    void run() {
+        for (auto ep: assert_endpoints)
+            ep->init();
+        target_reset(2);
+        step(40000, false);
+        while (!done()) {
+            for (auto ep: assert_endpoints) {
+                ep->tick();
+                if (ep->terminate()) {
+                    abort();
                 }
             }
         }

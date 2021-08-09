@@ -86,3 +86,22 @@ public:
     };
 };
 #endif // DESIGNNAME_AutoCounterPrintf
+
+#ifdef DESIGNNAME_PrintfGlobalResetCondition
+class PrintfGlobalResetCondition_t: public print_module_t, virtual simif_t
+{
+public:
+    PrintfGlobalResetCondition_t(int argc, char** argv): print_module_t(argc, argv) {};
+    virtual void run() {
+        poke(reset, 1);
+        // To be safe, must be at least the length of the number of pipeine
+        // registers on each reset * maximum clock division.
+        step(4);
+        poke(reset, 0);
+        for (auto &print_endpoint: print_endpoints) {
+            print_endpoint->init();
+        }
+        run_and_collect_prints(1000);
+    };
+};
+#endif // DESIGNNAME_PrintfGlobalResetCondition

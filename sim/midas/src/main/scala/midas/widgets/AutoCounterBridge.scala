@@ -23,12 +23,18 @@ trait AutoCounterConsts {
   */
 case class EventMetadata(portName: String, label: String, width: Int)
 
-class AutoCounterBundle(eventMetadata: Seq[EventMetadata], triggerName: String) extends Record {
+class AutoCounterBundle(
+    eventMetadata: Seq[EventMetadata],
+    triggerName: String,
+    resetPortName: String) extends Record {
   val triggerEnable = Input(Bool())
+  val underGlobalReset = Input(Bool())
   val events = eventMetadata.map(e => e.portName -> Input(UInt(e.width.W)))
-  val elements = collection.immutable.ListMap(((triggerName, triggerEnable) +:
-                                               events):_*)
-  override def cloneType = new AutoCounterBundle(eventMetadata, triggerName).asInstanceOf[this.type]
+  val elements = collection.immutable.ListMap((
+    (triggerName, triggerEnable) +:
+    (resetPortName, underGlobalReset) +:
+    events):_*)
+  override def cloneType = new AutoCounterBundle(eventMetadata, triggerName, resetPortName).asInstanceOf[this.type]
 }
 
 class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCounterConsts {
@@ -36,14 +42,17 @@ class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCount
   val cycle = UInt(counterWidth.W)
 }
 
-class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: String)(implicit p: Parameters)
+class AutoCounterBridgeModule(
+    eventMetadata: Seq[EventMetadata],
+    triggerName: String,
+    resetPortName: String)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) with AutoCounterConsts {
   lazy val module = new BridgeModuleImp(this) {
     val numCounters = eventMetadata.size
     val labels = eventMetadata.map(_.label)
 
     val io = IO(new WidgetIO())
-    val hPort = IO(HostPort(new AutoCounterBundle(eventMetadata, triggerName)))
+    val hPort = IO(HostPort(new AutoCounterBundle(eventMetadata, triggerName, resetPortName)))
     val trigger = hPort.hBits.triggerEnable
     val cycles = RegInit(0.U(counterWidth.W))
     val acc_cycles = RegInit(0.U(counterWidth.W))
@@ -76,7 +85,7 @@ class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: St
 
     val counters = hPort.hBits.events.unzip._2.map({ increment =>
       val count = RegInit(0.U(counterWidth.W))
-      when (targetFire) {
+      when (targetFire && !hPort.hBits.underGlobalReset) {
         count := count + increment
       }
       count
@@ -92,7 +101,7 @@ class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: St
 
     val btht_queue = Module(new Queue(new AutoCounterToHostToken(numCounters), 2))
 
-    btht_queue.io.enq.valid := isSampleCycle & targetFire & trigger
+    btht_queue.io.enq.valid := isSampleCycle && targetFire && trigger
     btht_queue.io.enq.bits.data_out := VecInit(counters)
     btht_queue.io.enq.bits.cycle := cycles
     hPort.toHost.hReady := targetFire

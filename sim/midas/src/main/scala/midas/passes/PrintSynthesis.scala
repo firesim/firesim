@@ -18,7 +18,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule}
-import midas.targetutils.SynthPrintfAnnotation
+import midas.targetutils.{SynthPrintfAnnotation, GlobalResetConditionSink}
 
 private[passes] class PrintSynthesis extends firrtl.Transform {
   def inputForm = MidForm
@@ -113,26 +113,53 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
     println(s"[Golden Gate] total # of printf instances synthesized: ${outputAnnos.size}")
 
     // Step 4: Generate FCCAs and Bridge Annotations for each clock domain
-    val topModule = wiredState.circuit.modules.find(_.name == c.main).get
+    val topModule = wiredState.circuit.modules.collectFirst({
+      case m@Module(_,name,_,_) if name == c.main => m }).get
+    val submodules = wiredState.circuit.modules.filter { _.name != c.main }
+    val ns = Namespace(topModule)
+    val topMT = ModuleTarget(c.main, c.main)
     val portMap = topModule.ports.map(p => portRT(p) -> p).toMap
 
-    val printRecordAnnos = for ((clockRT, oAnnos) <- groupedPrints.toSeq.sortBy(_._1.ref)) yield {
-      val fccaAnnos = oAnnos.flatMap({ case BridgeTopWiringOutputAnnotation(_,_,oPortRT,_,oClockRT) =>
+    val (addedAnnos, addedPorts, addedStmts) = (for ((sinkClockName, oAnnos) <- groupedPrints.toSeq.sortBy(_._1.ref)) yield {
+      val printFCCAs = oAnnos.flatMap({ case BridgeTopWiringOutputAnnotation(_,_,oPortRT,_,oClockRT) =>
         genFCCAsFromPort(portMap(oPortRT), oPortRT, oClockRT) })
 
       val portTuples = oAnnos.map({ case BridgeTopWiringOutputAnnotation(srcRT,_,oPortRT,_,_) =>
         portMap(oPortRT) -> formatStringMap(srcRT) })
 
+      /**
+        * For the global reset condition, add an additional boolean channel. We
+        * could wire this to the stubs, but to be consistent across all
+        * instrumentation features treat it as a separate chanenl and let the
+        * bridge decide how to handle it.
+        */
+      val resetPortName = ns.newName(s"${sinkClockName.ref}_globalReset")
+      val resetPort = Port(NoInfo, resetPortName, Output, BoolType)
+      val resetPortRT = topMT.ref(resetPortName)
+      val resetPortConn =  Connect(NoInfo, WRef(resetPort), zero)
+      val resetFCCA = FAMEChannelConnectionAnnotation.source(
+        resetPortName,
+        WireChannel,
+        clock = printFCCAs.head.clock,
+        Seq(resetPortRT))
+      val resetConditionAnno = GlobalResetConditionSink(resetPortRT)
+
+      val fccaAnnos = resetFCCA +: printFCCAs
       val bridgeAnno = BridgeIOAnnotation(
         target = ModuleTarget(c.main, c.main).ref(topWiringPrefix.stripSuffix("_")),
-        widget = (p: Parameters) => new PrintBridgeModule(portTuples)(p),
+        widget = (p: Parameters) => new PrintBridgeModule(resetPortName, portTuples)(p),
         channelNames = fccaAnnos.map(_.globalName)
       )
-      bridgeAnno +: fccaAnnos
-    }
+      (resetConditionAnno +: bridgeAnno +: fccaAnnos, resetPort, resetPortConn)
+    }).unzip3
     // Remove added Annotations to prevent being reconsumed by a downstream pass
     val cleanedAnnotations = wiredState.annotations.filterNot(outputAnnos.toSet)
-    wiredState.copy(annotations = cleanedAnnotations ++ printRecordAnnos.toSeq.flatten)
+    val updatedTopModule = topModule.copy(
+      ports = topModule.ports ++ addedPorts,
+      body = Block(topModule.body +: addedStmts))
+    wiredState.copy(
+      circuit = wiredState.circuit.copy(modules = updatedTopModule +: submodules),
+      annotations = cleanedAnnotations ++ addedAnnos.toSeq.flatten)
   }
 
   def execute(state: CircuitState): CircuitState = {
