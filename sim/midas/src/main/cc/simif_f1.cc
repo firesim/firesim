@@ -57,7 +57,7 @@ void simif_f1_t::fpga_shutdown() {
 void simif_f1_t::fpga_setup(int slot_id) {
 #ifndef SIMULATION_XSIM
     /*
-     * pci_vendor_id and pci_device_id values below are Amazon's and avaliable
+     * pci_vendor_id and pci_device_id values below are Amazon's and available
      * to use for a given FPGA slot.
      * Users may replace these with their own if allocated to them by PCI SIG
      */
