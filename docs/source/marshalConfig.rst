@@ -89,7 +89,8 @@ uartlog or output files).
 FireMarshal calls into makefiles for several of its dependencies. This option
 provides the default level of parallelism to use when calling into these
 makefiles. The value here will be append to the '-j' option (e.g. jlevel='16' →
-'-j16'). The empty string results in maximum parallelism.
+'-j16'). Setting to null (the default) will autodetect the number of cores
+available on your system and use that.
 
 .. _config-rootfs-size:
 

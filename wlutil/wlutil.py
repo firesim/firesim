@@ -313,7 +313,6 @@ class marshalCtx(collections.MutableMapping):
         self['command-script'] = self['gen-dir'] / "_command.sh"
         self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
-        self['jlevel'] = '-j' + str(self['jlevel'])
 
         self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
         self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
@@ -331,6 +330,10 @@ class marshalCtx(collections.MutableMapping):
         for dPath in (self['board-dir'] / 'distros').glob("*"):
             m = self.importDistro(dPath)
             self['distro-mods'][m.__name__] = m
+
+        if self['jlevel'] is None:
+            self['jlevel'] = psutil.cpu_count()
+        self['jlevel'] = '-j' + str(self['jlevel'])
 
 
     def setRunName(self, configPath, operation):
