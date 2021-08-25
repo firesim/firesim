@@ -109,6 +109,18 @@ class F1Config extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
 
+class U250Config extends Config(new Config((site, here, up) => {
+  case Platform       => (p: Parameters) => new U250Shim()(p)
+  case HasDMAChannel  => true
+  case CtrlNastiKey   => NastiParameters(32, 20, 1)
+  case DMANastiKey    => NastiParameters(512, 64, 4)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x400000000L, // 16 GiB
+    beatBytes = 8,
+    idBits    = 6)
+  case HostMemNumChannels => 1
+}) ++ new SimConfig)
+
 // Turns on all additional synthesizable debug features for checking the
 // implementation of the simulator.
 class HostDebugFeatures extends Config((site, here, up) => {
