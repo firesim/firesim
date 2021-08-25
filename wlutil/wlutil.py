@@ -786,6 +786,7 @@ class WithMetadataChecker(doit.dependency.MD5Checker):
 
             return md5State + stat
 
+
 # The doit.tools.config_changed helper has a few limitations:
 #   - doesn't support multiple invocations in a single uptodate.
 #   - It is not JSON serializable which means you can't use it as a calc_dep
@@ -836,9 +837,10 @@ class config_changed(dict):
             return False
         return (last_success == self.config_digest)
 
+
 def appendPath(basepath, appendval):
     return basepath.parent / (basepath.name + appendval)
 
+
 def noDiskPath(path):
     return appendPath(path, '-nodisk')
-

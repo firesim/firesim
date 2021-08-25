@@ -1,6 +1,6 @@
 {
   "name" : "rocc",
-  "base" : "bare",
+  "base" : "bare-base.json",
   "host-init" : "build.sh",
   "bin" : "rocc-test.riscv",
   "spike" : "spike_local/bin/spike",
