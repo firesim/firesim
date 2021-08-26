@@ -4,3 +4,4 @@ wlutil/_command.sh
 *__pycache__
 .doit.db*
 marshal-config.yaml
+.ropeproject

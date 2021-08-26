@@ -1,1 +1,1 @@
-from .br import *
+from .br import *  # NOQA

@@ -1,6 +1,5 @@
 import subprocess as sp
 import sys
-import os
 import pathlib as pth
 
 testSrc = pth.Path(__file__).parent.resolve()

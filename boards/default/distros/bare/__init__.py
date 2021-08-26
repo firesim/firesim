@@ -1,1 +1,1 @@
-from .bare import *
+from .bare import *  # NOQA
