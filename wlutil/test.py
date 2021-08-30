@@ -78,7 +78,7 @@ def cmpOutput(config, testDir, refDir, strip=False):
                         # I'm not 100% sure what will happen with a binary file
                         diffString = "".join(difflib.unified_diff(rFile.readlines(),
                                              tFile.readlines(), fromfile=str(rPath), tofile=str(tPath)))
-                        if diffString is not "":
+                        if diffString != "":
                             return diffString
 
     return None

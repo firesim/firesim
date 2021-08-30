@@ -4,6 +4,7 @@ import importlib
 import sys
 from . import wlutil
 
+
 def installWorkload(cfg, installer='firesim'):
     installerPath = wlutil.getOpt('installers') / installer
 
