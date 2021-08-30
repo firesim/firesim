@@ -9,7 +9,11 @@ serves as the stable release branch.
 
 Before submitting a PR:
 * Merge origin/dev to ensure you have the latest changes.
-* Run ./full_test.sh to ensure the basic unit-tests still work
+* Run ./fullTest.py to ensure the basic unit-tests still work
+* Ensure all code passes lint (this will be enforced by github). You can
+  manually check each file (or a glob) with the following command:
+
+    pylama --ignore="E501" --linters="pycodestyle,pyflakes" FILENAME.py
 
 ## Getting Help / Discussion:
 * For general questions, help, and discussion: use the FireSim user forum: https://groups.google.com/forum/#!forum/firesim

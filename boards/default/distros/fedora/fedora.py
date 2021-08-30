@@ -15,21 +15,25 @@ ExecStart=/etc/firesim/{scriptName} {scriptArgs}
 StandardOutput=journal+console"""
 
 # Some common directories for this module (all absolute paths)
-fed_dir=pathlib.Path(__file__).resolve().parent
+fed_dir = pathlib.Path(__file__).resolve().parent
 
 # Temporary overlay used for applying init scripts
-overlay=fed_dir / 'overlay'
+overlay = fed_dir / 'overlay'
+
 
 # Fedora doesn't support any options
 def hashOpts(opts):
     return None
 
+
 # Fedora doesn't support any options
 def mergeOpts(base, new):
     return base
 
+
 def initOpts(cfg):
     return
+
 
 class Builder:
     def __init__(self, opts):
@@ -37,15 +41,15 @@ class Builder:
 
     def getWorkload(self):
         return {
-                'name' : 'fedora-base',
-                'isDistro' : True,
-                'distro' : {
-                    'name' : 'fedora',
-                    'opts' : {}
+                'name': 'fedora-base',
+                'isDistro': True,
+                'distro': {
+                    'name': 'fedora',
+                    'opts': {}
                 },
-                'workdir' : fed_dir,
-                'builder' : self,
-                'img' : fed_dir / "rootfs.img"
+                'workdir': fed_dir,
+                'builder': self,
+                'img': fed_dir / "rootfs.img"
                 }
 
     def buildBaseImage(self):
@@ -72,7 +76,7 @@ class Builder:
         # custom service (firesim.service) that runs a script (/init.sh). We
         # can change the default boot behavior by changing this script.
         scriptDst = overlay / 'etc/firesim/firesim.sh'
-        if script != None:
+        if script is not None:
             print("applying script: " + str(scriptDst))
             shutil.copy(script, scriptDst)
         else:
@@ -81,7 +85,7 @@ class Builder:
             # Alternatively: we could consider replacing the default.target
             # symlink to disable the firesim target entirely
             scriptDst.touch()
-        
+
         scriptDst.chmod(0o755)
 
         # Create the service script
@@ -97,9 +101,9 @@ class Builder:
 
     def stripUart(self, lines):
         stripped = []
-        pat = re.compile(".*firesim.sh\[\d*\]: (.*\n)")
-        for l in lines:
-            match = pat.match(l)
+        pat = re.compile(r".*firesim.sh\[\d*\]: (.*\n)")
+        for line in lines:
+            match = pat.match(line)
             if match:
                 stripped.append(match.group(1))
 

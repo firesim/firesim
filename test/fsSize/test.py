@@ -2,7 +2,6 @@ import sys
 import os
 import subprocess as sp
 import pathlib as pth
-import tempfile
 
 testSrc = pth.Path(__file__).parent.resolve()
 testCfg = testSrc.parent / "fsSize.yaml"
@@ -19,7 +18,7 @@ try:
     except sp.CalledProcessError as e:
         print("Failed to generate input files: ", e)
         raise
-       
+
     print("Testing Workload")
     try:
         sp.run([marshalBin, "test", testCfg], check=True)
