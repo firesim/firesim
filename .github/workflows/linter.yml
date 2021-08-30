@@ -49,5 +49,6 @@ jobs:
         env:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_PYTHON_FLAKE8: true
+          FILTER_REGEX_EXCLUDE: linux busybox buildroot riscv-isa-sim
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
