@@ -498,8 +498,6 @@ class Config(collections.MutableMapping):
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
 
-    # Finalize this config using baseCfg (which is assumed to be fully
-    # initialized).
     def applyBase(self, baseCfg):
         """Finalize this config using baseCfg (which is assumed to be fully
            initialized)."""
