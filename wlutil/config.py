@@ -1,11 +1,10 @@
-import glob
 import collections
 import yaml
 import pprint
 import logging
 import humanfriendly as hf
-from .wlutil import *
-import pathlib as pth
+from . import wlutil
+import pathlib
 import copy
 
 # This is a comprehensive list of all user-defined config options
@@ -96,18 +95,18 @@ configDeprecated = [
 # This is a comprehensive list of all options set during config parsing
 # (but not explicitly provided by the user)
 configDerived = [
-        'img', # Path to output filesystem image
-        'img-sz', # Desired size of image in bytes (optional)
-        'bin', # Path to output binary (e.g. bbl-vmlinux)
-        'dwarf', # Additional debugging symbols for the kernel (bbl strips them from 'bin')
-        'base-img', # The filesystem image to use when building this workload
-        'base-format', # The format of base-img
-        'cfg-file', # Path to this workloads raw config file
-        'initramfs', # boolean: should we use an initramfs with this config?
-        'jobs', # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
-        'base-deps', # A list of tasks that this workload needs from its base (a potentially empty list)
-        'firmware-src', # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
-        'use-parent-bin', # Child would build the exact same binary as the parent, just copy it instead of rebuilding.
+        'img',  # Path to output filesystem image
+        'img-sz',  # Desired size of image in bytes (optional)
+        'bin',  # Path to output binary (e.g. bbl-vmlinux)
+        'dwarf',  # Additional debugging symbols for the kernel (bbl strips them from 'bin')
+        'base-img',  # The filesystem image to use when building this workload
+        'base-format',  # The format of base-img
+        'cfg-file',  # Path to this workloads raw config file
+        'initramfs',  # boolean: should we use an initramfs with this config?
+        'jobs',  # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
+        'base-deps',  # A list of tasks that this workload needs from its base (a potentially empty list)
+        'firmware-src',  # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
+        'use-parent-bin',  # Child would build the exact same binary as the parent, just copy it instead of rebuilding.
         ]
 
 # These are the user-defined options that should be converted to absolute
@@ -144,9 +143,9 @@ configInherit = [
 # These take the post-processing form (e.g. if the user can provide a string,
 # but we convert it to an int, this would be an int)
 configDefaults = {
-        'img-sz' : 0, # default to 'tight' configuration
-        'mem' : hf.parse_size('16GiB'), # same as firesim default target
-        'cpus' : 4 # same as firesim default target
+        'img-sz': 0,  # default to 'tight' configuration
+        'mem': hf.parse_size('16GiB'),  # same as firesim default target
+        'cpus': 4  # same as firesim default target
         }
 
 # Members of the 'linux' option in the config
@@ -158,11 +157,11 @@ configLinux = [
 
 # Members of the 'firmware' option
 configFirmware = [
-        "use-bbl", # Use bbl as firmware instead of openSBI
-        "bbl-src", # Alternative source directory for bbl
-        "bbl-build-args", # Additional arguments to configure script for bbl. User provides string, cannonical form is list.
-        "opensbi-src", # Alternative source directory for openSBI
-        "opensbi-build-args", # Additional arguments to make for openSBI. User provides string, cannonical form is list.
+        "use-bbl",  # Use bbl as firmware instead of openSBI
+        "bbl-src",  # Alternative source directory for bbl
+        "bbl-build-args",  # Additional arguments to configure script for bbl. User provides string, cannonical form is list.
+        "opensbi-src",  # Alternative source directory for openSBI
+        "opensbi-build-args",  # Additional arguments to make for openSBI. User provides string, cannonical form is list.
         ]
 
 # Members of the 'testing' option
@@ -176,6 +175,7 @@ configTesting = [
         # Strip as much non-deterministic and irrelevant output from the uartlog before comparing
         'strip'
 ]
+
 
 class RunSpec():
     def __init__(self, script=None, command=None, args=[]):
@@ -201,9 +201,8 @@ class RunSpec():
         baseDir: Optional directory in which the script is to be found
         """
         scriptParts = command.split(' ')
-        return RunSpec(
-                script = (baseDir / scriptParts[0]).resolve(),
-                args = scriptParts[1:])
+        return RunSpec(script=(baseDir / scriptParts[0]).resolve(),
+                       args=scriptParts[1:])
 
     def __repr__(self):
         return "RunSpec(" + \
@@ -237,6 +236,7 @@ def translateDeprecated(config):
     against the raw config dict from the user. After this, there will be only
     one cannonical representation for each option and deprecated options will
     not be present in the config."""
+    log = logging.getLogger()
 
     # linux stuff
     # Handle deprecated standalone linux-config and linux-src options (they now live entirely in the linux dict)
@@ -253,7 +253,7 @@ def translateDeprecated(config):
     # Firmware stuff
     if 'pk-src' in config:
         if 'firmware' not in config:
-            config['firmware'] = {'bbl-src' : config['pk-src']}
+            config['firmware'] = {'bbl-src': config['pk-src']}
         else:
             log.warning("The deprecated 'pk-src' option is mutually exclusive with the 'firmware' option; ignoring")
 
@@ -289,6 +289,7 @@ def verifyConfig(config):
             if k not in configTesting:
                 log.warning("Unrecognized Option: " + k)
 
+
 def initLinuxOpts(config):
     """Initialize the 'linux' option group of config"""
     if 'linux' not in config:
@@ -296,9 +297,9 @@ def initLinuxOpts(config):
 
     if 'config' in config['linux']:
         if isinstance(config['linux']['config'], list):
-            config['linux']['config'] = [ cleanPath(p, config['workdir']) for p in config['linux']['config'] ]
+            config['linux']['config'] = [cleanPath(p, config['workdir']) for p in config['linux']['config']]
         else:
-            config['linux']['config'] = [ cleanPath(config['linux']['config'], config['workdir']) ]
+            config['linux']['config'] = [cleanPath(config['linux']['config'], config['workdir'])]
 
     if 'source' in config['linux']:
         config['linux']['source'] = cleanPath(config['linux']['source'], config['workdir'])
@@ -306,7 +307,7 @@ def initLinuxOpts(config):
     if 'modules' in config['linux']:
         for name, path in config['linux']['modules'].items():
             if path is None:
-               continue
+                continue
             else:
                 config['linux']['modules'][name] = cleanPath(path, config['workdir'])
 
@@ -385,8 +386,7 @@ class Config(collections.MutableMapping):
     #   - Jobs will be a dictionary of { 'name' : Config } for each job
     #   - All options will be in the cannonical form or not in the dictionary if undefined
     def __init__(self, cfgFile=None, cfgDict=None):
-
-        if cfgFile != None:
+        if cfgFile is not None:
             with open(cfgFile, 'r') as f:
                 # self.cfg = json.load(f)
                 self.cfg = yaml.safe_load(f)
@@ -426,7 +426,7 @@ class Config(collections.MutableMapping):
             self.cfg['isDistro'] = False
 
         if 'distro' in self.cfg:
-            getOpt('distro-mods')[self.cfg['distro']['name']].initOpts(self)
+            wlutil.getOpt('distro-mods')[self.cfg['distro']['name']].initOpts(self)
 
         if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
@@ -441,12 +441,12 @@ class Config(collections.MutableMapping):
         if 'files' in self.cfg:
             fList = []
             for f in self.cfg['files']:
-                fList.append(FileSpec(src=self.cfg['workdir'] / f[0], dst=pathlib.Path(f[1])))
+                fList.append(wlutil.FileSpec(src=self.cfg['workdir'] / f[0], dst=pathlib.Path(f[1])))
 
             self.cfg['files'] = fList
 
         if 'outputs' in self.cfg:
-            self.cfg['outputs'] = [ pathlib.Path(f) for f in self.cfg['outputs'] ]
+            self.cfg['outputs'] = [pathlib.Path(f) for f in self.cfg['outputs']]
 
         # This object handles setting up the 'run' and 'command' options
         if 'run' in self.cfg:
@@ -498,10 +498,10 @@ class Config(collections.MutableMapping):
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
 
-
-    # Finalize this config using baseCfg (which is assumed to be fully
-    # initialized).
     def applyBase(self, baseCfg):
+        """Finalize this config using baseCfg (which is assumed to be fully
+           initialized)."""
+
         # For any heritable trait that is defined in baseCfg but not self.cfg
         for k in ((set(baseCfg.keys()) - set(self.cfg.keys())) & set(configInherit)):
             self.cfg[k] = baseCfg[k]
@@ -511,7 +511,7 @@ class Config(collections.MutableMapping):
         if 'img' in baseCfg:
             self.cfg['base-img'] = baseCfg['img']
             self.cfg['base-deps'].append(str(self.cfg['base-img']))
-            self.cfg['img'] = getOpt('image-dir') / (self.cfg['name'] + ".img")
+            self.cfg['img'] = wlutil.getOpt('image-dir') / (self.cfg['name'] + ".img")
 
         if 'bin' in baseCfg:
             self.cfg['base-bin'] = baseCfg['bin']
@@ -528,8 +528,8 @@ class Config(collections.MutableMapping):
         if 'linux' in self.cfg:
             # Linux workloads get their own binary, whether from scratch or a
             # copy of their parent's
-            self.cfg['bin'] = getOpt('image-dir') / (self.cfg['name'] + "-bin")
-            self.cfg['dwarf'] = getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
+            self.cfg['bin'] = wlutil.getOpt('image-dir') / (self.cfg['name'] + "-bin")
+            self.cfg['dwarf'] = wlutil.getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
 
             # To avoid needlessly recompiling kernels, we check if the child has
             # the exact same binary-related configuration. If 'use-parent-bin'
@@ -538,7 +538,7 @@ class Config(collections.MutableMapping):
             self.cfg['use-parent-bin'] = True
             for opt in ['firmware', 'linux', 'host-init']:
                 if opt not in self.cfg:
-                    # Child doesn't overwrite a non-heritable option 
+                    # Child doesn't overwrite a non-heritable option
                     continue
                 elif self.cfg.get(opt, None) != baseCfg.get(opt, None):
                     self.cfg['use-parent-bin'] = False
@@ -552,9 +552,8 @@ class Config(collections.MutableMapping):
             self.cfg['launch'] = True
 
         if 'runSpec' not in self.cfg:
-            self.cfg['run'] = getOpt('wlutil-dir') / 'null_run.sh'
+            self.cfg['run'] = wlutil.getOpt('wlutil-dir') / 'null_run.sh'
             self.cfg['runSpec'] = RunSpec(script=self.cfg['run'])
-
 
     # The following methods are needed by MutableMapping
     def __getitem__(self, key):
@@ -593,10 +592,10 @@ class ConfigManager(collections.MutableMapping):
     def __init__(self, dirs=None, paths=None):
         log = logging.getLogger()
         cfgPaths = []
-        if paths != None:
+        if paths is not None:
             cfgPaths += paths
 
-        if dirs != None:
+        if dirs is not None:
             for d in dirs:
                 for cfgFile in d.glob('*.json'):
                     cfgPaths.append(cfgFile)
@@ -656,7 +655,6 @@ class ConfigManager(collections.MutableMapping):
 
             log.debug("Loaded " + str(cfgName))
 
-
     def _forkDistro(self, cfg):
         """Starting from cfg, create new versions of every base that have this
         config's distro options. After this, cfg will inherit from distro-opt
@@ -664,8 +662,7 @@ class ConfigManager(collections.MutableMapping):
         log = logging.getLogger()
 
         distCfg = cfg['distro']
-        distMod = getOpt('distro-mods')[distCfg['name']]
-
+        distMod = wlutil.getOpt('distro-mods')[distCfg['name']]
 
         def mergeOptsRecursive(distMod, cfg):
             if cfg['isDistro']:
@@ -692,7 +689,7 @@ class ConfigManager(collections.MutableMapping):
                     raise ValueError("The 'distro' option is required for workloads that do not have a base")
 
                 distName = cfg['distro']['name']
-                distMod = getOpt('distro-mods')[distName]
+                distMod = wlutil.getOpt('distro-mods')[distName]
 
                 if distID is not None:
                     baseName = distName + "." + distID
@@ -730,12 +727,11 @@ class ConfigManager(collections.MutableMapping):
 
         forkRecursive(cfg, distID)
 
-
-    # Finish initializing this config from it's base config. Will recursively
-    # initialize any needed bases.
     def _initializeFromBase(self, cfg):
+        """Finish initializing this config from it's base config. Will recursively
+           initialize any needed bases."""
         log = logging.getLogger()
-        if cfg.initialized == True:
+        if cfg.initialized:
             # Memoizaaaaaaation!
             return
         else:
@@ -747,7 +743,7 @@ class ConfigManager(collections.MutableMapping):
                         log.warning("Base config '" + cfg['base'] + " not found.")
                     raise
 
-                if baseCfg.initialized == False:
+                if not baseCfg.initialized:
                     self._initializeFromBase(baseCfg)
 
                 cfg.applyBase(baseCfg)
@@ -786,4 +782,3 @@ class ConfigManager(collections.MutableMapping):
 
     def __repr__(self):
         return repr(self.cfgs)
-

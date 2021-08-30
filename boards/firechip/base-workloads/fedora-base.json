@@ -1,5 +1,6 @@
 {
   "name" : "fedora-base",
+  "guest-init": "initRepos.sh",
   "distro" : {
       "name" : "fedora",
       "opts" : {}

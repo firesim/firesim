@@ -1,29 +1,23 @@
-#!/usr/bin/env python3
-import sys
-import argparse
 import pathlib as pl
 import difflib
-import os
 from contextlib import contextmanager
 import pathlib
-import re
-import multiprocessing as mp
 import logging
 import traceback
 import textwrap
-import psutil
 from enum import Enum
 import signal
 
-from .wlutil import *
-from .build import *
-from .launch import *
- 
+from . import wlutil
+from . import build as wlbuild
+from . import launch as wllaunch
+
 testResult = Enum('testResult', ['success', 'failure', 'skip'])
 
 # Default timeouts (in seconds)
-defBuildTimeout = 2400 
-defRunTimeout =  2400
+defBuildTimeout = 2400
+defRunTimeout = 2400
+
 
 class TestFailure(Exception):
     def __init__(self, msg):
@@ -62,12 +56,12 @@ def cmpOutput(config, testDir, refDir, strip=False):
                     if rPath.name == "uartlog":
                         rLines = rFile.readlines()
                         tLines = tFile.readlines()
-                        
+
                         # Some configurations spit out a bunch of spurious \r\n
                         # (^M in vim) characters. This strips them so that
                         # users can type reference outputs using normal
                         # newlines.
-                        tLines = [ line.replace("\r", "") for line in tLines]
+                        tLines = [line.replace("\r", "") for line in tLines]
                         if strip:
                             tLines = config['builder'].stripUart(tLines)
 
@@ -79,12 +73,12 @@ def cmpOutput(config, testDir, refDir, strip=False):
                             else:
                                 return str(tPath) + " matches only at " + \
                                        str(rPath) + ":" + str(m.a) + "," + str(m.a + m.size) + "\n" + \
-                                       "".join(rLines[m.a : m.a + m.size])
+                                       "".join(rLines[m.a: m.a + m.size])
                     else:
                         # I'm not 100% sure what will happen with a binary file
                         diffString = "".join(difflib.unified_diff(rFile.readlines(),
-                                tFile.readlines(), fromfile=str(rPath), tofile=str(tPath)))
-                        if diffString is not "":
+                                             tFile.readlines(), fromfile=str(rPath), tofile=str(tPath)))
+                        if diffString != "":
                             return diffString
 
     return None
@@ -117,7 +111,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
     spike: Test using spike instead of the default qemu
     cmp_only (path): Do not run the workload. Instead, simply compare the
         golden output against the path in cmp_only. For example, cmp_only could
-        point to the output of a FireSim run. 
+        point to the output of a FireSim run.
 
     Returns (wlutil.test.testResult, output directory)
     """
@@ -130,7 +124,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         return testResult.skip, None
 
     testCfg = cfg['testing']
-        
+
     if 'buildTimeout' not in testCfg:
         testCfg['buildTimeout'] = defBuildTimeout
     if 'runTimeout' not in testCfg:
@@ -138,7 +132,7 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
 
     refPath = cfg['workdir'] / testCfg['refDir']
     if cmp_only is None:
-        testPath = getOpt('res-dir') / getOpt('run-name')
+        testPath = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
     else:
         testPath = cmp_only
 
@@ -146,55 +140,50 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
         if cmp_only is None:
             # Build workload
             log.info("Building test workload")
-            ret = 0
             with timeout(testCfg['buildTimeout'], 'build'):
-                res = buildWorkload(cfgName, cfgs)
+                res = wlbuild.buildWorkload(cfgName, cfgs)
 
             if res != 0:
-                raise TestFailure("Failure when building workload " + cfgName) 
+                raise TestFailure("Failure when building workload " + cfgName)
 
             # Run every job (or just the workload itself if no jobs)
             if 'jobs' in cfg:
                 for jName in cfg['jobs'].keys():
                     log.info("Running job " + jName)
                     with timeout(testCfg['runTimeout'], 'launch job' + jName):
-                        launchWorkload(cfg, jobs=[jName], spike=spike, interactive=verbose)
+                        wllaunch.launchWorkload(cfg, jobs=[jName], spike=spike, interactive=verbose)
             else:
                 log.info("Running workload")
                 with timeout(testCfg['runTimeout'], 'launch'):
-                    launchWorkload(cfg, spike=spike, interactive=verbose)
+                    wllaunch.launchWorkload(cfg, spike=spike, interactive=verbose)
 
-        log.info("Testing outputs")    
+        log.info("Testing outputs")
         strip = False
         if 'strip' in testCfg and testCfg['strip']:
             strip = True
 
         diff = cmpOutput(cfg, testPath, refPath, strip=strip)
         if diff is not None:
-            suitePass = False
             log.info("Test " + cfgName + " failure: output does not match reference")
             log.info(textwrap.indent(diff, '\t'))
             return testResult.failure, testPath
 
     except TimeoutError as e:
-        suitePass = False
         if e.args[0] == "buildWorkload":
             log.info("Test " + cfgName + " failure: timeout while building")
         elif e.args[0] == "launchWorkload":
             log.info("Test " + cfgName + " failure: timeout while running")
         else:
             log.error("Internal tester error: timeout from unrecognized function: " + e.args[0])
-        
+
         return testResult.failure, testPath
 
     except TestFailure as e:
-        suitePass = False
         log.info(e.msg)
-        
+
         return testResult.failure, testPath
 
-    except Exception as e:
-        suitePass = False
+    except Exception:
         log.info("Test " + cfgName + " failure: Exception encountered")
         traceback.print_exc()
         return testResult.failure, testPath

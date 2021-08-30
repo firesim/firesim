@@ -1,1 +1,1 @@
-from .fedora import *
+from .fedora import *  # NOQA
