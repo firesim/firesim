@@ -2,9 +2,11 @@
 Utilities for dealing with FireSim workloads
 """
 
-from .wlutil import *
-from .build import buildWorkload 
-from .launch import launchWorkload
-from .test import testWorkload,testResult
-from .install import installWorkload
-from .config import ConfigManager
+# These imports allow users to simply import wlutil instead of manually
+# importing each subpackage
+from .wlutil import *  # NOQA
+from .build import buildWorkload  # NOQA
+from .launch import launchWorkload  # NOQA
+from .test import testWorkload,testResult  # NOQA
+from .install import installWorkload  # NOQA
+from .config import ConfigManager  # NOQA

@@ -1,11 +1,11 @@
-RAWURL=http://fedora.riscv.rocks/kojifiles/work/tasks/944/320944/Fedora-Developer-Rawhide-20200108.n.0-sda.raw.xz
+RAWURL=https://dl.fedoraproject.org/pub/alt/risc-v/repo/virt-builder-images/images/Fedora-Minimal-Rawhide-20191123.n.1-sda.raw.xz
 COMPIMG=rootfs.img.xz
 NEWIMG=rootfs.img
 
 # Extract root partition without partition table
 # NOTE: Offset must be adjusted for different base image
 $(NEWIMG): $(COMPIMG)
-	xzcat -k $(COMPIMG) | dd of=$(NEWIMG) bs=512 skip=1007616
+	xzcat -k $(COMPIMG) | dd of=$(NEWIMG) bs=512 skip=1249280
 
 $(COMPIMG):
 	curl $(RAWURL) -o $(COMPIMG)

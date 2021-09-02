@@ -2,7 +2,6 @@ import subprocess as sp
 import sys
 import os
 import pathlib as pth
-import re
 
 # Should be the directory containing the test
 testSrc = pth.Path(__file__).parent.resolve()
@@ -16,6 +15,3 @@ if sp.call(str(managerPath) + " test sameDir.yaml", shell=True) != 0:
 else:
     print("Success")
     sys.exit(0)
-
-
-

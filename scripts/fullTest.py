@@ -192,7 +192,8 @@ if __name__ == "__main__":
     for category in args.categories:
         if category != 'special':
             allFailures += runTests(categoryTests[category], category,
-                                    marshalArgs=categoryArgs[category][0], cmdArgs=categoryArgs[category][1])
+                                    marshalArgs=categoryArgs[category][0],
+                                    cmdArgs=categoryArgs[category][1])
         else:
             allFailures += runSpecial(categoryTests["special"], "SPECIAL")
 

@@ -3,8 +3,7 @@ import yaml
 import pprint
 import logging
 import humanfriendly as hf
-# from .wlutil import *
-import wlutil
+from . import wlutil
 import pathlib
 import copy
 
@@ -202,9 +201,8 @@ class RunSpec():
         baseDir: Optional directory in which the script is to be found
         """
         scriptParts = command.split(' ')
-        return RunSpec(
-                script=(baseDir / scriptParts[0]).resolve(),
-                args=scriptParts[1:])
+        return RunSpec(script=(baseDir / scriptParts[0]).resolve(),
+                       args=scriptParts[1:])
 
     def __repr__(self):
         return "RunSpec(" + \
@@ -388,7 +386,6 @@ class Config(collections.MutableMapping):
     #   - Jobs will be a dictionary of { 'name' : Config } for each job
     #   - All options will be in the cannonical form or not in the dictionary if undefined
     def __init__(self, cfgFile=None, cfgDict=None):
-
         if cfgFile is not None:
             with open(cfgFile, 'r') as f:
                 # self.cfg = json.load(f)
@@ -501,9 +498,10 @@ class Config(collections.MutableMapping):
 
                 self.cfg['jobs'][jCfg['name']] = Config(cfgDict=jCfg)
 
-    # Finalize this config using baseCfg (which is assumed to be fully
-    # initialized).
     def applyBase(self, baseCfg):
+        """Finalize this config using baseCfg (which is assumed to be fully
+           initialized)."""
+
         # For any heritable trait that is defined in baseCfg but not self.cfg
         for k in ((set(baseCfg.keys()) - set(self.cfg.keys())) & set(configInherit)):
             self.cfg[k] = baseCfg[k]
@@ -766,11 +764,11 @@ class ConfigManager(collections.MutableMapping):
 
         forkRecursive(cfg, distID)
 
-    # Finish initializing this config from its base config. Will recursively
-    # initialize any needed bases.
     def _initializeFromBase(self, cfg):
+        """Finish initializing this config from it's base config. Will recursively
+           initialize any needed bases."""
         log = logging.getLogger()
-        if cfg.initialized is True:
+        if cfg.initialized:
             # Memoizaaaaaaation!
             return
         else:
@@ -782,7 +780,7 @@ class ConfigManager(collections.MutableMapping):
                         log.warning("Base config '" + cfg['base'] + "' not found.")
                     raise
 
-                if baseCfg.initialized is False:
+                if not baseCfg.initialized:
                     self._initializeFromBase(baseCfg)
 
                 cfg.applyBase(baseCfg)
