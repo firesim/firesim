@@ -1,6 +1,6 @@
 {
   "name" : "dummy",
-  "base" : "bare",
+  "base" : "bare-base.json",
   "host-init" : "build.sh",
   "bin" : "dummy",
   "launch" : false

@@ -177,6 +177,23 @@ configTesting = [
 ]
 
 
+class WorkloadConfigError(Exception):
+    def __init__(self, path, opt=None, extra=None):
+        self.path = path
+        self.opt = opt
+        self.extra = extra
+
+    def __str__(self):
+        msg = "Unable to load workload " + str(self.path)
+        if self.opt is not None:
+            msg += f": error with option '{self.opt}'"
+
+        if self.extra is not None:
+            msg += ": " + self.extra
+
+        return msg
+
+
 class RunSpec():
     def __init__(self, script=None, command=None, args=[]):
         """RunSpec represents a command or script to run in the target.
@@ -388,7 +405,6 @@ class Config(collections.MutableMapping):
     def __init__(self, cfgFile=None, cfgDict=None):
         if cfgFile is not None:
             with open(cfgFile, 'r') as f:
-                # self.cfg = json.load(f)
                 self.cfg = yaml.safe_load(f)
             self.cfg['cfg-file'] = cfgFile
         else:
@@ -607,11 +623,15 @@ class ConfigManager(collections.MutableMapping):
 
         self.searchPaths = searchPaths
 
+        # Load the explicitly provided workloads
         for cfgName in configNames:
             if isinstance(cfgName, pathlib.Path):
                 cfgPath = cfgName
             else:
                 cfgPath = findConfig(cfgName, searchPaths)
+
+            if cfgPath is None:
+                raise WorkloadConfigError(cfgName, extra="Could not locate workload")
 
             cfgName = cfgPath.name
 
@@ -622,14 +642,30 @@ class ConfigManager(collections.MutableMapping):
             targetCfg = Config(cfgPath)
             self.cfgs[cfgName] = targetCfg
 
+            # Once loaded, jobs are pretty much like any other workload. We
+            # stick them in the global pool of loaded configs for future
+            # reference.
+            if 'jobs' in targetCfg:
+                for jCfg in targetCfg['jobs'].values():
+                    self.cfgs[jCfg['name']] = jCfg
+
+        # Load parent workloads
+        for targetCfg in list(self.cfgs.values()):
             parentName = targetCfg.get('base', None)
+            currentName = cfgName
             while not (parentName in self.cfgs or
                        parentName is None or
                        parentName in wlutil.getOpt('distro-mods')):
 
-                parentPath = findConfig(parentName, searchPaths)
+                parentPath = findConfig(parentName, searchPaths + [targetCfg['cfg-file'].parent])
+                if parentPath is None:
+                    raise WorkloadConfigError(currentName,
+                                              opt='base',
+                                              extra=f"Could not locate base workload '{parentName}'")
+
                 parentCfg = Config(parentPath)
                 self.cfgs[parentName] = parentCfg
+                currentName = parentName
                 parentName = parentCfg.get('base', None)
 
         # Distro options essentially fork the inheritance tree at the root
@@ -650,18 +686,12 @@ class ConfigManager(collections.MutableMapping):
 
             try:
                 self._initializeFromBase(self.cfgs[cfgName])
-
             except KeyError as e:
-                log.warning("Skipping " + str(cfgName) + ":")
-                log.warning("\tMissing required option '" + e.args[0] + "'")
-                del self.cfgs[cfgName]
-                continue
+                raise WorkloadConfigError(cfgName,
+                                          extra=f"Missing required option '{e.args[0]}'")
             except Exception as e:
-                log.warning("Skipping " + str(cfgName) + ": Unable to parse config:")
-                log.warning("\t" + repr(e))
-                del self.cfgs[cfgName]
-                raise
-                continue
+                raise WorkloadConfigError(cfgName,
+                                          extra="Unable to parse config: " + repr(e))
 
             log.debug("Loaded " + str(cfgName))
 

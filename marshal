@@ -33,7 +33,7 @@ def main():
     # Build command
     build_parser = subparsers.add_parser(
         'build', help='Build an image from the given configuration.')
-    build_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
+    build_parser.add_argument('config_files', nargs='+', help="Configuration file(s) to use.")
     build_parser.add_argument('-B', '--binOnly', action='store_true', help="Only build the binary")
     build_parser.add_argument('-I', '--imgOnly', action='store_true', help="Only build the image (may require an image if you have guest-init scripts)")
 
@@ -47,12 +47,12 @@ def main():
     launch_parser.add_argument('-a', '--all', action='store_true', help="Run all jobs in the workload")
     # the type= option here allows us to only accept one argument but store it
     # in a list so it matches the "build" behavior
-    launch_parser.add_argument('config_files', metavar='config', nargs='?', type=(lambda c: [pathlib.Path(c)]), help="Configuration file to use.")
+    launch_parser.add_argument('config_files', nargs='+', help="Configuration file to use.")
 
     # Test command
     test_parser = subparsers.add_parser(
             'test', help="Test each workload.")
-    test_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
+    test_parser.add_argument('config_files', nargs='+', help="Configuration file(s) to use.")
     test_parser.add_argument('-s', '--spike', action='store_true',
                              help="Use the spike isa simulator instead of qemu")
     test_parser.add_argument('-m', '--manual', metavar='testDir', help="Manual test, don't build or run, just compare testDir against the reference output.")
@@ -60,12 +60,12 @@ def main():
     # Clean Command
     clean_parser = subparsers.add_parser(
             'clean', help="Removes build outputs of the provided config (img and bin). Does not affect logs or runOutputs.")
-    clean_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
+    clean_parser.add_argument('config_files', nargs='+', help="Configuration file(s) to use.")
 
     # Install Command
     install_parser = subparsers.add_parser(
             'install', help="Install this workload to firesim (create configs in firesim/deploy/workloads)")
-    install_parser.add_argument('config_files', metavar="config", type=pathlib.Path, nargs='+', help="Configuration file(s) to use.")
+    install_parser.add_argument('config_files', nargs='+', help="Configuration file(s) to use.")
     install_parser.add_argument("-t", "--target", default='firesim', type=str, help="Target to install to. See your board's documentation for available targets")
 
     args = parser.parse_args()
@@ -82,7 +82,13 @@ def main():
 
     wlutil.initLogging(args.verbose, werr=args.werr)
 
-    # Load all the configs from the workload directories
+    # Detect path-like config files vs just names
+    for i in range(len(args.config_files)):
+        cfg = args.config_files[i]
+        if '/' in cfg:
+            args.config_files[i] = pathlib.Path(cfg).resolve()
+
+    # Set up generic search paths for other workloads
     # Order matters here, duplicate workload files found in later search paths
     # will overwrite files found in earlier search paths.
 
@@ -101,12 +107,10 @@ def main():
     if args.workdir is not None:
         workdirs[args.workdir] = None
 
-    # Treat the workload name as a path and search locally for it
-    args.config_files = [f.resolve() for f in args.config_files]
-    for f in args.config_files:
-        workdirs[f.parent] = None
+    # Local directory is first place to look
+    workdirs[pathlib.Path.cwd()] = None
 
-    cfgs = wlutil.ConfigManager(args.config_files, workdirs.keys())
+    cfgs = wlutil.ConfigManager(args.config_files, list(workdirs.keys()))
 
     if args.command == 'test':
         suitePass = True
@@ -117,7 +121,10 @@ def main():
         # Each config gets it's own logging output and results directory
         ctx.setRunName(cfgPath, args.command)
         wlutil.initLogging(args.verbose, werr=args.werr)
-        cfgName = cfgPath.name
+        if isinstance(cfgPath, pathlib.Path):
+            cfgName = cfgPath.name
+        else:
+            cfgName = cfgPath
 
         log = logging.getLogger()
         if not args.verbose:
