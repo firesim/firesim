@@ -695,33 +695,6 @@ class ConfigManager(collections.MutableMapping):
 
             log.debug("Loaded " + str(cfgName))
 
-    def _loadRecursive(self, cfgName):
-        log = logging.getLogger()
-
-        if isinstance(cfgName, pathlib.Path):
-            cfgPath = cfgName
-        else:
-            cfgPath = findConfig(cfgName, self.searchPaths)
-
-        cfgName = cfgPath.name
-
-        log.debug(f"Loading {cfgName}:{cfgPath}")
-        if cfgName in self.cfgs:
-            log.warning("Workload " + str(cfgPath) + " overrides " + str(self.cfgs[cfgName]['cfg-file']))
-
-        targetCfg = Config(cfgPath)
-        self.cfgs[cfgName] = targetCfg
-
-        parentName = targetCfg.get('base', None)
-        while not (parentName in self.cfgs or
-                   parentName is None or
-                   parentName in wlutil.getOpt('distro-mods')):
-
-            parentPath = findConfig(parentName, self.searchPaths)
-            parentCfg = Config(parentPath)
-            self.cfgs[parentName] = parentCfg
-            parentName = parentCfg.get('base', None)
-
     def _forkDistro(self, cfg):
         """Starting from cfg, create new versions of every base that have this
         config's distro options. After this, cfg will inherit from distro-opt
