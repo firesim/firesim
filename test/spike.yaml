@@ -1,6 +1,6 @@
 {
   "name" : "spike",
-  "base" : "bare",
+  "base" : "bare-base.json",
   "host-init" : "build.sh",
   "bin" : "hello",
   "spike" : "spike_local/bin/spike",

@@ -177,6 +177,23 @@ configTesting = [
 ]
 
 
+class WorkloadConfigError(Exception):
+    def __init__(self, path, opt=None, extra=None):
+        self.path = path
+        self.opt = opt
+        self.extra = extra
+
+    def __str__(self):
+        msg = "Unable to load workload " + str(self.path)
+        if self.opt is not None:
+            msg += f": error with option '{self.opt}'"
+
+        if self.extra is not None:
+            msg += ": " + self.extra
+
+        return msg
+
+
 class RunSpec():
     def __init__(self, script=None, command=None, args=[]):
         """RunSpec represents a command or script to run in the target.
@@ -388,7 +405,6 @@ class Config(collections.MutableMapping):
     def __init__(self, cfgFile=None, cfgDict=None):
         if cfgFile is not None:
             with open(cfgFile, 'r') as f:
-                # self.cfg = json.load(f)
                 self.cfg = yaml.safe_load(f)
             self.cfg['cfg-file'] = cfgFile
         else:
@@ -578,48 +594,79 @@ class Config(collections.MutableMapping):
         return repr(self.cfg)
 
 
+def findConfig(targetName, searchPaths):
+    for searchDir in searchPaths:
+        for candidate in searchDir.iterdir():
+            if candidate.name == targetName:
+                return candidate
+
+    return None
+
+
 # The configuration of sw-manager is derived from the *.json files in workloads/
 class ConfigManager(collections.MutableMapping):
     # This contains all currently loaded configs, indexed by config file path
     cfgs = {}
 
-    # Initialize this class with the set of configs to use. Note that configs
-    # that don't parse will issue a warning but be ignored otherwise.
-    # Args:
-    #   cfgdir - An iterable of directories containing config files to load.
-    #            All files matching *.json in these directories will be loaded.
-    #   paths - An iterable of absolute paths to config files to load
-    def __init__(self, dirs=None, paths=None):
+    def __init__(self, configNames, searchPaths):
+        """Initialize this class with the set of configs to use. Note that configs
+        that don't parse will issue a warning but be ignored otherwise.
+        Args:
+        configNames - An iterable of configuration file names to load, names
+            may be a string (in which case it will be looked for in searchPaths) or
+            a pathlib.Path object (in which case it will be loaded directly).
+
+        searchPaths - A list of pathlib.Path objects to directories to search
+            when locating workload configurations.
+        """
         log = logging.getLogger()
-        cfgPaths = []
-        if paths is not None:
-            cfgPaths += paths
 
-        if dirs is not None:
-            for d in dirs:
-                for cfgFile in d.glob('*.json'):
-                    cfgPaths.append(cfgFile)
-                for cfgFile in d.glob('*.yaml'):
-                    cfgPaths.append(cfgFile)
+        self.searchPaths = searchPaths
 
-        # Read all the configs from their files
-        for f in cfgPaths:
-            cfgName = f.name
-            try:
-                log.debug("Loading " + str(f))
-                if cfgName in list(self.cfgs.keys()):
-                    log.warning("Workload " + str(f) + " overrides " + str(self.cfgs[cfgName]['cfg-file']))
-                self.cfgs[cfgName] = Config(f)
-            except KeyError as e:
-                log.warning("Skipping " + str(f) + ":")
-                log.warning("\tMissing required option '" + e.args[0] + "'")
-                self.cfgs.pop(cfgName, None)
-                continue
-            except Exception as e:
-                log.warning("Skipping " + str(f) + ": Unable to parse config:")
-                log.warning("\t" + repr(e))
-                del self.cfgs[cfgName]
-                raise
+        # Load the explicitly provided workloads
+        for cfgName in configNames:
+            if isinstance(cfgName, pathlib.Path):
+                cfgPath = cfgName
+            else:
+                cfgPath = findConfig(cfgName, searchPaths)
+
+            if cfgPath is None:
+                raise WorkloadConfigError(cfgName, extra="Could not locate workload")
+
+            cfgName = cfgPath.name
+
+            log.debug(f"Loading {cfgName}:{cfgPath}")
+            if cfgName in self.cfgs:
+                log.warning("Workload " + str(cfgPath) + " overrides " + str(self.cfgs[cfgName]['cfg-file']))
+
+            targetCfg = Config(cfgPath)
+            self.cfgs[cfgName] = targetCfg
+
+            # Once loaded, jobs are pretty much like any other workload. We
+            # stick them in the global pool of loaded configs for future
+            # reference.
+            if 'jobs' in targetCfg:
+                for jCfg in targetCfg['jobs'].values():
+                    self.cfgs[jCfg['name']] = jCfg
+
+        # Load parent workloads
+        for targetCfg in list(self.cfgs.values()):
+            parentName = targetCfg.get('base', None)
+            currentName = cfgName
+            while not (parentName in self.cfgs or
+                       parentName is None or
+                       parentName in wlutil.getOpt('distro-mods')):
+
+                parentPath = findConfig(parentName, searchPaths + [targetCfg['cfg-file'].parent])
+                if parentPath is None:
+                    raise WorkloadConfigError(currentName,
+                                              opt='base',
+                                              extra=f"Could not locate base workload '{parentName}'")
+
+                parentCfg = Config(parentPath)
+                self.cfgs[parentName] = parentCfg
+                currentName = parentName
+                parentName = parentCfg.get('base', None)
 
         # Distro options essentially fork the inheritance tree at the root
         # since they modify a parent from the child. For every child with a
@@ -628,7 +675,6 @@ class ConfigManager(collections.MutableMapping):
         # workloads for all intents and purposes.
         for cfgName in list(self.cfgs.keys()):
             cfg = self.cfgs[cfgName]
-
             # Leafs modified the distro config in some way and need to fork the
             # inheritance chain
             if 'distro' in cfg and cfg['distro']['leaf']:
@@ -640,18 +686,12 @@ class ConfigManager(collections.MutableMapping):
 
             try:
                 self._initializeFromBase(self.cfgs[cfgName])
-
             except KeyError as e:
-                log.warning("Skipping " + str(cfgName) + ":")
-                log.warning("\tMissing required option '" + e.args[0] + "'")
-                del self.cfgs[cfgName]
-                continue
+                raise WorkloadConfigError(cfgName,
+                                          extra=f"Missing required option '{e.args[0]}'")
             except Exception as e:
-                log.warning("Skipping " + str(cfgName) + ": Unable to parse config:")
-                log.warning("\t" + repr(e))
-                del self.cfgs[cfgName]
-                raise
-                continue
+                raise WorkloadConfigError(cfgName,
+                                          extra="Unable to parse config: " + repr(e))
 
             log.debug("Loaded " + str(cfgName))
 
@@ -740,7 +780,7 @@ class ConfigManager(collections.MutableMapping):
                     baseCfg = self.cfgs[cfg['base']]
                 except KeyError as e:
                     if e.args[0] != 'base' and e.args[0] == cfg['base']:
-                        log.warning("Base config '" + cfg['base'] + " not found.")
+                        log.warning("Base config '" + cfg['base'] + "' not found.")
                     raise
 
                 if not baseCfg.initialized:
@@ -762,6 +802,9 @@ class ConfigManager(collections.MutableMapping):
                     self._initializeFromBase(jCfg)
 
     # The following methods are needed by MutableMapping
+    def keys(self):
+        return self.cfgs.keys()
+
     def __getitem__(self, key):
         return self.cfgs[key]
 
