@@ -19,7 +19,11 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
   case EnableModelMultiThreading => true
   case SynthPrints => true
   case EnableAutoCounter => true
-}) ++ new Config(new firesim.configs.WithEC2F1Artefacts ++ new WithDefaultMemModel ++ new midas.F1Config))
+}) ++ new Config(
+  new firesim.configs.WithEC2F1Artefacts ++
+  new WithDefaultMemModel ++
+  new firesim.configs.WithILATopWiringTransform ++
+  new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {
   case MemSize => BigInt(1 << 30) // 1 GB
