@@ -568,9 +568,6 @@ void firesim_top_t::run() {
     fprintf(stderr, "Commencing simulation.\n");
     record_start_times();
 
-    // Assert reset T=0 -> 50
-    target_reset(50);
-
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();
         step(get_largest_stepsize(), false);
