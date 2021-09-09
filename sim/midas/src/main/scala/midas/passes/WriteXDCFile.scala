@@ -10,7 +10,11 @@ import firrtl.analyses.InstanceKeyGraph
 import midas.stage.{GoldenGateFileEmission}
 import midas.targetutils.xdc._
 
-private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[String] = Some(".xdc"))
+/**
+  * We could reuse [[GoldenGateOutputFileAnnotation]] here, but this makes it
+  * marginally easier to filter out.
+  */
+private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[String])
     extends NoTargetAnnotation with GoldenGateFileEmission {
   def getBytes = fileBody.getBytes
 }
@@ -84,7 +88,7 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
       val annos = xdcAnnosGroupedByFile.get(fileType).getOrElse(Nil)
       val xdcSnippets = annos.map { a => serializeXDC(a, iGraph, circuitPath) }
       XDCOutputAnnotation(
-        xdcHeader + xdcSnippets.flatten.mkString("\n"),
+        (xdcHeader +: xdcSnippets.flatten).mkString("\n"),
         Some(fileType.fileSuffix))
     }
 
