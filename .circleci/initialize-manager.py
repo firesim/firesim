@@ -28,6 +28,13 @@ def initialize_manager(max_runtime):
             run("git checkout " + ci_commit_sha1)
             run("./build-setup.sh --fast")
 
+        # Initialize marshal submodules early because it appears some form of
+        # contention between submodule initialization and the jgit SBT plugin
+        # causes SBT to lock up, causing downstream scala tests to fail when
+        # run concurrently with ./init-submodules.sh
+        with cd(manager_marshal_dir):
+            run("./init-submodules.sh")
+
         with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh"):
             run(".circleci/firesim-managerinit.expect {} {} {}".format(
                 os.environ["AWS_ACCESS_KEY_ID"],
@@ -40,8 +47,10 @@ def initialize_manager(max_runtime):
 
             # Setting pty=False is required to stop the screen from being
             # culled when the SSH session associated with teh run command ends.
-            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'".format(int(max_runtime) * 3600 , ci_workflow_id), pty=False)
-            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}".format(ci_workflow_id, ci_api_token), pty=False)
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'"
+                .format(int(max_runtime) * 3600, ci_workflow_id), pty=False)
+            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}"
+                .format(ci_workflow_id, ci_api_token), pty=False)
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)

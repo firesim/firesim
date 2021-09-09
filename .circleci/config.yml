@@ -10,6 +10,7 @@ executors:
     environment:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
         LANG: en_US.UTF-8 # required by sbt when it sees boost directories
+        MARSHAL_JLEVEL: 8 # This is unset by default, leading to starvation conditions on the manager
   aws:
     docker:
     - image: cimg/python:2.7-node
@@ -154,6 +155,15 @@ jobs:
               max-runtime-hours: 6
           - initial-scala-compile
 
+  build-default-workloads:
+    description: "Invokes marshal to build the default rootfs."
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          command: |
+              .circleci/build-default-workloads.py
+          no_output_timeout: 30m
 
   run-manager-pytests:
     executor: aws
@@ -207,6 +217,10 @@ workflows:
   firesimCIall:
     jobs:
      - setup-default-manager
+
+     - build-default-workloads:
+         requires:
+         - setup-default-manager
 
      - run-test-groupA:
          requires:

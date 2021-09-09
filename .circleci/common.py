@@ -5,6 +5,7 @@ from fabric.api import *
 # Remote paths
 manager_home_dir = "/home/centos"
 manager_fsim_dir = "/home/centos/firesim"
+manager_marshal_dir = manager_fsim_dir + "/target-design/chipyard/software/firemarshal"
 manager_ci_dir = manager_fsim_dir + "/.circleci"
 
 # Common fabric settings
