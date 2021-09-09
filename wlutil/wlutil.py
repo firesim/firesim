@@ -337,6 +337,12 @@ class marshalCtx(collections.MutableMapping):
 
         if self['jlevel'] is None:
             self['jlevel'] = psutil.cpu_count()
+            if self['jlevel'] is None:
+                # logging has not be initialized by this point, have to settle
+                # for print
+                print("WARNING: unable to determine CPU count, defaulting jlevel to 1. You may explicitly set the jlevel in your marshal-config.yaml.")
+                self['jlevel'] = 1
+
         self['jlevel'] = '-j' + str(self['jlevel'])
 
     def setRunName(self, configPath, operation):
