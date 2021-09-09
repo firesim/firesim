@@ -18,6 +18,7 @@ import re
 import pprint
 import doit
 import importlib.util
+import psutil
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', ['src', 'dst'])
@@ -316,7 +317,6 @@ class marshalCtx(collections.MutableMapping):
         self['command-script'] = self['gen-dir'] / "_command.sh"
         self['run-name'] = ""
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
-        self['jlevel'] = '-j' + str(self['jlevel'])
 
         self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
         self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
@@ -334,6 +334,16 @@ class marshalCtx(collections.MutableMapping):
         for dPath in (self['board-dir'] / 'distros').glob("*"):
             m = self.importDistro(dPath)
             self['distro-mods'][m.__name__] = m
+
+        if self['jlevel'] is None:
+            self['jlevel'] = psutil.cpu_count()
+            if self['jlevel'] is None:
+                # logging has not be initialized by this point, have to settle
+                # for print
+                print("WARNING: unable to determine CPU count, defaulting jlevel to 1. You may explicitly set the jlevel in your marshal-config.yaml.")
+                self['jlevel'] = 1
+
+        self['jlevel'] = '-j' + str(self['jlevel'])
 
     def setRunName(self, configPath, operation):
         """Helper function for formatting a  unique run name. You are free to
