@@ -20,7 +20,7 @@ private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[S
 }
 
 private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration with XDCAnnotationConstants {
-	override def prerequisites = Forms.LowForm
+    override def prerequisites = Forms.LowForm
   // Probably should run before emitter?
 
   private def formatArguments(
@@ -36,7 +36,7 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
     // emitted with targets rooted at the current chisel module...
     val rootModule = argumentList.head.module
     // Explicit here means the LCA is encoded directly in the module field of the target.
-    val hasCommonExplicitRoot = argumentList.foldLeft(true) { _ && _.module == rootModule }
+    val hasCommonExplicitRoot = argumentList.forall(_.module == rootModule)
     require(hasCommonExplicitRoot,
       "All targets in an XDC Annotation must be rooted at the same module. Got:\n" +
       argumentList.mkString("\n"))
@@ -64,7 +64,7 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
     val segments = specifierRegex.split(anno.formatString)
     val duplicatedArgumentLists = formatArguments(iGraph, anno.argumentList, pathToCircuit)
     for (formattedArguments <- duplicatedArgumentLists) yield {
-      segments.zipAll(formattedArguments, "", "").foldLeft(""){ case (root, (a, b)) => root + a + b }
+      segments.zipAll(formattedArguments, "", "").map { case (a, b) => a + b }.mkString
     }
   }
 
