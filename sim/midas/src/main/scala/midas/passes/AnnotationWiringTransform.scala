@@ -6,6 +6,7 @@ import midas.targetutils._
 
 import scala.reflect.{ClassTag, classTag}
 import scala.collection.mutable
+import scala.util.{Try, Success, Failure}
 
 import firrtl._
 import firrtl.annotations._
@@ -22,10 +23,20 @@ import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
   * having to wire them all at once (since some passes in the compiler may
   * inject new sinks or sources, before their opposite has been added).
   *
+  * @param expectsExactlyOneSource When set, the pass will throw an exception
+  * if no SourceType annotation is found. Otherwise, no changes to the circuit are
+  * made (though SinkType annotations will be removed).
+  *
+  * @param expectsAtLeastOneSink When set, the pass will throw an exception
+  * if no SinkType  annotations are found. Otherwise, no changes to the circuit are
+  * made (though SourceType annotations will be removed).
+  *
   */
 class AnnotationParameterizedWiringTransform[
-  SourceType <: SingleTargetAnnotation[ReferenceTarget] : ClassTag,
-  SinkType <: SingleTargetAnnotation[ReferenceTarget] : ClassTag] extends Transform with DependencyAPIMigration {
+    SourceType <: SingleTargetAnnotation[ReferenceTarget] : ClassTag,
+    SinkType <: SingleTargetAnnotation[ReferenceTarget] : ClassTag](
+    expectsExactlyOneSource: Boolean,
+    expectsAtLeastOneSink: Boolean) extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
@@ -45,18 +56,41 @@ class AnnotationParameterizedWiringTransform[
       case o => cleanedAnnotations += o
     }
 
-    assert(sources.size <= 1, "Expected 0 or 1 sources, got:\n" + sources.mkString("\n"))
 
-    val updatedState = if (sources.nonEmpty) {
-      val sinkWiringTransforms = Seq(new WiringTransform, new ResolveAndCheck)
-      sinkWiringTransforms.foldLeft(
-        state.copy(annotations = sinks ++: sources ++: state.annotations))(
-       (in, xform) => xform.runTransform(in))
-    } else {
-      state
+    val sourceName = classTag[SourceType].runtimeClass.getName
+    val sinkName = classTag[SinkType].runtimeClass.getName
+    require(sources.size <= 1, s"Received multiple ${sourceName} annotations:\n" + sources.mkString("\n"))
+    require(!expectsExactlyOneSource || sources.size == 1, s"Expected exactly one ${sourceName} annotation, but got none.")
+    require(!expectsAtLeastOneSink   || sinks.size > 0, s"Expected at least one ${sinkName} annotation, but got none.")
+
+    val sourceLoc = sources.headOption.map { _.target }
+    val sinkLocs = sinks
+      .map { _.target }
+      .mkString("\n    ")
+
+    logger.info(
+      s"""|Wiring ${sourceName} to ${sinkName}
+          |  Source: ${sourceLoc}
+          |  Sinks: ${sinkLocs}""".stripMargin)
+
+
+    def doWiring(): Try[CircuitState] = {
+      if (sources.nonEmpty && sinks.nonEmpty) {
+        val sinkWiringTransforms = Seq(new WiringTransform, new ResolveAndCheck)
+        Try(sinkWiringTransforms.foldLeft(
+          state.copy(annotations = sinks ++: sources ++: state.annotations))(
+         (in, xform) => xform.runTransform(in)))
+      } else {
+        Success(state)
+      }
     }
-    updatedState.copy(annotations = cleanedAnnotations)
+
+    doWiring match {
+      case Success(state) => state.copy(annotations = cleanedAnnotations)
+      case Failure(why) =>
+        throw new RuntimeException(s"Could not perform wiring for annotation: ${wiringKey}. Exception follows.\n $why")
+    }
   }
 }
 
-object GlobalResetConditionWiring extends AnnotationParameterizedWiringTransform[GlobalResetCondition, GlobalResetConditionSink]
+object GlobalResetConditionWiring extends AnnotationParameterizedWiringTransform[GlobalResetCondition, GlobalResetConditionSink](false, false)
