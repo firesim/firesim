@@ -321,7 +321,8 @@
 specific Source and Sink annotation pair. It collects and maps these
 specific annotations into WiringAnnotations.</p><p>This permits sources and sinks for different features to exist without
 having to wire them all at once (since some passes in the compiler may
-inject new sinks or sources, before their opposite has been added).</p></div><div class="toggleContainer block">
+inject new sinks or sources, before their opposite has been added).
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -376,10 +377,10 @@ inject new sinks or sources, before their opposite has been added).</p></div><di
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="midas.passes.AnnotationParameterizedWiringTransform#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;()(implicitevidence$1:scala.reflect.ClassTag[SourceType],implicitevidence$2:scala.reflect.ClassTag[SinkType]):midas.passes.AnnotationParameterizedWiringTransform[SourceType,SinkType]"></a><a id="&lt;init&gt;:AnnotationParameterizedWiringTransform[SourceType,SinkType]"></a>
+              <ol><li name="midas.passes.AnnotationParameterizedWiringTransform#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(expectsExactlyOneSource:Boolean,expectsAtLeastOneSink:Boolean)(implicitevidence$1:scala.reflect.ClassTag[SourceType],implicitevidence$2:scala.reflect.ClassTag[SinkType]):midas.passes.AnnotationParameterizedWiringTransform[SourceType,SinkType]"></a><a id="&lt;init&gt;:AnnotationParameterizedWiringTransform[SourceType,SinkType]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/AnnotationParameterizedWiringTransform.html#&lt;init&gt;()(implicitevidence$1:scala.reflect.ClassTag[SourceType],implicitevidence$2:scala.reflect.ClassTag[SinkType]):midas.passes.AnnotationParameterizedWiringTransform[SourceType,SinkType]" title="Permalink">
+      <a href="../../midas/passes/AnnotationParameterizedWiringTransform.html#&lt;init&gt;(expectsExactlyOneSource:Boolean,expectsAtLeastOneSink:Boolean)(implicitevidence$1:scala.reflect.ClassTag[SourceType],implicitevidence$2:scala.reflect.ClassTag[SinkType]):midas.passes.AnnotationParameterizedWiringTransform[SourceType,SinkType]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -388,10 +389,14 @@ inject new sinks or sources, before their opposite has been added).</p></div><di
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AnnotationParameterizedWiringTransform</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<span class="extype" name="midas.passes.AnnotationParameterizedWiringTransform.SourceType">SourceType</span>]</span>, <span name="arg1">arg1: <a href="https://www.scala-lang.org/api/2.12.10/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<span class="extype" name="midas.passes.AnnotationParameterizedWiringTransform.SinkType">SinkType</span>]</span>)</span>
+        <span class="name">AnnotationParameterizedWiringTransform</span><span class="params">(<span name="expectsExactlyOneSource">expectsExactlyOneSource: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="expectsAtLeastOneSink">expectsAtLeastOneSink: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<span class="extype" name="midas.passes.AnnotationParameterizedWiringTransform.SourceType">SourceType</span>]</span>, <span name="arg1">arg1: <a href="https://www.scala-lang.org/api/2.12.10/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<span class="extype" name="midas.passes.AnnotationParameterizedWiringTransform.SinkType">SinkType</span>]</span>)</span>
       </span>
       
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">expectsExactlyOneSource</dt><dd class="cmt"><p>When set, the pass will throw an exception
+if no SourceType annotation is found. Otherwise, no changes to the circuit are
+made (though SinkType annotations will be removed).</p></dd><dt class="param">expectsAtLeastOneSink</dt><dd class="cmt"><p>When set, the pass will throw an exception
+if no SinkType  annotations are found. Otherwise, no changes to the circuit are
+made (though SourceType annotations will be removed).</p></dd></dl></div>
     </li></ol>
             </div>
 
