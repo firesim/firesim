@@ -28,7 +28,7 @@ class FAMEAnnotationSerialization extends AnyFlatSpec {
   }
 
   "ClockChannel FCCAs" should "serialize and deserialize correctly" in {
-    val clockInfo = TargetClockChannel(Seq(RationalClock("test",1,2)))
+    val clockInfo = TargetClockChannel(Seq(RationalClock("test",1,2)), Seq(1))
     val anno = baseFCCA.copy(channelInfo = clockInfo)
     val deserAnno = serializeAndDeserialize(anno)
     assert(anno == deserAnno)
