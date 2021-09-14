@@ -15,6 +15,8 @@ import scala.collection.mutable
 import mutable.{LinkedHashSet, LinkedHashMap}
 
 import midas.passes._
+import midas.targetutils.xdc.{XDCFiles, XDCAnnotation}
+import midas.widgets.{RationalClock}
 
 /**************
  PRECONDITIONS:
@@ -70,10 +72,20 @@ trait FAME1DataChannel extends FAME1Channel with HasModelPort {
   }
 }
 
-case class FAME1ClockChannel(name: String, ports: Seq[Port]) extends FAME1Channel with InputChannel with HasModelPort
+trait ClockChannel {
+  def clockInfo: Seq[RationalClock]
+  def clockMFMRs: Seq[Int]
+  lazy val clockMFMRMap: Map[RationalClock, Int] = clockInfo.zip(clockMFMRs).toMap
+}
 
-case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with InputChannel {
+
+case class FAME1ClockChannel(name: String, ports: Seq[Port], clockInfo: Seq[RationalClock], clockMFMRs: Seq[Int])
+    extends FAME1Channel with InputChannel with HasModelPort with ClockChannel
+
+case class VirtualClockChannel(targetClock: Port) extends FAME1Channel with InputChannel with ClockChannel {
   val name = "VirtualClockChannel"
+  val clockInfo = Seq(RationalClock("NonHubClock", 1,1))
+  val clockMFMRs = Seq(1)
   val ports = Seq(targetClock)
   val isValid: Expression = UIntLiteral(1)
   def setReady(advanceCycle: Expression): Statement = EmptyStmt
@@ -107,7 +119,7 @@ case class FAME1OutputChannel(
 // - Use to initialize isFired for all channels (with negation)
 // - Finishing is gated with clock channel valid
 object FAMEModuleTransformer {
-  def apply(m: Module, analysis: FAMEChannelAnalysis): Module = {
+  def apply(m: Module, analysis: FAMEChannelAnalysis, addedAnnos: mutable.ArrayBuffer[Annotation]): Module = {
     // Step 0: Bookkeeping for port structure conventions
     implicit val ns = Namespace(m)
     val mTarget = ModuleTarget(analysis.circuit.main, m.name)
@@ -132,10 +144,11 @@ object FAMEModuleTransformer {
     }
 
 
-    val clockChannel = analysis.modelInputChannelPortMap(mTarget).find(isClockChannel) match {
-      case Some((name, (None, ports))) => FAME1ClockChannel(name, ports)
+    val (currentModuleIsHub, clockChannel) = analysis.modelInputChannelPortMap(mTarget).find(isClockChannel) match {
+      case Some((name, (None, ports))) =>
+        (true, FAME1ClockChannel(name, ports, analysis.targetClockChInfo.clockInfo, analysis.targetClockChInfo.perClockMFMR))
       case Some(_) => ??? // Clock channel cannot have an associated clock domain
-      case None => VirtualClockChannel(clocks.head) // Virtual clock channel for single-clock models
+      case None => (false, VirtualClockChannel(clocks.head)) // Virtual clock channel for single-clock models
     }
 
     /*
@@ -169,7 +182,7 @@ object FAMEModuleTransformer {
       clockBuffer: SignalInfo)
 
     // Multi-clock management step 4: Generate clock buffers for all target clocks
-    val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.map { en =>
+    val clockMetadata: Seq[TargetClockMetadata] = clockChannel.ports.zip(clockChannel.clockInfo).map { case (en, info) =>
       val enableReg = hostFlagReg(s"${en.name}_enabled")
       val buf = WDefInstance(ns.newName(s"${en.name}_buffer"), DefineAbstractClockGate.blackbox.name)
       val clockFlag = DoPrim(PrimOps.AsUInt, Seq(clockChannel.replacePortRef(WRef(en))), Nil, BoolType)
@@ -178,6 +191,44 @@ object FAMEModuleTransformer {
         Connect(NoInfo, WSubField(WRef(buf), "I"), WRef(hostClock)),
         Connect(NoInfo, WSubField(WRef(buf), "CE"),
           And.reduce(Seq(WRef(enableReg), WRef(finishing), nReset)))))
+      // Add multicycle annotations
+      val clockName = info.name
+      val clockMFMR = clockChannel.clockMFMRMap(info)
+      val bufferOutputRT = mTarget.ref(buf.name).field("O")
+
+      if (currentModuleIsHub) {
+        // Leverage the MFMR hint provided by the clock bridge to relax the setup constraints on 
+        // intra-domain paths. Do this only for the hub, since it it is the only multiclock model.
+        //
+        // Using this multicycle setup constraint is conservative, since all
+        // inter-clock paths must still close timing at single a host cycle of
+        // delay. If we instead defined these generated clocks by specifying them
+        // as _divisions_ of the host_clock, the timer may give more margin to a
+        // path spanning two slower clock domains, when in reality they must meet
+        // a single host-cycle constraint.  For a counterexample, consider three
+        // clocks with periods of 2, 3, 4. This produces the following clock token schedule:
+        //
+        // token  : 0 1 2 3 4 5
+        // ====================
+        // clk 2  : 1 1 0 1 1 1
+        // clk 3  : 1 0 1 0 1 0
+        // clk 4  : 1 0 0 1 0 1
+        // t_time : 0 2 3 4 6 8
+        //
+        // While the latter two clocks have MFMRs of 2, they sometimes fire in
+        // back-to-back host-cycles (tokens 2->3).
+        //
+        // Note: "host_clock" is defined statically in the shell XDC.
+        val xdcAnno = XDCAnnotation(
+          XDCFiles.Implementation,
+          s"""|create_generated_clock -name ${clockName} -source [get_pins -of [get_clocks host_clock]] [get_pins {}] -divide_by 1
+              |set_multicycle_path $clockMFMR -setup -from [get_clocks $clockName] -to [get_clocks $clockName]
+              |set_multicycle_path 1 -hold  -from [get_clocks $clockName] -to [get_clocks $clockName]
+              |""".stripMargin,
+          bufferOutputRT)
+        addedAnnos += xdcAnno
+      }
+
       TargetClockMetadata(
         en,
         WRef(enableReg),
@@ -405,10 +456,12 @@ class FAMETransform extends Transform {
     // TODO: pick a value that does not collide
     implicit val triggerName = "finishing"
 
+    val addedAnnos = mutable.ArrayBuffer[Annotation]()
+
     val toTransform = analysis.transformedModules
     val transformedModules = c.modules.map {
       case m: Module if (m.name == c.main) => transformTop(m, analysis)
-      case m: Module if (toTransform.contains(ModuleTarget(c.main, m.name))) => FAMEModuleTransformer(m, analysis)
+      case m: Module if (toTransform.contains(ModuleTarget(c.main, m.name))) => FAMEModuleTransformer(m, analysis, addedAnnos)
       case m => m // TODO (Albert): revisit this; currently, not transforming nested modules
     }
 
@@ -418,6 +471,6 @@ class FAMETransform extends Transform {
     }
 
     val newCircuit = c.copy(modules = transformedModules)
-    CircuitState(newCircuit, outputForm, filteredAnnos, Some(hostDecouplingRenames(analysis)))
+    CircuitState(newCircuit, outputForm, filteredAnnos ++ addedAnnos, Some(hostDecouplingRenames(analysis)))
   }
 }

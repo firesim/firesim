@@ -40,6 +40,22 @@ sealed trait ClockBridgeConsts {
 }
 
 /**
+  * Finds a virtual fast-clock whose period is the GCD of the periods of all requested
+  * clocks, and returns the period of each requested clock as an integer multiple of that
+  * high-frequency virtual clock.
+  */
+object FindScaledPeriodGCD {
+  def apply(phaseRelationships: Seq[(Int, Int)]): Seq[BigInt] = {
+    val periodDivisors = phaseRelationships.unzip._1
+    val productOfDivisors  = periodDivisors.foldLeft(BigInt(1))(_ * _)
+    val scaledMultipliers  = phaseRelationships.map({ case (divisor, multiplier) =>  multiplier * productOfDivisors / divisor })
+    val gcdOfScaledPeriods = scaledMultipliers.reduce((a, b) => a.gcd(b))
+    val reducedPeriods     = scaledMultipliers.map(_ / gcdOfScaledPeriods)
+    reducedPeriods
+  }
+}
+
+/**
   * A custom bridge annotation for the Clock Bridge. Unique so that we can
   * trivially match against it in bridge extraction.
   *
@@ -80,12 +96,16 @@ class RationalClockBridge(val allClocks: Seq[RationalClock]) extends BlackBox wi
     val clocks = Output(Vec(allClocks.size, Clock()))
   })
 
+  val scaledPeriods = FindScaledPeriodGCD(allClocks.map { c => (c.multiplier, c.divisor) })
+  val minPeriod = scaledPeriods.min
+  val clockMFMRs = scaledPeriods.map { period => ((period + (minPeriod - 1)) / minPeriod).toInt }
+
   // Generate the bridge annotation
   annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation(outer.toTarget, allClocks) })
   annotate(new ChiselAnnotation { def toFirrtl =
       FAMEChannelConnectionAnnotation(
         clockChannelName,
-        channelInfo = TargetClockChannel(allClocks),
+        channelInfo = TargetClockChannel(allClocks, clockMFMRs),
         clock = None, // Clock channels do not have a reference clock
         sinks = Some(io.clocks.map(_.toTarget)),
         sources = None
@@ -159,22 +179,6 @@ class ClockBridgeModule(clockInfo: Seq[RationalClock])(implicit p: Parameters)
     tCycleFastest := tCycleFastest + 1.U
   }
   genCRFile()
-}
-
-/**
-  * Finds a virtual fast-clock whose period is the GCD of the periods of all requested
-  * clocks, and returns the period of each requested clock as an integer multiple of that
-  * high-frequency virtual clock.
-  */
-object FindScaledPeriodGCD {
-  def apply(phaseRelationships: Seq[(Int, Int)]): Seq[BigInt] = {
-    val periodDivisors = phaseRelationships.unzip._1
-    val productOfDivisors  = periodDivisors.foldLeft(BigInt(1))(_ * _)
-    val scaledMultipliers  = phaseRelationships.map({ case (divisor, multiplier) =>  multiplier * productOfDivisors / divisor })
-    val gcdOfScaledPeriods = scaledMultipliers.reduce((a, b) => a.gcd(b))
-    val reducedPeriods     = scaledMultipliers.map(_ / gcdOfScaledPeriods)
-    reducedPeriods
-  }
 }
 
 /**
