@@ -152,7 +152,7 @@ jobs:
               command: |
                   .circleci/launch-manager-instance.py
           - initialize-manager:
-              max-runtime-hours: 6
+              max-runtime-hours: 10
           - initial-scala-compile
 
   build-default-workloads:
