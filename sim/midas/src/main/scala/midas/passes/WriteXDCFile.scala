@@ -21,7 +21,6 @@ private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[S
 
 private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration with XDCAnnotationConstants {
     override def prerequisites = Forms.LowForm
-  // Probably should run before emitter?
 
   private def formatArguments(
       iGraph: InstanceKeyGraph,

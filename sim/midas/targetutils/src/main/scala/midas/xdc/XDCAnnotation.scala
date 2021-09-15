@@ -62,7 +62,7 @@ object XDCFiles {
   *    emission under more complex duplication conditions, all RTs must share the
   *    same explicit root module (i.e,, their module parameter is the same).
   * .
-  * 2. Specifies currently cannot point at aggregates. This will be resolved in a future PR.
+  * 2. Specifiers currently cannot point at aggregates. This will be resolved in a future PR.
   *
   */
 
