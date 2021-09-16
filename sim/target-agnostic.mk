@@ -191,6 +191,7 @@ repo_state     := $(fpga_work_dir)/design/repo_state
 # Enumerates the subset of generated files that must be copied over for FPGA compilation
 fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
 	.sv .defines.vh .env.tcl \
+	.synthesis.xdc .implementation.xdc \
 	.ila_insert_inst.v .ila_insert_ports.v .ila_insert_wires.v .ila_insert_vivado.tcl)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')

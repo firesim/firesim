@@ -40,7 +40,10 @@ class GoldenGateCompilerPhase extends Phase {
 
     // Lower and emit simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      Dependency[firrtl.SystemVerilogEmitter] +:
+      // We should probably ensure all provided Host Transforms run before
+      // these two.  Perhaps we should just use a fourth compiler, or make sure
+      // user provided passes specify the right prerequisites?
+      Seq(Dependency[firrtl.SystemVerilogEmitter], Dependency(midas.passes.WriteXDCFile)) ++:
       p(HostTransforms),Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(hostLoweringCompiler.prettyPrint("  "))
