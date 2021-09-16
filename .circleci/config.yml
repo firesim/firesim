@@ -107,10 +107,14 @@ commands:
     parameters:
       max-runtime-hours:
         type: integer
+      timeout:
+        type: string
+        default: "30m"
     steps:
       - run:
           command: |
               .circleci/initialize-manager.py  << parameters.max-runtime-hours >>
+          no_output_timeout: << parameters.timeout >>
 
   # This avoids a race that occurs when multiple cold scala compilations are launched at the same time.
   initial-scala-compile:
