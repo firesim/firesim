@@ -49,7 +49,7 @@ def initialize_manager(max_runtime):
             # culled when the SSH session associated with teh run command ends.
             run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'"
                 .format(int(max_runtime) * 3600, ci_workflow_id), pty=False)
-            run("screen -S workflow-monitor -dm ./workflow-monitor.py {} {}"
+            run("screen -S workflow-monitor -L -dm ./workflow-monitor.py {} {}"
                 .format(ci_workflow_id, ci_api_token), pty=False)
 
     except BaseException as e:

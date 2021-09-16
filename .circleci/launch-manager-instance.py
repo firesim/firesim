@@ -14,7 +14,7 @@ from common import *
 sys.path.append(ci_workdir + "/deploy/awstools")
 import awstools
 
-INSTANCE_TYPE = 'c5.4xlarge'
+INSTANCE_TYPE = 'z1d.2xlarge'
 MARKET_TYPE = 'ondemand'
 SPOT_INT_BEHAVIOR = 'terminate'
 SPOT_MAX_PRICE = 'ondemand'
