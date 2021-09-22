@@ -1,7 +1,7 @@
 import Tests._
 
 // This needs to stay in sync with the chisel3 and firrtl git submodules
-val chiselVersion = "3.4.1"
+val chiselVersion = "3.5-SNAPSHOT"
 
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
@@ -10,7 +10,7 @@ apiDirectory := "latest"
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
-  scalaVersion := "2.12.10",
+  scalaVersion := "2.12.14",
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
@@ -99,4 +99,4 @@ lazy val firesim    = (project in file("."))
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
-  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile")
