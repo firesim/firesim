@@ -101,9 +101,10 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
         // Now emit a printf using all the generated hardware
         val printFormat = StringLit(s"""[AutoCounter] $label: %d\n""")
+        val printName = moduleNS.newName(label + "_print")
         val printStmt = Print(NoInfo, printFormat, Seq(WRef(count)),
-                              WRef(clock.ref), And(WRef(trigger), Neq(WRef(target.ref), zero)))
-        addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(countName))), mT, printFormat.string, Some(target.ref + "_print"))
+                              WRef(clock.ref), And(WRef(trigger), Neq(WRef(target.ref), zero)), printName)
+        addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(countName))), mT, printFormat.string, Some(printName))
         Seq(count, next, printStmt, countUpdate)
       })
       m.copy(body = Block(m.body, addedStmts:_*))
