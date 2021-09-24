@@ -12,7 +12,9 @@ from fabric.api import local, hide, settings
 rootLogger = logging.getLogger()
 
 # this needs to be updated whenever the FPGA Dev AMI changes
-f1_ami_name = "FPGA Developer AMI - 1.10.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+# You can find this by going to the AMI tab under EC2 and searching for public images:
+# https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
+f1_ami_name = "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
