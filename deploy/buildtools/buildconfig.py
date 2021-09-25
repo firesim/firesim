@@ -66,8 +66,7 @@ class BuildConfig:
 
     def get_build_dir_name(self):
         """" Get the name of the local build directory. """
-        return """{}-{}-{}""".format(self.launch_time,
-                                     self.get_chisel_triplet(), self.name)
+        return """{}-{}""".format(self.launch_time, self.name)
 
     # Builds up a string for a make invocation using the tuple variables
     def make_recipe(self, recipe):
