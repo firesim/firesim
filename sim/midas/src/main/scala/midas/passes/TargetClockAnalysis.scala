@@ -26,7 +26,7 @@ object ChannelClockInfoAnalysis extends Transform {
   def outputForm = LowForm
   def analyze(state: CircuitState): Map[String, RationalClock] = {
     val clockChannels = state.annotations.collect {
-      case FAMEChannelConnectionAnnotation(_,TargetClockChannel(clocks),_,_,Some(clockRTs)) =>
+      case FAMEChannelConnectionAnnotation(_,TargetClockChannel(clocks,_),_,_,Some(clockRTs)) =>
         clockRTs zip clocks
     }
     require(clockChannels.size == 1,
