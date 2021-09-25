@@ -151,6 +151,10 @@
                         <a href="ChannelSource$.html" title="">ChannelSource</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
+                        <a class="trait" href="ClockChannel.html" title=""></a>
+                        <a href="ClockChannel.html" title="">ClockChannel</a>
+                      </li><li class="current-entities indented3">
+                        <span class="separator"></span>
                         <a class="object" href="ConditionalConnect$.html" title=""></a>
                         <a href="ConditionalConnect$.html" title="">ConditionalConnect</a>
                       </li><li class="current-entities indented3">
@@ -589,6 +593,22 @@
       </span>
       
       
+    </li><li name="midas.passes.fame.ClockChannel" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ClockChannelextendsAnyRef"></a><a id="ClockChannel:ClockChannel"></a>
+      <span class="permalink">
+      <a href="../../../midas/passes/fame/ClockChannel.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ClockChannel.html"><span class="name">ClockChannel</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
     </li><li name="midas.passes.fame.Decoupled" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DecoupledextendsAnyRef"></a><a id="Decoupled:Decoupled"></a>
       <span class="permalink">
@@ -694,7 +714,7 @@ a decoupled target connection.
  2.) There are no collisions among input/output channel names
 </p>
     </li><li name="midas.passes.fame.FAME1ClockChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FAME1ClockChannelextendsFAME1ChannelwithInputChannelwithHasModelPortwithProductwithSerializable"></a><a id="FAME1ClockChannel:FAME1ClockChannel"></a>
+      <a id="FAME1ClockChannelextendsFAME1ChannelwithInputChannelwithHasModelPortwithClockChannelwithProductwithSerializable"></a><a id="FAME1ClockChannel:FAME1ClockChannel"></a>
       <span class="permalink">
       <a href="../../../midas/passes/fame/FAME1ClockChannel.html" title="Permalink">
         <i class="material-icons"></i>
@@ -705,7 +725,7 @@ a decoupled target connection.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="FAME1ClockChannel.html"><span class="name">FAME1ClockChannel</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ports">ports: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Port">Port</span>]</span>)</span><span class="result"> extends <a href="FAME1Channel.html" class="extype" name="midas.passes.fame.FAME1Channel">FAME1Channel</a> with <a href="InputChannel.html" class="extype" name="midas.passes.fame.InputChannel">InputChannel</a> with <a href="HasModelPort.html" class="extype" name="midas.passes.fame.HasModelPort">HasModelPort</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="FAME1ClockChannel.html"><span class="name">FAME1ClockChannel</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ports">ports: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.ir.Port">Port</span>]</span>, <span name="clockInfo">clockInfo: <span class="extype" name="scala.Seq">Seq</span>[<a href="../../widgets/RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>, <span name="clockMFMRs">clockMFMRs: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>)</span><span class="result"> extends <a href="FAME1Channel.html" class="extype" name="midas.passes.fame.FAME1Channel">FAME1Channel</a> with <a href="InputChannel.html" class="extype" name="midas.passes.fame.InputChannel">InputChannel</a> with <a href="HasModelPort.html" class="extype" name="midas.passes.fame.HasModelPort">HasModelPort</a> with <a href="ClockChannel.html" class="extype" name="midas.passes.fame.ClockChannel">ClockChannel</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
@@ -1303,7 +1323,7 @@ after the PromoteSubmodule transform has run.
       </span>
       
       
-    </li><li name="midas.passes.fame.TargetClockChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="midas.passes.fame.TargetClockChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TargetClockChannelextendsFAMEChannelInfowithProductwithSerializable"></a><a id="TargetClockChannel:TargetClockChannel"></a>
       <span class="permalink">
       <a href="../../../midas/passes/fame/TargetClockChannel.html" title="Permalink">
@@ -1315,11 +1335,15 @@ after the PromoteSubmodule transform has run.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Indicates that a channel connection carries target clocks" href="TargetClockChannel.html"><span class="name">TargetClockChannel</span></a><span class="params">(<span name="clockInfo">clockInfo: <span class="extype" name="scala.Seq">Seq</span>[<a href="../../widgets/RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>)</span><span class="result"> extends <a href="FAMEChannelInfo.html" class="extype" name="midas.passes.fame.FAMEChannelInfo">FAMEChannelInfo</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="Indicates that a channel connection carries target clocks" href="TargetClockChannel.html"><span class="name">TargetClockChannel</span></a><span class="params">(<span name="clockInfo">clockInfo: <span class="extype" name="scala.Seq">Seq</span>[<a href="../../widgets/RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>, <span name="perClockMFMR">perClockMFMR: <span class="extype" name="scala.Seq">Seq</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>)</span><span class="result"> extends <a href="FAMEChannelInfo.html" class="extype" name="midas.passes.fame.FAMEChannelInfo">FAMEChannelInfo</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">Indicates that a channel connection carries target clocks
-</p>
+</p><div class="fullcomment"><div class="comment cmt"><p>Indicates that a channel connection carries target clocks
+</p></div><dl class="paramcmts block"><dt class="param">clockInfo</dt><dd class="cmt"><p>The user-specified metadata, including a name and a ratio
+       relative to the base clock</p></dd><dt class="param">perClockMFMR</dt><dd class="cmt"><p>Specifies the minimum number of host cycles
+       between clock edges. This is a property of the clock token schedule, and
+       permits relaxing timing constraints on clock domains with miniumum FMRS (MFMR) &gt; 1.</p></dd></dl></div>
     </li><li name="midas.passes.fame.ThreadedMem" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ThreadedMemextendsStatementwithIsDeclarationwithProductwithSerializable"></a><a id="ThreadedMem:ThreadedMem"></a>
       <span class="permalink">
@@ -1353,7 +1377,7 @@ after the PromoteSubmodule transform has run.
       
       
     </li><li name="midas.passes.fame.VirtualClockChannel" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="VirtualClockChannelextendsFAME1ChannelwithInputChannelwithProductwithSerializable"></a><a id="VirtualClockChannel:VirtualClockChannel"></a>
+      <a id="VirtualClockChannelextendsFAME1ChannelwithInputChannelwithClockChannelwithProductwithSerializable"></a><a id="VirtualClockChannel:VirtualClockChannel"></a>
       <span class="permalink">
       <a href="../../../midas/passes/fame/VirtualClockChannel.html" title="Permalink">
         <i class="material-icons"></i>
@@ -1364,7 +1388,7 @@ after the PromoteSubmodule transform has run.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="VirtualClockChannel.html"><span class="name">VirtualClockChannel</span></a><span class="params">(<span name="targetClock">targetClock: <span class="extype" name="firrtl.ir.Port">Port</span></span>)</span><span class="result"> extends <a href="FAME1Channel.html" class="extype" name="midas.passes.fame.FAME1Channel">FAME1Channel</a> with <a href="InputChannel.html" class="extype" name="midas.passes.fame.InputChannel">InputChannel</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="VirtualClockChannel.html"><span class="name">VirtualClockChannel</span></a><span class="params">(<span name="targetClock">targetClock: <span class="extype" name="firrtl.ir.Port">Port</span></span>)</span><span class="result"> extends <a href="FAME1Channel.html" class="extype" name="midas.passes.fame.FAME1Channel">FAME1Channel</a> with <a href="InputChannel.html" class="extype" name="midas.passes.fame.InputChannel">InputChannel</a> with <a href="ClockChannel.html" class="extype" name="midas.passes.fame.ClockChannel">ClockChannel</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       
