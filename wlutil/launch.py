@@ -117,14 +117,10 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
             log.info("Running: " + "".join(cmd))
             if not interactive:
                 log.info("For live output see: " + str(uartLog))
-            with open(uartLog, 'wb', buffering=0) as uartF:
-                with sp.Popen(cmd.split(), stderr=sp.STDOUT, stdout=sp.PIPE) as p:
-                    for c in iter(lambda: p.stdout.read(1), b''):
-                        if interactive:
-                            sys.stdout.buffer.write(c)
-                            sys.stdout.flush()
-                        uartF.write(c)
-
+            
+            scriptCmd = f'script -f -c "{cmd}" {uartLog}'
+            sp.Popen(["screen", "-S", config['name'], "-d", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT)  
+            
             if 'outputs' in config:
                 outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
                 wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
