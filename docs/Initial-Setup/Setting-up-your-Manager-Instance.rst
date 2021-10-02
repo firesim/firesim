@@ -25,7 +25,7 @@ To launch a manager instance, follow these steps:
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
 2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
-   ``FPGA Developer AMI - 1.10.0`` and select the AMI that appears (there
+   ``FPGA Developer AMI - 1.11.0`` and select the AMI that appears (there
    should be only one). **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge``.
