@@ -24,7 +24,7 @@ testchip_dir=$(TOP_DIR)/generators/testchipip/src/main/resources
 testchip_csrc_dir=$(testchip_dir)/testchipip/csrc
 dramsim_dir=$(TOP_DIR)/tools/DRAMSim2
 
-override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(dramsim_dir) -I$(testchip_csrc_dir)
+override CXXFLAGS := $(CXXFLAGS) -Wall -I$(dramsim_dir) -I$(testchip_csrc_dir)
 
 include $(util_dir)/utils.mk
 

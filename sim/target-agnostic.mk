@@ -164,11 +164,11 @@ $(PLATFORM) = $(OUTPUT_DIR)/$(DESIGN)-$(PLATFORM)
 $(PLATFORM): $($(PLATFORM))
 
 .PHONY: driver
-driver: $($(PLATFORM))
+driver: $(PLATFORM)
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
-$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
+$(f1): export CXXFLAGS := $(CXXFLAGS) -std=c++11 $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -L$(fpga_dir)/sdk/userspace/lib -lfpga_mgmt
 
@@ -179,6 +179,20 @@ $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	# The manager expects to find the default conf in output/ by this name
 	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
 	$(MAKE) -C $(simif_dir) $(PLATFORM) PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
+	TOP_DIR=$(chipyard_dir)
+
+$(vitis): export CXXFLAGS := $(CXXFLAGS) -std=c++14 $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(XILINX_XRT)/include
+# Statically link libfesvr to make it easier to distribute drivers to f1 instances
+$(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -L$(XILINX_XRT)/lib -luuid -lxrt_coreutil
+
+# Compile Driver
+$(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+	mkdir -p $(OUTPUT_DIR)/build
+	cp $(header) $(OUTPUT_DIR)/build/
+	# The manager expects to find the default conf in output/ by this name
+	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
+	$(MAKE) -C $(simif_dir) vitis PLATFORM=vitis DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
