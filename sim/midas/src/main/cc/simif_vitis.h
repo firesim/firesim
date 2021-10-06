@@ -18,9 +18,6 @@ class simif_vitis_t: public virtual simif_t
     virtual ssize_t push(size_t addr, char* data, size_t size);
     uint32_t is_write_ready();
   private:
-    //char in_buf[CTRL_BEAT_BYTES];
-    //char out_buf[CTRL_BEAT_BYTES];
-
     int device_index;
     std::string binary_file;
     xrt::device device_handle;
