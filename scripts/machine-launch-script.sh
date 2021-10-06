@@ -48,9 +48,11 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
-# these need to match what's in deploy/requirements.txt
-# last working pip version before deprecation
+# pip2 no longer installed on FPGA developer AMIs
+sudo yum -y install python-pip
+# In the event it is (as on an older AMI), upgrade it just in case
 sudo pip2 install --upgrade pip==20.3.4
+# these need to match what's in deploy/requirements.txt
 sudo pip2 install fabric==1.14.0
 sudo pip2 install boto3==1.6.2
 sudo pip2 install colorama==0.3.7
