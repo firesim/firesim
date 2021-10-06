@@ -39,9 +39,17 @@ PLATFORM ?=
 DRIVER_CC ?=
 DRIVER_H ?=
 
+# Defined for each platform
+vitis_CXX_FLAGS ?= -std=c++14 -I$(XILINX_XRT)/include
+vitis_LD_FLAGS ?= -L$(XILINX_XRT)/lib -luuid -lxrt_coreutil
+f1_CXX_FLAGS ?= -std=c++11 -I$(fpga_dir)/sdk/userspace/include
+f1_LD_FLAGS ?=
+
 # Target-specific CXX and LD flags for compiling the driver and meta-simulators
 TARGET_CXX_FLAGS ?=
+override TARGET_CXX_FLAGS += $($(PLATFORM)_CXX_FLAGS)
 TARGET_LD_FLAGS ?=
+override TARGET_LD_FLAGS += $($(PLATFORM)_LD_FLAGS)
 
 simif_dir = $(firesim_base_dir)/midas/src/main/cc
 midas_h  = $(shell find $(simif_dir) -name "*.h")
@@ -168,7 +176,7 @@ driver: $(PLATFORM)
 
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
-$(f1): export CXXFLAGS := $(CXXFLAGS) -std=c++11 $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
+$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -L$(fpga_dir)/sdk/userspace/lib -lfpga_mgmt
 
@@ -182,9 +190,9 @@ $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
-$(vitis): export CXXFLAGS := $(CXXFLAGS) -std=c++14 $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(XILINX_XRT)/include
+$(vitis): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
-$(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -L$(XILINX_XRT)/lib -luuid -lxrt_coreutil
+$(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 
 # Compile Driver
 $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
