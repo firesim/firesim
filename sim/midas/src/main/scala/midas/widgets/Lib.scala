@@ -386,7 +386,6 @@ object CRIO {
 }
 
 class DecoupledCRIO[+T <: Data](gen: T) extends DecoupledIO[T](gen) {
-  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
 }
 object DecoupledCRIO {
   def apply[T <: Data](gen: T): DecoupledCRIO[T] = new DecoupledCRIO(gen)

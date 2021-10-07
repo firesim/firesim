@@ -109,7 +109,6 @@ class DynamicLatencyPipeIO[T <: Data](gen: T, entries: Int, countBits: Int)
   val latency = Input(UInt(countBits.W))
   val tCycle = Input(UInt(countBits.W))
 
-  override def cloneType = new DynamicLatencyPipeIO(gen, entries, countBits).asInstanceOf[this.type]
 }
 
 // I had to copy this code because critical fields are now private

@@ -13,8 +13,6 @@ class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
   val hValid = Output(Bool())
   val hBits  = gen.cloneType
   def fire(): Bool = hReady && hValid
-  override def cloneType: this.type =
-    new HostDecoupledIO(gen).asInstanceOf[this.type]
 }
 
 /** Adds a ready-valid handshaking protocol to any interface.
