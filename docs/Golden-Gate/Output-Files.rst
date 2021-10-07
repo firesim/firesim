@@ -10,7 +10,7 @@ Core Files
 -------------------------------------
 These are used in nearly all flows.
 
-* **<BASE>.v**: The verilog implementation of the simulator which will be synthesized onto the FPGA. The top-level is the Shim module specified in the ``PLATFORM_CONFIG``.
+* **<BASE>.sv**: The verilog implementation of the simulator which will be synthesized onto the FPGA. The top-level is the Shim module specified in the ``PLATFORM_CONFIG``.
 * **<BASE>.const.h**: A target-specific header containing all necessary metadata to instantiate bridge drivers. This is linked into the simulator driver and meta-simulators (FPGA-level / MIDAS-level). Often referred to as "the header".
 * **<BASE>.runtime.conf**: Default plus args for generated FASED memory timing models. Most other bridges have their defaults baked into the driver.
 
