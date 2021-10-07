@@ -9,6 +9,10 @@ import botocore
 from botocore import exceptions
 from fabric.api import local, hide, settings
 
+# setup basic config for logging
+if __name__ == '__main__':
+    logging.basicConfig()
+
 rootLogger = logging.getLogger()
 
 # this needs to be updated whenever the FPGA Dev AMI changes
@@ -368,13 +372,13 @@ def get_snsname_arn():
             Name=snsname
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
         else:
             rootLogger.warning("Unknown exception is encountered while trying to perform \"Topic Creation\"")
         rootLogger.warning(err)
         return None
-        
+
     return response['TopicArn']
 
 def subscribe_to_firesim_topic(email):
@@ -382,7 +386,7 @@ def subscribe_to_firesim_topic(email):
 
     client = boto3.client('sns')
     arn = get_snsname_arn()
-    if not arn: 
+    if not arn:
         return None
     try:
         response = client.subscribe(
@@ -396,7 +400,7 @@ receive any notifications until you click the confirmation link.""".format(email
 
         rootLogger.info(message)
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying subscribe notifications")
@@ -408,7 +412,7 @@ def send_firesim_notification(subject, body):
     client = boto3.client('sns')
     arn = get_snsname_arn()
 
-    if not arn: 
+    if not arn:
         return None
 
     try:
@@ -418,26 +422,48 @@ def send_firesim_notification(subject, body):
             Subject=subject
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to publish to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
 
+def main(args):
+    if args.command == "launch":
+        insts = launch_run_instances(args.inst_type, args.inst_amt, args.clustertag, args.market, args.int_behavior, args.spot_max_price)
+        print("Instance IDs: {}".format(insts))
+        wait_on_instance_launches(insts)
+        print("Launched instance IPs: {}".format(get_private_ips_for_instances(insts)))
+    else: # "terminate"
+        insts = get_instances_by_tag_type(args.clustertag, args.inst_type)
+        instids = get_instance_ids_for_instances(insts)
+        terminate_instances(instids, False)
+        print("Terminated instance IDs: {}".format(instids))
+    return 0
 
 if __name__ == '__main__':
-    #""" Example usage """
-    #instanceobjs = launch_instances('c5.4xlarge', 2)
-    #instance_ips = get_private_ips_for_instances(instanceobjs)
-    #instance_ids = get_instance_ids_for_instances(instanceobjs)
-    #wait_on_instance_launches(instanceobjs)
+    import sys
+    import argparse
+    parser = argparse.ArgumentParser(description="Launch/terminate instances")
+    parser.add_argument("command", choices=["launch", "terminate"], help="Choose to launch or terminate instances")
+    parser.add_argument("--inst_type", help="Instance type (e.g. m5.large). Used by \'launch\' and \'terminate\'.")
+    parser.add_argument("--inst_amt", type=int, default=1, help="Number of instances to launch. Used by \'launch\'.")
+    parser.add_argument("--clustertag", help="Name of instance cluster. Used by \'launch\' and \'terminate\'.")
+    parser.add_argument("--market", choices=["ondemand", "spot"], default="ondemand", help="Type of market to get instances. Used by \'launch\'.")
+    parser.add_argument("--int_behavior", choices=["hibernate", "stop", "terminate"], default="terminate", help="Interrupt behavior. Used by \'launch\'.")
+    parser.add_argument("--spot_max_price", default="ondemand", help="Spot Max Price. Used by \'launch\'.")
+    args = parser.parse_args()
+    if args.command == "launch" and (
+            args.inst_type is None or
+            args.inst_amt is None or
+            args.clustertag is None or
+            args.market is None or
+            args.int_behavior is None or
+            args.spot_max_price is None):
+        parser.error("launch missing arguments")
+    if args.command == "terminate" and (
+            args.inst_type is None or
+            args.clustertag is None):
+        parser.error("terminate missing arguments")
 
-    #print("now terminating!")
-    #terminate_instances(instance_ids, False)
-
-    """ Test SNS """
-    #subscribe_to_firesim_topic("sagark@eecs.berkeley.edu")
-
-    #send_firesim_notification("test subject", "test message")
-
-    print(aws_resource_names())
+    sys.exit(main(args))
