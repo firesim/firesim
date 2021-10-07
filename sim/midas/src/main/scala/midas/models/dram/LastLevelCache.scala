@@ -43,7 +43,6 @@ class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
     xaction := new_xaction
   }
 
-  override def cloneType = new MSHR(llcKey)(p).asInstanceOf[this.type]
 }
 
 object MSHR {
@@ -63,7 +62,6 @@ class BlockMetadata(tagBits: Int) extends Bundle {
   val tag = UInt(tagBits.W)
   val valid = Bool()
   val dirty = Bool()
-  override def cloneType = new BlockMetadata(tagBits).asInstanceOf[this.type]
 }
 
 class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle

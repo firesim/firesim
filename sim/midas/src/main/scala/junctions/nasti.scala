@@ -258,8 +258,6 @@ object NastiQueue {
 class NastiArbiterIO(arbN: Int)(implicit p: Parameters) extends Bundle {
   val master = Vec(arbN, new NastiIO).flip
   val slave = new NastiIO
-  override def cloneType =
-    new NastiArbiterIO(arbN).asInstanceOf[this.type]
 }
 
 /** Arbitrate among arbN masters requesting to a single slave */
@@ -409,8 +407,6 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
 class NastiRouterIO(nSlaves: Int)(implicit p: Parameters) extends Bundle {
   val master = (new NastiIO).flip
   val slave = Vec(nSlaves, new NastiIO)
-  override def cloneType =
-    new NastiRouterIO(nSlaves).asInstanceOf[this.type]
 }
 
 /** Take a single Nasti master and route its requests to various slaves
@@ -575,8 +571,6 @@ class NastiInterconnectIO(val nMasters: Int, val nSlaves: Int)
    * a master to the slaves. Hence why the declarations seem to be backwards. */
   val masters = Vec(nMasters, new NastiIO).flip
   val slaves = Vec(nSlaves, new NastiIO)
-  override def cloneType =
-    new NastiInterconnectIO(nMasters, nSlaves).asInstanceOf[this.type]
 }
 
 abstract class NastiInterconnect(implicit p: Parameters) extends NastiModule()(p) {

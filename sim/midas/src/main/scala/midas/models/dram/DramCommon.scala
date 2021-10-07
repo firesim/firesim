@@ -102,7 +102,6 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
     }
   }
 
-  override def cloneType = new DRAMProgrammableTimings().asInstanceOf[this.type]
 
 }
 
@@ -326,7 +325,6 @@ class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
     rank === rankAddr && bank === bankAddr && rowHit
   }
 
-  override def cloneType = new MASEntry(key)(p).asInstanceOf[this.type]
 }
 
 class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends MASEntry(key)(p) {
@@ -337,7 +335,6 @@ class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends M
   // and the entry isn't personally ready
   def wantPRE(): Bool = !isReady && mayPRE // Don't need the dummy args
   def wantACT(): Bool = !isReady
-  override def cloneType = new FirstReadyFCFSEntry(key)(p).asInstanceOf[this.type]
 }
 
 // Tracks the state of a bank, including:

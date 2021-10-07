@@ -72,7 +72,6 @@ class RATEntry(vIdWidth: Int, pIdWidth: Int) extends Bundle {
     next.valid := false.B
     head := false.B
   }
-  override def cloneType() = new RATEntry(vIdWidth, pIdWidth).asInstanceOf[this.type]
 }
 
 object RATEntry {
