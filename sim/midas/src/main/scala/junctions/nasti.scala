@@ -255,7 +255,7 @@ object NastiQueue {
   }
 }
 
-class NastiArbiterIO(arbN: Int)(implicit p: Parameters) extends Bundle {
+class NastiArbiterIO(val arbN: Int)(implicit val p: Parameters) extends Bundle {
   val master = Vec(arbN, new NastiIO).flip
   val slave = new NastiIO
 }
@@ -404,7 +404,7 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
   b_queue.io.deq.ready := io.b.ready && !draining
 }
 
-class NastiRouterIO(nSlaves: Int)(implicit p: Parameters) extends Bundle {
+class NastiRouterIO(val nSlaves: Int)(implicit val p: Parameters) extends Bundle {
   val master = (new NastiIO).flip
   val slave = Vec(nSlaves, new NastiIO)
 }
@@ -566,7 +566,7 @@ class NastiCrossbar(nMasters: Int, nSlaves: Int,
 }
 
 class NastiInterconnectIO(val nMasters: Int, val nSlaves: Int)
-                         (implicit p: Parameters) extends Bundle {
+                         (implicit val p: Parameters) extends Bundle {
   /* This is a bit confusing. The interconnect is a slave to the masters and
    * a master to the slaves. Hence why the declarations seem to be backwards. */
   val masters = Vec(nMasters, new NastiIO).flip
