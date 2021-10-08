@@ -10,7 +10,7 @@ import firrtl.Utils.{throwInternalError, BoolType, one, zero}
 import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import firrtl.transforms.TopWiring._
-import freechips.rocketchip.util.property._
+import freechips.rocketchip.util.property
 import freechips.rocketchip.util.WideCounter
 import freechips.rocketchip.config.{Parameters, Field}
 import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
@@ -22,12 +22,12 @@ import java.io._
 import scala.io.Source
 import collection.mutable
 
-class FireSimPropertyLibrary extends BasePropertyLibrary {
+class FireSimPropertyLibrary extends property.BasePropertyLibrary {
   import chisel3._
   import chisel3.experimental.DataMirror.internal.isSynthesizable
   import chisel3.internal.sourceinfo.{SourceInfo}
   import chisel3.experimental.{annotate,ChiselAnnotation}
-  def generateProperty(prop_param: BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
+  def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
       annotate(new ChiselAnnotation {

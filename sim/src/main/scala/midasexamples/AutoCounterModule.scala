@@ -6,7 +6,7 @@ import chisel3._
 import freechips.rocketchip.config.Parameters
 
 import midas.targetutils.{PerfCounter, AutoCounterCoverModuleAnnotation}
-import freechips.rocketchip.util.property._
+import freechips.rocketchip.util.property
 
 /**
   * Demonstrates how to instantiate autocounters, and validates those
@@ -84,7 +84,7 @@ class AutoCounterModuleChild extends Module {
   io.oddlfsr := odd_lfsr
 }
 
-/** Demonstrate explicit instrumentation of AutoCounters via PerfCounter 
+/** Demonstrate explicit instrumentation of AutoCounters via PerfCounter
  *
  * Toplevel Chisel class suitable for use as a GoldenGate 'target' as described by the docs
  *
@@ -96,7 +96,7 @@ class AutoCounterModuleChild extends Module {
 class AutoCounterModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterModuleDUT)
 
 class AutoCounterCoverModuleDUT extends Module {
-  cover.setPropLib(new midas.passes.FireSimPropertyLibrary())
+  property.cover.setPropLib(new midas.passes.FireSimPropertyLibrary())
   val io = IO(new Bundle {
     val a = Input(Bool())
   })
@@ -109,7 +109,7 @@ class AutoCounterCoverModuleDUT extends Module {
   cycle := cycle + 1.U
   val cycle8 = ~cycle(2) & ~cycle(1) & ~cycle(0)
 
-  cover(cycle8 , "CYCLES_DIV_8", "Count the number of times the cycle count is divisible by 8. Should be equal to number of cycles divided by 8")
+  property.cover(cycle8 , "CYCLES_DIV_8", "Count the number of times the cycle count is divisible by 8. Should be equal to number of cycles divided by 8")
 
   chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("AutoCounterCoverModuleDUT"))
 
