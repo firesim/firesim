@@ -3,23 +3,19 @@ package junctions
 import Chisel._
 import freechips.rocketchip.config.Parameters
 
-class ReorderQueueWrite[T <: Data](dType: T, tagWidth: Int) extends Bundle {
+class ReorderQueueWrite[T <: Data](private val dType: T, val tagWidth: Int) extends Bundle {
   val data = dType.cloneType
   val tag = UInt(width = tagWidth)
-
 }
 
-class ReorderEnqueueIO[T <: Data](dType: T, tagWidth: Int)
-  extends DecoupledIO(new ReorderQueueWrite(dType, tagWidth)) {
+class ReorderEnqueueIO[T <: Data](private val dType: T, val tagWidth: Int)
+  extends DecoupledIO(new ReorderQueueWrite(dType, tagWidth)) 
 
-}
-
-class ReorderDequeueIO[T <: Data](dType: T, tagWidth: Int) extends Bundle {
+class ReorderDequeueIO[T <: Data](private val dType: T, val tagWidth: Int) extends Bundle {
   val valid = Bool(INPUT)
   val tag = UInt(INPUT, tagWidth)
   val data = dType.cloneType.asOutput
   val matches = Bool(OUTPUT)
-
 }
 
 class ReorderQueue[T <: Data](dType: T, tagWidth: Int,
