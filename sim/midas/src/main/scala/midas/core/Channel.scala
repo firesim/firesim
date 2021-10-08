@@ -18,10 +18,9 @@ import midas.core.SimUtils.{ChLeafType}
 // token streams irrevocably will introduce simulation non-determinism.
 case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 
-class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
+class PipeChannelIO[T <: ChLeafType](private val gen: T)(implicit val p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
-
 }
 
 class PipeChannel[T <: ChLeafType](
@@ -101,7 +100,7 @@ class PipeChannelUnitTest(
 // WARNING: Target.fire() is meaningless unless are fwd and rev channels are
 // synchronized and carry valid tokens
 
-class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
+class SimReadyValidIO[T <: Data](private val gen: T) extends Bundle {
   val target = EnqIO(gen)
   val fwd = new HostReadyValid
   val rev = Flipped(new HostReadyValid)
@@ -161,7 +160,7 @@ object SimReadyValid {
   def apply[T <: Data](gen: T) = new SimReadyValidIO(gen)
 }
 
-class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
+class ReadyValidChannelIO[T <: Data](private val gen: T)(implicit val p: Parameters) extends Bundle {
   val enq = Flipped(SimReadyValid(gen))
   val deq = SimReadyValid(gen)
   val targetReset = Flipped(Decoupled(Bool()))
