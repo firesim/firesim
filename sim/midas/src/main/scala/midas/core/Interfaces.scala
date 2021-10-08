@@ -7,7 +7,7 @@ import chisel3._
 
 
 // Adapted from DecoupledIO in Chisel3
-class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
+class HostDecoupledIO[+T <: Data](private val gen: T) extends Bundle
 {
   val hReady = Input(Bool())
   val hValid = Output(Bool())
