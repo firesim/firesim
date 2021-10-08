@@ -101,8 +101,6 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
       case _ => None
     }
   }
-
-
 }
 
 case class DRAMBackendKey(writeDepth: Int, readDepth: Int, latencyBits: Int)
@@ -303,7 +301,7 @@ trait HasLegalityUpdateIO {
 
 // Add some scheduler specific metadata to a reference
 // TODO factor out different MAS metadata into a mixin
-class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
+class MASEntry(val key: DRAMBaseConfig)(implicit val p: Parameters) extends Bundle {
   val xaction = new TransactionMetaData
   val rowAddr = UInt(key.dramKey.rowBits.W)
   val bankAddrOH = UInt(key.dramKey.maxBanks.W)
