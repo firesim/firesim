@@ -20,7 +20,7 @@ import Console.{UNDERLINED, RESET}
 import java.io.{File, FileWriter}
 
 // State to track reads to DRAM, ~loosely an MSHR
-class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
+class MSHR(val llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
   val set_addr = UInt(llcKey.sets.maxBits.W)
   val xaction = new TransactionMetaData
   val wb_in_flight =  Bool()
@@ -58,13 +58,13 @@ object MSHR {
   }
 }
 
-class BlockMetadata(tagBits: Int) extends Bundle {
+class BlockMetadata(val tagBits: Int) extends Bundle {
   val tag = UInt(tagBits.W)
   val valid = Bool()
   val dirty = Bool()
 }
 
-class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
+class LLCProgrammableSettings(val llcKey: LLCParams) extends Bundle
     with HasProgrammableRegisters with HasConsoleUtils {
   val wayBits     = Input(UInt(log2Ceil(llcKey.ways.maxBits).W))
   val setBits     = Input(UInt(log2Ceil(llcKey.sets.maxBits).W))
