@@ -385,8 +385,7 @@ object CRIO {
     new CRIO(direction, width, default)
 }
 
-class DecoupledCRIO[+T <: Data](gen: T) extends DecoupledIO[T](gen) {
-}
+class DecoupledCRIO[+T <: Data](private val gen: T) extends DecoupledIO[T](gen) 
 object DecoupledCRIO {
   def apply[T <: Data](gen: T): DecoupledCRIO[T] = new DecoupledCRIO(gen)
 }
