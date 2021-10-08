@@ -18,7 +18,7 @@ case class BankConflictConfig(
   def elaborate()(implicit p: Parameters): BankConflictModel = Module(new BankConflictModel(this))
 }
 
-class BankConflictMMRegIO(cfg: BankConflictConfig)(implicit p: Parameters)
+class BankConflictMMRegIO(val cfg: BankConflictConfig)(implicit val p: Parameters)
     extends SplitTransactionMMRegIO(cfg){
   val latency = Input(UInt(cfg.maxLatencyBits.W))
   val conflictPenalty = Input(UInt(32.W))
@@ -47,18 +47,18 @@ class BankConflictMMRegIO(cfg: BankConflictConfig)(implicit p: Parameters)
   }
 }
 
-class BankConflictIO(cfg: BankConflictConfig)(implicit p: Parameters)
+class BankConflictIO(val cfg: BankConflictConfig)(implicit val p: Parameters)
     extends SplitTransactionModelIO()(p) {
   val mmReg = new BankConflictMMRegIO(cfg)
 }
 
-class BankQueueEntry(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+class BankQueueEntry(val cfg: BankConflictConfig)(implicit val p: Parameters) extends Bundle {
   val xaction = new TransactionMetaData
   val bankAddr = UInt(log2Ceil(cfg.maxBanks).W)
 }
 
 // Appends a target cycle at which this reference should be complete
-class BankConflictReference(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+class BankConflictReference(val cfg: BankConflictConfig)(implicit val p: Parameters) extends Bundle {
   val reference = new BankQueueEntry(cfg)
   val cycle = UInt(cfg.maxLatencyBits.W) // Indicates latency until doneness
   val done = Bool() // Set high when the cycle count expires
