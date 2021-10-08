@@ -45,7 +45,7 @@ class FreeList(entries: Int) extends Module {
 
 // This maintains W-W R-R orderings by managing a set of shared physical
 // queues based on the the NASTI id field.
-class RATEntry(vIdWidth: Int, pIdWidth: Int) extends Bundle {
+class RATEntry(val vIdWidth: Int, val pIdWidth: Int) extends Bundle {
   val current = Valid(UInt(vIdWidth.W))
   val next = Valid(UInt(pIdWidth.W))
   val head = Output(Bool())
@@ -86,7 +86,7 @@ object RATEntry {
   }
 }
 
-class AllocationIO(vIdWidth: Int, pIdWidth: Int) extends Bundle {
+class AllocationIO(val vIdWidth: Int, val pIdWidth: Int) extends Bundle {
   val pId = Output(UInt(pIdWidth.W))
   val vId = Input(UInt(vIdWidth.W))
   val ready = Output(Bool())
