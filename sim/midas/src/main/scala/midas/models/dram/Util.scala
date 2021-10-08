@@ -104,7 +104,7 @@ trait HasFIFOPointers {
   }
 }
 
-class DynamicLatencyPipeIO[T <: Data](gen: T, entries: Int, countBits: Int)
+class DynamicLatencyPipeIO[T <: Data](private val gen: T, val entries: Int, val countBits: Int)
     extends QueueIO(gen, entries) {
   val latency = Input(UInt(countBits.W))
   val tCycle = Input(UInt(countBits.W))
