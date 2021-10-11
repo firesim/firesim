@@ -4,9 +4,13 @@ manager """
 from time import strftime, gmtime
 import ConfigParser
 import pprint
+import sys
 
 from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import *
+
+def str2class(classname):
+        return getattr(sys.modules[__name__], classname)
 
 class BuildConfig:
     """ This represents a SINGLE build configuration. """
@@ -20,49 +24,18 @@ class BuildConfig:
         self.deploytriplet = buildconfigdict['deploytriplet']
         self.launch_time = launch_time
         self.launched_instance_object = None
+        self.build_host = None
+        self.provision_build_farm_class_name = None
+
+    def add_host(self, host, launch_func_name):
+        self.build_host = host
+        self.provision_build_farm_class_name = launch_func_name
 
     def __repr__(self):
         return "BuildConfig obj:\n" + pprint.pformat(vars(self), indent=10)
 
     def get_chisel_triplet(self):
         return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
-
-    def launch_build_instance(self, build_instance_market,
-                          spot_interruption_behavior, spot_max_price,
-                              buildfarmprefix):
-        """ Launch an instance to run this build.
-        buildfarmprefix can be None.
-        """
-        buildfarmprefix = '' if buildfarmprefix is None else buildfarmprefix
-        num_instances = 1
-        self.launched_instance_object = launch_instances(self.instancetype,
-                          num_instances, build_instance_market,
-                          spot_interruption_behavior,
-                          spot_max_price,
-                          blockdevices=[
-                              {
-                                  'DeviceName': '/dev/sda1',
-                                  'Ebs': {
-                                      'VolumeSize': 200,
-                                      'VolumeType': 'gp2',
-                                  },
-                              },
-                          ],
-                          tags={ 'fsimbuildcluster': buildfarmprefix },
-                          randomsubnet=True)[0]
-
-    def get_launched_instance_object(self):
-        """ Get the instance object returned by boto3 for this build. """
-        return self.launched_instance_object
-
-    def get_build_instance_private_ip(self):
-        """ Get the private IP of the instance running this build. """
-        return self.launched_instance_object.private_ip_address
-
-    def terminate_build_instance(self):
-        """ Terminate the instance running this build. """
-        instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
-        terminate_instances(instance_ids, dryrun=False)
 
     def get_build_dir_name(self):
         """" Get the name of the local build directory. """
@@ -94,25 +67,32 @@ class GlobalBuildConfig:
         global_build_configfile.optionxform = str
         global_build_configfile.read(args.buildconfigfile)
 
-        self.s3_bucketname = \
-            global_build_configfile.get('afibuild', 's3bucketname')
-
-        aws_resource_names_dict = aws_resource_names()
-        if aws_resource_names_dict['s3bucketname'] is not None:
-            # in tutorial mode, special s3 bucket name
-            self.s3_bucketname = aws_resource_names_dict['s3bucketname']
-
-        self.build_instance_market = \
-                global_build_configfile.get('afibuild', 'buildinstancemarket')
-        self.spot_interruption_behavior = \
-            global_build_configfile.get('afibuild', 'spotinterruptionbehavior')
-        self.spot_max_price = \
-                     global_build_configfile.get('afibuild', 'spotmaxprice')
-        self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
+        ## TODO: This errors if not using aws
+        ## aws specific options
+        #self.s3_bucketname = global_build_configfile.get('afibuild', 's3bucketname')
+        #aws_resource_names_dict = aws_resource_names()
+        #if aws_resource_names_dict['s3bucketname'] is not None:
+        #    # in tutorial mode, special s3 bucket name
+        #    self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+        #self.build_instance_market = global_build_configfile.get('afibuild', 'buildinstancemarket')
+        #self.spot_interruption_behavior = global_build_configfile.get('afibuild', 'spotinterruptionbehavior')
+        #self.spot_max_price = global_build_configfile.get('afibuild', 'spotmaxprice')
+        #self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
+        #self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
+        #self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
 
         # this is a list of actual builds to run
         builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
 
+        # get host providers
+        self.host_providers = dict(global_build_configfile.items("hostproviders"))
+        self.build_hosts = dict(global_build_configfile.items("buildhosts"))
+
+        if len(self.build_hosts) != len(builds_to_run_list):
+            print("ERROR: needs builds.len != buildhosts.len")
+            sys.exit(1)
+
+        # map build to build recipies
         build_recipes_configfile = ConfigParser.ConfigParser(allow_no_value=True)
         # make option names case sensitive
         build_recipes_configfile.optionxform = str
@@ -121,53 +101,80 @@ class GlobalBuildConfig:
         build_recipes = dict()
         for section in build_recipes_configfile.sections():
             build_recipes[section] = BuildConfig(section,
-                                dict(build_recipes_configfile.items(section)),
-                                launch_time)
+                dict(build_recipes_configfile.items(section)),
+                launch_time)
 
-        self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
-        self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
         self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
 
+        for idx, build in enumerate(self.builds_list):
+            # get corresponding host and use it
+            host = self.build_hosts[str(idx)]
+            if host in self.host_providers.keys():
+                build.add_host(host, self.host_providers[host])
+            else:
+                build.add_host(host, None)
+
+    def setup(self):
+        """ Setup based on the types of buildhosts """
+
+        if "f1" in list(map(lambda x: x.build_host, self.builds_list)):
+            auto_create_bucket(self.s3_bucketname)
+            #check to see email notifications can be subscribed
+            get_snsname_arn()
 
     def launch_build_instances(self):
         """ Launch an instance for the builds we want to do """
 
-        # get access to the runfarmprefix, which we will apply to build
-        # instances too now.
-        aws_resource_names_dict = aws_resource_names()
-        # just duplicate the runfarmprefix for now. This can be None,
-        # in which case we give an empty build farm prefix
-        build_farm_prefix = aws_resource_names_dict['runfarmprefix']
-
         for build in self.builds_list:
-            build.launch_build_instance(self.build_instance_market,
-                                        self.spot_interruption_behavior,
-                                        self.spot_max_price,
-                                        build_farm_prefix)
+            if build.provision_build_farm_class_name:
+                build.launched_instance_object = str2class(build.provision_build_farm_class_name).launch_build_instance(self)
+            else:
+                build.launched_instance_object = ProvisionDefaultBuildFarm.launch_build_instance(self)
+
 
     def wait_build_instances(self):
         """ block until all build instances are launched """
-        instances = [build.get_launched_instance_object() for build in self.builds_list]
-        wait_on_instance_launches(instances)
+        for build in self.builds_list:
+            instance = build.get_launched_instance_object()
+            if build.provision_build_farm_class_name:
+                str2class(build.provision_build_farm_class_name).wait_on_instance_launch(instance)
+            else:
+                ProvisionDefaultBuildFarm.wait_on_instance_launch(instance)
 
     def terminate_all_build_instances(self):
         for build in self.builds_list:
-            build.terminate_build_instance()
+            instance = build.get_launched_instance_object()
+            if build.provision_build_farm_class_name:
+                str2class(build.provision_build_farm_class_name).terminate_build_instance(instance)
+            else:
+                ProvisionDefaultBuildFarm.terminate_build_instance(instance)
 
     def get_build_by_ip(self, nodeip):
         """ For a particular private IP (aka instance), return the BuildConfig
         that it's supposed to be running. """
         for build in self.builds_list:
-            if build.get_build_instance_private_ip() == nodeip:
-                return build
+            instance = build.get_launched_instance_object()
+            if build.provision_build_farm_class_name:
+                if str2class(build.provision_build_farm_class_name).get_build_instance_private_ip(instance) == nodeip:
+                    return build
+            else:
+                if ProvisionDefaultBuildFarm.get_build_instance_private_ip(instance) == nodeip:
+                    return build
         return None
 
     def get_build_instance_ips(self):
         """ Return a list of all the build instance IPs, i.e. hosts to pass to
         fabric. """
-        return map(lambda x: x.get_build_instance_private_ip(), self.builds_list)
+        ip_list = []
+        for build in self.builds_list:
+            instance = build.get_launched_instance_object()
+            if build.provision_build_farm_class_name:
+                ip_list.append(str2class(build.provision_build_farm_class_name).get_build_instance_private_ip(instance))
+            else:
+                ip_list.append(ProvisionDefaultBuildFarm.get_build_instance_private_ip(instance))
+        return ip_list
 
     def get_builds_list(self):
         return self.builds_list

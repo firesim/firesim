@@ -21,39 +21,30 @@ def get_deploy_dir():
         deploydir = local("pwd", capture=True)
     return deploydir
 
-def replace_rtl(conf, buildconfig):
-    """ Run chisel/firrtl/fame-1, produce verilog for fpga build.
+def replace_rtl(buildconfig):
+    """ Generate Verilog """
+    rootLogger.info("Building Verilog for {}".format(str(buildconfig.get_chisel_triplet())))
+    with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+        run("{}/replace-rtl.sh {} {} {} {} \"{}\"".format(
+            get_deploy_dir() + "/buildtools",
+            os.getenv('RISCV', ""),
+            os.getenv('PATH', ""),
+            os.getenv('LD_LIBRARY_PATH', ""),
+            get_deploy_dir() + "/..",
+            buildconfig.make_recipe("PLATFORM=f1 replace-rtl")))
 
-    THIS ALWAYS RUNS LOCALLY"""
-    builddir = buildconfig.get_build_dir_name()
-    fpgabuilddir = "hdk/cl/developer_designs/cl_" + buildconfig.get_chisel_triplet()
-    ddir = get_deploy_dir()
+def build_driver(buildconfig):
+    """ Build FPGA driver """
+    rootLogger.info("Building FPGA driver for {}".format(str(buildconfig.get_chisel_triplet())))
+    with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+        run("{}/build-driver.sh {} {} {} {} \"{}\"".format(
+            get_deploy_dir() + "/buildtools",
+            os.getenv('RISCV', ""),
+            os.getenv('PATH', ""),
+            os.getenv('LD_LIBRARY_PATH', ""),
+            get_deploy_dir() + "/..",
+            buildconfig.make_recipe("PLATFORM=f1 driver")))
 
-    rootLogger.info("Running replace-rtl to generate verilog for " + str(buildconfig.get_chisel_triplet()))
-
-    with prefix('cd ' + ddir + '/../'), \
-         prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
-         prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
-         prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
-         prefix('source sourceme-f1-manager.sh'), \
-         prefix('export CL_DIR={}/../platforms/f1/aws-fpga/{}'.format(ddir, fpgabuilddir)), \
-         prefix('cd sim/'), \
-         InfoStreamLogger('stdout'), \
-         InfoStreamLogger('stderr'):
-        run(buildconfig.make_recipe("replace-rtl"))
-        run("""mkdir -p {}/results-build/{}/""".format(ddir, builddir))
-        run("""cp $CL_DIR/design/FireSim-generated.sv {}/results-build/{}/FireSim-generated.sv""".format(ddir, builddir))
-
-    # build the fpga driver that corresponds with this version of the RTL
-    with prefix('cd ' + ddir + '/../'), \
-         prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
-         prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
-         prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
-         prefix('source sourceme-f1-manager.sh'), \
-         prefix('cd sim/'), \
-         StreamLogger('stdout'), \
-         StreamLogger('stderr'):
-        run(buildconfig.make_recipe("f1"))
 
 @parallel
 def aws_build(global_build_config, bypass=False):

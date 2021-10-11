@@ -368,13 +368,13 @@ def get_snsname_arn():
             Name=snsname
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
         else:
             rootLogger.warning("Unknown exception is encountered while trying to perform \"Topic Creation\"")
         rootLogger.warning(err)
         return None
-        
+
     return response['TopicArn']
 
 def subscribe_to_firesim_topic(email):
@@ -382,7 +382,7 @@ def subscribe_to_firesim_topic(email):
 
     client = boto3.client('sns')
     arn = get_snsname_arn()
-    if not arn: 
+    if not arn:
         return None
     try:
         response = client.subscribe(
@@ -396,7 +396,7 @@ receive any notifications until you click the confirmation link.""".format(email
 
         rootLogger.info(message)
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying subscribe notifications")
@@ -408,7 +408,7 @@ def send_firesim_notification(subject, body):
     client = boto3.client('sns')
     arn = get_snsname_arn()
 
-    if not arn: 
+    if not arn:
         return None
 
     try:
@@ -418,12 +418,101 @@ def send_firesim_notification(subject, body):
             Subject=subject
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to publish to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
 
+class ProvisionBuildFarm:
+    @classmethod
+    def launch_build_instance(cls, globalbuildconf):
+        return
+
+    @classmethod
+    def wait_on_instance_launch(cls, obj):
+        return
+
+    @classmethod
+    def get_build_instance_private_ip(cls, obj):
+        return
+
+    @classmethod
+    def terminate_build_instance(cls, obj):
+        return
+
+class DefaultInstance:
+    def __init__(self, build_host):
+        self.build_host = build_host
+
+class ProvisionDefaultBuildFarm(ProvisionBuildFarm):
+    @classmethod
+    def launch_build_instance(cls, globalbuildconf):
+        rootLogger.info("Using {} as the build host. Assuming already ready".format(globalbuildconf.build_host))
+        return DefaultInstance(globalbuildconf.build_host)
+
+    @classmethod
+    def wait_on_instance_launch(cls, obj):
+        rootLogger.info("Using {} as the build host. Assuming no wait".format(obj.build_host))
+        return
+
+    @classmethod
+    def get_build_instance_private_ip(cls, obj):
+        return obj.build_host
+
+    @classmethod
+    def terminate_build_instance(cls, obj):
+        rootLogger.info("Using {} as the build host. Assuming no shutdown".format(obj.build_host))
+        return
+
+class ProvisionEC2BuildFarm(ProvisionBuildFarm):
+    @classmethod
+    def launch_build_instance(cls, globalbuildconf):
+        # get access to the runfarmprefix, which we will apply to build
+        # instances too now.
+        aws_resource_names_dict = aws_resource_names()
+        # just duplicate the runfarmprefix for now. This can be None,
+        # in which case we give an empty build farm prefix
+        build_farm_prefix = aws_resource_names_dict['runfarmprefix']
+
+        build_instance_market = globalbuildconf.build_instance_market
+        spot_interruption_behavior = globalbuildconf.spot_interruption_behavior
+        spot_max_price = globalbuildconf.spot_max_price
+
+        buildfarmprefix = '' if buildfarmprefix is None else buildfarmprefix
+        num_instances = 1
+        return launch_instances(
+            self.instancetype,
+            num_instances,
+            build_instance_market,
+            spot_interruption_behavior,
+            spot_max_price,
+            blockdevices=[
+                {
+                    'DeviceName': '/dev/sda1',
+                    'Ebs': {
+                        'VolumeSize': 200,
+                        'VolumeType': 'gp2',
+                    },
+                },
+            ],
+            tags={ 'fsimbuildcluster': buildfarmprefix },
+            randomsubnet=True)[0]
+
+    @classmethod
+    def wait_on_instance_launch(cls, obj):
+        wait_on_instance_launches([obj])
+
+    @classmethod
+    def get_build_instance_private_ip(cls, obj):
+        """ Get the private IP of the instance running this build. """
+        return obj.private_ip_address
+
+    @classmethod
+    def terminate_build_instance(cls, obj):
+        """ Terminate the instance running this build. """
+        instance_ids = get_instance_ids_for_instances([obj])
+        terminate_instances(instance_ids, dryrun=False)
 
 if __name__ == '__main__':
     #""" Example usage """

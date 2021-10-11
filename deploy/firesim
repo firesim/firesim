@@ -29,8 +29,8 @@ from util.streamlogger import StreamLogger
 ## below are tasks that users can call
 ## to add a task, add it here and to the choices array
 
-def managerinit():
-    """ Setup local FireSim manager components. """
+def awsinit():
+    """ Setup AWS FireSim manager components. """
 
     def valid_aws_configure_creds():
         """ See if aws configure has been run. Returns False if aws configure
@@ -65,6 +65,17 @@ def managerinit():
         if not valid_creds:
             rootLogger.info("Invalid AWS credentials. Try again.")
 
+    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    if useremail != "":
+        subscribe_to_firesim_topic(useremail)
+    else:
+        rootLogger.info("You did not supply an email address. No notifications will be sent.")
+    rootLogger.info("FireSim Manager AWS setup completed.")
+
+
+def managerinit():
+    """ Setup local FireSim manager components. """
+
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "hwdb", "runtime"]
     for conf_file in config_files:
@@ -83,11 +94,6 @@ def managerinit():
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
-    if useremail != "":
-        subscribe_to_firesim_topic(useremail)
-    else:
-        rootLogger.info("You did not supply an email address. No notifications will be sent.")
     rootLogger.info("FireSim Manager setup completed.")
 
 def infrasetup(runtime_conf):
@@ -106,21 +112,14 @@ def runworkload(runtime_conf):
     """ do runworkload. """
     runtime_conf.run_workload()
 
-def buildafi(globalbuildconf):
-    """ Starting from local Chisel, build an AFI for all of the specified
+def buildbitstream(globalbuildconf):
+    """ Starting from local Chisel, build an bitstream for all of the specified
     hardware configs. """
 
-    @parallel
-    def instance_liveness():
-        """ confirm that all instances are running first. """
-        rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("uname -a")
-
-    auto_create_bucket(globalbuildconf.s3_bucketname)
-
-    #check to see email notifications can be subscribed
-    get_snsname_arn()
+    # AJG: Currently only the FPGA build section of this is done on the "buildhosts" the local driver/rtl is done locally
+    for buildconf in globalbuildconf.get_builds_list():
+        execute(replace_rtl, buildconf, hosts=['localhost'])
+        execute(build_driver, buildconf, hosts=['localhost'])
 
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
@@ -133,10 +132,9 @@ def buildafi(globalbuildconf):
             rootLogger.info("Termination skipped. There may still be build instances running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, terminate_instances_handler)
-
-    for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+    # pre-setup stuff (things that need to be done before the instances are spawn/killed)
+    # specific to the buildhosts that are used
+    globalbuildconf.setup()
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
@@ -145,9 +143,17 @@ def buildafi(globalbuildconf):
     # confirm that build instances have finished booting
     globalbuildconf.wait_build_instances()
 
+    @parallel
+    def instance_liveness():
+         """ confirm that all instances are running first. """
+         rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
+         with StreamLogger('stdout'), StreamLogger('stderr'):
+             run("uname -a")
+
     # confirm that we can connect to the launched instances
     execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
 
+    # TODO: Implement
     # run builds, then terminate instances
     execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
 
@@ -220,7 +226,8 @@ def construct_firesim_argparser():
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=[
                             'managerinit',
-                            'buildafi',
+                            'awsinit',
+                            'buildbitstream',
                             'launchrunfarm',
                             'infrasetup',
                             'boot',
@@ -286,7 +293,10 @@ def main(args):
     if args.task == 'managerinit':
         managerinit()
 
-    if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
+    if args.task == 'awsinit':
+        awsinit()
+
+    if args.task in ['buildbitstream', 'shareagfi', 'tar2afi']:
         buildconfig = GlobalBuildConfig(args)
         globals()[args.task](buildconfig)
 
