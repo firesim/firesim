@@ -10,7 +10,7 @@ firesim_tsi_t::firesim_tsi_t(int argc, char** argv, bool can_have_loadmem) : tes
     if (arg.find("+idle-counts=") == 0)
       idle_counts = atoi(arg.c_str()+13);
   }
-  has_loadmem = can_have_loadmem;
+  has_loadmem = false;
 }
 
 void firesim_tsi_t::idle()

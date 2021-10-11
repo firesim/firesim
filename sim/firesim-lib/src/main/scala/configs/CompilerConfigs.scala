@@ -88,3 +88,11 @@ class BaseF1Config extends Config(
   new WithILATopWiringTransform ++
   new midas.F1Config
 )
+
+class BaseVitisConfig extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+//  new WithEC2F1Artefacts ++
+//  new WithILATopWiringTransform ++
+  new midas.VitisConfig
+)
