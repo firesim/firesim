@@ -22,8 +22,7 @@ class F1BitBuilder(BitBuilder):
         # First, Produce dcp/tar for design. Runs on remote machines, out of
         # $HOME/firesim-build/ """
 
-        # TODO: Might want the buildfarm instance to specify the dir to do the builds in
-        fpga_build_dir = "hdk/cl/developer_designs/cl_" + build_config.get_chisel_triplet()
+        fpga_build_dir = "hdk/cl/developer_designs/cl_" + self.build_config.get_chisel_triplet()
         local_deploy_dir = get_deploy_dir()
 
         # local paths
@@ -34,6 +33,11 @@ class F1BitBuilder(BitBuilder):
         remote_home_dir = ""
         with StreamLogger('stdout'), StreamLogger('stderr'):
             remote_home_dir = run('echo $HOME')
+
+        # override if provision farm asked for it
+        if self.build_config.provision_build_farm_dispatcher.override_remote_build_dir:
+            remote_home_dir = self.build_config.provision_build_farm_dispatcher.override_remote_build_dir
+
         remote_build_dir = "{}/firesim-build".format(remote_home_dir)
         f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
         awsfpga_dir = "{}/aws-fpga".format(f1_platform_dir)

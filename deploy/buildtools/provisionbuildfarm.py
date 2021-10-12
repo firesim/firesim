@@ -8,6 +8,18 @@ class ProvisionBuildFarm:
     def __init__(self, build_config, args):
         self.build_config = build_config
         self.args = args
+        self.override_remote_build_dir = None
+
+        for arg in args:
+            split_k_v = [s for s in arg.split("=")]
+            key = split_k_v[0]
+            value = split_k_v[1]
+
+            if key == "rembuilddir":
+                self.override_remote_build_dir = value
+            else:
+                print("ERROR: Unable to understand {}={}".format(key, value))
+                sys.exit(1)
 
     def launch_build_instance(self):
         return
@@ -38,6 +50,23 @@ class ProvisionDefaultBuildFarm(ProvisionBuildFarm):
         return
 
 class ProvisionEC2BuildFarm(ProvisionBuildFarm):
+    def __init__(self, build_config, args):
+        ProvisionBuildFarm.__init__(self, build_config, args)
+
+        # default values
+        self.instance_type = "z1d.2xlarge"
+
+        for arg in args:
+            split_k_v = [s for s in arg.split("=")]
+            key = split_k_v[0]
+            value = split_k_v[1]
+
+            if key == "insttype":
+                self.instance_type = value
+            else:
+                print("ERROR: Unable to understand {}={}".format(key, value))
+                sys.exit(1)
+
     def launch_build_instance(self):
         globalbuildconf = self.build_config.global_build_config
         buildconf = self.build_config
@@ -53,16 +82,10 @@ class ProvisionEC2BuildFarm(ProvisionBuildFarm):
         spot_interruption_behavior = globalbuildconf.spot_interruption_behavior
         spot_max_price = globalbuildconf.spot_max_price
 
-        if len(self.args) != 1:
-            print("ERROR: Incorrect # of args sent to ProvisionEC2BuildFarm")
-            sys.exit(1)
-
-        instance_type = self.args[0]
-
         buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
         num_instances = 1
         buildconf.launched_instance_object = launch_instances(
-            instance_type,
+            self.instance_type,
             num_instances,
             build_instance_market,
             spot_interruption_behavior,

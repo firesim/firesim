@@ -1,8 +1,11 @@
 #!/bin/bash
 
-CL_DIR=$1
+set -ex
 
-cd $CL_DIR/../../../../.. # aws-fpga
+CL_DIR=$1
+AWS_FPGA_DIR=$CL_DIR/../../../..
+
+cd $AWS_FPGA_DIR
 source hdk_setup.sh
 export CL_DIR=$CL_DIR
 cd $CL_DIR/build/scripts
