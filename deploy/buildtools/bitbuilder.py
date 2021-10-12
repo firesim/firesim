@@ -33,12 +33,12 @@ class F1BitBuilder(BitBuilder):
         # First, Produce dcp/tar for design. Runs on remote machines, out of
         # $HOME/firesim-build/ """
 
-        fpga_build_dir = "hdk/cl/developer_designs/cl_" + self.build_config.get_chisel_triplet()
+        fpga_build_dir = "hdk/cl/developer_designs/cl_{}".format(self.build_config.get_chisel_triplet())
         local_deploy_dir = get_deploy_dir()
 
         # local paths
-        local_fsim_dir = local_deploy_dir + "/.."
-        local_awsfpga_dir = local_fsim_dir + "/platforms/f1/aws-fpga",
+        local_fsim_dir = "{}/..".format(local_deploy_dir)
+        local_awsfpga_dir = "{}/platforms/f1/aws-fpga".format(local_fsim_dir)
 
         # remote paths
         remote_home_dir = ""
@@ -101,7 +101,7 @@ class F1BitBuilder(BitBuilder):
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
         # local AWS build directory; might have config-specific changes to fpga flow
-        fpga_build_dir = "hdk/cl/developer_designs/cl_" + self.build_config.get_chisel_triplet()
+        fpga_build_dir = "hdk/cl/developer_designs/cl_{}".format(self.build_config.get_chisel_triplet())
         results_dir = self.build_config.get_build_dir_name()
 
         # cl_dir is the cl_dir that is either local or remote
@@ -113,19 +113,14 @@ class F1BitBuilder(BitBuilder):
         if not self.build_config.local:
             cl_dir = self.pre_remote_build()
         else:
-            cl_dir = local_deploy_dir + "/../platforms/f1/aws-fpga/{}".format(fpga_build_dir),
-
-        print(cl_dir)
-        self.build_config.provision_build_farm_dispatcher.terminate_build_instance()
-        sys.exit(1)
-
+            cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_dir)
 
         vivado_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # copy script to fpgabuidldir and execute
             rsync_cap = rsync_project(
-                local_dir=local_deploy_dir + "/buildtools/platform-specific-scripts/f1/build-bitstream.sh",
-                remote_dir=cl_dir + "/",
+                local_dir="{}/buildtools/platform-specific-scripts/f1/build-bitstream.sh".format(local_deploy_dir),
+                remote_dir="{}/".format(cl_dir),
                 ssh_opts="-o StrictHostKeyChecking=no",
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
@@ -139,7 +134,7 @@ class F1BitBuilder(BitBuilder):
         with StreamLogger('stdout'), StreamLogger('stderr'):
             rsync_cap = rsync_project(
                 local_dir="""{}/results-build/{}/""".format(local_deploy_dir, results_dir),
-                remote_dir=cl_dir + "/",
+                remote_dir="{}/".format(cl_dir),
                 ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
                 capture=True)
             rootLogger.debug(rsync_cap)
