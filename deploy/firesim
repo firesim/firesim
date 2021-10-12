@@ -21,8 +21,9 @@ from awstools.awstools import *
 from awstools.afitools import *
 
 # firesim buildtools
-from buildtools.buildafi import *
-from buildtools.buildconfig import GlobalBuildConfig
+from buildtools.build import *
+from buildtools.buildconfigfile import BuildConfigFile
+from buildtools.buildconfig import BuildConfig
 
 from util.streamlogger import StreamLogger
 
@@ -126,6 +127,10 @@ def buildbitstream(globalbuildconf):
     # confirm that build instances have finished booting
     globalbuildconf.wait_build_instances()
 
+    # TODO: Test past this point
+    print("MAKE SURE TO DELETE ANY SPARE INSTANCES... THIS DOESN'T DO IT FOR YOU")
+    sys.exit(1)
+
     @parallel
     def instance_liveness():
          """ confirm that all instances are running first. """
@@ -136,9 +141,8 @@ def buildbitstream(globalbuildconf):
     # confirm that we can connect to the launched instances
     execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
 
-    # TODO: Implement
     # run builds, then terminate instances
-    execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
+    execute(bitstream_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
 
 
 def tar2afi(globalbuildconf):
@@ -280,7 +284,7 @@ def main(args):
         awsinit()
 
     if args.task in ['buildbitstream', 'shareagfi', 'tar2afi']:
-        buildconfig = GlobalBuildConfig(args)
+        buildconfig = BuildConfigFile(args)
         globals()[args.task](buildconfig)
 
     if args.task == 'terminaterunfarm':
