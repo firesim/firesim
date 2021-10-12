@@ -74,7 +74,8 @@ def managerinit():
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-
+    # warn about AWS init
+    rootLogger.warning("If running the manager on AWS F1, run \"awsinit\" at least once.")
 
 def infrasetup(runtime_conf):
     """ do infrasetup. """

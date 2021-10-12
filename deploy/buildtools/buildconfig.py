@@ -97,10 +97,11 @@ class GlobalBuildConfig:
         self.s3_bucketname = \
             global_build_configfile.get('afibuild', 's3bucketname')
 
-        aws_resource_names_dict = aws_resource_names()
-        if aws_resource_names_dict['s3bucketname'] is not None:
-            # in tutorial mode, special s3 bucket name
-            self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+        if valid_aws_configure_creds():
+            aws_resource_names_dict = aws_resource_names()
+            if aws_resource_names_dict['s3bucketname'] is not None:
+                # in tutorial mode, special s3 bucket name
+                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
 
         self.build_instance_market = \
                 global_build_configfile.get('afibuild', 'buildinstancemarket')
