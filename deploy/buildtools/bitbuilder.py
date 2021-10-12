@@ -1,13 +1,24 @@
 """ This converts the build configuration files into something usable by the
 manager """
 
+from __future__ import with_statement
 from time import strftime, gmtime
 import ConfigParser
 import pprint
 import sys
+import json
+import time
+import random
+import string
+import logging
 
-from runtools.runtime_config import RuntimeHWDB
+from fabric.api import *
+from fabric.contrib.console import confirm
+from fabric.contrib.project import rsync_project
+from awstools.afitools import *
 from awstools.awstools import *
+from buildtools.build import get_deploy_dir
+from util.streamlogger import StreamLogger, InfoStreamLogger
 
 class BitBuilder:
     def __init__(self, build_config):
@@ -77,7 +88,7 @@ class F1BitBuilder(BitBuilder):
         def on_build_failure():
             message_title = "FireSim FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for triplet: " + build_config.get_chisel_triplet()
+            message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
             message_body += ".\nInspect the log output from IP address " + env.host_string + " for more information."
 
             send_firesim_notification(message_title, message_body)
@@ -98,17 +109,23 @@ class F1BitBuilder(BitBuilder):
         # if remote (aka not locally) then you need to copy things
         local_deploy_dir = get_deploy_dir()
         cl_dir = ""
+
         if not self.build_config.local:
             cl_dir = self.pre_remote_build()
         else:
-            cl_dir = local_deploy_dir + "/../platforms/f1/aws-fpga/{}/*".format(fpga_build_dir),
+            cl_dir = local_deploy_dir + "/../platforms/f1/aws-fpga/{}".format(fpga_build_dir),
+
+        print(cl_dir)
+        self.build_config.provision_build_farm_dispatcher.terminate_build_instance()
+        sys.exit(1)
+
 
         vivado_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # copy script to fpgabuidldir and execute
             rsync_cap = rsync_project(
-                local_dir=local_deploy_dir + "/platform-specific-scripts/f1/build-bitstream.sh",
-                remote_dir=cl_dir,
+                local_dir=local_deploy_dir + "/buildtools/platform-specific-scripts/f1/build-bitstream.sh",
+                remote_dir=cl_dir + "/",
                 ssh_opts="-o StrictHostKeyChecking=no",
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
@@ -122,7 +139,7 @@ class F1BitBuilder(BitBuilder):
         with StreamLogger('stdout'), StreamLogger('stderr'):
             rsync_cap = rsync_project(
                 local_dir="""{}/results-build/{}/""".format(local_deploy_dir, results_dir),
-                remote_dir=cl_dir,
+                remote_dir=cl_dir + "/",
                 ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
                 capture=True)
             rootLogger.debug(rsync_cap)
@@ -152,7 +169,7 @@ class F1BitBuilder(BitBuilder):
 
         afi = None
         agfi = None
-        s3bucket = self.global_build_config.s3_bucketname
+        s3bucket = self.build_config.global_build_config.s3_bucketname
         afiname = self.build_config.name
 
         # construct the "tags" we store in the AGFI description
@@ -238,9 +255,9 @@ class F1BitBuilder(BitBuilder):
             with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
                 outputfile.write(agfi_entry)
 
-            if self.global_build_config.post_build_hook:
+            if self.build_config.global_build_config.post_build_hook:
                 with StreamLogger('stdout'), StreamLogger('stderr'):
-                    localcap = local("""{} {}""".format(self.global_build_config.post_build_hook,
+                    localcap = local("""{} {}""".format(self.build_config.global_build_config.post_build_hook,
                                                         results_build_dir,
                                                         capture=True))
                     rootLogger.debug("[localhost] " + str(localcap))

@@ -33,18 +33,18 @@ class ProvisionBuildFarm:
 
 class ProvisionDefaultBuildFarm(ProvisionBuildFarm):
     def launch_build_instance(self):
-        rootLogger.info("Using {} as the build host. Assuming already ready".format(self.build_config.build_host))
+        rootLogger.info("No launch needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
         return None
 
     def wait_on_instance_launch(self):
-        rootLogger.info("Using {} as the build host. Assuming no wait".format(self.build_config.build_host))
+        rootLogger.info("No waiting needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
         return
 
     def get_build_instance_private_ip(self):
         return self.build_config.build_host
 
     def terminate_build_instance(self):
-        rootLogger.info("Using {} as the build host. Assuming no shutdown".format(self.build_config.build_host))
+        rootLogger.info("No termination needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
         return
 
 class ProvisionEC2BuildFarm(ProvisionBuildFarm):

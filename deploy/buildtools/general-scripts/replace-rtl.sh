@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 RISCV=$1
 PATH=$2
