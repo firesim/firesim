@@ -127,10 +127,6 @@ def buildbitstream(globalbuildconf):
     # confirm that build instances have finished booting
     globalbuildconf.wait_build_instances()
 
-    # TODO: Test past this point
-    print("MAKE SURE TO DELETE ANY SPARE INSTANCES... THIS DOESN'T DO IT FOR YOU")
-    sys.exit(1)
-
     @parallel
     def instance_liveness():
          """ confirm that all instances are running first. """
