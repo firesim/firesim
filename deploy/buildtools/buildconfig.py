@@ -37,6 +37,10 @@ class BuildConfig:
     def get_chisel_triplet(self):
         return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
 
+    def get_launched_instance_object(self):
+        """ Get the instance object for this build. """
+        return self.launched_instance_object
+
     def get_build_dir_name(self):
         """" Get the name of the local build directory. """
         return """{}-{}""".format(self.launch_time, self.name)
@@ -67,19 +71,19 @@ class GlobalBuildConfig:
         global_build_configfile.optionxform = str
         global_build_configfile.read(args.buildconfigfile)
 
-        ## TODO: This errors if not using aws
-        ## aws specific options
-        #self.s3_bucketname = global_build_configfile.get('afibuild', 's3bucketname')
-        #aws_resource_names_dict = aws_resource_names()
-        #if aws_resource_names_dict['s3bucketname'] is not None:
-        #    # in tutorial mode, special s3 bucket name
-        #    self.s3_bucketname = aws_resource_names_dict['s3bucketname']
-        #self.build_instance_market = global_build_configfile.get('afibuild', 'buildinstancemarket')
-        #self.spot_interruption_behavior = global_build_configfile.get('afibuild', 'spotinterruptionbehavior')
-        #self.spot_max_price = global_build_configfile.get('afibuild', 'spotmaxprice')
-        #self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
-        #self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
-        #self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
+        # aws specific options
+        self.s3_bucketname = global_build_configfile.get('afibuild', 's3bucketname')
+        if valid_aws_configure_creds():
+            aws_resource_names_dict = aws_resource_names()
+            if aws_resource_names_dict['s3bucketname'] is not None:
+                # in tutorial mode, special s3 bucket name
+                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+        self.build_instance_market = global_build_configfile.get('afibuild', 'buildinstancemarket')
+        self.spot_interruption_behavior = global_build_configfile.get('afibuild', 'spotinterruptionbehavior')
+        self.spot_max_price = global_build_configfile.get('afibuild', 'spotmaxprice')
+        self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
+        self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
+        self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
 
         # this is a list of actual builds to run
         builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
@@ -129,38 +133,35 @@ class GlobalBuildConfig:
 
         for build in self.builds_list:
             if build.provision_build_farm_class_name:
-                build.launched_instance_object = str2class(build.provision_build_farm_class_name).launch_build_instance(self)
+                str2class(build.provision_build_farm_class_name).launch_build_instance(self, build)
             else:
-                build.launched_instance_object = ProvisionDefaultBuildFarm.launch_build_instance(self)
+                ProvisionDefaultBuildFarm.launch_build_instance(self, build)
 
 
     def wait_build_instances(self):
         """ block until all build instances are launched """
         for build in self.builds_list:
-            instance = build.get_launched_instance_object()
             if build.provision_build_farm_class_name:
-                str2class(build.provision_build_farm_class_name).wait_on_instance_launch(instance)
+                str2class(build.provision_build_farm_class_name).wait_on_instance_launch(build)
             else:
-                ProvisionDefaultBuildFarm.wait_on_instance_launch(instance)
+                ProvisionDefaultBuildFarm.wait_on_instance_launch(build)
 
     def terminate_all_build_instances(self):
         for build in self.builds_list:
-            instance = build.get_launched_instance_object()
             if build.provision_build_farm_class_name:
-                str2class(build.provision_build_farm_class_name).terminate_build_instance(instance)
+                str2class(build.provision_build_farm_class_name).terminate_build_instance(build)
             else:
-                ProvisionDefaultBuildFarm.terminate_build_instance(instance)
+                ProvisionDefaultBuildFarm.terminate_build_instance(build)
 
     def get_build_by_ip(self, nodeip):
         """ For a particular private IP (aka instance), return the BuildConfig
         that it's supposed to be running. """
         for build in self.builds_list:
-            instance = build.get_launched_instance_object()
             if build.provision_build_farm_class_name:
-                if str2class(build.provision_build_farm_class_name).get_build_instance_private_ip(instance) == nodeip:
+                if str2class(build.provision_build_farm_class_name).get_build_instance_private_ip(build) == nodeip:
                     return build
             else:
-                if ProvisionDefaultBuildFarm.get_build_instance_private_ip(instance) == nodeip:
+                if ProvisionDefaultBuildFarm.get_build_instance_private_ip(build) == nodeip:
                     return build
         return None
 
@@ -169,11 +170,10 @@ class GlobalBuildConfig:
         fabric. """
         ip_list = []
         for build in self.builds_list:
-            instance = build.get_launched_instance_object()
             if build.provision_build_farm_class_name:
-                ip_list.append(str2class(build.provision_build_farm_class_name).get_build_instance_private_ip(instance))
+                ip_list.append(str2class(build.provision_build_farm_class_name).get_build_instance_private_ip(build))
             else:
-                ip_list.append(ProvisionDefaultBuildFarm.get_build_instance_private_ip(instance))
+                ip_list.append(ProvisionDefaultBuildFarm.get_build_instance_private_ip(build))
         return ip_list
 
     def get_builds_list(self):

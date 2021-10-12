@@ -16,6 +16,25 @@ rootLogger = logging.getLogger()
 # https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
 f1_ami_name = "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
+def valid_aws_configure_creds():
+    """ See if aws configure has been run. Returns False if aws configure
+    needs to be run, else True.
+
+    This DOES NOT perform any deeper validation.
+    """
+    import botocore.session
+    session = botocore.session.get_session()
+    creds = session.get_credentials()
+    if creds is None:
+        return False
+    if session.get_credentials().access_key == '':
+        return False
+    if session.get_credentials().secret_key == '':
+        return False
+    if session.get_config_variable('region') == '':
+        return False
+    return True
+
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
     vpcname, securitygroupname, keyname, etc.
@@ -426,48 +445,44 @@ def send_firesim_notification(subject, body):
 
 class ProvisionBuildFarm:
     @classmethod
-    def launch_build_instance(cls, globalbuildconf):
+    def launch_build_instance(cls, globalbuildconf, buildconf):
         return
 
     @classmethod
-    def wait_on_instance_launch(cls, obj):
+    def wait_on_instance_launch(cls, buildconf):
         return
 
     @classmethod
-    def get_build_instance_private_ip(cls, obj):
+    def get_build_instance_private_ip(cls, buildconf):
         return
 
     @classmethod
-    def terminate_build_instance(cls, obj):
+    def terminate_build_instance(cls, buildconf):
         return
-
-class DefaultInstance:
-    def __init__(self, build_host):
-        self.build_host = build_host
 
 class ProvisionDefaultBuildFarm(ProvisionBuildFarm):
     @classmethod
-    def launch_build_instance(cls, globalbuildconf):
-        rootLogger.info("Using {} as the build host. Assuming already ready".format(globalbuildconf.build_host))
-        return DefaultInstance(globalbuildconf.build_host)
+    def launch_build_instance(cls, globalbuildconf, buildconf):
+        rootLogger.info("Using {} as the build host. Assuming already ready".format(buildconf.build_host))
+        return None
 
     @classmethod
-    def wait_on_instance_launch(cls, obj):
-        rootLogger.info("Using {} as the build host. Assuming no wait".format(obj.build_host))
+    def wait_on_instance_launch(cls, buildconf):
+        rootLogger.info("Using {} as the build host. Assuming no wait".format(buildconf.build_host))
         return
 
     @classmethod
-    def get_build_instance_private_ip(cls, obj):
-        return obj.build_host
+    def get_build_instance_private_ip(cls, buildconf):
+        return buildconf.build_host
 
     @classmethod
-    def terminate_build_instance(cls, obj):
-        rootLogger.info("Using {} as the build host. Assuming no shutdown".format(obj.build_host))
+    def terminate_build_instance(cls, buildconf):
+        rootLogger.info("Using {} as the build host. Assuming no shutdown".format(buildconf.build_host))
         return
 
 class ProvisionEC2BuildFarm(ProvisionBuildFarm):
     @classmethod
-    def launch_build_instance(cls, globalbuildconf):
+    def launch_build_instance(cls, globalbuildconf, buildconf):
         # get access to the runfarmprefix, which we will apply to build
         # instances too now.
         aws_resource_names_dict = aws_resource_names()
@@ -479,10 +494,10 @@ class ProvisionEC2BuildFarm(ProvisionBuildFarm):
         spot_interruption_behavior = globalbuildconf.spot_interruption_behavior
         spot_max_price = globalbuildconf.spot_max_price
 
-        buildfarmprefix = '' if buildfarmprefix is None else buildfarmprefix
+        buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
         num_instances = 1
-        return launch_instances(
-            self.instancetype,
+        buildconf.launched_instance_object = launch_instances(
+            buildconf.instancetype,
             num_instances,
             build_instance_market,
             spot_interruption_behavior,
@@ -500,18 +515,18 @@ class ProvisionEC2BuildFarm(ProvisionBuildFarm):
             randomsubnet=True)[0]
 
     @classmethod
-    def wait_on_instance_launch(cls, obj):
-        wait_on_instance_launches([obj])
+    def wait_on_instance_launch(cls, buildconf):
+        wait_on_instance_launches([buildconf.launched_instance_object])
 
     @classmethod
-    def get_build_instance_private_ip(cls, obj):
+    def get_build_instance_private_ip(cls, buildconf):
         """ Get the private IP of the instance running this build. """
-        return obj.private_ip_address
+        return buildconf.launched_instance_object.private_ip_address
 
     @classmethod
-    def terminate_build_instance(cls, obj):
+    def terminate_build_instance(cls, buildconf):
         """ Terminate the instance running this build. """
-        instance_ids = get_instance_ids_for_instances([obj])
+        instance_ids = get_instance_ids_for_instances([buildconf.launched_instance_object])
         terminate_instances(instance_ids, dryrun=False)
 
 if __name__ == '__main__':
