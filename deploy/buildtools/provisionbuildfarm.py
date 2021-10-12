@@ -1,6 +1,7 @@
 import logging
 
 from awstools.awstools import *
+import sys
 
 rootLogger = logging.getLogger()
 
@@ -17,9 +18,6 @@ class ProvisionBuildFarm:
 
             if key == "rembuilddir":
                 self.override_remote_build_dir = value
-            else:
-                print("ERROR: Unable to understand {}={}".format(key, value))
-                sys.exit(1)
 
     def launch_build_instance(self):
         return
@@ -63,9 +61,6 @@ class ProvisionEC2BuildFarm(ProvisionBuildFarm):
 
             if key == "insttype":
                 self.instance_type = value
-            else:
-                print("ERROR: Unable to understand {}={}".format(key, value))
-                sys.exit(1)
 
     def launch_build_instance(self):
         globalbuildconf = self.build_config.global_build_config

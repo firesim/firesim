@@ -114,9 +114,9 @@ class F1BitBuilder(BitBuilder):
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
-            vivado_result = run("{}/build-bitstream.sh {} {} {} {} \"{}\"".format(
+            vivado_result = run("{}/build-bitstream.sh {}".format(
                 cl_dir,
-                cl_dir)
+                cl_dir))
 
         # put build results in the result-build area
         with StreamLogger('stdout'), StreamLogger('stderr'):
