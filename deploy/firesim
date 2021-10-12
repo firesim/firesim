@@ -197,6 +197,7 @@ def construct_firesim_argparser():
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=[
                             'managerinit',
+                            'awsinit',
                             'buildafi',
                             'launchrunfarm',
                             'infrasetup',
