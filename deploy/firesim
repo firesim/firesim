@@ -29,27 +29,8 @@ from util.streamlogger import StreamLogger
 ## below are tasks that users can call
 ## to add a task, add it here and to the choices array
 
-def managerinit():
-    """ Setup local FireSim manager components. """
-
-    def valid_aws_configure_creds():
-        """ See if aws configure has been run. Returns False if aws configure
-        needs to be run, else True.
-
-        This DOES NOT perform any deeper validation.
-        """
-        import botocore.session
-        session = botocore.session.get_session()
-        creds = session.get_credentials()
-        if creds is None:
-            return False
-        if session.get_credentials().access_key == '':
-            return False
-        if session.get_credentials().secret_key == '':
-            return False
-        if session.get_config_variable('region') == '':
-            return False
-        return True
+def awsinit():
+    """ Setup AWS FireSim manager components. """
 
     valid_creds = valid_aws_configure_creds()
     while not valid_creds:
@@ -64,6 +45,16 @@ def managerinit():
         valid_creds = valid_aws_configure_creds()
         if not valid_creds:
             rootLogger.info("Invalid AWS credentials. Try again.")
+
+    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    if useremail != "":
+        subscribe_to_firesim_topic(useremail)
+    else:
+        rootLogger.info("You did not supply an email address. No notifications will be sent.")
+    rootLogger.info("FireSim Manager setup completed.")
+
+def managerinit():
+    """ Setup local FireSim manager components. """
 
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "hwdb", "runtime"]
@@ -83,12 +74,7 @@ def managerinit():
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
-    if useremail != "":
-        subscribe_to_firesim_topic(useremail)
-    else:
-        rootLogger.info("You did not supply an email address. No notifications will be sent.")
-    rootLogger.info("FireSim Manager setup completed.")
+
 
 def infrasetup(runtime_conf):
     """ do infrasetup. """
@@ -285,6 +271,9 @@ def main(args):
     # tasks that have a special config/dispatch setup
     if args.task == 'managerinit':
         managerinit()
+
+    if args.task == 'awsinit':
+        awsinit()
 
     if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
         buildconfig = GlobalBuildConfig(args)

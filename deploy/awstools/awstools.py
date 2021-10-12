@@ -16,6 +16,25 @@ rootLogger = logging.getLogger()
 # https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
 f1_ami_name = "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
+def valid_aws_configure_creds():
+    """ See if aws configure has been run. Returns False if aws configure
+    needs to be run, else True.
+
+    This DOES NOT perform any deeper validation.
+    """
+    import botocore.session
+    session = botocore.session.get_session()
+    creds = session.get_credentials()
+    if creds is None:
+        return False
+    if session.get_credentials().access_key == '':
+        return False
+    if session.get_credentials().secret_key == '':
+        return False
+    if session.get_config_variable('region') == '':
+        return False
+    return True
+
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
     vpcname, securitygroupname, keyname, etc.
@@ -368,13 +387,13 @@ def get_snsname_arn():
             Name=snsname
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
         else:
             rootLogger.warning("Unknown exception is encountered while trying to perform \"Topic Creation\"")
         rootLogger.warning(err)
         return None
-        
+
     return response['TopicArn']
 
 def subscribe_to_firesim_topic(email):
@@ -382,7 +401,7 @@ def subscribe_to_firesim_topic(email):
 
     client = boto3.client('sns')
     arn = get_snsname_arn()
-    if not arn: 
+    if not arn:
         return None
     try:
         response = client.subscribe(
@@ -396,7 +415,7 @@ receive any notifications until you click the confirmation link.""".format(email
 
         rootLogger.info(message)
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying subscribe notifications")
@@ -408,7 +427,7 @@ def send_firesim_notification(subject, body):
     client = boto3.client('sns')
     arn = get_snsname_arn()
 
-    if not arn: 
+    if not arn:
         return None
 
     try:
@@ -418,12 +437,11 @@ def send_firesim_notification(subject, body):
             Subject=subject
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to publish to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
-
 
 if __name__ == '__main__':
     #""" Example usage """
