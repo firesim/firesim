@@ -89,4 +89,5 @@ class ProvisionEC2BuildFarm(ProvisionBuildFarm):
     def terminate_build_instance(self):
         """ Terminate the instance running this build. """
         instance_ids = get_instance_ids_for_instances([self.build_config.launched_instance_object])
+        rootLogger.info("Terminating build instances {}".format(instance_ids))
         terminate_instances(instance_ids, dryrun=False)

@@ -18,13 +18,56 @@ class BitBuilder:
         return
 
 class F1BitBuilder(BitBuilder):
+    def pre_remote_build(self):
+        # First, Produce dcp/tar for design. Runs on remote machines, out of
+        # $HOME/firesim-build/ """
+
+        # TODO: Might want the buildfarm instance to specify the dir to do the builds in
+        fpga_build_dir = "hdk/cl/developer_designs/cl_" + build_config.get_chisel_triplet()
+        local_deploy_dir = get_deploy_dir()
+
+        # local paths
+        local_fsim_dir = local_deploy_dir + "/.."
+        local_awsfpga_dir = local_fsim_dir + "/platforms/f1/aws-fpga",
+
+        # remote paths
+        remote_home_dir = ""
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            remote_home_dir = run('echo $HOME')
+        remote_build_dir = "{}/firesim-build".format(remote_home_dir)
+        f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
+        awsfpga_dir = "{}/aws-fpga".format(f1_platform_dir)
+
+        # copy aws-fpga to the build instance.
+        # do the rsync, but ignore any checkpoints that might exist on this machine
+        # (in case builds were run locally)
+        # extra_opts -l preserves symlinks
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run('mkdir -p {}'.format(f1_platform_dir))
+            rsync_cap = rsync_project(
+                local_dir=local_awsfpga_dir,
+                remote_dir=f1_platform_dir,
+                ssh_opts="-o StrictHostKeyChecking=no",
+                exclude="hdk/cl/developer_designs/cl_*",
+                extra_opts="-l", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+            rsync_cap = rsync_project(
+                local_dir="{}/{}/*".format(local_awsfpga_dir, fpga_build_dir),
+                remote_dir='{}/{}'.format(awsfpga_dir, fpga_build_dir),
+                exclude='build/checkpoints',
+                ssh_opts="-o StrictHostKeyChecking=no",
+                extra_opts="-l", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+
+        return "{}/{}".format(awsfpga_dir, fpga_build_dir)
+
     def build_bitstream(self):
         """ Run Vivado, convert tar -> AGFI/AFI. Then terminate the instance at the end.
         conf = build_config dicitonary
         bypass: since this function takes a long time, bypass just returns for
         testing purposes when set to True. """
-
-        build_config = self.build_config
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
@@ -37,102 +80,47 @@ class F1BitBuilder(BitBuilder):
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
-            rootLogger.info("Terminating the build instance now.")
 
-            if build.provision_build_farm_class_name:
-                str2class(build.provision_build_farm_class_name).terminate_build_instance(build)
-            else:
-                ProvisionDefaultBuildFarm.terminate_build_instance(build)
+            self.build_config.provision_build_farm_dispatcher.terminate_build_instance()
 
-        rootLogger.info("Running process to build AGFI from verilog.")
+        rootLogger.info("Building AWS F1 AGFI from Verilog")
 
-        ddir = get_deploy_dir()
         # local AWS build directory; might have config-specific changes to fpga flow
-        fpgabuilddir = "hdk/cl/developer_designs/cl_" + build_config.get_chisel_triplet()
-        builddir = build_config.get_build_dir_name()
+        fpga_build_dir = "hdk/cl/developer_designs/cl_" + self.build_config.get_chisel_triplet()
+        results_dir = self.build_config.get_build_dir_name()
 
-        # TODO: Needs to know if this is running locally or remotely
+        # cl_dir is the cl_dir that is either local or remote
         # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple
         # if remote (aka not locally) then you need to copy things
-        if build_config.build_host != "localhost":
-            # First, Produce dcp/tar for design. Runs on remote machines, out of
-            # /home/centos/firesim-build/ """
-
-            # TODO: Might want the buildfarm instance to specify the dir to do the builds in
-
-            # get root directory
-            homedir = ""
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                homedir = run('echo $HOME')
-
-            remote_build_dir = "{}/firesim-build".format(homedir)
-
-            # first, copy aws-fpga to the build instance.
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                run('mkdir -p {}/firesim-build/platforms/f1/'.format(remote_build_dir))
-
-            # do the rsync, but ignore any checkpoints that might exist on this machine
-            # (in case builds were run locally)
-            # extra_opts -l preserves symlinks
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                rsync_cap = rsync_project(
-                    local_dir=ddir + "/../platforms/f1/aws-fpga",
-                    remote_dir='/platforms/f1/'.format(remote_build_dir),
-                    ssh_opts="-o StrictHostKeyChecking=no",
-                    exclude="hdk/cl/developer_designs/cl_*",
-                    extra_opts="-l", capture=True)
-                rootLogger.debug(rsync_cap)
-                rootLogger.debug(rsync_cap.stderr)
-                rsync_cap = rsync_project(
-                    local_dir=ddir + "/../platforms/f1/aws-fpga/{}/*".format(fpgabuilddir),
-                    remote_dir='{}/platforms/f1/aws-fpga/{}'.format(remote_build_dir, fpgabuilddir),
-                    exclude='build/checkpoints',
-                    ssh_opts="-o StrictHostKeyChecking=no",
-                    extra_opts="-l", capture=True)
-                rootLogger.debug(rsync_cap)
-                rootLogger.debug(rsync_cap.stderr)
+        local_deploy_dir = get_deploy_dir()
+        cl_dir = ""
+        if not self.build_config.local:
+            cl_dir = self.pre_remote_build()
+        else:
+            cl_dir = local_deploy_dir + "/../platforms/f1/aws-fpga/{}/*".format(fpga_build_dir),
 
         vivado_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            # TODO: This needs to swtich between copying the file to the local path or the non
-            copy_dir = ""
-            if build_config.build_host != "localhost":
-                copy_dir = remote_build_dir
-            else:
-                copy_dir = ddir
             # copy script to fpgabuidldir and execute
             rsync_cap = rsync_project(
-                local_dir=ddir + "/platform-specific-scripts/f1/build-bitstream.sh",
-                remote_dir=copy_dir + "/../platforms/f1/aws-fpga/{}/*".format(fpgabuilddir),
+                local_dir=local_deploy_dir + "/platform-specific-scripts/f1/build-bitstream.sh",
+                remote_dir=cl_dir,
                 ssh_opts="-o StrictHostKeyChecking=no",
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
-            vivado_result = run("{}/platform-specific-scripts/f1/build-bitstream.sh {} {} {} {} \"{}\"".format(
-                copy_dir + "/../platforms/f1/aws-fpga/{}/*".format(fpgabuilddir)
-                get_deploy_dir() + "/buildtools",
-                os.getenv('RISCV', ""),
-                os.getenv('PATH', ""),
-                os.getenv('LD_LIBRARY_PATH', ""),
-                get_deploy_dir() + "/..",
-                build_config.make_recipe("PLATFORM=f1 driver")))
+            vivado_result = run("{}/build-bitstream.sh {} {} {} {} \"{}\"".format(
+                cl_dir,
+                cl_dir)
 
-
-        # run the Vivado build
-        with prefix('cd /home/centos/firesim-build/platforms/f1/aws-fpga'), \
-            prefix('source hdk_setup.sh'), \
-            prefix('export CL_DIR=/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir), \
-            prefix('cd $CL_DIR/build/scripts/'), InfoStreamLogger('stdout'), InfoStreamLogger('stderr'), \
-            settings(warn_only=True):
-            vivado_result = run('./aws_build_dcp_from_cl.sh -foreground').return_code
-
-        # rsync in the reverse direction to get build results
+        # put build results in the result-build area
         with StreamLogger('stdout'), StreamLogger('stderr'):
-            rsync_cap = rsync_project(local_dir="""{}/results-build/{}/""".format(ddir, builddir),
-                        remote_dir='/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir,
-                        ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-                        capture=True)
+            rsync_cap = rsync_project(
+                local_dir="""{}/results-build/{}/""".format(local_deploy_dir, results_dir),
+                remote_dir=cl_dir,
+                ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
+                capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
@@ -140,16 +128,13 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return
 
-        if not aws_create_afi(global_build_config, build_config):
+        if not self.aws_create_afi():
             on_build_failure()
             return
 
+        self.build_config.provision_build_farm_dispatcher.terminate_build_instance()
 
-        rootLogger.info("Terminating the build instance now.")
-        build_config.terminate_build_instance()
-
-
-    def aws_create_afi(global_build_config, build_config):
+    def aws_create_afi(self):
         """
         Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI)
 
@@ -158,19 +143,19 @@ class F1BitBuilder(BitBuilder):
         ## next, do tar -> AGFI
         ## This is done on the local copy
 
-        ddir = get_deploy_dir()
-        builddir = build_config.get_build_dir_name()
+        local_deploy_dir = get_deploy_dir()
+        results_dir = self.build_config.get_build_dir_name()
 
         afi = None
         agfi = None
-        s3bucket = global_build_config.s3_bucketname
-        afiname = build_config.name
+        s3bucket = self.global_build_config.s3_bucketname
+        afiname = self.build_config.name
 
         # construct the "tags" we store in the AGFI description
-        tag_buildtriplet = build_config.get_chisel_triplet()
+        tag_buildtriplet = self.build_config.get_chisel_triplet()
         tag_deploytriplet = tag_buildtriplet
-        if build_config.deploytriplet != "None":
-            tag_deploytriplet = build_config.deploytriplet
+        if self.build_config.deploytriplet != "None":
+            tag_deploytriplet = self.build_config.deploytriplet
 
         # the asserts are left over from when we tried to do this with tags
         # - technically I don't know how long these descriptions are allowed to be,
@@ -193,7 +178,7 @@ class F1BitBuilder(BitBuilder):
         # append the build node IP + a random string to diff them in s3
         global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-        with lcd("""{}/results-build/{}/cl_firesim/build/checkpoints/to_aws/""".format(ddir, builddir)), StreamLogger('stdout'), StreamLogger('stderr'):
+        with lcd("""{}/results-build/{}/cl_firesim/build/checkpoints/to_aws/""".format(local_deploy_dir, results_dir)), StreamLogger('stdout'), StreamLogger('stderr'):
             files = local('ls *.tar', capture=True)
             rootLogger.debug(files)
             rootLogger.debug(files.stderr)
@@ -213,7 +198,7 @@ class F1BitBuilder(BitBuilder):
             rootLogger.info("Resulting AFI: " + str(afi))
 
         rootLogger.info("Waiting for create-fpga-image completion.")
-        results_build_dir = """{}/results-build/{}/""".format(ddir, builddir)
+        results_build_dir = """{}/results-build/{}/""".format(local_deploy_dir, results_dir)
         checkstate = "pending"
         with lcd(results_build_dir), StreamLogger('stdout'), StreamLogger('stderr'):
             while checkstate == "pending":
@@ -229,7 +214,11 @@ class F1BitBuilder(BitBuilder):
             copy_afi_to_all_regions(afi)
 
             message_title = "FireSim FPGA Build Completed"
-            agfi_entry = "[" + afiname + "]\nagfi=" + agfi + "\ndeploytripletoverride=None\ncustomruntimeconfig=None\n\n"
+            agfi_entry = "[" + afiname + "]\n"
+            agfi_entry += "deploytripletoverride=None\n"
+            agfi_entry += "customruntimeconfig=None\n"
+            agfi_entry += "platform=f1\n"
+            agfi_entry += agfi + "\n\n"
             message_body = "Your AGFI has been created!\nAdd\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
 
             send_firesim_notification(message_title, message_body)
@@ -240,14 +229,14 @@ class F1BitBuilder(BitBuilder):
             # for convenience when generating a bunch of images. you can just
             # cat all the files in this directory after your builds finish to get
             # all the entries to copy into config_hwdb.ini
-            hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(ddir)
+            hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(local_deploy_dir)
             local("mkdir -p " + hwdb_entry_file_location)
             with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
                 outputfile.write(agfi_entry)
 
-            if global_build_config.post_build_hook:
+            if self.global_build_config.post_build_hook:
                 with StreamLogger('stdout'), StreamLogger('stderr'):
-                    localcap = local("""{} {}""".format(global_build_config.post_build_hook,
+                    localcap = local("""{} {}""".format(self.global_build_config.post_build_hook,
                                                         results_build_dir,
                                                         capture=True))
                     rootLogger.debug("[localhost] " + str(localcap))

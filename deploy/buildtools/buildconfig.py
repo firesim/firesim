@@ -32,10 +32,15 @@ class BuildConfig:
 
         # AJG: assigned by the BuildConfigFile
         self.build_host = None
+        self.local = False
         self.provision_build_farm_dispatcher = None
 
     def add_build_host_info(self, build_host, provision_build_farm_class_name, provision_build_farm_args):
         self.build_host = build_host
+        # TODO: if given a local ip addr (not localhost) double check that its localhost
+        if build_host == "localhost":
+            self.local = True
+
         if provision_build_farm_class_name:
             self.provision_build_farm_dispatcher = getattr(import_module("buildtools.provisionbuildfarm"), provision_build_farm_class_name)(self, provision_build_farm_args)
         else:
