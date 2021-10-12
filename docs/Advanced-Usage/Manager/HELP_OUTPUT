@@ -3,13 +3,13 @@ usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
                [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
                [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
                [-m TERMINATESOMEM416] [-q]
-               
-               {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+
+               {awsinit,managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
 
 FireSim Simulation Manager.
 
 positional arguments:
-  {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+  {awsinit,managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
                         Management task to run.
 
 optional arguments:

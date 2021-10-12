@@ -10,18 +10,23 @@ This page outlines all of the tasks that the FireSim manager supports.
 
 This is a setup command that does the following:
 
-* Run ``aws configure``, prompt for credentials
 * Replace the default config files (``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``, and ``config_hwdb.ini``) with clean example versions.
-* Prompt the user for email address and subscribe them to notifications for their own builds.
 
-You can re-run this whenever you want to get clean configuration files -- you
-can just hit enter when prompted for aws configure credentials and your email
-address, and both will keep your previously specified values.
+You can re-run this whenever you want to get clean configuration files.
 
 If you run this command by accident and didn't mean to overwrite your
 configuration files, you'll find backed-up versions in
 ``firesim/deploy/sample-backup-configs/backup*``.
 
+.. _firesim-awsinit:
+
+``firesim awsinit``
+----------------------------
+
+This is a setup command that does the following:
+
+* Run ``aws configure``, prompt for credentials
+* Prompt the user for email address and subscribe them to notifications for their own builds.
 
 .. _firesim-buildafi:
 
@@ -80,14 +85,14 @@ This directory will contain:
 ----------------------
 
 This command can be used to run only steps 9 & 10 from an aborted ``firesim buildafi`` that has been
-manually corrected. ``firesim tar2afi`` assumes that you have a 
+manually corrected. ``firesim tar2afi`` assumes that you have a
 ``firesim/deploy/results-build/LAUNCHTIME-CONFIG_TRIPLET-BUILD_NAME/cl_firesim``
 directory tree that can be submitted to the AWS backend for conversion to an AFI.
 
 When using this command, you need to also provide the ``--launchtime LAUNCHTIME`` cmdline argument,
-specifying an already existing LAUNCHTIME.  
+specifying an already existing LAUNCHTIME.
 
-This command will run for the configurations specified in :ref:`config-build` and 
+This command will run for the configurations specified in :ref:`config-build` and
 :ref:`config-build-recipes` as with :ref:`firesim-buildafi`.  It is likely that you may want
 to comment out ``BUILD_NAME`` that successfully completed :ref:`firesim-builafi` before
 running this command.
@@ -282,7 +287,7 @@ workload configuration (see the :ref:`defining-custom-workloads` section).
 
 For
 non-networked simulations, it will wait for ALL simulations to complete (copying
-back results as each workload completes), then exit. 
+back results as each workload completes), then exit.
 
 For
 globally-cycle-accurate networked simulations, the global simulation will stop
