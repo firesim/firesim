@@ -77,13 +77,13 @@ $(simulator_verilog) $(header) $(fame_annos): $(simulator_verilog).intermediate 
 # pass --no-legacy-dedup as well
 $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
 	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
-		-o $(simulator_verilog) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
+		-i $(FIRRTL_FILE) \
+		-td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		--output-filename-base $(BASE_FILE_NAME) \
 		--no-dedup \
-		-E sverilog \
 	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
