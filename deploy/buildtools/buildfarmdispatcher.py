@@ -5,19 +5,12 @@ import sys
 
 rootLogger = logging.getLogger()
 
-class ProvisionBuildFarm:
-    def __init__(self, build_config, args):
+class BuildFarmDispatcher:
+    def __init__(self, build_config, arg_dict):
         self.build_config = build_config
-        self.args = args
-        self.override_remote_build_dir = None
-
-        for arg in args:
-            split_k_v = [s for s in arg.split("=")]
-            key = split_k_v[0]
-            value = split_k_v[1]
-
-            if key == "rembuilddir":
-                self.override_remote_build_dir = value
+        self.arg_dict = arg_dict
+        self.override_remote_build_dir = arg_dict.get("remotebuilddir")
+        self.is_local = False
 
     def launch_build_instance(self):
         return
@@ -31,7 +24,16 @@ class ProvisionBuildFarm:
     def terminate_build_instance(self):
         return
 
-class ProvisionDefaultBuildFarm(ProvisionBuildFarm):
+class DefaultBuildFarmDispatcher(BuildFarmDispatcher):
+    def __init__(self, build_config, arg_dict):
+        BuildFarmDispatcher.__init__(self, build_config, arg_dict)
+
+        # default options
+        self.ip_addr = arg_dict.get('ipaddr')
+
+        if self.ip_addr == "localhost":
+            self.is_local = True
+
     def launch_build_instance(self):
         rootLogger.info("No launch needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
         return None
@@ -41,29 +43,25 @@ class ProvisionDefaultBuildFarm(ProvisionBuildFarm):
         return
 
     def get_build_instance_private_ip(self):
-        return self.build_config.build_host
+        return self.ip_addr
 
     def terminate_build_instance(self):
         rootLogger.info("No termination needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
         return
 
-class ProvisionEC2BuildFarm(ProvisionBuildFarm):
-    def __init__(self, build_config, args):
-        ProvisionBuildFarm.__init__(self, build_config, args)
+class EC2BuildFarmDispatcher(BuildFarmDispatcher):
+    def __init__(self, build_config, arg_dict):
+        BuildFarmDispatcher.__init__(self, build_config, arg_dict)
 
-        # default values
-        self.instance_type = "z1d.2xlarge"
+        # aws specific options
+        self.instance_type = arg_dict.get('instancetype')
+        self.build_instance_market = arg_dict.get('buildinstancemarket')
+        self.spot_interruption_behavior = arg_dict.get('spotinterruptionbehavior')
+        self.spot_max_price = arg_dict.get('spotmaxprice')
 
-        for arg in args:
-            split_k_v = [s for s in arg.split("=")]
-            key = split_k_v[0]
-            value = split_k_v[1]
-
-            if key == "insttype":
-                self.instance_type = value
+        self.is_local = False
 
     def launch_build_instance(self):
-        globalbuildconf = self.build_config.global_build_config
         buildconf = self.build_config
 
         # get access to the runfarmprefix, which we will apply to build
@@ -73,9 +71,9 @@ class ProvisionEC2BuildFarm(ProvisionBuildFarm):
         # in which case we give an empty build farm prefix
         build_farm_prefix = aws_resource_names_dict['runfarmprefix']
 
-        build_instance_market = globalbuildconf.build_instance_market
-        spot_interruption_behavior = globalbuildconf.spot_interruption_behavior
-        spot_max_price = globalbuildconf.spot_max_price
+        build_instance_market = self.build_instance_market
+        spot_interruption_behavior = self.spot_interruption_behavior
+        spot_max_price = self.spot_max_price
 
         buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
         num_instances = 1

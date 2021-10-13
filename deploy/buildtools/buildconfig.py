@@ -9,52 +9,43 @@ from importlib import import_module
 
 from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import *
-from buildtools.provisionbuildfarm import *
+from buildtools.buildfarmdispatcher import *
 from buildtools.build import *
 
 class BuildConfig:
     """ This represents a SINGLE build configuration. """
-    def __init__(self, name, buildconfigdict, global_build_config, launch_time):
+    def __init__(self, name, build_config_dict, build_host_conf_dict, build_host_name, global_build_config, launch_time):
         self.name = name
         self.global_build_config = global_build_config
 
-        # parsed options
-        self.TARGET_PROJECT = buildconfigdict.get('TARGET_PROJECT')
-        self.DESIGN = buildconfigdict['DESIGN']
-        self.TARGET_CONFIG = buildconfigdict['TARGET_CONFIG']
-        self.PLATFORM_CONFIG = buildconfigdict['PLATFORM_CONFIG']
-        self.deploytriplet = buildconfigdict['deploytriplet']
+        self.TARGET_PROJECT = build_config_dict.get('TARGET_PROJECT')
+        self.DESIGN = build_config_dict['DESIGN']
+        self.TARGET_CONFIG = build_config_dict['TARGET_CONFIG']
+        self.deploytriplet = build_config_dict['deploytriplet']
         self.launch_time = launch_time
-        self.launched_instance_object = None
 
-        # AJG: assigned by the build recipe
-        self.fpga_bit_builder_dispatcher = getattr(import_module("buildtools.bitbuilder"), buildconfigdict['fpgaplatform'])(self)
+        # run platform specific options
+        self.PLATFORM_CONFIG = build_config_dict['PLATFORM_CONFIG']
+        self.s3_bucketname = build_config_dict['s3bucketname']
+        if valid_aws_configure_creds():
+            aws_resource_names_dict = aws_resource_names()
+            if aws_resource_names_dict['s3bucketname'] is not None:
+                # in tutorial mode, special s3 bucket name
+                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+        self.post_build_hook = build_config_dict['postbuildhook']
 
-        # AJG: assigned by the BuildConfigFile
-        self.build_host = None
-        self.local = False
-        self.provision_build_farm_dispatcher = None
-
-    def add_build_host_info(self, build_host, provision_build_farm_class_name, provision_build_farm_args):
-        self.build_host = build_host
-        # TODO: if given a local ip addr (not localhost) double check that its localhost
-        if build_host == "localhost":
-            self.local = True
-
-        if provision_build_farm_class_name:
-            self.provision_build_farm_dispatcher = getattr(import_module("buildtools.provisionbuildfarm"), provision_build_farm_class_name)(self, provision_build_farm_args)
-        else:
-            self.provision_build_farm_dispatcher = ProvisionDefaultBuildFarm(self, provision_build_farm_args)
+        self.build_host = build_host_name
+        self.build_farm_dispatcher_class_name = build_host_conf_dict['providerclass']
+        del build_host_conf_dict['providerclass']
+        self.build_farm_dispatcher = getattr(
+            import_module("buildtools.buildfarmdispatcher"),
+            self.build_farm_dispatcher_class_name)(self, build_host_conf_dict)
 
     def __repr__(self):
         return "BuildConfig Object:\n" + pprint.pformat(vars(self), indent=10)
 
     def get_chisel_triplet(self):
         return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
-
-    def get_launched_instance_object(self):
-        """ Get the instance object for this build. """
-        return self.launched_instance_object
 
     def get_build_dir_name(self):
         """" Get the name of the local build directory. """
