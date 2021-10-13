@@ -279,7 +279,7 @@ def main(args):
         managerinit()
 
     if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
-        buildconfig = GlobalBuildConfig(args)
+        buildconfig = BuildConfigFile(args)
         globals()[args.task](buildconfig)
 
     if args.task == 'terminaterunfarm':

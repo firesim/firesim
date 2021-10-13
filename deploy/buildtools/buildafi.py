@@ -61,9 +61,9 @@ def pre_remote_build(build_config):
     with StreamLogger('stdout'), StreamLogger('stderr'):
         remote_home_dir = run('echo $HOME')
 
-    # override if provision farm asked for it
-    if build_config.provision_build_farm_dispatcher.override_remote_build_dir:
-        remote_home_dir = build_config.provision_build_farm_dispatcher.override_remote_build_dir
+    # override if build farm dispatcher asked for it
+    if build_config.build_farm_dispatcher.override_remote_build_dir:
+        remote_home_dir = build_config.build_farm_dispatcher.override_remote_build_dir
 
     remote_build_dir = "{}/firesim-build".format(remote_home_dir)
     f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
@@ -103,7 +103,7 @@ def aws_build(global_build_config, bypass=False):
 
     build_config = global_build_config.get_build_by_ip(env.host_string)
     if bypass:
-        build_config.provision_build_farm_dispatcher.terminate_build_instance()
+        build_config.build_farm_dispatcher.terminate_build_instance()
         return
 
     # The default error-handling procedure. Send an email and teardown instance
@@ -118,7 +118,7 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.info(message_title)
         rootLogger.info(message_body)
 
-        build_config.provision_build_farm_dispatcher.terminate_build_instance()
+        build_config.build_farm_dispatcher.terminate_build_instance()
 
     rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -132,10 +132,10 @@ def aws_build(global_build_config, bypass=False):
     local_deploy_dir = get_deploy_dir()
     cl_dir = ""
 
-    if not build_config.local:
-        cl_dir = pre_remote_build()
-    else:
+    if build_config.build_farm_dispatcher.is_local:
         cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_dir)
+    else:
+        cl_dir = pre_remote_build(build_config)
 
     vivado_result = 0
     with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
@@ -170,7 +170,7 @@ def aws_build(global_build_config, bypass=False):
         on_build_failure()
         return
 
-    build_config.provision_build_farm_dispatcher.terminate_build_instance()
+    build_config.build_farm_dispatcher.terminate_build_instance()
 
 def aws_create_afi(build_config):
     """
@@ -186,7 +186,7 @@ def aws_create_afi(build_config):
 
     afi = None
     agfi = None
-    s3bucket = build_config.global_build_config.s3_bucketname
+    s3bucket = build_config.s3_bucketname
     afiname = build_config.name
 
     # construct the "tags" we store in the AGFI description
@@ -272,9 +272,9 @@ def aws_create_afi(build_config):
         with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
             outputfile.write(agfi_entry)
 
-        if build_config.global_build_config.post_build_hook:
+        if build_config.post_build_hook:
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local("""{} {}""".format(build_config.global_build_config.post_build_hook,
+                localcap = local("""{} {}""".format(build_config.post_build_hook,
                                                     results_build_dir,
                                                     capture=True))
                 rootLogger.debug("[localhost] " + str(localcap))
