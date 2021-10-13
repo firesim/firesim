@@ -81,12 +81,6 @@ def get_all_workflow_instances(tag_value):
     """ Grabs a list of all instance dicts sharing the CI run's unique tag """
     return get_instances_with_filter([get_ci_filter(tag_value)])
 
-def wait_on_instance(instance_id):
-    """ Blocks on EC2 instance boot """
-    ec2_client = boto3.client('ec2')
-    waiter = ec2_client.get_waiter('instance_status_ok')
-    waiter.wait(InstanceIds=[instance_id])
-
 def instance_metadata_str(instance):
     """ Pretty prints instance info, including ID, state, and public IP """
     static_md = """    Instance ID: {}

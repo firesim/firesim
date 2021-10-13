@@ -27,7 +27,6 @@ def main():
         print(instance_metadata_str(manager_instance))
         sys.exit(0)
 
-
     manager_instance = awstools.launch_instances(
         instancetype=INSTANCE_TYPE,
         count=1,
@@ -44,11 +43,9 @@ def main():
             }],
         tags=get_manager_tag_dict(ci_commit_sha1, ci_workflow_id))[0]
 
-    print("Launching a fresh manager instance.")
+    print("Launching a fresh manager instance. This will take a couple minutes")
     manager_instance.wait_until_running()
     manager_instance.load()
-    print("Waiting for instance initialization. This will take a couple minutes.")
-    wait_on_instance(manager_instance.instance_id)
     print("Instance ready.")
     print(instance_metadata_str(get_manager_instance(ci_workflow_id)))
     sys.stdout.flush()
