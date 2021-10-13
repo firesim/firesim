@@ -22,7 +22,9 @@ from awstools.afitools import *
 
 # firesim buildtools
 from buildtools.buildafi import *
-from buildtools.buildconfig import GlobalBuildConfig
+from buildtools.build import *
+from buildtools.buildconfigfile import BuildConfigFile
+from buildtools.buildconfig import BuildConfig
 
 from util.streamlogger import StreamLogger
 
@@ -110,10 +112,9 @@ def buildafi(globalbuildconf):
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
-    auto_create_bucket(globalbuildconf.s3_bucketname)
-
-    #check to see email notifications can be subscribed
-    get_snsname_arn()
+    for buildconf in globalbuildconf.get_builds_list():
+        execute(replace_rtl, buildconf, hosts=['localhost'])
+        execute(build_driver, buildconf, hosts=['localhost'])
 
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
@@ -128,8 +129,9 @@ def buildafi(globalbuildconf):
 
     signal.signal(signal.SIGINT, terminate_instances_handler)
 
-    for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+    # pre-setup stuff (things that need to be done before instances are spawned/killed)
+    # specific to the buildhost
+    globalbuildconf.setup()
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
