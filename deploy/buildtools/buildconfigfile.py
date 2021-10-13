@@ -4,11 +4,10 @@ manager """
 from time import strftime, gmtime
 import ConfigParser
 import pprint
-import sys
 import logging
 
 from runtools.runtime_config import RuntimeHWDB
-from awstools.awstools import *
+from awstools.awstools import auto_create_bucket, get_snsname_arn
 from buildtools.buildconfig import BuildConfig
 
 rootLogger = logging.getLogger()
