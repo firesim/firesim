@@ -68,7 +68,7 @@ def aws_resource_names():
     resp = None
     res = None
     # This takes multiple minutes without a timeout from the CI container. In
-    # practise it should resolve nearly instantly on an initialized EC2 instance.
+    # practice it should resolve nearly instantly on an initialized EC2 instance.
     curl_connection_timeout = 10
     with settings(warn_only=True), hide('everything'):
         res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/meta-data/instance-id""".format(curl_connection_timeout), capture=True)
@@ -139,8 +139,19 @@ def get_aws_userid():
     But it seems that by default many accounts do not have permission to run this,
     so instead we get it from instance metadata.
     """
-    res = local("""curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="accountId" : ")[^"]*(?=")'""", capture=True)
-    return res.stdout.lower()
+    res = None
+    # This takes multiple minutes without a timeout from a non-AWS instance. In
+    # practice it should resolve nearly instantly on an initialized EC2 instance.
+    curl_connection_timeout = 10
+    with settings(warn_only=True), hide('everything'):
+        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="accountId" : ")[^"]*(?=")'""".format(curl_connection_timeout), capture=True)
+
+    # Use some default string if we're not on an EC2 instance (e.g., when a
+    # manager is launched from CI; during demos; other etc)
+    if res.return_code != 0:
+        return "PREAWSINIT"
+    else:
+        return res.stdout.lower()
 
 def construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice):
     """ construct the dictionary necessary to configure instance market selection
