@@ -4,7 +4,6 @@ manager """
 from time import strftime, gmtime
 import ConfigParser
 import pprint
-import sys
 from importlib import import_module
 
 from runtools.runtime_config import RuntimeHWDB

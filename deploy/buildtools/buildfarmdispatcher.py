@@ -1,7 +1,6 @@
 import logging
 
 from awstools.awstools import *
-import sys
 
 rootLogger = logging.getLogger()
 

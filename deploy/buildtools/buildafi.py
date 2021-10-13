@@ -111,7 +111,6 @@ def aws_build(global_build_config, bypass=False):
         message_title = "FireSim FPGA Build Failed"
 
         message_body = "Your FPGA build failed for triplet: " + build_config.get_chisel_triplet()
-        message_body += ".\nInspect the log output from IP address " + env.host_string + " for more information."
 
         send_firesim_notification(message_title, message_body)
 
@@ -139,7 +138,7 @@ def aws_build(global_build_config, bypass=False):
 
     vivado_result = 0
     with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-        # copy script to fpgabuidldir and execute
+        # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
             local_dir="{}/buildtools/platform-specific-scripts/f1/build-bitstream.sh".format(local_deploy_dir),
             remote_dir="{}/".format(cl_dir),
@@ -148,9 +147,7 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-        vivado_result = run("{}/build-bitstream.sh {}".format(
-            cl_dir,
-            cl_dir))
+        vivado_result = run("{}/build-bitstream.sh {}".format(cl_dir, cl_dir)).return_code
 
     # put build results in the result-build area
     with StreamLogger('stdout'), StreamLogger('stderr'):
