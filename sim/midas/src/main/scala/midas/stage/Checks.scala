@@ -58,11 +58,6 @@ object Checks extends Phase {
       case a: ConfigPackageAnnotation => a +=: cpa
       case a: ConfigStringAnnotation => a +=: csa
       case a: OutputBaseFilenameAnnotation => a +=: obf
-      // Provide warnings on typical FIRRTL CLI annotations
-      case u: firrtl.stage.OutputFileAnnotation =>
-        logger.warn("firrtl.stage.OutputFileAnnotation found but ignored. Output names are derived from the OutputBaseFilenameAnnotation.")
-      case e: firrtl.EmitCircuitAnnotation =>
-        logger.warn("firrtl.EmitCircuitAnnotation found but ignored. Output emission is fixed to SystemVerilog.")
       case _ =>
     }
 

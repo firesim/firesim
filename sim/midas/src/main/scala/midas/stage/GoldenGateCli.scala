@@ -10,9 +10,7 @@ trait GoldenGateCli { this: Shell =>
       ConfigStringAnnotation,
       OutputBaseFilenameAnnotation,
       firrtl.stage.FirrtlFileAnnotation,
-      firrtl.stage.OutputFileAnnotation,
       firrtl.stage.FirrtlSourceAnnotation,
-      firrtl.transforms.NoCircuitDedupAnnotation,
-      firrtl.EmitCircuitAnnotation)
+      firrtl.transforms.NoCircuitDedupAnnotation)
     .map(_.addOptions(parser))
 }
