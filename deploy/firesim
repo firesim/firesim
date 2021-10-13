@@ -240,6 +240,8 @@ def construct_firesim_argparser():
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
+    parser.add_argument('-o', '--copyonly', action='store_true',
+                        help='Only used by managerinit, only setup the default configuration files. Defaults to False')
 
     argcomplete.autocomplete(parser)
     return parser.parse_args()
@@ -262,7 +264,12 @@ def main(args):
 
     # tasks that have a special config/dispatch setup
     if args.task == 'managerinit':
-        managerinit()
+        if args.copyonly:
+            managerinit()
+        else:
+            rootLogger.warning("DEPRECATION: managerinit will move AWS setup strictly to awsinit in a future release.")
+            awsinit()
+            managerinit()
 
     if args.task == 'awsinit':
         awsinit()
