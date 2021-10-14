@@ -459,6 +459,7 @@ def send_firesim_notification(subject, body):
         rootLogger.warning(err)
 
 def main(args):
+    print(args)
     import argparse
     import json
     parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
