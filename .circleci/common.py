@@ -2,6 +2,10 @@ import sys
 import boto3
 from fabric.api import *
 
+# Reuse manager utilities
+sys.path.append(ci_workdir + "/deploy/awstools")
+from awstools import get_instances_with_filter
+
 # Remote paths
 manager_home_dir = "/home/centos"
 manager_fsim_dir = "/home/centos/firesim"
