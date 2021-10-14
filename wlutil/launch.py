@@ -5,6 +5,7 @@ import sys
 import subprocess as sp
 from . import wlutil
 
+import time
 
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
 def get_free_tcp_port():
@@ -100,6 +101,8 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
         configs = [baseConfig['jobs'][j] for j in jobs]
 
     baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
+
+    jobProcs = []
     for config in configs:
         if config['launch']:
             runResDir = baseResDir / config['name']
@@ -119,8 +122,12 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
                 log.info("For live output see: " + str(uartLog))
             
             scriptCmd = f'script -f -c "{cmd}" {uartLog}'
-            sp.Popen(["screen", "-S", config['name'], "-d", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT)  
-            
+            jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-D", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+    
+    for proc in jobProcs:
+        proc.wait()
+
+    for config in configs:           
             if 'outputs' in config:
                 outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
                 wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
