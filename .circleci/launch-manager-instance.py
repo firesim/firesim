@@ -14,11 +14,6 @@ from common import *
 sys.path.append(ci_workdir + "/deploy/awstools")
 import awstools
 
-INSTANCE_TYPE = 'z1d.2xlarge'
-MARKET_TYPE = 'ondemand'
-SPOT_INT_BEHAVIOR = 'terminate'
-SPOT_MAX_PRICE = 'ondemand'
-
 def main():
     """ Spins up a new manager instance for our CI run """
     manager_instance = get_manager_instance(ci_workflow_id)
@@ -27,25 +22,15 @@ def main():
         print(instance_metadata_str(manager_instance))
         sys.exit(0)
 
-    manager_instance = awstools.launch_instances(
-        instancetype=INSTANCE_TYPE,
-        count=1,
-        instancemarket=MARKET_TYPE,
-        spotinterruptionbehavior=SPOT_INT_BEHAVIOR,
-        spotmaxprice=SPOT_MAX_PRICE,
-        blockdevices=[
-            {
-                'DeviceName': '/dev/sda1',
-                'Ebs': {
-                    'VolumeSize': 300,
-                    'VolumeType': 'gp2',
-                },
-            }],
-        tags=get_manager_tag_dict(ci_commit_sha1, ci_workflow_id))[0]
-
     print("Launching a fresh manager instance. This will take a couple minutes")
-    manager_instance.wait_until_running()
-    manager_instance.load()
+    awstools.main([
+        'launch',
+        '--inst_type', 'z1d.2xlarge',
+        '--inst_amt', 1,
+        '--block_devices', [{'DeviceName':'/dev/sda1','Ebs':{'VolumeSize':300,'VolumeType':'gp2'}}],
+        '--tags', get_manager_tag_dict(ci_commit_sha1, ci_workflow_id)])
+    manager_instance = get_manager_instance(ci_workflow_id)
+
     print("Instance ready.")
     print(instance_metadata_str(get_manager_instance(ci_workflow_id)))
     sys.stdout.flush()
