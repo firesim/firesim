@@ -3,6 +3,7 @@ import boto3
 from fabric.api import *
 
 # Reuse manager utilities
+from ci_variables import ci_workdir
 sys.path.append(ci_workdir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
