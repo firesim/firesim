@@ -3,6 +3,7 @@ from __future__ import print_function
 import random
 import logging
 import os
+import json
 
 import boto3
 import botocore
@@ -102,8 +103,6 @@ def aws_resource_names():
     base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
 
     return base_dict
-
-
 
 # AMIs are region specific
 def get_f1_ami_id():
@@ -226,6 +225,15 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
             startsubnet += 1
     return instances
 
+def run_block_device_dict():
+    return [ { 'DeviceName': '/dev/sda1', 'Ebs': { 'VolumeSize': 300, 'VolumeType': 'gp2' } } ]
+
+def run_tag_dict():
+    return { 'fsimcluster': "defaultcluster" }
+
+def run_filters_list_dict():
+    return [ { 'Name': 'tag:fsimcluster', 'Values': [ "defaultcluster" ] } ]
+
 def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice):
     return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice,
         blockdevices=[
@@ -238,6 +246,22 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
             },
         ],
         tags={ 'fsimcluster': fsimclustertag })
+
+def get_instances_with_filter(filters, allowed_states=['pending', 'running', 'shutting-down', 'stopping', 'stopped']):
+    """ Produces a list of instances based on a set of provided filters """
+    ec2_client = boto3.client('ec2')
+
+    instance_res = ec2_client.describe_instances(Filters=filters +
+        [{'Name': 'instance-state-name', 'Values' : allowed_states}]
+    )['Reservations']
+
+    instances = []
+    # Collect all instances across all reservations
+    if instance_res:
+        for res in instance_res:
+            if res['Instances']:
+                instances.extend(res['Instances'])
+    return instances
 
 def get_instances_by_tag_type(fsimclustertag, instancetype):
     """ return list of instances that match a tag and instance type """
@@ -437,13 +461,22 @@ def send_firesim_notification(subject, body):
 
 def main(args):
     if args.command == "launch":
-        insts = launch_run_instances(args.inst_type, args.inst_amt, args.clustertag, args.market, args.int_behavior, args.spot_max_price)
-        print("Instance IDs: {}".format(insts))
+        insts = launch_instances(
+            args.inst_type,
+            args.inst_amt,
+            args.market,
+            args.int_behavior,
+            args.spot_max_price,
+            args.block_devices,
+            args.tags,
+            args.random_subnet)
+        instids = get_instance_ids_for_instances(insts)
+        print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)
         print("Launched instance IPs: {}".format(get_private_ips_for_instances(insts)))
     else: # "terminate"
-        insts = get_instances_by_tag_type(args.clustertag, args.inst_type)
-        instids = get_instance_ids_for_instances(insts)
+        insts = get_instances_with_filter(args.filters)
+        instids = [ inst['InstanceId'] for inst in insts ]
         terminate_instances(instids, False)
         print("Terminated instance IDs: {}".format(instids))
     return 0
@@ -451,26 +484,30 @@ def main(args):
 if __name__ == '__main__':
     import sys
     import argparse
-    parser = argparse.ArgumentParser(description="Launch/terminate instances")
+    parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("command", choices=["launch", "terminate"], help="Choose to launch or terminate instances")
-    parser.add_argument("--inst_type", help="Instance type (e.g. m5.large). Used by \'launch\' and \'terminate\'.")
+    parser.add_argument("--inst_type", default="m5.large", help="Instance type (e.g. m5.large). Used by \'launch\'.")
     parser.add_argument("--inst_amt", type=int, default=1, help="Number of instances to launch. Used by \'launch\'.")
-    parser.add_argument("--clustertag", help="Name of instance cluster. Used by \'launch\' and \'terminate\'.")
     parser.add_argument("--market", choices=["ondemand", "spot"], default="ondemand", help="Type of market to get instances. Used by \'launch\'.")
     parser.add_argument("--int_behavior", choices=["hibernate", "stop", "terminate"], default="terminate", help="Interrupt behavior. Used by \'launch\'.")
     parser.add_argument("--spot_max_price", default="ondemand", help="Spot Max Price. Used by \'launch\'.")
+    parser.add_argument("--random_subnet", action="store_true", help="Randomize subnets. Used by \'launch\'.")
+    parser.add_argument("--block_devices", type=json.loads, default=run_block_device_dict(), help="List of dicts with block device information. Used by \'launch\'.")
+    parser.add_argument("--tags", type=json.loads, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
+    parser.add_argument("--filters", type=json.loads, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
     args = parser.parse_args()
     if args.command == "launch" and (
             args.inst_type is None or
             args.inst_amt is None or
-            args.clustertag is None or
+            args.tags is None or
             args.market is None or
             args.int_behavior is None or
+            args.random_subnet is None or
+            args.block_devices is None or
             args.spot_max_price is None):
         parser.error("launch missing arguments")
     if args.command == "terminate" and (
-            args.inst_type is None or
-            args.clustertag is None):
+            args.filters is None):
         parser.error("terminate missing arguments")
 
     sys.exit(main(args))

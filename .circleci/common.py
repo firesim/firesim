@@ -29,22 +29,6 @@ def get_manager_tag_dict(sha, tag_value):
         'ci-manager':'',
         unique_tag_key: tag_value}
 
-def get_instances_with_filter(tag_filters, allowed_states=['pending', 'running', 'shutting-down', 'stopping', 'stopped']):
-    """ Produces a list of instances based on a set of provided filters """
-    ec2_client = boto3.client('ec2')
-
-    instance_res = ec2_client.describe_instances(Filters=tag_filters +
-        [{'Name': 'instance-state-name', 'Values' : allowed_states}]
-    )['Reservations']
-
-    instances = []
-    # Collect all instances across all reservations
-    if instance_res:
-        for res in instance_res:
-            if res['Instances']:
-                instances.extend(res['Instances'])
-    return instances
-
 def get_manager_instance(tag_value):
     """ Looks up the manager instance dict using the CI run's unique tag"""
     instances = get_instances_with_filter([get_ci_filter(tag_value), manager_filter])
