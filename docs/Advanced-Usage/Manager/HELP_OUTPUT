@@ -15,38 +15,38 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -c RUNTIMECONFIGFILE, --runtimeconfigfile RUNTIMECONFIGFILE
-                        Optional custom runtime/workload config file. Defaults
-                        to config_runtime.ini.
+                        Optional custom runtime/workload config file.
+                        (default: config_runtime.ini)
   -b BUILDCONFIGFILE, --buildconfigfile BUILDCONFIGFILE
-                        Optional custom build config file. Defaults to
-                        config_build.ini.
+                        Optional custom build config file. (default:
+                        config_build.ini)
   -r BUILDRECIPESCONFIGFILE, --buildrecipesconfigfile BUILDRECIPESCONFIGFILE
-                        Optional custom build recipe config file. Defaults to
-                        config_build_recipes.ini.
+                        Optional custom build recipe config file. (default:
+                        config_build_recipes.ini)
   -a HWDBCONFIGFILE, --hwdbconfigfile HWDBCONFIGFILE
-                        Optional custom HW database config file. Defaults to
-                        config_hwdb.ini.
+                        Optional custom HW database config file. (default:
+                        config_hwdb.ini)
   -x OVERRIDECONFIGDATA, --overrideconfigdata OVERRIDECONFIGDATA
                         Override a single value from one of the the RUNTIME
                         e.g.: --overrideconfigdata "targetconfig linklatency
-                        6405".
+                        6405". (default: )
   -f TERMINATESOMEF116, --terminatesomef116 TERMINATESOMEF116
                         Only used by terminatesome. Terminates this many of
-                        the previously launched f1.16xlarges.
+                        the previously launched f1.16xlarges. (default: -1)
   -g TERMINATESOMEF12, --terminatesomef12 TERMINATESOMEF12
                         Only used by terminatesome. Terminates this many of
-                        the previously launched f1.2xlarges.
+                        the previously launched f1.2xlarges. (default: -1)
   -i TERMINATESOMEF14, --terminatesomef14 TERMINATESOMEF14
                         Only used by terminatesome. Terminates this many of
-                        the previously launched f1.4xlarges.
+                        the previously launched f1.4xlarges. (default: -1)
   -m TERMINATESOMEM416, --terminatesomem416 TERMINATESOMEM416
                         Only used by terminatesome. Terminates this many of
-                        the previously launched m4.16xlarges.
+                        the previously launched m4.16xlarges. (default: -1)
   -q, --forceterminate  For terminaterunfarm, force termination without
-                        prompting user for confirmation. Defaults to False
+                        prompting user for confirmation. (default: False)
   -t LAUNCHTIME, --launchtime LAUNCHTIME
                         Give the "Y-m-d--H-M-S" prefix of results-build
                         directory. Useful for tar2afi when finishing a partial
-                        buildafi
+                        buildafi (default: None)
   -o, --copyonly        Only used by managerinit, only setup the default
-                        configuration files. Defaults to False
+                        configuration files. (default: False)
