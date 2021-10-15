@@ -459,9 +459,8 @@ def send_firesim_notification(subject, body):
         rootLogger.warning(err)
 
 def main(args):
-    print(args)
     import argparse
-    import json
+    import yaml
     parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("command", choices=["launch", "terminate"], help="Choose to launch or terminate instances")
     parser.add_argument("--inst_type", default="m5.large", help="Instance type. Used by \'launch\'.")
@@ -470,9 +469,9 @@ def main(args):
     parser.add_argument("--int_behavior", choices=["hibernate", "stop", "terminate"], default="terminate", help="Interrupt behavior. Used by \'launch\'.")
     parser.add_argument("--spot_max_price", default="ondemand", help="Spot Max Price. Used by \'launch\'.")
     parser.add_argument("--random_subnet", action="store_true", help="Randomize subnets. Used by \'launch\'.")
-    parser.add_argument("--block_devices", type=json.loads, default=run_block_device_dict(), help="List of dicts with block device information. Used by \'launch\'.")
-    parser.add_argument("--tags", type=json.loads, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
-    parser.add_argument("--filters", type=json.loads, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
+    parser.add_argument("--block_devices", type=yaml.load, default=run_block_device_dict(), help="List of dicts with block device information. Used by \'launch\'.")
+    parser.add_argument("--tags", type=yaml.load, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
+    parser.add_argument("--filters", type=yaml.load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
     args = parser.parse_args(args)
 
     if args.command == "launch":
