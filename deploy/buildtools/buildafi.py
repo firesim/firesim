@@ -45,59 +45,54 @@ def build_driver(build_config):
             get_deploy_dir() + "/..",
             build_config.make_recipe("PLATFORM=f1 driver")))
 
-def pre_remote_build(build_config):
-    # First, Produce dcp/tar for design. Runs on remote machines, out of
-    # $HOME/firesim-build/ """
-
-    fpga_build_dir = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
-    local_deploy_dir = get_deploy_dir()
+def remote_setup(build_config):
+    fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
 
     # local paths
-    local_fsim_dir = "{}/..".format(local_deploy_dir)
-    local_awsfpga_dir = "{}/platforms/f1/aws-fpga".format(local_fsim_dir)
+    local_awsfpga_dir = "{}/../platforms/f1/aws-fpga".format(get_deploy_dir())
 
     # remote paths
     remote_home_dir = ""
     with StreamLogger('stdout'), StreamLogger('stderr'):
         remote_home_dir = run('echo $HOME')
 
-    # override if build farm dispatcher asked for it
+    # potentially override build dir
     if build_config.build_farm_dispatcher.override_remote_build_dir:
         remote_home_dir = build_config.build_farm_dispatcher.override_remote_build_dir
 
     remote_build_dir = "{}/firesim-build".format(remote_home_dir)
-    f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
-    awsfpga_dir = "{}/aws-fpga".format(f1_platform_dir)
+    remote_f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
+    remote_awsfpga_dir = "{}/aws-fpga".format(remote_f1_platform_dir)
 
     # copy aws-fpga to the build instance.
     # do the rsync, but ignore any checkpoints that might exist on this machine
     # (in case builds were run locally)
     # extra_opts -l preserves symlinks
     with StreamLogger('stdout'), StreamLogger('stderr'):
-        run('mkdir -p {}'.format(f1_platform_dir))
+        run('mkdir -p {}'.format(remote_f1_platform_dir))
         rsync_cap = rsync_project(
             local_dir=local_awsfpga_dir,
-            remote_dir=f1_platform_dir,
+            remote_dir=remote_f1_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="hdk/cl/developer_designs/cl_*",
             extra_opts="-l", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
-            local_dir="{}/{}/*".format(local_awsfpga_dir, fpga_build_dir),
-            remote_dir='{}/{}'.format(awsfpga_dir, fpga_build_dir),
+            local_dir="{}/{}/*".format(local_awsfpga_dir, fpga_build_postfix),
+            remote_dir='{}/{}'.format(remote_awsfpga_dir, fpga_build_postfix),
             exclude='build/checkpoints',
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-    return "{}/{}".format(awsfpga_dir, fpga_build_dir)
+    return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
 @parallel
 def aws_build(global_build_config, bypass=False):
     """ Run Vivado, convert tar -> AGFI/AFI. Then terminate the instance at the end.
-    conf = build_config dicitonary
+    global_build_config = the global build configuration
     bypass: since this function takes a long time, bypass just returns for
     testing purposes when set to True. """
 
@@ -121,20 +116,19 @@ def aws_build(global_build_config, bypass=False):
 
     rootLogger.info("Building AWS F1 AGFI from Verilog")
 
-    # local AWS build directory; might have config-specific changes to fpga flow
-    fpga_build_dir = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
-    results_dir = build_config.get_build_dir_name()
+    local_deploy_dir = get_deploy_dir()
+    fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
+    local_results_dir = "{}/results-build/{}".format(local_deploy_dir, build_config.get_build_dir_name())
 
     # cl_dir is the cl_dir that is either local or remote
-    # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple
+    # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple)
     # if remote (aka not locally) then you need to copy things
-    local_deploy_dir = get_deploy_dir()
     cl_dir = ""
 
     if build_config.build_farm_dispatcher.is_local:
-        cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_dir)
+        cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_postfix)
     else:
-        cl_dir = pre_remote_build(build_config)
+        cl_dir = remote_setup(build_config)
 
     vivado_result = 0
     with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
@@ -152,7 +146,7 @@ def aws_build(global_build_config, bypass=False):
     # put build results in the result-build area
     with StreamLogger('stdout'), StreamLogger('stderr'):
         rsync_cap = rsync_project(
-            local_dir="""{}/results-build/{}/""".format(local_deploy_dir, results_dir),
+            local_dir="{}/".format(local_results_dir),
             remote_dir="{}".format(cl_dir),
             ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
             capture=True)
@@ -175,11 +169,9 @@ def aws_create_afi(build_config):
 
     :return: None on error
     """
-    ## next, do tar -> AGFI
-    ## This is done on the local copy
 
     local_deploy_dir = get_deploy_dir()
-    results_dir = build_config.get_build_dir_name()
+    local_results_dir = "{}/results-build/{}".format(local_deploy_dir, build_config.get_build_dir_name())
 
     afi = None
     agfi = None
@@ -213,7 +205,7 @@ def aws_create_afi(build_config):
     # append the build node IP + a random string to diff them in s3
     global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-    with lcd("""{}/results-build/{}/cl_firesim/build/checkpoints/to_aws/""".format(local_deploy_dir, results_dir)), StreamLogger('stdout'), StreamLogger('stderr'):
+    with lcd("""{}/cl_{}/build/checkpoints/to_aws/""".format(local_results_dir, tag_buildtriplet)), StreamLogger('stdout'), StreamLogger('stderr'):
         files = local('ls *.tar', capture=True)
         rootLogger.debug(files)
         rootLogger.debug(files.stderr)
@@ -233,7 +225,7 @@ def aws_create_afi(build_config):
         rootLogger.info("Resulting AFI: " + str(afi))
 
     rootLogger.info("Waiting for create-fpga-image completion.")
-    results_build_dir = """{}/results-build/{}/""".format(local_deploy_dir, results_dir)
+    results_build_dir = """{}/""".format(local_results_dir)
     checkstate = "pending"
     with lcd(results_build_dir), StreamLogger('stdout'), StreamLogger('stderr'):
         while checkstate == "pending":

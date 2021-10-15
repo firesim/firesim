@@ -8,6 +8,7 @@ class BuildFarmDispatcher:
     def __init__(self, build_config, arg_dict):
         self.build_config = build_config
         self.arg_dict = arg_dict
+        # used to override where to do the fpga build (if done remotely)
         self.override_remote_build_dir = arg_dict.get("remotebuilddir")
         self.is_local = False
 
