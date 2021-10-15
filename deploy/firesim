@@ -233,7 +233,7 @@ def construct_firesim_argparser():
                         help='Optional custom build recipe config file. Defaults to config_build_recipes.ini.',
                         default='config_build_recipes.ini')
     parser.add_argument('-s', '--buildhostsconfigfile', type=str,
-                        help='Optional custom build host config file. Defaults to config_build_hosts.ini.',
+                        help='Optional custom build host config file.',
                         default='config_build_hosts.ini')
     parser.add_argument('-a', '--hwdbconfigfile', type=str,
                         help='Optional custom HW database config file. Defaults to config_hwdb.ini.',
