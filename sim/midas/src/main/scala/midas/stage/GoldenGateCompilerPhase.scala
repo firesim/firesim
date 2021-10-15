@@ -15,8 +15,10 @@ import firrtl.stage.transforms.Compiler
 
 class GoldenGateCompilerPhase extends Phase {
 
-  override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
-  override val optionalPrerequisiteOf = Seq(Dependency[firrtl.stage.phases.WriteEmitted])
+  override val prerequisites = Seq(
+    Dependency(midas.stage.Checks),
+    Dependency(midas.stage.AddDerivedAnnotations),
+    Dependency[CreateParametersInstancePhase])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val allCircuits = annotations.collect({ case FirrtlCircuitAnnotation(circuit) => circuit })
