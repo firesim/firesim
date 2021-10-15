@@ -33,34 +33,31 @@ class BuildConfigFile:
         self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
         self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
 
-        # this is a list of actual builds to run (name,buildhost)
-        builds_to_run_list = global_build_configfile.items('builds')
-        builds_to_run_dict = dict(global_build_configfile.items('builds'))
+        # this is a list of actual builds to run
+        builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
 
         build_recipes_configfile = ConfigParser.ConfigParser(allow_no_value=True)
         # make option names case sensitive
         build_recipes_configfile.optionxform = str
         build_recipes_configfile.read(args.buildrecipesconfigfile)
 
+        build_hosts_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        # make option names case sensitive
+        build_hosts_configfile.optionxform = str
+        build_hosts_configfile.read(args.buildhostsconfigfile)
+
         build_recipes = dict()
         for section in build_recipes_configfile.sections():
-            # retrieve the build host section and pass to BuildConfig
-            build_host_section = builds_to_run_dict.get(section)
-            if build_host_section == None:
-                build_host_section = "defaultbuildhost"
-            build_host_conf_dict = dict(global_build_configfile.items(build_host_section))
-
             build_recipes[section] = BuildConfig(
                 section,
                 dict(build_recipes_configfile.items(section)),
-                build_host_conf_dict,
-                build_host_section,
+                build_hosts_configfile,
                 self,
                 launch_time)
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
-        self.builds_list = list(map(lambda x: build_recipes[x[0]], builds_to_run_list))
+        self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
 
     def setup(self):
         """ Setup based on the types of buildhosts """

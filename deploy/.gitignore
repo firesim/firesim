@@ -6,10 +6,12 @@ results-workload/*
 config_runtime.ini
 config_build.ini
 config_build_recipes.ini
+config_build_hosts.ini
 config_hwdb.ini
 backup_config_build.ini
 backup_config_runtime.ini
 backup_config_build_recipes.ini
+backup_config_build_hosts.ini
 backup_config_hwdb.ini
 generated-topology-diagrams/
 logs/*.log
