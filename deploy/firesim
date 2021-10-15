@@ -193,7 +193,7 @@ def shareagfi(buildconf):
 
 def construct_firesim_argparser():
     # parse command line args
-    parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
+    parser = argparse.ArgumentParser(description='FireSim Simulation Manager.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=[
                             'managerinit',
@@ -210,16 +210,16 @@ def construct_firesim_argparser():
                             'tar2afi'
                             ])
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
-                        help='Optional custom runtime/workload config file. Defaults to config_runtime.ini.',
+                        help='Optional custom runtime/workload config file.',
                         default='config_runtime.ini')
     parser.add_argument('-b', '--buildconfigfile', type=str,
-                        help='Optional custom build config file. Defaults to config_build.ini.',
+                        help='Optional custom build config file.',
                         default='config_build.ini')
     parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
-                        help='Optional custom build recipe config file. Defaults to config_build_recipes.ini.',
+                        help='Optional custom build recipe config file.',
                         default='config_build_recipes.ini')
     parser.add_argument('-a', '--hwdbconfigfile', type=str,
-                        help='Optional custom HW database config file. Defaults to config_hwdb.ini.',
+                        help='Optional custom HW database config file.',
                         default='config_hwdb.ini')
     parser.add_argument('-x', '--overrideconfigdata', type=str,
                         help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "targetconfig linklatency 6405".',
@@ -237,11 +237,11 @@ def construct_firesim_argparser():
                         help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
     parser.add_argument('-q', '--forceterminate', action='store_true',
-                        help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
+                        help='For terminaterunfarm, force termination without prompting user for confirmation.')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
     parser.add_argument('-o', '--copyonly', action='store_true',
-                        help='Only used by managerinit, only setup the default configuration files. Defaults to False')
+                        help='Only used by managerinit, only setup the default configuration files.')
 
     argcomplete.autocomplete(parser)
     return parser.parse_args()
