@@ -71,6 +71,8 @@ sudo pip2 install awscli==1.15.76
 sudo pip2 install pytest
 # moto 1.3.1 is newest version that will work with boto3 1.6.2
 sudo pip2 install moto==1.3.1
+# needed for the awstools cmdline parsing
+sudo pip2 install pyyaml
 
 sudo activate-global-python-argcomplete
 

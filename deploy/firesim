@@ -110,13 +110,6 @@ def buildafi(globalbuildconf):
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
-    @parallel
-    def instance_liveness():
-        """ confirm that all instances are running first. """
-        rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("uname -a")
-
     auto_create_bucket(globalbuildconf.s3_bucketname)
 
     #check to see email notifications can be subscribed
@@ -144,9 +137,6 @@ def buildafi(globalbuildconf):
 
     # confirm that build instances have finished booting
     globalbuildconf.wait_build_instances()
-
-    # confirm that we can connect to the launched instances
-    execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
 
     # run builds, then terminate instances
     execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
