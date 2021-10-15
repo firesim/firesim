@@ -58,6 +58,7 @@ class EC2BuildFarmDispatcher(BuildFarmDispatcher):
         self.build_instance_market = arg_dict.get('buildinstancemarket')
         self.spot_interruption_behavior = arg_dict.get('spotinterruptionbehavior')
         self.spot_max_price = arg_dict.get('spotmaxprice')
+        self.launched_instance_object = None
 
         self.is_local = False
 
@@ -77,7 +78,7 @@ class EC2BuildFarmDispatcher(BuildFarmDispatcher):
 
         buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
         num_instances = 1
-        buildconf.launched_instance_object = launch_instances(
+        self.launched_instance_object = launch_instances(
             self.instance_type,
             num_instances,
             build_instance_market,
@@ -96,14 +97,14 @@ class EC2BuildFarmDispatcher(BuildFarmDispatcher):
             randomsubnet=True)[0]
 
     def wait_on_instance_launch(self):
-        wait_on_instance_launches([self.build_config.launched_instance_object])
+        wait_on_instance_launches([self.launched_instance_object])
 
     def get_build_instance_private_ip(self):
         """ Get the private IP of the instance running this build. """
-        return self.build_config.launched_instance_object.private_ip_address
+        return self.launched_instance_object.private_ip_address
 
     def terminate_build_instance(self):
         """ Terminate the instance running this build. """
-        instance_ids = get_instance_ids_for_instances([self.build_config.launched_instance_object])
+        instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
         rootLogger.info("Terminating build instances {}".format(instance_ids))
         terminate_instances(instance_ids, dryrun=False)
