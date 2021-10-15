@@ -99,16 +99,10 @@ def buildafi(globalbuildconf):
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
-    # TODO: AJG:
-    # Problem... how to build things on localhost in parallel?
-    # currently there is a mapping from ip -> buildconfig
-    # this breaks down if multiple things are building on localhost...
-    #for buildconf in globalbuildconf.get_builds_list():
-    #    execute(replace_rtl, buildconf, hosts=['localhost'])
-    #    execute(build_driver, buildconf, hosts=['localhost'])
-    num_builds = len(globalbuildconf.get_builds_list())
-    execute(globalbuildconf.replace_rtl, hosts=['localhost'] * num_builds)
-    execute(globalbuildconf.build_driver, hosts=['localhost'] * num_builds)
+    # forced to build locally
+    for build_config in globalbuildconf.get_builds_list():
+        execute(build_config.fpga_bit_builder_dispatcher.replace_rtl, hosts=['localhost'])
+        execute(build_config.fpga_bit_builder_dispatcher.build_driver, hosts=['localhost'])
 
     @parallel
     def instance_liveness():
