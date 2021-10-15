@@ -26,7 +26,6 @@ def main():
     awstools.main([
         'launch',
         '--inst_type', 'z1d.2xlarge',
-        '--inst_amt', 1,
         '--block_devices', str([{'DeviceName':'/dev/sda1','Ebs':{'VolumeSize':300,'VolumeType':'gp2'}}]),
         '--tags', str(get_manager_tag_dict(ci_commit_sha1, ci_workflow_id))])
     manager_instance = get_manager_instance(ci_workflow_id)
