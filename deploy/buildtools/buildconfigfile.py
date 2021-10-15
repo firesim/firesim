@@ -5,6 +5,7 @@ from time import strftime, gmtime
 import ConfigParser
 import pprint
 import logging
+import sys
 
 from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import auto_create_bucket, get_snsname_arn
@@ -58,6 +59,7 @@ class BuildConfigFile:
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
         self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
+        self.build_ip_set = set()
 
     def setup(self):
         """ Setup based on the types of buildhosts """
@@ -71,6 +73,13 @@ class BuildConfigFile:
         # TODO: optimization: batch together items using the same buildhost
         for build in self.builds_list:
             build.build_farm_dispatcher.launch_build_instance()
+            num_ips = len(self.build_ip_set)
+            ip = build.build_farm_dispatcher.get_build_instance_private_ip()
+            self.build_ip_set.add(ip)
+            if num_ips == len(self.build_ip_set):
+                rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
+                self.terminate_all_build_instances()
+                sys.exit(1)
 
     def wait_build_instances(self):
         """ block until all build instances are launched """
@@ -92,7 +101,7 @@ class BuildConfigFile:
     def get_build_instance_ips(self):
         """ Return a list of all the build instance IPs, i.e. hosts to pass to
         fabric. """
-        return map(lambda x: x.build_farm_dispatcher.get_build_instance_private_ip(), self.builds_list)
+        return list(self.build_ip_set)
 
     def get_builds_list(self):
         return self.builds_list
