@@ -153,7 +153,7 @@ def aws_build(global_build_config, bypass=False):
     with StreamLogger('stdout'), StreamLogger('stderr'):
         rsync_cap = rsync_project(
             local_dir="""{}/results-build/{}/""".format(local_deploy_dir, results_dir),
-            remote_dir="{}/".format(cl_dir),
+            remote_dir="{}".format(cl_dir),
             ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
             capture=True)
         rootLogger.debug(rsync_cap)
@@ -250,10 +250,9 @@ def aws_create_afi(build_config):
 
         message_title = "FireSim FPGA Build Completed"
         agfi_entry = "[" + afiname + "]\n"
+        agfi_entry += "afgi=" + agfi + "\n"
         agfi_entry += "deploytripletoverride=None\n"
-        agfi_entry += "customruntimeconfig=None\n"
-        agfi_entry += "platform=f1\n"
-        agfi_entry += agfi + "\n\n"
+        agfi_entry += "customruntimeconfig=None\n\n"
         message_body = "Your AGFI has been created!\nAdd\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
 
         send_firesim_notification(message_title, message_body)
