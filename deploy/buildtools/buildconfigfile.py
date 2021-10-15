@@ -92,10 +92,7 @@ class BuildConfigFile:
     def get_build_instance_ips(self):
         """ Return a list of all the build instance IPs, i.e. hosts to pass to
         fabric. """
-        ip_list = []
-        for build in self.builds_list:
-            ip_list.append(build.build_farm_dispatcher.get_build_instance_private_ip())
-        return ip_list
+        return map(lambda x: x.build_farm_dispatcher.get_build_instance_private_ip(), self.builds_list)
 
     def get_builds_list(self):
         return self.builds_list
