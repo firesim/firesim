@@ -106,6 +106,24 @@ class BuildConfigFile:
     def get_builds_list(self):
         return self.builds_list
 
+    @serial
+    def replace_rtl(self):
+        build_config = self.get_build_by_ip(env.host_string)
+        build_config.fpga_bit_builder_dispatcher.replace_rtl()
+        return
+
+    @serial
+    def build_driver(self):
+        build_config = self.get_build_by_ip(env.host_string)
+        build_config.fpga_bit_builder_dispatcher.build_driver()
+        return
+
+    @parallel
+    def build_bitstream(self, bypass=False):
+        build_config = self.get_build_by_ip(env.host_string)
+        build_config.fpga_bit_builder_dispatcher.build_bitstream()
+        return
+
     def __str__(self):
         return pprint.pformat(vars(self))
 

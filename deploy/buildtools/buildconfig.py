@@ -41,10 +41,18 @@ class BuildConfig:
 
         self.build_farm_dispatcher_class_name = build_host_conf_dict['providerclass']
         del build_host_conf_dict['providerclass']
-        # create dispatcher object using class given and pass args to it
+        # create build platform dispatcher object using class given and pass args to it
         self.build_farm_dispatcher = getattr(
             import_module("buildtools.buildfarmdispatcher"),
             self.build_farm_dispatcher_class_name)(self, build_host_conf_dict)
+
+        self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpgaplatform')
+        if self.fpga_bit_builder_dispatcher_class_name == None:
+            self.fpga_bit_builder_dispatcher_class_name = "F1BitBuilder"
+        # create run platform dispatcher object using class given and pass args to it
+        self.fpga_bit_builder_dispatcher = getattr(
+            import_module("buildtools.bitbuilder"),
+            self.fpga_bit_builder_dispatcher_class_name)(self)
 
     def __repr__(self):
         return "BuildConfig Object:\n" + pprint.pformat(vars(self), indent=10)
