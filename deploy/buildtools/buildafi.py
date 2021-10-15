@@ -244,8 +244,8 @@ def aws_create_afi(build_config):
         agfi_entry = "[" + afiname + "]\n"
         agfi_entry += "afgi=" + agfi + "\n"
         agfi_entry += "deploytripletoverride=None\n"
-        agfi_entry += "customruntimeconfig=None\n\n"
-        message_body = "Your AGFI has been created!\nAdd\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+        agfi_entry += "customruntimeconfig=None\n"
+        message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
 
         send_firesim_notification(message_title, message_body)
 

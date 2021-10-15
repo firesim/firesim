@@ -59,7 +59,7 @@ def managerinit():
     """ Setup local FireSim manager components. """
 
     rootLogger.info("Backing up initial config files, if they exist.")
-    config_files = ["build", "build_recipes", "hwdb", "runtime"]
+    config_files = ["build", "build_recipes", "build_hosts", "hwdb", "runtime"]
     for conf_file in config_files:
         with warn_only(), hide('everything'):
             m = local("""cp config_{}.ini sample-backup-configs/backup_config_{}.ini""".format(conf_file, conf_file), capture=True)
@@ -230,6 +230,9 @@ def construct_firesim_argparser():
     parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
                         help='Optional custom build recipe config file. Defaults to config_build_recipes.ini.',
                         default='config_build_recipes.ini')
+    parser.add_argument('-s', '--buildhostsconfigfile', type=str,
+                        help='Optional custom build host config file. Defaults to config_build_hosts.ini.',
+                        default='config_build_hosts.ini')
     parser.add_argument('-a', '--hwdbconfigfile', type=str,
                         help='Optional custom HW database config file. Defaults to config_hwdb.ini.',
                         default='config_hwdb.ini')

@@ -13,29 +13,35 @@ from buildtools.build import *
 
 class BuildConfig:
     """ This represents a SINGLE build configuration. """
-    def __init__(self, name, build_config_dict, build_host_conf_dict, build_host_name, global_build_config, launch_time):
+    def __init__(self, name, recipe_config_dict, build_hosts_configfile, global_build_config, launch_time):
         self.name = name
         self.global_build_config = global_build_config
 
-        self.TARGET_PROJECT = build_config_dict.get('TARGET_PROJECT')
-        self.DESIGN = build_config_dict['DESIGN']
-        self.TARGET_CONFIG = build_config_dict['TARGET_CONFIG']
-        self.deploytriplet = build_config_dict['deploytriplet']
+        self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT')
+        self.DESIGN = recipe_config_dict['DESIGN']
+        self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
+        self.deploytriplet = recipe_config_dict['deploytriplet']
         self.launch_time = launch_time
 
         # run platform specific options
-        self.PLATFORM_CONFIG = build_config_dict['PLATFORM_CONFIG']
-        self.s3_bucketname = build_config_dict['s3bucketname']
+        self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
+        self.s3_bucketname = recipe_config_dict['s3bucketname']
         if valid_aws_configure_creds():
             aws_resource_names_dict = aws_resource_names()
             if aws_resource_names_dict['s3bucketname'] is not None:
                 # in tutorial mode, special s3 bucket name
                 self.s3_bucketname = aws_resource_names_dict['s3bucketname']
-        self.post_build_hook = build_config_dict['postbuildhook']
+        self.post_build_hook = recipe_config_dict['postbuildhook']
 
-        self.build_host = build_host_name
+        # retrieve the build host section
+        self.build_host = recipe_config_dict.get('buildhost')
+        if self.build_host == None:
+            self.build_host = "defaultbuildhost"
+        build_host_conf_dict = dict(build_hosts_configfile.items(self.build_host))
+
         self.build_farm_dispatcher_class_name = build_host_conf_dict['providerclass']
         del build_host_conf_dict['providerclass']
+        # create dispatcher object using class given and pass args to it
         self.build_farm_dispatcher = getattr(
             import_module("buildtools.buildfarmdispatcher"),
             self.build_farm_dispatcher_class_name)(self, build_host_conf_dict)
