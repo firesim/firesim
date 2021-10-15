@@ -7,7 +7,12 @@ import datetime
 import pytz
 import boto3
 
-from common import get_instances_with_filter, unique_tag_key
+from common import unique_tag_key
+
+# Reuse manager utilities
+from ci_variables import ci_workdir
+sys.path.append(ci_workdir + "/deploy/awstools")
+from awstools import get_instances_with_filter
 
 # The number of hours an instance may exist since its initial launch time
 INSTANCE_LIFETIME_LIMIT_HOURS = 24
