@@ -118,6 +118,14 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="index.html" class="extype" name="midas.stage">stage</a></dd></dl></div>
     </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="AddDerivedAnnotations$.html" title="Provides firrtl.stage.OutputFileAnnotation and firrtl.EmitCircuitAnnotation, which are required by downstream FIRRTL transforms but derive from Golden Gate-specific annotations."></a>
+                        <a href="AddDerivedAnnotations$.html" title="Provides firrtl.stage.OutputFileAnnotation and firrtl.EmitCircuitAnnotation, which are required by downstream FIRRTL transforms but derive from Golden Gate-specific annotations.">AddDerivedAnnotations</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Checks$.html" title="Sanity checks an firrtl.AnnotationSeq before running the main firrtl.options.Phases of chisel3.stage.ChiselStage."></a>
+                        <a href="Checks$.html" title="Sanity checks an firrtl.AnnotationSeq before running the main firrtl.options.Phases of chisel3.stage.ChiselStage.">Checks</a>
+                      </li><li class="current-entities indented2">
                         <a class="object" href="ConfigPackageAnnotation$.html" title=""></a>
                         <a class="class" href="ConfigPackageAnnotation.html" title=""></a>
                         <a href="ConfigPackageAnnotation.html" title="">ConfigPackageAnnotation</a>
@@ -178,9 +186,9 @@
                         <a class="class" href="RuntimeConfigGeneratorStage.html" title=""></a>
                         <a href="RuntimeConfigGeneratorStage.html" title="">RuntimeConfigGeneratorStage</a>
                       </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="RuntimeConfigNameAnnotation$.html" title=""></a>
-                        <a class="class" href="RuntimeConfigNameAnnotation.html" title=""></a>
-                        <a href="RuntimeConfigNameAnnotation.html" title="">RuntimeConfigNameAnnotation</a>
+                        <a href="RuntimeConfigNameAnnotation$.html" title="">RuntimeConfigNameAnnotation</a>
                       </li>
               </ul>
             </div>
@@ -583,22 +591,22 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.stage.GoldenGateCompilerPhase#optionalPrerequisiteOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="optionalPrerequisiteOf:Seq[firrtl.options.Dependency[firrtl.stage.phases.WriteEmitted]]"></a><a id="optionalPrerequisiteOf:Seq[Dependency[WriteEmitted]]"></a>
+    </li><li name="firrtl.options.DependencyAPI#optionalPrerequisiteOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="optionalPrerequisiteOf:Seq[firrtl.options.Dependency[A]]"></a><a id="optionalPrerequisiteOf:Seq[Dependency[Phase]]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/GoldenGateCompilerPhase.html#optionalPrerequisiteOf:Seq[firrtl.options.Dependency[firrtl.stage.phases.WriteEmitted]]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateCompilerPhase.html#optionalPrerequisiteOf:Seq[firrtl.options.Dependency[A]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">optionalPrerequisiteOf</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.stage.phases.WriteEmitted">WriteEmitted</span>]]</span>
+        <span class="name">optionalPrerequisiteOf</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span>]]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.GoldenGateCompilerPhase">GoldenGateCompilerPhase</a> → DependencyAPI</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
     </li><li name="firrtl.options.DependencyAPI#optionalPrerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="optionalPrerequisites:Seq[firrtl.options.Dependency[A]]"></a><a id="optionalPrerequisites:Seq[Dependency[Phase]]"></a>
       <span class="permalink">
@@ -616,9 +624,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd></dl></div>
     </li><li name="midas.stage.GoldenGateCompilerPhase#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="prerequisites:Seq[firrtl.options.Dependency[midas.stage.phases.CreateParametersInstancePhase]]"></a><a id="prerequisites:Seq[Dependency[CreateParametersInstancePhase]]"></a>
+      <a id="prerequisites:Seq[firrtl.options.Dependency[firrtl.options.Phase{defprerequisites:Seq[firrtl.options.Dependency[midas.stage.Checks.type]]}]]"></a><a id="prerequisites:Seq[Dependency[Phase{defprerequisites:Seq[firrtl.options.Dependency[midas.stage.Checks.type]]}]]"></a>
       <span class="permalink">
-      <a href="../../midas/stage/GoldenGateCompilerPhase.html#prerequisites:Seq[firrtl.options.Dependency[midas.stage.phases.CreateParametersInstancePhase]]" title="Permalink">
+      <a href="../../midas/stage/GoldenGateCompilerPhase.html#prerequisites:Seq[firrtl.options.Dependency[firrtl.options.Phase{defprerequisites:Seq[firrtl.options.Dependency[midas.stage.Checks.type]]}]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -627,7 +635,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">prerequisites</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<a href="phases/CreateParametersInstancePhase.html" class="extype" name="midas.stage.phases.CreateParametersInstancePhase">CreateParametersInstancePhase</a>]]</span>
+        <span class="name">prerequisites</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.options.Phase">Phase</span> { def prerequisites: Seq[firrtl.options.Dependency[midas.stage.Checks.type]] }]]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.stage.GoldenGateCompilerPhase">GoldenGateCompilerPhase</a> → DependencyAPI</dd></dl></div>

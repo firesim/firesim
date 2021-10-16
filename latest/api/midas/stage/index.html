@@ -182,6 +182,14 @@
       
       
     </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="AddDerivedAnnotations$.html" title="Provides firrtl.stage.OutputFileAnnotation and firrtl.EmitCircuitAnnotation, which are required by downstream FIRRTL transforms but derive from Golden Gate-specific annotations."></a>
+                        <a href="AddDerivedAnnotations$.html" title="Provides firrtl.stage.OutputFileAnnotation and firrtl.EmitCircuitAnnotation, which are required by downstream FIRRTL transforms but derive from Golden Gate-specific annotations.">AddDerivedAnnotations</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="Checks$.html" title="Sanity checks an firrtl.AnnotationSeq before running the main firrtl.options.Phases of chisel3.stage.ChiselStage."></a>
+                        <a href="Checks$.html" title="Sanity checks an firrtl.AnnotationSeq before running the main firrtl.options.Phases of chisel3.stage.ChiselStage.">Checks</a>
+                      </li><li class="current-entities indented2">
                         <a class="object" href="ConfigPackageAnnotation$.html" title=""></a>
                         <a class="class" href="ConfigPackageAnnotation.html" title=""></a>
                         <a href="ConfigPackageAnnotation.html" title="">ConfigPackageAnnotation</a>
@@ -242,9 +250,9 @@
                         <a class="class" href="RuntimeConfigGeneratorStage.html" title=""></a>
                         <a href="RuntimeConfigGeneratorStage.html" title="">RuntimeConfigGeneratorStage</a>
                       </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="RuntimeConfigNameAnnotation$.html" title=""></a>
-                        <a class="class" href="RuntimeConfigNameAnnotation.html" title=""></a>
-                        <a href="RuntimeConfigNameAnnotation.html" title="">RuntimeConfigNameAnnotation</a>
+                        <a href="RuntimeConfigNameAnnotation$.html" title="">RuntimeConfigNameAnnotation</a>
                       </li><li name="midas.targetutils" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="targetutils"></a><a id="targetutils:targetutils"></a>
       <span class="permalink">
@@ -565,22 +573,6 @@
       </span>
       
       
-    </li><li name="midas.stage.RuntimeConfigNameAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="RuntimeConfigNameAnnotationextendsNoTargetAnnotationwithGoldenGateOptionwithProductwithSerializable"></a><a id="RuntimeConfigNameAnnotation:RuntimeConfigNameAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/stage/RuntimeConfigNameAnnotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="RuntimeConfigNameAnnotation.html"><span class="name">RuntimeConfigNameAnnotation</span></a><span class="params">(<span name="configString">configString: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.NoTargetAnnotation">NoTargetAnnotation</span> with <a href="GoldenGateOption.html" class="extype" name="midas.stage.GoldenGateOption">GoldenGateOption</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      
     </li></ol>
             </div>
 
@@ -589,7 +581,42 @@
         <div class="values members">
               <h3>Value Members</h3>
               <ol>
-                <li name="midas.stage.ConfigPackageAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+                <li name="midas.stage.AddDerivedAnnotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AddDerivedAnnotations"></a><a id="AddDerivedAnnotations:AddDerivedAnnotations"></a>
+      <span class="permalink">
+      <a href="../../midas/stage/AddDerivedAnnotations$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Provides firrtl.stage.OutputFileAnnotation and firrtl.EmitCircuitAnnotation, which are required by downstream FIRRTL transforms but derive from Golden Gate-specific annotations." href="AddDerivedAnnotations$.html"><span class="name">AddDerivedAnnotations</span></a><span class="result"> extends <span class="extype" name="firrtl.options.Phase">Phase</span></span>
+      </span>
+      
+      <p class="shortcomment cmt"> Provides <span class="extype" name="firrtl.stage.OutputFileAnnotation">firrtl.stage.OutputFileAnnotation</span> and
+ <span class="extype" name="firrtl.EmitCircuitAnnotation">firrtl.EmitCircuitAnnotation</span>, which are required by downstream FIRRTL
+ transforms but derive from Golden Gate-specific annotations.</p>
+    </li><li name="midas.stage.Checks" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Checks"></a><a id="Checks:Checks"></a>
+      <span class="permalink">
+      <a href="../../midas/stage/Checks$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Sanity checks an firrtl.AnnotationSeq before running the main firrtl.options.Phases of chisel3.stage.ChiselStage." href="Checks$.html"><span class="name">Checks</span></a><span class="result"> extends <span class="extype" name="firrtl.options.Phase">Phase</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Sanity checks an <span class="extype" name="firrtl.AnnotationSeq">firrtl.AnnotationSeq</span> before running the main <span class="extype" name="firrtl.options.Phase">firrtl.options.Phase</span>s of
+<span class="extype" name="chisel3.stage.ChiselStage">chisel3.stage.ChiselStage</span>.</p>
+    </li><li name="midas.stage.ConfigPackageAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ConfigPackageAnnotation"></a><a id="ConfigPackageAnnotation:ConfigPackageAnnotation"></a>
       <span class="permalink">
       <a href="../../midas/stage/ConfigPackageAnnotation$.html" title="Permalink">
@@ -697,7 +724,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="" href="RuntimeConfigNameAnnotation$.html"><span class="name">RuntimeConfigNameAnnotation</span></a><span class="result"> extends <span class="extype" name="firrtl.options.HasShellOptions">HasShellOptions</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="RuntimeConfigNameAnnotation$.html"><span class="name">RuntimeConfigNameAnnotation</span></a><span class="result"> extends <span class="extype" name="firrtl.options.HasShellOptions">HasShellOptions</span></span>
       </span>
       
       
