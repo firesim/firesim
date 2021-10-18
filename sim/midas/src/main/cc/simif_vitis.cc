@@ -14,10 +14,10 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
     std::vector<std::string> args(argv + 1, argv + argc);
     for (auto &arg: args) {
         if (arg.find("+device_index=") == 0) {
-            device_index = 0;//atoi((arg.c_str()) + 8);
+            device_index = atoi((arg.c_str()) + 14); // 0
         }
         if (arg.find("+binary_file=") == 0) {
-            binary_file = "kernel.xclbin"; //atoi((arg.c_str()) + 8);
+            binary_file = arg.substr(13, std::string::npos);//"kernel.xclbin"; //atoi((arg.c_str()) + 8);
         }
     }
 
@@ -31,6 +31,8 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
         exit(1);
     }
 
+    fprintf(stdout, "DEBUG: DevIdx:%d XCLBin:%s\n", device_index, binary_file.c_str());
+
     // Open the FPGA device
     device_handle = xrt::device(device_index);
 
@@ -39,6 +41,9 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
 
     // Open Kernel
     kernel_handle = xrt::ip(device_handle, uuid, "firesim");
+
+    fprintf(stdout, "DEBUG: Successfully opened kernel\n");
+
 }
 
 simif_vitis_t::~simif_vitis_t() {
@@ -49,6 +54,9 @@ void simif_vitis_t::write(size_t addr, uint32_t data) {
     // addr is really a (32-byte) word address because of zynq implementation
     addr <<= CTRL_AXI4_SIZE;
     kernel_handle.write_register(addr, data);
+
+    fprintf(stdout, "DEBUG: Write 0x%lx:%d\n", addr, data);
+    exit(1);
 }
 
 uint32_t simif_vitis_t::read(size_t addr) {
@@ -56,6 +64,10 @@ uint32_t simif_vitis_t::read(size_t addr) {
     addr <<= CTRL_AXI4_SIZE;
     uint32_t value;
     value = kernel_handle.read_register(addr);
+
+    fprintf(stdout, "DEBUG: Read 0x%lx:%d\n", addr, value);
+    exit(1);
+
     return value & 0xFFFFFFFF;
 }
 
@@ -73,5 +85,9 @@ uint32_t simif_vitis_t::is_write_ready() {
     uint64_t addr = 0x4;
     uint32_t value;
     value = kernel_handle.read_register(addr);
+
+    fprintf(stdout, "DEBUG: Read-is_write_ready() 0x%lx:%d\n", addr, value);
+    exit(1);
+
     return value & 0xFFFFFFFF;
 }
