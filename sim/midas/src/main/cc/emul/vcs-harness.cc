@@ -15,6 +15,7 @@ extern bool vcs_rst;
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
+extern std::unique_ptr<mm_t> pcim;
 extern std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
 static const size_t CTRL_DATA_SIZE = CTRL_BEAT_BYTES / sizeof(uint32_t);
@@ -89,6 +90,38 @@ void tick(
   vc_handle dma_b_ready,
   vc_handle dma_b_bits_resp,
   vc_handle dma_b_bits_id,
+
+  vc_handle pcim_ar_valid,
+  vc_handle pcim_ar_ready,
+  vc_handle pcim_ar_bits_addr,
+  vc_handle pcim_ar_bits_id,
+  vc_handle pcim_ar_bits_size,
+  vc_handle pcim_ar_bits_len,
+
+  vc_handle pcim_aw_valid,
+  vc_handle pcim_aw_ready,
+  vc_handle pcim_aw_bits_addr,
+  vc_handle pcim_aw_bits_id,
+  vc_handle pcim_aw_bits_size,
+  vc_handle pcim_aw_bits_len,
+
+  vc_handle pcim_w_valid,
+  vc_handle pcim_w_ready,
+  vc_handle pcim_w_bits_strb,
+  vc_handle pcim_w_bits_data,
+  vc_handle pcim_w_bits_last,
+
+  vc_handle pcim_r_valid,
+  vc_handle pcim_r_ready,
+  vc_handle pcim_r_bits_resp,
+  vc_handle pcim_r_bits_id,
+  vc_handle pcim_r_bits_data,
+  vc_handle pcim_r_bits_last,
+
+  vc_handle pcim_b_valid,
+  vc_handle pcim_b_ready,
+  vc_handle pcim_b_bits_resp,
+  vc_handle pcim_b_bits_id,
 
   vc_handle mem_0_ar_valid,
   vc_handle mem_0_ar_ready,
@@ -258,6 +291,40 @@ void tick(
       vc_getScalar(dma_b_valid)
     );
 
+    uint32_t pcim_w_data[DMA_DATA_SIZE];
+    for (size_t i = 0 ; i < DMA_DATA_SIZE; i++) {
+      pcim_w_data[i] = vc_4stVectorRef(pcim_w_bits_data)[i].d;
+    }
+
+    uint64_t pcim_w_strb;
+    assert(DMA_BEAT_BYTES == 64);
+    for (size_t i = 0; i < (DMA_DATA_SIZE / 8); i++) {
+      ((uint32_t*)&pcim_strb)[i] = vc_4stVectorRef(pcim_w_bits_strb)[i].d;
+    }
+
+    pcim->tick(
+      vcs_rst,
+      vc_getScalar(pcim_ar_valid),
+      vc_4stVectorRef(pcim_ar_bits_addr)->d,
+      vc_4stVectorRef(pcim_ar_bits_id)->d,
+      vc_4stVectorRef(pcim_ar_bits_size)->d,
+      vc_4stVectorRef(pcim_ar_bits_len)->d,
+
+      vc_getScalar(pcim_aw_valid),
+      vc_4stVectorRef(pcim_aw_bits_addr)->d,
+      vc_4stVectorRef(pcim_aw_bits_id)->d,
+      vc_4stVectorRef(pcim_aw_bits_size)->d,
+      vc_4stVectorRef(pcim_aw_bits_len)->d,
+
+      vc_getScalar(pcim_w_valid),
+      pcim_w_strb,
+      pcim_w_data,
+      vc_getScalar(pcim_w_bits_last),
+
+      vc_getScalar(pcim_r_ready),
+      vc_getScalar(pcim_b_ready)
+    );
+
 #define MEMORY_CHANNEL_TICK(IDX) \
     uint32_t mem_ ## IDX ## _w_data[MEM_DATA_SIZE]; \
     for (size_t i = 0 ; i < MEM_DATA_SIZE ; i++) { \
@@ -393,6 +460,32 @@ void tick(
     }
     vc_put4stVector(dma_w_bits_data, dd);
 
+    vc_putScalar(pcim_aw_ready, pcim->aw_ready());
+    vc_putScalar(pcim_ar_ready, pcim->ar_ready());
+    vc_putScalar(pcim_w_ready, pcim->w_ready());
+    vc_putScalar(pcim_b_valid, pcim->b_valid());
+    vc_putScalar(pcim_r_valid, pcim->r_valid());
+    vc_putScalar(pcim_r_bits_last, pcim->r_last());
+
+    vec32 pcimd[DMA_DATA_SIZE];
+    pcimd[0].c = 0;
+    pcimd[0].d = pcim->b_id();
+    vc_put4stVector(pcim_b_bits_id, pcimd);
+    pcimd[0].c = 0;
+    pcimd[0].d = pcim->b_resp();
+    vc_put4stVector(pcim_b_bits_resp,  pcimd);
+    pcimd[0].c = 0;
+    pcimd[0].d = pcim->r_id();
+    vc_put4stVector(pcim_r_bits_id,  pcimd);
+    pcimd[0].c = 0;
+    pcimd[0].d = pcim->r_resp();
+    vc_put4stVector(pcim_r_bits_resp,  pcimd);
+
+    for (size_t i = 0 ; i < DMA_DATA_SIZE ; i++) {
+       pcimd[i].c = 0;
+       pcimd[i].d = ((uint32_t*) pcim->r_data())[i];
+    }
+    vc_put4stVector(pcim_r_bits_data,  pcimd);
 
 #define MEMORY_CHANNEL_PROP(IDX) \
     vc_putScalar(mem_ ## IDX ## _aw_ready, slave[IDX]->aw_ready()); \

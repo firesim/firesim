@@ -86,7 +86,7 @@ class synthesized_prints_t: public bridge_driver_t
         // This will be set based on the ratio of token_size : desired_batch_beats
         size_t batch_beats;
         // This will be modified to be a multiple of the token size
-        const size_t desired_batch_beats = 3072;
+        const size_t desired_batch_beats = PCIM_CIRCULAR_BUFFER_SIZE / beat_bytes;
 
         // Used to define the boundaries in the batch buffer at which we'll
         // initalize GMP types

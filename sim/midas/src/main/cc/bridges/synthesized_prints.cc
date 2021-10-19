@@ -55,6 +55,7 @@ synthesized_prints_t::synthesized_prints_t(
 
   // Choose a multiple of token_bytes for the batch size
   if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
+    assert(0);
     this->batch_beats = token_bytes / beat_bytes;
   } else {
     this->batch_beats = desired_batch_beats;
@@ -143,6 +144,13 @@ void synthesized_prints_t::init() {
   write(this->mmio_addrs->startCycleH, this->start_cycle >> 32);
   write(this->mmio_addrs->endCycleL, this->end_cycle);
   write(this->mmio_addrs->endCycleH, this->end_cycle >> 32);
+  sim->init_stream(dma_address,
+      this->mmio_addrs->toHostPhysAddrHigh,
+      this->mmio_addrs->toHostPhysAddrLow,
+      this->mmio_addrs->bytesAvailable,
+      this->mmio_addrs->bytesConsumed,
+      this->mmio_addrs->toHostStreamDoneInit);
+
   write(this->mmio_addrs->doneInit, 1);
 }
 
@@ -267,7 +275,7 @@ void synthesized_prints_t::show_prints(char * buf) {
 void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
-  size_t beats_available = read(mmio_addrs->outgoing_count);
+  size_t beats_available = read(mmio_addrs->bytesAvailable) / DMA_BEAT_BYTES;
   if (beats_available >= batch_beats) {
       process_tokens(batch_beats);
   }
@@ -277,10 +285,10 @@ void synthesized_prints_t::tick() {
 // FPGA as mmio read latency is 100+ ns.
 int synthesized_prints_t::beats_avaliable_stable() {
   size_t prev_beats_available = 0;
-  size_t beats_avaliable = read(mmio_addrs->outgoing_count);
+  size_t beats_avaliable = read(mmio_addrs->bytesAvailable) / DMA_BEAT_BYTES;
   while (beats_avaliable > prev_beats_available) {
     prev_beats_available = beats_avaliable;
-    beats_avaliable = read(mmio_addrs->outgoing_count);
+    beats_avaliable = read(mmio_addrs->bytesAvailable) / DMA_BEAT_BYTES;
   }
   return beats_avaliable;
 }
@@ -295,7 +303,7 @@ void synthesized_prints_t::flush() {
   // to write out any incomplete beat
   if  (token_bytes < beat_bytes) {
     write(mmio_addrs->flushNarrowPacket, 1);
-    while (read(mmio_addrs->outgoing_count) != (beats_available + 1));
+    while ((read(mmio_addrs->bytesAvailable) / DMA_BEAT_BYTES) != (beats_available + 1));
     beats_available++;
   }
 

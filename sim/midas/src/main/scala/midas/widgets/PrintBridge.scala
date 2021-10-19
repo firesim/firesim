@@ -53,14 +53,15 @@ class PrintRecordBag(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, Str
 }
 
 class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
-    extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) {
+    extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) with HasToHostStream {
 
-  lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
+  //  The fewest number of BRAMS that produces a memory that is 512b wide.(8 X 32Kb BRAM)
+  def toHostCPUQueueDepth = (32 * 1024) / (512 / 8)
+
+  lazy val module = new BridgeModuleImp(this) {
+    import BridgeStreamConstants._
     val io = IO(new WidgetIO())
     val hPort = IO(HostPort(new PrintRecordBag(resetPortName, printPorts)))
-
-    lazy val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
-    lazy val dmaSize = BigInt(dmaBytes * toHostCPUQueueDepth)
 
     val printPort = hPort.hBits
     // Pick a padded token width that's a power of 2 bytes, including enable bit
@@ -68,7 +69,7 @@ class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, 
     val pow2Bits = math.max(8, 1 << log2Ceil(printPort.getWidth + reservedBits))
     val idleCycleBits = math.min(16, pow2Bits) - reservedBits
     // The number of tokens that fill a single DMA beat
-    val packingRatio = if (pow2Bits < dma.nastiXDataBits) Some(dma.nastiXDataBits/pow2Bits) else None
+    val packingRatio = if (pow2Bits < pcimWidthBits) Some(pcimWidthBits/pow2Bits) else None
 
     // PROGRAMMABLE REGISTERS
     val startCycleL = genWOReg(Wire(UInt(32.W)), "startCycleL")
@@ -140,15 +141,17 @@ class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, 
                         (valid && idleCycles =/= 0.U || idleCyclesRollover) ||
                      dataPipe.io.deq.valid
 
-    if (pow2Bits == dma.nastiXDataBits) {
-      outgoingPCISdat.io.enq.bits := printToken
-      outgoingPCISdat.io.enq.valid := tokenValid
-      bufferReady := outgoingPCISdat.io.enq.ready
+    val streamEnq = elaborateStreamController(this)
+
+    if (pow2Bits == pcimWidthBits) {
+      streamEnq.bits := printToken
+      streamEnq.valid := tokenValid
+      bufferReady := streamEnq.ready
     } else {
       // Pack narrow or serialize wide tokens if they do not match the size of the DMA bus
-      val mwFifoDepth = math.max(1, 1 * pow2Bits/dma.nastiXDataBits)
-      val widthAdapter = Module(new junctions.MultiWidthFifo(pow2Bits, dma.nastiXDataBits, mwFifoDepth))
-      outgoingPCISdat.io.enq <> widthAdapter.io.out
+      val mwFifoDepth = math.max(1, 1 * pow2Bits/pcimWidthBits)
+      val widthAdapter = Module(new junctions.MultiWidthFifo(pow2Bits, pcimWidthBits, mwFifoDepth))
+      streamEnq <> widthAdapter.io.out
       // If packing, we need to be able to flush an incomplete beat to the FIFO,
       // or we'll lose [0, packingRatio - 1] tokens at the end of simulation
       packingRatio match {

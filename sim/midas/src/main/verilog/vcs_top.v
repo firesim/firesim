@@ -67,6 +67,39 @@ extern "A" void tick
   input  reg [1:0]                 dma_b_resp,
   input  reg [`DMA_ID_BITS-1:0]    dma_b_id,
 
+  input  reg                       pcim_ar_valid,
+  output reg                       pcim_ar_ready,
+  input  reg [`DMA_ADDR_BITS-1:0]  pcim_ar_addr,
+  input  reg [`DMA_ID_BITS-1:0]    pcim_ar_id,
+  input  reg [2:0]                 pcim_ar_size,
+  input  reg [7:0]                 pcim_ar_len,
+
+  input  reg                       pcim_aw_valid,
+  output reg                       pcim_aw_ready,
+  input  reg [`DMA_ADDR_BITS-1:0]  pcim_aw_addr,
+  input  reg [`DMA_ID_BITS-1:0]    pcim_aw_id,
+  input  reg [2:0]                 pcim_aw_size,
+  input  reg [7:0]                 pcim_aw_len,
+
+  input  reg                       pcim_w_valid,
+  output reg                       pcim_w_ready,
+  input  reg [`DMA_STRB_BITS-1:0]  pcim_w_strb,
+  input  reg [`DMA_DATA_BITS-1:0]  pcim_w_data,
+  input  reg                       pcim_w_last,
+
+  output reg                       pcim_r_valid,
+  input  reg                       pcim_r_ready,
+  output reg [1:0]                 pcim_r_resp,
+  output reg [`DMA_ID_BITS-1:0]    pcim_r_id,
+  output reg [`DMA_DATA_BITS-1:0]  pcim_r_data,
+  output reg                       pcim_r_last,
+
+  output reg                       pcim_b_valid,
+  input  reg                       pcim_b_ready,
+  output reg [1:0]                 pcim_b_resp,
+  output reg [`DMA_ID_BITS-1:0]    pcim_b_id,
+
+
   input  reg                       mem_0_ar_valid,
   output reg                       mem_0_ar_ready,
   input  reg [`MEM_ADDR_BITS-1:0]  mem_0_ar_addr,
@@ -294,6 +327,38 @@ module emul;
   wire [1:0]                 dma_b_resp;
   wire [`DMA_ID_BITS-1:0]    dma_b_id;
 
+  wire                       pcim_ar_valid;
+  reg                        pcim_ar_ready;
+  wire [`DMA_ADDR_BITS-1:0]  pcim_ar_addr;
+  wire [`DMA_ID_BITS-1:0]    pcim_ar_id;
+  wire [2:0]                 pcim_ar_size;
+  wire [7:0]                 pcim_ar_len;
+
+  wire                       pcim_aw_valid;
+  reg                        pcim_aw_ready;
+  wire [`DMA_ADDR_BITS-1:0]  pcim_aw_addr;
+  wire [`DMA_ID_BITS-1:0]    pcim_aw_id;
+  wire [2:0]                 pcim_aw_size;
+  wire [7:0]                 pcim_aw_len;
+
+  wire                       pcim_w_valid;
+  reg                        pcim_w_ready;
+  wire [`DMA_STRB_BITS-1:0]  pcim_w_strb;
+  wire [`DMA_DATA_BITS-1:0]  pcim_w_data;
+  wire                       pcim_w_last;
+
+  reg                        pcim_r_valid;
+  wire                       pcim_r_ready;
+  reg  [1:0]                 pcim_r_resp;
+  reg  [`DMA_ID_BITS-1:0]    pcim_r_id;
+  reg  [`DMA_DATA_BITS-1:0]  pcim_r_data;
+  reg                        pcim_r_last;
+
+  reg                        pcim_b_valid;
+  wire                       pcim_b_ready;
+  reg  [1:0]                 pcim_b_resp;
+  reg  [`DMA_ID_BITS-1:0]    pcim_b_id;
+
   wire                       mem_0_ar_valid;
   reg                        mem_0_ar_ready;
   wire [`MEM_ADDR_BITS-1:0]  mem_0_ar_addr;
@@ -488,6 +553,38 @@ module emul;
   wire [1:0]                 dma_b_resp_delay;
   wire [`DMA_ID_BITS-1:0]    dma_b_id_delay;
 
+  wire                       pcim_ar_valid_delay;
+  wire                       pcim_ar_ready_delay;
+  wire [`DMA_ADDR_BITS-1:0]  pcim_ar_addr_delay;
+  wire [`DMA_ID_BITS-1:0]    pcim_ar_id_delay;
+  wire [2:0]                 pcim_ar_size_delay;
+  wire [7:0]                 pcim_ar_len_delay;
+
+  wire                       pcim_aw_valid_delay;
+  wire                       pcim_aw_ready_delay;
+  wire [`DMA_ADDR_BITS-1:0]  pcim_aw_addr_delay;
+  wire [`DMA_ID_BITS-1:0]    pcim_aw_id_delay;
+  wire [2:0]                 pcim_aw_size_delay;
+  wire [7:0]                 pcim_aw_len_delay;
+
+  wire                       pcim_w_valid_delay;
+  wire                       pcim_w_ready_delay;
+  wire [`DMA_STRB_BITS-1:0]  pcim_w_strb_delay;
+  wire [`DMA_DATA_BITS-1:0]  pcim_w_data_delay;
+  wire                       pcim_w_last_delay;
+
+  wire                       pcim_r_valid_delay;
+  wire                       pcim_r_ready_delay;
+  wire [1:0]                 pcim_r_resp_delay;
+  wire [`DMA_ID_BITS-1:0]    pcim_r_id_delay;
+  wire [`DMA_DATA_BITS-1:0]  pcim_r_data_delay;
+  wire                       pcim_r_last_delay;
+
+  wire                       pcim_b_valid_delay;
+  wire                       pcim_b_ready_delay;
+  wire [1:0]                 pcim_b_resp_delay;
+  wire [`DMA_ID_BITS-1:0]    pcim_b_id_delay;
+
   wire                       mem_0_ar_valid_delay;
   wire                       mem_0_ar_ready_delay;
   wire [`MEM_ADDR_BITS-1:0]  mem_0_ar_addr_delay;
@@ -679,6 +776,38 @@ module emul;
   assign #0.1 dma_b_ready_delay = dma_b_ready;
   assign #0.1 dma_b_resp = dma_b_resp_delay;
   assign #0.1 dma_b_id = dma_b_id_delay;
+
+  assign #0.1 pcim_ar_valid = pcim_ar_valid_delay;
+  assign #0.1 pcim_ar_ready_delay = pcim_ar_ready;
+  assign #0.1 pcim_ar_addr = pcim_ar_addr_delay;
+  assign #0.1 pcim_ar_id = pcim_ar_id_delay;
+  assign #0.1 pcim_ar_size = pcim_ar_size_delay;
+  assign #0.1 pcim_ar_len = pcim_ar_len_delay;
+
+  assign #0.1 pcim_aw_valid = pcim_aw_valid_delay;
+  assign #0.1 pcim_aw_ready_delay = pcim_aw_ready;
+  assign #0.1 pcim_aw_addr = pcim_aw_addr_delay;
+  assign #0.1 pcim_aw_id = pcim_aw_id_delay;
+  assign #0.1 pcim_aw_size = pcim_aw_size_delay;
+  assign #0.1 pcim_aw_len = pcim_aw_len_delay;
+
+  assign #0.1 pcim_w_valid = pcim_w_valid_delay;
+  assign #0.1 pcim_w_ready_delay = pcim_w_ready;
+  assign #0.1 pcim_w_strb = pcim_w_strb_delay;
+  assign #0.1 pcim_w_data = pcim_w_data_delay;
+  assign #0.1 pcim_w_last = pcim_w_last_delay;
+
+  assign #0.1 pcim_r_valid_delay = pcim_r_valid;
+  assign #0.1 pcim_r_ready = pcim_r_ready_delay;
+  assign #0.1 pcim_r_resp_delay = pcim_r_resp;
+  assign #0.1 pcim_r_id_delay = pcim_r_id;
+  assign #0.1 pcim_r_data_delay = pcim_r_data;
+  assign #0.1 pcim_r_last_delay = pcim_r_last;
+
+  assign #0.1 pcim_b_valid_delay = pcim_b_valid;
+  assign #0.1 pcim_b_ready = pcim_b_ready_delay;
+  assign #0.1 pcim_b_resp_delay = pcim_b_resp;
+  assign #0.1 pcim_b_id_delay = pcim_b_id;
 
   assign #0.1 mem_0_ar_valid = mem_0_ar_valid_delay;
   assign #0.1 mem_0_ar_ready_delay = mem_0_ar_ready;
@@ -876,6 +1005,38 @@ module emul;
     .dma_b_bits_resp(dma_b_resp_delay),
     .dma_b_bits_id(dma_b_id_delay),
 
+    .pcim_ar_valid(pcim_ar_valid_delay),
+    .pcim_ar_ready(pcim_ar_ready_delay),
+    .pcim_ar_bits_addr(pcim_ar_addr_delay),
+    .pcim_ar_bits_id(pcim_ar_id_delay),
+    .pcim_ar_bits_size(pcim_ar_size_delay),
+    .pcim_ar_bits_len(pcim_ar_len_delay),
+
+    .pcim_aw_valid(pcim_aw_valid_delay),
+    .pcim_aw_ready(pcim_aw_ready_delay),
+    .pcim_aw_bits_addr(pcim_aw_addr_delay),
+    .pcim_aw_bits_id(pcim_aw_id_delay),
+    .pcim_aw_bits_size(pcim_aw_size_delay),
+    .pcim_aw_bits_len(pcim_aw_len_delay),
+
+    .pcim_w_valid(pcim_w_valid_delay),
+    .pcim_w_ready(pcim_w_ready_delay),
+    .pcim_w_bits_strb(pcim_w_strb_delay),
+    .pcim_w_bits_data(pcim_w_data_delay),
+    .pcim_w_bits_last(pcim_w_last_delay),
+
+    .pcim_r_valid(pcim_r_valid_delay),
+    .pcim_r_ready(pcim_r_ready_delay),
+    .pcim_r_bits_resp(pcim_r_resp_delay),
+    .pcim_r_bits_id(pcim_r_id_delay),
+    .pcim_r_bits_data(pcim_r_data_delay),
+    .pcim_r_bits_last(pcim_r_last_delay),
+
+    .pcim_b_valid(pcim_b_valid_delay),
+    .pcim_b_ready(pcim_b_ready_delay),
+    .pcim_b_bits_resp(pcim_b_resp_delay),
+    .pcim_b_bits_id(pcim_b_id_delay),
+
     .mem_0_ar_valid(mem_0_ar_valid_delay),
     .mem_0_ar_ready(mem_0_ar_ready_delay),
     .mem_0_ar_bits_addr(mem_0_ar_addr_delay),
@@ -907,7 +1068,6 @@ module emul;
     .mem_0_b_ready(mem_0_b_ready_delay),
     .mem_0_b_bits_resp(mem_0_b_resp_delay),
     .mem_0_b_bits_id(mem_0_b_id_delay),
-
 `ifdef MEM_HAS_CHANNEL1
     .mem_1_ar_valid(mem_1_ar_valid_delay),
     .mem_1_ar_ready(mem_1_ar_ready_delay),
@@ -1080,6 +1240,38 @@ module emul;
       dma_b_ready,
       dma_b_resp,
       dma_b_id,
+
+      pcim_ar_valid,
+      pcim_ar_ready,
+      pcim_ar_addr,
+      pcim_ar_id,
+      pcim_ar_size,
+      pcim_ar_len,
+
+      pcim_aw_valid,
+      pcim_aw_ready,
+      pcim_aw_addr,
+      pcim_aw_id,
+      pcim_aw_size,
+      pcim_aw_len,
+
+      pcim_w_valid,
+      pcim_w_ready,
+      pcim_w_strb,
+      pcim_w_data,
+      pcim_w_last,
+
+      pcim_r_valid,
+      pcim_r_ready,
+      pcim_r_resp,
+      pcim_r_id,
+      pcim_r_data,
+      pcim_r_last,
+
+      pcim_b_valid,
+      pcim_b_ready,
+      pcim_b_resp,
+      pcim_b_id,
 
       mem_0_ar_valid,
       mem_0_ar_ready,

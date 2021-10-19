@@ -78,6 +78,8 @@ class simif_t
     // Widget communication
     virtual void write(size_t addr, data_t data) = 0;
     virtual data_t read(size_t addr) = 0;
+
+    virtual ssize_t init_stream(int idx, size_t buffer_high_addr, size_t buffer_low_addr, size_t bytes_available_addr, size_t bytes_consumed_addr, size_t done_init_addr) = 0;
     virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
     virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
 
@@ -160,6 +162,51 @@ class simif_t
     void record_end_times();
     uint64_t get_end_tcycle() { return end_tcycle; }
     void print_simulation_performance_summary();
+};
+
+class StreamHandler {
+  public:
+    StreamHandler(size_t buffer_high_addr, size_t buffer_low_addr, size_t bytes_available_addr, size_t bytes_consumed_addr, size_t done_init_addr, void* buffer_base, size_t buffer_phys_addr, simif_t* sim):
+        addr_hi(buffer_high_addr),
+        addr_lo(buffer_low_addr),
+        bytes_available_addr(bytes_available_addr),
+        bytes_consumed_addr(bytes_consumed_addr),
+        done_init_addr(done_init_addr),
+        buffer_base(buffer_base),
+        buffer_phys_addr(buffer_phys_addr),
+        sim(sim) {
+      sim->write(addr_hi, buffer_phys_addr >> 32);
+      sim->write(addr_lo, buffer_phys_addr);
+      sim->write(done_init_addr, 1);
+    };
+
+    size_t bytes_available() { return sim->read(bytes_available_addr); };
+
+    size_t pull(char* data, size_t size) {
+      assert(size % 4096 == 0);
+      size_t bytes_in_buffer = sim->read(bytes_available_addr);
+      if (bytes_in_buffer < size) {
+        return 0;
+      }
+
+      void* src_addr = (char*)buffer_base + offset;
+      printf("dst %x, src: %x, size: %d\n", data, src_addr, size);
+      std::memcpy(data, src_addr, size);
+      offset = (offset + size) % PCIM_CIRCULAR_BUFFER_SIZE;
+      sim->write(bytes_consumed_addr, size);
+      return size;
+    }
+
+  private:
+    unsigned offset = 0;
+    const size_t addr_hi;
+    const size_t addr_lo;
+    const size_t bytes_available_addr;
+    const size_t bytes_consumed_addr;
+    const size_t done_init_addr;
+    const void*  buffer_base;
+    const size_t buffer_phys_addr;
+    simif_t* sim;
 };
 
 #endif // __SIMIF_H

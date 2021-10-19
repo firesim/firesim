@@ -152,8 +152,8 @@ abstract class TutorialSuite(
   mkdirs()
   behavior of s"$targetName"
   elaborateAndCompile()
-  compileMlSimulator(backendSimulator)
-  runTest(backendSimulator)
+  //compileMlSimulator(backendSimulator)
+  //runTest(backendSimulator)
 }
 
 //class PointerChaserF1Test extends TutorialSuite(
@@ -205,6 +205,7 @@ class AutoCounterGlobalResetConditionF1Test extends TutorialSuite("AutoCounterGl
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedLog("synthprinttest.out0")
+  runTest("vcs", true)
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
