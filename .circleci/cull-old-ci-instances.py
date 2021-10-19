@@ -6,6 +6,7 @@
 import datetime
 import pytz
 import boto3
+import sys
 
 from common import unique_tag_key
 
