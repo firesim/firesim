@@ -196,6 +196,41 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
     })
   }
 
+  val streamAXI4BundleParams = AXI4BundleParameters(
+    addrBits = 64,
+    dataBits = 512,
+    idBits = 16)  // Dubious...
+  val bridgesRequiringStreams = bridgeModuleMap.values.collect { case b: HasToHostStream => b }
+
+  val streamAXI4SNode = if (bridgesRequiringStreams.nonEmpty) {
+    val node = AXI4SlaveNode(
+      Seq(AXI4SlavePortParameters(
+        slaves = Seq(AXI4SlaveParameters(
+          address       = Seq(AddressSet(0, (BigInt(1) << 64) - 1)),
+          resources     = (new MemoryDevice).reg,
+          regionType    = RegionType.UNCACHED, // cacheable
+          executable    = false,
+          supportsWrite = TransferSizes(64, 4096),
+          supportsRead  = TransferSizes(64, 4096),
+          interleavedId = Some(0))), // slave does not interleave read responses
+        beatBytes = 64)
+    ))
+
+    val xbar = (node := AXI4Buffer() := AXI4Xbar())
+
+    for (bridge <- bridgesRequiringStreams) {
+      xbar := AXI4Buffer() := bridge.toHostStreamNode
+    }
+    Some(node)
+  } else {
+    None
+  }
+
+  val addrConsts = for ((bridge, idx) <- bridgesRequiringStreams.zipWithIndex) yield {
+    s"${bridge.getWName.toUpperCase}_DMA_ADDR" -> idx.toLong
+  }
+
+
   override def genHeader(sb: StringBuilder) {
     super.genHeader(sb)
     targetMemoryRegions.foreach(_.serializeToHeader(sb))
@@ -211,11 +246,12 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val ctrl = IO(Flipped(WidgetMMIO()))
   val mem = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
   val dma = IO(Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) }))))
-
+  val pcim = IO(AXI4Bundle(outer.streamAXI4BundleParams))
   // Hack: Don't touch the ports so that we can use FPGATop as top-level in ML simulation
   dontTouch(ctrl)
   dontTouch(mem)
   dontTouch(dma)
+  dontTouch(pcim)
   (mem zip outer.memAXI4Nodes.map(_.in.head)).foreach { case (io, (bundle, _)) =>
     require(bundle.params.idBits <= p(HostMemChannelKey).idBits,
       s"""| Required memory channel ID bits exceeds that present on host.
@@ -223,6 +259,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
           | Enable host ID reuse with the HostMemIdSpaceKey""".stripMargin)
     io <> bundle
   }
+  outer.streamAXI4SNode.foreach { node => pcim <> node.in.head._1 }
+
 
   val sim = Module(new SimWrapper(p(SimWrapperKey)))
   val simIo = sim.channelPorts
@@ -279,12 +317,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   outer.printHostDRAMSummary()
   outer.emitDefaultPlusArgsFile()
 
-  val addrConsts = dmaAddrMap.map {
-    case AddrMapEntry(name, MemRange(addr, _, _)) =>
-      (s"${name.toUpperCase}_DMA_ADDR" -> addr.longValue)
-  }
-
-  val headerConsts = addrConsts ++ List[(String, Long)](
+  val headerConsts = outer.addrConsts ++ List[(String, Long)](
     "CTRL_ID_BITS"   -> ctrl.nastiXIdBits,
     "CTRL_ADDR_BITS" -> ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> ctrl.nastiXDataBits,
@@ -308,7 +341,9 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "DMA_DATA_BITS"  -> dma.nastiXDataBits,
     "DMA_STRB_BITS"  -> dma.nastiWStrobeBits,
     "DMA_BEAT_BYTES" -> p(DMANastiKey).dataBits / 8,
-    "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
+    "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8),
+    // PCIM Prototype
+    "PCIM_CIRCULAR_BUFFER_SIZE" -> BridgeStreamConstants.bufferSizeBytes,
   ) ++ Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
   def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)
 }

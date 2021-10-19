@@ -53,13 +53,6 @@ synthesized_prints_t::synthesized_prints_t(
   // Removes the cycle prefix from human-readable output
   std::string cycleprefix_arg   = std::string("+print-no-cycle-prefix");
 
-  // Choose a multiple of token_bytes for the batch size
-  if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
-    this->batch_beats = token_bytes / beat_bytes;
-  } else {
-    this->batch_beats = desired_batch_beats;
-  }
-
   for (auto arg: args) {
       if (arg.find(printfile_arg) == 0) {
           printfilename = arg.erase(0, printfile_arg.length()) + std::to_string(printno);
@@ -143,6 +136,16 @@ void synthesized_prints_t::init() {
   write(this->mmio_addrs->startCycleH, this->start_cycle >> 32);
   write(this->mmio_addrs->endCycleL, this->end_cycle);
   write(this->mmio_addrs->endCycleH, this->end_cycle >> 32);
+  sim->init_stream(dma_address,
+      this->mmio_addrs->toHostPhysAddrHigh,
+      this->mmio_addrs->toHostPhysAddrLow,
+      this->mmio_addrs->bytesAvailable,
+      this->mmio_addrs->bytesConsumed,
+      this->mmio_addrs->toHostStreamDoneInit,
+      this->mmio_addrs->toHostStreamFlush,
+      this->mmio_addrs->toHostStreamFlushDone
+      );
+
   write(this->mmio_addrs->doneInit, 1);
 }
 
@@ -198,8 +201,8 @@ uint32_t decode_idle_cycles(char * buf, uint32_t mask) {
 }
 
 // Iterates through the DMA flits (each is one token); checking if their are enabled prints
-void synthesized_prints_t::process_tokens(size_t beats) {
-  size_t batch_bytes = beats * beat_bytes;
+void synthesized_prints_t::process_tokens(size_t num_tokens) {
+  size_t batch_bytes = num_tokens * token_bytes;
 
   // See FireSim issue #208
   // This needs to be page aligned, as a DMA request that spans a page is
@@ -267,9 +270,9 @@ void synthesized_prints_t::show_prints(char * buf) {
 void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
-  size_t beats_available = read(mmio_addrs->outgoing_count);
-  if (beats_available >= batch_beats) {
-      process_tokens(batch_beats);
+  size_t tokens_available = read(mmio_addrs->bytesAvailable) / token_bytes;
+  if (tokens_available >= batch_tokens) {
+      process_tokens(batch_tokens);
   }
 }
 
@@ -277,10 +280,10 @@ void synthesized_prints_t::tick() {
 // FPGA as mmio read latency is 100+ ns.
 int synthesized_prints_t::beats_avaliable_stable() {
   size_t prev_beats_available = 0;
-  size_t beats_avaliable = read(mmio_addrs->outgoing_count);
+  size_t beats_avaliable = read(mmio_addrs->bytesAvailable) / DMA_BEAT_BYTES;
   while (beats_avaliable > prev_beats_available) {
     prev_beats_available = beats_avaliable;
-    beats_avaliable = read(mmio_addrs->outgoing_count);
+    beats_avaliable = read(mmio_addrs->bytesAvailable) / DMA_BEAT_BYTES;
   }
   return beats_avaliable;
 }
@@ -288,18 +291,18 @@ int synthesized_prints_t::beats_avaliable_stable() {
 // Pull in any remaining tokens and flush them to file
 // WARNING: may not function correctly if the simulator is actively running
 void synthesized_prints_t::flush() {
-  // Wait for the system to settle
-  size_t beats_available = beats_avaliable_stable();
 
-  // If multiple tokens are being packed into a single DMA beat, force the widget
-  // to write out any incomplete beat
-  if  (token_bytes < beat_bytes) {
-    write(mmio_addrs->flushNarrowPacket, 1);
-    while (read(mmio_addrs->outgoing_count) != (beats_available + 1));
-    beats_available++;
-  }
+  // Drain whatever exists to make sure there is space to flush.
+  size_t tokens_available = read(mmio_addrs->bytesAvailable) / token_bytes;
+  process_tokens(tokens_available);
 
-  if (beats_available) process_tokens(beats_available);
+  // Tell the bridge to enqueue whatever it may have left.
+  write(mmio_addrs->flushNarrowPacket, 1);
+  sim->flush_tohost_stream(dma_address);
+
+  tokens_available = read(mmio_addrs->bytesAvailable) / token_bytes;
+  process_tokens(tokens_available);
+
   this->printstream->flush();
 }
 

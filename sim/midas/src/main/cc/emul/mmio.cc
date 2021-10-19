@@ -88,6 +88,7 @@ bool mmio_t::write_resp() {
 extern uint64_t main_time;
 extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
+extern std::unique_ptr<mm_t> pcim;
 std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
 void init(uint64_t memsize, bool dramsim) {
@@ -97,6 +98,8 @@ void init(uint64_t memsize, bool dramsim) {
     slave[mem_channel_index].reset(dramsim ? (mm_t*) new mm_dramsim2_t(1 << MEM_ID_BITS) : (mm_t*) new mm_magic_t);
     slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
   }
+  pcim.reset(new mm_magic_t);
+  pcim->init(1024*1024, DMA_BEAT_BYTES, 512);
 }
 
 void load_mems(const char *fname) {

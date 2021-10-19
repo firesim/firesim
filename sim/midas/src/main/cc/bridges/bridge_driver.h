@@ -53,7 +53,6 @@ protected:
     return sim->push(addr, data, size);
   }
 
-private:
   simif_t *sim;
 };
 

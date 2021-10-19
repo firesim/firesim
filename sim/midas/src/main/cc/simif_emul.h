@@ -22,7 +22,17 @@ class simif_emul_t : public virtual simif_t
 
     virtual void write(size_t addr, data_t data);
     virtual data_t read(size_t addr);
+    virtual ssize_t init_stream(
+      int idx,
+      size_t buffer_high_addr,
+      size_t buffer_low_addr,
+      size_t bytes_available_addr,
+      size_t bytes_consumed_addr,
+      size_t init_done_addr,
+      size_t flush_addr,
+      size_t flush_done_addr);
     virtual ssize_t pull(size_t addr, char* data, size_t size);
+    virtual void flush_tohost_stream(size_t addr);
     virtual ssize_t push(size_t addr, char* data, size_t size);
 
   private:
@@ -33,6 +43,7 @@ class simif_emul_t : public virtual simif_t
     void advance_target();
     void wait_read(std::unique_ptr<mmio_t>& mmio, void *data);
     void wait_write(std::unique_ptr<mmio_t>& mmio);
+    StreamHandler* streams[1024];
 };
 
 #endif // __SIMIF_EMUL_H

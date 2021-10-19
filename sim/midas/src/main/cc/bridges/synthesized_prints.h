@@ -83,10 +83,7 @@ class synthesized_prints_t: public bridge_driver_t
         // DMA batching parameters
         const size_t beat_bytes  = DMA_DATA_BITS / 8;
         // The number of DMA beats to pull off the FPGA on each invocation of tick()
-        // This will be set based on the ratio of token_size : desired_batch_beats
-        size_t batch_beats;
-        // This will be modified to be a multiple of the token size
-        const size_t desired_batch_beats = 3072;
+        const size_t batch_tokens = PCIM_CIRCULAR_BUFFER_SIZE / token_bytes / 2;
 
         // Used to define the boundaries in the batch buffer at which we'll
         // initalize GMP types
@@ -112,7 +109,7 @@ class synthesized_prints_t: public bridge_driver_t
         std::vector<size_t> bit_offset;
 
         bool current_print_enabled(gmp_align_t* buf, size_t offset);
-        void process_tokens(size_t beats);
+        void process_tokens(size_t num_tokens);
         void show_prints(char * buf);
         void print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks);
         // Returns the number of beats available, once two successive reads return the same value
