@@ -79,8 +79,17 @@ class simif_t
     virtual void write(size_t addr, data_t data) = 0;
     virtual data_t read(size_t addr) = 0;
 
-    virtual ssize_t init_stream(int idx, size_t buffer_high_addr, size_t buffer_low_addr, size_t bytes_available_addr, size_t bytes_consumed_addr, size_t done_init_addr) = 0;
+    virtual ssize_t init_stream(
+      int idx,
+      size_t buffer_high_addr,
+      size_t buffer_low_addr,
+      size_t bytes_available_addr,
+      size_t bytes_consumed_addr,
+      size_t done_init_addr,
+      size_t flush_addr,
+      size_t flush_done_addr) = 0;
     virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
+    virtual void flush_tohost_stream(size_t addr) = 0;
     virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
 
     inline void poke(size_t id, data_t value, bool blocking = true) {
@@ -166,7 +175,7 @@ class simif_t
 
 class StreamHandler {
   public:
-    StreamHandler(size_t buffer_high_addr, size_t buffer_low_addr, size_t bytes_available_addr, size_t bytes_consumed_addr, size_t done_init_addr, void* buffer_base, size_t buffer_phys_addr, simif_t* sim):
+    StreamHandler(size_t buffer_high_addr, size_t buffer_low_addr, size_t bytes_available_addr, size_t bytes_consumed_addr, size_t done_init_addr, void* buffer_base, size_t buffer_phys_addr, size_t flush_addr, size_t flush_done_addr, simif_t* sim):
         addr_hi(buffer_high_addr),
         addr_lo(buffer_low_addr),
         bytes_available_addr(bytes_available_addr),
@@ -174,6 +183,8 @@ class StreamHandler {
         done_init_addr(done_init_addr),
         buffer_base(buffer_base),
         buffer_phys_addr(buffer_phys_addr),
+        flush_addr(flush_addr),
+        flush_done_addr(flush_done_addr),
         sim(sim) {
       sim->write(addr_hi, buffer_phys_addr >> 32);
       sim->write(addr_lo, buffer_phys_addr);
@@ -183,18 +194,35 @@ class StreamHandler {
     size_t bytes_available() { return sim->read(bytes_available_addr); };
 
     size_t pull(char* data, size_t size) {
-      assert(size % 4096 == 0);
+      assert(size <= PCIM_CIRCULAR_BUFFER_SIZE);
       size_t bytes_in_buffer = sim->read(bytes_available_addr);
       if (bytes_in_buffer < size) {
         return 0;
       }
 
       void* src_addr = (char*)buffer_base + offset;
+      size_t first_copy_bytes = ((offset + size) > PCIM_CIRCULAR_BUFFER_SIZE) ? PCIM_CIRCULAR_BUFFER_SIZE - offset : size;
       printf("dst %x, src: %x, size: %d\n", data, src_addr, size);
-      std::memcpy(data, src_addr, size);
+      std::memcpy(data, src_addr, first_copy_bytes);
+      if (first_copy_bytes < size) {
+        printf("Secondary memcopy dst %x, src: %x, size: %d\n", (char*) data + first_copy_bytes, buffer_base, size - first_copy_bytes);
+        std::memcpy((char*) data + first_copy_bytes, buffer_base, size - first_copy_bytes);
+      }
       offset = (offset + size) % PCIM_CIRCULAR_BUFFER_SIZE;
       sim->write(bytes_consumed_addr, size);
       return size;
+    }
+
+    void flush() {
+      sim->write(flush_addr, 1);
+      fprintf(stderr, "Driver: Flushing\n");
+      printf("Driver: Flushing\n");
+      // TODO: Consider if this should be made non blocking // alternate API
+      auto flush_done = false;
+      while (!flush_done) {
+        flush_done = (sim->read(flush_done_addr) & 1);
+        fprintf(stderr, "Flush in progress? %d\n", flush_done);
+      }
     }
 
   private:
@@ -206,6 +234,8 @@ class StreamHandler {
     const size_t done_init_addr;
     const void*  buffer_base;
     const size_t buffer_phys_addr;
+    const size_t flush_addr;
+    const size_t flush_done_addr;
     simif_t* sim;
 };
 

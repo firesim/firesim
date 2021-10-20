@@ -158,16 +158,39 @@ data_t simif_emul_t::read(size_t addr) {
 
 #define MAX_LEN 255
 
-ssize_t simif_emul_t::init_stream(int idx, size_t buffer_high_addr, size_t buffer_low_addr, size_t bytes_available_addr, size_t bytes_consumed_addr, size_t done_init_addr) {
+ssize_t simif_emul_t::init_stream(
+    int idx,
+    size_t buffer_high_addr,
+    size_t buffer_low_addr,
+    size_t bytes_available_addr,
+    size_t bytes_consumed_addr,
+    size_t done_init_addr,
+    size_t flush_addr,
+    size_t flush_done_addr) {
   size_t fpga_buffer_address = idx * PCIM_CIRCULAR_BUFFER_SIZE;
   void* driver_buffer_ptr = ((char*) pcim->get_data()) + fpga_buffer_address;
-  streams[idx] = new StreamHandler(buffer_high_addr, buffer_low_addr, bytes_available_addr, bytes_consumed_addr, done_init_addr, driver_buffer_ptr, fpga_buffer_address, this);
+  streams[idx] = new StreamHandler(
+    buffer_high_addr,
+    buffer_low_addr,
+    bytes_available_addr,
+    bytes_consumed_addr,
+    done_init_addr,
+    driver_buffer_ptr,
+    fpga_buffer_address,
+    flush_addr,
+    flush_done_addr,
+    this);
   return 0;
 }
 // Address is an index of the stream
 ssize_t simif_emul_t::pull(size_t addr, char* data, size_t size) {
   return streams[addr]->pull(data, size);
 }
+
+void simif_emul_t::flush_tohost_stream(size_t addr) {
+  streams[addr]->flush();
+}
+
 
 ssize_t simif_emul_t::push(size_t addr, char *data, size_t size) {
   ssize_t len = (size - 1) / DMA_BEAT_BYTES;

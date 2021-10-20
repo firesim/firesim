@@ -299,7 +299,7 @@ void tick(
     uint64_t pcim_w_strb;
     assert(DMA_BEAT_BYTES == 64);
     for (size_t i = 0; i < (DMA_DATA_SIZE / 8); i++) {
-      ((uint32_t*)&pcim_strb)[i] = vc_4stVectorRef(pcim_w_bits_strb)[i].d;
+      ((uint32_t*)&pcim_w_strb)[i] = vc_4stVectorRef(pcim_w_bits_strb)[i].d;
     }
 
     pcim->tick(
