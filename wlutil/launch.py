@@ -103,34 +103,47 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
     baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
 
     jobProcs = []
-    for config in configs:
-        if config['launch']:
-            runResDir = baseResDir / config['name']
-            uartLog = runResDir / "uartlog"
-            os.makedirs(runResDir)
 
-            if spike:
-                if 'img' in config and not config['nodisk']:
-                    sys.exit("Spike currently does not support disk-based " +
-                             "configurations. Please use an initramfs based image.")
-                cmd = getSpikeCmd(config, config['nodisk'])
-            else:
-                cmd = getQemuCmd(config, config['nodisk'])
+    try:
+        for config in configs:
+            if config['launch']:
+                runResDir = baseResDir / config['name']
+                uartLog = runResDir / "uartlog"
+                os.makedirs(runResDir)
 
-            log.info("Running: " + "".join(cmd))
-            if not interactive:
-                log.info("For live output see: " + str(uartLog))
-            
-            scriptCmd = f'script -f -c "{cmd}" {uartLog}'
-            jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-D", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+                if spike:
+                    if 'img' in config and not config['nodisk']:
+                        sys.exit("Spike currently does not support disk-based " +
+                                 "configurations. Please use an initramfs based image.")
+                    cmd = getSpikeCmd(config, config['nodisk'])
+                else:
+                    cmd = getQemuCmd(config, config['nodisk'])
+
+                log.info("Running: " + "".join(cmd))
+                if not interactive:
+                    log.info("For live output see: " + str(uartLog))
+                
+                scriptCmd = f'script -f -c "{cmd}" {uartLog}'
+                
+                if interactive and (jobs is None):
+                    jobProcs.append(sp.Popen(["screen", "-s", config['name'], "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+                else:
+                    jobProcs.append(sp.Popen(["screen", "-s", config['name'], "-d", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+                
+                log.info('Opened screen session for {0} with identifier {0}'.format(config['name']))
     
-    for proc in jobProcs:
-        proc.wait()
+        for proc in jobProcs:
+            proc.wait()
+    
+    except Exception:
+        for proc in jobProcs:
+            proc.terminate()
+        raise
 
     for config in configs:           
-            if 'outputs' in config:
-                outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
-                wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
+        if 'outputs' in config:
+            outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
+            wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
 
     if 'post_run_hook' in baseConfig:
         prhCmd = [baseConfig['post_run_hook'].path] + baseConfig['post_run_hook'].args + [baseResDir]
