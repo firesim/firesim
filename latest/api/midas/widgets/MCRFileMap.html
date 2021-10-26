@@ -327,8 +327,8 @@
                         <a href="MCRFile.html" title="">MCRFile</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title=""></a>
-                        <a href="" title="">MCRFileMap</a>
+                        <a class="class" href="" title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus)."></a>
+                        <a href="" title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus).">MCRFileMap</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="MCRIO.html" title=""></a>
@@ -553,7 +553,11 @@
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Manages the metadata associated with a widget's configuration registers
+(exposed via the control bus). Registers are incrementally allocated, which
+each register consuming a fixed number of bytes of the address space.</p><p>This derives from a very early form of CSR handling in Rocket Chip which
+has since been replaced with diplomacy and its regmapper utilities.
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -603,10 +607,10 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="midas.widgets.MCRFileMap#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;():midas.widgets.MCRFileMap"></a><a id="&lt;init&gt;:MCRFileMap"></a>
+              <ol><li name="midas.widgets.MCRFileMap#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(bytesPerAddress:Int):midas.widgets.MCRFileMap"></a><a id="&lt;init&gt;:MCRFileMap"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/MCRFileMap.html#&lt;init&gt;():midas.widgets.MCRFileMap" title="Permalink">
+      <a href="../../midas/widgets/MCRFileMap.html#&lt;init&gt;(bytesPerAddress:Int):midas.widgets.MCRFileMap" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -615,10 +619,11 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">MCRFileMap</span><span class="params">()</span>
+        <span class="name">MCRFileMap</span><span class="params">(<span name="bytesPerAddress">bytesPerAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
       </span>
       
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">bytesPerAddress</dt><dd class="cmt"><p>The number of bytes of address space consumed by each bound register.
+Historical: MCR -&gt; Midas Configuration Register</p></dd></dl></div>
     </li></ol>
             </div>
 

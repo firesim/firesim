@@ -439,8 +439,8 @@
                         <a href="MCRFile.html" title="">MCRFile</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="MCRFileMap.html" title=""></a>
-                        <a href="MCRFileMap.html" title="">MCRFileMap</a>
+                        <a class="class" href="MCRFileMap.html" title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus)."></a>
+                        <a href="MCRFileMap.html" title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus).">MCRFileMap</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="MCRIO.html" title=""></a>
@@ -1487,7 +1487,7 @@ serialized, BridgeModule generation can be more flexibly captured in a lambda</p
       </span>
       
       
-    </li><li name="midas.widgets.MCRFileMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="midas.widgets.MCRFileMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="MCRFileMapextendsAnyRef"></a><a id="MCRFileMap:MCRFileMap"></a>
       <span class="permalink">
       <a href="../../midas/widgets/MCRFileMap.html" title="Permalink">
@@ -1499,10 +1499,15 @@ serialized, BridgeModule generation can be more flexibly captured in a lambda</p
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="MCRFileMap.html"><span class="name">MCRFileMap</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+        <a title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus)." href="MCRFileMap.html"><span class="name">MCRFileMap</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">Manages the metadata associated with a widget's configuration registers
+(exposed via the control bus).</p><div class="fullcomment"><div class="comment cmt"><p>Manages the metadata associated with a widget's configuration registers
+(exposed via the control bus). Registers are incrementally allocated, which
+each register consuming a fixed number of bytes of the address space.</p><p>This derives from a very early form of CSR handling in Rocket Chip which
+has since been replaced with diplomacy and its regmapper utilities.
+</p></div></div>
     </li><li name="midas.widgets.MCRIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="MCRIOextendsNastiBundle"></a><a id="MCRIO:MCRIO"></a>
       <span class="permalink">

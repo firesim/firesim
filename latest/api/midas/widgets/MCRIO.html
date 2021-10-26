@@ -327,8 +327,8 @@
                         <a href="MCRFile.html" title="">MCRFile</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="MCRFileMap.html" title=""></a>
-                        <a href="MCRFileMap.html" title="">MCRFileMap</a>
+                        <a class="class" href="MCRFileMap.html" title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus)."></a>
+                        <a href="MCRFileMap.html" title="Manages the metadata associated with a widget's configuration registers (exposed via the control bus).">MCRFileMap</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="" title=""></a>
@@ -709,6 +709,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.widgets.MCRIO#activeWriteToAddress" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="activeWriteToAddress(addr:Int):chisel3.Bool"></a><a id="activeWriteToAddress(Int):Bool"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/MCRIO.html#activeWriteToAddress(addr:Int):chisel3.Bool" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">activeWriteToAddress</span><span class="params">(<span name="addr">addr: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <span class="extype" name="chisel3.Bool">Bool</span></span>
+      </span>
+      
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -774,9 +790,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Data → HasId</dd></dl></div>
     </li><li name="midas.widgets.MCRIO#bindDecoupledSink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bindDecoupledSink(channel:midas.widgets.DecoupledSinkEntry,addr:Int):Unit"></a><a id="bindDecoupledSink(DecoupledSinkEntry,Int):Unit"></a>
+      <a id="bindDecoupledSink(channel:midas.widgets.DecoupledSinkEntry,index:Int):Unit"></a><a id="bindDecoupledSink(DecoupledSinkEntry,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/MCRIO.html#bindDecoupledSink(channel:midas.widgets.DecoupledSinkEntry,addr:Int):Unit" title="Permalink">
+      <a href="../../midas/widgets/MCRIO.html#bindDecoupledSink(channel:midas.widgets.DecoupledSinkEntry,index:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -785,14 +801,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">bindDecoupledSink</span><span class="params">(<span name="channel">channel: <a href="DecoupledSinkEntry.html" class="extype" name="midas.widgets.DecoupledSinkEntry">DecoupledSinkEntry</a></span>, <span name="addr">addr: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">bindDecoupledSink</span><span class="params">(<span name="channel">channel: <a href="DecoupledSinkEntry.html" class="extype" name="midas.widgets.DecoupledSinkEntry">DecoupledSinkEntry</a></span>, <span name="index">index: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       
     </li><li name="midas.widgets.MCRIO#bindDecoupledSource" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bindDecoupledSource(channel:midas.widgets.DecoupledSourceEntry,addr:Int):Unit"></a><a id="bindDecoupledSource(DecoupledSourceEntry,Int):Unit"></a>
+      <a id="bindDecoupledSource(channel:midas.widgets.DecoupledSourceEntry,index:Int):Unit"></a><a id="bindDecoupledSource(DecoupledSourceEntry,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/MCRIO.html#bindDecoupledSource(channel:midas.widgets.DecoupledSourceEntry,addr:Int):Unit" title="Permalink">
+      <a href="../../midas/widgets/MCRIO.html#bindDecoupledSource(channel:midas.widgets.DecoupledSourceEntry,index:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -801,14 +817,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">bindDecoupledSource</span><span class="params">(<span name="channel">channel: <a href="DecoupledSourceEntry.html" class="extype" name="midas.widgets.DecoupledSourceEntry">DecoupledSourceEntry</a></span>, <span name="addr">addr: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">bindDecoupledSource</span><span class="params">(<span name="channel">channel: <a href="DecoupledSourceEntry.html" class="extype" name="midas.widgets.DecoupledSourceEntry">DecoupledSourceEntry</a></span>, <span name="index">index: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       
     </li><li name="midas.widgets.MCRIO#bindReg" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bindReg(reg:midas.widgets.RegisterEntry,addr:Int):Unit"></a><a id="bindReg(RegisterEntry,Int):Unit"></a>
+      <a id="bindReg(reg:midas.widgets.RegisterEntry,index:Int):Unit"></a><a id="bindReg(RegisterEntry,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/MCRIO.html#bindReg(reg:midas.widgets.RegisterEntry,addr:Int):Unit" title="Permalink">
+      <a href="../../midas/widgets/MCRIO.html#bindReg(reg:midas.widgets.RegisterEntry,index:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -817,7 +833,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">bindReg</span><span class="params">(<span name="reg">reg: <a href="RegisterEntry.html" class="extype" name="midas.widgets.RegisterEntry">RegisterEntry</a></span>, <span name="addr">addr: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">bindReg</span><span class="params">(<span name="reg">reg: <a href="RegisterEntry.html" class="extype" name="midas.widgets.RegisterEntry">RegisterEntry</a></span>, <span name="index">index: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       
@@ -1788,6 +1804,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>NamedComponent → InstanceId</dd></dl></div>
+    </li><li name="midas.widgets.MCRIO#toIndex" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toIndex(addr:Int):Int"></a><a id="toIndex(Int):Int"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/MCRIO.html#toIndex(addr:Int):Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toIndex</span><span class="params">(<span name="addr">addr: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="chisel3.internal.NamedComponent#toNamed" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toNamed:firrtl.annotations.ComponentName"></a><a id="toNamed:ComponentName"></a>
       <span class="permalink">
