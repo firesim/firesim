@@ -71,7 +71,7 @@ This directory will contain:
 
 - ``cl_firesim:``: This directory is essentially the Vivado project that built the FPGA image, in the state it was in when the Vivado build process completed. This contains reports, stdout from the build, and the final tar file produced by Vivado.
 
-- ``cl_firesim_generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
+- ``FireSim-generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
 
 
 .. _firesim-tar2afi:
