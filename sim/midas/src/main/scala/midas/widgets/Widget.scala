@@ -35,6 +35,8 @@ class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
 abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
+  require(p(CtrlNastiKey).dataBits == 32, "Control bus data width must be 32b per AXI4-lite standard")
+
   override def module: WidgetImp
   val (wName, wId) = Widget.assignName(this)
   this.suggestName(wName)
@@ -54,7 +56,7 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   }
 
   val customSize: Option[BigInt] = None
-  def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.io.ctrl.nastiXDataBits/8))))
+  def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.ctrlWidth/8))))
 
   def printCRs = module.crRegistry.printCRs
 
@@ -62,13 +64,12 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
 }
 
 abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
-  val crRegistry = new MCRFileMap()
+  val ctrlWidth = p(CtrlNastiKey).dataBits
+  val crRegistry = new MCRFileMap(ctrlWidth / 8)
   def numRegs = crRegistry.numRegs
 
   def io: WidgetIO
 
-  // Default case we set the region to be large enough to hold the CRs
-  lazy val ctrlWidth = io.ctrl.nastiXDataBits
   def numChunks(e: Bits): Int = ((e.getWidth + ctrlWidth - 1) / ctrlWidth)
 
   def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
@@ -115,7 +116,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
       name: String,
       default: Option[T] = None,
       masterDriven: Boolean = true): T = {
-    require(wire.getWidth <= io.ctrl.nastiXDataBits)
+    require(wire.getWidth <= ctrlWidth)
     val reg = default match {
       case None => Reg(wire.cloneType)
       case Some(init) => RegInit(init)
@@ -136,13 +137,12 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
 
   def genWideRORegInit[T <: Bits](default: T, name: String): T = {
-    val cW = io.ctrl.nastiXDataBits
     val reg = RegInit(default)
     val shadowReg = Reg(default.cloneType)
     shadowReg.suggestName(s"${name}_mmreg")
-    val baseAddr = Seq.tabulate((default.getWidth + cW - 1) / cW)({ i =>
-      val msb = math.min(cW * (i + 1) - 1, default.getWidth - 1)
-      val slice = shadowReg(msb, cW * i)
+    val baseAddr = Seq.tabulate((default.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
+      val msb = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
+      val slice = shadowReg(msb, ctrlWidth * i)
       attach(slice, s"${name}_$i", ReadOnly)
     }).head
     // When a read request is made of the low order address snapshot the entire register
@@ -239,8 +239,7 @@ trait HasWidgets {
   }
 
   def genHeader(sb: StringBuilder) {
-    // Converts byte addresses to AXI4-lite (i.e., 32-bit wide) word addresses
-    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start >> 2, sb))
+    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, sb))
   }
 
   def printWidgets {
