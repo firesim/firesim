@@ -5,10 +5,6 @@ dramsim_o := $(foreach f, \
 $(dramsim_o): $(GEN_DIR)/%.o: $(dramsim_dir)/%.cpp
 	$(CXX) $(CXXFLAGS) -DNO_STORAGE -DNO_OUTPUT -Dmain=nomain -c -o $@ $<
 
-ifeq ($(PLATFORM),zynq)
-host = arm-xilinx-linux-gnueabi
-endif
-
 ext_files := mm mm_dramsim2
 ext_cc    := $(addprefix $(testchip_csrc_dir)/, $(addsuffix .cc, $(ext_files)))
 ext_o     := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(ext_files)))
