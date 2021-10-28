@@ -110,7 +110,7 @@ public:
 int main(int argc, char** argv)
 {
   dut_emul_t dut(argc, argv);
-  dut.init(argc, argv, true);
+  dut.init(argc, argv);
   dut.run();
   return dut.teardown();
 }

@@ -24,9 +24,10 @@ simif_t::simif_t() {
   this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;
 }
 
-void simif_t::init(int argc, char** argv, bool log) {
+void simif_t::init(int argc, char** argv) {
+  // Do any post-constructor initialization required before requesting MMIO
+  this->host_init(argc, argv);
   while(!read(this->master_mmio_addrs->INIT_DONE));
-  this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
   std::string loadmem;
   bool fastloadmem = false;

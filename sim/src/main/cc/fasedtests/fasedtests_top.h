@@ -16,7 +16,7 @@ class fasedtests_top_t: virtual simif_peek_poke_t, public systematic_scheduler_t
     public:
         fasedtests_top_t(int argc, char** argv);
         ~fasedtests_top_t() { }
-        void run();
+        int run();
 
     protected:
         void add_bridge_driver(bridge_driver_t* bridge_driver) {

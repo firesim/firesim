@@ -570,7 +570,7 @@ void firesim_top_t::run() {
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();
-        step(get_largest_stepsize(), false);
+        take_steps(get_largest_stepsize(), false);
         while(!done() && !simulation_complete()){
             for (auto &e: bridges) e->tick();
         }
@@ -599,5 +599,7 @@ int firesim_top_t::teardown() {
     for (auto &e: bridges) {
         e->finish();
     }
+
+    this->host_finish();
     return (exitcode || has_timed_out()) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

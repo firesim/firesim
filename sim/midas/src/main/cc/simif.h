@@ -44,19 +44,38 @@ class simif_t
 
   public:
     // Simulation APIs
-    virtual void init(int argc, char** argv, bool log = false);
-    virtual int finish() = 0;
+    virtual void init(int argc, char** argv);
     inline bool done() { return read(this->master_mmio_addrs->DONE); }
     inline void take_steps(size_t n, bool blocking) {
       write(this->master_mmio_addrs->STEP, n);
       if (blocking) while(!done());
     }
 
+    // Host-platform interface. See simif_f1; simif_emul for implementation examples
+
+    // Performs platform-level initialization that for some reason or another
+    // cannot be done in the constructor. (For one, currently command line args
+    // are not passed to constructor).
+    virtual void host_init(int argc, char** argv) = 0;
+    // Does final platform-specific cleanup before destructors are called.
+    virtual int host_finish() = 0;
+
     // Widget communication
+    // 32b MMIO, issued over the simulation control bus (AXI4-lite).
     virtual void write(size_t addr, data_t data) = 0;
     virtual data_t read(size_t addr) = 0;
+
+    // Bulk transfers / bridge streaming interfaces.
+
+    // Moves <bytes>B of data from a bridge FIFO at address <addr> (on the
+    // FPGA) to a buffer specified by <data>. FIFO addresses are emitted in the
+    // simulation header, and are in a distinct address space from MMIO.
     virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
+    // Moves <bytes>B of data from the buffer <data> to a bridge FIFO at
+    // address <addr> (on the FPGA.
     virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
+
+    // End host-platform interface.
 
     // LOADMEM functions
     void read_mem(size_t addr, mpz_t& value);

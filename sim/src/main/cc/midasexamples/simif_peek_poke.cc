@@ -124,7 +124,7 @@ int simif_peek_poke_t::teardown() {
   fprintf(stderr, "SEED: %ld\n", get_seed());
   this->print_simulation_performance_summary();
 
-  finish();
+  this->host_finish();
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }
