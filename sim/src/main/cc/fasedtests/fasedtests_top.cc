@@ -11,6 +11,7 @@
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
+#include "bridges/reset_pulse.h"
 
 fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 {
@@ -30,6 +31,9 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
         }
     }
 
+#ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
+INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
+#endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_0
     INSTANTIATE_FASED(fpga_models.push_back, 0)
@@ -113,9 +117,6 @@ void fasedtests_top_t::run() {
     fprintf(stderr, "Commencing simulation.\n");
     uint64_t start_hcycle = hcycle();
     uint64_t start_time = timestamp();
-
-    // Assert reset T=0 -> 50
-    target_reset(50);
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();

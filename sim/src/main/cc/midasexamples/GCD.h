@@ -1,8 +1,8 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
-class GCD_t: virtual simif_t
+class GCD_t: public simif_peek_poke_t
 {
 public:
   GCD_t(int argc, char** argv) {}

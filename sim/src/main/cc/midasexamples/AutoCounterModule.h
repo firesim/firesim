@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/autocounter.h"
 
-class autocounter_module_t: virtual simif_t
+class autocounter_module_t: public simif_peek_poke_t
 {
     public:
         std::vector<autocounter_t *> autocounter_endpoints;
@@ -30,7 +30,7 @@ class autocounter_module_t: virtual simif_t
 };
 
 #ifdef DESIGNNAME_AutoCounterModule
-class AutoCounterModule_t: public autocounter_module_t, virtual simif_t
+class AutoCounterModule_t: public autocounter_module_t
 {
 public:
     AutoCounterModule_t(int argc, char** argv): autocounter_module_t(argc, argv) {};
@@ -50,7 +50,7 @@ public:
 #endif //DESIGNNAME_AutoCounterModule
 
 #ifdef DESIGNNAME_AutoCounterGlobalResetCondition
-class AutoCounterGlobalResetCondition_t: public autocounter_module_t, virtual simif_t
+class AutoCounterGlobalResetCondition_t: public autocounter_module_t
 {
 public:
     AutoCounterGlobalResetCondition_t(int argc, char** argv): autocounter_module_t(argc, argv) {};

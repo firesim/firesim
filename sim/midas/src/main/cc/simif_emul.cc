@@ -115,9 +115,8 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
 }
 
 int simif_emul_t::finish() {
-  int exitcode = simif_t::finish();
   ::finish();
-  return exitcode;
+  return 0;
 }
 
 void simif_emul_t::advance_target() {

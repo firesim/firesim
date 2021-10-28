@@ -112,5 +112,5 @@ int main(int argc, char** argv)
   dut_emul_t dut(argc, argv);
   dut.init(argc, argv, true);
   dut.run();
-  return dut.finish();
+  return dut.teardown();
 }

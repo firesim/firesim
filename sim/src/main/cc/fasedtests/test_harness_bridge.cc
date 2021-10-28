@@ -3,7 +3,7 @@
 #include "test_harness_bridge.h"
 
 test_harness_bridge_t::test_harness_bridge_t(
-  simif_t* sim,
+  simif_peek_poke_t* sim,
   AddressMap addr_map, // This matches the addr map pass to the FASED timing model
   const std::vector<std::string>& args) : bridge_driver_t(sim), sim(sim), addr_map(addr_map) {
 

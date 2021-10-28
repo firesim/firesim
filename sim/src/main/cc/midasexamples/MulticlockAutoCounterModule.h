@@ -3,7 +3,7 @@
 #include "AutoCounterModule.h"
 
 #ifdef DESIGNNAME_MulticlockAutoCounterModule
-class MulticlockAutoCounterModule_t: public autocounter_module_t, virtual simif_t
+class MulticlockAutoCounterModule_t: public autocounter_module_t
 {
 public:
   MulticlockAutoCounterModule_t(int argc, char** argv): autocounter_module_t(argc, argv) {};
