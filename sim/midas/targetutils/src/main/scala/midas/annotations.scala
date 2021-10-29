@@ -286,7 +286,7 @@ object TriggerSource {
     // Hack: Create dummy nodes until chisel-side instance annotations have been improved
     val clock = WireDefault(Module.clock)
     reset.map(dontTouch.apply)
-    requireIsHardware(target, "Target passed to TriggerSoure:")
+    requireIsHardware(target, "Target passed to TriggerSource:")
     reset.foreach { requireIsHardware(_,  "Reset passed to TriggerSource:") }
     annotate(new ChiselAnnotation {
       def toFirrtl = TriggerSourceAnnotation(target.toNamed.toTarget, clock.toNamed.toTarget, reset.map(_.toTarget), tpe)
