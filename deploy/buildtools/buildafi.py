@@ -144,7 +144,7 @@ def aws_build(global_build_config, bypass=False):
     with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir="{}/buildtools/platform-specific-scripts/f1/build-bitstream.sh".format(local_deploy_dir),
+            local_dir="{}/../platforms/f1/build-bitstream.sh".format(local_deploy_dir),
             remote_dir="{}/".format(cl_dir),
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l", capture=True)
