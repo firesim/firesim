@@ -5,7 +5,16 @@ from awstools.awstools import *
 rootLogger = logging.getLogger()
 
 class BuildFarmDispatcher:
+    """ Abstract class to manage how to handle instances (launch, build, terminate, etc). """
+
     def __init__(self, build_config, arg_dict):
+        """ Initialization function.
+
+        Parameters:
+            build_config (BuildConfig): Build config associated with this dispatcher
+            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+        """
+
         self.build_config = build_config
         self.arg_dict = arg_dict
         # used to override where to do the fpga build (if done remotely)
@@ -13,19 +22,32 @@ class BuildFarmDispatcher:
         self.is_local = False
 
     def launch_build_instance(self):
-        return
+        """ Launch instance """
+        raise NotImplementedError
 
     def wait_on_instance_launch(self):
-        return
+        """ Ensure instance is launched and ready to be used """
+        raise NotImplementedError
 
     def get_build_instance_private_ip(self):
-        return
+        """ Get IP address associated with this dispatched instance """
+        raise NotImplementedError
 
     def terminate_build_instance(self):
-        return
+        """ Terminate the instance """
+        raise NotImplementedError
 
 class DefaultBuildFarmDispatcher(BuildFarmDispatcher):
+    """ Default dispatcher class that uses the IP address given as the build host. """
+
     def __init__(self, build_config, arg_dict):
+        """ Initialization function. Sets IP address and determines if it is localhost.
+
+        Parameters:
+            build_config (BuildConfig): Build config associated with this dispatcher
+            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+        """
+
         BuildFarmDispatcher.__init__(self, build_config, arg_dict)
 
         # default options
@@ -34,23 +56,39 @@ class DefaultBuildFarmDispatcher(BuildFarmDispatcher):
         if self.ip_addr == "localhost":
             self.is_local = True
 
+        rootLogger.info("Using host {} for {}".format(self.build_config.build_host, self.build_config.get_chisel_triplet()))
+
     def launch_build_instance(self):
-        rootLogger.info("No launch needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
-        return None
+        """ Launch instance. In this case, no launch is needed since IP address should be pre-setup. """
+        return
 
     def wait_on_instance_launch(self):
-        rootLogger.info("No waiting needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
+        """ Wait for instance launch. In this case, no launch is needed, there is no need to wait. """
         return
 
     def get_build_instance_private_ip(self):
+        """ Get IP address associated with this dispatched instance.
+        Returns:
+            (str): IP address given as the dispatcher arg
+        """
+
         return self.ip_addr
 
     def terminate_build_instance(self):
-        rootLogger.info("No termination needed for {} host (using {})".format(self.build_config.get_chisel_triplet(), self.build_config.build_host))
+        """ Terminate instance. In this case, no terminate is needed since nothing was launched. """
         return
 
 class EC2BuildFarmDispatcher(BuildFarmDispatcher):
+    """ Dispatcher class to manage an AWS EC2 instance as the build host. """
+
     def __init__(self, build_config, arg_dict):
+        """ Initialization function. Setup AWS instance variables.
+
+        Parameters:
+            build_config (BuildConfig): Build config associated with this dispatcher
+            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+        """
+
         BuildFarmDispatcher.__init__(self, build_config, arg_dict)
 
         # aws specific options
@@ -63,6 +101,8 @@ class EC2BuildFarmDispatcher(BuildFarmDispatcher):
         self.is_local = False
 
     def launch_build_instance(self):
+        """ Launch an AWS EC2 instance for the build config. """
+
         buildconf = self.build_config
 
         # get access to the runfarmprefix, which we will apply to build
@@ -97,14 +137,20 @@ class EC2BuildFarmDispatcher(BuildFarmDispatcher):
             randomsubnet=True)[0]
 
     def wait_on_instance_launch(self):
+        """ Wait for EC2 instance launch. """
         wait_on_instance_launches([self.launched_instance_object])
 
     def get_build_instance_private_ip(self):
-        """ Get the private IP of the instance running this build. """
+        """ Get IP address associated with this dispatched instance.
+
+        Returns:
+            (str): IP address of EC2 build host
+        """
+
         return self.launched_instance_object.private_ip_address
 
     def terminate_build_instance(self):
-        """ Terminate the instance running this build. """
+        """ Terminate the EC2 instance running this build. """
         instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
         rootLogger.info("Terminating build instances {}".format(instance_ids))
         terminate_instances(instance_ids, dryrun=False)

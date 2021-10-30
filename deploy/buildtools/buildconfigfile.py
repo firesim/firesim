@@ -14,10 +14,15 @@ from buildtools.buildconfig import BuildConfig
 rootLogger = logging.getLogger()
 
 class BuildConfigFile:
-    """ Configuration class for builds. This is the "global" configfile, i.e.
-    sample_config_build.ini """
+    """ Class representing the "global" build config file i.e. sample_config_build.ini. """
 
     def __init__(self, args):
+        """ Initialize function.
+
+        Parameters:
+            args (argparse.Namespace): Object holding arg attributes
+        """
+
         if args.launchtime:
             launch_time = args.launchtime
         else:
@@ -69,7 +74,7 @@ class BuildConfigFile:
             get_snsname_arn()
 
     def launch_build_instances(self):
-        """ Launch an instance for the builds we want to do """
+        """ Launch an instance for the builds. Exits the program if an IP address is reused. """
         # TODO: optimization: batch together items using the same buildhost
         for build in self.builds_list:
             build.build_farm_dispatcher.launch_build_instance()
@@ -82,30 +87,51 @@ class BuildConfigFile:
                 sys.exit(1)
 
     def wait_build_instances(self):
-        """ block until all build instances are launched """
+        """ Block until all build instances are launched """
         for build in self.builds_list:
             build.build_farm_dispatcher.wait_on_instance_launch()
 
     def terminate_all_build_instances(self):
+        """ Terminate all build instances that are launched """
         for build in self.builds_list:
             build.build_farm_dispatcher.terminate_build_instance()
 
     def get_build_by_ip(self, nodeip):
-        """ For a particular private IP (aka instance), return the BuildConfig
-        that it's supposed to be running. """
+        """ For a particular IP (aka instance), return the build config it is running.
+
+        Parameters:
+            nodeip (str): IP address of build wanted
+        Returns:
+            (BuildConfig or None): Build config of input IP or None
+        """
+
         for build in self.builds_list:
             if build.build_farm_dispatcher.get_build_instance_private_ip() == nodeip:
                 return build
         return None
 
     def get_build_instance_ips(self):
-        """ Return a list of all the build instance IPs, i.e. hosts to pass to
-        fabric. """
+        """ Get all the build instance IPs (later passed to fabric as hosts).
+
+        Returns:
+            (list[str]): List of IP addresses to build on
+        """
         return list(self.build_ip_set)
 
     def get_builds_list(self):
+        """ Get all the build configurations.
+
+        Returns:
+            (list[BuildConfig]): List of build configs
+        """
+
         return self.builds_list
 
     def __str__(self):
+        """ Print the class.
+
+        Returns:
+            (str): String representation of the class
+        """
         return pprint.pformat(vars(self))
 

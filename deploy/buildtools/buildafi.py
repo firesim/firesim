@@ -16,13 +16,21 @@ from util.streamlogger import StreamLogger, InfoStreamLogger
 rootLogger = logging.getLogger()
 
 def get_deploy_dir():
-    """ Must use local here. determine where the firesim/deploy dir is """
+    """ Determine where the firesim/deploy directory is and return its path.
+
+    Returns:
+        (str): Path to firesim/deploy directory
+    """
     with StreamLogger('stdout'), StreamLogger('stderr'):
         deploydir = local("pwd", capture=True)
     return deploydir
 
 def replace_rtl(build_config):
-    """ Generate Verilog """
+    """ Generate Verilog from build config
+
+    Parameters:
+        build_config (BuildConfig): Build configuration to make Verilog from
+    """
     rootLogger.info("Building Verilog for {}".format(str(build_config.get_chisel_triplet())))
 
     with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
@@ -36,7 +44,11 @@ def replace_rtl(build_config):
         run(build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
 def build_driver(build_config):
-    """ Build FPGA driver """
+    """ Build FireSim FPGA driver from build config
+
+    Parameters:
+        build_config (BuildConfig): Build configuration to make driver from
+    """
     rootLogger.info("Building FPGA driver for {}".format(str(build_config.get_chisel_triplet())))
 
     with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
@@ -50,6 +62,14 @@ def build_driver(build_config):
         run(buildconfig.make_recipe("PLATFORM=f1 driver"))
 
 def remote_setup(build_config):
+    """ Setup CL_DIR on remote machine
+
+    Parameters:
+        build_config (BuildConfig): Build configuration to determine paths
+    Returns:
+        (str): Path to remote CL_DIR directory (that is setup)
+    """
+
     fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
 
     # local paths
@@ -95,10 +115,13 @@ def remote_setup(build_config):
 
 @parallel
 def aws_build(global_build_config, bypass=False):
-    """ Run Vivado, convert tar -> AGFI/AFI. Then terminate the instance at the end.
-    global_build_config = the global build configuration
-    bypass: since this function takes a long time, bypass just returns for
-    testing purposes when set to True. """
+    """ Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
+    Must run after replace_rtl and build_driver are run.
+
+    Parameters:
+        global_build_config (BuildConfigFile): Global build file
+        bypass (bool): If true, immediately return and terminate instance. Used for testing purposes
+    """
 
     build_config = global_build_config.get_build_by_ip(env.host_string)
     if bypass:
@@ -107,6 +130,8 @@ def aws_build(global_build_config, bypass=False):
 
     # The default error-handling procedure. Send an email and teardown instance
     def on_build_failure():
+        """ Terminate build host and notify user that build failed """
+
         message_title = "FireSim FPGA Build Failed"
 
         message_body = "Your FPGA build failed for triplet: " + build_config.get_chisel_triplet()
@@ -177,7 +202,10 @@ def aws_create_afi(build_config):
     """
     Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI)
 
-    :return: None on error
+    Parameters:
+        build_config (BuildConfig): Build config to determine paths
+    Returns:
+        (bool or None): True on success, None on error
     """
 
     local_deploy_dir = get_deploy_dir()
