@@ -8,7 +8,7 @@ from importlib import import_module
 
 from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import *
-from buildtools.buildfarmdispatcher import *
+from buildtools.buildhostdispatcher import *
 from buildtools.build import *
 
 class BuildConfig:
@@ -50,12 +50,12 @@ class BuildConfig:
             self.build_host = "defaultbuildhost"
         build_host_conf_dict = dict(build_hosts_configfile.items(self.build_host))
 
-        self.build_farm_dispatcher_class_name = build_host_conf_dict['providerclass']
+        self.build_host_dispatcher_class_name = build_host_conf_dict['providerclass']
         del build_host_conf_dict['providerclass']
         # create dispatcher object using class given and pass args to it
-        self.build_farm_dispatcher = getattr(
-            import_module("buildtools.buildfarmdispatcher"),
-            self.build_farm_dispatcher_class_name)(self, build_host_conf_dict)
+        self.build_host_dispatcher = getattr(
+            import_module("buildtools.buildhostdispatcher"),
+            self.build_host_dispatcher_class_name)(self, build_host_conf_dict)
 
     def __repr__(self):
         """ Print the class.

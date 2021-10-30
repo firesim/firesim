@@ -81,8 +81,8 @@ def remote_setup(build_config):
         remote_home_dir = run('echo $HOME')
 
     # potentially override build dir
-    if build_config.build_farm_dispatcher.override_remote_build_dir:
-        remote_home_dir = build_config.build_farm_dispatcher.override_remote_build_dir
+    if build_config.build_host_dispatcher.override_remote_build_dir:
+        remote_home_dir = build_config.build_host_dispatcher.override_remote_build_dir
 
     remote_build_dir = "{}/firesim-build".format(remote_home_dir)
     remote_f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
@@ -125,7 +125,7 @@ def aws_build(global_build_config, bypass=False):
 
     build_config = global_build_config.get_build_by_ip(env.host_string)
     if bypass:
-        build_config.build_farm_dispatcher.terminate_build_instance()
+        build_config.build_host_dispatcher.release_buildhost()
         return
 
     # The default error-handling procedure. Send an email and teardown instance
@@ -141,7 +141,7 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.info(message_title)
         rootLogger.info(message_body)
 
-        build_config.build_farm_dispatcher.terminate_build_instance()
+        build_config.build_host_dispatcher.release_buildhost()
 
     rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -160,7 +160,7 @@ def aws_build(global_build_config, bypass=False):
         run("""mkdir -p {}""".format(local_results_dir))
         run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
 
-    if build_config.build_farm_dispatcher.is_local:
+    if build_config.build_host_dispatcher.is_local:
         cl_dir = local_cl_dir
     else:
         cl_dir = remote_setup(build_config)
@@ -196,7 +196,7 @@ def aws_build(global_build_config, bypass=False):
         on_build_failure()
         return
 
-    build_config.build_farm_dispatcher.terminate_build_instance()
+    build_config.build_host_dispatcher.release_buildhost()
 
 def aws_create_afi(build_config):
     """

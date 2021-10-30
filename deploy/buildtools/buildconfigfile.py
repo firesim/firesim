@@ -73,13 +73,13 @@ class BuildConfigFile:
             #check to see email notifications can be subscribed
             get_snsname_arn()
 
-    def launch_build_instances(self):
+    def request_build_hosts(self):
         """ Launch an instance for the builds. Exits the program if an IP address is reused. """
         # TODO: optimization: batch together items using the same buildhost
         for build in self.builds_list:
-            build.build_farm_dispatcher.launch_build_instance()
+            build.build_host_dispatcher.request_build_host()
             num_ips = len(self.build_ip_set)
-            ip = build.build_farm_dispatcher.get_build_instance_private_ip()
+            ip = build.build_host_dispatcher.get_build_host_ip()
             self.build_ip_set.add(ip)
             if num_ips == len(self.build_ip_set):
                 rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
@@ -89,12 +89,12 @@ class BuildConfigFile:
     def wait_build_instances(self):
         """ Block until all build instances are launched """
         for build in self.builds_list:
-            build.build_farm_dispatcher.wait_on_instance_launch()
+            build.build_host_dispatcher.wait_on_build_host_initialization()
 
     def terminate_all_build_instances(self):
         """ Terminate all build instances that are launched """
         for build in self.builds_list:
-            build.build_farm_dispatcher.terminate_build_instance()
+            build.build_host_dispatcher.release_buildhost()
 
     def get_build_by_ip(self, nodeip):
         """ For a particular IP (aka instance), return the build config it is running.
@@ -106,7 +106,7 @@ class BuildConfigFile:
         """
 
         for build in self.builds_list:
-            if build.build_farm_dispatcher.get_build_instance_private_ip() == nodeip:
+            if build.build_host_dispatcher.get_build_host_ip() == nodeip:
                 return build
         return None
 
