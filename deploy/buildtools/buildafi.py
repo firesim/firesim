@@ -24,26 +24,30 @@ def get_deploy_dir():
 def replace_rtl(build_config):
     """ Generate Verilog """
     rootLogger.info("Building Verilog for {}".format(str(build_config.get_chisel_triplet())))
-    with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-        run("{}/general-scripts/replace-rtl.sh {} {} {} {} \"{}\"".format(
-            get_deploy_dir() + "/buildtools",
-            os.getenv('RISCV', ""),
-            os.getenv('PATH', ""),
-            os.getenv('LD_LIBRARY_PATH', ""),
-            get_deploy_dir() + "/..",
-            build_config.make_recipe("PLATFORM=f1 replace-rtl")))
+
+    with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
+         prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+         prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+         prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+         prefix('source sourceme-f1-manager.sh'), \
+         prefix('cd sim/'), \
+         InfoStreamLogger('stdout'), \
+         InfoStreamLogger('stderr'):
+        run(build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
 def build_driver(build_config):
     """ Build FPGA driver """
     rootLogger.info("Building FPGA driver for {}".format(str(build_config.get_chisel_triplet())))
-    with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-        run("{}/general-scripts/build-driver.sh {} {} {} {} \"{}\"".format(
-            get_deploy_dir() + "/buildtools",
-            os.getenv('RISCV', ""),
-            os.getenv('PATH', ""),
-            os.getenv('LD_LIBRARY_PATH', ""),
-            get_deploy_dir() + "/..",
-            build_config.make_recipe("PLATFORM=f1 driver")))
+
+    with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
+         prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+         prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+         prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+         prefix('source sourceme-f1-manager.sh'), \
+         prefix('cd sim/'), \
+         InfoStreamLogger('stdout'), \
+         InfoStreamLogger('stderr'):
+        run(buildconfig.make_recipe("PLATFORM=f1 driver"))
 
 def remote_setup(build_config):
     fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
@@ -124,9 +128,15 @@ def aws_build(global_build_config, bypass=False):
     # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple)
     # if remote (aka not locally) then you need to copy things
     cl_dir = ""
+    local_cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_postfix)
+
+    # copy over generated RTL into local CL_DIR before remote
+    with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+        run("""mkdir -p {}""".format(local_results_dir))
+        run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
 
     if build_config.build_farm_dispatcher.is_local:
-        cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_postfix)
+        cl_dir = local_cl_dir
     else:
         cl_dir = remote_setup(build_config)
 
