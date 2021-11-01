@@ -116,18 +116,18 @@ def buildafi(globalbuildconf):
         execute(replace_rtl, buildconf, hosts=['localhost'])
         execute(build_driver, buildconf, hosts=['localhost'])
 
-    def terminate_instances_handler(sig, frame):
-        """ Handler that prompts to terminate build instances if you press ctrl-c. """
+    def release_instances_handler(sig, frame):
+        """ Handler that prompts to release build hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = raw_input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+        userconfirm = raw_input("Do you also want to release your build hosts? Type 'yes' to do so.\n")
         if userconfirm == "yes":
-            globalbuildconf.terminate_all_build_instances()
-            rootLogger.info("Instances terminated. Please confirm in your AWS Management Console.")
+            globalbuildconf.release_build_hosts()
+            rootLogger.info("Build hosts released.")
         else:
-            rootLogger.info("Termination skipped. There may still be build instances running.")
+            rootLogger.info("Termination skipped. There may still be build hosts running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, terminate_instances_handler)
+    signal.signal(signal.SIGINT, release_instances_handler)
 
     # pre-setup stuff (things that need to be done before instances are spawned/killed)
     # specific to the buildhost
@@ -135,13 +135,13 @@ def buildafi(globalbuildconf):
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
-    globalbuildconf.launch_build_instances()
+    globalbuildconf.request_build_hosts()
 
     # confirm that build instances have finished booting
-    globalbuildconf.wait_build_instances()
+    globalbuildconf.wait_on_build_host_initializations()
 
     # run builds, then terminate instances
-    execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
+    execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_host_ips())
 
 
 def tar2afi(globalbuildconf):

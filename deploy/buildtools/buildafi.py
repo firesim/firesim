@@ -125,7 +125,7 @@ def aws_build(global_build_config, bypass=False):
 
     build_config = global_build_config.get_build_by_ip(env.host_string)
     if bypass:
-        build_config.build_host_dispatcher.release_buildhost()
+        build_config.build_host_dispatcher.release_build_host()
         return
 
     # The default error-handling procedure. Send an email and teardown instance
@@ -141,7 +141,7 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.info(message_title)
         rootLogger.info(message_body)
 
-        build_config.build_host_dispatcher.release_buildhost()
+        build_config.build_host_dispatcher.release_build_host()
 
     rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -196,7 +196,7 @@ def aws_build(global_build_config, bypass=False):
         on_build_failure()
         return
 
-    build_config.build_host_dispatcher.release_buildhost()
+    build_config.build_host_dispatcher.release_build_host()
 
 def aws_create_afi(build_config):
     """

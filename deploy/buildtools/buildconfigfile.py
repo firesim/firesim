@@ -70,8 +70,9 @@ class BuildConfigFile:
         """ Setup based on the types of buildhosts """
         for build in self.builds_list:
             auto_create_bucket(build.s3_bucketname)
-            #check to see email notifications can be subscribed
-            get_snsname_arn()
+
+        #check to see email notifications can be subscribed
+        get_snsname_arn()
 
     def request_build_hosts(self):
         """ Launch an instance for the builds. Exits the program if an IP address is reused. """
@@ -83,18 +84,18 @@ class BuildConfigFile:
             self.build_ip_set.add(ip)
             if num_ips == len(self.build_ip_set):
                 rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
-                self.terminate_all_build_instances()
+                self.release_build_hosts()
                 sys.exit(1)
 
-    def wait_build_instances(self):
+    def wait_on_build_host_initializations(self):
         """ Block until all build instances are launched """
         for build in self.builds_list:
             build.build_host_dispatcher.wait_on_build_host_initialization()
 
-    def terminate_all_build_instances(self):
+    def release_build_hosts(self):
         """ Terminate all build instances that are launched """
         for build in self.builds_list:
-            build.build_host_dispatcher.release_buildhost()
+            build.build_host_dispatcher.release_build_host()
 
     def get_build_by_ip(self, nodeip):
         """ For a particular IP (aka instance), return the build config it is running.
@@ -110,7 +111,7 @@ class BuildConfigFile:
                 return build
         return None
 
-    def get_build_instance_ips(self):
+    def get_build_host_ips(self):
         """ Get all the build instance IPs (later passed to fabric as hosts).
 
         Returns:

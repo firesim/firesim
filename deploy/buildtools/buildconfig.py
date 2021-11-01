@@ -57,6 +57,8 @@ class BuildConfig:
             import_module("buildtools.buildhostdispatcher"),
             self.build_host_dispatcher_class_name)(self, build_host_conf_dict)
 
+        self.build_host_dispatcher.parse_args()
+
     def __repr__(self):
         """ Print the class.
 
