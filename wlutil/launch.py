@@ -126,9 +126,9 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
                 scriptCmd = f'script -f -c "{cmd}" {uartLog}'
                 
                 if interactive and (jobs is None):
-                    jobProcs.append(sp.Popen(["screen", "-s", config['name'], "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+                    jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
                 else:
-                    jobProcs.append(sp.Popen(["screen", "-s", config['name'], "-d", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+                    jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-D", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
                 
                 log.info('Opened screen session for {0} with identifier {0}'.format(config['name']))
     
