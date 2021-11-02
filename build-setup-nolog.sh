@@ -19,15 +19,17 @@ RDIR=$(pwd)
 FASTINSTALL=false
 IS_LIBRARY=false
 SKIP_TOOLCHAIN=false
+SLIM_SETUP=false
 
 function usage
 {
-    echo "usage: build-setup.sh [ fast | --fast] [--skip-toolchain] [--library]"
+    echo "usage: build-setup.sh [fast | --fast] [--skip-toolchain] [--library] [--slim-setup]"
     echo "   fast: if set, pulls in a pre-compiled RISC-V toolchain for an EC2 manager instance"
     echo "   skip-toolchain: if set, skips RISC-V toolchain handling (cloning or building)."
     echo "                   The user must define $RISCV in their env to provide their own toolchain."
     echo "   library: if set, initializes submodules assuming FireSim is being used"
     echo "            as a library submodule. Implies --skip-toolchain "
+    echo "   slim-setup: if set, skips aws specific setup"
 }
 
 if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
@@ -46,6 +48,9 @@ do
             SKIP_TOOLCHAIN=true;
             ;;
         --skip-toolchain)
+            SKIP_TOOLCHAIN=true;
+            ;;
+        --slim-setup)
             SKIP_TOOLCHAIN=true;
             ;;
         -h | -H | --help)
@@ -169,18 +174,20 @@ fi
 
 cd $RDIR
 
-# commands to run only on EC2
+# check if running on EC2
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
-if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
-    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-    make
+set +e
+wget -T 1 -t 3 -O /dev/null http://169.254.169.254/
+IS_EC2=$?
+set -e
 
-    # Install firesim-software dependencies
-    # We always setup the symlink correctly above, so use sw/firesim-software
-    marshal_dir=$RDIR/sw/firesim-software
-    cd $RDIR
-    sudo pip3 install -r $marshal_dir/python-requirements.txt
+# Install firesim-software dependencies
+# We always setup the symlink correctly above, so use sw/firesim-software
+marshal_dir=$RDIR/sw/firesim-software
+cd $RDIR
+sudo pip3 install -r $marshal_dir/python-requirements.txt
+if [ $IS_EC2 -eq 0 ]; then
     cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y
     wget https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git/snapshot/e2fsprogs-1.45.4.tar.gz
     tar xvzf e2fsprogs-1.45.4.tar.gz
@@ -191,18 +198,12 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     sudo make install
     cd ../..
     rm -rf e2fsprogs*
+else
+    cat $marshal_dir/ubuntu-requirements.txt | sudo xargs apt-get install -y
+fi
 
-    # Setup for using qcow2 images
-    cd $RDIR
-    ./scripts/install-nbd-kmod.sh
-
-    # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
-    # pull down some IP, so we don't have to waste time doing it each time on
-    # worker instances
-    AWSFPGA=$RDIR/platforms/f1/aws-fpga
-    cd $AWSFPGA
-    bash -c "source ./sdk_setup.sh"
-    bash -c "source ./hdk_setup.sh"
+if [ "$SLIM_SETUP" != true ]; then
+    ./aws-setup.sh
 fi
 
 # Per-repository dependencies are installed under this sysroot
@@ -216,6 +217,9 @@ env_append "export LD_LIBRARY_PATH=$firesim_local_sysroot/lib\${LD_LIBRARY_PATH:
 cd $RDIR
 set +e
 ./gen-tags.sh
+pushd $target_chipyard_dir
+./scripts/gen-tags.sh
+popd
 set -e
 
 # Write out the generated env.sh indicating successful completion.

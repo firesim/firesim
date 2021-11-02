@@ -1,0 +1,9 @@
+1. Setup Chipyard (toolchain build, source env.sh)
+2. Run firesim-setup --library --slim-setup (ignore the aws stuff)
+3. source the sourceme-manager.sh in firesim (get the ssh key)
+4. do firesim managerinit (get the aws credentials)
+5. run aws-setup.sh (get the aws stuff now)
+
+TODO:
+- Need to print out the public IP addresses if not running on EC2 instances
+- Figure out the permissions thingy #226 fix reverted

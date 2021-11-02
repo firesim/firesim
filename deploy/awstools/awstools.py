@@ -132,28 +132,9 @@ def get_f1_ami_id():
     return response['Images'][0]['ImageId']
 
 def get_aws_userid():
-    """ Get the user's IAM ID to intelligently create a bucket name when doing managerinit.
-    The previous method to do this was:
-
+    """ Get the user's IAM ID to intelligently create a bucket name when doing managerinit. """
     client = boto3.client('iam')
     return client.get_user()['User']['UserId'].lower()
-
-    But it seems that by default many accounts do not have permission to run this,
-    so instead we get it from instance metadata.
-    """
-    res = None
-    # This takes multiple minutes without a timeout from a non-AWS instance. In
-    # practice it should resolve nearly instantly on an initialized EC2 instance.
-    curl_connection_timeout = 10
-    with settings(warn_only=True), hide('everything'):
-        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="accountId" : ")[^"]*(?=")'""".format(curl_connection_timeout), capture=True)
-
-    # Use some default string if we're not on an EC2 instance (e.g., when a
-    # manager is launched from CI; during demos; other etc)
-    if res.return_code != 0:
-        return "PREAWSINIT"
-    else:
-        return res.stdout.lower()
 
 def construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice):
     """ construct the dictionary necessary to configure instance market selection
@@ -324,6 +305,10 @@ def get_private_ips_for_instances(instances):
     """" Take list of instances (as returned by create_instances), return private IPs. """
     return [instance.private_ip_address for instance in instances]
 
+def get_public_ips_for_instances(instances):
+    """" Take list of instances (as returned by create_instances), return public IPs. """
+    return [instance.public_ip_address for instance in instances]
+
 def get_instance_ids_for_instances(instances):
     """" Take list of instances (as returned by create_instances), return instance ids. """
     return [instance.id for instance in instances]
@@ -357,6 +342,7 @@ def wait_on_instance_launches(instances, message=""):
     for instance in instances:
         instance.wait_until_running()
         wait_on_instance_boot(instance.id)
+        instance.reload()
         rootLogger.info(str(instance.id) + " booted!")
 
 def terminate_instances(instanceids, dryrun=True):
@@ -365,8 +351,7 @@ def terminate_instances(instanceids, dryrun=True):
     client = boto3.client('ec2')
     client.terminate_instances(InstanceIds=instanceids, DryRun=dryrun)
 
-def auto_create_bucket(userbucketname):
-    """ Check if the user-specified s3 bucket is available.
+def auto_create_bucket(userbucketname): """ Check if the user-specified s3 bucket is available.
     If we get a NoSuchBucket exception, create the bucket for the user.
     If we get any other exception, exit.
     If we get no exception, assume the bucket exists and the user has already
@@ -517,7 +502,8 @@ def main(args):
         instids = get_instance_ids_for_instances(insts)
         print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)
-        print("Launched instance IPs: {}".format(get_private_ips_for_instances(insts)))
+        print("Launched instance private IPs: {}".format(get_private_ips_for_instances(insts)))
+        print("Launched instance public IPs: {}".format(get_public_ips_for_instances(insts)))
     else: # "terminate"
         insts = get_instances_with_filter(args.filters)
         instids = [ inst['InstanceId'] for inst in insts ]
