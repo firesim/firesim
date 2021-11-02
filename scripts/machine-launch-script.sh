@@ -33,11 +33,14 @@ sudo yum -y install https://repo.ius.io/ius-release-el7.rpm
 sudo yum -y install git224
 
 # install verilator
-git clone http://git.veripool.org/git/verilator
-cd verilator/
-git checkout v4.034
-autoconf && ./configure && make -j4 && sudo make install
-cd ..
+if ! command -v verilator &> /dev/null
+then
+    git clone http://git.veripool.org/git/verilator
+    cd verilator/
+    git checkout v4.034
+    autoconf && ./configure && make -j4 && sudo make install
+    cd ..
+fi
 
 # bash completion for manager
 sudo yum -y install bash-completion
