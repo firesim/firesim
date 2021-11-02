@@ -1,8 +1,14 @@
-1. Setup Chipyard (toolchain build, source env.sh)
-2. Run firesim-setup --library --slim-setup (ignore the aws stuff)
-3. source the sourceme-manager.sh in firesim (get the ssh key)
-4. do firesim managerinit (get the aws credentials)
-5. run aws-setup.sh (get the aws stuff now)
+0. Run the `./scripts/ubuntu-req.sh` script in Chipyard
+1. Setup Chipyard
+    - Init. submodules
+    - Build toolchain (if need be)
+    - Source toolchain file
+2. Run `./scripts/machine-launch-script-ubuntu.sh` in FireSim from $HOME
+3. Run Chipyard's FireSim setup script without setting up AWS EC2 items
+    - `./scripts/firesim-setup.sh --library --slim-setup`
+4. Source the FireSim manager
+5. Run `firesim managerinit` to setup AWS credentials
+6. Run `aws-setup.sh` to get the final AWS setup
 
 TODO:
 - Need to print out the public IP addresses if not running on EC2 instances
