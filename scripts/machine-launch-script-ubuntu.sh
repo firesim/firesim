@@ -34,12 +34,15 @@ sudo add-apt-repository ppa:git-core/ppa -y
 sudo apt-get update
 sudo apt-get install git -y
 
-## install verilator
-git clone http://git.veripool.org/git/verilator
-cd verilator/
-git checkout v4.034
-autoconf && ./configure && make -j$(nproc) && sudo make install
-cd ..
+# install verilator
+if ! command -v verilator &> /dev/null
+then
+    git clone http://git.veripool.org/git/verilator
+    cd verilator/
+    git checkout v4.034
+    autoconf && ./configure && make -j4 && sudo make install
+    cd ..
+fi
 
 # bash completion for manager
 sudo apt-get -y install bash-completion
