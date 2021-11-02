@@ -51,7 +51,7 @@ do
             SKIP_TOOLCHAIN=true;
             ;;
         --slim-setup)
-            SKIP_TOOLCHAIN=true;
+            SLIM_SETUP=true;
             ;;
         -h | -H | --help)
             usage
