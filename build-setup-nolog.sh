@@ -12,8 +12,8 @@
 # exit script if any command fails
 set -e
 set -o pipefail
+set -x
 
-unamestr=$(uname)
 RDIR=$(pwd)
 
 FASTINSTALL=false
@@ -174,20 +174,28 @@ fi
 
 cd $RDIR
 
-# check if running on EC2
-# see if the instance info page exists. if not, we are not on ec2.
-# this is one of the few methods that works without sudo
-set +e
-wget -T 1 -t 3 -O /dev/null http://169.254.169.254/
-IS_EC2=$?
-set -e
+IS_CENTOS=false
+IS_UBUNTU=false
+OS_TYPE=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
+case $OS_TYPE in
+    *"CentOS"*)
+        IS_CENTOS=true
+        ;;
+    *"Ubuntu"*)
+        IS_UBUNTU=true
+        ;;
+    *)
+        echo "Unknown OS: Only Ubuntu/CentOS supported"
+        exit 3
+esac
 
 # Install firesim-software dependencies
 # We always setup the symlink correctly above, so use sw/firesim-software
 marshal_dir=$RDIR/sw/firesim-software
 cd $RDIR
-sudo pip3 install -r $marshal_dir/python-requirements.txt
-if [ $IS_EC2 -eq 0 ]; then
+# python setup is per-user
+pip3 install --user -r $marshal_dir/python-requirements.txt
+if [ "$IS_CENTOS" == true ]; then
     cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y
     wget https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git/snapshot/e2fsprogs-1.45.4.tar.gz
     tar xvzf e2fsprogs-1.45.4.tar.gz
