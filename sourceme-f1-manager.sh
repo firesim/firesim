@@ -25,3 +25,6 @@ export FIRESIM_RUNFARM_PREFIX=""
 
 # put FlameGraph/other fireperf utils on the user path
 export PATH=$(pwd)/utils/fireperf:$(pwd)/utils/fireperf/FlameGraph:$PATH
+
+# make sure .local is in the path
+export PATH=$HOME/.local/bin:$PATH
