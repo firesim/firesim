@@ -332,7 +332,8 @@ def terminate_instances(instanceids, dryrun=True):
     client = boto3.client('ec2')
     client.terminate_instances(InstanceIds=instanceids, DryRun=dryrun)
 
-def auto_create_bucket(userbucketname): """ Check if the user-specified s3 bucket is available.
+def auto_create_bucket(userbucketname):
+    """ Check if the user-specified s3 bucket is available.
     If we get a NoSuchBucket exception, create the bucket for the user.
     If we get any other exception, exit.
     If we get no exception, assume the bucket exists and the user has already
