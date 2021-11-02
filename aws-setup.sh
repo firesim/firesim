@@ -90,6 +90,7 @@ else
     IP_ADDR=$(sed -n "s/.*public.*\[.\(.*\).\].*/\1/p" /tmp/fsim-setup-ipaddr | head -n 1)
 
     # get current hash
+    # TODO: This won't work if you have local changes that you haven't pushed up...
     CUR_HASH=$(git rev-parse HEAD)
 
     ssh -o StrictHostKeyChecking=no centos@$IP_ADDR << EOF
