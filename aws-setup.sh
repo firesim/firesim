@@ -53,19 +53,19 @@ if [ "$IS_CENTOS" == true ]; then
         python $RDIR/deploy/awstools/awstools.py launch --inst_amt 1 2>&1 | tee /tmp/fsim-setup-ipaddr
         # retrieve the public IP
         IP_ADDR=$(sed -n "s/.*public.*\[.\(.*\).\].*/\1/p" /tmp/fsim-setup-ipaddr | head -n 1)
-    
+
         # get current hash
         CUR_HASH=$(git rev-parse HEAD)
-    
+
         ssh -o StrictHostKeyChecking=no centos@$IP_ADDR << EOF
             git clone https://github.com/firesim/firesim.git
             cd ~/firesim
             git checkout $CUR_HASH
-    
+
             source ./scripts/machine-launch-script.sh
-    
+
             git submodule update --init --recursive platforms/f1/aws-fpga
-    
+
             # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
             # pull down some IP, so we don't have to waste time doing it each time on
             # worker instances
@@ -73,15 +73,15 @@ if [ "$IS_CENTOS" == true ]; then
             bash -c "source ./sdk_setup.sh"
             bash -c "source ./hdk_setup.sh"
 EOF
-    
+
         # copy back built results (prevent overwriting the current dir)
         rsync -avzp --ignore-existing -e 'ssh -o StrictHostKeyChecking=no' centos@$IP_ADDR:firesim/ $RDIR
-    
+
         # terminate AMI instance using awstools
         python $RDIR/deploy/awstools/awstools.py terminate
         rm -rf /tmp/fsim-setup-ipaddr
     fi
-else 
+else
     # manager running on Ubuntu
 
     # launch AMI instance using awstools
@@ -90,23 +90,38 @@ else
     IP_ADDR=$(sed -n "s/.*public.*\[.\(.*\).\].*/\1/p" /tmp/fsim-setup-ipaddr | head -n 1)
 
     # get current hash
-    # TODO: This won't work if you have local changes that you haven't pushed up...
     CUR_HASH=$(git rev-parse HEAD)
+    CUR_URL=$(git config --get remote.origin.url)
+    CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    if [[ $(git diff --stat) != '' ]]; then
+        echo "Git working tree is dirty. Might not setup FireSim repo properly."
+        echo "To fix, rerun $0 after pushing your changes."
+    fi
 
     ssh -o StrictHostKeyChecking=no centos@$IP_ADDR << EOF
-        git clone https://github.com/firesim/firesim.git
-        cd ~/firesim
-        git checkout $CUR_HASH
+        set -ex
 
-	cd ~
+        # setup firesim on remote machine to finish setup
+        git clone $CUR_URL
+        cd ~/firesim
+        if git checkout $CUR_HASH ; then
+            echo "Successfully checked out $CUR_HASH"
+        else
+            echo "Attempting to checkout branch"
+            git checkout $CUR_BRANCH
+        fi
+
+        # install deps
+        cd ~
         source ~/firesim/scripts/machine-launch-script.sh
 
-	cd ~/firesim
+        # just setup aws-fpga
+        cd ~/firesim
         git submodule update --init --recursive platforms/f1/aws-fpga
 
         cd ~/firesim/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma
         make
-    
+
         # Setup for using qcow2 images
         cd ~/firesim
         ./scripts/install-nbd-kmod.sh
