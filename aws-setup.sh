@@ -88,6 +88,7 @@ else
     python $RDIR/deploy/awstools/awstools.py launch --inst_amt 1 2>&1 | tee /tmp/fsim-setup-ipaddr
     # retrieve the public IP
     IP_ADDR=$(sed -n "s/.*public.*\[.\(.*\).\].*/\1/p" /tmp/fsim-setup-ipaddr | head -n 1)
+    SSH_OPTS="-o StrictHostKeyChecking=no"
 
     # get current hash
     CUR_HASH=$(git rev-parse HEAD)
@@ -98,7 +99,7 @@ else
         echo "To fix, rerun $0 after pushing your changes."
     fi
 
-    ssh -o StrictHostKeyChecking=no centos@$IP_ADDR << EOF
+    ssh $SSH_OPTS centos@$IP_ADDR << EOF
         set -ex
 
         # setup firesim on remote machine to finish setup
@@ -135,7 +136,7 @@ else
 EOF
 
     # copy back built results (prevent overwriting the current dir)
-    rsync -avzp --ignore-existing -e 'ssh -o StrictHostKeyChecking=no' centos@$IP_ADDR:firesim/ $RDIR
+    rsync -avzp --ignore-existing -e "ssh $SSH_OPTS" centos@$IP_ADDR:firesim/ $RDIR
 
     # terminate AMI instance using awstools
     python $RDIR/deploy/awstools/awstools.py terminate
