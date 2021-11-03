@@ -48,6 +48,9 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
+# update ca-certificates
+sudo yum -y install ca-certificates
+
 # pip2 no longer installed on FPGA developer AMIs
 sudo yum -y install python-pip
 # In the event it is (as on an older AMI), upgrade it just in case
