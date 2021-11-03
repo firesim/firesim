@@ -47,6 +47,9 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
+# update ca-certificates
+sudo yum -y install ca-certificates
+
 # these need to match what's in deploy/requirements.txt
 # last working pip version before deprecation
 sudo pip2 install --upgrade pip==20.3.4
