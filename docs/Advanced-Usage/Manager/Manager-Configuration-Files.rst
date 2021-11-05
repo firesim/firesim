@@ -138,7 +138,7 @@ number between 1 and 200, allowing you to model NICs between 1 and 200 Gbit/s.
 ``profileinterval``
 """""""""""""""""""""""""""""
 
-The simulation driver periodically samples performance counters in FASED timing model instances and dumps the result to a file on the host. ``profileinterval`` defines the number of target cycles between samples; setting this field to -1 disables polling. 
+The simulation driver periodically samples performance counters in FASED timing model instances and dumps the result to a file on the host. ``profileinterval`` defines the number of target cycles between samples; setting this field to -1 disables polling.
 
 
 ``defaulthwconfig``
@@ -204,7 +204,7 @@ Workload definitions are located in ``firesim/deploy/workloads/*.json``.
 
 Some sample workloads:
 
-``linux-uniform.json``: This runs the default FireSim Linux distro on as many nodes 
+``linux-uniform.json``: This runs the default FireSim Linux distro on as many nodes
 as you specify when setting the ``[targetconfig]`` parameters.
 
 ``spec17-intrate.json``: This runs SPECint 2017's rate benchmarks. In this type of
@@ -233,6 +233,13 @@ without renaming the entire workload. For example, specifying
 ``suffixtag=test-v1`` with a workload named ``super-application`` will result
 in a workload results directory named
 ``results-workload/DATE--TIME-super-application-test-v1/``.
+
+``compress``
+""""""""""""""""""""""""""
+
+Set this to ``yes`` if you want workload results to be compressed when copied back
+to the manager machine. This will compress each job's output in the workload and store
+them in the ``results-workload/DATE--TIME-WORKLOADNAME/`` workload results directory.
 
 ``[hostdebug]``
 ^^^^^^^^^^^^^^^^^^
@@ -309,7 +316,7 @@ to set your max to the on-demand price for the instance.
 ``postbuildhook``
 """""""""""""""""""""""
 
-(Optional) Provide an a script to run on the results copied back from a _single_ build instance. Upon completion of each design's build, the manager invokes this script and passing the absolute path to that instance's build-results directory as it's first argument. 
+(Optional) Provide an a script to run on the results copied back from a _single_ build instance. Upon completion of each design's build, the manager invokes this script and passing the absolute path to that instance's build-results directory as it's first argument.
 
 
 ``[builds]``
