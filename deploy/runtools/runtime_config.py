@@ -317,6 +317,8 @@ class InnerRuntimeConfiguration:
         # an extra tag to differentiate workloads with the same name in results names
         self.suffixtag = runtime_dict['workload']['suffixtag'] if 'suffixtag' in runtime_dict['workload'] else ""
         self.terminateoncompletion = runtime_dict['workload']['terminateoncompletion'] == "yes"
+        # compress output workload results
+        self.compress = runtime_dict['workload']['compress'] == "yes"
 
     def __str__(self):
         return pprint.pformat(vars(self))
@@ -346,7 +348,7 @@ class RuntimeConfig:
         # setup workload config obj, aka a list of workloads that can be assigned
         # to a server
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
-                                       self.innerconf.suffixtag)
+                                       self.innerconf.suffixtag, self.innerconf.compress)
 
         self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
                                self.innerconf.f1_4xlarges_requested,
