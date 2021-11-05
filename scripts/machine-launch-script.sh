@@ -6,6 +6,7 @@ set -o pipefail
 echo "machine launch script started" > /home/centos/machine-launchstatus
 
 {
+sudo yum install -y ca-certificates
 sudo yum install -y mosh
 sudo yum groupinstall -y "Development tools"
 sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
