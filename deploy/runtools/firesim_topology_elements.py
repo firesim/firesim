@@ -319,7 +319,7 @@ class FireSimServerNode(FireSimNode):
         else:
             # create compressed file w/ all outputs on the remote and copy back
             file_list = []
-            zip_file = """/home/centos/{}.zip""".format(jobinfo.jobname)
+            targz_file = """/home/centos/{}.tar.gz""".format(jobinfo.jobname)
 
             if rfsname is not None:
                 ## copy back files from inside the rootfs
@@ -332,8 +332,8 @@ class FireSimServerNode(FireSimNode):
             for simoutputfile in jobinfo.simoutputs:
                 file_list.append(remote_sim_run_dir + simoutputfile)
 
-            # create zip file (with all files flattened)
-            run("""zip -j {} {}""".format(zip_file, ' '.join(file_list))
+            # create tar.gz file (with all files flattened)
+            run("""tar -cvzf {} --transform 's/.*\///g' {}""".format(targz_file, ' '.join(file_list)))
 
             if rfsname is not None:
                 ## unmount
@@ -345,8 +345,8 @@ class FireSimServerNode(FireSimNode):
                     with StreamLogger('stdout'), StreamLogger('stderr'):
                         run("""sudo qemu-nbd -d {devname}""".format(devname=rfsname))
 
-            # copy back zip into orig. location
-            get(remote_path=zip_file, local_path=job_results_dir)
+            # copy back tar.gz into orig. location
+            get(remote_path=targz_file, local_path=job_results_dir)
 
 
     def get_sim_kill_command(self, slotno):
