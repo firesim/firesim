@@ -574,7 +574,7 @@ class FireSimTopologyWithPasses:
             def get_jobs_completed_local_info():
                 # this is a list of jobs completed, since any completed job will have
                 # a directory (or .tar.gz file) within this directory.
-                jobscompleted = [os.path.splitext(p)[0] for p in os.listdir(self.workload.job_results_dir)]
+                jobscompleted = [p.split(".")[0] for p in os.listdir(self.workload.job_results_dir)]
                 rootLogger.debug("dir based jobs completed: " + str(jobscompleted))
                 return jobscompleted
 
