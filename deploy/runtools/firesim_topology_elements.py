@@ -288,7 +288,7 @@ class FireSimServerNode(FireSimNode):
                     run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
                 run("""sudo chown -R centos {}""".format(mountpoint))
 
-        if not self.get_job().parent_workload.compress:
+        if not self.get_job().parent_workload.compress_results:
             job_dir = """{}/{}/""".format(job_results_dir, jobinfo.jobname)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 localcap = local("""mkdir -p {}""".format(job_dir), capture=True)

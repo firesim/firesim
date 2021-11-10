@@ -318,7 +318,7 @@ class InnerRuntimeConfiguration:
         self.suffixtag = runtime_dict['workload']['suffixtag'] if 'suffixtag' in runtime_dict['workload'] else ""
         self.terminateoncompletion = runtime_dict['workload']['terminateoncompletion'] == "yes"
         # compress output workload results
-        self.compress = runtime_dict['workload']['compress'] == "yes"
+        self.compress_results = runtime_dict['workload']['compressresults'] == "yes"
 
     def __str__(self):
         return pprint.pformat(vars(self))

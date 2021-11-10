@@ -75,7 +75,7 @@ class WorkloadConfig:
     workloadinputs = 'workloads/'
     workloadoutputs = 'results-workloads/'
 
-    def __init__(self, workloadfilename, launch_time, suffixtag, compress):
+    def __init__(self, workloadfilename, launch_time, suffixtag, compress_results):
         self.workloadfilename = self.workloadinputs + workloadfilename
         workloadjson = None
         with open(self.workloadfilename) as json_data:
@@ -117,7 +117,7 @@ class WorkloadConfig:
                                                             self.workload_name,
                                                             appendsuffix)
 
-        self.compress = compress
+        self.compress_results = compress_results
 
         #import code
         #code.interact(local=locals())

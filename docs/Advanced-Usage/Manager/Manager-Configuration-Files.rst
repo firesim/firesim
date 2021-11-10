@@ -234,7 +234,7 @@ without renaming the entire workload. For example, specifying
 in a workload results directory named
 ``results-workload/DATE--TIME-super-application-test-v1/``.
 
-``compress``
+``compressresults``
 """"""""""""""""""""""""""
 
 Set this to ``yes`` if you want workload results to be compressed when copied back
