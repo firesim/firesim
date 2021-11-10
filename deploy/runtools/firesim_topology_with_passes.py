@@ -465,7 +465,7 @@ class FireSimTopologyWithPasses:
                             break
                         # If AutoILA is disabled, use the following condition
                         elif "No Sockets found" in screenoutput:
-                            break 
+                            break
                         time.sleep(1)
 
         execute(screens, hosts=all_runfarm_ips)
@@ -573,8 +573,8 @@ class FireSimTopologyWithPasses:
 
             def get_jobs_completed_local_info():
                 # this is a list of jobs completed, since any completed job will have
-                # a directory within this directory.
-                jobscompleted = os.listdir(self.workload.job_results_dir)
+                # a directory (or .tar.gz file) within this directory.
+                jobscompleted = [os.path.splitext(p)[0] for p in os.listdir(self.workload.job_results_dir)]
                 rootLogger.debug("dir based jobs completed: " + str(jobscompleted))
                 return jobscompleted
 
