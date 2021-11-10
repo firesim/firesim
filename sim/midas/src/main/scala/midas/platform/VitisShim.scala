@@ -4,25 +4,60 @@ package platform
 import chisel3._
 import chisel3.util._
 import junctions._
+import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyRawModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{DMANastiKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
+import midas.platform.xilinx._
+
+object VitisConstants {
+  // Configurable through v++
+  val kernelDefaultFreqMHz = 300.0
+}
 
 class VitisShim(implicit p: Parameters) extends PlatformShim {
-  lazy val module = new LazyModuleImp(this) {
-    val io = IO(new Bundle{
-      val master = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
-      //val dma  = Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) })))
-    })
-    //val io_slave  = IO(HeterogeneousBag(top.module.mem.map(x => x.cloneType)))
+  val ctrlAXI4BundleParams = AXI4BundleParameters(
+    p(CtrlNastiKey).addrBits,
+    p(CtrlNastiKey).dataBits,
+    p(CtrlNastiKey).idBits)
 
-    top.module.ctrl <> io.master
-    //top.module.dma  <> io.dma
-    //io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
+  lazy val module = new LazyRawModuleImp(this) {
+    val ap_rst_n    = IO(Input(AsyncReset()))
+    val ap_clk      = IO(Input(Clock()))
+    val s_axi_lite  = IO(Flipped(new XilinxAXI4Bundle(ctrlAXI4BundleParams, isAXI4Lite = true)))
+
+    val ap_rst = (!ap_rst_n.asBool)
+
+    // Setup Internal Clocking
+    val firesimMMCM = Module(new MMCM(
+      VitisConstants.kernelDefaultFreqMHz,
+      p(DesiredHostFrequency),
+      "firesim_clocking"))
+    firesimMMCM.io.clk_in1 := ap_clk
+    firesimMMCM.io.reset   := ap_rst.asAsyncReset
+
+    val hostClock = firesimMMCM.io.clk_out1
+
+    /**
+      * Synchronizes an active high asynchronous reset.
+      */
+    def resetSync(areset: AsyncReset, clock: Clock, length: Int = 3): Bool = {
+      withClockAndReset(clock, areset) {
+        val sync_regs = Seq.fill(length)(RegInit(true.B))
+        sync_regs.foldLeft(false.B) { case (prev, curr) => curr := prev; curr }
+      }
+    }
+
+    // Synchronize asyncReset passed to kernel
+    val hostAsyncReset = (ap_rst || !firesimMMCM.io.locked).asAsyncReset
+    val hostSyncReset = resetSync(hostAsyncReset, hostClock)
+
+    top.module.reset := hostSyncReset
+    top.module.clock := hostClock
 
     // tie-off dma/io_slave interfaces
     top.module.dma.ar.valid := false.B
@@ -30,12 +65,6 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     top.module.dma.w.valid  := false.B
     top.module.dma.r.ready  := false.B
     top.module.dma.b.ready  := false.B
-
-    //io.dma.ar.ready := false.B
-    //io.dma.aw.ready := false.B
-    //io.dma.w.ready  := false.B
-    //io.dma.r.valid  := false.B
-    //io.dma.b.valid  := false.B
 
     top.module.mem.foreach({ case bundle =>
       bundle.ar.ready := false.B
@@ -45,31 +74,27 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
       bundle.b.valid  := false.B
     })
 
-    //io_slave.foreach({ case bundle =>
-    //  bundle.ar.valid := false.B
-    //  bundle.aw.valid := false.B
-    //  bundle.w.valid  := false.B
-    //  bundle.r.ready  := false.B
-    //  bundle.b.ready  := false.B
-    //})
+    val ctrl_cdc = Module(new AXI4ClockConverter(ctrlAXI4BundleParams, "ctrl_cdc", isAXI4Lite = true))
+    ctrl_cdc.io.s_axi <> s_axi_lite
+    ctrl_cdc.io.s_axi_aclk := ap_clk
+    ctrl_cdc.io.s_axi_aresetn := (!ap_rst).asAsyncReset
 
-    // Biancolin: It would be good to put in writing why ID is being reassigned...
-    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 1 << p(CtrlNastiKey).idBits)
-    top.module.ctrl.aw.bits.id := wCounterValue
+    ctrl_cdc.io.m_axi_aclk := hostClock
+    ctrl_cdc.io.m_axi_aresetn := (!hostSyncReset).asAsyncReset
 
-    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 1 << p(CtrlNastiKey).idBits)
-    top.module.ctrl.ar.bits.id := rCounterValue
+    // All this awful block of code does is convert between three different
+    // AXI4 bundle formats (Xilinx, RC Standard, Legacy Nasti).
+    val axi4ToNasti = Module(new AXI42NastiIdentityModule(ctrlAXI4BundleParams))
 
-    // Capture FPGA-toolflow related verilog defines
-    def channelInUse(idx: Int): String = if (idx < top.dramChannelsRequired) "1" else "0"
+    // Clock and reset are provided here only to enable assertion generation
+    ctrl_cdc.io.m_axi.driveStandardAXI4(axi4ToNasti.io.axi4, hostClock, hostSyncReset)
+    top.module.ctrl <> axi4ToNasti.io.nasti
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
-      s"""|// Optionally instantiate additional memory channels if required.
-          |// The first channel (C) is provided by the shell and is not optional.
-          |`define USE_DDR_CHANNEL_A ${channelInUse(1)}
-          |`define USE_DDR_CHANNEL_B ${channelInUse(2)}
-          |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
-          |""".stripMargin,
+      s"// Vitis Shim requires no dynamically generated macros \n",
       fileSuffix = ".defines.vh")
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      s"# Currenty unused",
+      ".env.tcl")
   }
 }
