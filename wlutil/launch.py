@@ -73,7 +73,7 @@ def getQemuCmd(config, nodisk=False):
     return " ".join(cmd) + " " + config.get('qemu-args', '')
 
 
-def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
+def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
     """Launches the specified workload in functional simulation.
 
     cfgName: unique name of the workload in the cfgs
@@ -81,8 +81,8 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
     jobs: List of job names to launch. If jobs is None we use the parent of
     all the jobs (i.e.  the top-level workload in the config).
     spike: Use spike instead of the default qemu as the functional simulator
-    interactive: If true, the output from the simulator will be displayed to
-        stdout. If false, only the uartlog will be written (it is written live and
+    silent: If false, the output from the simulator will be displayed to
+        stdout. If true, only the uartlog will be written (it is written live and
         unbuffered so users can still 'tail' the output if they'd like).
 
     Returns: Path of output directory
@@ -103,6 +103,7 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
     baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
 
     jobProcs = []
+    screenIdentifier = {}
 
     try:
         for config in configs:
@@ -113,24 +114,31 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
 
                 if spike:
                     if 'img' in config and not config['nodisk']:
-                        sys.exit("Spike currently does not support disk-based " +
+                        sys.exit("\nSpike currently does not support disk-based " +
                                  "configurations. Please use an initramfs based image.")
                     cmd = getSpikeCmd(config, config['nodisk'])
                 else:
                     cmd = getQemuCmd(config, config['nodisk'])
-
-                log.info("Running: " + "".join(cmd))
-                if not interactive:
+                    
+                log.info(f'\nLaunching job {config['name']}') 
+                log.info(f'Running: {cmd}')
+                if silent:
                     log.info("For live output see: " + str(uartLog))
                 
                 scriptCmd = f'script -f -c "{cmd}" {uartLog}'
                 
-                if interactive and (jobs is None):
+                if not silent and len(configs) == 1:
                     jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
                 else:
                     jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-D", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
                 
-                log.info('Opened screen session for {0} with identifier {0}'.format(config['name']))
+                screenIdentifiers.update({config['name']: config['name']})
+                log.info('Opened screen session for {0} with identifier {1}'.format(config['name'], screenIdentifiers[config['name']]))
+
+        log.info("\nList of screen session identifers:")
+        for config in configs:
+            log.info(f'{config['name']}: {screenIdentifiers[config['name']]}')
+        log.info("\n")
     
         for proc in jobProcs:
             proc.wait()

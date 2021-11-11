@@ -151,11 +151,11 @@ def testWorkload(cfgName, cfgs, verbose=False, spike=False, cmp_only=None):
                 for jName in cfg['jobs'].keys():
                     log.info("Running job " + jName)
                     with timeout(testCfg['runTimeout'], 'launch job' + jName):
-                        wllaunch.launchWorkload(cfg, jobs=[jName], spike=spike, interactive=verbose)
+                        wllaunch.launchWorkload(cfg, jobs=[jName], spike=spike, silent=not verbose)
             else:
                 log.info("Running workload")
                 with timeout(testCfg['runTimeout'], 'launch'):
-                    wllaunch.launchWorkload(cfg, spike=spike, interactive=verbose)
+                    wllaunch.launchWorkload(cfg, spike=spike, silent=not verbose)
 
         log.info("Testing outputs")
         strip = False
