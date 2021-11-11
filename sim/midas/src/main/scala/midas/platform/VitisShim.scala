@@ -9,7 +9,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyRawModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
-import midas.core.{DMANastiKey}
+import midas.core.{DMANastiKey, HostMemChannelKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.platform.xilinx._
@@ -17,6 +17,9 @@ import midas.platform.xilinx._
 object VitisConstants {
   // Configurable through v++
   val kernelDefaultFreqMHz = 300.0
+
+  // This is wider than the addresses used in FPGATop
+  val axi4MAddressBits = 64
 }
 
 class VitisShim(implicit p: Parameters) extends PlatformShim {
@@ -25,10 +28,16 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     p(CtrlNastiKey).dataBits,
     p(CtrlNastiKey).idBits)
 
+  val hostMemAXI4BundleParams = p(HostMemChannelKey)
+    .axi4BundleParams
+    .copy(addrBits = VitisConstants.axi4MAddressBits)
+
+
   lazy val module = new LazyRawModuleImp(this) {
     val ap_rst_n    = IO(Input(AsyncReset()))
     val ap_clk      = IO(Input(Clock()))
     val s_axi_lite  = IO(Flipped(new XilinxAXI4Bundle(ctrlAXI4BundleParams, isAXI4Lite = true)))
+    val host_mem_0    = IO((new XilinxAXI4Bundle(hostMemAXI4BundleParams)))
 
     val ap_rst = (!ap_rst_n.asBool)
 
@@ -89,6 +98,19 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     // Clock and reset are provided here only to enable assertion generation
     ctrl_cdc.io.m_axi.driveStandardAXI4(axi4ToNasti.io.axi4, hostClock, hostSyncReset)
     top.module.ctrl <> axi4ToNasti.io.nasti
+
+
+    val host_mem_cdc = Module(new AXI4ClockConverter(hostMemAXI4BundleParams, "host_mem_cdc"))
+    host_mem_cdc.io.s_axi.drivenByStandardAXI4(top.module.mem(0), hostClock, hostSyncReset)
+    host_mem_cdc.io.s_axi_aclk := hostClock
+    host_mem_cdc.io.s_axi_aresetn := (!hostSyncReset).asAsyncReset
+    host_mem_cdc.io.s_axi.araddr := 0x400000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).ar.bits.addr
+    host_mem_cdc.io.s_axi.awaddr := 0x400000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).aw.bits.addr
+
+    host_mem_0 <> host_mem_cdc.io.m_axi
+    host_mem_cdc.io.m_axi_aclk := ap_clk
+    host_mem_cdc.io.m_axi_aresetn := ap_rst_n
+
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       s"// Vitis Shim requires no dynamically generated macros \n",
