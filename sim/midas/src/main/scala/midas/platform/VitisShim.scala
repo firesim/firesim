@@ -104,8 +104,10 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     host_mem_cdc.io.s_axi.drivenByStandardAXI4(top.module.mem(0), hostClock, hostSyncReset)
     host_mem_cdc.io.s_axi_aclk := hostClock
     host_mem_cdc.io.s_axi_aresetn := (!hostSyncReset).asAsyncReset
-    host_mem_cdc.io.s_axi.araddr := 0x400000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).ar.bits.addr
-    host_mem_cdc.io.s_axi.awaddr := 0x400000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).aw.bits.addr
+    host_mem_cdc.io.s_axi.araddr := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).ar.bits.addr
+    host_mem_cdc.io.s_axi.awaddr := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).aw.bits.addr
+    host_mem_cdc.io.s_axi.arcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
+    host_mem_cdc.io.s_axi.awcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
 
     host_mem_0 <> host_mem_cdc.io.m_axi
     host_mem_cdc.io.m_axi_aclk := ap_clk
