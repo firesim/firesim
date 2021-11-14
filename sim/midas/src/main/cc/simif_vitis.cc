@@ -65,7 +65,7 @@ void simif_vitis_t::write(size_t addr, uint32_t data) {
     addr <<= CTRL_AXI4_SIZE;
     kernel_handle.write_register(addr, data);
 
-    fprintf(stdout, "DEBUG: Write 0x%lx(%ld):%d\n", addr, addr/4, data);
+    //fprintf(stdout, "DEBUG: Write 0x%lx(%ld):%d\n", addr, addr/4, data);
     //exit(1);
 }
 
@@ -75,7 +75,7 @@ uint32_t simif_vitis_t::read(size_t addr) {
     uint32_t value;
     value = kernel_handle.read_register(addr);
 
-    fprintf(stdout, "DEBUG: Read 0x%lx(%ld):%d\n", addr, addr/4, value);
+    //fprintf(stdout, "DEBUG: Read 0x%lx(%ld):%d\n", addr, addr/4, value);
     //exit(1);
 
     return value & 0xFFFFFFFF;
