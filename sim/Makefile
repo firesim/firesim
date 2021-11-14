@@ -27,7 +27,7 @@ TARGET_PROJECT ?= firesim
 TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)/Makefrag
 
 # The host-platform type (currently only f1 supported)
-PLATFORM ?= f1
+PLATFORM ?= vitis
 
 ifdef FIRESIM_STANDALONE
 
