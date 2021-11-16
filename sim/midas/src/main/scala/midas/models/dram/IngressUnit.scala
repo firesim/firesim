@@ -94,28 +94,59 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
                        ((awCredits.value < wCredits.value) && awCredits.inc) ||
                         awCredits.inc && wCredits.inc
 
+  val read_req_done = arQueue.io.enq.fire()
   when (!io.relaxed) {
     Seq(awCredits, wCredits) foreach { _.dec := write_req_done }
   }
 
+  val addrWidth = p(NastiKey).addrBits
+  val readMatcher = Module(new FIFOAddressMatcher(cfg.maxReads, addrWidth)).io
+  readMatcher.enq.valid := tFireHelper.fire(arQueue.io.enq.ready) && io.nastiInputs.hBits.ar.valid
+  readMatcher.enq.bits := io.nastiInputs.hBits.ar.bits.addr
+  readMatcher.deq := arQueue.io.deq.fire() 
+  readMatcher.match_address := io.nastiInputs.hBits.aw.bits.addr
 
-  val read_req_done = arQueue.io.enq.fire
+  val writeMatcher = Module(new FIFOAddressMatcher(cfg.maxWrites, addrWidth)).io
+  writeMatcher.enq.valid := tFireHelper.fire(awQueue.io.enq.ready) && io.nastiInputs.hBits.aw.valid
+  writeMatcher.enq.bits := io.nastiInputs.hBits.aw.bits.addr
+  writeMatcher.deq := awQueue.io.deq.fire() 
+  writeMatcher.match_address := io.nastiInputs.hBits.aw.bits.addr
 
   // FIFO that tracks the relative order of reads and writes are they are received 
   // bit 0 = Read, bit 1 = Write
   val xaction_order = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
+  val xaction_order_collisions = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
   xaction_order.io.enqA.valid := read_req_done
   xaction_order.io.enqA.bits := true.B
   xaction_order.io.enqB.valid := write_req_done
   xaction_order.io.enqB.bits := false.B
+  xaction_order_collisions.io.enqA.valid := read_req_done
+  xaction_order_collisions.io.enqA.bits := writeMatcher.hit
+  xaction_order_collisions.io.enqB.valid := write_req_done
+  xaction_order_collisions.io.enqB.bits := readMatcher.hit
 
-  val do_hread = io.relaxed ||
+  val writeCollisions = SatUpDownCounter(cfg.maxWrites)
+
+  val readCollisions = SatUpDownCounter(cfg.maxReads)
+
+  writeCollisions.inc := awQueue.io.enq.fire() && readMatcher.hit && io.nastiInputs.hBits.aw.valid 
+  writeCollisions.dec := xaction_order.io.deq.valid && xaction_order.io.deq.bits &&
+                           xaction_order_collisions.io.deq.valid && xaction_order_collisions.io.deq.bits
+  readCollisions.inc := arQueue.io.enq.fire() && writeMatcher.hit && io.nastiInputs.hBits.ar.valid
+  readCollisions.dec := !xaction_order.io.deq.valid && xaction_order.io.deq.bits &&
+                           xaction_order_collisions.io.deq.valid && xaction_order_collisions.io.deq.bits
+
+  val collisions = writeCollisions.value === 0.U && readCollisions.value === 0.U
+
+
+  val do_hread = io.relaxed || collisions ||
     (io.host_mem_idle || io.host_read_inflight) && xaction_order.io.deq.valid && xaction_order.io.deq.bits
 
-  val do_hwrite = Mux(io.relaxed, !awCredits.empty,
+  val do_hwrite = Mux((io.relaxed || collisions), !awCredits.empty,
     io.host_mem_idle && xaction_order.io.deq.valid && !xaction_order.io.deq.bits)
 
   xaction_order.io.deq.ready := io.nastiOutputs.ar.fire || io.nastiOutputs.aw.fire
+  xaction_order_collisions.io.deq.ready := io.nastiOutputs.ar.fire || io.nastiOutputs.aw.fire
 
   val do_hwrite_data_reg = RegInit(false.B)
   when (io.nastiOutputs.aw.fire) {
@@ -124,7 +155,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
     do_hwrite_data_reg := false.B
   }
 
-  val do_hwrite_data = Mux(io.relaxed, !wCredits.empty, do_hwrite_data_reg)
+  val do_hwrite_data = Mux((io.relaxed || collisions), !wCredits.empty, do_hwrite_data_reg)
 
 
   io.nastiInputs.hReady := !ingressUnitStall
