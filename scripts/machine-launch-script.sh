@@ -68,7 +68,11 @@ python3 -m pip install --user moto
 # needed for the awstools cmdline parsing
 python3 -m pip install --user pyyaml
 
-activate-global-python-argcomplete
+# setup argcomplete
+activate-global-python-argcomplete --user
+echo "for bcfile in /home/centos/.bash_completion.d/* ; do" >> /home/centos/.bash_completion
+echo "  [ -f "$bcfile" ] && . $bcfile" >> /home/centos/.bash_completion
+echo "done" >> /home/centos/.bash_completion
 
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 

@@ -6,9 +6,9 @@ import pprint
 import logging
 import datetime
 
-from switch_model_config import *
-from firesim_topology_core import *
-from utils import MacAddress
+from runtools.switch_model_config import *
+from runtools.firesim_topology_core import *
+from runtools.utils import MacAddress
 from fabric.api import *
 from colorama import Fore, Style
 import types

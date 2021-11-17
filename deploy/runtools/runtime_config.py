@@ -4,7 +4,7 @@ simulation tasks. """
 from __future__ import print_function
 
 from time import strftime, gmtime
-import ConfigParser
+import configparser
 import pprint
 import logging
 
@@ -223,7 +223,7 @@ class RuntimeHWDB:
     as endpoints on the simulation. """
 
     def __init__(self, hardwaredbconfigfile):
-        agfidb_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        agfidb_configfile = configparser.ConfigParser(allow_no_value=True)
         agfidb_configfile.read(hardwaredbconfigfile)
         agfidb_dict = {s:dict(agfidb_configfile.items(s)) for s in agfidb_configfile.sections()}
 
@@ -240,7 +240,7 @@ class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.ini """
 
     def __init__(self, runtimeconfigfile, configoverridedata):
-        runtime_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        runtime_configfile = configparser.ConfigParser(allow_no_value=True)
         runtime_configfile.read(runtimeconfigfile)
         runtime_dict = {s:dict(runtime_configfile.items(s)) for s in runtime_configfile.sections()}
 
