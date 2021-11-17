@@ -3,6 +3,7 @@
 #include "autocounter.h"
 
 #include <iostream>
+#include <regex>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
@@ -19,6 +20,14 @@ autocounter_t::autocounter_t(
     std::vector<std::string> &args,
     AUTOCOUNTERBRIDGEMODULE_struct * mmio_addrs,
     AddressMap addr_map,
+    const uint32_t event_count,
+    const char* const* event_types,
+    const uint32_t* event_widths,
+    const uint32_t* accumulator_widths,
+    const uint32_t* event_addr_hi,
+    const uint32_t* event_addr_lo,
+    const char* const* event_msgs,
+    const char* const* event_labels,
     const char* const  clock_domain_name,
     const unsigned int clock_multiplier,
     const unsigned int clock_divisor,
@@ -26,33 +35,43 @@ autocounter_t::autocounter_t(
         bridge_driver_t(sim),
         mmio_addrs(mmio_addrs),
         addr_map(addr_map),
+        event_count(event_count),
+        event_types       (event_types,        event_types + event_count),
+        event_widths      (event_widths,       event_widths + event_count),
+        accumulator_widths(accumulator_widths, accumulator_widths + event_count),
+        event_addr_hi     (event_addr_hi,      event_addr_hi + event_count),
+        event_addr_lo     (event_addr_lo,      event_addr_lo + event_count),
+        event_msgs        (event_msgs,         event_msgs + event_count),
+        event_labels      (event_labels,       event_labels + event_count),
         clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
 
-    this->readrate = 0;
     this->autocounter_filename = "AUTOCOUNTER";
     const char *autocounter_filename_in = NULL;
     std::string readrate_arg = std::string("+autocounter-readrate=");
-    std::string filename_arg = std::string("+autocounter-filename=");
+    std::string filename_arg = std::string("+autocounter-filename-base=");
 
     for (auto &arg: args) {
         if (arg.find(readrate_arg) == 0) {
             char *str = const_cast<char*>(arg.c_str()) + readrate_arg.length();
             uint64_t base_cycles = atol(str);
-            this->readrate = this->clock_info.to_local_cycles(base_cycles);
-            // TODO: Just fix this in the bridge by not sampling with a fixed frequency
-            if (this->clock_info.to_base_cycles(this->readrate) != base_cycles) {
+            this->readrate_base_clock = base_cycles;
+            this->readrate = this->clock_info.to_local_cycles(this->readrate_base_clock);
+            // TODO: Fix this in the bridge by not sampling with a fixed frequency
+            if (this->clock_info.to_base_cycles(this->readrate) != this->readrate_base_clock) {
                 fprintf(stderr,
-"[AutoCounter] Warning: requested sample rate of %llu [base] cycles does not map to a whole number\n\
+"[AutoCounter] Warning: requested sample rate of %" PRIu64 " [base] cycles does not map to a whole number\n\
                        of cycles in clock domain: %s, (%d/%d) of base clock.\n",
-                       base_cycles, this->clock_info.domain_name,
-                       this->clock_info.multiplier, this->clock_info.divisor);
+                       this->readrate_base_clock,
+                       this->clock_info.domain_name,
+                       this->clock_info.multiplier,
+                       this->clock_info.divisor);
                 fprintf(stderr, "[AutoCounter] Workaround: Pick a sample rate that is divisible by all clock divisors.\n");
             }
 
         }
         if (arg.find(filename_arg) == 0) {
             autocounter_filename_in = const_cast<char*>(arg.c_str()) + filename_arg.length();
-            this->autocounter_filename = std::string(autocounter_filename_in) + std::to_string(autocounterno);
+            this->autocounter_filename = std::string(autocounter_filename_in) + std::to_string(autocounterno) + ".csv";
         }
     }
 
@@ -60,7 +79,7 @@ autocounter_t::autocounter_t(
     if(!autocounter_file.is_open()) {
       throw std::runtime_error("Could not open output file: " + this->autocounter_filename);
     }
-    this->clock_info.emit_file_header(autocounter_file);
+    emit_autocounter_header();
 }
 
 autocounter_t::~autocounter_t() {
@@ -68,37 +87,74 @@ autocounter_t::~autocounter_t() {
 }
 
 void autocounter_t::init() {
-    cur_cycle = 0;
     // Decrement the readrate by one to simplify the HW a little bit
     write(addr_map.w_registers.at("readrate_low"), (readrate - 1) & ((1ULL << 32) - 1));
     write(addr_map.w_registers.at("readrate_high"), this->readrate >> 32);
     write(mmio_addrs->init_done, 1);
 }
 
+std::string replace_all(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+    return str;
+}
+
+std::string quote_csv_element(std::string str) {
+    std::string quoted = replace_all(str, "\"", "\"\"");
+    return '"' + quoted + '"';
+}
+
+template<typename T>
+void write_header_array_to_csv(std::ofstream& f, std::vector<T>& row, std::string first_column) {
+    f << first_column << ",";
+    assert(!row.empty());
+    for  (auto it = row.begin(); it != row.end(); it++) {
+        f << *it;
+        if ((it + 1) != row.end()) {
+            f << ",";
+        } else {
+            f << std::endl;
+        }
+    }
+}
+
+void autocounter_t::emit_autocounter_header() {
+
+    autocounter_file << "version," << autocounter_csv_format_version << std::endl;
+    autocounter_file << clock_info.as_csv_row();
+
+    auto quoted_descriptions = std::vector<std::string>();
+    for (auto &desc: event_msgs) {
+        quoted_descriptions.push_back(quote_csv_element(desc));
+    }
+
+    write_header_array_to_csv(autocounter_file, event_labels,       "label");
+    write_header_array_to_csv(autocounter_file, quoted_descriptions,"\"description\"");
+    write_header_array_to_csv(autocounter_file, event_types,        "type");
+    write_header_array_to_csv(autocounter_file, event_widths,       "event width");
+    write_header_array_to_csv(autocounter_file, accumulator_widths, "accumulator width");
+}
+
 bool autocounter_t::drain_sample() {
   bool bridge_has_sample = read(addr_map.r_registers.at("countersready"));
-
   if (bridge_has_sample) {
-    cur_cycle = read(this->mmio_addrs->cycles_low);
-    cur_cycle |= ((uint64_t)read(this->mmio_addrs->cycles_high)) << 32;
-    autocounter_file << "Cycle " << cur_cycle << std::endl;
-    autocounter_file << "============================" << std::endl;
-    for (auto pair: addr_map.r_registers) {
+    cur_cycle_base_clock += readrate_base_clock;
+    autocounter_file << cur_cycle_base_clock << ",";
+    for (size_t idx = 0; idx < event_count; idx++) {
+      uint64_t counter_val = ((uint64_t) (read(event_addr_hi[idx]))) << 32;
+      counter_val |= read(event_addr_lo[idx]);
+      autocounter_file << counter_val;
 
-      std::string low_prefix = std::string("autocounter_low_");
-      std::string high_prefix = std::string("autocounter_high_");
-
-      if (pair.first.find("autocounter_low_") == 0) {
-          char *str = const_cast<char*>(pair.first.c_str()) + low_prefix.length();
-          std::string countername(str);
-          uint64_t counter_val = ((uint64_t) (read(addr_map.r_registers.at(high_prefix + countername)))) << 32;
-          counter_val |= read(pair.second);
-          autocounter_file << "PerfCounter " << str << ": " << counter_val << std::endl;
+      if (idx < (event_count - 1)) {
+        autocounter_file << ",";
+      } else {
+        autocounter_file << std::endl;
       }
-
     }
     write(addr_map.w_registers.at("readdone"), 1);
-    autocounter_file << "" << std::endl;
   }
   return bridge_has_sample;
 }
