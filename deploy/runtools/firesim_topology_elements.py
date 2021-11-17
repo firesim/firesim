@@ -301,6 +301,7 @@ class FireSimServerNode(FireSimNode):
                             local_dir=job_dir,
                             ssh_opts="-o StrictHostKeyChecking=no",
                             extra_opts="-L",
+                            upload=False,
                             capture=True)
                     rootLogger.debug(rsync_cap)
                     rootLogger.debug(rsync_cap.stderr)
@@ -324,6 +325,7 @@ class FireSimServerNode(FireSimNode):
                         local_dir=job_dir,
                         ssh_opts="-o StrictHostKeyChecking=no",
                         extra_opts="-L",
+                        upload=False,
                         capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
