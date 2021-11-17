@@ -43,41 +43,32 @@ cd ..
 sudo yum -y install bash-completion
 
 # graphviz for manager
-sudo yum -y install graphviz python-devel
+sudo yum -y install graphviz
 
 # used for CI
 sudo yum -y install expect
 
-# pip2 no longer installed on FPGA developer AMIs
-sudo yum -y install python-pip
-# In the event it is (as on an older AMI), upgrade it just in case
-sudo pip2 install --upgrade pip==20.3.4
-# these need to match what's in deploy/requirements.txt
-sudo pip2 install fabric==1.14.0
-sudo pip2 install boto3==1.6.2
-sudo pip2 install colorama==0.3.7
-sudo pip2 install argcomplete==1.9.3
-sudo pip2 install graphviz==0.8.3
+# upgrade pip
+pip3 install --user --upgrade pip
+# install requirements
+python3 -m pip install --user fab-classic
+python3 -m pip install --user boto3
+python3 -m pip install --user colorama
+python3 -m pip install --user argcomplete
+python3 -m pip install --user graphviz
 # for some of our workload plotting scripts
-sudo pip2 install --upgrade --ignore-installed pyparsing
-sudo pip2 install numpy==1.16.6
-sudo pip2 install kiwisolver==1.1.0
-sudo pip2 install matplotlib==2.2.2
-sudo pip2 install pandas==0.22.0
-# new awscli on 1.6.0 AMI is broken with our versions of boto3
-sudo pip2 install awscli==1.15.76
-# pip2 should install pytest 4.6.X as it's the last py2 release. see:
-# https://pytest.org/en/latest/py27-py34-deprecation.html#what-this-means-for-general-users
-sudo pip2 install pytest
-# moto 1.3.1 is newest version that will work with boto3 1.6.2
-sudo pip2 install moto==1.3.1
+python3 -m pip install --user --upgrade --ignore-installed pyparsing
+python3 -m pip install --user numpy
+python3 -m pip install --user kiwisolver
+python3 -m pip install --user matplotlib
+python3 -m pip install --user pandas
+python3 -m pip install --user awscli
+python3 -m pip install --user pytest
+python3 -m pip install --user moto
 # needed for the awstools cmdline parsing
-sudo pip2 install pyyaml
+python3 -m pip install --user pyyaml
 
-sudo activate-global-python-argcomplete
-
-# Upgrading pip2 clobbers the pip3 installation paths.
-sudo yum reinstall -y python36-pip
+activate-global-python-argcomplete
 
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 

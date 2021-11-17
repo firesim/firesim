@@ -1,7 +1,5 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
-
-# REQUIRES PYTHON2, because fabric requires python2
 
 from __future__ import with_statement, print_function
 import sys
