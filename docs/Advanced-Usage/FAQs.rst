@@ -65,7 +65,8 @@ For example, if you want to use ZFS to transparently compress data:
    This is where data will be stored in a compressed format.
 #. Make sure that the volume is attached (using something like ``lsblk -f``).
    This new volume should not have a filesystem type and should be unmounted (named something like ``nvme1n1``).
-#. Install ZFS according to https://zfsonlinux.org/
+#. Install ZFS according to <https://openzfs.github.io/openzfs-docs/Getting%20Started/RHEL-based%20distro/index.html>.
+   Check `/etc/redhat-release` to verify the CentOS version of the manager instance.
 #. Mount the volume and setup the ZFS filesystem with compression. 
 
 ::
