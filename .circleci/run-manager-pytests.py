@@ -9,7 +9,7 @@ def run_manager_pytests():
     """ Runs all manager pytests """
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("cd deploy && python -m pytest")
+        run("cd deploy && python3 -m pytest")
 
 if __name__ == "__main__":
     execute(run_manager_pytests, hosts=[manager_hostname(ci_workflow_id)])
