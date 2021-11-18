@@ -66,14 +66,16 @@ For example, if you want to use ZFS to transparently compress data:
 #. Make sure that the volume is attached (using something like ``lsblk -f``).
    This new volume should not have a filesystem type and should be unmounted (named something like ``nvme1n1``).
 #. Install ZFS according to <https://openzfs.github.io/openzfs-docs/Getting%20Started/RHEL-based%20distro/index.html>.
-   Check `/etc/redhat-release` to verify the CentOS version of the manager instance.
-#. Mount the volume and setup the ZFS filesystem with compression. 
+   Check ``/etc/redhat-release`` to verify the CentOS version of the manager instance.
+#. Mount the volume and setup the ZFS filesystem with compression.
+
 .. warning::
     Creating the zpool will destroy all pre-existing data on that partition.  Double-check that the device node is correct before running any commands.
 ::
+
     zpool create -o ashift=12 -O compression=on <POOL_NAME> /dev/nvme1n1
     zpool list
     zfs list
 
 #. At this point, you can use ``/<POOL_NAME>`` as a normal directory to store data into where it will
-   be compressed.
+   be compressed. To see the compression ratio, use ``zfs get compressratio``.
