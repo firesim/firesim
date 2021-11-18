@@ -45,7 +45,7 @@ cd ..
 sudo yum -y install bash-completion
 
 # graphviz for manager
-sudo yum -y install graphviz
+sudo yum -y install graphviz python-devel
 
 # used for CI
 sudo yum -y install expect
