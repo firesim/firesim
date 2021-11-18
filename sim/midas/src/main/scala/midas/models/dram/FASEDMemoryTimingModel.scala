@@ -282,7 +282,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       maxReqLength = cfg.maxReadLength,
       maxReqsPerId = cfg.maxReadsPerID))
 
-    readEgress.io.enq <> nastiToHostDRAM.r
+    ingress.io.nastiRRespInputs <> nastiToHostDRAM.r
+    readEgress.io.enq <> ingress.io.nastiRespOutputs.r 
     readEgress.io.enq.bits.user := DontCare
 
     val writeEgress = Module(new WriteEgress(
@@ -290,7 +291,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       maxReqLength = cfg.maxWriteLength,
       maxReqsPerId = cfg.maxWritesPerID))
 
-    writeEgress.io.enq <> nastiToHostDRAM.b
+    ingress.io.nastiWRespInputs <> nastiToHostDRAM.b
+    writeEgress.io.enq <> ingress.io.nastiRespOutputs.b 
     writeEgress.io.enq.bits.user := DontCare
 
     // Track outstanding requests to the host memory system
