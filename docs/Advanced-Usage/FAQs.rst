@@ -53,3 +53,25 @@ interactive simulation, or you've connected the NIC to the internet), this is
 likely a bug in one of your custom bridge implementations or in FireSim. In
 fact, for a given target-design, enabling printf synthesis, assertion synthesis,
 autocounter, or Auto ILA, should not change the simulated behavior of the machine.
+
+Is there a way to compress workload results when copying back to the manager instance?
+--------------------------------------------------------------------------------------
+
+FireSim doesn't support compressing workload results before copying them back to the manager instance.
+Instead we recommend that you use a modern filesystem (like ZFS) to provide compression for you.
+For example, if you want to use ZFS to transparently compress data:
+
+#. Attach a new volume to your EC2 instance (either at runtime or during launch).
+   This is where data will be stored in a compressed format.
+#. Make sure that the volume is attached (using something like ``lsblk -f``).
+   This new volume should not have a filesystem type and should be unmounted (named something like ``nvme1n1``).
+#. Install ZFS according to https://zfsonlinux.org/
+#. Mount the volume and setup the ZFS filesystem with compression. 
+
+::
+    zpool create <MOUNTPOINT> /dev/nvme1n1
+    zpool list
+    zfs set compression=gzip <MOUNTPOINT>
+
+#. At this point, you can use the ``<MOUNTPOINT>`` area as a normal folder to store data into where it will
+   be compressed.
