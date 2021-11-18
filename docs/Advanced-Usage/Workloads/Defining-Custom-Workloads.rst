@@ -100,7 +100,7 @@ when a workload running on a simulated cluster with ``firesim runworkload``
 completes, ``/etc/os-release`` will be copied out from each rootfs and placed
 in the job's output directory within the workload's output directory (See
 the :ref:`firesim-runworkload` section). You can add multiple paths
-here.
+here. Additionally, you can use bash globbing for file names (ex: ``file*name``).
 
 The ``common_simulation_outputs`` field is a list of outputs that the manager
 will copy off of the simulation host machine AFTER a simulation completes. In
@@ -111,7 +111,8 @@ full console output of the simulated system) and ``memory_stats.csv`` files
 will be copied out of the simulation's base directory on the host instance and
 placed in the job's output directory within the workload's output directory
 (see the :ref:`firesim-runworkload` section). You can add multiple
-paths here.
+paths here. Additionally, you can use bash globbing for file names
+(ex: ``file*name``).
 
 ..
   TODO: this is no longer relevant with firemarshal
@@ -125,7 +126,7 @@ paths here.
 Non-uniform Workload JSON (explicit job per simulated node)
 ---------------------------------------------------------------
 
-Now, we'll look at the ``ping-latency`` workload, which explicitly defines a 
+Now, we'll look at the ``ping-latency`` workload, which explicitly defines a
 job per simulated node.
 
 .. include:: /../deploy/workloads/ping-latency-firemarshal.json
