@@ -221,7 +221,8 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
                 "InstanceMarketOptions":marketconfig,
             }
             if user_data_file is not None:
-                instance_args["UserData"] = "file://{}".format(user_data_file)
+                with open(user_data_file, "r") as f:
+                    instance_args["UserData"] = ''.join(f.readlines())
 
             instance = ec2.create_instances(**instance_args)
             instances += instance

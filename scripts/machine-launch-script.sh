@@ -4,6 +4,8 @@ set -ex
 set -o pipefail
 
 echo "machine launch script started" > /home/centos/machine-launchstatus
+sudo chgrp centos /home/centos/machine-launchstatus
+sudo chown centos /home/centos/machine-launchstatus
 
 {
 sudo yum install -y ca-certificates
@@ -48,31 +50,30 @@ sudo yum -y install graphviz
 # used for CI
 sudo yum -y install expect
 
+# todo: figure out how to setup on a per user basis
+
 # upgrade pip
-pip3 install --user --upgrade pip
+sudo pip3 install --upgrade pip
 # install requirements
-python3 -m pip install --user fab-classic
-python3 -m pip install --user boto3
-python3 -m pip install --user colorama
-python3 -m pip install --user argcomplete
-python3 -m pip install --user graphviz
+sudo python3 -m pip install fab-classic
+sudo python3 -m pip install boto3
+sudo python3 -m pip install colorama
+sudo python3 -m pip install argcomplete
+sudo python3 -m pip install graphviz
 # for some of our workload plotting scripts
-python3 -m pip install --user --upgrade --ignore-installed pyparsing
-python3 -m pip install --user numpy
-python3 -m pip install --user kiwisolver
-python3 -m pip install --user matplotlib
-python3 -m pip install --user pandas
-python3 -m pip install --user awscli
-python3 -m pip install --user pytest
-python3 -m pip install --user moto
+sudo python3 -m pip install --upgrade --ignore-installed pyparsing
+sudo python3 -m pip install numpy
+sudo python3 -m pip install kiwisolver
+sudo python3 -m pip install matplotlib
+sudo python3 -m pip install pandas
+sudo python3 -m pip install awscli
+sudo python3 -m pip install pytest
+sudo python3 -m pip install moto
 # needed for the awstools cmdline parsing
-python3 -m pip install --user pyyaml
+sudo python3 -m pip install pyyaml
 
 # setup argcomplete
-activate-global-python-argcomplete --user
-echo "for bcfile in /home/centos/.bash_completion.d/* ; do" >> /home/centos/.bash_completion
-echo "  [ -f "$bcfile" ] && . $bcfile" >> /home/centos/.bash_completion
-echo "done" >> /home/centos/.bash_completion
+activate-global-python-argcomplete
 
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 
