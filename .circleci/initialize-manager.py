@@ -20,7 +20,7 @@ def initialize_manager(max_runtime):
     try:
 	# wait until machine launch is complete
         with cd(manager_home_dir):
-            run("timeout 10m tail -f machine-launchstatus | sed '/machine launch script completed/ q'")
+            run("timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)")
 
         with cd(manager_home_dir):
             run("git clone https://github.com/firesim/firesim.git")
