@@ -86,6 +86,9 @@ sudo activate-global-python-argcomplete
 # Upgrading pip2 clobbers the pip3 installation paths.
 sudo apt-get -y install --reinstall python3-pip
 
+# default /bin/sh to bash (not dash)
+sudo dpkg-reconfigure -p critical dash
+
 } 2>&1 | tee $HOME/machine-launchstatus.log
 
 echo "machine launch script completed" >> $HOME/machine-launchstatus

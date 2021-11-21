@@ -39,6 +39,15 @@ def valid_aws_configure_creds():
         return False
     return True
 
+def is_on_ec2():
+    """ Determine if code is running on ec2 instance. """
+
+    curl_connection_timeout = 10
+    with settings(warn_only=True), hide('everything'):
+        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/meta-data/instance-id""".format(curl_connection_timeout), capture=True)
+
+    return (res.return_code == 0)
+
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
     vpcname, securitygroupname, keyname, etc.

@@ -135,8 +135,11 @@ else
         bash -c "source ./hdk_setup.sh"
 EOF
 
+    # copy back aws-fpga results
+    rsync -azp --ignore-existing -e "ssh $SSH_OPTS" centos@$IP_ADDR:firesim/platforms/f1/aws-fpga/ $RDIR/platforms/f1/aws-fpga
+
     # copy back built results (prevent overwriting the current dir)
-    rsync -avzp --ignore-existing -e "ssh $SSH_OPTS" centos@$IP_ADDR:firesim/ $RDIR
+    rsync -azp --ignore-existing -e "ssh $SSH_OPTS" centos@$IP_ADDR:firesim/build $RDIR
 
     # terminate AMI instance using awstools
     python $RDIR/deploy/awstools/awstools.py terminate
