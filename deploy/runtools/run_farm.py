@@ -79,7 +79,10 @@ class EC2Inst(object):
         return self.boto3_instance_object is not None
 
     def get_private_ip(self):
-        return self.boto3_instance_object.private_ip_address
+        if is_on_ec2():
+            return self.boto3_instance_object.private_ip_address
+        else:
+            return self.boto3_instance_object.public_ip_address
 
     def add_switch(self, firesimswitchnode):
         """ Add a switch to the next available switch slot. """
@@ -547,7 +550,7 @@ class InstanceDeployManager:
         self.instance_logger("Starting Vivado virtual JTAG.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
-  
+
     def kill_ila_server(self):
         """ Kill the vivado hw_server and virtual jtag """
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
