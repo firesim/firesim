@@ -80,9 +80,9 @@ class EC2Inst(object):
 
     def get_private_ip(self):
         if is_on_ec2():
-            return self.boto3_instance_object.private_ip_address
+            return "centos@" + self.boto3_instance_object.private_ip_address
         else:
-            return self.boto3_instance_object.public_ip_address
+            return "centos@" + self.boto3_instance_object.public_ip_address
 
     def add_switch(self, firesimswitchnode):
         """ Add a switch to the next available switch slot. """

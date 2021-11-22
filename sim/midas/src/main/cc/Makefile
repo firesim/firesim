@@ -33,7 +33,7 @@ $(OUT_DIR)/dramsim2_ini: $(testchip_dir)/dramsim2_ini
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
 # The trailing whitespace is important for some reason...
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas 
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas -static
 
 design_v  := $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
 design_h  := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.h
