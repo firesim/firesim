@@ -17,13 +17,6 @@ from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
 
-@parallel
-def instance_liveness():
-    """ confirm that all instances are running first. """
-    rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        run("uname -a")
-
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
     on the topology to map it all the way to something usable to deploy a simulation.
@@ -396,7 +389,6 @@ class FireSimTopologyWithPasses:
             my_node.instance_deploy_manager.infrasetup_instance()
 
         all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
-        execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
     def boot_simulation_passes(self, use_mock_instances_for_testing, skip_instance_binding=False):
@@ -420,7 +412,6 @@ class FireSimTopologyWithPasses:
             my_node.instance_deploy_manager.start_switches_instance()
 
         all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
-        execute(instance_liveness, hosts=all_runfarm_ips)
         execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
         @parallel
@@ -465,7 +456,7 @@ class FireSimTopologyWithPasses:
                             break
                         # If AutoILA is disabled, use the following condition
                         elif "No Sockets found" in screenoutput:
-                            break 
+                            break
                         time.sleep(1)
 
         execute(screens, hosts=all_runfarm_ips)

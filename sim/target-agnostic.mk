@@ -170,7 +170,7 @@ fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
-$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
+$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -L$(fpga_dir)/sdk/userspace/lib -lfpga_mgmt
 
 # Compile Driver
 $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)

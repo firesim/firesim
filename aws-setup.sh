@@ -131,7 +131,6 @@ else
         # pull down some IP, so we don't have to waste time doing it each time on
         # worker instances
         cd ~/firesim/platforms/f1/aws-fpga
-        bash -c "source ./sdk_setup.sh"
         bash -c "source ./hdk_setup.sh"
 EOF
 
@@ -140,6 +139,11 @@ EOF
 
     # copy back built results (prevent overwriting the current dir)
     rsync -azp --ignore-existing -e "ssh $SSH_OPTS" centos@$IP_ADDR:firesim/build $RDIR
+
+    # install userspace sdk locally
+    pushd $RDIR/platforms/f1/aws-fpga
+    bash -c "source ./sdk_setup.sh"
+    popd
 
     # terminate AMI instance using awstools
     python $RDIR/deploy/awstools/awstools.py terminate
