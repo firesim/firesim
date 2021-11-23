@@ -15,10 +15,16 @@ The easiest way to use Marshal is to run it via Chipyard
 FireMarshal independently, you will need the following dependencies:
 
 ## Standard Packages
-centos-requirements.txt is a list of packages for centos7 that are needed by
+``centos-requirements.txt`` is a list of packages for centos7 that are needed by
 marshal. You can install these with:
 ```
 cat centos-requirements.txt | sudo xargs yum install -y
+```
+
+``ubuntu-requirements.txt`` is a list of packages for Ubuntu 18.04 that are needed by marshal.
+You can install these with:
+```
+cat ubuntu-requirements.txt | sudo xargs apt-get install -y
 ```
 
 Package names may be different on other distributions.
