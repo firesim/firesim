@@ -9,6 +9,10 @@ import botocore
 from botocore import exceptions
 from fabric.api import local, hide, settings
 
+# setup basic config for logging
+if __name__ == '__main__':
+    logging.basicConfig()
+
 rootLogger = logging.getLogger()
 
 # this needs to be updated whenever the FPGA Dev AMI changes
@@ -117,8 +121,6 @@ def aws_resource_names():
     base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
 
     return base_dict
-
-
 
 # AMIs are region specific
 def get_f1_ami_id():
@@ -252,6 +254,15 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
             startsubnet += 1
     return instances
 
+def run_block_device_dict():
+    return [ { 'DeviceName': '/dev/sda1', 'Ebs': { 'VolumeSize': 300, 'VolumeType': 'gp2' } } ]
+
+def run_tag_dict():
+    return { 'fsimcluster': "defaultcluster" }
+
+def run_filters_list_dict():
+    return [ { 'Name': 'tag:fsimcluster', 'Values': [ "defaultcluster" ] } ]
+
 def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice):
     return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice,
         blockdevices=[
@@ -264,6 +275,22 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
             },
         ],
         tags={ 'fsimcluster': fsimclustertag })
+
+def get_instances_with_filter(filters, allowed_states=['pending', 'running', 'shutting-down', 'stopping', 'stopped']):
+    """ Produces a list of instances based on a set of provided filters """
+    ec2_client = boto3.client('ec2')
+
+    instance_res = ec2_client.describe_instances(Filters=filters +
+        [{'Name': 'instance-state-name', 'Values' : allowed_states}]
+    )['Reservations']
+
+    instances = []
+    # Collect all instances across all reservations
+    if instance_res:
+        for res in instance_res:
+            if res['Instances']:
+                instances.extend(res['Instances'])
+    return instances
 
 def get_instances_by_tag_type(fsimclustertag, instancetype):
     """ return list of instances that match a tag and instance type """
@@ -317,12 +344,19 @@ def instance_privateip_lookup_table(instances):
     ips_to_instances = zip(ips, instances)
     return { ip: instance for (ip, instance) in ips_to_instances }
 
+def wait_on_instance_boot(instance_id):
+    """ Blocks on EC2 instance boot """
+    ec2_client = boto3.client('ec2')
+    waiter = ec2_client.get_waiter('instance_status_ok')
+    waiter.wait(InstanceIds=[instance_id])
+
 def wait_on_instance_launches(instances, message=""):
     """ Take a list of instances (as returned by create_instances), wait until
     instance is running. """
     rootLogger.info("Waiting for instance boots: " + str(len(instances)) + " " + message)
     for instance in instances:
         instance.wait_until_running()
+        wait_on_instance_boot(instance.id)
         rootLogger.info(str(instance.id) + " booted!")
 
 def terminate_instances(instanceids, dryrun=True):
@@ -454,19 +488,43 @@ def send_firesim_notification(subject, body):
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
 
+def main(args):
+    import argparse
+    import yaml
+    parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("command", choices=["launch", "terminate"], help="Choose to launch or terminate instances")
+    parser.add_argument("--inst_type", default="m5.large", help="Instance type. Used by \'launch\'.")
+    parser.add_argument("--inst_amt", type=int, default=1, help="Number of instances to launch. Used by \'launch\'.")
+    parser.add_argument("--market", choices=["ondemand", "spot"], default="ondemand", help="Type of market to get instances. Used by \'launch\'.")
+    parser.add_argument("--int_behavior", choices=["hibernate", "stop", "terminate"], default="terminate", help="Interrupt behavior. Used by \'launch\'.")
+    parser.add_argument("--spot_max_price", default="ondemand", help="Spot Max Price. Used by \'launch\'.")
+    parser.add_argument("--random_subnet", action="store_true", help="Randomize subnets. Used by \'launch\'.")
+    parser.add_argument("--block_devices", type=yaml.safe_load, default=run_block_device_dict(), help="List of dicts with block device information. Used by \'launch\'.")
+    parser.add_argument("--tags", type=yaml.safe_load, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
+    parser.add_argument("--filters", type=yaml.safe_load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
+    args = parser.parse_args(args)
+
+    if args.command == "launch":
+        insts = launch_instances(
+            args.inst_type,
+            args.inst_amt,
+            args.market,
+            args.int_behavior,
+            args.spot_max_price,
+            args.block_devices,
+            args.tags,
+            args.random_subnet)
+        instids = get_instance_ids_for_instances(insts)
+        print("Instance IDs: {}".format(instids))
+        wait_on_instance_launches(insts)
+        print("Launched instance IPs: {}".format(get_private_ips_for_instances(insts)))
+    else: # "terminate"
+        insts = get_instances_with_filter(args.filters)
+        instids = [ inst['InstanceId'] for inst in insts ]
+        terminate_instances(instids, False)
+        print("Terminated instance IDs: {}".format(instids))
+    return 0
+
 if __name__ == '__main__':
-    #""" Example usage """
-    #instanceobjs = launch_instances('c5.4xlarge', 2)
-    #instance_ips = get_private_ips_for_instances(instanceobjs)
-    #instance_ids = get_instance_ids_for_instances(instanceobjs)
-    #wait_on_instance_launches(instanceobjs)
-
-    #print("now terminating!")
-    #terminate_instances(instance_ids, False)
-
-    """ Test SNS """
-    #subscribe_to_firesim_topic("sagark@eecs.berkeley.edu")
-
-    #send_firesim_notification("test subject", "test message")
-
-    print(aws_resource_names())
+    import sys
+    sys.exit(main(sys.argv[1:]))

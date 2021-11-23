@@ -148,7 +148,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     // Now that we've bound registers, snoop the poke register addresses for writes
     // Yay Chisel!
     channelPokes.foreach({ case (addrs: Seq[Int], poked: Bool) =>
-      poked := addrs.map(i => crFile.io.mcr.write(i).valid).reduce(_ || _)
+      poked := addrs.map(i => crFile.io.mcr.activeWriteToAddress(i)).reduce(_ || _)
     })
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {

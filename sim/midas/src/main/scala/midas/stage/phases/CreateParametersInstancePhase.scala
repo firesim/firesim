@@ -5,7 +5,7 @@ package midas.stage.phases
 import midas.OutputDir
 import midas.stage.{ConfigPackageAnnotation, ConfigStringAnnotation}
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, PreservesAll, Unserializable, TargetDirAnnotation}
+import firrtl.options.{Phase, PreservesAll, Unserializable, TargetDirAnnotation, Dependency}
 import firrtl.annotations.NoTargetAnnotation
 import freechips.rocketchip.config.{Parameters, Config}
 
@@ -14,6 +14,8 @@ import java.io.{File}
 case class ConfigParametersAnnotation(p: Parameters) extends NoTargetAnnotation with Unserializable
 
 class CreateParametersInstancePhase extends Phase with PreservesAll[Phase] {
+
+  override val prerequisites = Seq(Dependency(midas.stage.Checks))
 
   // This copies the rocketChip get config code, but adds support for looking up a config class
   // from one of many packages

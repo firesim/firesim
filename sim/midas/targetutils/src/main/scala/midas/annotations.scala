@@ -3,7 +3,7 @@
 package midas.targetutils
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate, requireIsHardware}
 
 import firrtl.{RenameMap}
 import firrtl.annotations._
@@ -24,6 +24,7 @@ case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
 
 object FpgaDebug {
   def apply(targets: chisel3.Data*): Unit = {
+    targets foreach { requireIsHardware(_, "Target passed to FpgaDebug:") }
     targets.map({ t => chisel3.experimental.annotate(FpgaDebugAnnotation(t)) })
   }
 }
@@ -227,8 +228,13 @@ object PerfCounter {
             reset: Reset,
             label: String,
             message: String): Unit = {
+    requireIsHardware(target, "Target passed to PerfCounter:")
+    requireIsHardware(clock,  "Clock passed to PerfCounter:")
+    requireIsHardware(reset,  "Reset passed to PerfCounter:")
     annotate(new ChiselAnnotation {
-      def toFirrtl = AutoCounterFirrtlAnnotation(target.toTarget, clock.toTarget,
+      def toFirrtl = AutoCounterFirrtlAnnotation(
+        target.toTarget,
+        clock.toTarget,
         reset.toTarget, label, message)
     })
   }
@@ -280,6 +286,8 @@ object TriggerSource {
     // Hack: Create dummy nodes until chisel-side instance annotations have been improved
     val clock = WireDefault(Module.clock)
     reset.map(dontTouch.apply)
+    requireIsHardware(target, "Target passed to TriggerSource:")
+    reset.foreach { requireIsHardware(_,  "Reset passed to TriggerSource:") }
     annotate(new ChiselAnnotation {
       def toFirrtl = TriggerSourceAnnotation(target.toNamed.toTarget, clock.toNamed.toTarget, reset.map(_.toTarget), tpe)
     })

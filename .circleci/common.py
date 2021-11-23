@@ -2,6 +2,11 @@ import sys
 import boto3
 from fabric.api import *
 
+# Reuse manager utilities
+from ci_variables import ci_workdir
+sys.path.append(ci_workdir + "/deploy/awstools")
+from awstools import get_instances_with_filter
+
 # Remote paths
 manager_home_dir = "/home/centos"
 manager_fsim_dir = "/home/centos/firesim"
@@ -28,22 +33,6 @@ def get_manager_tag_dict(sha, tag_value):
         'ci-commit-sha1': sha,
         'ci-manager':'',
         unique_tag_key: tag_value}
-
-def get_instances_with_filter(tag_filters, allowed_states=['pending', 'running', 'shutting-down', 'stopping', 'stopped']):
-    """ Produces a list of instances based on a set of provided filters """
-    ec2_client = boto3.client('ec2')
-
-    instance_res = ec2_client.describe_instances(Filters=tag_filters +
-        [{'Name': 'instance-state-name', 'Values' : allowed_states}]
-    )['Reservations']
-
-    instances = []
-    # Collect all instances across all reservations
-    if instance_res:
-        for res in instance_res:
-            if res['Instances']:
-                instances.extend(res['Instances'])
-    return instances
 
 def get_manager_instance(tag_value):
     """ Looks up the manager instance dict using the CI run's unique tag"""
@@ -80,12 +69,6 @@ def manager_hostname(tag_value):
 def get_all_workflow_instances(tag_value):
     """ Grabs a list of all instance dicts sharing the CI run's unique tag """
     return get_instances_with_filter([get_ci_filter(tag_value)])
-
-def wait_on_instance(instance_id):
-    """ Blocks on EC2 instance boot """
-    ec2_client = boto3.client('ec2')
-    waiter = ec2_client.get_waiter('instance_status_ok')
-    waiter.wait(InstanceIds=[instance_id])
 
 def instance_metadata_str(instance):
     """ Pretty prints instance info, including ID, state, and public IP """

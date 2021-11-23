@@ -15,14 +15,13 @@ class GoldenGateStage extends Stage with PreservesAll[Phase] {
   private val phases: Seq[Phase] =
     Seq(
         new firrtl.options.phases.GetIncludes,
+        midas.stage.Checks,
+        midas.stage.AddDerivedAnnotations,
         new midas.stage.phases.CreateParametersInstancePhase,
         new firrtl.stage.phases.AddDefaults,
-        new firrtl.stage.phases.AddImplicitEmitter,
         new firrtl.stage.phases.Checks,
         new firrtl.stage.phases.AddCircuit,
-        new firrtl.stage.phases.AddImplicitOutputFile,
-        new midas.stage.GoldenGateCompilerPhase,
-        new firrtl.stage.phases.WriteEmitted )
+        new midas.stage.GoldenGateCompilerPhase)
       .map(DeletedWrapper(_))
 
 
