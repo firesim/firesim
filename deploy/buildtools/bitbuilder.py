@@ -33,64 +33,65 @@ class BitBuilder:
         self.build_config = build_config
         return
 
-    def get_remote_build_dir(self):
-        if not self.build_config.build_farm_dispatcher.is_local:
-            # remote paths
-            remote_home_dir = ""
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
-
-            # potentially override build dir
-            if self.build_config.build_farm_dispatcher.override_remote_build_dir:
-                remote_home_dir = self.build_config.build_farm_dispatcher.override_remote_build_dir
-
-            return remote_home_dir
-        else:
-            return None
-
     def replace_rtl(self):
-        return
+        raise NotImplementedError
 
     def build_driver(self):
-        return
+        raise NotImplementedError
 
     def build_bitstream(self, bypass=False):
-        return
+        raise NotImplementedError
 
 class F1BitBuilder(BitBuilder):
     def replace_rtl(self):
-        """ Generate Verilog """
-        rootLogger.info("Building AWS F1 Verilog for {}".format(self.build_config.get_chisel_triplet()))
-        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            run("{}/general-scripts/replace-rtl.sh {} {} {} {} \"{}\"".format(
-                get_deploy_dir() + "/buildtools",
-                os.getenv('RISCV', ""),
-                os.getenv('PATH', ""),
-                os.getenv('LD_LIBRARY_PATH', ""),
-                get_deploy_dir() + "/..",
-                self.build_config.make_recipe("PLATFORM=f1 replace-rtl")))
+        """ Generate Verilog from build config """
+        rootLogger.info("Building Verilog for {}".format(str(self.build_config.get_chisel_triplet())))
 
-    def build_driver(self):
-        """ Build FPGA driver """
-        rootLogger.info("Building AWS F1 FPGA driver for {}".format(self.build_config.get_chisel_triplet()))
-        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            run("{}/general-scripts/build-driver.sh {} {} {} {} \"{}\"".format(
-                get_deploy_dir() + "/buildtools",
-                os.getenv('RISCV', ""),
-                os.getenv('PATH', ""),
-                os.getenv('LD_LIBRARY_PATH', ""),
-                get_deploy_dir() + "/..",
-                self.build_config.make_recipe("PLATFORM=f1 driver")))
+        with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
+            prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+            prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+            prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+            prefix('source sourceme-f1-manager.sh'), \
+            prefix('cd sim/'), \
+            InfoStreamLogger('stdout'), \
+            InfoStreamLogger('stderr'):
+            run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
+    def build_driver(build_config):
+        """ Build FireSim FPGA driver from build config """
+        rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
+
+        with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
+            prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+            prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+            prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+            prefix('source sourceme-f1-manager.sh'), \
+            prefix('cd sim/'), \
+            InfoStreamLogger('stdout'), \
+            InfoStreamLogger('stderr'):
+            run(self.build_config.make_recipe("PLATFORM=f1 driver"))
 
     def remote_setup(self):
+        """ Setup CL_DIR on remote machine
+
+        Returns:
+            (str): Path to remote CL_DIR directory (that is setup)
+        """
+
         fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(self.build_config.get_chisel_triplet())
 
         # local paths
         local_awsfpga_dir = "{}/../platforms/f1/aws-fpga".format(get_deploy_dir())
 
         # remote paths
-        remote_home_dir = get_remote_build_dir()
+        remote_home_dir = ""
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            remote_home_dir = run('echo $HOME')
+
+        # potentially override build dir
+        if self.build_config.build_host_dispatcher.override_remote_build_dir:
+            remote_home_dir = self.build_config.build_host_dispatcher.override_remote_build_dir
+
         remote_build_dir = "{}/firesim-build".format(remote_home_dir)
         remote_f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
         remote_awsfpga_dir = "{}/aws-fpga".format(remote_f1_platform_dir)
@@ -126,11 +127,13 @@ class F1BitBuilder(BitBuilder):
         testing purposes when set to True. """
 
         if bypass:
-            self.build_config.build_farm_dispatcher.terminate_build_instance()
+            self.build_config.build_host_dispatcher.release_build_host()
             return
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
+            """ Terminate build host and notify user that build failed """
+
             message_title = "FireSim FPGA Build Failed"
 
             message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
@@ -140,7 +143,7 @@ class F1BitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_farm_dispatcher.terminate_build_instance()
+            self.build_config.build_host_dispatcher.release_build_host()
 
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -152,17 +155,23 @@ class F1BitBuilder(BitBuilder):
         # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple)
         # if remote (aka not locally) then you need to copy things
         cl_dir = ""
+        local_cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_postfix)
 
-        if self.build_config.build_farm_dispatcher.is_local:
-            cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_postfix)
+        # copy over generated RTL into local CL_DIR before remote
+        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+            run("""mkdir -p {}""".format(local_results_dir))
+            run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
+
+        if self.build_config.build_host_dispatcher.is_local:
+            cl_dir = local_cl_dir
         else:
-            cl_dir = remote_setup()
+            cl_dir = remote_setup(self.build_config)
 
         vivado_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # copy script to the cl_dir and execute
             rsync_cap = rsync_project(
-                local_dir="{}/buildtools/platform-specific-scripts/f1/build-bitstream.sh".format(local_deploy_dir),
+                local_dir="{}/../platforms/f1/build-bitstream.sh".format(local_deploy_dir),
                 remote_dir="{}/".format(cl_dir),
                 ssh_opts="-o StrictHostKeyChecking=no",
                 extra_opts="-l", capture=True)
@@ -185,11 +194,11 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return
 
-        if not aws_create_afi():
+        if not aws_create_afi(self.build_config):
             on_build_failure()
             return
 
-        self.build_config.build_farm_dispatcher.terminate_build_instance()
+        self.build_config.build_host_dispatcher.release_build_host()
 
     def aws_create_afi(self):
         """
