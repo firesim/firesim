@@ -42,6 +42,65 @@ class BitBuilder:
     def build_bitstream(self, bypass=False):
         raise NotImplementedError
 
+    def write_to_built_hwdb_entry(name, hwdb_entry):
+        """ Write HWDB entry out to file in built_hwdb_entries area
+
+        Parameters:
+            name (str): name of HWDB entry
+            hwdb_entry (str): string version of hwdb entry
+        Returns:
+            (str): Path to HWDB written
+        """
+
+        # for convenience when generating a bunch of images. you can just
+        # cat all the files in this directory after your builds finish to get
+        # all the entries to copy into config_hwdb.ini
+        hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(local_deploy_dir)
+        hwdb_entry_file_path = """{}/built-hwdb-entries/{}""".format(local_deploy_dir, name)
+        local("mkdir -p " + hwdb_entry_file_location)
+        with open(hwdb_entry_file_location + "/" + name, "w") as outputfile:
+            outputfile.write(hwdb_entry)
+
+    def run_post_build_hook(results_build_dir):
+        """ Execute post_build_hook if it exists
+
+        Parameters:
+            results_build_dir (str): name of folder to pass to post_build_hook
+        """
+
+        if self.build_config.post_build_hook:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                localcap = local("""{} {}""".format(self.build_config.post_build_hook,
+                                                    results_build_dir,
+                                                    capture=True))
+                rootLogger.debug("[localhost] " + str(localcap))
+                rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+    def create_hwdb_entry(name, platform_name, run_platform_lines):
+        """ Create and printout a HWDB entry
+
+        Parameters:
+            name (str): name of HWDB entry
+            platform_name (str): name of platform to run on
+            run_platform_lines (list): string list of lines to add to hwdb entry
+        Returns:
+            (str): String HWDB entry
+        """
+
+        hwdb_entry = "[" + name + "]\n"
+        hwdb_entry += "platform=" + platform_name + "\n"
+        for l in run_platform_lines:
+            hwdb_entry += l + "\n"
+        hwdb_entry += "deploytripletoverride=None\n"
+        hwdb_entry += "customruntimeconfig=None\n"
+
+        message_body = "FireSim FPGA Build Completed\nYour FI has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+
+        rootLogger.info(message_title)
+        rootLogger.info(message_body)
+
+        return hwdb_entry
+
 class F1BitBuilder(BitBuilder):
     def replace_rtl(self):
         """ Generate Verilog from build config """
@@ -277,35 +336,177 @@ class F1BitBuilder(BitBuilder):
             # copy the image to all regions for the current user
             copy_afi_to_all_regions(afi)
 
+            hwdb_entry = self.create_hwdb_entry(afiname, "f1", ["agfi=" + agfi])
+
             message_title = "FireSim FPGA Build Completed"
-            agfi_entry = "[" + afiname + "]\n"
-            agfi_entry += "afgi=" + agfi + "\n"
-            agfi_entry += "deploytripletoverride=None\n"
-            agfi_entry += "customruntimeconfig=None\n"
-            message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+            message_body = "Your AGFI has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
 
             send_firesim_notification(message_title, message_body)
+
+            written_path = self.write_to_built_hwdb_entry(afiname, hwdb_entry)
+            self.run_post_build_hook(results_build_dir)
+
+            rootLogger.info("Build complete! F1 AFI ready. See {}.".format(written_path))
+            return True
+        else:
+            return
+
+class VitisBitBuilder(BitBuilder):
+    def replace_rtl(self):
+        """ Generate Verilog from build config """
+        rootLogger.info("Building Verilog for {}".format(str(self.build_config.get_chisel_triplet())))
+
+        with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
+            prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+            prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+            prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+            prefix('source sourceme-f1-manager.sh'), \
+            prefix('cd sim/'), \
+            InfoStreamLogger('stdout'), \
+            InfoStreamLogger('stderr'):
+            run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
+
+    def build_driver(build_config):
+        """ Build FireSim FPGA driver from build config """
+        rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
+
+        with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
+            prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+            prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+            prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+            prefix('source sourceme-f1-manager.sh'), \
+            prefix('cd sim/'), \
+            InfoStreamLogger('stdout'), \
+            InfoStreamLogger('stderr'):
+            run(self.build_config.make_recipe("PLATFORM=vitis driver"))
+
+    def remote_setup(self):
+        """ Setup CL_DIR on remote machine
+
+        Returns:
+            (str): Path to remote CL_DIR directory (that is setup)
+        """
+
+        fpga_build_postfix = "cl_{}".format(self.build_config.get_chisel_triplet())
+
+        # local paths
+        local_vitis_dir = "{}/../platforms/vitis/".format(get_deploy_dir())
+
+        # remote paths
+        remote_home_dir = ""
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            remote_home_dir = run('echo $HOME')
+
+        # potentially override build dir
+        if self.build_config.build_host_dispatcher.override_remote_build_dir:
+            remote_home_dir = self.build_config.build_host_dispatcher.override_remote_build_dir
+
+        remote_build_dir = "{}/firesim-build".format(remote_home_dir)
+        remote_vitis_dir = "{}/platforms/vitis".format(remote_build_dir)
+
+        # copy aws-fpga to the build instance.
+        # do the rsync, but ignore any checkpoints that might exist on this machine
+        # (in case builds were run locally)
+        # extra_opts -l preserves symlinks
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            run('mkdir -p {}'.format(remote_vitis_dir))
+            rsync_cap = rsync_project(
+                local_dir=local_vitis_dir,
+                remote_dir=remote_vitis_dir,
+                ssh_opts="-o StrictHostKeyChecking=no",
+                exclude="cl_*",
+                extra_opts="-l", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+            rsync_cap = rsync_project(
+                local_dir="{}/{}/".format(local_vitis_dir, fpga_build_postfix),
+                remote_dir='{}/{}'.format(remote_vitis_dir, fpga_build_postfix),
+                ssh_opts="-o StrictHostKeyChecking=no",
+                extra_opts="-l", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+
+        return "{}/{}".format(remote_vitis_dir, fpga_build_postfix)
+
+    def build_bitstream(self, bypass=False):
+        """ Run Vivado, convert tar -> AGFI/AFI. Then terminate the instance at the end.
+        bypass: since this function takes a long time, bypass just returns for
+        testing purposes when set to True. """
+
+        if bypass:
+            self.build_config.build_host_dispatcher.release_build_host()
+            return
+
+        # The default error-handling procedure. Send an email and teardown instance
+        def on_build_failure():
+            """ Terminate build host and notify user that build failed """
+
+            message_title = "FireSim Vitis FPGA Build Failed"
+
+            message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            # for convenience when generating a bunch of images. you can just
-            # cat all the files in this directory after your builds finish to get
-            # all the entries to copy into config_hwdb.ini
-            hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(local_deploy_dir)
-            local("mkdir -p " + hwdb_entry_file_location)
-            with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
-                outputfile.write(agfi_entry)
+            self.build_config.build_host_dispatcher.release_build_host()
 
-            if self.build_config.post_build_hook:
-                with StreamLogger('stdout'), StreamLogger('stderr'):
-                    localcap = local("""{} {}""".format(self.build_config.post_build_hook,
-                                                        results_build_dir,
-                                                        capture=True))
-                    rootLogger.debug("[localhost] " + str(localcap))
-                    rootLogger.debug("[localhost] " + str(localcap.stderr))
+        rootLogger.info("Building Vitis FI from Verilog")
 
-            rootLogger.info("Build complete! AFI ready. See {}.".format(os.path.join(hwdb_entry_file_location,afiname)))
-            return True
+        local_deploy_dir = get_deploy_dir()
+        fpga_build_postfix = "cl_{}".format(self.build_config.get_chisel_triplet())
+        local_results_dir = "{}/results-build/{}".format(local_deploy_dir, self.build_config.get_build_dir_name())
+
+        # cl_dir is the cl_dir that is either local or remote
+        # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple)
+        # if remote (aka not locally) then you need to copy things
+        cl_dir = ""
+        local_cl_dir = "{}/../platforms/vitis/{}".format(local_deploy_dir, fpga_build_postfix)
+
+        # copy over generated RTL into local CL_DIR before remote
+        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+            run("""mkdir -p {}""".format(local_results_dir))
+            run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
+
+        if self.build_config.build_host_dispatcher.is_local:
+            cl_dir = local_cl_dir
         else:
+            cl_dir = remote_setup(self.build_config)
+
+        vitis_result = 0
+        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
+            # TODO: Put script within Vitis area
+            # copy script to the cl_dir and execute
+            rsync_cap = rsync_project(
+                local_dir="{}/../platforms/build-bitstream.sh".format(local_deploy_dir),
+                remote_dir="{}/".format(cl_dir),
+                ssh_opts="-o StrictHostKeyChecking=no",
+                extra_opts="-l", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+
+            vitis_result = run("{}/build-bitstream.sh {}".format(cl_dir, cl_dir)).return_code
+
+        # put build results in the result-build area
+        with StreamLogger('stdout'), StreamLogger('stderr'):
+            rsync_cap = rsync_project(
+                local_dir="{}/".format(local_results_dir),
+                remote_dir="{}".format(cl_dir),
+                ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
+                capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+
+        if vitis_result != 0:
+            on_build_failure()
             return
+
+        finame = self.build_config.name
+        xclbin_path = cl_dir + "/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
+
+        hwdb_entry = self.create_hwdb_entry(finame, "vitis", ["xclbin=" + xclbin_path])
+        written_path = self.write_to_built_hwdb_entry(finame, hwdb_entry)
+        self.run_post_build_hook(results_build_dir)
+
+        rootLogger.info("Build complete! Vitis FI ready. See {}.".format(written_path))
+
+        self.build_config.build_host_dispatcher.release_build_host()
