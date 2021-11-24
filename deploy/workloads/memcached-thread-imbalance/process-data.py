@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # requires see package requirements below
 #
 # usage:

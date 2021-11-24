@@ -21,44 +21,41 @@ gapbs: input = graph500
 
 $(GAP_DIR)/overlay/$(input):
 	cd $(GAP_DIR) && ./gen_run_scripts.sh --binaries --input $(input)
- 
 
-gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input) 
+
+gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input)
 	mkdir -p $@
 	cp $(BASE_LINUX) $@/bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
+	./gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(GAP_DIR)/overlay/$(input) \
 
 memcached-thread-imbalance:
 	mkdir -p $@
-	sudo yum -y install gengetopt
-	sudo pip2 install matplotlib
-	sudo pip2 install pandas
 	cd $@ && git submodule update --init mutilate-loadgen-riscv-release
 	cd $@/mutilate-loadgen-riscv-release && ./build.sh
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/mutilate-loadgen-riscv-release/overlay
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/mutilate-loadgen-riscv-release/overlay
 
 bw-test-two-instances: bw-test-two-instances.json
-	cd ../../sw/network-benchmarks && python build-bw-test.py -n 8
+	cd ../../sw/network-benchmarks && ./build-bw-test.py -n 8
 	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
 
 bw-test-one-instance: bw-test-one-instance.json
-	cd ../../sw/network-benchmarks && python build-bw-test.py -n 4
+	cd ../../sw/network-benchmarks && ./build-bw-test.py -n 4
 	cp ../../sw/network-benchmarks/testbuild/*.riscv $@
 
 ping-latency:
 	mkdir -p $@
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 simperf-test:
 	mkdir -p $@
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 linux-poweroff:
 	mkdir -p $@/overlay
 	cd ../../sw/check-rtc && make print-mcycle-linux
 	cp ../../sw/check-rtc/print-mcycle-linux $@/overlay/
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 simperf-test-scale: simperf-test
 
@@ -69,7 +66,7 @@ flash-stress: simperf-test-latency
 iperf3: iperf3.json
 	mkdir -p $@
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
 
 check-rtc:
 	cd ../../sw/check-rtc && make check-rtc
@@ -79,14 +76,14 @@ check-rtc-linux:
 	cd ../../sw/check-rtc && make check-rtc-linux
 	cp ../../sw/check-rtc/check-rtc-linux $@/overlay
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 checksum-test:
 	cd ../../target-design/chipyard/tests && make checksum.riscv
 
 ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
-	python gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
+	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
 
 fc-test:
 	cd ../../sw/network-benchmarks/fc-test && make

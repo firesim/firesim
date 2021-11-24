@@ -79,7 +79,7 @@ directory name the same. In this case, we have set all of them to
 
 Next, the ``common_bootbinary`` field represents the binary that the simulations
 in this workload are expected to boot from. The manager will copy this binary
-for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is 
+for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is
 relative to the workload's directory, in this case
 ``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
@@ -123,7 +123,7 @@ be fixed in a future release.
 Non-uniform Workload JSON (explicit job per simulated node)
 ---------------------------------------------------------------
 
-Now, we'll look at the ``ping-latency`` workload, which explicitly defines a 
+Now, we'll look at the ``ping-latency`` workload, which explicitly defines a
 job per simulated node.
 
 .. include:: /../deploy/workloads/ping-latency.json
@@ -193,10 +193,10 @@ see in the ``ping-latency`` directory.
 ::
 
     [ from the workloads/ directory ]
-    python gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/br-base.img -s ping-latency/overlay
+    ./gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/br-base.img -s ping-latency/overlay
 
 Notice that we tell this script where the json file lives, where the base rootfs image is, and where we expect to find files
-that we want to include in the generated disk images. This script will take care of the rest and we'll end up with 
+that we want to include in the generated disk images. This script will take care of the rest and we'll end up with
 ``idler-[1-6].ext2``, ``pingee.ext2``, and ``pinger.ext2``!
 
 You'll notice a Makefile in the ``workloads/`` directory -- it contains many
