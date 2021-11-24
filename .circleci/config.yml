@@ -206,6 +206,18 @@ jobs:
       - build-scala-doc
       - push-scaladoc-to-ghpages
 
+  documentation-check:
+    executor: main-env
+    steps:
+      - checkout
+      - run:
+          name: Check that documentation builds with no warnings/errors
+          command: |
+            sudo apt-get update -y
+            sudo apt-get install -y python3-pip
+            sudo pip3 install -r docs/requirements.txt
+            make -C docs html
+
   cull-old-ci-instances:
     executor: aws
     steps:
@@ -220,6 +232,8 @@ workflows:
 
   firesimCIall:
     jobs:
+     - documentation-check
+
      - setup-default-manager
 
      - build-default-workloads:
