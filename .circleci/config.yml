@@ -214,7 +214,7 @@ jobs:
           name: Check that documentation builds with no warnings/errors
           command: |
             sudo yum update -y
-            sudo yum install -y python3-pip
+            sudo yum install -y python3-pip make
             sudo pip3 install -r docs/requirements.txt
             make -C docs html
 
