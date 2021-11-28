@@ -2,7 +2,7 @@
 #
 
 # You can set these variables from the command line.
-PHINXOPTS    = -w warnings.txt -n -W
+SPHINXOPTS    = -w warnings.txt -n -W
 SPHINXBUILD   = python3 -msphinx
 SPHINXPROJ    = FireSim
 SOURCEDIR     = .
