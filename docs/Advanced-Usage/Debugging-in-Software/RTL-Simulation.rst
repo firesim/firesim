@@ -1,6 +1,7 @@
+.. _meta-simulation:
+
 Debugging & Testing with Meta-Simulation
 =========================================
-.. _meta-simulation:
 
 When we speak of RTL simulation in FireSim, we are generally referring to
 `meta-simulation`: simulating the FireSim simulator's RTL, typically using VCS or
@@ -23,10 +24,10 @@ ones. This illustrated in the chart below.
 ====== ===== =======  ========= ============= =============
 Type   Waves VCS      Verilator Verilator -O1 Verilator -O2
 ====== ===== =======  ========= ============= =============
-Target Off   4.8 kHz  3.9 kHz   6.6 kHz       N/A          
-Target On    0.8 kHz  3.0 kHz   5.1 kHz       N/A          
-Meta   Off   3.8 kHz  2.4 kHz   4.5 kHz       5.3 KHz      
-Meta   On    2.9 kHz  1.5 kHz   2.7 kHz       3.4 KHz      
+Target Off   4.8 kHz  3.9 kHz   6.6 kHz       N/A
+Target On    0.8 kHz  3.0 kHz   5.1 kHz       N/A
+Meta   Off   3.8 kHz  2.4 kHz   4.5 kHz       5.3 KHz
+Meta   On    2.9 kHz  1.5 kHz   2.7 kHz       3.4 KHz
 ====== ===== =======  ========= ============= =============
 
 Note that using more aggressive optimization levels when compiling the
@@ -137,7 +138,7 @@ Module Hierarchy
 To build out a simulator, Golden Gate adds multiple layers of module hierarchy to the target
 design and performs additional hierarchy mutations to implement bridges and
 resource optimizations. Meta-simulation uses the ``FPGATop`` module as the
-top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1). 
+top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1).
 The original top-level of the input design is nested three levels below FPGATop:
 
 .. figure:: /img/metasim-module-hierarchy.png

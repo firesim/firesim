@@ -88,7 +88,7 @@ Troubleshooting Dromajo Simulations with MIDAS Simulations
 ----------------------------------------------------------
 
 If FPGA simulation fails with Dromajo, you can use MIDAS-level simulation to determine if your Dromajo setup is correct.
-First refer to :ref:`Debugging & Testing with RTL Simulation` for more information on MIDAS-level simulation.
+First refer to :ref:`meta-simulation` for more information on MIDAS-level simulation.
 The main difference between those instructions and simulations with Dromajo is that you need to manually point to the ``dtb``, ``rom``, and binary files when invoking the simulator.
 Here is an example of a ``make`` command that can be run to check for a correct setup.
 
