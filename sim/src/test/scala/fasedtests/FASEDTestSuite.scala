@@ -99,6 +99,31 @@ abstract class FASEDTest(
 }
 
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
+
+// Sanity checks that target output is the same when using the default runtime
+// configuration and the hardwired values.
+class CheckHardwiredValuesTest extends FASEDTest("AXI4Fuzzer", "NT10e3_AddrBits16_DefaultConfig", "DefaultF1Config") {
+  val logA = new File(s"$outDir/using-runtime-conf.out")
+  runTest(
+    "verilator",
+    logFile = Some(logA),
+    behaviorSpec = Some("run using a runtime.conf"))
+
+  val logB = new File(s"$outDir/using-hardwired-settings.out")
+  runTest(
+    "verilator",
+    logFile = Some(logB),
+    baseRuntimeConfig = EmptyRuntimeConfig,
+    additionalPlusArgs = Seq("+mm_useHardwareDefaultRuntimeSettings_0"),
+    behaviorSpec = Some("run using initialization values"))
+
+  "Initialization values for configuration registers" should "produce the same target behavior as using the default runtime.conf" in {
+    val aLines = extractLines(logA, "AXI4FuzzMaster_0", headerLines = 0)
+    val bLines = extractLines(logB, "AXI4FuzzMaster_0", headerLines = 0)
+    diffLines(aLines, bLines, logA.getName, logB.getName)
+  }
+}
+
 class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_QuadChannel_DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
 class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig", "DefaultF1Config")
