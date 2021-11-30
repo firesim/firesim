@@ -123,10 +123,17 @@ Our paper describing FireSim's Compiler, _Golden Gate_:
 
 Our paper to appear in ASPLOS 2020 discusses system-level profiling features in FireSim:
 
-> Sagar Karandikar, Albert Ou, Alon Amid, Howard Mao, Randy Katz, Borivoje Nikolić, and Krste Asanović, **FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design**, *To appear, In Proceedings of the Twenty-Fifth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS 2020)*, Lausanne, Switzerland, March 2020.
+> Sagar Karandikar, Albert Ou, Alon Amid, Howard Mao, Randy Katz, Borivoje Nikolić, and Krste Asanović, **FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design**, *In Proceedings of the Twenty-Fifth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS 2020)*, Lausanne, Switzerland, March 2020.
 
 [Paper PDF](https://sagark.org/assets/pubs/fireperf-asplos2020.pdf)
 
+### **IEEE MICRO 2021**: Accessible, FPGA Resource-Optimized Simulation of Multi-Clock Systems in FireSim
+
+In this special issue, we describe the automated instance-multithreading optimization and support for multiple clock domains in the simulated target.
+
+> David Biancolin, Albert Magyar, David Biancolin, Albert Magyar, Sagar Karandikar, Alon Amid, Borivoje Nikolić, Jonathan  Bachrach, Krste Asanović. **Accessible, FPGA Resource-Optimized Simulation of Multi-Clock Systems in FireSim**. *In IEEE Micro Volume: 41, Issue: 4, July-Aug. 1 2021*
+
+[Article PDF](hhttps://davidbiancolin.github.io/papers/micro-firesim2021.pdf)
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
 
