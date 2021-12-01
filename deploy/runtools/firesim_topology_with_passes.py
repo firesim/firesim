@@ -465,7 +465,7 @@ class FireSimTopologyWithPasses:
                             break
                         # If AutoILA is disabled, use the following condition
                         elif "No Sockets found" in screenoutput:
-                            break 
+                            break
                         time.sleep(1)
 
         execute(screens, hosts=all_runfarm_ips)
@@ -501,22 +501,22 @@ class FireSimTopologyWithPasses:
 
             instancestate_map = dict()
             if terminateoncompletion:
-                for instip, instdata in instancestates.iteritems():
+                for instip, instdata in instancestates.items():
                     # if terminateoncompletion and all sims are terminated, the inst must have been terminated
-                    instancestate_map[instip] = all([x[1] for x in instdata['sims'].iteritems()])
+                    instancestate_map[instip] = all([x[1] for x in instdata['sims'].items()])
             else:
                 instancestate_map = {inst: False for inst in instancestates.keys()}
 
             switchstates = []
-            for instip, instdata in instancestates.iteritems():
-                for switchname, switchcompleted in instdata['switches'].iteritems():
+            for instip, instdata in instancestates.items():
+                for switchname, switchcompleted in instdata['switches'].items():
                     switchstates.append({'hostip': instip,
                                          'switchname': switchname,
                                          'running': not switchcompleted})
 
             simstates = []
-            for instip, instdata in instancestates.iteritems():
-                for simname, simcompleted in instdata['sims'].iteritems():
+            for instip, instdata in instancestates.items():
+                for simname, simcompleted in instdata['sims'].items():
                     simstates.append({'hostip': instip,
                                          'simname': simname,
                                          'running': not simcompleted})
@@ -532,7 +532,7 @@ class FireSimTopologyWithPasses:
             totalsims = len(simstates)
             totalinsts = len(instancestate_map.keys())
             runningsims = len([x for x in simstates if x['running']])
-            runninginsts = len([x for x in instancestate_map.iteritems() if not x[1]])
+            runninginsts = len([x for x in instancestate_map.items() if not x[1]])
 
             # clear the screen
             rootLogger.info('\033[2J')

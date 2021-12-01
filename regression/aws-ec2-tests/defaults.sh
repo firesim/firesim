@@ -15,14 +15,14 @@ run () {
     if [ -z $IP_ADDR ]; then
         parse_ip_address
     fi
-    ssh -i $FIRESIM_PEM_FILE -o "StrictHostKeyChecking no" -t $IP_ADDR $@
+    ssh -i $FIRESIM_PEM_FILE -o "StrictHostKeyChecking no" -t $IP_ADDR "bash -l -c '$@'"
 }
 
 run_script () {
     if [ -z $IP_ADDR ]; then
         parse_ip_address
     fi
-    ssh -i $FIRESIM_PEM_FILE -o "StrictHostKeyChecking no" -t $IP_ADDR 'bash -s' < $1 "$2"
+    ssh -i $FIRESIM_PEM_FILE -o "StrictHostKeyChecking no" -t $IP_ADDR 'bash -l -s' < $1 "$2"
 }
 
 

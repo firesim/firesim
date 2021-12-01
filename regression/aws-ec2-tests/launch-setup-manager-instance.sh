@@ -26,12 +26,8 @@ $SCRIPT_DIR/../../deploy/awstools/awstools.py \
 
 rm -rf machine-launch-script.sh
 
-parse_ip_address
-
-echo "Using $IP_ADDR as testing instance"
-
 # make sure managerinit finishes properly
-run "timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)"
+run "timeout 10m grep -q \".*machine launch script complete.*\" <(tail -f machine-launchstatus)"
 
 # setup the repo (similar to ci)
 
@@ -41,5 +37,8 @@ run "cd firesim/ && ./build-setup.sh --fast"
 run "cd firesim/sw/firesim-software && ./init-submodules.sh"
 # use local aws permissions (for now bypass the manager)
 copy ~/.aws/ $IP_ADDR:~/.aws
+copy ~/firesim.pem $IP_ADDR:~/firesim.pem
+copy firesim-managerinit.expect $IP_ADDR:~/firesim-managerinit.expect
+run "./firesim-managerinit.expect"
 
 echo "Success"
