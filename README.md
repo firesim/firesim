@@ -133,7 +133,7 @@ In this special issue, we describe the automated instance-multithreading optimiz
 
 > David Biancolin, Albert Magyar, David Biancolin, Albert Magyar, Sagar Karandikar, Alon Amid, Borivoje Nikolić, Jonathan  Bachrach, Krste Asanović. **Accessible, FPGA Resource-Optimized Simulation of Multi-Clock Systems in FireSim**. *In IEEE Micro Volume: 41, Issue: 4, July-Aug. 1 2021*
 
-[Article PDF](hhttps://davidbiancolin.github.io/papers/micro-firesim2021.pdf)
+[Article PDF](https://davidbiancolin.github.io/papers/firesim-micro21.pdf)
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
 
