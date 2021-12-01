@@ -37,10 +37,10 @@ class BuildHostDispatcher:
         Returns:
             (str or None): Value of argument wanted
         """
-        if not arg_dict.has_key(arg_wanted):
+        if not self.arg_dict.has_key(arg_wanted):
             rootLogger.critical("ERROR: Unable to find arg {} for {}".format(arg_wanted, self.__name__))
             sys.exit(1)
-        return arg_dict.get(arg_wanted)
+        return self.arg_dict.get(arg_wanted)
 
     def request_build_host(self):
         """ Request build host to use for build. """

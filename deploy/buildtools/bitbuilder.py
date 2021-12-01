@@ -17,7 +17,6 @@ from fabric.contrib.console import confirm
 from fabric.contrib.project import rsync_project
 from awstools.afitools import *
 from awstools.awstools import *
-from buildtools.build import get_deploy_dir
 from util.streamlogger import StreamLogger, InfoStreamLogger
 
 rootLogger = logging.getLogger()
@@ -116,7 +115,7 @@ class F1BitBuilder(BitBuilder):
             InfoStreamLogger('stderr'):
             run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
-    def build_driver(build_config):
+    def build_driver(self):
         """ Build FireSim FPGA driver from build config """
         rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
 
@@ -366,7 +365,7 @@ class VitisBitBuilder(BitBuilder):
             InfoStreamLogger('stderr'):
             run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
 
-    def build_driver(build_config):
+    def build_driver(self):
         """ Build FireSim FPGA driver from build config """
         rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
 

@@ -206,8 +206,8 @@ if [ "$IS_CENTOS" == true ]; then
     sudo make install
     cd ../..
     rm -rf e2fsprogs*
-else
-    cat $marshal_dir/ubuntu-requirements.txt | sudo xargs apt-get install -y
+#else
+    #cat $marshal_dir/ubuntu-requirements.txt | sudo xargs apt-get install -y
 fi
 
 if [ "$SLIM_SETUP" != true ]; then

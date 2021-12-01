@@ -9,7 +9,6 @@ from importlib import import_module
 from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import *
 from buildtools.buildhostdispatcher import *
-from buildtools.build import *
 
 class BuildConfig:
     """ Represents a single build configuration used to build RTL/drivers/AFIs. """
