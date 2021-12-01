@@ -12,6 +12,7 @@ from runtools.utils import MacAddress
 from fabric.api import *
 from colorama import Fore, Style
 import types
+from functools import reduce
 
 from util.streamlogger import StreamLogger
 
