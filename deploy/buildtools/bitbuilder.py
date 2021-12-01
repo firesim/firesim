@@ -28,9 +28,30 @@ def get_deploy_dir():
     return deploydir
 
 class BitBuilder:
-    def __init__(self, build_config):
+    def __init__(self, build_config, arg_dict):
         self.build_config = build_config
+        self.arg_dict = arg_dict
         return
+
+    def parse_args(self):
+        # no default args
+        return
+
+    def get_arg(self, arg_wanted):
+        """ Retrieve argument from arg dict and error if not found.
+
+        Parameters:
+            arg_wanted (str): Argument to get value of
+        Returns:
+            (str or None): Value of argument wanted
+        """
+        if not self.arg_dict.has_key(arg_wanted):
+            rootLogger.critical("ERROR: Unable to find arg {} for {}".format(arg_wanted, self.__name__))
+            sys.exit(1)
+        return self.arg_dict.get(arg_wanted)
+
+    def setup(self)
+        raise NotImplementedError
 
     def replace_rtl(self):
         raise NotImplementedError
@@ -101,6 +122,29 @@ class BitBuilder:
         return hwdb_entry
 
 class F1BitBuilder(BitBuilder):
+    def __init__(self, build_config, arg_dict):
+        BitBuilder.__init__(self, build_config, arg_dict)
+
+        self.s3_bucketname = None
+
+    def parse_args(self):
+        """ Parse build host arguments. """
+        # get default arguments
+        BitBuilder.parse_args(self)
+
+        self.s3_bucketname = self.get_arg('s3bucketname')
+        if valid_aws_configure_creds():
+            aws_resource_names_dict = aws_resource_names()
+            if aws_resource_names_dict['s3bucketname'] is not None:
+                # in tutorial mode, special s3 bucket name
+                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+
+    def setup(self):
+        auto_create_bucket(self.s3_bucketname)
+
+        #check to see email notifications can be subscribed
+        get_snsname_arn()
+
     def replace_rtl(self):
         """ Generate Verilog from build config """
         rootLogger.info("Building Verilog for {}".format(str(self.build_config.get_chisel_triplet())))
@@ -270,7 +314,7 @@ class F1BitBuilder(BitBuilder):
 
         afi = None
         agfi = None
-        s3bucket = self.build_config.s3_bucketname
+        s3bucket = self.s3_bucketname
         afiname = self.build_config.name
 
         # construct the "tags" we store in the AGFI description
@@ -351,6 +395,17 @@ class F1BitBuilder(BitBuilder):
             return
 
 class VitisBitBuilder(BitBuilder):
+    def __init__(self, build_config, arg_dict):
+        BitBuilder.__init__(self, build_config, arg_dict)
+
+    def parse_args(self):
+        """ Parse build host arguments. """
+        # get default arguments
+        BitBuilder.parse_args(self)
+
+    def setup(self):
+        return
+
     def replace_rtl(self):
         """ Generate Verilog from build config """
         rootLogger.info("Building Verilog for {}".format(str(self.build_config.get_chisel_triplet())))

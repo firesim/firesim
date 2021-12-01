@@ -9,7 +9,6 @@ import sys
 
 from fabric.api import *
 from runtools.runtime_config import RuntimeHWDB
-from awstools.awstools import auto_create_bucket, get_snsname_arn
 from buildtools.buildconfig import BuildConfig
 
 rootLogger = logging.getLogger()
@@ -68,13 +67,9 @@ class BuildConfigFile:
         self.build_ip_set = set()
 
     def setup(self):
-        """ Setup based on the types of buildhosts """
-        # TODO: how do deal with this on non-AWS hosts
-        #for build in self.builds_list:
-        #    auto_create_bucket(build.s3_bucketname)
-
-        ##check to see email notifications can be subscribed
-        #get_snsname_arn()
+        """ Setup based on the types of buildhosts/bitbuilders """
+        for build in self.builds_list:
+            build.fpga_bit_builder_dispatcher.setup()
 
     def request_build_hosts(self):
         """ Launch an instance for the builds. Exits the program if an IP address is reused. """
