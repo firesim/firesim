@@ -337,7 +337,7 @@ class RunFarm:
 
         if not forceterminate:
             # --forceterminate was not supplied, so confirm with the user
-            userconfirm = raw_input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
+            userconfirm = input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
         else:
             userconfirm = "yes"
 
@@ -547,7 +547,7 @@ class InstanceDeployManager:
         self.instance_logger("Starting Vivado virtual JTAG.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
-  
+
     def kill_ila_server(self):
         """ Kill the vivado hw_server and virtual jtag """
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
