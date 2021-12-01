@@ -128,7 +128,7 @@ def buildafi(globalbuildconf):
     globalbuildconf.wait_on_build_host_initializations()
 
     # run builds, then terminate instances
-    execute(globalbuildconf.build_bitstream, hosts=globalbuildconf.get_build_instance_ips())
+    execute(globalbuildconf.build_bitstream, hosts=globalbuildconf.get_build_host_ips())
 
 
 def tar2afi(globalbuildconf):

@@ -35,12 +35,13 @@ class BuildConfig:
 
         # run platform specific options
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
-        self.s3_bucketname = recipe_config_dict['s3bucketname']
-        if valid_aws_configure_creds():
-            aws_resource_names_dict = aws_resource_names()
-            if aws_resource_names_dict['s3bucketname'] is not None:
-                # in tutorial mode, special s3 bucket name
-                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+        # TODO: Move to bitbuilder (add args to bitbuilder)
+        #self.s3_bucketname = recipe_config_dict['s3bucketname']
+        #if valid_aws_configure_creds():
+        #    aws_resource_names_dict = aws_resource_names()
+        #    if aws_resource_names_dict['s3bucketname'] is not None:
+        #        # in tutorial mode, special s3 bucket name
+        #        self.s3_bucketname = aws_resource_names_dict['s3bucketname']
         self.post_build_hook = recipe_config_dict['postbuildhook']
 
         # retrieve the build host section

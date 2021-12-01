@@ -69,11 +69,12 @@ class BuildConfigFile:
 
     def setup(self):
         """ Setup based on the types of buildhosts """
-        for build in self.builds_list:
-            auto_create_bucket(build.s3_bucketname)
+        # TODO: how do deal with this on non-AWS hosts
+        #for build in self.builds_list:
+        #    auto_create_bucket(build.s3_bucketname)
 
-        #check to see email notifications can be subscribed
-        get_snsname_arn()
+        ##check to see email notifications can be subscribed
+        #get_snsname_arn()
 
     def request_build_hosts(self):
         """ Launch an instance for the builds. Exits the program if an IP address is reused. """
