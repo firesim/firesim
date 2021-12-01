@@ -554,7 +554,7 @@ class VitisBitBuilder(BitBuilder):
             return
 
         finame = self.build_config.name
-        xclbin_path = cl_dir + "/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
+        xclbin_path = cl_dir + "/bitstream/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
 
         results_build_dir = """{}/""".format(local_results_dir)
 
