@@ -50,7 +50,7 @@ class BitBuilder:
             sys.exit(1)
         return self.arg_dict.get(arg_wanted)
 
-    def setup(self)
+    def setup(self):
         raise NotImplementedError
 
     def replace_rtl(self):
@@ -62,7 +62,7 @@ class BitBuilder:
     def build_bitstream(self, bypass=False):
         raise NotImplementedError
 
-    def write_to_built_hwdb_entry(name, hwdb_entry):
+    def write_to_built_hwdb_entry(self, name, hwdb_entry):
         """ Write HWDB entry out to file in built_hwdb_entries area
 
         Parameters:
@@ -71,6 +71,8 @@ class BitBuilder:
         Returns:
             (str): Path to HWDB written
         """
+
+        local_deploy_dir = get_deploy_dir()
 
         # for convenience when generating a bunch of images. you can just
         # cat all the files in this directory after your builds finish to get
@@ -81,7 +83,7 @@ class BitBuilder:
         with open(hwdb_entry_file_location + "/" + name, "w") as outputfile:
             outputfile.write(hwdb_entry)
 
-    def run_post_build_hook(results_build_dir):
+    def run_post_build_hook(self, results_build_dir):
         """ Execute post_build_hook if it exists
 
         Parameters:
@@ -96,7 +98,7 @@ class BitBuilder:
                 rootLogger.debug("[localhost] " + str(localcap))
                 rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-    def create_hwdb_entry(name, platform_name, run_platform_lines):
+    def create_hwdb_entry(self, name, platform_name, run_platform_lines):
         """ Create and printout a HWDB entry
 
         Parameters:
@@ -113,11 +115,6 @@ class BitBuilder:
             hwdb_entry += l + "\n"
         hwdb_entry += "deploytripletoverride=None\n"
         hwdb_entry += "customruntimeconfig=None\n"
-
-        message_body = "FireSim FPGA Build Completed\nYour FI has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
-
-        rootLogger.info(message_title)
-        rootLogger.info(message_body)
 
         return hwdb_entry
 
@@ -384,6 +381,8 @@ class F1BitBuilder(BitBuilder):
             message_title = "FireSim FPGA Build Completed"
             message_body = "Your AGFI has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
 
+            rootLogger.info(message_title)
+            rootLogger.info(message_body)
             send_firesim_notification(message_title, message_body)
 
             written_path = self.write_to_built_hwdb_entry(afiname, hwdb_entry)
@@ -557,9 +556,17 @@ class VitisBitBuilder(BitBuilder):
         finame = self.build_config.name
         xclbin_path = cl_dir + "/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
 
+        results_build_dir = """{}/""".format(local_results_dir)
+
         hwdb_entry = self.create_hwdb_entry(finame, "vitis", ["xclbin=" + xclbin_path])
         written_path = self.write_to_built_hwdb_entry(finame, hwdb_entry)
         self.run_post_build_hook(results_build_dir)
+
+        message_title = "FireSim FPGA Build Completed"
+        message_body = "Your FI has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+
+        rootLogger.info(message_title)
+        rootLogger.info(message_body)
 
         rootLogger.info("Build complete! Vitis FI ready. See {}.".format(written_path))
 
