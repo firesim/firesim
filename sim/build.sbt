@@ -1,6 +1,5 @@
 import Tests._
 
-// This needs to stay in sync with the chisel3 and firrtl git submodules
 val chiselVersion = "3.4.1"
 
 // This is set by CI and should otherwise be unmodified
@@ -16,6 +15,8 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+  libraryDependencies += "edu.berkeley.cs" %% "chisel3" % chiselVersion,
+  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full),
   // ScalaDoc
   autoAPIMappings  := true,
   exportJars := true,
@@ -41,22 +42,14 @@ lazy val chipyardDir = if(firesimAsLibrary) {
 }
 
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
-lazy val chisel        = ProjectRef(workspaceDirectory / "chisel3", "chisel")
-lazy val firrtl        = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
 lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
 lazy val sifive_blocks = ProjectRef(chipyardDir, "sifive_blocks")
 lazy val firechip      = ProjectRef(chipyardDir, "firechip")
 
-// While not built from source, *must* be in sync with the chisel3 git submodule
-// Building from source requires extending sbt-sriracha or a similar plugin and
-//   keeping scalaVersion in sync with chisel3 to the minor version
-lazy val chiselPluginLib = "edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full
-
 lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
-  .dependsOn(chisel)
 
 // We cannot forward reference firesim from midas (this creates a circular
 // dependency on the project definitions), so declare a reference to it
@@ -64,24 +57,19 @@ lazy val targetutils   = (project in file("midas/targetutils"))
 lazy val firesimRef = ProjectRef(file("."), "firesim")
 
 lazy val midas = (project in file("midas"))
-  .dependsOn(rocketchip, firrtl % "test->test")
-  .settings(
-    commonSettings,
-    addCompilerPlugin(chiselPluginLib)
-  )
+  .dependsOn(rocketchip)
+  .settings(libraryDependencies += "edu.berkeley.cs" %% "firrtl" % "1.4.1" % "test")
+  .settings(commonSettings)
+
 
 lazy val firesimLib = (project in file("firesim-lib"))
   .dependsOn(midas, icenet, testchipip, sifive_blocks)
-  .settings(
-    commonSettings,
-    addCompilerPlugin(chiselPluginLib)
-  )
+  .settings(commonSettings)
 
 // Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, SiteScaladocPlugin)
   .settings(commonSettings,
-    addCompilerPlugin(chiselPluginLib),
     git.remoteRepo := "git@github.com:firesim/firesim.git",
     // Publish scala doc only for the library projects -- classes under this
     // project are all integration test-related
@@ -99,4 +87,4 @@ lazy val firesim    = (project in file("."))
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
-  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
