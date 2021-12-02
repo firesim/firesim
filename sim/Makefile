@@ -47,11 +47,8 @@ SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
 SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/target/active.json
 
-# By default build chisel3/firrtl and other subprojects from source
-# Workaround: Specify a firrtl version in system properties so that Treadle uses a
-# compatible version of FIRRTL and not 1.5-SNAPSHOT (which is the default
-# specified in it's build.sbt, and is not overridden by Chipyard's build.sbt)
-override SBT_OPTS += -DfirrtlVersion=1.4.1 -Dsbt.sourcemode=true -Dsbt.workspace=$(chipyard_dir)/tools
+# by default build chisel3/firrtl and other subprojects from source
+override SBT_OPTS += -Dsbt.sourcemode=true -Dsbt.workspace=$(chipyard_dir)/tools
 
 ifdef ENABLE_SBT_THIN_CLIENT
 override SCALA_BUILDTOOL_DEPS += $(SBT_THIN_CLIENT_TIMESTAMP)
