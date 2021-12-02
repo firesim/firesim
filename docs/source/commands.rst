@@ -58,15 +58,17 @@ the image or binary definitions but would still like to test the other.
 
 launch
 --------------------------------------
-The launch command will run the workload in either Qemu (a high-per Qemu will
-be used by default and is the best choice in most circumstances.
 
-:: 
-  ./marshal launch [-s] [-a] [-j JOB] config
-
-Each workload (root/job) is run in its own screen session. In order to interact with or observe a workload, one can attach to the corresponding screen session using standard screen syntax and the identifier listed in the output of `launch`.
+The launch command will run the workload in either Qemu (a high-performance functional simulator) or spike (the official RISC-V ISA simulator). Qemu will be used by default and is the best choice in most circumstances.
 
 ::
+
+  ./marshal launch [-s] [-a] [-j JOB] config
+
+Each workload (root/job) is run in its own screen session. In order to interact with or observe a workload, one can attach to the corresponding screen session using standard screen syntax and the identifier listed in the output of ``launch``.
+
+::
+
   screen -r <screen-identifier>
 
 When running a single workload, FireMarshal attaches to its screen session by default. When running multiple workloads, the user must manually attach to a session of their choice.
