@@ -5,7 +5,6 @@ import sys
 import subprocess as sp
 from . import wlutil
 
-import time
 
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
 def get_free_tcp_port():
@@ -103,7 +102,7 @@ def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
     baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
 
     jobProcs = []
-    screenIdentifier = {}
+    screenIdentifiers = {}
 
     try:
         for config in configs:
@@ -119,36 +118,37 @@ def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
                     cmd = getSpikeCmd(config, config['nodisk'])
                 else:
                     cmd = getQemuCmd(config, config['nodisk'])
-                    
-                log.info(f'\nLaunching job {config['name']}') 
+
+                log.info(f"\nLaunching job {config['name']}")
                 log.info(f'Running: {cmd}')
                 if silent:
                     log.info("For live output see: " + str(uartLog))
-                
+
                 scriptCmd = f'script -f -c "{cmd}" {uartLog}'
-                
+
                 if not silent and len(configs) == 1:
                     jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
                 else:
                     jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-D", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
-                
-                screenIdentifiers.update({config['name']: config['name']})
+
+                screenIdentifiers[config['name']] = config['name']
                 log.info('Opened screen session for {0} with identifier {1}'.format(config['name'], screenIdentifiers[config['name']]))
 
         log.info("\nList of screen session identifers:")
         for config in configs:
-            log.info(f'{config['name']}: {screenIdentifiers[config['name']]}')
+            if config['launch']:
+                log.info(f"{config['name']}: {screenIdentifiers[config['name']]}")
         log.info("\n")
-    
+
         for proc in jobProcs:
             proc.wait()
-    
+
     except Exception:
         for proc in jobProcs:
             proc.terminate()
         raise
 
-    for config in configs:           
+    for config in configs:
         if 'outputs' in config:
             outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
             wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
