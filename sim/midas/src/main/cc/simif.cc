@@ -98,7 +98,7 @@ void simif_t::poke(size_t id, mpz_t& value) {
   size_t size;
   data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
   for (size_t i = 0 ; i < INPUT_CHUNKS[id] ; i++) {
-    write(INPUT_ADDRS[id]+ (i * sizeof(data_t)), i < size ? data[i] : 0);
+    write(INPUT_ADDRS[id]+i, i < size ? data[i] : 0);
   }
 }
 
@@ -106,7 +106,7 @@ void simif_t::peek(size_t id, mpz_t& value) {
   const size_t size = (const size_t)OUTPUT_CHUNKS[id];
   data_t data[size];
   for (size_t i = 0 ; i < size ; i++) {
-    data[i] = read((size_t)OUTPUT_ADDRS[id] + (i * sizeof(data_t)) );
+    data[i] = read((size_t)OUTPUT_ADDRS[id]+i);
   }
   mpz_import(value, size, -1, sizeof(data_t), 0, 0, data);
   if (log) {
