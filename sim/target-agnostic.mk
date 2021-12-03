@@ -42,7 +42,11 @@ DRIVER_H ?=
 # Defined for each platform
 platforms_dir := $(abspath $(firesim_base_dir)/../platforms)
 vitis_CXX_FLAGS ?= -std=c++14 -I$(XILINX_XRT)/include
-vitis_LD_FLAGS ?= -L$(XILINX_XRT)/lib -lxrt_coreutil_static -lboost_filesystem -lboost_system -luuid -ldl --verbose
+
+vitis_LD_FLAGS ?= -L$(XILINX_XRT)/lib
+vitis_LD_FLAGS += -Wl,--whole-archive -lxilinxopencl_static -lxrt++_static -lxrt_core_static -lxrt_coreutil_static -Wl,--no-whole-archive
+vitis_LD_FLAGS += -Wl,--whole-archive -lboost_filesystem -lboost_system -luuid -ldl -lrt -lpthread -Wl,--no-whole-archive
+
 f1_CXX_FLAGS ?= -std=c++11 -I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
 f1_LD_FLAGS ?=
 
