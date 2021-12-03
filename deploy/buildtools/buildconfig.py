@@ -6,7 +6,6 @@ import ConfigParser
 import pprint
 from importlib import import_module
 
-from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import *
 from buildtools.buildhostdispatcher import *
 

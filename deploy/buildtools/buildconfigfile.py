@@ -8,7 +8,7 @@ import logging
 import sys
 
 from fabric.api import *
-from runtools.runtime_config import RuntimeHWDB
+from runtools.runtime_hw_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
 
 rootLogger = logging.getLogger()
