@@ -3,10 +3,11 @@
     - Init. submodules
     - Build toolchain (if need be)
     - Source toolchain file
+1a. Checkout vitis-integration-ontop-fsim-mill in sims/firesim
 2. Run `./scripts/machine-launch-script-ubuntu.sh` in FireSim from $HOME
 3. Run Chipyard's FireSim setup script without setting up AWS EC2 items
     - `./scripts/firesim-setup.sh --library --slim-setup`
-4. Source the FireSim manager
+4. Source the FireSim manager in sims/firesim
 5. Run `firesim managerinit` to setup AWS credentials
 6. Run `aws-setup.sh` to get the final AWS setup
 
