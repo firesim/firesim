@@ -5,9 +5,6 @@ set -o pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source $SCRIPT_DIR/../defaults.sh
-parse_ip_address
-
-echo "Using $IP_ADDR as testing instance"
 
 run_test () {
     TEST_NAME=$1
