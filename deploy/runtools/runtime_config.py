@@ -17,6 +17,7 @@ from runtools.run_farm import RunFarm
 from runtools.runtime_hw_config import *
 from util.streamlogger import StreamLogger
 import os
+from importlib import import_module
 
 LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
@@ -26,7 +27,7 @@ rootLogger = logging.getLogger()
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.ini """
 
-    def __init__(self, runtimeconfigfile, configoverridedata):
+    def __init__(self, runtimeconfigfile, runfarmconfigfile, configoverridedata):
         runtime_configfile = ConfigParser.ConfigParser(allow_no_value=True)
         runtime_configfile.read(runtimeconfigfile)
         runtime_dict = {s:dict(runtime_configfile.items(s)) for s in runtime_configfile.sections()}
@@ -44,25 +45,27 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
-        if runfarmtagprefix != "":
-            runfarmtagprefix += "-"
+        # Setup the runfarm
 
-        self.runfarmtag = runfarmtagprefix + runtime_dict['runfarm']['runfarmtag']
+        run_farm_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        # make option names case sensitive
+        run_farm_configfile.optionxform = str
+        run_farm_configfile.read(runfarmconfigfile)
 
-        aws_resource_names_dict = aws_resource_names()
-        if aws_resource_names_dict['runfarmprefix'] is not None:
-            # if specified, further prefix runfarmtag
-            self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
+        self.run_farm_requested_name = runtime_dict['runfarm']['runfarm']
+        if self.run_farm_requested_name == None:
+            self.run_farm_requested_name  = "f1-runfarm"
+        print(runfarmconfigfile)
+        run_farm_conf_dict = dict(run_farm_configfile.items(self.run_farm_requested_name))
 
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
-        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
+        self.runfarm_class_name = run_farm_conf_dict['providerclass']
+        del run_farm_conf_dict['providerclass']
+        # create dispatcher object using class given and pass args to it
+        self.run_farm_dispatcher = getattr(
+            import_module("runtools.run_farm"),
+            self.runfarm_class_name)(run_farm_conf_dict)
 
-        self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
-        self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
-        self.spot_max_price = runtime_dict['runfarm']['spotmaxprice']
+        self.run_farm_dispatcher.parse_args()
 
         self.topology = runtime_dict['targetconfig']['topology']
         self.no_net_num_nodes = int(runtime_dict['targetconfig']['no_net_num_nodes'])
@@ -123,8 +126,11 @@ class RuntimeConfig:
         rootLogger.debug(self.runtimehwdb)
 
         self.innerconf = InnerRuntimeConfiguration(args.runtimeconfigfile,
+                                                   args.runfarmconfigfile,
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
+
+        self.runfarm = self.innerconf.run_farm_dispatcher
 
         # construct a privateip -> instance obj mapping for later use
         #self.instancelookuptable = instance_privateip_lookup_table(
@@ -134,15 +140,6 @@ class RuntimeConfig:
         # to a server
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
                                        self.innerconf.suffixtag)
-
-        self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
-                               self.innerconf.f1_4xlarges_requested,
-                               self.innerconf.f1_2xlarges_requested,
-                               self.innerconf.m4_16xlarges_requested,
-                               self.innerconf.runfarmtag,
-                               self.innerconf.run_instance_market,
-                               self.innerconf.spot_interruption_behavior,
-                               self.innerconf.spot_max_price)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
