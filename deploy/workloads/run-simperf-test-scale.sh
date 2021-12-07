@@ -72,4 +72,4 @@ loopfunc 2 0 0
 
 loopfunc 1 1 0
 
-$ORIGDIR/simperf-test-scale/simperf-test-scale-results.py $(pwd)/$resultsdir
+python3 $ORIGDIR/simperf-test-scale/simperf-test-scale-results.py $(pwd)/$resultsdir

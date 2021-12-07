@@ -39,7 +39,7 @@ do
     mv $originalfilename $resultsdir/$i
 done
 
-$ORIGDIR/ping-latency/ping-latency-graph.py $(pwd)/$resultsdir
+python3 $ORIGDIR/ping-latency/ping-latency-graph.py $(pwd)/$resultsdir
 
 firesim terminaterunfarm -c workloads/ping-latency-config.ini --forceterminate
 

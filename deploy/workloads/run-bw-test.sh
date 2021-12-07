@@ -40,7 +40,7 @@ do
     mv $originalfilename $resultsdir/$i
 done
 
-$ORIGDIR/bw-test-two-instances/bw-test-graph.py $(pwd)/$resultsdir
+python3 $ORIGDIR/bw-test-two-instances/bw-test-graph.py $(pwd)/$resultsdir
 
 cd $ORIGDIR
 cd ../../

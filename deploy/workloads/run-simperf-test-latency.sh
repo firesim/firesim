@@ -39,7 +39,7 @@ do
     mv $originalfilename $resultsdir/$i
 done
 
-$ORIGDIR/simperf-test-latency/simperf-test-results.py $(pwd)/$resultsdir
+python3 $ORIGDIR/simperf-test-latency/simperf-test-results.py $(pwd)/$resultsdir
 firesim terminaterunfarm -c workloads/simperf-test-latency-config.ini --forceterminate
 
 

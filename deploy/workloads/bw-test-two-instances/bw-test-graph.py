@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import matplotlib
 # don't use xwindow
 matplotlib.use('Agg')

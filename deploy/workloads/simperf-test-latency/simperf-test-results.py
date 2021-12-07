@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import matplotlib
 # don't use xwindow
@@ -63,7 +62,7 @@ def get_simperf_from_file(basedirname):
 
     return [link_latency_us, simperf_mhz]
 
-resultarray = map(get_simperf_from_file, files)
+resultarray = list(map(get_simperf_from_file, files))
 
 link_latency = list(map(lambda x: x[0], resultarray))
 simperf_mhz = list(map(lambda x: x[1][1], resultarray))

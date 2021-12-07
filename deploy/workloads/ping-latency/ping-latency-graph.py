@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import matplotlib
 # don't use xwindow
@@ -53,7 +52,7 @@ def get_average_rtt_from_file(basedirname):
 
     return [link_latency_us, measured_rtt_in_us, ideal_rtt_in_us]
 
-resultarray = map(get_average_rtt_from_file, files)
+resultarray = list(map(get_average_rtt_from_file, files))
 
 link_latency = list(map(lambda x: x[0], resultarray))
 measured_rtt = list(map(lambda x: x[1], resultarray))

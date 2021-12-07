@@ -26,14 +26,14 @@ $(GAP_DIR)/overlay/$(input):
 gapbs:  gapbs.json $(GAP_DIR)/overlay/$(input)
 	mkdir -p $@
 	cp $(BASE_LINUX) $@/bbl-vmlinux
-	./gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
+	python3 gen-benchmark-rootfs.py -w $< -r -b $(BASE_IMAGE) \
 		-s $(GAP_DIR)/overlay/$(input) \
 
 memcached-thread-imbalance:
 	mkdir -p $@
 	cd $@ && git submodule update --init mutilate-loadgen-riscv-release
 	cd $@/mutilate-loadgen-riscv-release && ./build.sh
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/mutilate-loadgen-riscv-release/overlay
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/mutilate-loadgen-riscv-release/overlay
 
 bw-test-two-instances: bw-test-two-instances.json
 	cd ../../sw/network-benchmarks && python3 build-bw-test.py -n 8
@@ -45,17 +45,17 @@ bw-test-one-instance: bw-test-one-instance.json
 
 ping-latency:
 	mkdir -p $@
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 simperf-test:
 	mkdir -p $@
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 linux-poweroff:
 	mkdir -p $@/overlay
 	cd ../../sw/check-rtc && make print-mcycle-linux
 	cp ../../sw/check-rtc/print-mcycle-linux $@/overlay/
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 simperf-test-scale: simperf-test
 
@@ -66,7 +66,7 @@ flash-stress: simperf-test-latency
 iperf3: iperf3.json
 	mkdir -p $@
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE)
 
 check-rtc:
 	cd ../../sw/check-rtc && make check-rtc
@@ -76,14 +76,14 @@ check-rtc-linux:
 	cd ../../sw/check-rtc && make check-rtc-linux
 	cp ../../sw/check-rtc/check-rtc-linux $@/overlay
 	cd $@ && ln -sf ../$(BASE_LINUX) bbl-vmlinux
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/overlay
 
 checksum-test:
 	cd ../../target-design/chipyard/tests && make checksum.riscv
 
 ccbench-cache-sweep:
 	cd ccbench-cache-sweep/ccbench/caches && make ARCH=riscv
-	./gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
+	python3 gen-benchmark-rootfs.py -w $@.json -r -b $(BASE_IMAGE) -s $@/
 
 fc-test:
 	cd ../../sw/network-benchmarks/fc-test && make
