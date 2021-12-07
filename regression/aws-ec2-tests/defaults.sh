@@ -11,6 +11,10 @@ copy () {
     rsync -avzp -e "ssh -o StrictHostKeyChecking=no -i $FIRESIM_PEM_FILE" --exclude '.git' $1 $2
 }
 
+copy_no_sym () {
+    rsync -avzpL -e "ssh -o StrictHostKeyChecking=no -i $FIRESIM_PEM_FILE" --exclude '.git' $1 $2
+}
+
 run () {
     if [ -z $IP_ADDR ]; then
         parse_ip_address
