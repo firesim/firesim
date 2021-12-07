@@ -39,6 +39,6 @@ run "cd firesim/sw/firesim-software && ./init-submodules.sh"
 copy ~/.aws/ $IP_ADDR:~/.aws
 copy ~/firesim.pem $IP_ADDR:~/firesim.pem
 copy firesim-managerinit.expect $IP_ADDR:~/firesim-managerinit.expect
-run "./firesim-managerinit.expect"
+run "cd firesim && source sourceme-f1-manager.sh && cd ../ && ./firesim-managerinit.expect"
 
 echo "Success"

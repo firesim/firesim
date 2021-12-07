@@ -111,7 +111,7 @@ class GlobalBuildConfig:
         self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
 
         # this is a list of actual builds to run
-        builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
+        builds_to_run_list = list(map(lambda x: x[0], global_build_configfile.items('builds')))
 
         build_recipes_configfile = configparser.ConfigParser(allow_no_value=True)
         # make option names case sensitive
@@ -167,7 +167,7 @@ class GlobalBuildConfig:
     def get_build_instance_ips(self):
         """ Return a list of all the build instance IPs, i.e. hosts to pass to
         fabric. """
-        return map(lambda x: x.get_build_instance_private_ip(), self.builds_list)
+        return list(map(lambda x: x.get_build_instance_private_ip(), self.builds_list))
 
     def get_builds_list(self):
         return self.builds_list

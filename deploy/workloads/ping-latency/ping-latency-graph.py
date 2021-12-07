@@ -12,7 +12,7 @@ import os
 
 basedir = sys.argv[1] + "/"
 
-files = map(lambda x: basedir + x, sorted(os.listdir(basedir), key=int))
+files = list(map(lambda x: basedir + x, sorted(os.listdir(basedir), key=int)))
 
 def process_uartlog(uartlogpath):
     """ process the log and then report the mean RTT for this link latency """
@@ -55,9 +55,9 @@ def get_average_rtt_from_file(basedirname):
 
 resultarray = map(get_average_rtt_from_file, files)
 
-link_latency = map(lambda x: x[0], resultarray)
-measured_rtt = map(lambda x: x[1], resultarray)
-ideal_rtt = map(lambda x: x[2], resultarray)
+link_latency = list(map(lambda x: x[0], resultarray))
+measured_rtt = list(map(lambda x: x[1], resultarray))
+ideal_rtt = list(map(lambda x: x[2], resultarray))
 
 print(resultarray)
 

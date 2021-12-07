@@ -192,18 +192,18 @@ class FireSimTopologyWithPasses:
             # Filter out FireSimDummyServerNodes for actually deploying.
             # Infrastructure after this point will automatically look at the
             # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
-            downlinknodes = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
+            downlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches
                 self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
                 m4_16s_used += 1
             elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 # all downlinks are simulations
-                if (len(list(downlinknodes)) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
+                if (len(downlinknodes) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
                     self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
                     self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
                     f1_2s_used += 1
-                elif (len(list(downlinknodes)) <= 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
+                elif (len(downlinknodes) <= 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
                     self.run_farm.f1_4s[f1_4s_used].add_switch(switch)
                     for server in downlinknodes:
                         self.run_farm.f1_4s[f1_4s_used].add_simulation(server)
