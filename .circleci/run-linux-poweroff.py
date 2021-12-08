@@ -18,7 +18,7 @@ def run_linux_poweroff():
                 rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch".format(timeout, workload)).return_code
             if rc != 0:
                 # need to confirm that instance is off
-                run("firesim terminaterunfarm -q {}".format(workload))
+                run("firesim terminaterunfarm -q -c {}".format(workload))
                 sys.exit(1)
 
         run_w_timeout("./deploy/workloads/linux-poweroff-all-no-nic.ini", "30m")
