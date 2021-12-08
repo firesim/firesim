@@ -12,7 +12,7 @@ def initialize_manager(max_runtime):
     """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
 
     max_runtime (hours): The maximum uptime this manager and its associated
-        instances should have before it is stopped. This serves as a redundant check 
+        instances should have before it is stopped. This serves as a redundant check
         in case the workflow-monitor is brought down for some reason.
     """
 
@@ -20,7 +20,11 @@ def initialize_manager(max_runtime):
     try:
 	# wait until machine launch is complete
         with cd(manager_home_dir):
-            run("timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)")
+            with settings(warn_only=True):
+                rc = run("timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)").return_code
+                if rc != 0:
+                    run("cat machine-launchstatus.log")
+                    raise Exception("machine-launch-script.sh failed to run")
 
         with cd(manager_home_dir):
             run("git clone https://github.com/firesim/firesim.git")
