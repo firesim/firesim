@@ -28,7 +28,8 @@ commands:
     steps:
       - run:
           command: |
-            pip3 install -r .circleci/requirements.txt
+            sudo pip3 install --upgrade pip==21.3.1
+            sudo python3 -m pip install -r .circleci/requirements.txt
 
   buildsetup:
     description: "Run firesim's build-setup.sh"
