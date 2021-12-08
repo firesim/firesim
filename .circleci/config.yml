@@ -206,7 +206,7 @@ jobs:
       - run:
           command: |
               .circleci/run-linux-poweroff.py
-            no_output_timeout: 30m
+          no_output_timeout: 30m
 
   run-ini-api-tests:
     executor: aws
@@ -215,7 +215,7 @@ jobs:
       - run:
           command: |
               .circleci/run-ini-api-tests.py
-            no_output_timeout: 30m
+          no_output_timeout: 30m
 
   publish-scala-doc:
     executor: main-env
