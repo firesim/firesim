@@ -18,7 +18,7 @@ def initialize_manager(max_runtime):
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
-	# wait until machine launch is complete
+        # wait until machine launch is complete
         with cd(manager_home_dir):
             with settings(warn_only=True):
                 rc = run("timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)").return_code
@@ -26,7 +26,9 @@ def initialize_manager(max_runtime):
                     run("cat machine-launchstatus.log")
                     raise Exception("machine-launch-script.sh failed to run")
 
-        with cd(manager_home_dir):
+            # add firesim.pem (stored as env. var. w/ \n replaced with ,)
+            run("echo {} | tr , '\n' > firesim.pem".format(os.environ["FIRESIM_PEM"]))
+
             run("git clone https://github.com/firesim/firesim.git")
 
         with cd(manager_fsim_dir):
