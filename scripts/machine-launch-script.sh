@@ -53,24 +53,24 @@ sudo yum -y install expect
 # todo: figure out how to setup on a per user basis
 
 # upgrade pip
-sudo pip3 install --upgrade pip
+sudo pip3 install --upgrade pip==21.3.1
 # install requirements
-sudo python3 -m pip install fab-classic
-sudo python3 -m pip install boto3
-sudo python3 -m pip install colorama
-sudo python3 -m pip install argcomplete
-sudo python3 -m pip install graphviz
+sudo python3 -m pip install fab-classic==1.19.1
+sudo python3 -m pip install boto3=1.20.21
+sudo python3 -m pip install colorama=0.4.3
+sudo python3 -m pip install argcomplete=1.12.3
+sudo python3 -m pip install graphviz=0.19
 # for some of our workload plotting scripts
-sudo python3 -m pip install --upgrade --ignore-installed pyparsing
-sudo python3 -m pip install numpy
-sudo python3 -m pip install kiwisolver
-sudo python3 -m pip install matplotlib
-sudo python3 -m pip install pandas
-sudo python3 -m pip install awscli
-sudo python3 -m pip install pytest
-sudo python3 -m pip install moto
+sudo python3 -m pip install pyparsing==3.0.6
+sudo python3 -m pip install numpy==1.19.5
+sudo python3 -m pip install kiwisolver==1.3.1
+sudo python3 -m pip install matplotlib==3.3.4
+sudo python3 -m pip install pandas==1.1.5
+sudo python3 -m pip install awscli==1.22.21
+sudo python3 -m pip install pytest==6.2.5
+sudo python3 -m pip install moto==2.2.17
 # needed for the awstools cmdline parsing
-sudo python3 -m pip install pyyaml
+sudo python3 -m pip install pyyaml==5.4.1
 
 # setup argcomplete
 activate-global-python-argcomplete
