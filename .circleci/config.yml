@@ -13,7 +13,7 @@ executors:
         MARSHAL_JLEVEL: 8 # This is unset by default, leading to starvation conditions on the manager
   aws:
     docker:
-    - image: cimg/python:3.6.8-node
+    - image: cimg/python:3.6.9-node
 
 commands:
   machinelaunchscript:
