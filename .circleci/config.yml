@@ -199,6 +199,24 @@ jobs:
           test-package: "firesim.firesim"
           test-name: "CITests"
 
+  run-basic-linux-poweroff:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          command: |
+              .circleci/run-linux-poweroff.py
+            no_output_timeout: 30m
+
+  run-ini-api-tests:
+    executor: aws
+    steps:
+      - repo-setup-aws
+      - run:
+          command: |
+              .circleci/run-ini-api-tests.py
+            no_output_timeout: 30m
+
   publish-scala-doc:
     executor: main-env
     steps:
@@ -253,6 +271,14 @@ workflows:
          - run-test-groupB
 
      - run-manager-pytests:
+         requires:
+         - setup-default-manager
+
+     - run-basic-linux-poweroff:
+         requires:
+         - build-default-workloads
+
+     - run-ini-api-tests:
          requires:
          - setup-default-manager
 
