@@ -274,9 +274,15 @@ workflows:
          requires:
          - setup-default-manager
 
+     - run-fpga-tests-hold:
+         type: approval
+         requires:
+         - build-default-workloads
+
      - run-basic-linux-poweroff:
          requires:
          - build-default-workloads
+         - run-fpga-tests-hold
 
      - run-ini-api-tests:
          requires:
