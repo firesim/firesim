@@ -56,10 +56,10 @@ sudo yum -y install expect
 sudo pip3 install --upgrade pip==21.3.1
 # install requirements
 sudo python3 -m pip install fab-classic==1.19.1
-sudo python3 -m pip install boto3=1.20.21
-sudo python3 -m pip install colorama=0.4.3
-sudo python3 -m pip install argcomplete=1.12.3
-sudo python3 -m pip install graphviz=0.19
+sudo python3 -m pip install boto3==1.20.21
+sudo python3 -m pip install colorama==0.4.3
+sudo python3 -m pip install argcomplete==1.12.3
+sudo python3 -m pip install graphviz==0.19
 # for some of our workload plotting scripts
 sudo python3 -m pip install pyparsing==3.0.6
 sudo python3 -m pip install numpy==1.19.5
