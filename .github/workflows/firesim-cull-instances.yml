@@ -15,5 +15,9 @@ jobs:
         with:
           ref: dev
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: |
           .github/scripts/cull-old-ci-instances.py

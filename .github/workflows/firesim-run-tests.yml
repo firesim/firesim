@@ -11,6 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - name: Initialize FireSim manager
         run: |
           .github/scripts/launch-manager-instance.py
@@ -28,6 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: |
           .github/scripts/build-default-workloads.py
 
@@ -40,6 +48,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: |
           .github/scripts/run-manager-pytests.py
 
@@ -52,6 +64,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - uses: ./.github/actions/run-scala-test
         with:
           test-name: "CIGroupA"
@@ -65,6 +81,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - uses: ./.github/actions/run-scala-test
         with:
           test-name: "CIGroupB"
@@ -78,6 +98,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - uses: ./.github/actions/run-scala-test
         with:
           target-project: "firesim"
@@ -93,6 +117,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: |
           .github/scripts/run-linux-poweroff.py
 
@@ -105,6 +133,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: |
           .github/scripts/run-ini-api-tests.py
 

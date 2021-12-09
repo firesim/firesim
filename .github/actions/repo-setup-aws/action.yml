@@ -1,12 +1,22 @@
 name: repo-setup-aws
 description: "Runs all baseline setup to interact with a AWS-hosted manager instance"
 
+aws-access-key-id:
+  description: "aws-access-key-id"
+  required: true
+aws-secret-access-key:
+  description: "aws-secret-access-key"
+  required: true
+aws-default-region:
+  description: "aws-default-region"
+  required: true
+
 runs:
   using: "composite"
   steps:
       - uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          aws-access-key-id: ${{ inputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+          aws-region: ${{ inputs.aws-default-region }}
       - uses: ./.github/actions/install-ci-python-reqs
