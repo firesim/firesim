@@ -29,7 +29,7 @@ def run_build_build_recipes_ini_api_tests():
 
         commands_to_run(
                 ["firesim buildafi"],
-                "-b {}/sample_config_build.ini -r {}/sample_config_build_recipes.ini".format(test_dir))
+                "-b {}/sample_config_build.ini -r {}/sample_config_build_recipes.ini".format(test_dir, test_dir))
 
     run_test("invalid-build-section")
     run_test("invalid-recipe-inst-type")
@@ -65,7 +65,7 @@ def run_runtime_hwdb_ini_api_tests():
 
         commands_to_run(
                 ["firesim launchrunfarm", "firesim infrasetup", "firesim runworkload", "firesim terminaterunfarm -q"],
-                "-c {}/sample_config_runtime.ini -a {}/sample_config_hwdb.ini".format(name))
+                "-c {}/sample_config_runtime.ini -a {}/sample_config_hwdb.ini".format(test_dir, test_dir))
 
     run_test("hwdb-invalid-afi")
     run_test("runtime-invalid-hwconfig")
