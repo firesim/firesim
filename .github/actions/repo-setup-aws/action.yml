@@ -1,18 +1,9 @@
 name: repo-setup-aws
 description: "Runs all baseline setup to interact with a AWS-hosted manager instance"
 
-inputs:
-  ref:
-    description: "Reference to checkout"
-    required: false
-    default: ${{ github.sha }}
-
 runs:
   using: "composite"
   steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ inputs.ref }}
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}

@@ -11,8 +11,9 @@ jobs:
     env:
       TERM: xterm-256-color
     steps:
-      - uses: ./.github/actions/repo-setup-aws
+      - uses: actions/checkout@v2
         with:
           ref: dev
+      - uses: ./.github/actions/repo-setup-aws
       - run: |
           .github/scripts/cull-old-ci-instances.py

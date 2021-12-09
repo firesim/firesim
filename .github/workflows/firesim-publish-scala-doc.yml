@@ -15,6 +15,7 @@ jobs:
       image: firesim/firesim-ci:v1.1
       options: --entrypoint /bin/bash --user centos
     steps:
-        - uses: ./.github/actions/repo-setup
-        - uses: ./.github/actions/build-scala-doc
-        - uses: ./.github/actions/push-scaladoc-to-ghpages
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/repo-setup
+      - uses: ./.github/actions/build-scala-doc
+      - uses: ./.github/actions/push-scaladoc-to-ghpages
