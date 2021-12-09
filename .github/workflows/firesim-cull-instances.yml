@@ -1,0 +1,18 @@
+name: firesim-cull-instances
+
+on:
+  schedule:
+    - cron: "0 0,12 * * *"
+
+jobs:
+  cull-old-ci-instances:
+    name: cull-old-ci-instances
+    runs-on: ubuntu-latest
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: ./.github/actions/repo-setup-aws
+        with:
+          ref: dev
+      - run: |
+          .github/scripts/cull-old-ci-instances.py

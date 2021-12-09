@@ -1,0 +1,8 @@
+name: machinelaunchscript
+description: "Run FireSim's machine-launch-script.sh"
+
+runs:
+  using: "composite"
+  steps:
+    - run: cd scripts/ && /usr/bin/bash machine-launch-script.sh
+      shell: bash

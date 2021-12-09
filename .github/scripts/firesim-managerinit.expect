@@ -1,0 +1,9 @@
+#! /usr/bin/env expect
+set timeout -1
+spawn firesim managerinit
+send -- "[lindex $argv 0]\r"
+send -- "[lindex $argv 1]\r"
+send -- "[lindex $argv 2]\r"
+send -- "json\r"
+send -- "\r"
+expect eof

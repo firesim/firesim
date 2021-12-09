@@ -1,0 +1,20 @@
+name: firesim-publish-scala-doc
+
+on:
+  push:
+    branches:
+      - dev
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+jobs:
+  publish-scala-doc:
+    name: publish-scala-doc
+    runs-on: ubuntu-latest
+    container:
+      image: firesim/firesim-ci:v1.1
+      options: --entrypoint /bin/bash --user centos
+    steps:
+        - uses: ./.github/actions/repo-setup
+        - uses: ./.github/actions/build-scala-doc
+        - uses: ./.github/actions/push-scaladoc-to-ghpages

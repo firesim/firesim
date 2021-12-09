@@ -1,0 +1,29 @@
+name: push-scaladoc-to-ghpages
+description: "Pushes scaladoc to ghphage branch"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.SERVER_KEY }}
+        known_hosts: ${{ secrets.SERVER_NAME }}
+
+    - run: |
+        git config --global user.email "biancolin@berkeley.edu"
+        git config --global user.name "github-actions"
+      shell: bash
+
+    - run: |
+        if [[ "${{ GITHUB_REF_TYPE }}" != 'tag' ]]; then
+          source env.sh
+          export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for ${{ GITHUB_REF_NAME }} release"
+          make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND='set apiDirectory := \"${{ GITHUB_REF_NAME }}\"; ghpagesPushSite'
+        else
+          source env.sh
+          export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for dev:${{ GITHUB_SHA }}"
+          make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND="ghpagesPushSite"
+        fi
+      shell: bash
+
