@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname, manager_ci_dir
+from common import manager_fsim_dir, manager_hostname, manager_ci_dir, manager_fsim_pem
 from ci_variables import ci_workflow_id
 
 import sys
@@ -85,4 +85,5 @@ def run_ini_api_tests():
     run_runtime_hwdb_ini_api_tests()
 
 if __name__ == "__main__":
-    execute(run_ini_api_tests, hosts=[manager_hostname(ci_workflow_id)])
+    set_fabric_firesim_pem()
+    execute(run_ini_api_tests, hosts=["localhost"])

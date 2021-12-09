@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname
+from common import manager_fsim_dir, manager_hostname, set_fabric_firesim_pem
 from ci_variables import ci_workflow_id
 
 def run_sbt_command(target_project, command):
@@ -19,4 +19,5 @@ def run_sbt_command(target_project, command):
         run("make -C sim sbt SBT_COMMAND={} TARGET_PROJECT={}".format(command, target_project))
 
 if __name__ == "__main__":
-    execute(run_sbt_command, sys.argv[1], sys.argv[2], hosts=[manager_hostname(ci_workflow_id)])
+    set_fabric_firesim_pem()
+    execute(run_sbt_command, sys.argv[1], sys.argv[2], hosts=["localhost"])

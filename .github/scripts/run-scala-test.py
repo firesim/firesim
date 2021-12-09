@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname
+from common import manager_fsim_dir, manager_hostname, set_fabric_firesim_pem
 from ci_variables import ci_workflow_id
 
 def run_scala_test(target_project, test_name):
@@ -15,7 +15,13 @@ def run_scala_test(target_project, test_name):
     test_name -- the full classname of the test
     """
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("make -C sim testOnly TARGET_PROJECT={} SCALA_TEST={}".format(target_project, test_name))
+        # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
+        with settings(warn_only=True):
+            rc = run("make -C sim testOnly TARGET_PROJECT={} SCALA_TEST={} &> scala-test.full.log".format(target_project, test_name)).return_code
+            if rc != 0:
+                run("cat scala-test.full.log")
+                raise Exception("Running scala test failed")
 
 if __name__ == "__main__":
-    execute(run_scala_test, sys.argv[1], sys.argv[2], hosts = [manager_hostname(ci_workflow_id)])
+    set_fabric_firesim_pem()
+    execute(run_scala_test, sys.argv[1], sys.argv[2], hosts = ["localhost"])

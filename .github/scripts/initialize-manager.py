@@ -1,6 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import traceback
+import time
+import os
 
 from fabric.api import *
 
@@ -20,14 +22,11 @@ def initialize_manager(max_runtime):
     try:
         # wait until machine launch is complete
         with cd(manager_home_dir):
-            with settings(warn_only=True):
-                rc = run("timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)").return_code
-                if rc != 0:
-                    run("cat machine-launchstatus.log")
-                    raise Exception("machine-launch-script.sh failed to run")
-
-            # add firesim.pem (stored as env. var. w/ \n replaced with ,)
-            run("echo {} | tr , '\n' > firesim.pem".format(os.environ["FIRESIM_PEM"]))
+            # add firesim.pem
+            with open(manager_fsim_pem, "w") as pem_file:
+                pem_file.write(os.environ["FIRESIM_PEM"])
+            os.chmod(manager_fsim_pem, 600)
+            set_fabric_firesim_pem()
 
             run("git clone https://github.com/firesim/firesim.git")
 
@@ -43,7 +42,7 @@ def initialize_manager(max_runtime):
             run("./init-submodules.sh")
 
         with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh"):
-            run(".circleci/firesim-managerinit.expect {} {} {}".format(
+            run(".github/scripts/firesim-managerinit.expect {} {} {}".format(
                 os.environ["AWS_ACCESS_KEY_ID"],
                 os.environ["AWS_SECRET_ACCESS_KEY"],
                 os.environ["AWS_DEFAULT_REGION"]))
@@ -54,10 +53,10 @@ def initialize_manager(max_runtime):
 
             # Setting pty=False is required to stop the screen from being
             # culled when the SSH session associated with teh run command ends.
-            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop\'"
-                .format(int(max_runtime) * 3600, ci_workflow_id), pty=False)
-            run("screen -S workflow-monitor -L -dm ./workflow-monitor.py {} {}"
-                .format(ci_workflow_id, ci_api_token), pty=False)
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop {}\'"
+                .format(int(max_runtime) * 3600, ci_workflow_id, ci_personal_api_token), pty=False)
+            run("screen -S workflow-monitor -L -dm ./workflow-monitor.py {} {} {}"
+                .format(ci_workflow_id, ci_api_token, ci_personal_api_token), pty=False)
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
@@ -66,4 +65,4 @@ def initialize_manager(max_runtime):
 
 if __name__ == "__main__":
     max_runtime = sys.argv[1]
-    execute(initialize_manager, max_runtime, hosts=[manager_hostname(ci_workflow_id)])
+    execute(initialize_manager, max_runtime, hosts=["localhost"])

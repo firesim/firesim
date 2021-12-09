@@ -50,8 +50,6 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
-# todo: figure out how to setup on a per user basis
-
 # upgrade pip
 sudo pip3 install --upgrade pip==21.3.1
 # install requirements

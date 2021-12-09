@@ -1,10 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Used to launch a fresh manager instance from the CI container.
 
 import sys
-
-from fabric.api import *
 
 # This must run in the CI container
 from ci_variables import *

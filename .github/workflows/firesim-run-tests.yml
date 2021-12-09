@@ -2,159 +2,185 @@ name: firesim-ci-process
 
 on: [push]
 
+env:
+  PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS-ACCESS-KEY-ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS-DEFAULT-REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+
 jobs:
-  setup-default-manager:
-    name: setup-default-manager
-    runs-on: ubuntu-latest
-    env:
-      TERM: xterm-256-color
+  cancel-prior-workflows:
+    name: cancel-prior-workflows
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Cancel previous workflow runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+  setup-self-hosted-manager:
+    name: setup-self-hosted-manager
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
       - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
-      - name: Initialize FireSim manager
-        run: |
-          .github/scripts/launch-manager-instance.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - run: ./.github/scripts/launch-manager-instance.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - run: ./.github/scripts/initialize-manager-hosted.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
+
+  setup-manager:
+    name: setup-manager
+    needs: [setup-self-hosted-manager]
+    runs-on: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
       - uses: ./.github/actions/initialize-manager
+        if: steps.job-start.outputs.run_result != 'success'
         with:
           max-runtime-hours: 10
       - uses: ./.github/actions/initial-scala-compile
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
 
   build-default-workloads:
     name: build-default-workloads
-    needs: [setup-default-manager]
-    runs-on: ubuntu-latest
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
-      - run: |
-          .github/scripts/build-default-workloads.py
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - run: .github/scripts/build-default-workloads.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
 
   run-manager-pytests:
     name: run-manager-pytests
-    needs: [setup-default-manager]
-    runs-on: ubuntu-latest
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
-      - run: |
-          .github/scripts/run-manager-pytests.py
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - run: .github/scripts/run-manager-pytests.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
 
   run-test-groupA:
     name: run-test-groupA
-    needs: [setup-default-manager]
-    runs-on: ubuntu-latest
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - uses: ./.github/actions/job-start
+        id: job-start
       - uses: ./.github/actions/run-scala-test
+        if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupA"
+      - uses: ./.github/actions/job-end
 
   run-test-groupB:
     name: run-test-groupB
     needs: [run-test-groupA]
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - uses: ./.github/actions/job-start
+        id: job-start
       - uses: ./.github/actions/run-scala-test
+        if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupB"
+      - uses: ./.github/actions/job-end
 
   run-chipyard-tests:
     name: run-chipyard-tests
     needs: [run-test-groupB]
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - uses: ./.github/actions/job-start
+        id: job-start
       - uses: ./.github/actions/run-scala-test
+        if: steps.job-start.outputs.run_result != 'success'
         with:
           target-project: "firesim"
           test-package: "firesim.firesim"
           test-name: "CITests"
+      - uses: ./.github/actions/job-end
 
   run-basic-linux-poweroff:
     name: run-basic-linux-poweroff
     needs: [build-default-workloads]
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
+    environment: use-fpgas
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
-      - run: |
-          .github/scripts/run-linux-poweroff.py
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - run: .github/scripts/run-linux-poweroff.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
 
   run-ini-api-tests:
     name: run-ini-api-tests
-    needs: [setup-default-manager]
-    runs-on: ubuntu-latest
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/repo-setup-aws
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-default-region: ${{ secrets.AWS_DEFAULT_REGION }}
-      - run: |
-          .github/scripts/run-ini-api-tests.py
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - run: .github/scripts/run-ini-api-tests.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
 
   documentation-check:
     name: documentation-check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     container:
       image: firesim/firesim-ci:v1.1
-      options: --entrypoint /bin/bash --user centos
+      options: --entrypoint /bin/bash
+      env:
+        JVM_MEMORY: 3500M # Default JVM maximum heap limit
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
       - name: Check that documentation builds with no warnings/errors
+        if: steps.job-start.outputs.run_result != 'success'
         run: |
           sudo yum update -y
-          sudo yum install -y python3-pip
+          sudo yum install -y python3-pip make
           sudo pip3 install -r docs/requirements.txt
           make -C docs html
       - name: Show error log from sphinx if failed
-        if: ${{ failure() }}
+        if: ${{ steps.job-start.outputs.run_result != 'success' && failure() }}
         run: cat /tmp/sphinx-err*.log
+      - uses: ./.github/actions/job-end

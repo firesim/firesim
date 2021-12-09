@@ -1,21 +1,31 @@
 import sys
 import boto3
+import os
 from fabric.api import *
+import requests
 
 # Reuse manager utilities
-from ci_variables import ci_workdir
-sys.path.append(ci_workdir + "/deploy/awstools")
+script_dir = os.path.dirname(os.path.realpath(__file__)) + "/../.."
+sys.path.append(script_dir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
 # Remote paths
 manager_home_dir = "/home/centos"
-manager_fsim_dir = "/home/centos/firesim"
+manager_fsim_pem = manager_home_dir + "/firesim.pem"
+manager_fsim_dir = manager_home_dir + "/firesim"
 manager_marshal_dir = manager_fsim_dir + "/target-design/chipyard/software/firemarshal"
-manager_ci_dir = manager_fsim_dir + "/.circleci"
+manager_ci_dir = manager_fsim_dir + "/.github/scripts"
 
 # Common fabric settings
 env.output_prefix = False
 env.abort_on_prompts = True
+env.timeout = 100
+env.connection_attempts = 10
+env.disable_known_hosts = True
+env.keepalive = 15
+
+def set_fabric_firesim_pem():
+    env.key_filename = manager_fsim_pem
 
 # This tag is common to all instances launched as part of a given workflow
 unique_tag_key = 'ci-workflow-id'
@@ -83,8 +93,25 @@ def instance_metadata_str(instance):
 
     return static_md + dynamic_md
 
+def deregister_runner_if_exists(gh_token, runner_name):
+    headers = {'Authorization': "token {}".format(gh_token.strip())}
 
-def change_workflow_instance_states(tag_value, state_change, dryrun=False):
+    # Check if exists before deregistering
+    r = requests.get("https://api.github.com/repos/firesim/firesim/actions/runners", headers=headers)
+    if r.status_code != 200:
+        # if couldn't delete then just exit
+        return
+
+    res_dict = r.json()
+    runner_list = res_dict["runners"]
+    for runner in runner_list:
+        if runner_name in runner["name"]:
+            r = requests.delete("https://api.github.com/repos/firesim/firesim/actions/runners/{}".format(runner["id"]), headers=headers)
+            if r.status_code != 204:
+                # if couldn't delete then just exit
+                return
+
+def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=False):
     """ Change the state of all instances sharing the same CI run's tag. """
 
     all_instances = get_all_workflow_instances(tag_value)
@@ -100,6 +127,7 @@ def change_workflow_instance_states(tag_value, state_change, dryrun=False):
     client = boto3.client('ec2')
     if state_change == 'stop':
         print("Stopping instances: {}".format(", ".join(instance_ids)))
+        deregister_runner_if_exists(gh_token, tag_value)
         client.stop_instances(InstanceIds=instance_ids, DryRun=dryrun)
     elif state_change == 'start':
         print("Starting instances: {}".format(", ".join(instance_ids)))
@@ -116,15 +144,16 @@ def change_workflow_instance_states(tag_value, state_change, dryrun=False):
 
     elif state_change == 'terminate':
         print("Terminating instances: {}".format(", ".join(instance_ids)))
+        deregister_runner_if_exists(gh_token, tag_value)
         client.terminate_instances(InstanceIds=instance_ids, DryRun=dryrun)
     else:
         raise ValueError("Unrecognized transition type: {}".format(state_change))
 
-def terminate_workflow_instances(tag_value, dryrun=False):
-    change_workflow_instance_states(tag_value, "terminate", dryrun)
+def terminate_workflow_instances(gh_token, tag_value, dryrun=False):
+    change_workflow_instance_states(gh_token, tag_value, "terminate", dryrun)
 
-def stop_workflow_instances(tag_value, dryrun=False):
-    change_workflow_instance_states(tag_value, "stop", dryrun)
+def stop_workflow_instances(gh_token, tag_value, dryrun=False):
+    change_workflow_instance_states(gh_token, tag_value, "stop", dryrun)
 
-def start_workflow_instances(tag_value, dryrun=False):
-    change_workflow_instance_states(tag_value, "start", dryrun)
+def start_workflow_instances(gh_token, tag_value, dryrun=False):
+    change_workflow_instance_states(gh_token, tag_value, "start", dryrun)

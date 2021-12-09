@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname
+from common import manager_fsim_dir, manager_hostname, set_fabric_firesim_pem
 from ci_variables import ci_workflow_id
 
 def run_linux_poweroff():
@@ -13,6 +13,11 @@ def run_linux_poweroff():
         run("cd deploy/workloads/ && make linux-poweroff")
 
         def run_w_timeout(workload, timeout):
+            """ Run workload with a specific timeout
+
+            :arg: workload (str) - workload ini (abs path)
+            :arg: timeout (str) - timeout amount for the workload to run
+            """
             rc = 0
             with settings(warn_only=True):
                 rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch".format(timeout, workload)).return_code
@@ -21,8 +26,9 @@ def run_linux_poweroff():
                 run("firesim terminaterunfarm -q -c {}".format(workload))
                 sys.exit(1)
 
-        run_w_timeout("./deploy/workloads/linux-poweroff-all-no-nic.ini", "30m")
-        run_w_timeout("./deploy/workloads/linux-poweroff-nic.ini", "30m")
+        run_w_timeout("{}/deploy/workloads/linux-poweroff-all-no-nic.ini".format(manager_fsim_dir), "30m")
+        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "30m")
 
 if __name__ == "__main__":
-    execute(run_linux_poweroff, hosts=[manager_hostname(ci_workflow_id)])
+    set_fabric_firesim_pem()
+    execute(run_linux_poweroff, hosts=["localhost"])

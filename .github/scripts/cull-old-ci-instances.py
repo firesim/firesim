@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Runs periodically in it's own workflow in the CI/CD environment to teardown
 # instances that have exceeded a lifetime limit
@@ -8,10 +8,10 @@ import pytz
 import boto3
 import sys
 
-from common import unique_tag_key
+from common import unique_tag_key, deregister_runner_if_exists
 
 # Reuse manager utilities
-from ci_variables import ci_workdir
+from ci_variables import ci_workdir, ci_personal_api_token, ci_workflow_id
 sys.path.append(ci_workdir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
@@ -27,12 +27,13 @@ def main():
     all_ci_instances = get_instances_with_filter([all_ci_instances_filter], allowed_states=['*'])
 
     client = boto3.client('ec2')
-    print "Terminated Instances:"
+    print("Terminated Instances:")
     for inst in all_ci_instances:
         lifetime_secs = (current_time - inst["LaunchTime"]).total_seconds()
         if lifetime_secs > (INSTANCE_LIFETIME_LIMIT_HOURS * 3600):
+            deregister_runner_if_exists(ci_personal_api_token, ci_workflow_id):
             client.terminate_instances(InstanceIds=[inst["InstanceId"]])
-            print "  " + inst["InstanceId"]
+            print("  " + inst["InstanceId"])
 
 if __name__ == "__main__":
     main()

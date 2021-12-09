@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname
+from common import manager_fsim_dir, manager_hostname, set_fabric_firesim_pem
 from ci_variables import ci_workflow_id
 
 def run_manager_pytests():
@@ -12,4 +12,5 @@ def run_manager_pytests():
         run("cd deploy && python3 -m pytest")
 
 if __name__ == "__main__":
-    execute(run_manager_pytests, hosts=[manager_hostname(ci_workflow_id)])
+    set_fabric_firesim_pem()
+    execute(run_manager_pytests, hosts=["localhost"])
