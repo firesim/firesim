@@ -40,32 +40,19 @@ class RunFarm(object):
 
     NAME = ""
 
-    def __init__(self, arg_dict):
+    def __init__(self, args):
         """ Initialization function.
 
         Parameters:
             build_config (BuildConfig): Build config associated with this dispatcher
-            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+            args (list/dict): List or dict of args (i.e. options) passed to the dispatcher
         """
 
-        self.arg_dict = arg_dict
+        self.args = args
 
     def parse_args(self):
         """ Parse default build host arguments. Can be overridden by child classes. """
         return
-
-    def get_arg(self, arg_wanted):
-        """ Retrieve argument from arg dict and error if not found.
-
-        Parameters:
-            arg_wanted (str): Argument to get value of
-        Returns:
-            (str or None): Value of argument wanted
-        """
-        if not self.arg_dict.has_key(arg_wanted):
-            rootLogger.critical("ERROR: Unable to find arg {} for {}".format(arg_wanted, self.__name__))
-            sys.exit(1)
-        return self.arg_dict.get(arg_wanted)
 
     def post_launch_binding(self, mock = False):
         raise NotImplementedError
@@ -97,8 +84,8 @@ class EC2RunFarm(RunFarm):
 
     NAME = "aws-ec2-f1"
 
-    def __init__(self, arg_dict):
-        RunFarm.__init__(self, arg_dict)
+    def __init__(self, args):
+        RunFarm.__init__(self, args)
 
         self.f1_16s = []
         self.f1_4s = []
@@ -115,21 +102,21 @@ class EC2RunFarm(RunFarm):
         if runfarmtagprefix != "":
             runfarmtagprefix += "-"
 
-        self.runfarmtag = runfarmtagprefix + self.get_arg('runfarmtag')
+        self.runfarmtag = runfarmtagprefix + self.args.get('runfarmtag')
 
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
             # if specified, further prefix runfarmtag
             self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
 
-        num_f1_16 = self.get_arg('f1_16xlarges')
-        num_f1_4 = self.get_arg('f1_4xlarges')
-        num_m4_16 = self.get_arg('m4_16xlarges')
-        num_f1_2 = self.get_arg('f1_2xlarges')
+        num_f1_16 = self.args.get('f1_16xlarges')
+        num_f1_4 = self.args.get('f1_4xlarges')
+        num_m4_16 = self.args.get('m4_16xlarges')
+        num_f1_2 = self.args.get('f1_2xlarges')
 
-        self.run_instance_market = self.get_arg('runinstancemarket')
-        self.spot_interruption_behavior = self.get_arg('spotinterruptionbehavior')
-        self.spot_max_price = self.get_arg('spotmaxprice')
+        self.run_instance_market = self.args.get('runinstancemarket')
+        self.spot_interruption_behavior = self.args.get('spotinterruptionbehavior')
+        self.spot_max_price = self.args.get('spotmaxprice')
 
         self.f1_16s = [F1Inst(8) for x in range(num_f1_16)]
         self.f1_4s = [F1Inst(2) for x in range(num_f1_4)]
@@ -402,21 +389,21 @@ class IpAddrRunFarm(RunFarm):
 
     NAME = "unmanaged"
 
-    def __init__(self, arg_dict):
-        RunFarm.__init__(self, arg_dict)
+    def __init__(self, args):
+        RunFarm.__init__(self, args)
 
         self.fpga_node = None
 
     def parse_args(self):
 
         # only supports 1 ip address
-        assert(len(self.arg_dict) == 1)
-        self.arg_dict = self.arg_dict[0]
+        assert(len(self.args) == 1)
+        self.args = self.args[0]
 
 	dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(FPGAInst)])
 
-	platform_name = self.get_arg("description").get("platform")
-	num_fpgas = self.get_arg("description").get("num-fpgas")
+	platform_name = self.args.get("description").get("platform")
+	num_fpgas = self.args.get("description").get("num-fpgas")
 
 	run_inst_class_name = dispatch_dict[platform_name]
 
@@ -424,7 +411,7 @@ class IpAddrRunFarm(RunFarm):
             import_module("runtools.run_farm_instances"),
             run_inst_class_name)(num_fpgas)
 
-        self.fpga_node.set_ip(self.get_arg("ip-address"))
+        self.fpga_node.set_ip(self.args.get("ip-address"))
 
     def post_launch_binding(self, mock = False):
         return

@@ -15,7 +15,7 @@ class BuildHostDispatcher(object):
 
         Parameters:
             build_config (BuildConfig): Build config associated with this dispatcher
-            args (dict): Dict of args (i.e. options) passed to the dispatcher
+            args (list/dict): List/Dict of args (i.e. options) passed to the dispatcher
         """
 
         self.build_config = build_config
