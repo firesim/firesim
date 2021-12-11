@@ -10,16 +10,16 @@ class BuildHostDispatcher(object):
 
     NAME = ""
 
-    def __init__(self, build_config, arg_dict):
+    def __init__(self, build_config, args):
         """ Initialization function.
 
         Parameters:
             build_config (BuildConfig): Build config associated with this dispatcher
-            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+            args (dict): Dict of args (i.e. options) passed to the dispatcher
         """
 
         self.build_config = build_config
-        self.arg_dict = arg_dict
+        self.args = args
 
         # used if dispatcher refers to local build host
         self.is_local = False
@@ -29,20 +29,7 @@ class BuildHostDispatcher(object):
 
     def parse_args(self):
         """ Parse default build host arguments. Can be overridden by child classes. """
-        self.override_remote_build_dir = self.get_arg("remotebuilddir")
-
-    def get_arg(self, arg_wanted):
-        """ Retrieve argument from arg dict and error if not found.
-
-        Parameters:
-            arg_wanted (str): Argument to get value of
-        Returns:
-            (str or None): Value of argument wanted
-        """
-        if not self.arg_dict.has_key(arg_wanted):
-            rootLogger.critical("ERROR: Unable to find arg {} for {}".format(arg_wanted, self.__name__))
-            sys.exit(1)
-        return self.arg_dict.get(arg_wanted)
+        self.override_remote_build_dir = self.args.get("remotebuilddir")
 
     def request_build_host(self):
         """ Request build host to use for build. """
@@ -65,18 +52,23 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
 
     NAME = "unmanaged"
 
-    def __init__(self, build_config, arg_dict):
+    dispatch_counter = 0
+
+    def __init__(self, build_config, args):
         """ Initialization function. Sets IP address and determines if it is localhost.
 
         Parameters:
             build_config (BuildConfig): Build config associated with this dispatcher
-            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+            args (dict): Dict of args (i.e. options) passed to the dispatcher
         """
 
-        BuildHostDispatcher.__init__(self, build_config, arg_dict)
+        BuildHostDispatcher.__init__(self, build_config, args)
 
-        # ip addr associated with build host
+        # ip addrs associated with build host
         self.ip_addr = None
+
+        self.dispatch_id = IPAddrBuildHostDispatcher.dispatch_counter
+        IPAddrBuildHostDispatcher.dispatch_counter += 1
 
         rootLogger.info("Using host {} for {}".format(self.build_config.build_host, self.build_config.get_chisel_triplet()))
 
@@ -86,9 +78,15 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
         BuildHostDispatcher.parse_args(self)
 
         # ip address arg
-        self.ip_addr = self.get_arg("ip_addresses")
-        if self.ip_addr == "localhost":
-            self.is_local = True
+        if len(self.args.get("ip_addresses")) > self.dispatch_id:
+            self.ip_addr = self.args.get("ip_addresses")[self.dispatch_id]
+            if self.ip_addr == "localhost":
+                self.is_local = True
+
+            rootLogger.info("Using host {} with IP address: {}".format(self.build_config.build_host, self.ip_addr))
+        else:
+            rootLogger.critical("ERROR: Less IPs available than builds. Add more IPs.")
+            sys.exit(1)
 
     def request_build_host(self):
         """ In this case, nothing happens since IP address should be pre-setup. """
@@ -116,15 +114,15 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
 
     NAME = "aws-ec2"
 
-    def __init__(self, build_config, arg_dict):
+    def __init__(self, build_config, args):
         """ Initialization function. Setup AWS instance variables.
 
         Parameters:
             build_config (BuildConfig): Build config associated with this dispatcher
-            arg_dict (dict): Dict of args (i.e. options) passed to the dispatcher
+            args (dict): Dict of args (i.e. options) passed to the dispatcher
         """
 
-        BuildHostDispatcher.__init__(self, build_config, arg_dict)
+        BuildHostDispatcher.__init__(self, build_config, args)
 
         # instance object associated with the build host
         self.launched_instance_object = None

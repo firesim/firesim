@@ -51,16 +51,17 @@ class BuildConfigFile:
 
         build_recipes = dict()
         for section_name, section_dict in build_recipes_configfile.items():
-            build_recipes[section_name] = BuildConfig(
-                section_name,
-                section_dict,
-                build_hosts_configfile,
-                self,
-                launch_time)
+            if section_name in builds_to_run_list:
+                build_recipes[section_name] = BuildConfig(
+                    section_name,
+                    section_dict,
+                    build_hosts_configfile,
+                    self,
+                    launch_time)
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
-        self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
+        self.builds_list = build_recipes.values()
         self.build_ip_set = set()
 
     def setup(self):
