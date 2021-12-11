@@ -2,12 +2,22 @@
 manager """
 
 from time import strftime, gmtime
-import ConfigParser
 import pprint
 from importlib import import_module
 
 from awstools.awstools import *
 from buildtools.buildhostdispatcher import *
+
+def inheritors(klass):
+    subclasses = set()
+    work = [klass]
+    while work:
+	parent = work.pop()
+	for child in parent.__subclasses__():
+	    if child not in subclasses:
+		subclasses.add(child)
+		work.append(child)
+    return subclasses
 
 class BuildConfig:
     """ Represents a single build configuration used to build RTL/drivers/AFIs. """
@@ -18,7 +28,7 @@ class BuildConfig:
         Parameters:
             name (str): Name of config i.e. name of build_recipe.ini section
             recipe_config_dict (dict): build_recipe.ini options associated with name
-            build_hosts_configfile (configparser.ConfigParser): Parsed representation of build_hosts.ini file
+            build_hosts_configfile (dict): Parsed representation of build_hosts.ini file
             global_build_config (BuildConfigFile): Global build config file
             launch_time (str): Time manager was launched
         """
@@ -40,10 +50,13 @@ class BuildConfig:
         self.build_host = recipe_config_dict.get('buildhost')
         if self.build_host == None:
             self.build_host = "defaultbuildhost"
-        build_host_conf_dict = dict(build_hosts_configfile.items(self.build_host))
+        build_host_conf_dict = build_hosts_configfile[self.build_host]
 
-        self.build_host_dispatcher_class_name = build_host_conf_dict['providerclass']
-        del build_host_conf_dict['providerclass']
+        assert(len(build_host_conf_dict.items()) == 1)
+	build_host_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(BuildHostDispatcher)])
+        self.build_host_dispatcher_class_name = build_host_dispatch_dict[build_host_conf_dict.keys()[0]]
+        build_host_conf_dict = build_host_conf_dict.values()[0]
+
         # create dispatcher object using class given and pass args to it
         self.build_host_dispatcher = getattr(
             import_module("buildtools.buildhostdispatcher"),

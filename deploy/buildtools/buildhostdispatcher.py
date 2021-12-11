@@ -5,8 +5,10 @@ from awstools.awstools import *
 
 rootLogger = logging.getLogger()
 
-class BuildHostDispatcher:
+class BuildHostDispatcher(object):
     """ Abstract class to manage how to handle build hosts (request, wait, release, etc). """
+
+    NAME = ""
 
     def __init__(self, build_config, arg_dict):
         """ Initialization function.
@@ -61,6 +63,8 @@ class BuildHostDispatcher:
 class IPAddrBuildHostDispatcher(BuildHostDispatcher):
     """ Dispatcher class that uses the IP address given as the build host. """
 
+    NAME = "unmanaged"
+
     def __init__(self, build_config, arg_dict):
         """ Initialization function. Sets IP address and determines if it is localhost.
 
@@ -82,7 +86,7 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
         BuildHostDispatcher.parse_args(self)
 
         # ip address arg
-        self.ip_addr = self.get_arg("ipaddr")
+        self.ip_addr = self.get_arg("ip_addresses")
         if self.ip_addr == "localhost":
             self.is_local = True
 
@@ -109,6 +113,8 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
 
 class EC2BuildHostDispatcher(BuildHostDispatcher):
     """ Dispatcher class to manage an AWS EC2 instance as the build host. """
+
+    NAME = "aws-ec2"
 
     def __init__(self, build_config, arg_dict):
         """ Initialization function. Setup AWS instance variables.

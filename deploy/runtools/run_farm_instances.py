@@ -104,16 +104,15 @@ class EC2Inst(Inst):
         return
 
 class FPGAInst(object):
-    FPGA_SLOTS = 0
-
     def __init__(self):
         super(FPGAInst, self).__init__()
+        self.num_fpga_slots = 0
         self.fpga_slots = []
         self.fpga_slots_consumed = 0
 
     def get_num_fpga_slots_max(self):
         """ Get the number of fpga slots. """
-        return self.FPGA_SLOTS
+        return self.num_fpga_slots
 
     def get_num_fpga_slots_consumed(self):
         """ Get the number of fpga slots. """
@@ -121,40 +120,23 @@ class FPGAInst(object):
 
     def add_simulation(self, firesimservernode):
         """ Add a simulation to the next available slot. """
-        assert self.fpga_slots_consumed < self.FPGA_SLOTS
+        assert self.fpga_slots_consumed < self.num_fpga_slots
         self.fpga_slots[self.fpga_slots_consumed] = firesimservernode
         firesimservernode.assign_host_instance(self)
         self.fpga_slots_consumed += 1
 
-class F1_16(EC2Inst, FPGAInst):
+class F1Inst(EC2Inst, FPGAInst):
     instance_counter = 0
-    FPGA_SLOTS = 8
+    NAME = "aws-ec2-f1"
 
-    def __init__(self):
-        super(F1_16, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = F1_16.instance_counter
-        F1_16.instance_counter += 1
+    def __init__(self, num_fpga_slots):
+        super(F1Inst, self).__init__()
+        self.num_fpga_slots = num_fpga_slots
+        self.fpga_slots = [None for x in range(self.num_fpga_slots)]
+        self.instance_id = F1Inst.instance_counter
+        F1Inst.instance_counter += 1
 
-class F1_4(EC2Inst, FPGAInst):
-    instance_counter = 0
-    FPGA_SLOTS = 2
-
-    def __init__(self):
-        super(F1_4, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = F1_4.instance_counter
-        F1_4.instance_counter += 1
-
-class F1_2(EC2Inst, FPGAInst):
-    instance_counter = 0
-    FPGA_SLOTS = 1
-
-    def __init__(self):
-        super(F1_2, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = F1_2.instance_counter
-        F1_2.instance_counter += 1
+        self.instance_deploy_manager = EC2InstanceDeployManager(self)
 
 class M4_16(EC2Inst):
     instance_counter = 0
@@ -164,15 +146,17 @@ class M4_16(EC2Inst):
         self.instance_id = M4_16.instance_counter
         M4_16.instance_counter += 1
 
-class Vitis_Inst(Inst, FPGAInst):
+class VitisInst(Inst, FPGAInst):
     instance_counter = 0
-    FPGA_SLOTS = 4 # should be auto-determined
+    NAME = "vitis"
 
-    def __init__(self):
-        super(Vitis_Inst, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = Vitis_Inst.instance_counter
-        Vitis_Inst.instance_counter += 1
+    def __init__(self, num_fpga_slots):
+        super(VitisInst, self).__init__()
+        self.num_fpga_slots = num_fpga_slots
+        self.fpga_slots = [None for x in range(self.num_fpga_slots)]
+        self.instance_id = VitisInst.instance_counter
+        VitisInst.instance_counter += 1
+
         self.instance_deploy_manager = VitisInstanceDeployManager(self)
         self.ip_addr = None
 

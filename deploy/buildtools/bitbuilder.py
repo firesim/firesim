@@ -3,7 +3,6 @@ manager """
 
 from __future__ import with_statement
 from time import strftime, gmtime
-import ConfigParser
 import pprint
 import sys
 import json
@@ -109,12 +108,12 @@ class BitBuilder:
             (str): String HWDB entry
         """
 
-        hwdb_entry = "[" + name + "]\n"
-        hwdb_entry += "platform=" + platform_name + "\n"
+        hwdb_entry = name + "\n"
+        hwdb_entry += "    platform: " + platform_name + "\n"
         for l in run_platform_lines:
-            hwdb_entry += l + "\n"
-        hwdb_entry += "deploytripletoverride=None\n"
-        hwdb_entry += "customruntimeconfig=None\n"
+            hwdb_entry += "    " + l + "\n"
+        hwdb_entry += "    deploytripletoverride: null\n"
+        hwdb_entry += "    customruntimeconfig: null\n"
 
         return hwdb_entry
 
@@ -376,7 +375,7 @@ class F1BitBuilder(BitBuilder):
             # copy the image to all regions for the current user
             copy_afi_to_all_regions(afi)
 
-            hwdb_entry = self.create_hwdb_entry(afiname, "f1", ["agfi=" + agfi])
+            hwdb_entry = self.create_hwdb_entry(afiname, "f1", ["agfi: " + agfi])
 
             message_title = "FireSim FPGA Build Completed"
             message_body = "Your AGFI has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
@@ -558,7 +557,7 @@ class VitisBitBuilder(BitBuilder):
 
         results_build_dir = """{}/""".format(local_results_dir)
 
-        hwdb_entry = self.create_hwdb_entry(finame, "vitis", ["xclbin=" + xclbin_path])
+        hwdb_entry = self.create_hwdb_entry(finame, "vitis", ["xclbin: " + xclbin_path])
         written_path = self.write_to_built_hwdb_entry(finame, hwdb_entry)
         self.run_post_build_hook(results_build_dir)
 

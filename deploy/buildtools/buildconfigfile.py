@@ -2,10 +2,10 @@
 manager """
 
 from time import strftime, gmtime
-import ConfigParser
 import pprint
 import logging
 import sys
+import yaml
 
 from fabric.api import *
 from runtools.runtime_hw_config import RuntimeHWDB
@@ -30,33 +30,30 @@ class BuildConfigFile:
 
         self.args = args
 
-        global_build_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        global_build_configfile.optionxform = str
-        global_build_configfile.read(args.buildconfigfile)
+        global_build_configfile = None
+        with open(args.buildconfigfile, "r") as yaml_file:
+            global_build_configfile = yaml.safe_load(yaml_file)
 
         # aws specific options
-        self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
-        self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
+        self.agfistoshare = global_build_configfile['agfistoshare']
+        self.acctids_to_sharewith = global_build_configfile['sharewithaccounts'].values()
 
         # this is a list of actual builds to run
-        builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
+        builds_to_run_list = global_build_configfile['builds']
 
-        build_recipes_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        build_recipes_configfile.optionxform = str
-        build_recipes_configfile.read(args.buildrecipesconfigfile)
+        build_recipes_configfile = None
+        with open(args.buildrecipesconfigfile, "r") as yaml_file:
+            build_recipes_configfile = yaml.safe_load(yaml_file)
 
-        build_hosts_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        build_hosts_configfile.optionxform = str
-        build_hosts_configfile.read(args.buildhostsconfigfile)
+        build_hosts_configfile = None
+        with open(args.buildhostsconfigfile, "r") as yaml_file:
+            build_hosts_configfile = yaml.safe_load(yaml_file)
 
         build_recipes = dict()
-        for section in build_recipes_configfile.sections():
-            build_recipes[section] = BuildConfig(
-                section,
-                dict(build_recipes_configfile.items(section)),
+        for section_name, section_dict in build_recipes_configfile.items():
+            build_recipes[section_name] = BuildConfig(
+                section_name,
+                section_dict,
                 build_hosts_configfile,
                 self,
                 launch_time)

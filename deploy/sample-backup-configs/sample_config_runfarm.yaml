@@ -1,0 +1,17 @@
+aws-ec2-f1-runfarm:
+    aws-ec2-f1:
+        runfarmtag: mainrunfarm
+        f1_16xlarges: 0
+        m4_16xlarges: 0
+        f1_4xlarges: 0
+        f1_2xlarges: 1
+        runinstancemarket: ondemand
+        spotinterruptionbehavior: terminate
+        spotmaxprice: ondemand
+
+local-runfarm:
+    unmanaged:
+        - ip-address: localhost
+          description:
+              platform: vitis
+              num-fpgas: 4

@@ -9,6 +9,18 @@ from fabric.contrib.project import rsync_project
 from util.streamlogger import StreamLogger
 import time
 from importlib import import_module
+from runtools.run_farm_instances import FPGAInst
+
+def inheritors(klass):
+    subclasses = set()
+    work = [klass]
+    while work:
+	parent = work.pop()
+	for child in parent.__subclasses__():
+	    if child not in subclasses:
+		subclasses.add(child)
+		work.append(child)
+    return subclasses
 
 rootLogger = logging.getLogger()
 
@@ -24,7 +36,10 @@ class MockBoto3Instance:
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
 
-class RunFarm:
+class RunFarm(object):
+
+    NAME = ""
+
     def __init__(self, arg_dict):
         """ Initialization function.
 
@@ -80,6 +95,8 @@ class EC2RunFarm(RunFarm):
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
 
+    NAME = "aws-ec2-f1"
+
     def __init__(self, arg_dict):
         RunFarm.__init__(self, arg_dict)
 
@@ -114,9 +131,9 @@ class EC2RunFarm(RunFarm):
         self.spot_interruption_behavior = self.get_arg('spotinterruptionbehavior')
         self.spot_max_price = self.get_arg('spotmaxprice')
 
-        self.f1_16s = [F1_16() for x in range(num_f1_16)]
-        self.f1_4s = [F1_4() for x in range(num_f1_4)]
-        self.f1_2s = [F1_2() for x in range(num_f1_2)]
+        self.f1_16s = [F1Inst(8) for x in range(num_f1_16)]
+        self.f1_4s = [F1Inst(2) for x in range(num_f1_4)]
+        self.f1_2s = [F1Inst(1) for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
 
     def bind_mock_instances_to_objects(self):
@@ -383,9 +400,7 @@ class IpAddrRunFarm(RunFarm):
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
 
-    #def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
-    #             run_instance_market, spot_interruption_behavior,
-    #             spot_max_price):
+    NAME = "unmanaged"
 
     def __init__(self, arg_dict):
         RunFarm.__init__(self, arg_dict)
@@ -393,11 +408,23 @@ class IpAddrRunFarm(RunFarm):
         self.fpga_node = None
 
     def parse_args(self):
+
+        # only supports 1 ip address
+        assert(len(self.arg_dict) == 1)
+        self.arg_dict = self.arg_dict[0]
+
+	dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(FPGAInst)])
+
+	platform_name = self.get_arg("description").get("platform")
+	num_fpgas = self.get_arg("description").get("num-fpgas")
+
+	run_inst_class_name = dispatch_dict[platform_name]
+
         self.fpga_node = getattr(
             import_module("runtools.run_farm_instances"),
-            self.get_arg("runinstancedescriptor"))()
+            run_inst_class_name)(num_fpgas)
 
-        self.fpga_node.set_ip(self.get_arg("ipaddr"))
+        self.fpga_node.set_ip(self.get_arg("ip-address"))
 
     def post_launch_binding(self, mock = False):
         return

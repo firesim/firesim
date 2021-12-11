@@ -4,9 +4,9 @@ simulation tasks. """
 from __future__ import print_function
 
 from time import strftime, gmtime
-import ConfigParser
 import pprint
 import logging
+import yaml
 
 from fabric.api import *
 from awstools.awstools import *
@@ -24,13 +24,27 @@ CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
 
+def inheritors(klass):
+    subclasses = set()
+    work = [klass]
+    while work:
+	parent = work.pop()
+	for child in parent.__subclasses__():
+	    if child not in subclasses:
+		subclasses.add(child)
+		work.append(child)
+    return subclasses
+
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.ini """
 
     def __init__(self, runtimeconfigfile, runfarmconfigfile, configoverridedata):
-        runtime_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        runtime_configfile.read(runtimeconfigfile)
-        runtime_dict = {s:dict(runtime_configfile.items(s)) for s in runtime_configfile.sections()}
+
+        runtime_configfile = None
+        with open(runtimeconfigfile, "r") as yaml_file:
+            runtime_configfile = yaml.safe_load(yaml_file)
+
+        runtime_dict = runtime_configfile
 
         # override parts of the runtime conf if specified
         configoverrideval = configoverridedata
@@ -47,19 +61,19 @@ class InnerRuntimeConfiguration:
 
         # Setup the runfarm
 
-        run_farm_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        run_farm_configfile.optionxform = str
-        run_farm_configfile.read(runfarmconfigfile)
+        run_farm_configfile = None
+        with open(runfarmconfigfile, "r") as yaml_file:
+            run_farm_configfile = yaml.safe_load(yaml_file)
 
-        self.run_farm_requested_name = runtime_dict['runfarm']['runfarm']
-        if self.run_farm_requested_name == None:
-            self.run_farm_requested_name  = "f1-runfarm"
-        print(runfarmconfigfile)
-        run_farm_conf_dict = dict(run_farm_configfile.items(self.run_farm_requested_name))
+        self.run_farm_requested_name = runtime_dict['runfarm']
 
-        self.runfarm_class_name = run_farm_conf_dict['providerclass']
-        del run_farm_conf_dict['providerclass']
+        run_farm_conf_dict = run_farm_configfile[self.run_farm_requested_name]
+
+        assert(len(run_farm_conf_dict.items()) == 1)
+	run_farm_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(RunFarm)])
+        self.runfarm_class_name = run_farm_dispatch_dict[run_farm_conf_dict.keys()[0]]
+        run_farm_conf_dict = run_farm_conf_dict.values()[0]
+
         # create dispatcher object using class given and pass args to it
         self.run_farm_dispatcher = getattr(
             import_module("runtools.run_farm"),

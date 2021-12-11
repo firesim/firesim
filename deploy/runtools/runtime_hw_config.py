@@ -4,9 +4,9 @@ simulation tasks. """
 from __future__ import print_function
 
 from time import strftime, gmtime
-import ConfigParser
 import pprint
 import logging
+import yaml
 
 from fabric.api import *
 from awstools.awstools import *
@@ -234,9 +234,12 @@ class RuntimeHWDB:
     as endpoints on the simulation. """
 
     def __init__(self, hardwaredbconfigfile):
-        agfidb_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        agfidb_configfile.read(hardwaredbconfigfile)
-        agfidb_dict = {s:dict(agfidb_configfile.items(s)) for s in agfidb_configfile.sections()}
+
+        agfidb_configfile = None
+        with open(hardwaredbconfigfile, "r") as yaml_file:
+            agfidb_configfile = yaml.safe_load(yaml_file)
+
+        agfidb_dict = agfidb_configfile
 
         self.hwconf_dict = {s: RuntimeHWConfig(s, v) for s, v in agfidb_dict.items()}
 
