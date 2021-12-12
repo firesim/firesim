@@ -10,17 +10,7 @@ from util.streamlogger import StreamLogger
 import time
 from importlib import import_module
 from runtools.run_farm_instances import FPGAInst
-
-def inheritors(klass):
-    subclasses = set()
-    work = [klass]
-    while work:
-	parent = work.pop()
-	for child in parent.__subclasses__():
-	    if child not in subclasses:
-		subclasses.add(child)
-		work.append(child)
-    return subclasses
+from utils import inheritors
 
 rootLogger = logging.getLogger()
 
@@ -102,21 +92,21 @@ class EC2RunFarm(RunFarm):
         if runfarmtagprefix != "":
             runfarmtagprefix += "-"
 
-        self.runfarmtag = runfarmtagprefix + self.args.get('runfarmtag')
+        self.runfarmtag = runfarmtagprefix + self.args['runfarmtag']
 
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
             # if specified, further prefix runfarmtag
             self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
 
-        num_f1_16 = self.args.get('f1_16xlarges')
-        num_f1_4 = self.args.get('f1_4xlarges')
-        num_m4_16 = self.args.get('m4_16xlarges')
-        num_f1_2 = self.args.get('f1_2xlarges')
+        num_f1_16 = self.args['f1_16xlarges']
+        num_f1_4 = self.args['f1_4xlarges']
+        num_m4_16 = self.args['m4_16xlarges']
+        num_f1_2 = self.args['f1_2xlarges']
 
-        self.run_instance_market = self.args.get('runinstancemarket')
-        self.spot_interruption_behavior = self.args.get('spotinterruptionbehavior')
-        self.spot_max_price = self.args.get('spotmaxprice')
+        self.run_instance_market = self.args['runinstancemarket']
+        self.spot_interruption_behavior = self.args['spotinterruptionbehavior']
+        self.spot_max_price = self.args['spotmaxprice']
 
         self.f1_16s = [F1Inst(8) for x in range(num_f1_16)]
         self.f1_4s = [F1Inst(2) for x in range(num_f1_4)]
@@ -315,68 +305,6 @@ class EC2RunFarm(RunFarm):
             if host_node.get_ip() == ipaddr:
                 return host_node
         return None
-
-    def pass_no_net_host_mapping(self, firesim_topology):
-        # only if we have no networks - pack simulations
-        # assumes the user has provided enough or more slots
-        servers = firesim_topology.get_dfs_order_servers()
-        serverind = 0
-
-        for f1_16x in self.f1_16s:
-            for x in range(f1_16x.get_num_fpga_slots_max()):
-                f1_16x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        for f1_4x in self.f1_4s:
-            for x in range(f1_4x.get_num_fpga_slots_max()):
-                f1_4x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        for f1_2x in self.f1_2s:
-            for x in range(f1_2x.get_num_fpga_slots_max()):
-                f1_2x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        assert serverind == len(servers), "ERR: all servers were not assigned to a host."
-
-    def pass_simple_networked_host_node_mapping(self, firesim_topology):
-        """ A very simple host mapping strategy.  """
-        switches = firesim_topology.get_dfs_order_switches()
-        f1_2s_used = 0
-        f1_4s_used = 0
-        f1_16s_used = 0
-        m4_16s_used = 0
-
-        for switch in switches:
-            # Filter out FireSimDummyServerNodes for actually deploying.
-            # Infrastructure after this point will automatically look at the
-            # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
-            downlinknodes = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
-            if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
-                # all downlinks are switches
-                self.m4_16s[m4_16s_used].add_switch(switch)
-                m4_16s_used += 1
-            elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
-                # all downlinks are simulations
-                if (len(downlinknodes) == 1) and (f1_2s_used < len(self.f1_2s)):
-                    self.f1_2s[f1_2s_used].add_switch(switch)
-                    self.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
-                    f1_2s_used += 1
-                elif (len(downlinknodes) <= 2) and (f1_4s_used < len(self.f1_4s)):
-                    self.f1_4s[f1_4s_used].add_switch(switch)
-                    for server in downlinknodes:
-                        self.f1_4s[f1_4s_used].add_simulation(server)
-                    f1_4s_used += 1
-                else:
-                    self.f1_16s[f1_16s_used].add_switch(switch)
-                    for server in downlinknodes:
-                        self.f1_16s[f1_16s_used].add_simulation(server)
-                    f1_16s_used += 1
-            else:
-                assert False, "Mixed downlinks currently not supported."""
 
 
 

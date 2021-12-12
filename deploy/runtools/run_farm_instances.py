@@ -81,6 +81,9 @@ class Inst(object):
         self._next_port += 1
         return retport
 
+    def is_fpga_node(self):
+        return False
+
 class EC2Inst(Inst):
     def __init__(self):
         self.boto3_instance_object = None
@@ -125,7 +128,10 @@ class FPGAInst(object):
         firesimservernode.assign_host_instance(self)
         self.fpga_slots_consumed += 1
 
-class F1Inst(EC2Inst, FPGAInst):
+    def is_fpga_node(self):
+        return True
+
+class F1Inst(FPGAInst, EC2Inst):
     instance_counter = 0
     NAME = "aws-ec2-f1"
 
@@ -138,6 +144,7 @@ class F1Inst(EC2Inst, FPGAInst):
 
         self.instance_deploy_manager = EC2InstanceDeployManager(self)
 
+
 class M4_16(EC2Inst):
     instance_counter = 0
 
@@ -146,7 +153,7 @@ class M4_16(EC2Inst):
         self.instance_id = M4_16.instance_counter
         M4_16.instance_counter += 1
 
-class VitisInst(Inst, FPGAInst):
+class VitisInst(FPGAInst, Inst):
     instance_counter = 0
     NAME = "vitis"
 

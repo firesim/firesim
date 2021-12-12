@@ -148,27 +148,70 @@ class FireSimTopologyWithPasses:
         gviz_graph.render(view=False)
 
     def pass_no_net_host_mapping(self):
-        self.run_farm.pass_no_net_host_mapping(self.firesimtopol)
+        # only if we have no networks - pack simulations
+        # assumes the user has provided enough or more slots
+        servers = self.firesimtopol.get_dfs_order_servers()
+        serverind = 0
+
+        run_farm_nodes = self.run_farm.get_all_host_nodes()
+        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes.sort(reverse=True, key=lambda x: x.get_num_fpga_slots_max()) # largest fpga nodes 1st
+
+        # find unused fpga (starting from largest)
+        for node in fpga_nodes:
+            for slot in range(node.get_num_fpga_slots_max()):
+                node.add_simulation(servers[serverind])
+                serverind += 1
+                if len(servers) == serverind:
+                    return
+        assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
     def pass_simple_networked_host_node_mapping(self):
-        self.run_farm.pass_no_net_host_mapping(self.firesimtopol)
-
-    def mapping_use_one_f1_16xlarge(self):
-        """ Just put everything on one f1.16xlarge """
+        """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
-        f1_2s_used = 0
-        f1_16s_used = 0
-        m4_16s_used = 0
+
+        run_farm_nodes = self.run_farm.get_all_host_nodes()
+        switch_nodes = list(filter(lambda x: not x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes.sort(key=lambda x: x.get_num_fpga_slots_max()) # smallest fpga nodes 1st
 
         for switch in switches:
-            self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
+            # Filter out FireSimDummyServerNodes for actually deploying.
+            # Infrastructure after this point will automatically look at the
+            # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
+            downlinknodes = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
+            if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
+                # all downlinks are switches (use new switch instance for each)
+                for node in switch_nodes:
+                    if node.get_num_switch_slots_consumed() == 0:
+                        node.add_switch(switch)
+            elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
+                # find unused fpga (starting from smallest) that has all the slots needed for adding downlinks (greedy choice)
+                for node in fpga_nodes:
+                    if node.get_num_fpga_slots_consumed() == 0 and node.get_num_fpga_slots_max() >= len(downlinknodes):
+                        node.add_switch(switch)
+                        for server in downlinknodes:
+                            node.add_simulation(server)
+            else:
+                assert False, "Mixed downlinks currently not supported."""
+
+    def mapping_use_one_fpga_node(self):
+        """ Just put everything on one fpga node """
+        switches = self.firesimtopol.get_dfs_order_switches()
+
+        fpga_nodes_used = 0
+        run_farm_nodes = self.run_farm.get_all_host_nodes()
+        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+
+        for switch in switches:
+            fpga_nodes[fpga_nodes_used].add_switch(switch)
             downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 for server in downlinknodes:
-                    self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
+                    fpga_nodes[fpga_nodes_used].add_simulation(server)
             elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 assert False, "MIXED DOWNLINKS NOT SUPPORTED."
-        f1_16s_used += 1
+        fpga_nodes_used += 1
 
     def pass_perform_host_node_mapping(self):
         """ This pass assigns host nodes to nodes in the abstract FireSim

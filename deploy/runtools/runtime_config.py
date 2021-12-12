@@ -18,22 +18,12 @@ from runtools.runtime_hw_config import *
 from util.streamlogger import StreamLogger
 import os
 from importlib import import_module
+from utils import inheritors
 
 LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
-
-def inheritors(klass):
-    subclasses = set()
-    work = [klass]
-    while work:
-	parent = work.pop()
-	for child in parent.__subclasses__():
-	    if child not in subclasses:
-		subclasses.add(child)
-		work.append(child)
-    return subclasses
 
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.ini """
