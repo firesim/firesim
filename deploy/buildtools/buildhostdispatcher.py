@@ -71,10 +71,27 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
 
     def parse_args(self):
         """ Parse build host arguments. """
-        # ip address arg
-        if len(self.args) > self.dispatch_id:
-            self.ip_addr = self.args[self.dispatch_id].keys()[0]
-            self.override_remote_build_dir = self.args[self.dispatch_id][self.ip_addr]["build-dir"]
+        build_hosts_list = self.args["build-hosts"]
+        if len(build_hosts_list) > self.dispatch_id:
+            default_build_dir = self.args.get("default-build-dir")
+
+            build_host = build_hosts_list[self.dispatch_id]
+
+            if type(build_host) is dict:
+                # add element { ip-addr: { arg1: val1, arg2: val2, ... } }
+                assert(len(build_host.keys()) == 1)
+
+                self.ip_addr = build_host.keys()[0]
+                ip_args = build_host.values()[0]
+
+                self.override_remote_build_dir = ip_args.get("override-build-dir", default_build_dir)
+            elif type(build_host) is str:
+                # add element w/ defaults
+
+                self.ip_addr = build_host
+                self.override_remote_build_dir = default_build_dir
+            else:
+                raise Exception("Unknown build host type")
 
             if self.ip_addr == "localhost":
                 self.is_local = True
@@ -82,7 +99,7 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
             rootLogger.info("Using host {} for {} with IP address: {}".format(self.build_config.build_host, self.build_config.get_chisel_triplet(), self.ip_addr))
         else:
             rootLogger.critical("ERROR: Less IPs available than builds. Add more IPs.")
-            sys.exit(1)
+            raise Exception("ERROR: Less IPs available than builds. Add more IPs.")
 
     def request_build_host(self):
         """ In this case, nothing happens since IP address should be pre-setup. """
@@ -140,7 +157,7 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
         self.spot_interruption_behavior = self.args['spot-interruption-behavior']
         self.spot_max_price = self.args['spot-max-price']
 
-        self.override_remote_build_dir = self.args["build-dir"]
+        self.override_remote_build_dir = self.args.get("build-dir")
 
     def request_build_host(self):
         """ Launch an AWS EC2 instance for the build config. """

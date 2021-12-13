@@ -47,20 +47,20 @@ class BuildConfig:
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
         # retrieve the build host section
-        self.build_host = recipe_config_dict.get('build-host')
-        if self.build_host == None:
-            self.build_host = "default-build-host"
+        self.build_host = recipe_config_dict.get('build-host', "default-build-host")
         build_host_conf_dict = build_hosts_configfile[self.build_host]
 
-        assert(len(build_host_conf_dict.items()) == 1)
+        build_host_type = build_host_conf_dict["build-host-type"]
+        build_host_args = build_host_conf_dict["args"]
+
 	build_host_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(BuildHostDispatcher)])
-        self.build_host_dispatcher_class_name = build_host_dispatch_dict[build_host_conf_dict.keys()[0]]
-        build_host_conf_dict = build_host_conf_dict.values()[0]
+
+        build_host_dispatcher_class_name = build_host_dispatch_dict[build_host_type]
 
         # create dispatcher object using class given and pass args to it
         self.build_host_dispatcher = getattr(
             import_module("buildtools.buildhostdispatcher"),
-            self.build_host_dispatcher_class_name)(self, build_host_conf_dict)
+            build_host_dispatcher_class_name)(self, build_host_args)
 
         self.build_host_dispatcher.parse_args()
 

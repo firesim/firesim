@@ -40,8 +40,6 @@ class RunFarm(object):
 
         self.args = args
 
-        self.override_simulation_dir = None
-
     def parse_args(self):
         """ Parse default build host arguments. Can be overridden by child classes. """
         return
@@ -114,8 +112,6 @@ class EC2RunFarm(RunFarm):
         self.f1_4s = [F1Inst(2) for x in range(num_f1_4)]
         self.f1_2s = [F1Inst(1) for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
-
-        self.override_simulation_dir = self.args["simulation-dir"]
 
         allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
         for node in allinsts:
@@ -328,33 +324,52 @@ class IpAddrRunFarm(RunFarm):
     def __init__(self, args):
         RunFarm.__init__(self, args)
 
-        self.fpga_node = None
+        self.fpga_nodes = []
 
     def parse_args(self):
-        # TODO: currently, only supports 1 ip address
-        assert(len(self.args) == 1)
-
-        self.args = self.args[0]
-
 	dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(FPGAInst)])
 
-	ip_addr = self.args.keys()[0]
+        default_num_fpgas = self.args.get("default-num-fpgas")
+        default_platform = self.args.get("default-platform")
+        default_simulation_dir = self.args.get("default-simulation-dir")
 
-	self.args = self.args[ip_addr]
+        runhosts_list = self.args["runhosts"]
 
-	platform_name = self.args["platform"]
-	num_fpgas = self.args["num-fpgas"]
+        # TODO: currently, only supports 1 ip address
+        assert(len(runhosts_list) == 1)
 
-	run_inst_class_name = dispatch_dict[platform_name]
+        for runhost in runhosts_list:
+            if type(runhost) is dict:
+                # add element { ip-addr: { arg1: val1, arg2: val2, ... } }
+                assert(len(runhost.keys()) == 1)
 
-        self.fpga_node = getattr(
-            import_module("runtools.run_farm_instances"),
-            run_inst_class_name)(num_fpgas)
+                ip_addr = runhost.keys()[0]
+                ip_args = runhost.values()[0]
 
-        self.fpga_node.set_ip(ip_addr)
+                num_fpgas = ip_args.get("override-num-fpgas", default_num_fpgas)
+                platform = ip_args.get("override-platform", default_platform)
+                simulation_dir = ip_args.get("override-simulation-dir", default_simulation_dir)
 
-        self.override_simulation_dir = self.args["simulation-dir"]
-        self.fpga_node.set_sim_dir(self.override_simulation_dir)
+                fpga_node = getattr(
+                    import_module("runtools.run_farm_instances"),
+                    dispatch_dict[platform])(num_fpgas)
+
+                fpga_node.set_ip(ip_addr)
+                fpga_node.set_sim_dir(simulation_dir)
+
+                self.fpga_nodes.append(fpga_node)
+            elif type(runhost) is str:
+                # add element w/ defaults
+                fpga_node = getattr(
+                    import_module("runtools.run_farm_instances"),
+                    dispatch_dict[default_platform])(default_num_fpgas)
+
+                fpga_node.set_ip(runhost)
+                fpga_node.set_sim_dir(default_simulation_dir)
+
+                self.fpga_nodes.append(fpga_node)
+            else:
+                raise Exception("Unknown runhost type")
 
     def post_launch_binding(self, mock = False):
         return
@@ -369,12 +384,13 @@ class IpAddrRunFarm(RunFarm):
     def get_all_host_nodes(self):
         """ Get inst objects for all host nodes in the run farm that are bound to
         a real instance. """
-        return [self.fpga_node]
+        return self.fpga_nodes
 
     def lookup_by_ip_addr(self, ipaddr):
         """ Get an instance object from its IP address. """
-        if ipaddr == self.fpga_node.get_ip():
-            return self.fpga_node
+        for host_node in self.get_all_host_nodes():
+            if host_node.get_ip() == ipaddr:
+                return host_node
         return None
 
     def pass_no_net_host_mapping(self, firesim_topology):

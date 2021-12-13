@@ -59,15 +59,16 @@ class InnerRuntimeConfiguration:
 
         run_farm_conf_dict = run_farm_configfile[self.run_farm_requested_name]
 
-        assert(len(run_farm_conf_dict.items()) == 1)
+        runfarm_type = run_farm_conf_dict["runfarm-type"]
+        runfarm_args = run_farm_conf_dict["args"]
+
 	run_farm_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(RunFarm)])
-        self.runfarm_class_name = run_farm_dispatch_dict[run_farm_conf_dict.keys()[0]]
-        run_farm_conf_dict = run_farm_conf_dict.values()[0]
+        runfarm_class_name = run_farm_dispatch_dict[runfarm_type]
 
         # create dispatcher object using class given and pass args to it
         self.run_farm_dispatcher = getattr(
             import_module("runtools.run_farm"),
-            self.runfarm_class_name)(run_farm_conf_dict)
+            runfarm_class_name)(runfarm_args)
 
         self.run_farm_dispatcher.parse_args()
 

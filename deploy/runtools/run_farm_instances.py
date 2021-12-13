@@ -212,6 +212,16 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     def instance_logger(self, logstr):
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)
 
+    def get_simulation_dir(self):
+        remote_home_dir = ""
+        if self.parentnode.override_simulation_dir:
+            remote_home_dir = self.parentnode.override_simulation_dir
+        else:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_home_dir = run('echo $HOME')
+
+        return remote_home_dir
+
     def get_and_install_aws_fpga_sdk(self):
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
@@ -396,13 +406,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
         self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
 
-        # remote paths
-        remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
-        else:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
+        remote_home_dir = self.get_simulation_dir()
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -426,10 +430,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     def copy_switch_slot_infrastructure(self, switchslot):
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
 
-        # remote paths
-        remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        remote_home_dir = self.get_simulation_dir()
 
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -444,10 +445,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     def start_switch_slot(self, switchslot):
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
 
-        # remote paths
-        remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        remote_home_dir = self.get_simulation_dir()
+
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         switch = self.parentnode.switch_slots[switchslot]
         with cd(remote_switch_dir), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -455,13 +454,9 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     def start_sim_slot(self, slotno):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
-        # remote paths
-        remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
-        else:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
+
+        remote_home_dir = self.get_simulation_dir()
+
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -730,6 +725,16 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("xbutil validate --device {} --run quick".format(card_bdf))
 
+    def get_simulation_dir(self):
+        remote_home_dir = ""
+        if self.parentnode.override_simulation_dir:
+            remote_home_dir = self.parentnode.override_simulation_dir
+        else:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_home_dir = run('echo $HOME')
+
+        return remote_home_dir
+
     def copy_sim_slot_infrastructure(self, slotno):
         """ copy all the simulation infrastructure to the remote node. """
         serv = self.parentnode.fpga_slots[slotno]
@@ -739,13 +744,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
         self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
 
-        # remote paths
-        remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
-        else:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
+        remote_home_dir = self.get_simulation_dir()
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -769,10 +768,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def copy_switch_slot_infrastructure(self, switchslot):
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
 
-        # remote paths
-        remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        remote_home_dir = self.get_simulation_dir()
 
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -787,10 +783,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def start_switch_slot(self, switchslot):
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
 
-        # remote paths
-        remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        remote_home_dir = self.get_simulation_dir()
+
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         switch = self.parentnode.switch_slots[switchslot]
         with cd(remote_switch_dir), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -798,13 +792,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
     def start_sim_slot(self, slotno):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
-        # remote paths
-        remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
-        else:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
+
+        remote_home_dir = self.get_simulation_dir()
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         server = self.parentnode.fpga_slots[slotno]
