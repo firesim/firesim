@@ -6,126 +6,141 @@
 # buildafi
 
 # Example Build Recipe
-# [example-recipe-name]
-# # DESIGN SPECIFIC
-# DESIGN=TopModule
-# TARGET_CONFIG=Config
-# deploytriplet=None
-# # RUN PLATFORM SPECIFIC
-# PLATFORM_CONFIG=Config
-# postbuildhook=
-# fpgaplatform=F1BitBuilder
-# s3bucketname=firesim-AWSUSERNAME
-# # BUILD PLATFORM SPECIFIC (if unspecified, use the defaultbuildhost)
-# buildhost=defaultbuildhost
+# example-recipe-name:
+#    # DESIGN SPECIFIC
+#    DESIGN: TopModule
+#    TARGET_CONFIG: Config
+#    deploy-triplet: null
+#    # RUN PLATFORM SPECIFIC
+#    PLATFORM_CONFIG: Config
+#    post-build-hook: null
+#    fpga-platform: F1BitBuilder
+#    s3-bucket-name: firesim-DUMMY
+#    # BUILD PLATFORM SPECIFIC
+#    build-host: default-build-host
 
 test-vitis:
     # # DESIGN SPECIFIC
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    deploytriplet: null
+    deploy-triplet: null
     # # RUN PLATFORM SPECIFIC
     PLATFORM_CONFIG: BaseVitisConfig
-    postbuildhook: null
-    fpgaplatform: VitisBitBuilder
+    post-build-hook: null
+    fpga-platform: VitisBitBuilder
     # # BUILD PLATFORM SPECIFIC
-    buildhost: localbuildhost
+    build-host: local-build-host
 
-## Quad-core, Rocket-based recipes
-#[firesim-rocket-quadcore-nic-l2-llc4mb-ddr3]
-#DESIGN=FireSim
-#TARGET_CONFIG=WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.QuadRocketConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F90MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-## NB: This has a faster host-clock frequency than the NIC-based design, because
-## its uncore runs at half rate relative to the tile.
-#[firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3]
-## DESIGN SPECIFIC
-#DESIGN=FireSim
-#TARGET_CONFIG=DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.QuadRocketConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F140MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-#
-## Single-core, BOOM-based recipes
-#[firesim-boom-singlecore-nic-l2-llc4mb-ddr3]
-#DESIGN=FireSim
-#TARGET_CONFIG=WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.LargeBoomConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F65MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-## NB: This has a faster host-clock frequency than the NIC-based design, because
-## its uncore runs at half rate relative to the tile.
-#[firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3]
-#DESIGN=FireSim
-#TARGET_CONFIG=DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F75MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-#
-## Single-core, CVA6-based recipes
-#[firesim-cva6-singlecore-no-nic-l2-llc4mb-ddr3]
-#DESIGN=FireSim
-#TARGET_CONFIG=DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.CVA6Config
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F90MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-#
-## Single-core, Rocket-based recipes with Gemmini
-#[firesim-rocket-singlecore-gemmini-no-nic-l2-llc4mb-ddr3]
-#DESIGN=FireSim
-#TARGET_CONFIG=DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.GemminiRocketConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F110MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-#
-## RAM Optimizations enabled by adding _MCRams PLATFORM_CONFIG string
-#[firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts]
-#DESIGN=FireSim
-#TARGET_CONFIG=DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_MCRams_F90MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-#
-## Supernode configurations -- multiple instances of an SoC in a single simulator
-#[firesim-supernode-rocket-singlecore-nic-l2-lbp]
-#DESIGN=FireSim
-#TARGET_CONFIG=WithNIC_SupernodeFireSimRocketConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=WithAutoILA_F85MHz_BaseF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
-#
-## MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on runfarm
-#[midasexamples-gcd]
-#TARGET_PROJECT=midasexamples
-#DESIGN=GCD
-#TARGET_CONFIG=NoConfig
-#deploytriplet=None
-#PLATFORM_CONFIG=DefaultF1Config
-#postbuildhook=
-#fpgaplatform=F1BitBuilder
-#s3bucketname=firesim-AWSUSERNAME
+test-vitis-2:
+    # # DESIGN SPECIFIC
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimQuadRocketConfig
+    deploy-triplet: null
+    # # RUN PLATFORM SPECIFIC
+    PLATFORM_CONFIG: BaseVitisConfig
+    post-build-hook: null
+    fpga-platform: VitisBitBuilder
+    # # BUILD PLATFORM SPECIFIC
+    build-host: local-build-host
+
+# Quad-core, Rocket-based recipes
+firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
+    DESIGN: FireSim
+    TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.QuadRocketConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F90MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# NB: This has a faster host-clock frequency than the NIC-based design, because
+# its uncore runs at half rate relative to the tile.
+firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3:
+    DESIGN: FireSim
+    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.QuadRocketConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F140MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# Single-core, BOOM-based recipes
+firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
+    DESIGN: FireSim
+    TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.LargeBoomConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F65MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# NB: This has a faster host-clock frequency than the NIC-based design, because
+# its uncore runs at half rate relative to the tile.
+firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3:
+    DESIGN: FireSim
+    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F75MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# Single-core, CVA6-based recipes
+firesim-cva6-singlecore-no-nic-l2-llc4mb-ddr3:
+    DESIGN: FireSim
+    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.CVA6Config
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F90MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# Single-core, Rocket-based recipes with Gemmini
+firesim-rocket-singlecore-gemmini-no-nic-l2-llc4mb-ddr3:
+    DESIGN: FireSim
+    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.GemminiRocketConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F110MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# RAM Optimizations enabled by adding _MCRams PLATFORM_CONFIG string
+firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts:
+    DESIGN: FireSim
+    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_MCRams_F90MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# Supernode configurations -- multiple instances of an SoC in a single simulator
+firesim-supernode-rocket-singlecore-nic-l2-lbp:
+    DESIGN: FireSim
+    TARGET_CONFIG: WithNIC_SupernodeFireSimRocketConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: WithAutoILA_F85MHz_BaseF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host
+
+# MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on runfarm
+midasexamples-gcd:
+    TARGET_PROJECT: midasexamples
+    DESIGN: GCD
+    TARGET_CONFIG: NoConfig
+    deploy-triplet: null
+    PLATFORM_CONFIG: DefaultF1Config
+    post-build-hook: null
+    fpga-platform: F1BitBuilder
+    s3-bucket-name: firesim-DUMMY
+    build-host: default-build-host

@@ -3,18 +3,20 @@
 # THIS WILL BE USED IF BUILDHOST NOT SPECIFIED IN RECIPE
 # Note: For large designs (ones that would fill a EC2.2xlarge/Xilinx VU9P)
 # Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
-# non-default instancetype.
-defaultbuildhost:
+# non-default instance type.
+default-build-host:
     aws-ec2:
-        instancetype: z1d.2xlarge
-        buildinstancemarket: ondemand
-        spotinterruptionbehavior: terminate
-        spotmaxprice: ondemand
-        # change builddir w/ remote machines (empty defaults to no change)
-        remotebuilddir: null
+        instance-type: z1d.2xlarge
+        build-instance-market: ondemand
+        spot-interruption-behavior: terminate
+        spot-max-price: ondemand
+        # change location of build on build host
+        build-dir: null
 
-localbuildhost:
+local-build-host:
     unmanaged:
-        remotebuilddir: null
-        ip_addresses:
-            - localhost
+        - localhost:
+            # change location of build on build host (abs. path)
+            build-dir: null
+        - "192.168.1.254":
+            build-dir: null

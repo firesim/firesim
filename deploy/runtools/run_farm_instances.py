@@ -56,12 +56,16 @@ class Inst(object):
         self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
         self.switch_slots_consumed = 0
         self._next_port = 10000 # track ports to allocate for server switch model ports
+        self.override_simulation_dir = None
 
     def get_ip(self):
         raise NotImplementedError
 
     def set_ip(self, ip):
         raise NotImplementedError
+
+    def set_sim_dir(self, drctry):
+        self.override_simulation_dir = drctry
 
     def add_switch(self, firesimswitchnode):
         """ Add a switch to the next available switch slot. """
@@ -394,8 +398,11 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
         # remote paths
         remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        if self.parentnode.override_simulation_dir:
+            remote_home_dir = self.parentnode.override_simulation_dir
+        else:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_home_dir = run('echo $HOME')
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -450,8 +457,11 @@ class EC2InstanceDeployManager(InstanceDeployManager):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
         # remote paths
         remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        if self.parentnode.override_simulation_dir:
+            remote_home_dir = self.parentnode.override_simulation_dir
+        else:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_home_dir = run('echo $HOME')
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -731,8 +741,11 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
         # remote paths
         remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        if self.parentnode.override_simulation_dir:
+            remote_home_dir = self.parentnode.override_simulation_dir
+        else:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_home_dir = run('echo $HOME')
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -787,8 +800,12 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
         # remote paths
         remote_home_dir = ""
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            remote_home_dir = run('echo $HOME')
+        if self.parentnode.override_simulation_dir:
+            remote_home_dir = self.parentnode.override_simulation_dir
+        else:
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                remote_home_dir = run('echo $HOME')
+
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):

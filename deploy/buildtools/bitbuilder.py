@@ -36,19 +36,6 @@ class BitBuilder:
         # no default args
         return
 
-    def get_arg(self, arg_wanted):
-        """ Retrieve argument from arg dict and error if not found.
-
-        Parameters:
-            arg_wanted (str): Argument to get value of
-        Returns:
-            (str or None): Value of argument wanted
-        """
-        if not self.arg_dict.has_key(arg_wanted):
-            rootLogger.critical("ERROR: Unable to find arg {} for {}".format(arg_wanted, self.__name__))
-            sys.exit(1)
-        return self.arg_dict.get(arg_wanted)
-
     def setup(self):
         raise NotImplementedError
 
@@ -112,8 +99,8 @@ class BitBuilder:
         hwdb_entry += "    platform: " + platform_name + "\n"
         for l in run_platform_lines:
             hwdb_entry += "    " + l + "\n"
-        hwdb_entry += "    deploytripletoverride: null\n"
-        hwdb_entry += "    customruntimeconfig: null\n"
+        hwdb_entry += "    deploy-triplet-override: null\n"
+        hwdb_entry += "    custom-runtime-config: null\n"
 
         return hwdb_entry
 
@@ -128,12 +115,12 @@ class F1BitBuilder(BitBuilder):
         # get default arguments
         BitBuilder.parse_args(self)
 
-        self.s3_bucketname = self.get_arg('s3bucketname')
+        self.s3_bucketname = self.arg_dict['s3-bucket-name']
         if valid_aws_configure_creds():
             aws_resource_names_dict = aws_resource_names()
-            if aws_resource_names_dict['s3bucketname'] is not None:
+            if aws_resource_names_dict['s3-bucket-name'] is not None:
                 # in tutorial mode, special s3 bucket name
-                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+                self.s3_bucketname = aws_resource_names_dict['s3-bucket-name']
 
     def setup(self):
         auto_create_bucket(self.s3_bucketname)

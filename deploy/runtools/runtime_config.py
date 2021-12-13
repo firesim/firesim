@@ -71,12 +71,12 @@ class InnerRuntimeConfiguration:
 
         self.run_farm_dispatcher.parse_args()
 
-        self.topology = runtime_dict['targetconfig']['topology']
-        self.no_net_num_nodes = int(runtime_dict['targetconfig']['no_net_num_nodes'])
-        self.linklatency = int(runtime_dict['targetconfig']['linklatency'])
-        self.switchinglatency = int(runtime_dict['targetconfig']['switchinglatency'])
-        self.netbandwidth = int(runtime_dict['targetconfig']['netbandwidth'])
-        self.profileinterval = int(runtime_dict['targetconfig']['profileinterval'])
+        self.topology = runtime_dict['target-config']['topology']
+        self.no_net_num_nodes = int(runtime_dict['target-config']['no-net-num-nodes'])
+        self.linklatency = int(runtime_dict['target-config']['link-latency'])
+        self.switchinglatency = int(runtime_dict['target-config']['switching-latency'])
+        self.netbandwidth = int(runtime_dict['target-config']['net-bandwidth'])
+        self.profileinterval = int(runtime_dict['target-config']['profile-interval'])
         # Default values
         self.trace_enable = False
         self.trace_select = "0"
@@ -95,22 +95,22 @@ class InnerRuntimeConfiguration:
             self.trace_select = runtime_dict['tracing'].get('selector', "0")
             self.trace_start = runtime_dict['tracing'].get('start', "0")
             self.trace_end = runtime_dict['tracing'].get('end', "-1")
-            self.trace_output_format = runtime_dict['tracing'].get('output_format', "0")
+            self.trace_output_format = runtime_dict['tracing'].get('output-format', "0")
         if 'autocounter' in runtime_dict:
-            self.autocounter_readrate = int(runtime_dict['autocounter'].get('readrate', "0"))
-        self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
-        if 'hostdebug' in runtime_dict:
-            self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
-            self.disable_asserts = runtime_dict['hostdebug'].get('disable_synth_asserts') == "yes"
-        if 'synthprint' in runtime_dict:
-            self.print_start = runtime_dict['synthprint'].get("start", "0")
-            self.print_end = runtime_dict['synthprint'].get("end", "-1")
-            self.print_cycle_prefix = runtime_dict['synthprint'].get("cycleprefix", "yes") == "yes"
+            self.autocounter_readrate = int(runtime_dict['autocounter'].get('read-rate', "0"))
+        self.defaulthwconfig = runtime_dict['target-config']['default-hw-config']
+        if 'host-debug' in runtime_dict:
+            self.zerooutdram = runtime_dict['host-debug'].get('zero-out-dram') == "yes"
+            self.disable_asserts = runtime_dict['host-debug'].get('disable-synth-asserts') == "yes"
+        if 'synth-print' in runtime_dict:
+            self.print_start = runtime_dict['synth-print'].get("start", "0")
+            self.print_end = runtime_dict['synth-print'].get("end", "-1")
+            self.print_cycle_prefix = runtime_dict['synth-print'].get("cycle-prefix", "yes") == "yes"
 
-        self.workload_name = runtime_dict['workload']['workloadname']
+        self.workload_name = runtime_dict['workload']['workload-name']
         # an extra tag to differentiate workloads with the same name in results names
-        self.suffixtag = runtime_dict['workload']['suffixtag'] if 'suffixtag' in runtime_dict['workload'] else ""
-        self.terminateoncompletion = runtime_dict['workload']['terminateoncompletion'] == "yes"
+        self.suffixtag = runtime_dict['workload']['suffix-tag'] if 'suffix-tag' in runtime_dict['workload'] else ""
+        self.terminateoncompletion = runtime_dict['workload']['terminate-on-completion'] == "yes"
 
     def __str__(self):
         return pprint.pformat(vars(self))

@@ -40,6 +40,8 @@ class RunFarm(object):
 
         self.args = args
 
+        self.override_simulation_dir = None
+
     def parse_args(self):
         """ Parse default build host arguments. Can be overridden by child classes. """
         return
@@ -92,7 +94,7 @@ class EC2RunFarm(RunFarm):
         if runfarmtagprefix != "":
             runfarmtagprefix += "-"
 
-        self.runfarmtag = runfarmtagprefix + self.args['runfarmtag']
+        self.runfarmtag = runfarmtagprefix + self.args['runfarm-tag']
 
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
@@ -104,14 +106,20 @@ class EC2RunFarm(RunFarm):
         num_m4_16 = self.args['m4_16xlarges']
         num_f1_2 = self.args['f1_2xlarges']
 
-        self.run_instance_market = self.args['runinstancemarket']
-        self.spot_interruption_behavior = self.args['spotinterruptionbehavior']
-        self.spot_max_price = self.args['spotmaxprice']
+        self.run_instance_market = self.args['run-instance-market']
+        self.spot_interruption_behavior = self.args['spot-interruption-behavior']
+        self.spot_max_price = self.args['spot-max-price']
 
         self.f1_16s = [F1Inst(8) for x in range(num_f1_16)]
         self.f1_4s = [F1Inst(2) for x in range(num_f1_4)]
         self.f1_2s = [F1Inst(1) for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
+
+        self.override_simulation_dir = self.args["simulation-dir"]
+
+        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
+        for node in allinsts:
+            node.set_sim_dir(self.override_simulation_dir)
 
     def bind_mock_instances_to_objects(self):
         """ Only used for testing. Bind mock Boto3 instances to objects. """
@@ -323,15 +331,19 @@ class IpAddrRunFarm(RunFarm):
         self.fpga_node = None
 
     def parse_args(self):
-
-        # only supports 1 ip address
+        # TODO: currently, only supports 1 ip address
         assert(len(self.args) == 1)
+
         self.args = self.args[0]
 
 	dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(FPGAInst)])
 
-	platform_name = self.args.get("description").get("platform")
-	num_fpgas = self.args.get("description").get("num-fpgas")
+	ip_addr = self.args.keys()[0]
+
+	self.args = self.args[ip_addr]
+
+	platform_name = self.args["platform"]
+	num_fpgas = self.args["num-fpgas"]
 
 	run_inst_class_name = dispatch_dict[platform_name]
 
@@ -339,7 +351,10 @@ class IpAddrRunFarm(RunFarm):
             import_module("runtools.run_farm_instances"),
             run_inst_class_name)(num_fpgas)
 
-        self.fpga_node.set_ip(self.args.get("ip-address"))
+        self.fpga_node.set_ip(ip_addr)
+
+        self.override_simulation_dir = self.args["simulation-dir"]
+        self.fpga_node.set_sim_dir(self.override_simulation_dir)
 
     def post_launch_binding(self, mock = False):
         return

@@ -35,8 +35,8 @@ class BuildConfigFile:
             global_build_configfile = yaml.safe_load(yaml_file)
 
         # aws specific options
-        self.agfistoshare = global_build_configfile['agfistoshare']
-        self.acctids_to_sharewith = global_build_configfile['sharewithaccounts'].values()
+        self.agfistoshare = global_build_configfile['agfis-to-share']
+        self.acctids_to_sharewith = global_build_configfile['share-with-accounts'].values()
 
         # this is a list of actual builds to run
         builds_to_run_list = global_build_configfile['builds']

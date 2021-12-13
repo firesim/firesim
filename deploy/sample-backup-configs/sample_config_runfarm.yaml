@@ -1,17 +1,20 @@
 aws-ec2-f1-runfarm:
     aws-ec2-f1:
-        runfarmtag: mainrunfarm
+        runfarm-tag: mainrunfarm
         f1_16xlarges: 0
         m4_16xlarges: 0
         f1_4xlarges: 0
         f1_2xlarges: 1
-        runinstancemarket: ondemand
-        spotinterruptionbehavior: terminate
-        spotmaxprice: ondemand
+        run-instance-market: ondemand
+        spot-interruption-behavior: terminate
+        spot-max-price: ondemand
+        # change simulation directory default location (abs. path)
+        simulation-dir: null
 
 local-runfarm:
     unmanaged:
-        - ip-address: localhost
-          description:
+        - localhost:
               platform: vitis
               num-fpgas: 4
+              # change simulation directory default location
+              simulation-dir: /scratch/abejgonza

@@ -24,9 +24,10 @@ builds:
     # firesim-singlecore-sha3-no-nic-l2-llc4mb-ddr3
     # firesim-singlecore-sha3-print-no-nic-l2-llc4mb-ddr3
     - test-vitis
+    - test-vitis-2
 
 
-agfistoshare:
+agfis-to-share:
     - firesim-rocket-quadcore-nic-l2-llc4mb-ddr3
     - firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
     - firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3
@@ -38,7 +39,7 @@ agfistoshare:
 #    - firesim-singlecore-sha3-no-nic-l2-llc4mb-ddr3
 #    - firesim-singlecore-sha3-print-no-nic-l2-llc4mb-ddr3
 
-sharewithaccounts:
+share-with-accounts:
 # To share with a specific user:
     somebodysname: 123456789012
 # To share publicly:

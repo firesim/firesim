@@ -39,17 +39,17 @@ class BuildConfig:
         self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT')
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
-        self.deploytriplet = recipe_config_dict['deploytriplet']
+        self.deploytriplet = recipe_config_dict['deploy-triplet']
         self.launch_time = launch_time
 
         # run platform specific options
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
-        self.post_build_hook = recipe_config_dict['postbuildhook']
+        self.post_build_hook = recipe_config_dict['post-build-hook']
 
         # retrieve the build host section
-        self.build_host = recipe_config_dict.get('buildhost')
+        self.build_host = recipe_config_dict.get('build-host')
         if self.build_host == None:
-            self.build_host = "defaultbuildhost"
+            self.build_host = "default-build-host"
         build_host_conf_dict = build_hosts_configfile[self.build_host]
 
         assert(len(build_host_conf_dict.items()) == 1)
@@ -64,7 +64,7 @@ class BuildConfig:
 
         self.build_host_dispatcher.parse_args()
 
-        self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpgaplatform')
+        self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform')
         if self.fpga_bit_builder_dispatcher_class_name == None:
             self.fpga_bit_builder_dispatcher_class_name = "F1BitBuilder"
         # create run platform dispatcher object using class given and pass args to it

@@ -24,12 +24,11 @@ class BuildHostDispatcher(object):
         # used if dispatcher refers to local build host
         self.is_local = False
 
-        # used to override where to do the fpga build (if done remotely)
         self.override_remote_build_dir = None
 
     def parse_args(self):
         """ Parse default build host arguments. Can be overridden by child classes. """
-        self.override_remote_build_dir = self.args.get("remotebuilddir")
+        raise NotImplementedError
 
     def request_build_host(self):
         """ Request build host to use for build. """
@@ -59,7 +58,7 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
 
         Parameters:
             build_config (BuildConfig): Build config associated with this dispatcher
-            args (dict): Dict of args (i.e. options) passed to the dispatcher
+            args (list): List of args (i.e. options) passed to the dispatcher
         """
 
         BuildHostDispatcher.__init__(self, build_config, args)
@@ -70,20 +69,17 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
         self.dispatch_id = IPAddrBuildHostDispatcher.dispatch_counter
         IPAddrBuildHostDispatcher.dispatch_counter += 1
 
-        rootLogger.info("Using host {} for {}".format(self.build_config.build_host, self.build_config.get_chisel_triplet()))
-
     def parse_args(self):
         """ Parse build host arguments. """
-        # get default arguments
-        BuildHostDispatcher.parse_args(self)
-
         # ip address arg
-        if len(self.args.get("ip_addresses")) > self.dispatch_id:
-            self.ip_addr = self.args.get("ip_addresses")[self.dispatch_id]
+        if len(self.args) > self.dispatch_id:
+            self.ip_addr = self.args[self.dispatch_id].keys()[0]
+            self.override_remote_build_dir = self.args[self.dispatch_id][self.ip_addr]["build-dir"]
+
             if self.ip_addr == "localhost":
                 self.is_local = True
 
-            rootLogger.info("Using host {} with IP address: {}".format(self.build_config.build_host, self.ip_addr))
+            rootLogger.info("Using host {} for {} with IP address: {}".format(self.build_config.build_host, self.build_config.get_chisel_triplet(), self.ip_addr))
         else:
             rootLogger.critical("ERROR: Less IPs available than builds. Add more IPs.")
             sys.exit(1)
@@ -138,14 +134,13 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
 
     def parse_args(self):
         """ Parse build host arguments. """
-        # get default arguments
-        BuildHostDispatcher.parse_args(self)
-
         # get aws specific args
-        self.instance_type = self.get_arg('instancetype')
-        self.build_instance_market = self.get_arg('buildinstancemarket')
-        self.spot_interruption_behavior = self.get_arg('spotinterruptionbehavior')
-        self.spot_max_price = self.get_arg('spotmaxprice')
+        self.instance_type = self.args['instance-type']
+        self.build_instance_market = self.args['build-instance-market']
+        self.spot_interruption_behavior = self.args['spot-interruption-behavior']
+        self.spot_max_price = self.args['spot-max-price']
+
+        self.override_remote_build_dir = self.args["build-dir"]
 
     def request_build_host(self):
         """ Launch an AWS EC2 instance for the build config. """
