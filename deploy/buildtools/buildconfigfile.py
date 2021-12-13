@@ -6,6 +6,8 @@ import pprint
 import logging
 import sys
 import yaml
+from collections import defaultdict
+from importlib import import_module
 
 from fabric.api import *
 from runtools.runtime_hw_config import RuntimeHWDB
@@ -71,16 +73,32 @@ class BuildConfigFile:
 
     def request_build_hosts(self):
         """ Launch an instance for the builds. Exits the program if an IP address is reused. """
-        # TODO: optimization: batch together items using the same buildhost
-        for build in self.builds_list:
-            build.build_host_dispatcher.request_build_host()
-            num_ips = len(self.build_ip_set)
-            ip = build.build_host_dispatcher.get_build_host_ip()
-            self.build_ip_set.add(ip)
-            if num_ips == len(self.build_ip_set):
-                rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
-                self.release_build_hosts()
-                sys.exit(1)
+
+        def categorize(seq):
+            class_names = list(map(lambda x: x.build_host_dispatcher.__class__.__name__, seq))
+            class_builds_zipped = zip(class_names, seq)
+
+            d = defaultdict(list)
+            for c, b in class_builds_zipped:
+                d[c].append(b)
+
+            return d
+
+        cat = categorize(self.builds_list)
+
+        for bhd_class, build_hosts in cat.items():
+            # batch launching build hosts of similar types
+            getattr(import_module("buildtools.buildhostdispatcher"),
+                bhd_class).request_build_hosts(list(map(lambda x: x.build_host_dispatcher, build_hosts)))
+
+            for build in build_hosts:
+                num_ips = len(self.build_ip_set)
+                ip = build.build_host_dispatcher.get_build_host_ip()
+                self.build_ip_set.add(ip)
+                if num_ips == len(self.build_ip_set):
+                    rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
+                    self.release_build_hosts()
+                    sys.exit(1)
 
     def wait_on_build_host_initializations(self):
         """ Block until all build instances are launched """

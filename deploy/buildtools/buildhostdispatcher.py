@@ -34,6 +34,11 @@ class BuildHostDispatcher(object):
         """ Request build host to use for build. """
         raise NotImplementedError
 
+    # technically not inherited, but put here to make things clear
+    @staticmethod
+    def request_build_hosts(build_host_dispatchers):
+        return
+
     def wait_on_build_host_initialization(self):
         """ Ensure build host is launched and ready to be used. """
         raise NotImplementedError
@@ -105,6 +110,10 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
         """ In this case, nothing happens since IP address should be pre-setup. """
         return
 
+    @staticmethod
+    def request_build_hosts(build_host_dispatchers):
+        return
+
     def wait_on_build_host_initialization(self):
         """ In this case, nothing happens since IP address should be pre-setup. """
         return
@@ -162,8 +171,34 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
     def request_build_host(self):
         """ Launch an AWS EC2 instance for the build config. """
 
-        buildconf = self.build_config
+        build_instance_market = self.build_instance_market
+        spot_interruption_behavior = self.spot_interruption_behavior
+        spot_max_price = self.spot_max_price
 
+        num_instances = 1
+        self.launched_instance_object = EC2BuildHostDispatcher.ec2_launch_instances(
+            self.instance_type,
+            num_instances,
+            build_instance_market,
+            spot_interruption_behavior,
+            spot_max_price)[0]
+
+    @staticmethod
+    def request_build_hosts(build_host_dispatchers):
+        amt_requested = len(build_host_dispatchers)
+
+        launched_objs = EC2BuildHostDispatcher.ec2_launch_instances(
+            instance_type,
+            amt_requested,
+            build_instance_market,
+            spot_interruption_behavior,
+            spot_max_price)
+
+        for bh, lo in zip(build_host_dispatchers, launched_objs):
+            bh.launched_instance_object = lo
+
+    @staticmethod
+    def ec2_launch_instances(inst_type, num_insts, build_inst_market, spot_int_behav, spot_max_price):
         # get access to the runfarmprefix, which we will apply to build
         # instances too now.
         aws_resource_names_dict = aws_resource_names()
@@ -171,17 +206,13 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
         # in which case we give an empty build farm prefix
         build_farm_prefix = aws_resource_names_dict['runfarmprefix']
 
-        build_instance_market = self.build_instance_market
-        spot_interruption_behavior = self.spot_interruption_behavior
-        spot_max_price = self.spot_max_price
-
         buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
-        num_instances = 1
-        self.launched_instance_object = launch_instances(
-            self.instance_type,
-            num_instances,
-            build_instance_market,
-            spot_interruption_behavior,
+
+        return launch_instances(
+            inst_type,
+            num_insts,
+            build_inst_market,
+            spot_int_behav,
             spot_max_price,
             blockdevices=[
                 {
@@ -193,7 +224,7 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
                 },
             ],
             tags={ 'fsimbuildcluster': buildfarmprefix },
-            randomsubnet=True)[0]
+            randomsubnet=True)
 
     def wait_on_build_host_initialization(self):
         """ Wait for EC2 instance launch. """
