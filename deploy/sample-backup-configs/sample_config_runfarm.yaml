@@ -1,5 +1,6 @@
 aws-ec2-f1-runfarm:
-    aws-ec2-f1:
+    runfarm-type: aws-ec2-f1
+    args:
         runfarm-tag: mainrunfarm
         f1_16xlarges: 0
         m4_16xlarges: 0
@@ -12,9 +13,16 @@ aws-ec2-f1-runfarm:
         simulation-dir: null
 
 local-runfarm:
-    unmanaged:
-        - localhost:
-              platform: vitis
-              num-fpgas: 4
-              # change simulation directory default location
-              simulation-dir: /scratch/abejgonza
+    runfarm-type: unmanaged
+    args:
+        default-num-fpgas: 4
+        default-platform: vitis
+        default-simulation-dir: /scratch/abejgonza
+        runhosts:
+            - localhost
+#            - user@ip1
+#            - user@ip2:
+#                override-platform: PLATFORM
+#                override-num-fpgas: NUM
+#                override-simulation-dir: DIR
+
