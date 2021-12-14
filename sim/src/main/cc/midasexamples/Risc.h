@@ -1,10 +1,10 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
 typedef std::vector< uint32_t > app_t;
 
-class Risc_t: public virtual simif_t
+class Risc_t: public simif_peek_poke_t
 {
   public:
   uint32_t expected = 4;

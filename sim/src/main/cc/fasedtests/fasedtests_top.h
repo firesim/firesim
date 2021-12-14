@@ -4,19 +4,19 @@
 
 #include <memory>
 
-#include "simif.h"
+#include "midasexamples/simif_peek_poke.h"
 #include "bridges/bridge_driver.h"
 #include "bridges/fpga_model.h"
 #include "firesim/systematic_scheduler.h"
 
 #include "bridges/synthesized_prints.h"
 
-class fasedtests_top_t: virtual simif_t, public systematic_scheduler_t
+class fasedtests_top_t: virtual simif_peek_poke_t, public systematic_scheduler_t
 {
     public:
         fasedtests_top_t(int argc, char** argv);
         ~fasedtests_top_t() { }
-        void run();
+        int run();
 
     protected:
         void add_bridge_driver(bridge_driver_t* bridge_driver) {

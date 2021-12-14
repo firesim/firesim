@@ -11,6 +11,7 @@
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
+#include "bridges/reset_pulse.h"
 
 fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 {
@@ -30,6 +31,9 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
         }
     }
 
+#ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
+INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
+#endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_0
     INSTANTIATE_FASED(fpga_models.push_back, 0)
@@ -97,7 +101,7 @@ int fasedtests_top_t::exit_code(){
 }
 
 
-void fasedtests_top_t::run() {
+int fasedtests_top_t::run() {
     for (auto &e: fpga_models) {
         e->init();
     }
@@ -111,11 +115,7 @@ void fasedtests_top_t::run() {
         zero_out_dram();
     }
     fprintf(stderr, "Commencing simulation.\n");
-    uint64_t start_hcycle = hcycle();
-    uint64_t start_time = timestamp();
-
-    // Assert reset T=0 -> 50
-    target_reset(50);
+    record_start_times();
 
     while (!simulation_complete() && !has_timed_out()) {
         run_scheduled_tasks();
@@ -125,13 +125,10 @@ void fasedtests_top_t::run() {
         }
     }
 
-    uint64_t end_time = timestamp();
+    record_end_times();
+    fprintf(stderr, "\nSimulation complete.\n");
+
     uint64_t end_cycle = actual_tcycle();
-    uint64_t hcycles = hcycle() - start_hcycle;
-    double sim_time = diff_secs(end_time, start_time);
-    double sim_speed = ((double) end_cycle) / (sim_time * 1000.0);
-    // always print a newline after target's output
-    fprintf(stderr, "\n");
     int exitcode = exit_code();
     if (exitcode) {
         fprintf(stderr, "*** FAILED *** (code = %d) after %llu cycles\n", exitcode, end_cycle);
@@ -140,21 +137,18 @@ void fasedtests_top_t::run() {
     } else {
         fprintf(stderr, "*** PASSED *** after %llu cycles\n", end_cycle);
     }
-    if (sim_speed > 1000.0) {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f MHz\n", sim_time, sim_speed / 1000.0);
-    } else {
-        fprintf(stderr, "time elapsed: %.1f s, simulation speed = %.2f KHz\n", sim_time, sim_speed);
-    }
-    double fmr = ((double) hcycles / end_cycle);
-    fprintf(stderr, "FPGA-Cycles-to-Model-Cycles Ratio (FMR): %.2f\n", fmr);
-    expect(!exitcode, NULL);
+
+    print_simulation_performance_summary();
 
     for (auto e: fpga_models) {
         e->finish();
     }
-#ifdef PRINTBRIDGEMODULE_0_PRESENT
-    print_bridge->finish();
-#endif
+
+    for (auto &e: bridges) {
+        e->finish();
+    }
+    this->host_finish();
+    return (exitcode || has_timed_out()) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 
@@ -177,6 +171,5 @@ class fasedtests_driver_t:
 int main(int argc, char** argv) {
     fasedtests_driver_t driver(argc, argv);
     driver.init(argc, argv);
-    driver.run();
-    return driver.finish();
+    return driver.run();
 }

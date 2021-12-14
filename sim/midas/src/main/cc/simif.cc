@@ -15,23 +15,19 @@ double diff_secs(midas_time_t end, midas_time_t start) {
 }
 
 simif_t::simif_t() {
-  pass = true;
-  t = 0;
-  fail_t = 0;
   seed = time(NULL); // FIXME: better initail seed?
   SIMULATIONMASTER_0_substruct_create;
   this->master_mmio_addrs = SIMULATIONMASTER_0_substruct;
   LOADMEMWIDGET_0_substruct_create;
   this->loadmem_mmio_addrs = LOADMEMWIDGET_0_substruct;
-  PEEKPOKEBRIDGEMODULE_0_substruct_create;
-  this->defaultiowidget_mmio_addrs = PEEKPOKEBRIDGEMODULE_0_substruct;
   CLOCKBRIDGEMODULE_0_substruct_create;
   this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;
 }
 
-void simif_t::init(int argc, char** argv, bool log) {
+void simif_t::init(int argc, char** argv) {
+  // Do any post-constructor initialization required before requesting MMIO
+  this->host_init(argc, argv);
   while(!read(this->master_mmio_addrs->INIT_DONE));
-  this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
   std::string loadmem;
   bool fastloadmem = false;
@@ -68,77 +64,6 @@ uint64_t simif_t::hcycle() {
     data_t cycle_l = read(this->clock_bridge_mmio_addrs->hCycle_0);
     data_t cycle_h = read(this->clock_bridge_mmio_addrs->hCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
-}
-
-void simif_t::target_reset(int pulse_length) {
-  poke(reset, 1);
-  take_steps(pulse_length, true);
-  poke(reset, 0);
-}
-
-// A default finish method used in simple drivers.
-int simif_t::finish() {
-  record_end_times();
-  fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
-  if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
-  fprintf(stderr, "SEED: %ld\n", seed);
-  this->print_simulation_performance_summary();
-
-  return pass ? EXIT_SUCCESS : EXIT_FAILURE;
-}
-
-static const size_t data_t_chunks = sizeof(data_t) / sizeof(uint32_t);
-
-void simif_t::poke(size_t id, mpz_t& value) {
-  if (log) {
-    char* v_str = mpz_get_str(NULL, 16, value);
-    fprintf(stderr, "* POKE %s.%s <- 0x%s *\n", TARGET_NAME, INPUT_NAMES[id], v_str);
-    free(v_str);
-  }
-  size_t size;
-  data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
-  for (size_t i = 0 ; i < INPUT_CHUNKS[id] ; i++) {
-    write(INPUT_ADDRS[id]+ (i * sizeof(data_t)), i < size ? data[i] : 0);
-  }
-}
-
-void simif_t::peek(size_t id, mpz_t& value) {
-  const size_t size = (const size_t)OUTPUT_CHUNKS[id];
-  data_t data[size];
-  for (size_t i = 0 ; i < size ; i++) {
-    data[i] = read((size_t)OUTPUT_ADDRS[id] + (i * sizeof(data_t)) );
-  }
-  mpz_import(value, size, -1, sizeof(data_t), 0, 0, data);
-  if (log) {
-    char* v_str = mpz_get_str(NULL, 16, value);
-    fprintf(stderr, "* PEEK %s.%s -> 0x%s *\n", TARGET_NAME, (const char*)OUTPUT_NAMES[id], v_str);
-    free(v_str);
-  }
-}
-
-bool simif_t::expect(size_t id, mpz_t& expected) {
-  mpz_t value;
-  mpz_init(value);
-  peek(id, value);
-  bool pass = mpz_cmp(value, expected) == 0;
-  if (log) {
-    char* v_str = mpz_get_str(NULL, 16, value);
-    char* e_str = mpz_get_str(NULL, 16, expected);
-    fprintf(stderr, "* EXPECT %s.%s -> 0x%s ?= 0x%s : %s\n",
-      TARGET_NAME, (const char*)OUTPUT_NAMES[id], v_str, e_str, pass ? "PASS" : "FAIL");
-    free(v_str);
-    free(e_str);
-  }
-  mpz_clear(value);
-  return expect(pass, NULL);
-}
-
-void simif_t::step(uint32_t n, bool blocking) {
-  if (n == 0) return;
-  // take steps
-  if (log) fprintf(stderr, "* STEP %d -> %llu *\n", n, (t + n));
-  take_steps(n, blocking);
-  t += n;
 }
 
 void simif_t::load_mem(std::string filename) {

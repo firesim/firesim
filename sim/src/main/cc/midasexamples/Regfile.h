@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,7 +18,7 @@ const size_t reg_w_en_ios[reg_n_writes] = { io_writes_0_en, io_writes_1_en };
 const size_t reg_r_addr_ios[reg_n_reads] = { io_reads_0_addr, io_reads_1_addr };
 const size_t reg_r_data_ios[reg_n_reads] = { io_reads_0_data, io_reads_1_data };
 
-struct Regfile_t: virtual simif_t
+struct Regfile_t: public simif_peek_poke_t
 {
 
   Regfile_t(int argc, char** argv) {}

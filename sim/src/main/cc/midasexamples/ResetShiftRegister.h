@@ -1,8 +1,8 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
-class ResetShiftRegister_t: public virtual simif_t
+class ResetShiftRegister_t: public simif_peek_poke_t
 {
 public:
   ResetShiftRegister_t(int argc, char** argv) {}
