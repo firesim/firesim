@@ -150,7 +150,7 @@ class Builder:
             f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer['gcc']+'=y\n')
             f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer['gcc']+'"\n')
             f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer['gcc']+'=y\n')
-            f.write(f'BR2_JLEVEL='+str(wlutil.getOpt('jlevel'))+'\n')
+            f.write('BR2_JLEVEL='+str(wlutil.getOpt('jlevel'))+'\n')
 
         # Default Configuration (allows us to bump BR independently of our configs)
         defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
