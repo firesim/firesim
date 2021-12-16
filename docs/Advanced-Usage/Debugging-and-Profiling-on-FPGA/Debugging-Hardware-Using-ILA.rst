@@ -21,7 +21,7 @@ appropriately sized ILA instance.
 Enabling AutoILA
 ----------------
 
-To enable AutoILA, mixins `WithILATopWiringTransform` and `WithAutoILA` must be appended to the `PLATFORM_CONFIG`. These are appended by default to the `BaseF1Config`.
+To enable AutoILA, mixin `WithAutoILA` must be appended to the `PLATFORM_CONFIG`. This is appended by default to the `BaseF1Config`.
 
 Annotating Signals
 ------------------------
