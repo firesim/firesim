@@ -151,8 +151,9 @@ jobs:
           TERM: xterm-256color
       steps:
           - repo-setup-aws
-          - run: Printenv
-            command: printenv
+          - run:
+              name: Print the env
+              command: printenv
           - run:
               name: Initialize FireSim manager
               command: |
