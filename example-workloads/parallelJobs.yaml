@@ -1,0 +1,12 @@
+{
+  "name" : "parallelJobs",
+  "base" : "br-base.json",
+  "jobs" : [
+    {
+      "name" : "j0"
+    },
+    {
+      "name" : "j1"
+    }
+  ]
+}
