@@ -18,6 +18,11 @@ signals directly in the Chisel source. These will be consumed by a downstream
 FIRRTL pass which wires out the annotated signals, and binds them to an
 appropriately sized ILA instance.
 
+Enabling AutoILA
+----------------
+
+To enable AutoILA, mixin `WithAutoILA` must be appended to the `PLATFORM_CONFIG`. This is appended by default to the `BaseF1Config`.
+
 Annotating Signals
 ------------------------
 
