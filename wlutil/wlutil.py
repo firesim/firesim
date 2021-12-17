@@ -19,6 +19,26 @@ import pprint
 import doit
 import importlib.util
 import psutil
+import signal
+
+cleanUpFunctions = []
+
+
+# Register clean-up function for jobs launched by launch.py
+def registerCleanUp(func):
+    cleanUpFunctions.append(func)
+
+
+# Handle SIGINT
+def sigIntHandler(signum, frame):
+    for cleanUpFunc in cleanUpFunctions:
+        cleanUpFunc()
+
+    sys.exit("Received SIGINT")
+
+
+# Register SIGINT signal handler
+signal.signal(signal.SIGINT, sigIntHandler)
 
 # Useful for defining lists of files (e.g. 'files' part of config)
 FileSpec = collections.namedtuple('FileSpec', ['src', 'dst'])

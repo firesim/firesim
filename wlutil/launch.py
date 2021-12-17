@@ -5,6 +5,21 @@ import sys
 import subprocess as sp
 from . import wlutil
 
+jobProcs = []
+
+
+# Terminates jobs unless they have stopped running already
+def cleanUpSubProcesses():
+    log = logging.getLogger()
+    for proc in jobProcs:
+        if proc.poll() is None:
+            log.info(f'cleaning up launched workload process {proc.pid}')
+            proc.terminate()
+
+
+# Register clean up function with wlutil.py so it can be called by SIGINT handler
+wlutil.registerCleanUp(cleanUpSubProcesses)
+
 
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
 def get_free_tcp_port():
@@ -101,7 +116,6 @@ def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
 
     baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
 
-    jobProcs = []
     screenIdentifiers = {}
 
     try:
@@ -144,8 +158,7 @@ def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
             proc.wait()
 
     except Exception:
-        for proc in jobProcs:
-            proc.terminate()
+        cleanUpSubProcesses()
         raise
 
     for config in configs:
