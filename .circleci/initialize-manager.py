@@ -18,6 +18,8 @@ def initialize_manager(max_runtime):
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
+        run("printenv")
+
 	# wait until machine launch is complete
         with cd(manager_home_dir):
             with settings(warn_only=True):
