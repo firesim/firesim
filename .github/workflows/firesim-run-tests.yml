@@ -34,7 +34,7 @@ jobs:
         if: steps.job-start.outputs.run_result != 'success'
       - run: ./.github/scripts/launch-manager-instance.py
         if: steps.job-start.outputs.run_result != 'success'
-      - run: ./.github/scripts/initialize-manager-hosted.py
+      - run: ./.github/scripts/setup-manager-self-hosted.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
