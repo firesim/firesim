@@ -2,7 +2,6 @@
 
 import traceback
 import time
-import os
 
 from fabric.api import *
 
@@ -25,7 +24,7 @@ def initialize_manager(max_runtime):
             # add firesim.pem
             with open(manager_fsim_pem, "w") as pem_file:
                 pem_file.write(os.environ["FIRESIM_PEM"])
-            os.chmod(manager_fsim_pem, 600)
+            local("chmod 600 {}".format(manager_fsim_pem))
             set_fabric_firesim_pem()
 
             run("git clone https://github.com/firesim/firesim.git")
