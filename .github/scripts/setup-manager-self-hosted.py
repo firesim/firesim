@@ -28,11 +28,10 @@ def initialize_manager_hosted():
                     run("cat machine-launchstatus.log")
                     raise Exception("machine-launch-script.sh failed to run")
 
+        # create NUM_RUNNER self-hosted runners on the manager that run in parallel
         RUNNER_VERSION="2.285.1"
         NUM_RUNNERS = 4
-
         for runner_idx in range(NUM_RUNNERS):
-            # start runner setup
             actions_dir = "{}/actions-runner-{}".format(manager_home_dir, runner_idx)
             run("mkdir -p {}".format(actions_dir))
             with cd(actions_dir):
@@ -42,7 +41,7 @@ def initialize_manager_hosted():
                 # install deps
                 run("sudo ./bin/installdependencies.sh")
 
-                # get registration token
+                # get registration token from API
                 headers = {'Authorization': "token {}".format(ci_personal_api_token.strip())}
                 r = requests.post("https://api.github.com/repos/firesim/firesim/actions/runners/registration-token", headers=headers)
                 if r.status_code != 201:
@@ -55,10 +54,10 @@ def initialize_manager_hosted():
                 put(".github/scripts/gh-a-runner.expect", actions_dir)
                 run("chmod +x gh-a-runner.expect")
                 runner_name = "{}-{}".format(ci_workflow_id, runner_idx) # used to teardown runner
-                unique_label = ci_workflow_id # used within the yaml
+                unique_label = ci_workflow_id # used within the yaml to choose a runner
                 run("./gh-a-runner.expect {} {} {}".format(reg_token, runner_name, unique_label))
 
-                # start runner
+                # start runner (needs pty false to not immediate kill the command running under screen)
                 run("screen -S gh-a-runner-{} -L -dm ./run.sh".format(runner_idx), pty=False)
 
     except BaseException as e:
