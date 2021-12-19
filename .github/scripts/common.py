@@ -22,7 +22,7 @@ env.abort_on_prompts = True
 env.timeout = 100
 env.connection_attempts = 10
 env.disable_known_hosts = True
-env.keepalive = 15
+env.keepalive = 60 # keep long SSH connections running
 
 def set_fabric_firesim_pem():
     env.key_filename = manager_fsim_pem

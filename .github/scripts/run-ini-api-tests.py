@@ -2,7 +2,7 @@
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_ci_dir, manager_fsim_pem
+from common import manager_fsim_dir, manager_ci_dir, manager_fsim_pem, set_fabric_firesim_pem
 
 import sys
 
