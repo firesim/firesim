@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import sys
+
 from fabric.api import *
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
