@@ -42,9 +42,9 @@ def initialize_manager(max_runtime):
 
         with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh"):
             run(".github/scripts/firesim-managerinit.expect {} {} {}".format(
-                os.environ["AWS_ACCESS_KEY_ID"],
-                os.environ["AWS_SECRET_ACCESS_KEY"],
-                os.environ["AWS_DEFAULT_REGION"]))
+                os.environ["AWS-ACCESS-KEY-ID"],
+                os.environ["AWS-SECRET-ACCESS-KEY"],
+                os.environ["AWS-DEFAULT-REGION"]))
 
         with cd(manager_ci_dir):
             # Put a baseline time-to-live bound on the manager.
