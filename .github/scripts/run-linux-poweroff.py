@@ -24,11 +24,12 @@ def run_linux_poweroff():
                 rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch".format(timeout, workload)).return_code
             if rc != 0:
                 # need to confirm that instance is off
+                print("Workload {} failed. Terminating runfarm".format(workload))
                 run("firesim terminaterunfarm -q -c {}".format(workload))
-                sys.exit(1)
+                sys.exit(rc)
 
         run_w_timeout("{}/deploy/workloads/linux-poweroff-all-no-nic.ini".format(manager_fsim_dir), "30m")
-        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "30m")
+        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "45m")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()

@@ -16,7 +16,6 @@
 import http.client
 import time
 import sys
-import base64
 import json
 
 from common import terminate_workflow_instances, stop_workflow_instances
