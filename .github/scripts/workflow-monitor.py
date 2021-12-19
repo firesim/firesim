@@ -13,10 +13,9 @@
 #
 # Other states to consider: not_run, on_hold, unauthorized
 
-import http.client
 import time
 import sys
-import json
+import requests
 
 from common import terminate_workflow_instances, stop_workflow_instances
 
@@ -30,26 +29,19 @@ TERMINATE_STATES = ["cancelled", "success", "skipped", "stale"]
 STOP_STATES = ["failure", "timed_out"]
 NOP_STATES = ["action_required"] # TODO: unsure when this happens
 
-def main(workflow_id, gha_ci_token, gha_ci_personal_token):
+def main(workflow_id, gha_ci_personal_token):
 
     state = None
     consecutive_failures = 0
-    headers = {'Authorization': "token {}".format(gha_ci_token.strip())}
+    headers = {'Authorization': "token {}".format(gha_ci_personal_token.strip())}
 
     while True:
         time.sleep(POLLING_INTERVAL_SECONDS)
 
-        conn = http.client.HTTPSConnection("api.github.com")
-        # TODO: determine from env. vars
-        owner = "firesim"
-        repo = "firesim"
-        conn.request("GET", "/repos/{}/{}/actions/runs/{}".format(owner, repo, workflow_id), headers=headers)
-
-        res = conn.getresponse()
-
-        if res.status == http.client.OK:
+        res = requests.get("https://api.github.com/repos/firesim/firesim/actions/runs/{}".format(workflow_id), headers=headers)
+        if res.status_code == 200:
             consecutive_failures = 0
-            res_dict = json.load(res)
+            res_dict = res.json()
             state_status = res_dict["status"]
             state_concl = res_dict["conclusion"]
 
@@ -69,12 +61,11 @@ def main(workflow_id, gha_ci_token, gha_ci_personal_token):
                 raise ValueError
 
         else:
-            print("HTTP GET error: {} {}. Retrying.".format(res.status, res.reason))
+            print("HTTP GET error: {}. Retrying.".format(res.json()))
             consecutive_failures = consecutive_failures + 1
             if consecutive_failures == QUERY_FAILURE_THRESHOLD:
                 stop_workflow_instances(gha_ci_personal_token, workflow_id)
                 exit(1)
 
-
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    main(sys.argv[1], sys.argv[2])
