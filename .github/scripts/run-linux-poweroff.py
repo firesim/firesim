@@ -2,8 +2,7 @@
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname, set_fabric_firesim_pem
-from ci_variables import ci_workflow_id
+from common import manager_fsim_dir, set_fabric_firesim_pem
 
 def run_linux_poweroff():
     """ Runs Linux poweroff workloads """

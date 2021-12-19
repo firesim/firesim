@@ -2,12 +2,11 @@
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname, manager_ci_dir, manager_fsim_pem
-from ci_variables import ci_workflow_id
+from common import manager_fsim_dir, manager_ci_dir, manager_fsim_pem
 
 import sys
 
-def run_build_build_recipes_ini_api_tests():
+def run_build_recipes_ini_api_tests():
     """ Test config_{build, build_recipes}.ini APIs """
 
     def commands_to_run(commands, opts):
@@ -81,7 +80,7 @@ def run_runtime_hwdb_ini_api_tests():
 def run_ini_api_tests():
     """ Test manager .ini file APIs """
 
-    run_build_build_recipes_ini_api_tests()
+    run_build_recipes_ini_api_tests()
     run_runtime_hwdb_ini_api_tests()
 
 if __name__ == "__main__":
