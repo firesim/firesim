@@ -58,7 +58,9 @@ def initialize_manager_hosted():
                 unique_label = ci_workflow_id # used within the yaml to choose a runner
                 run("./gh-a-runner.expect {} {} {}".format(reg_token, runner_name, unique_label))
 
-                # start runner (needs pty false to not immediate kill the command running under screen)
+                # start runner
+                # Setting pty=False is required to stop the screen from being
+                # culled when the SSH session associated with the run command ends.
                 run("screen -S gh-a-runner-{} -L -dm ./run.sh".format(runner_idx), pty=False)
 
     except BaseException as e:
