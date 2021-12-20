@@ -48,11 +48,11 @@ def initialize_manager(max_runtime):
 
         with cd(manager_ci_dir):
             # Put a baseline time-to-live bound on the manager.
-            # Instances will be stopped and cleaned up in a nightly job.
+            # Instances will be terminated (since they are spot requests) and cleaned up in a nightly job.
 
             # Setting pty=False is required to stop the screen from being
             # culled when the SSH session associated with the run command ends.
-            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} stop {}\'"
+            run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} terminate {}\'"
                 .format(int(max_runtime) * 3600, ci_workflow_id, ci_personal_api_token), pty=False)
             run("screen -S workflow-monitor -L -dm ./workflow-monitor.py {} {}"
                 .format(ci_workflow_id, ci_personal_api_token), pty=False)

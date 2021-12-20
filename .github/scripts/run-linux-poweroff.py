@@ -21,15 +21,20 @@ def run_linux_poweroff():
             """
             rc = 0
             with settings(warn_only=True):
-                rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch".format(timeout, workload)).return_code
+                # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
+                rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload)).return_code
             if rc != 0:
                 # need to confirm that instance is off
-                print("Workload {} failed. Terminating runfarm".format(workload))
+                print("Workload {} failed. Printing last lines of log.".format(workload))
+                run("tail -n 100 {}.log".format(workload))
+                print("Terminating workload")
                 run("firesim terminaterunfarm -q -c {}".format(workload))
                 sys.exit(rc)
+            else:
+                print("Workload {} successful.".format(workload))
 
         run_w_timeout("{}/deploy/workloads/linux-poweroff-all-no-nic.ini".format(manager_fsim_dir), "30m")
-        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "45m")
+        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "30m")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
