@@ -56,7 +56,7 @@ def main(workflow_id, gha_ci_personal_token):
                 elif state_concl not in NOP_STATES:
                     print("Unexpected Workflow State On Completed: {}".format(state_concl))
                     raise ValueError
-            elif state_status not in ['in_progress', 'queued']:
+            elif state_status not in ['in_progress', 'queued', 'waiting', 'requested']:
                 print("Unexpected Workflow State: {}".format(state_status))
                 raise ValueError
 

@@ -22,11 +22,14 @@ def run_linux_poweroff():
             rc = 0
             with settings(warn_only=True):
                 # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
-                rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload)).return_code
+                # pty=False needed to avoid issues with screen -ls stalling in fabric
+                rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload), pty=False).return_code
             if rc != 0:
                 # need to confirm that instance is off
-                print("Workload {} failed. Printing last lines of log.".format(workload))
+                print("Workload {} failed. Printing last lines of log. See {}.log for full info".format(workload, workload))
+                print("Log start:")
                 run("tail -n 100 {}.log".format(workload))
+                print("Log end.")
                 print("Terminating workload")
                 run("firesim terminaterunfarm -q -c {}".format(workload))
                 sys.exit(rc)
