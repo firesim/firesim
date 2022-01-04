@@ -73,6 +73,8 @@ Each workload (root/job) is run in its own screen session. In order to interact 
 
 When running a single workload, FireMarshal attaches to its screen session by default. When running multiple workloads, the user must manually attach to a session of their choice.
 
+FireMarshal only exits after all launched workloads exited.
+
 ``-a --all``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Launch all jobs in the workload. Jobs will be run sequentially. See the
@@ -81,7 +83,7 @@ Launch all jobs in the workload. Jobs will be run sequentially. See the
 ``-j --job``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In workloads with multiple jobs, you can specify which job(s) to launch.
-FireMarshal supports running multiple jobs concurrently but foes not support networked jobs yet. Jobs are identified by their ``name`` attribute. Multiple ``-j``
+FireMarshal supports running multiple jobs concurrently but does not support networked jobs yet. Jobs are identified by their ``name`` attribute. Multiple ``-j``
 options may be passed to invoke multiple jobs. Use ``--all`` to launch all jobs
 in the workload. If neither ``--job`` nor ``--all`` are provided, the root
 workload will be run. The root workload is the parent of all the jobs (i.e. the

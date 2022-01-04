@@ -51,16 +51,38 @@ Let us now launch both jobs in this workload using:
 
   ./marshal launch --all example-workloads/parallelJobs.yaml
 
-FireMarshal uses separate screen sessions to run workloads in parallel. One can attach to a workload to interact with or observe it using standard screen syntax and the screen session identifiers listed in the output of the ``launch`` command. 
+FireMarshal uses separate screen sessions to run workloads in parallel. It exits only after all launched workloads have exited. 
 
-For instance, to attach to job ``j0``, use:
+One can attach to a workload to interact with or observe it using standard screen syntax and the screen session identifiers listed in the output of the ``launch`` command. 
+
+For instance, attach to job ``j0``, using:
 
 ::
 
   screen -r parallelJobs-j0
 
 
-To detach from inside a screen session, use ``ctrl-a`` then ``ctrl-d``.
+To detach from inside the screen session, use ``ctrl-a`` then ``ctrl-d``.
+
+
+Similarly, attach to job ``j1``, using:
+
+::
+
+  screen -r parallelJobs-j1
+
+
+Login (with the details provided above) and then use the ``poweroff`` command to shut job ``j1`` down.
+
+
+Now re-attach to job ``j0``, using:
+
+::
+
+  screen -r parallelJobs-j0
+
+
+Login (with the details provided above) and then use the ``poweroff`` command to shut job ``j0`` down.
 
 FireMarshal also logs ``stdout`` and ``stderr`` to a ``uartlog`` file for each workload. These files can be found inside the corresponding workload output directory inside ``runOutputs``. The path to this directory will be output by the ``launch`` command. For instance, a workload output directory for the launched ``parallelJobs`` workload would be called ``parallelJobs-launch-YYYY-MM-DD--HH-MM-SS-<HASH>``.  
 
