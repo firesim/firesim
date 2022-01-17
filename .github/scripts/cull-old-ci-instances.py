@@ -11,7 +11,7 @@ import sys
 from common import unique_tag_key, deregister_runner_if_exists
 
 # Reuse manager utilities
-from ci_variables import ci_workdir, ci_personal_api_token, ci_workflow_id
+from ci_variables import ci_workdir, ci_personal_api_token, ci_workflow_run_id
 sys.path.append(ci_workdir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
@@ -31,7 +31,7 @@ def main():
     for inst in all_ci_instances:
         lifetime_secs = (current_time - inst["LaunchTime"]).total_seconds()
         if lifetime_secs > (INSTANCE_LIFETIME_LIMIT_HOURS * 3600):
-            deregister_runner_if_exists(ci_personal_api_token, ci_workflow_id):
+            deregister_runner_if_exists(ci_personal_api_token, ci_workflow_run_id):
             client.terminate_instances(InstanceIds=[inst["InstanceId"]])
             print("  " + inst["InstanceId"])
 

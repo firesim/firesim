@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-# Changes the state of instances associated with the CI run's unique tag.
-# Where a run is a workflow in CircleCI. Can be used to start, stop, or
-# terminate.  This may run from either the manager or from the CI instance.
+# Changes the state of instances associated with the CI workflow run's unique tag.
+# Can be used to start, stop, or terminate.  This may run from either the manager
+# or from the CI instance.
 
 import argparse
 

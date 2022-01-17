@@ -45,7 +45,7 @@ def get_manager_tag_dict(sha, tag_value):
         unique_tag_key: tag_value}
 
 def get_manager_instance(tag_value):
-    """ Looks up the manager instance dict using the CI run's unique tag"""
+    """ Looks up the manager instance dict using the CI workflow run's unique tag"""
     instances = get_instances_with_filter([get_ci_filter(tag_value), manager_filter])
     if instances:
         assert len(instances) == 1
@@ -54,7 +54,7 @@ def get_manager_instance(tag_value):
         return None
 
 def get_manager_instance_id(tag_value):
-    """ Looks up the manager instance ID using the CI run's unique tag"""
+    """ Looks up the manager instance ID using the CI workflow run's unique tag"""
 
     manager = get_manager_instance(tag_value)
     if manager is None:
@@ -64,7 +64,7 @@ def get_manager_instance_id(tag_value):
         return manager['InstanceId']
 
 def get_manager_ip(tag_value):
-    """ Looks up the manager IP using the CI run's unique tag"""
+    """ Looks up the manager IP using the CI workflow run's unique tag"""
 
     manager = get_manager_instance(tag_value)
     if manager is None:
@@ -77,7 +77,7 @@ def manager_hostname(tag_value):
     return "centos@{}".format(get_manager_ip(tag_value))
 
 def get_all_workflow_instances(tag_value):
-    """ Grabs a list of all instance dicts sharing the CI run's unique tag """
+    """ Grabs a list of all instance dicts sharing the CI workflow run's unique tag """
     return get_instances_with_filter([get_ci_filter(tag_value)])
 
 def instance_metadata_str(instance):
@@ -112,7 +112,7 @@ def deregister_runner_if_exists(gh_token, runner_name):
                 return
 
 def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=False):
-    """ Change the state of all instances sharing the same CI run's tag. """
+    """ Change the state of all instances sharing the same CI workflow run's tag. """
 
     all_instances = get_all_workflow_instances(tag_value)
     manager_instance = get_manager_instance(tag_value)

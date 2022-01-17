@@ -54,8 +54,8 @@ def initialize_manager_hosted():
                 # config runner
                 put(".github/scripts/gh-a-runner.expect", actions_dir)
                 run("chmod +x gh-a-runner.expect")
-                runner_name = "{}-{}".format(ci_workflow_id, runner_idx) # used to teardown runner
-                unique_label = ci_workflow_id # used within the yaml to choose a runner
+                runner_name = "{}-{}".format(ci_workflow_run_id, runner_idx) # used to teardown runner
+                unique_label = ci_workflow_run_id # used within the yaml to choose a runner
                 run("./gh-a-runner.expect {} {} {}".format(reg_token, runner_name, unique_label))
 
                 # start runner
@@ -65,8 +65,8 @@ def initialize_manager_hosted():
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
-        terminate_workflow_instances(ci_personal_api_token, ci_workflow_id)
+        terminate_workflow_instances(ci_personal_api_token, ci_workflow_run_id)
         sys.exit(1)
 
 if __name__ == "__main__":
-    execute(initialize_manager_hosted, hosts=[manager_hostname(ci_workflow_id)])
+    execute(initialize_manager_hosted, hosts=[manager_hostname(ci_workflow_run_id)])

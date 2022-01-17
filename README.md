@@ -1,7 +1,7 @@
 # FireSim: Easy-to-use, Scalable, FPGA-accelerated Cycle-accurate Hardware Simulation
 
 ![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
-[![firesim](https://circleci.com/gh/firesim/firesim.svg?style=shield)](https://app.circleci.com/pipelines/github/firesim/firesim)
+![Github Actions Status](https://github.com/firesim/firesim/actions/workflows/firesim-run-tests.yml/badge.svg)
 
 ## Contents
 
@@ -15,7 +15,7 @@
 ## Using FireSim
 
 To get started with using FireSim, see the tutorials on the FireSim documentation
-site: https://docs.fires.im/. 
+site: https://docs.fires.im/.
 
 Another good overview (in video format) is our tutorial from the Chisel Community Conference on [YouTube](https://www.youtube.com/watch?v=S3OriQnJXYQ).
 

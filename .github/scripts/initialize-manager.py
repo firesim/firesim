@@ -53,13 +53,13 @@ def initialize_manager(max_runtime):
             # Setting pty=False is required to stop the screen from being
             # culled when the SSH session associated with the run command ends.
             run("screen -S ttl -dm bash -c \'sleep {}; ./change-workflow-instance-states.py {} terminate {}\'"
-                .format(int(max_runtime) * 3600, ci_workflow_id, ci_personal_api_token), pty=False)
+                .format(int(max_runtime) * 3600, ci_workflow_run_id, ci_personal_api_token), pty=False)
             run("screen -S workflow-monitor -L -dm ./workflow-monitor.py {} {}"
-                .format(ci_workflow_id, ci_personal_api_token), pty=False)
+                .format(ci_workflow_run_id, ci_personal_api_token), pty=False)
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
-        terminate_workflow_instances(ci_workflow_id)
+        terminate_workflow_instances(ci_workflow_run_id)
         sys.exit(1)
 
 if __name__ == "__main__":
