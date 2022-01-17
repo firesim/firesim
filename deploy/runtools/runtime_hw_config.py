@@ -147,7 +147,7 @@ class RuntimeHWConfig:
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
-        screen_name = "fsim{}".format(slotid if self.platform == "f1" else device_index)
+        screen_name = "fsim{}".format(slotid)
         run_device_placement = "+slotid={}".format(slotid) if self.platform == "f1" else "+device_index={}".format(slotid)
         other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
 
