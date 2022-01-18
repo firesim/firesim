@@ -41,7 +41,6 @@ class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record 
 // elements that include the "bits_" prefix. This is stripped off.
 class PayloadRecord(elms: Seq[(String, Data)]) extends Record {
   override val elements = ListMap((elms map { case (name, data) => name.stripPrefix("bits_") -> data.cloneType }):_*)
-  override def cloneType: this.type = new PayloadRecord(elms).asInstanceOf[this.type]
 }
 
 /**
@@ -230,7 +229,6 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig) extends Record
 
 class ClockRecord(numClocks: Int) extends Record {
   override val elements = ListMap(Seq.tabulate(numClocks)(i => s"_$i" -> Clock()):_*)
-  override def cloneType = new ClockRecord(numClocks).asInstanceOf[this.type]
 }
 
 class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config) {
@@ -250,7 +248,6 @@ class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config)
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*) ++
     // Untokenized ports
     ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
-  override def cloneType: this.type = new TargetBoxIO(config).asInstanceOf[this.type]
 }
 
 class TargetBox(config: SimWrapperConfig) extends BlackBox {
@@ -267,7 +264,6 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   }).get
 
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*)
-  override def cloneType: this.type = new SimWrapperChannels(config).asInstanceOf[this.type]
 }
 
 /**

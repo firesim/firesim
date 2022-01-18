@@ -108,8 +108,6 @@ class DynamicLatencyPipeIO[T <: Data](gen: T, entries: Int, countBits: Int)
     extends QueueIO(gen, entries) {
   val latency = Input(UInt(countBits.W))
   val tCycle = Input(UInt(countBits.W))
-
-  override def cloneType = new DynamicLatencyPipeIO(gen, entries, countBits).asInstanceOf[this.type]
 }
 
 // I had to copy this code because critical fields are now private
@@ -160,7 +158,7 @@ class DynamicLatencyPipe[T <: Data] (
   io.deq.valid := !empty && done(deq_ptr.value)
 }
 
-// Counts down from a set value; If the set value is less than the present value 
+// Counts down from a set value; If the set value is less than the present value
 // it is ignored.
 
 class DownCounter(counterWidth: Int) extends Module {
@@ -278,10 +276,10 @@ object TransactionMetaData {
     w
   }
 
-  def apply(x: NastiReadAddressChannel)(implicit p: Parameters): TransactionMetaData = 
+  def apply(x: NastiReadAddressChannel)(implicit p: Parameters): TransactionMetaData =
     apply(x.id, x.len, false.B)
 
-  def apply(x: NastiWriteAddressChannel)(implicit p: Parameters): TransactionMetaData = 
+  def apply(x: NastiWriteAddressChannel)(implicit p: Parameters): TransactionMetaData =
     apply(x.id, x.len, true.B)
 
 }

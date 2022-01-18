@@ -10,7 +10,7 @@ import midas.widgets._
 /** A simple freelist
   * @param entries The number of IDS to be managed by the free list
   *
-  * Inputs: freeId. Valid is asserted along side an ID that is to be 
+  * Inputs: freeId. Valid is asserted along side an ID that is to be
   *         returned to the freelist
   *
   * Outputs: nextId. The next available ID. Granted on a successful handshake
@@ -72,7 +72,6 @@ class RATEntry(vIdWidth: Int, pIdWidth: Int) extends Bundle {
     next.valid := false.B
     head := false.B
   }
-  override def cloneType() = new RATEntry(vIdWidth, pIdWidth).asInstanceOf[this.type]
 }
 
 object RATEntry {

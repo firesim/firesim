@@ -21,8 +21,6 @@ case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
-  override def cloneType = new PipeChannelIO(gen)(p).asInstanceOf[this.type]
-
 }
 
 class PipeChannel[T <: ChLeafType](
@@ -106,7 +104,6 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
   val fwd = new HostReadyValid
   val rev = Flipped(new HostReadyValid)
-  override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
 
   def generateFwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
     AssertTokenIrrevocable(fwd.hValid, Cat(target.valid, target.bits.asUInt), fwd.hReady, suggestedName)
@@ -167,7 +164,6 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
   val enq = Flipped(SimReadyValid(gen))
   val deq = SimReadyValid(gen)
   val targetReset = Flipped(Decoupled(Bool()))
-  override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
 
 class ReadyValidChannel[T <: Data](

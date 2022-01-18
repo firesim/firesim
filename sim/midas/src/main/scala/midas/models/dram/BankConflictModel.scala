@@ -55,7 +55,6 @@ class BankConflictIO(cfg: BankConflictConfig)(implicit p: Parameters)
 class BankQueueEntry(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
   val xaction = new TransactionMetaData
   val bankAddr = UInt(log2Ceil(cfg.maxBanks).W)
-  override def cloneType = new BankQueueEntry(cfg)(p).asInstanceOf[this.type]
 }
 
 // Appends a target cycle at which this reference should be complete
@@ -63,7 +62,6 @@ class BankConflictReference(cfg: BankConflictConfig)(implicit p: Parameters) ext
   val reference = new BankQueueEntry(cfg)
   val cycle = UInt(cfg.maxLatencyBits.W) // Indicates latency until doneness
   val done = Bool() // Set high when the cycle count expires
-  override def cloneType = new BankConflictReference(cfg)(p).asInstanceOf[this.type]
 }
 
 object BankConflictConstants {

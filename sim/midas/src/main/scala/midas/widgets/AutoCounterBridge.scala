@@ -34,7 +34,6 @@ class AutoCounterBundle(
     (triggerName, triggerEnable) +:
     (resetPortName, underGlobalReset) +:
     events):_*)
-  override def cloneType = new AutoCounterBundle(eventMetadata, triggerName, resetPortName).asInstanceOf[this.type]
 }
 
 class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCounterConsts {
@@ -123,7 +122,7 @@ class AutoCounterBridgeModule(
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
       headerComment(sb)
-      // Exclude counter addresses as their names can vary across AutoCounter instances, but 
+      // Exclude counter addresses as their names can vary across AutoCounter instances, but
       // we only generate a single struct typedef
       val headerWidgetName = wName.toUpperCase
       crRegistry.genHeader(headerWidgetName, base, sb, lowCountAddrs ++ highCountAddrs)
