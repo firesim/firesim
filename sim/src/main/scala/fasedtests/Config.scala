@@ -83,6 +83,7 @@ class WithNAddressBits(num: Int) extends Config((site, here, up) => {
 })
 class AddrBits16 extends WithNAddressBits(16)
 class AddrBits22 extends WithNAddressBits(22)
+class AddrBits8 extends WithNAddressBits(8)
 
 // Number of target memory channels -> number of FASED instances
 class QuadChannel extends WithNMemoryChannels(4)
@@ -100,6 +101,11 @@ class DefaultConfig extends Config(
     case junctions.NastiKey => junctions.NastiParameters(site(BeatBytes) * 8, site(AddrBits), site(IDBits))
   })
 )
+
+class FCFSConfigWithRestrictedAddr extends Config(
+  new AddrBits8 ++
+  new FCFS16GBQuadRank ++
+  new DefaultConfig)
 
 class FCFSConfig extends Config(
   new FCFS16GBQuadRank ++
