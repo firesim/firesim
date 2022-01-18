@@ -19,8 +19,6 @@ def get_free_tcp_port():
 def getSpikeCmd(config, nodisk=False):
     log = logging.getLogger()
 
-    #XXX
-    print("Launching: ", config['name'])
     if 'img' in config and config['img-hardcoded']:
         log.warn("You have hard-coded a disk image in your workload. Spike does not support disk images, your workload may not work correctly. Consider building with the '--nodisk' option (for linux-based workloads).")
     elif 'img' in config and not nodisk:
