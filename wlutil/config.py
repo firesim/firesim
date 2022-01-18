@@ -107,6 +107,7 @@ configDerived = [
         'base-deps',  # A list of tasks that this workload needs from its base (a potentially empty list)
         'firmware-src',  # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
         'use-parent-bin',  # Child would build the exact same binary as the parent, just copy it instead of rebuilding.
+        'img-hardcoded',  # The workload hard-coded an image, we will blindly use it.
         ]
 
 # These are the user-defined options that should be converted to absolute
@@ -132,6 +133,8 @@ configInherit = [
         'qemu',
         'launch',
         'bin',
+        'img',
+        'img-hardcoded',
         'post_run_hook',
         'spike-args',
         'rootfs-size',
@@ -447,6 +450,11 @@ class Config(collections.MutableMapping):
         if 'nodisk' not in self.cfg:
             # Note that sw_manager may set this back to true if the user passes command line options
             self.cfg['nodisk'] = False
+
+        if 'img' in self.cfg:
+            self.cfg['img-hardcoded'] = True
+        else:
+            self.cfg['img-hardcoded'] = False
 
         if 'rootfs-size' in self.cfg:
             self.cfg['img-sz'] = hf.parse_size(str(self.cfg['rootfs-size']))
