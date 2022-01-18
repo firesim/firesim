@@ -282,7 +282,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       maxReqLength = cfg.maxReadLength,
       maxReqsPerId = cfg.maxReadsPerID))
 
-    ingress.io.nastiRRespInputs <> nastiToHostDRAM.r
+    ingress.io.nastiRRespInputs <> nastiToHostDRAM.r 
     readEgress.io.enq <> ingress.io.nastiRespOutputs.r 
     readEgress.io.enq.bits.user := DontCare
 
@@ -291,8 +291,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       maxReqLength = cfg.maxWriteLength,
       maxReqsPerId = cfg.maxWritesPerID))
 
-    ingress.io.nastiWRespInputs <> nastiToHostDRAM.b
-    writeEgress.io.enq <> ingress.io.nastiRespOutputs.b 
+    ingress.io.nastiWRespInputs <> nastiToHostDRAM.b 
+    writeEgress.io.enq <> ingress.io.nastiRespOutputs.b
     writeEgress.io.enq.bits.user := DontCare
 
     // Track outstanding requests to the host memory system

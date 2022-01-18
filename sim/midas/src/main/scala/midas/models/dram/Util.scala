@@ -262,6 +262,10 @@ object CollapsingBuffer {
 trait HasAXI4Id extends HasNastiParameters { val id = UInt(nastiXIdBits.W) }
 trait HasAXI4IdAndLen extends HasAXI4Id { val len = UInt(nastiXLenBits.W) }
 trait HasReqMetaData extends HasAXI4IdAndLen { val addr = UInt(nastiXAddrBits.W) }
+class NastiAddressCompare (val addrBits: Int, val beatLength: Int)(implicit val p: Parameters) extends Bundle with HasNastiParameters { 
+  val addr = UInt(addrBits.W)
+  val len  = UInt(beatLength.W) 
+}
 
 class TransactionMetaData(implicit val p: Parameters) extends Bundle with HasAXI4IdAndLen {
   val isWrite = Bool()
@@ -346,6 +350,42 @@ class AXI4Releaser(implicit p: Parameters) extends Module {
   io.b.bits := io.egressResp.bBits
   io.egressResp.bReady := io.b.ready
 }
+
+class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatLength: Int) (implicit val p: Parameters) extends Module with HasFIFOPointers {
+  val io  = IO(new Bundle {
+    val enq = Flipped(Valid(new NastiAddressCompare(addrWidth, beatLength)))
+    val deq = Input(Bool())
+    val match_address = Input(new NastiAddressCompare(addrWidth, beatLength))
+    val hit = Output(Bool())
+  })
+
+  val addrs = RegInit(VecInit(Seq.fill(entries)({
+    val w = Wire(Valid(new NastiAddressCompare(addrWidth, beatLength)))
+    w.valid := false.B
+    w.bits := DontCare
+    w
+  })))
+  do_enq := io.enq.valid
+  do_deq := io.deq
+
+  assert(!full || (!do_enq || do_deq)) // Since we don't have backpressure, check for overflow
+  when (do_enq) {
+    addrs(enq_ptr.value).valid := true.B
+    addrs(enq_ptr.value).bits := io.enq.bits
+  }
+
+  when (do_deq) {
+    addrs(deq_ptr.value).valid := false.B
+  }
+
+  val addrMask = ~0.U(addrWidth.W)
+  val ioAddrMask = addrMask << io.match_address.len
+
+  io.hit := addrs.exists({entry =>  entry.valid &&
+                                    (entry.bits.addr & (addrMask << entry.bits.len) & ioAddrMask) ===
+                                    (io.match_address.addr & (addrMask << entry.bits.len) & ioAddrMask)})
+}
+
 
 class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with HasFIFOPointers {
   val io  = IO(new Bundle {
