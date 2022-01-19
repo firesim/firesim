@@ -127,7 +127,7 @@ from the BridgeModule may deadlock the simulator.
 Registering the Driver
 ++++++++++++++++++++++
 
-With the Bridge Driver implemented, we now have to register it in the main simulator 
+With the Bridge Driver implemented, we now have to register it in the main simulator
 simulator class defined in ``sim/src/main/cc/firesim/firesim_top.cc``. Here, we
 rely on the C preprocessor macros to instantiate the bridge driver only when
 the corresponding BridgeModule is present:
@@ -157,4 +157,4 @@ Here the main order of business is to add header and source files to
     :end-before: DOC include end: Bridge Build System Changes
 
 That's it! At this point you should be able to both test your bridge in software
-simulation using MIDAS-level simulation, or deploy it to an FPGA.
+simulation using meta-simulation, or deploy it to an FPGA.

@@ -1,5 +1,5 @@
 name: initialize-manager
-description: "Setups the manager instance and firesim repo"
+description: "Sets up the manager instance and firesim repo"
 
 inputs:
   max-runtime-hours:
