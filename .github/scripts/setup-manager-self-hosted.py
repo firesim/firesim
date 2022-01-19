@@ -29,8 +29,11 @@ def initialize_manager_hosted():
                     run("cat machine-launchstatus.log")
                     raise Exception("machine-launch-script.sh failed to run")
 
+        # get the runner version based off the latest tag on the github runner repo
+        RUNNER_VERSION = local("git ls-remote --refs --tags https://github.com/actions/runner.git | cut --delimiter='/' --fields=3 | tr '-' '~' | sort --version-sort | tail --lines=1", capture=True)
+        RUNNER_VERSION = RUNNER_VERSION.replace("v", "")
+        print("Using Github Actions Runner v{}".format(RUNNER_VERSION))
         # create NUM_RUNNER self-hosted runners on the manager that run in parallel
-        RUNNER_VERSION="2.285.1"
         NUM_RUNNERS = 4
         for runner_idx in range(NUM_RUNNERS):
             actions_dir = "{}/actions-runner-{}".format(manager_home_dir, runner_idx)
@@ -62,6 +65,13 @@ def initialize_manager_hosted():
                 # Setting pty=False is required to stop the screen from being
                 # culled when the SSH session associated with the run command ends.
                 run("screen -S gh-a-runner-{} -L -dm ./run.sh".format(runner_idx), pty=False)
+
+                # double check that screen is setup properly
+                with settings(warn_only=True):
+                    rc = run("screen -ls | grep -q \"gh-a-runner-{}\"".format(runner_idx))
+                    if rc != 0:
+                        run("cat screenlog.*")
+                        raise Exception("There was an issue with setting up Github Actions runner {}".format(runner_idx))
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)

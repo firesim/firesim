@@ -30,11 +30,14 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - uses: ./.github/actions/repo-setup-aws
+      - name: Install Python CI requirements
+        uses: ./.github/actions/repo-setup-aws
         if: steps.job-start.outputs.run_result != 'success'
-      - run: ./.github/scripts/launch-manager-instance.py
+      - name: Launch AWS instance used for the FireSim manager (instance info found here)
+        run: ./.github/scripts/launch-manager-instance.py
         if: steps.job-start.outputs.run_result != 'success'
-      - run: ./.github/scripts/setup-manager-self-hosted.py
+      - name: Setup N Github Actions Runners on AWS instance
+        run: ./.github/scripts/setup-manager-self-hosted.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
@@ -46,11 +49,13 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - uses: ./.github/actions/initialize-manager
+      - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
+        uses: ./.github/actions/initialize-manager
         if: steps.job-start.outputs.run_result != 'success'
         with:
           max-runtime-hours: 10
-      - uses: ./.github/actions/initial-scala-compile
+      - name: Initial Scala compilation
+        uses: ./.github/actions/initial-scala-compile
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
@@ -64,7 +69,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - run: .github/scripts/build-default-workloads.py
+      - name: Build default workloads (FireMarshal and paper workloads)
+        run: .github/scripts/build-default-workloads.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
@@ -78,7 +84,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - run: .github/scripts/run-manager-pytests.py
+      - name: Run pytests
+        run: .github/scripts/run-manager-pytests.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
@@ -92,7 +99,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - uses: ./.github/actions/run-scala-test
+      - name: Run CIGroupA Scala tests
+        uses: ./.github/actions/run-scala-test
         if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupA"
@@ -108,7 +116,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - uses: ./.github/actions/run-scala-test
+      - name: Run CIGroupB Scala tests
+        uses: ./.github/actions/run-scala-test
         if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupB"
@@ -124,7 +133,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - uses: ./.github/actions/run-scala-test
+      - name: Run other (CITests) Scala tests
+        uses: ./.github/actions/run-scala-test
         if: steps.job-start.outputs.run_result != 'success'
         with:
           target-project: "firesim"
@@ -143,7 +153,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - run: .github/scripts/run-linux-poweroff.py
+      - name: Run linux-poweroff test
+        run: .github/scripts/run-linux-poweroff.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
@@ -157,7 +168,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/job-start
         id: job-start
-      - run: .github/scripts/run-ini-api-tests.py
+      - name: Run .ini API verification tests
+        run: .github/scripts/run-ini-api-tests.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
