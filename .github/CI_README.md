@@ -12,7 +12,7 @@ Much of the following CI infrastructure is based on the Chipyard CI.
 For a basic explanation of how the GH-A CI works, see https://github.com/ucb-bar/chipyard/blob/dev/.github/CI_README.md.
 However, there are a couple of notable differences/comments as follows:
 
-* In order to provide a fresh environment to test changes, the CI dynamically spawns a AWS *spot* instance and sets up GH-A
+* In order to provide a fresh environment to test changes, the CI dynamically spawns a AWS instance and sets up GH-A
 to use this instance as a GH-A self-hosted runner (see https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
     * All scripts that run on the manager instance use Fabric with `localhost` and each GH-A step must include `runs-on: ${{ github.run_id }}` KV pair to indicate that you want to run directly on a runner that is on the manager instance.
     * Currently only 4 runners are spawned per workflow (reused across multiple workflow runs - i.e. clicking rerun). Every commit gets its own manager instance and 4 runners that run on the manager instance.
