@@ -24,7 +24,6 @@ def main():
     awstools.main([
         'launch',
         '--inst_type', 'z1d.2xlarge',
-        '--market', 'spot',
         '--block_devices', str([{'DeviceName':'/dev/sda1','Ebs':{'VolumeSize':300,'VolumeType':'gp2'}}]),
         '--tags', str(get_manager_tag_dict(ci_commit_sha1, ci_workflow_run_id)),
         '--user_data_file', ci_workdir + "/scripts/machine-launch-script.sh"
