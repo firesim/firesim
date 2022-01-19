@@ -2,7 +2,7 @@
 # See docs/Advanced-Usage/Manager/Manager-Configuration-Files.rst for
 # documentation of all of these params.
 
-runfarm: local-runfarm
+run-farm: local-run-farm
 
 target-config:
     # Set topology: no_net_config to run without a network simulation

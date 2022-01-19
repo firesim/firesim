@@ -49,26 +49,26 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        # Setup the runfarm
+        # Setup the run farm
 
         run_farm_configfile = None
         with open(runfarmconfigfile, "r") as yaml_file:
             run_farm_configfile = yaml.safe_load(yaml_file)
 
-        self.run_farm_requested_name = runtime_dict['runfarm']
+        self.run_farm_requested_name = runtime_dict['run-farm']
 
         run_farm_conf_dict = run_farm_configfile[self.run_farm_requested_name]
 
-        runfarm_type = run_farm_conf_dict["runfarm-type"]
-        runfarm_args = run_farm_conf_dict["args"]
+        run_farm_type = run_farm_conf_dict["run-farm-type"]
+        run_farm_args = run_farm_conf_dict["args"]
 
 	run_farm_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(RunFarm)])
-        runfarm_class_name = run_farm_dispatch_dict[runfarm_type]
+        run_farm_class_name = run_farm_dispatch_dict[run_farm_type]
 
         # create dispatcher object using class given and pass args to it
         self.run_farm_dispatcher = getattr(
             import_module("runtools.run_farm"),
-            runfarm_class_name)(runfarm_args)
+            run_farm_class_name)(run_farm_args)
 
         self.run_farm_dispatcher.parse_args()
 
@@ -135,7 +135,7 @@ class RuntimeConfig:
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
 
-        self.runfarm = self.innerconf.run_farm_dispatcher
+        self.run_farm = self.innerconf.run_farm_dispatcher
 
         # construct a privateip -> instance obj mapping for later use
         #self.instancelookuptable = instance_privateip_lookup_table(
@@ -149,7 +149,7 @@ class RuntimeConfig:
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
             self.innerconf.topology, self.innerconf.no_net_num_nodes,
-            self.runfarm, self.runtimehwdb, self.innerconf.defaulthwconfig,
+            self.run_farm, self.runtimehwdb, self.innerconf.defaulthwconfig,
             self.workload, self.innerconf.linklatency,
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
             self.innerconf.profileinterval, self.innerconf.trace_enable,
@@ -162,12 +162,12 @@ class RuntimeConfig:
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """
-        self.runfarm.launch_run_farm()
+        self.run_farm.launch_run_farm()
 
     def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
+        self.run_farm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                                         terminatesomem4_16, forceterminate)
 
     def infrasetup(self):

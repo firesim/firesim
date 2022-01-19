@@ -58,7 +58,7 @@ def managerinit():
     """ Setup local FireSim manager components. """
 
     rootLogger.info("Backing up initial config files, if they exist.")
-    config_files = ["build", "build_recipes", "build_hosts", "hwdb", "runtime", "runfarm"]
+    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime", "run_farm"]
     for conf_file in config_files:
         with warn_only(), hide('everything'):
             m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
@@ -103,32 +103,32 @@ def buildafi(globalbuildconf):
         execute(build_config.fpga_bit_builder_dispatcher.replace_rtl, hosts=['localhost'])
         execute(build_config.fpga_bit_builder_dispatcher.build_driver, hosts=['localhost'])
 
-    def release_build_hosts_handler(sig, frame):
-        """ Handler that prompts to release build hosts if you press ctrl-c. """
+    def release_build_farm_hosts_handler(sig, frame):
+        """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = raw_input("Do you also want to release your build hosts? Type 'yes' to do so.\n")
+        userconfirm = raw_input("Do you also want to release your build farm hosts? Type 'yes' to do so.\n")
         if userconfirm == "yes":
-            globalbuildconf.release_build_hosts()
-            rootLogger.info("Build hosts released.")
+            globalbuildconf.release_build_farm_hosts()
+            rootLogger.info("Build farm hosts released.")
         else:
-            rootLogger.info("Termination skipped. There may still be build hosts running.")
+            rootLogger.info("Termination skipped. There may still be build farm hosts running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, release_build_hosts_handler)
+    signal.signal(signal.SIGINT, release_build_farm_hosts_handler)
 
-    # pre-setup stuff (things that need to be done before build hosts are spawned/killed)
-    # specific to the buildhost
+    # pre-setup stuff (things that need to be done before build farm hosts are spawned/killed)
+    # specific to the build farm host
     globalbuildconf.setup()
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
-    globalbuildconf.request_build_hosts()
+    globalbuildconf.request_build_farm_hosts()
 
-    # confirm that build hosts have finished booting
-    globalbuildconf.wait_on_build_host_initializations()
+    # confirm that build farm hosts have finished booting
+    globalbuildconf.wait_on_build_farm_host_initializations()
 
     # run builds, then terminate instances
-    execute(globalbuildconf.build_bitstream, hosts=globalbuildconf.get_build_host_ips())
+    execute(globalbuildconf.build_bitstream, hosts=globalbuildconf.get_build_farm_host_ips())
 
 
 def tar2afi(globalbuildconf):
@@ -161,17 +161,17 @@ def launchrunfarm(runtime_conf):
     a consistent "first" instance (useful for debugging)
     """
     # short versions of config file vars
-    runtime_conf.runfarm.launch_run_farm()
+    runtime_conf.run_farm.launch_run_farm()
 
 
 def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                      terminatesomem4_16, forceterminate):
-    """ Terminate instances in the runfarm.
+    """ Terminate instances in the run farm.
 
     This works in 2 modes:
 
     1) If you pass no --terminatesomeINSTANCETYPE flags, it will terminate all
-       instances with the specified runfarm tag.
+       instances with the specified run farm tag.
 
     2) If you pass ANY --terminatesomeINSTANCETYPE flag, it will terminate only
        that many instances of the specified types and leave all others
@@ -215,17 +215,17 @@ def construct_firesim_argparser():
                         help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
                         default='config_runtime.yaml')
     parser.add_argument('-n', '--runfarmconfigfile', type=str,
-                        help='Optional custom runfarm config file. Defaults to config_runfarm.yaml.',
-                        default='config_runfarm.yaml')
+                        help='Optional custom run farm config file. Defaults to config_run_farm.yaml.',
+                        default='config_run_farm.yaml')
     parser.add_argument('-b', '--buildconfigfile', type=str,
                         help='Optional custom build config file. Defaults to config_build.yaml.',
                         default='config_build.yaml')
     parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
                         help='Optional custom build recipe config file. Defaults to config_build_recipes.yaml.',
                         default='config_build_recipes.yaml')
-    parser.add_argument('-s', '--buildhostsconfigfile', type=str,
-                        help='Optional custom build host config file. Defaults to config_build_hosts.yaml.',
-                        default='config_build_hosts.yaml')
+    parser.add_argument('-s', '--buildfarmconfigfile', type=str,
+                        help='Optional custom build farm config file. Defaults to config_build_farm.yaml.',
+                        default='config_build_farm.yaml')
     parser.add_argument('-a', '--hwdbconfigfile', type=str,
                         help='Optional custom HW database config file. Defaults to config_hwdb.yaml.',
                         default='config_hwdb.yaml')

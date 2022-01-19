@@ -6,7 +6,7 @@ import pprint
 from importlib import import_module
 
 from awstools.awstools import *
-from buildtools.buildhostdispatcher import *
+from buildtools.buildfarmhostdispatcher import *
 
 def inheritors(klass):
     subclasses = set()
@@ -22,13 +22,13 @@ def inheritors(klass):
 class BuildConfig:
     """ Represents a single build configuration used to build RTL/drivers/AFIs. """
 
-    def __init__(self, name, recipe_config_dict, build_hosts_configfile, global_build_config, launch_time):
+    def __init__(self, name, recipe_config_dict, build_farm_hosts_configfile, global_build_config, launch_time):
         """ Initialization function.
 
         Parameters:
             name (str): Name of config i.e. name of build_recipe.ini section
             recipe_config_dict (dict): build_recipe.ini options associated with name
-            build_hosts_configfile (dict): Parsed representation of build_hosts.ini file
+            build_farm_hosts_configfile (dict): Parsed representation of build_farm_hosts.ini file
             global_build_config (BuildConfigFile): Global build config file
             launch_time (str): Time manager was launched
         """
@@ -47,22 +47,22 @@ class BuildConfig:
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
         # retrieve the build host section
-        self.build_host = recipe_config_dict.get('build-host', "default-build-host")
-        build_host_conf_dict = build_hosts_configfile[self.build_host]
+        self.build_farm_host = recipe_config_dict.get('build-host', "default-build-host")
+        build_farm_host_conf_dict = build_farm_hosts_configfile[self.build_farm_host]
 
-        build_host_type = build_host_conf_dict["build-host-type"]
-        build_host_args = build_host_conf_dict["args"]
+        build_farm_host_type = build_farm_host_conf_dict["build-farm-type"]
+        build_farm_host_args = build_farm_host_conf_dict["args"]
 
-	build_host_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(BuildHostDispatcher)])
+	build_farm_host_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(BuildHostDispatcher)])
 
-        build_host_dispatcher_class_name = build_host_dispatch_dict[build_host_type]
+        build_farm_host_dispatcher_class_name = build_farm_host_dispatch_dict[build_farm_host_type]
 
         # create dispatcher object using class given and pass args to it
-        self.build_host_dispatcher = getattr(
+        self.build_farm_host_dispatcher = getattr(
             import_module("buildtools.buildhostdispatcher"),
-            build_host_dispatcher_class_name)(self, build_host_args)
+            build_farm_host_dispatcher_class_name)(self, build_farm_host_args)
 
-        self.build_host_dispatcher.parse_args()
+        self.build_farm_host_dispatcher.parse_args()
 
         self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform')
         if self.fpga_bit_builder_dispatcher_class_name == None:

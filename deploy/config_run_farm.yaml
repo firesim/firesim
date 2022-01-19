@@ -1,7 +1,7 @@
-aws-ec2-f1-runfarm:
-    runfarm-type: aws-ec2-f1
+aws-ec2-f1-run-farm:
+    run-farm-type: aws-ec2-f1
     args:
-        runfarm-tag: mainrunfarm
+        run-farm-tag: mainrunfarm
         f1_16xlarges: 0
         m4_16xlarges: 0
         f1_4xlarges: 0
@@ -12,8 +12,8 @@ aws-ec2-f1-runfarm:
         # change simulation directory default location (abs. path)
         simulation-dir: null
 
-local-runfarm:
-    runfarm-type: unmanaged
+local-run-farm:
+    run-farm-type: unmanaged
     args:
         default-num-fpgas: 4
         default-platform: vitis

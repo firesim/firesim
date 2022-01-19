@@ -47,9 +47,9 @@ class BuildConfigFile:
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
             build_recipes_configfile = yaml.safe_load(yaml_file)
 
-        build_hosts_configfile = None
-        with open(args.buildhostsconfigfile, "r") as yaml_file:
-            build_hosts_configfile = yaml.safe_load(yaml_file)
+        build_farm_hosts_configfile = None
+        with open(args.buildfarmconfigfile, "r") as yaml_file:
+            build_farm_hosts_configfile = yaml.safe_load(yaml_file)
 
         build_recipes = dict()
         for section_name, section_dict in build_recipes_configfile.items():
@@ -57,7 +57,7 @@ class BuildConfigFile:
                 build_recipes[section_name] = BuildConfig(
                     section_name,
                     section_dict,
-                    build_hosts_configfile,
+                    build_farm_hosts_configfile,
                     self,
                     launch_time)
 
@@ -67,15 +67,15 @@ class BuildConfigFile:
         self.build_ip_set = set()
 
     def setup(self):
-        """ Setup based on the types of buildhosts/bitbuilders """
+        """ Setup based on the types of buildfarmhosts/bitbuilders """
         for build in self.builds_list:
             build.fpga_bit_builder_dispatcher.setup()
 
-    def request_build_hosts(self):
+    def request_build_farm_hosts(self):
         """ Launch an instance for the builds. Exits the program if an IP address is reused. """
 
         def categorize(seq):
-            class_names = list(map(lambda x: x.build_host_dispatcher.__class__.__name__, seq))
+            class_names = list(map(lambda x: x.build_farm_host_dispatcher.__class__.__name__, seq))
             class_builds_zipped = zip(class_names, seq)
 
             d = defaultdict(list)
@@ -86,29 +86,29 @@ class BuildConfigFile:
 
         cat = categorize(self.builds_list)
 
-        for bhd_class, build_hosts in cat.items():
-            # batch launching build hosts of similar types
-            getattr(import_module("buildtools.buildhostdispatcher"),
-                bhd_class).request_build_hosts(list(map(lambda x: x.build_host_dispatcher, build_hosts)))
+        for bhd_class, build_farm_hosts in cat.items():
+            # batch launching build farm hosts of similar types
+            getattr(import_module("buildtools.buildfarmhostdispatcher"),
+                bhd_class).request_build_farm_hosts(list(map(lambda x: x.build_farm_host_dispatcher, build_farm_hosts)))
 
-            for build in build_hosts:
+            for build in build_farm_hosts:
                 num_ips = len(self.build_ip_set)
-                ip = build.build_host_dispatcher.get_build_host_ip()
+                ip = build.build_farm_host_dispatcher.get_build_farm_host_ip()
                 self.build_ip_set.add(ip)
                 if num_ips == len(self.build_ip_set):
                     rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
-                    self.release_build_hosts()
+                    self.release_build_farm_hosts()
                     sys.exit(1)
 
-    def wait_on_build_host_initializations(self):
+    def wait_on_build_farm_host_initializations(self):
         """ Block until all build instances are launched """
         for build in self.builds_list:
-            build.build_host_dispatcher.wait_on_build_host_initialization()
+            build.build_farm_host_dispatcher.wait_on_build_farm_host_initialization()
 
-    def release_build_hosts(self):
+    def release_build_farm_hosts(self):
         """ Terminate all build instances that are launched """
         for build in self.builds_list:
-            build.build_host_dispatcher.release_build_host()
+            build.build_farm_host_dispatcher.release_build_farm_host()
 
     def get_build_by_ip(self, nodeip):
         """ For a particular IP (aka instance), return the build config it is running.
@@ -120,11 +120,11 @@ class BuildConfigFile:
         """
 
         for build in self.builds_list:
-            if build.build_host_dispatcher.get_build_host_ip() == nodeip:
+            if build.build_farm_host_dispatcher.get_build_farm_host_ip() == nodeip:
                 return build
         return None
 
-    def get_build_host_ips(self):
+    def get_build_farm_host_ips(self):
         """ Get all the build instance IPs (later passed to fabric as hosts).
 
         Returns:

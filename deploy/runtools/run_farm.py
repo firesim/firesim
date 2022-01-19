@@ -82,22 +82,22 @@ class EC2RunFarm(RunFarm):
         self.f1_2s = []
         self.m4_16s = []
 
-        self.runfarmtag = None
+        self.run_farm_tag = None
         self.run_instance_market = None
         self.spot_interruption_behavior = None
         self.spot_max_price = None
 
     def parse_args(self):
-        runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
-        if runfarmtagprefix != "":
-            runfarmtagprefix += "-"
+        run_farm_tag_prefix = "" if 'FIRESIM_RUN_FARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUN_FARM_PREFIX']
+        if run_farm_tag_prefix != "":
+            run_farm_tag_prefix += "-"
 
-        self.runfarmtag = runfarmtagprefix + self.args['runfarm-tag']
+        self.run_farm_tag = run_farm_tag_prefix + self.args['run-farm-tag']
 
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
             # if specified, further prefix runfarmtag
-            self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
+            self.run_farm_tag = aws_resource_names_dict['runfarmprefix'] + "-" + self.run_farm_tag
 
         num_f1_16 = self.args['f1_16xlarges']
         num_f1_4 = self.args['f1_4xlarges']
@@ -142,13 +142,13 @@ class EC2RunFarm(RunFarm):
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
         available_f1_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
-            self.runfarmtag, 'f1.16xlarge'))
+            self.run_farm_tag, 'f1.16xlarge'))
         available_f1_4_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
-            self.runfarmtag, 'f1.4xlarge'))
+            self.run_farm_tag, 'f1.4xlarge'))
         available_m4_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
-            self.runfarmtag, 'm4.16xlarge'))
+            self.run_farm_tag, 'm4.16xlarge'))
         available_f1_2_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
-            self.runfarmtag, 'f1.2xlarge'))
+            self.run_farm_tag, 'f1.2xlarge'))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
         # confirm that we have the correct number of instances
@@ -184,7 +184,7 @@ class EC2RunFarm(RunFarm):
     def launch_run_farm(self):
         """ Launch the run farm. """
 
-        runfarmtag = self.runfarmtag
+        run_farm_tag = self.run_farm_tag
         runinstancemarket = self.run_instance_market
         spotinterruptionbehavior = self.spot_interruption_behavior
         spotmaxprice = self.spot_max_price
@@ -195,16 +195,16 @@ class EC2RunFarm(RunFarm):
         num_m4_16xlarges = len(self.m4_16s)
 
         # actually launch the instances
-        f1_16s = launch_run_instances('f1.16xlarge', num_f1_16xlarges, runfarmtag,
+        f1_16s = launch_run_instances('f1.16xlarge', num_f1_16xlarges, run_farm_tag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice)
-        f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, runfarmtag,
+        f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, run_farm_tag,
                                      runinstancemarket, spotinterruptionbehavior,
                                      spotmaxprice)
-        m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, runfarmtag,
+        m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, run_farm_tag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice)
-        f1_2s = launch_run_instances('f1.2xlarge', num_f1_2xlarges, runfarmtag,
+        f1_2s = launch_run_instances('f1.2xlarge', num_f1_2xlarges, run_farm_tag,
                                      runinstancemarket, spotinterruptionbehavior,
                                      spotmaxprice)
 
@@ -219,18 +219,18 @@ class EC2RunFarm(RunFarm):
 
     def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                            terminatesomem4_16, forceterminate):
-        runfarmtag = self.runfarmtag
+        run_farm_tag = self.run_farm_tag
 
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
         f1_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
+            get_instances_by_tag_type(run_farm_tag, 'f1.16xlarge'))
         f1_4_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
+            get_instances_by_tag_type(run_farm_tag, 'f1.4xlarge'))
         m4_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
+            get_instances_by_tag_type(run_farm_tag, 'm4.16xlarge'))
         f1_2_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
+            get_instances_by_tag_type(run_farm_tag, 'f1.2xlarge'))
 
         f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
         f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)

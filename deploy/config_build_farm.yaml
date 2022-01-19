@@ -1,13 +1,11 @@
-### Build Hosts ###
+### Build Farm ###
 
-# TODO: call this buildfarm
-
-# THIS WILL BE USED IF BUILDHOST NOT SPECIFIED IN RECIPE
+# THIS WILL BE USED IF BUILDFARM NOT SPECIFIED IN RECIPE
 # Note: For large designs (ones that would fill a EC2.2xlarge/Xilinx VU9P)
 # Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
 # non-default instance type.
-default-build-host:
-    build-host-type: aws-ec2
+default-build-farm:
+    build-farm-type: aws-ec2
     args:
         instance-type: z1d.2xlarge
         build-instance-market: ondemand
@@ -16,11 +14,11 @@ default-build-host:
         # change location of build on build host
         build-dir: null
 
-local-build-host:
-    build-host-type: unmanaged
+local-build-farm:
+    build-farm-type: unmanaged
     args:
         default-build-dir: null
-        build-hosts:
+        build-farm-hosts:
             - localhost
             - "192.168.1.254":
                 # change location of build on build host (abs. path)

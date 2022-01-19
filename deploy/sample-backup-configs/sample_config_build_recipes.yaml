@@ -17,7 +17,7 @@
 #    fpga-platform: F1BitBuilder
 #    s3-bucket-name: firesim-DUMMY
 #    # BUILD PLATFORM SPECIFIC
-#    build-host: default-build-host
+#    build-farm: default-build-farm
 
 test-vitis:
     # # DESIGN SPECIFIC
@@ -29,7 +29,7 @@ test-vitis:
     post-build-hook: null
     fpga-platform: VitisBitBuilder
     # # BUILD PLATFORM SPECIFIC
-    build-host: local-build-host
+    build-farm: local-build-farm
 
 test-vitis-2:
     # # DESIGN SPECIFIC
@@ -41,7 +41,7 @@ test-vitis-2:
     post-build-hook: null
     fpga-platform: VitisBitBuilder
     # # BUILD PLATFORM SPECIFIC
-    build-host: local-build-host
+    build-farm: local-build-farm
 
 # Quad-core, Rocket-based recipes
 firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
@@ -52,7 +52,7 @@ firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # NB: This has a faster host-clock frequency than the NIC-based design, because
 # its uncore runs at half rate relative to the tile.
@@ -64,7 +64,7 @@ firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # Single-core, BOOM-based recipes
 firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
@@ -75,7 +75,7 @@ firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # NB: This has a faster host-clock frequency than the NIC-based design, because
 # its uncore runs at half rate relative to the tile.
@@ -87,7 +87,7 @@ firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # Single-core, CVA6-based recipes
 firesim-cva6-singlecore-no-nic-l2-llc4mb-ddr3:
@@ -98,7 +98,7 @@ firesim-cva6-singlecore-no-nic-l2-llc4mb-ddr3:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # Single-core, Rocket-based recipes with Gemmini
 firesim-rocket-singlecore-gemmini-no-nic-l2-llc4mb-ddr3:
@@ -109,7 +109,7 @@ firesim-rocket-singlecore-gemmini-no-nic-l2-llc4mb-ddr3:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # RAM Optimizations enabled by adding _MCRams PLATFORM_CONFIG string
 firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts:
@@ -120,7 +120,7 @@ firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
 # Supernode configurations -- multiple instances of an SoC in a single simulator
 firesim-supernode-rocket-singlecore-nic-l2-lbp:
@@ -131,9 +131,9 @@ firesim-supernode-rocket-singlecore-nic-l2-lbp:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm
 
-# MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on runfarm
+# MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on run farm
 midasexamples-gcd:
     TARGET_PROJECT: midasexamples
     DESIGN: GCD
@@ -143,4 +143,4 @@ midasexamples-gcd:
     post-build-hook: null
     fpga-platform: F1BitBuilder
     s3-bucket-name: firesim-DUMMY
-    build-host: default-build-host
+    build-farm: default-build-farm

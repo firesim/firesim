@@ -111,7 +111,7 @@ class F1BitBuilder(BitBuilder):
         self.s3_bucketname = None
 
     def parse_args(self):
-        """ Parse build host arguments. """
+        """ Parse bit builder arguments. """
         # get default arguments
         BitBuilder.parse_args(self)
 
@@ -174,8 +174,8 @@ class F1BitBuilder(BitBuilder):
             remote_home_dir = run('echo $HOME')
 
         # potentially override build dir
-        if self.build_config.build_host_dispatcher.override_remote_build_dir:
-            remote_home_dir = self.build_config.build_host_dispatcher.override_remote_build_dir
+        if self.build_config.build_farm_host_dispatcher.override_remote_build_dir:
+            remote_home_dir = self.build_config.build_farm_host_dispatcher.override_remote_build_dir
 
         remote_build_dir = "{}/firesim-build".format(remote_home_dir)
         remote_f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
@@ -212,12 +212,12 @@ class F1BitBuilder(BitBuilder):
         testing purposes when set to True. """
 
         if bypass:
-            self.build_config.build_host_dispatcher.release_build_host()
+            self.build_config.build_farm_host_dispatcher.release_build_farm_host()
             return
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
-            """ Terminate build host and notify user that build failed """
+            """ Terminate build farm host and notify user that build failed """
 
             message_title = "FireSim FPGA Build Failed"
 
@@ -228,7 +228,7 @@ class F1BitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_host_dispatcher.release_build_host()
+            self.build_config.build_farm_host_dispatcher.release_build_farm_host()
 
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -247,7 +247,7 @@ class F1BitBuilder(BitBuilder):
             run("""mkdir -p {}""".format(local_results_dir))
             run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
 
-        if self.build_config.build_host_dispatcher.is_local:
+        if self.build_config.build_farm_host_dispatcher.is_local:
             cl_dir = local_cl_dir
         else:
             cl_dir = remote_setup(self.build_config)
@@ -283,7 +283,7 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return
 
-        self.build_config.build_host_dispatcher.release_build_host()
+        self.build_config.build_farm_host_dispatcher.release_build_farm_host()
 
     def aws_create_afi(self):
         """
@@ -384,7 +384,7 @@ class VitisBitBuilder(BitBuilder):
         BitBuilder.__init__(self, build_config, arg_dict)
 
     def parse_args(self):
-        """ Parse build host arguments. """
+        """ Parse bit builder arguments. """
         # get default arguments
         BitBuilder.parse_args(self)
 
@@ -437,8 +437,8 @@ class VitisBitBuilder(BitBuilder):
             remote_home_dir = run('echo $HOME')
 
         # potentially override build dir
-        if self.build_config.build_host_dispatcher.override_remote_build_dir:
-            remote_home_dir = self.build_config.build_host_dispatcher.override_remote_build_dir
+        if self.build_config.build_farm_host_dispatcher.override_remote_build_dir:
+            remote_home_dir = self.build_config.build_farm_host_dispatcher.override_remote_build_dir
 
         remote_build_dir = "{}/firesim-build".format(remote_home_dir)
         remote_vitis_dir = "{}/platforms/vitis".format(remote_build_dir)
@@ -473,12 +473,12 @@ class VitisBitBuilder(BitBuilder):
         testing purposes when set to True. """
 
         if bypass:
-            self.build_config.build_host_dispatcher.release_build_host()
+            self.build_config.build_farm_host_dispatcher.release_build_farm_host()
             return
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
-            """ Terminate build host and notify user that build failed """
+            """ Terminate build farm host and notify user that build failed """
 
             message_title = "FireSim Vitis FPGA Build Failed"
 
@@ -487,7 +487,7 @@ class VitisBitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_host_dispatcher.release_build_host()
+            self.build_config.build_farm_host_dispbtcher.release_build_farm_host()
 
         rootLogger.info("Building Vitis FI from Verilog")
 
@@ -506,7 +506,7 @@ class VitisBitBuilder(BitBuilder):
             run("""mkdir -p {}""".format(local_results_dir))
             run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
 
-        if self.build_config.build_host_dispatcher.is_local:
+        if self.build_config.build_farm_host_dispatcher.is_local:
             cl_dir = local_cl_dir
         else:
             cl_dir = remote_setup(self.build_config)
@@ -556,4 +556,4 @@ class VitisBitBuilder(BitBuilder):
 
         rootLogger.info("Build complete! Vitis FI ready. See {}.".format(written_path))
 
-        self.build_config.build_host_dispatcher.release_build_host()
+        self.build_config.build_farm_host_dispatcher.release_build_farm_host()

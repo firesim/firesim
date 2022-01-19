@@ -5,8 +5,8 @@ from awstools.awstools import *
 
 rootLogger = logging.getLogger()
 
-class BuildHostDispatcher(object):
-    """ Abstract class to manage how to handle build hosts (request, wait, release, etc). """
+class BuildFarmHostDispatcher(object):
+    """ Abstract class to manage how to handle a single build farm host (request, wait, release, etc). """
 
     NAME = ""
 
@@ -21,38 +21,39 @@ class BuildHostDispatcher(object):
         self.build_config = build_config
         self.args = args
 
-        # used if dispatcher refers to local build host
+        # used if dispatcher refers to local build farm
         self.is_local = False
 
         self.override_remote_build_dir = None
 
     def parse_args(self):
-        """ Parse default build host arguments. Can be overridden by child classes. """
+        """ Parse default build farm arguments. Can be overridden by child classes. """
         raise NotImplementedError
 
-    def request_build_host(self):
-        """ Request build host to use for build. """
+    def request_build_farm_host(self):
+        """ Request build farm host to use for build. """
         raise NotImplementedError
 
     # technically not inherited, but put here to make things clear
     @staticmethod
-    def request_build_hosts(build_host_dispatchers):
+    def request_build_farm_hosts(build_farm_host_dispatchers):
+        """ Request multiple build farm hosts """
         return
 
-    def wait_on_build_host_initialization(self):
-        """ Ensure build host is launched and ready to be used. """
+    def wait_on_build_farm_host_initialization(self):
+        """ Ensure build farm host is launched and ready to be used. """
         raise NotImplementedError
 
-    def get_build_host_ip(self):
-        """ Get IP address associated with this dispatched build host. """
+    def get_build_farm_host_ip(self):
+        """ Get IP address associated with this dispatched build farm host. """
         raise NotImplementedError
 
-    def release_build_host(self):
-        """ Release the build host. """
+    def release_build_farm_host(self):
+        """ Release the build farm host. """
         raise NotImplementedError
 
-class IPAddrBuildHostDispatcher(BuildHostDispatcher):
-    """ Dispatcher class that uses the IP address given as the build host. """
+class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
+    """ Dispatcher class that uses the IP address given as the build farm host. """
 
     NAME = "unmanaged"
 
@@ -66,60 +67,60 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
             args (list): List of args (i.e. options) passed to the dispatcher
         """
 
-        BuildHostDispatcher.__init__(self, build_config, args)
+        BuildFarmHostDispatcher.__init__(self, build_config, args)
 
-        # ip addrs associated with build host
+        # ip addrs associated with build farm host
         self.ip_addr = None
 
-        self.dispatch_id = IPAddrBuildHostDispatcher.dispatch_counter
-        IPAddrBuildHostDispatcher.dispatch_counter += 1
+        self.dispatch_id = IPAddrBuildFarmHostDispatcher.dispatch_counter
+        IPAddrBuildFarmHostDispatcher.dispatch_counter += 1
 
     def parse_args(self):
-        """ Parse build host arguments. """
-        build_hosts_list = self.args["build-hosts"]
-        if len(build_hosts_list) > self.dispatch_id:
+        """ Parse build farm host arguments. """
+        build_farm_hosts_list = self.args["build-farm-hosts"]
+        if len(build_farm_hosts_list) > self.dispatch_id:
             default_build_dir = self.args.get("default-build-dir")
 
-            build_host = build_hosts_list[self.dispatch_id]
+            build_farm_host = build_farm_hosts_list[self.dispatch_id]
 
-            if type(build_host) is dict:
+            if type(build_farm_host) is dict:
                 # add element { ip-addr: { arg1: val1, arg2: val2, ... } }
-                assert(len(build_host.keys()) == 1)
+                assert(len(build_farm_host.keys()) == 1)
 
-                self.ip_addr = build_host.keys()[0]
-                ip_args = build_host.values()[0]
+                self.ip_addr = build_farm_host.keys()[0]
+                ip_args = build_farm_host.values()[0]
 
                 self.override_remote_build_dir = ip_args.get("override-build-dir", default_build_dir)
-            elif type(build_host) is str:
+            elif type(build_farm_host) is str:
                 # add element w/ defaults
 
-                self.ip_addr = build_host
+                self.ip_addr = build_farm_host
                 self.override_remote_build_dir = default_build_dir
             else:
-                raise Exception("Unknown build host type")
+                raise Exception("Unknown build farm host type")
 
             if self.ip_addr == "localhost":
                 self.is_local = True
 
-            rootLogger.info("Using host {} for {} with IP address: {}".format(self.build_config.build_host, self.build_config.get_chisel_triplet(), self.ip_addr))
+            rootLogger.info("Using host {} for {} with IP address: {}".format(self.build_config.build_farm_host, self.build_config.get_chisel_triplet(), self.ip_addr))
         else:
             rootLogger.critical("ERROR: Less IPs available than builds. Add more IPs.")
             raise Exception("ERROR: Less IPs available than builds. Add more IPs.")
 
-    def request_build_host(self):
+    def request_build_farm_host(self):
         """ In this case, nothing happens since IP address should be pre-setup. """
         return
 
     @staticmethod
-    def request_build_hosts(build_host_dispatchers):
+    def request_build_farm_hosts(build_farm_host_dispatchers):
         return
 
-    def wait_on_build_host_initialization(self):
+    def wait_on_build_farm_host_initialization(self):
         """ In this case, nothing happens since IP address should be pre-setup. """
         return
 
-    def get_build_host_ip(self):
-        """ Get IP address associated with this dispatched build host.
+    def get_build_farm_host_ip(self):
+        """ Get IP address associated with this dispatched build farm host.
 
         Returns:
             (str): IP address given as the dispatcher arg
@@ -127,12 +128,12 @@ class IPAddrBuildHostDispatcher(BuildHostDispatcher):
 
         return self.ip_addr
 
-    def release_build_host(self):
+    def release_build_farm_host(self):
         """ In this case, nothing happens. Up to the IP address to cleanup after itself. """
         return
 
-class EC2BuildHostDispatcher(BuildHostDispatcher):
-    """ Dispatcher class to manage an AWS EC2 instance as the build host. """
+class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
+    """ Dispatcher class to manage an AWS EC2 instance as the build farm host. """
 
     NAME = "aws-ec2"
 
@@ -144,9 +145,9 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
             args (dict): Dict of args (i.e. options) passed to the dispatcher
         """
 
-        BuildHostDispatcher.__init__(self, build_config, args)
+        BuildFarmHostDispatcher.__init__(self, build_config, args)
 
-        # instance object associated with the build host
+        # instance object associated with the build farm host
         self.launched_instance_object = None
 
         # aws specific options
@@ -159,7 +160,7 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
         self.is_local = False
 
     def parse_args(self):
-        """ Parse build host arguments. """
+        """ Parse build farm host arguments. """
         # get aws specific args
         self.instance_type = self.args['instance-type']
         self.build_instance_market = self.args['build-instance-market']
@@ -168,7 +169,7 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
 
         self.override_remote_build_dir = self.args.get("build-dir")
 
-    def request_build_host(self):
+    def request_build_farm_host(self):
         """ Launch an AWS EC2 instance for the build config. """
 
         build_instance_market = self.build_instance_market
@@ -176,7 +177,7 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
         spot_max_price = self.spot_max_price
 
         num_instances = 1
-        self.launched_instance_object = EC2BuildHostDispatcher.ec2_launch_instances(
+        self.launched_instance_object = EC2BuildFarmHostDispatcher.ec2_launch_instances(
             self.instance_type,
             num_instances,
             build_instance_market,
@@ -184,17 +185,17 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
             spot_max_price)[0]
 
     @staticmethod
-    def request_build_hosts(build_host_dispatchers):
-        amt_requested = len(build_host_dispatchers)
+    def request_build_farm_hosts(build_farm_host_dispatchers):
+        amt_requested = len(build_farm_host_dispatchers)
 
-        launched_objs = EC2BuildHostDispatcher.ec2_launch_instances(
+        launched_objs = EC2BuildFarmHostDispatcher.ec2_launch_instances(
             instance_type,
             amt_requested,
             build_instance_market,
             spot_interruption_behavior,
             spot_max_price)
 
-        for bh, lo in zip(build_host_dispatchers, launched_objs):
+        for bh, lo in zip(build_farm_host_dispatchers, launched_objs):
             bh.launched_instance_object = lo
 
     @staticmethod
@@ -226,20 +227,20 @@ class EC2BuildHostDispatcher(BuildHostDispatcher):
             tags={ 'fsimbuildcluster': buildfarmprefix },
             randomsubnet=True)
 
-    def wait_on_build_host_initialization(self):
+    def wait_on_build_farm_host_initialization(self):
         """ Wait for EC2 instance launch. """
-        wait_on_build_host_initializationes([self.launched_instance_object])
+        wait_on_build_farm_host_initializationes([self.launched_instance_object])
 
-    def get_build_host_ip(self):
+    def get_build_farm_host_ip(self):
         """ Get IP address associated with this dispatched instance.
 
         Returns:
-            (str): IP address of EC2 build host
+            (str): IP address of EC2 build farm host
         """
 
         return self.launched_instance_object.private_ip_address
 
-    def release_build_host(self):
+    def release_build_farm_host(self):
         """ Terminate the EC2 instance running this build. """
         instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
         rootLogger.info("Terminating build instances {}. Please confirm in your AWS Management Console".format(instance_ids))

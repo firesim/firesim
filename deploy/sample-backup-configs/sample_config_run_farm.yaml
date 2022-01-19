@@ -1,0 +1,28 @@
+aws-ec2-f1-run-farm:
+    run-farm-type: aws-ec2-f1
+    args:
+        run-farm-tag: mainrunfarm
+        f1_16xlarges: 0
+        m4_16xlarges: 0
+        f1_4xlarges: 0
+        f1_2xlarges: 1
+        run-instance-market: ondemand
+        spot-interruption-behavior: terminate
+        spot-max-price: ondemand
+        # change simulation directory default location (abs. path)
+        simulation-dir: null
+
+local-run-farm:
+    run-farm-type: unmanaged
+    args:
+        default-num-fpgas: 4
+        default-platform: vitis
+        default-simulation-dir: /scratch/abejgonza
+        runhosts:
+            - localhost
+#            - user@ip1
+#            - user@ip2:
+#                override-platform: PLATFORM
+#                override-num-fpgas: NUM
+#                override-simulation-dir: DIR
+

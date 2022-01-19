@@ -72,7 +72,7 @@ class RuntimeHWConfig:
     def get_local_shared_libraries(self):
         """ Returns a list of path tuples, (A, B), where:
             A is the local file path on the manager instance to the library
-            B is the destination file path on the runfarm instance relative to the driver """
+            B is the destination file path on the run farm instance relative to the driver """
 
         return [[LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
                 [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]]
