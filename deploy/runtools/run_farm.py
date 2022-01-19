@@ -385,14 +385,14 @@ class InstanceDeployManager:
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
         with cd("../"):
-            # use local version of awsfpga on runfarm nodes
-            awsfpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
-            if "-dirty" in awsfpga_upstream_version:
+            # use local version of aws_fpga on runfarm nodes
+            aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
+            if "-dirty" in aws_fpga_upstream_version:
                 rootLogger.critical("Unable to use local changes to aws-fpga. Continuing without them.")
-        self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(awsfpga_upstream_version))
+        self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(aws_fpga_upstream_version))
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('git clone https://github.com/aws/aws-fpga')
-            run('cd aws-fpga && git checkout ' + awsfpga_upstream_version)
+            run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
 
