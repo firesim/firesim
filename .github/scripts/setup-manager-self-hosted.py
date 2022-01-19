@@ -68,7 +68,7 @@ def initialize_manager_hosted():
 
                 # double check that screen is setup properly
                 with settings(warn_only=True):
-                    rc = run("screen -ls | grep -q \"gh-a-runner-{}\"".format(runner_idx))
+                    rc = run("screen -ls | grep \"gh-a-runner-{}\"".format(runner_idx)).return_code
                     if rc != 0:
                         run("cat screenlog.*")
                         raise Exception("There was an issue with setting up Github Actions runner {}".format(runner_idx))
