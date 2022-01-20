@@ -27,10 +27,10 @@ def initialize_manager(max_runtime):
             local("chmod 600 {}".format(manager_fsim_pem))
             set_fabric_firesim_pem()
 
-            run("git clone https://github.com/firesim/firesim.git")
+            # copy ci version of the repo into the new globally accessible location
+            run("git clone {} {}".format(ci_workdir, manager_fsim_dir))
 
         with cd(manager_fsim_dir):
-            run("git checkout " + ci_commit_sha1)
             run("./build-setup.sh --fast")
 
         # Initialize marshal submodules early because it appears some form of
