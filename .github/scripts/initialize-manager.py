@@ -59,7 +59,7 @@ def initialize_manager(max_runtime):
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
-        terminate_workflow_instances(ci_workflow_run_id)
+        terminate_workflow_instances(ci_personal_api_token, ci_workflow_run_id)
         sys.exit(1)
 
 if __name__ == "__main__":
