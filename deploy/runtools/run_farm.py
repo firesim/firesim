@@ -384,7 +384,9 @@ class InstanceDeployManager:
     def get_and_install_aws_fpga_sdk(self):
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
-        with cd("../"):
+        with prefix('cd ../'), \
+             StreamLogger('stdout'), \
+             StreamLogger('stderr'):
             # use local version of aws_fpga on runfarm nodes
             aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
             if "-dirty" in aws_fpga_upstream_version:
