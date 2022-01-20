@@ -1,6 +1,17 @@
 name: firesim-ci-process
 
-on: [push]
+on:
+  # run ci when pushing/pring to dev/master/main
+  push:
+    branches:
+      - dev
+      - master
+      - main
+  pull_request:
+    branches:
+      - dev
+      - master
+      - main
 
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
