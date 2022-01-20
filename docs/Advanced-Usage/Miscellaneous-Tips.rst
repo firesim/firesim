@@ -135,3 +135,9 @@ Then, you can move the cursor over something you want to jump to and hit
 ``ctrl-]`` to jump to the definition and ``ctrl-t`` to jump back out. E.g. in
 top-level configurations in FireSim, you can jump all the way down through the
 Rocket Chip codebase and even down to Chisel.
+
+Using FireSim CI
+----------------
+
+For more information on how to deal with the FireSim CI and how to run FPGA simulations in the CI,
+refer to the the ``CI_README.md`` under the ``.github/`` directory.

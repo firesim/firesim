@@ -2,7 +2,7 @@
 manager """
 
 from time import strftime, gmtime
-import ConfigParser
+import configparser
 import pprint
 
 from runtools.runtime_config import RuntimeHWDB
@@ -89,7 +89,7 @@ class GlobalBuildConfig:
 
         self.args = args
 
-        global_build_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        global_build_configfile = configparser.ConfigParser(allow_no_value=True)
         # make option names case sensitive
         global_build_configfile.optionxform = str
         global_build_configfile.read(args.buildconfigfile)
@@ -111,9 +111,9 @@ class GlobalBuildConfig:
         self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
 
         # this is a list of actual builds to run
-        builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
+        builds_to_run_list = list(map(lambda x: x[0], global_build_configfile.items('builds')))
 
-        build_recipes_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        build_recipes_configfile = configparser.ConfigParser(allow_no_value=True)
         # make option names case sensitive
         build_recipes_configfile.optionxform = str
         build_recipes_configfile.read(args.buildrecipesconfigfile)
@@ -167,7 +167,7 @@ class GlobalBuildConfig:
     def get_build_instance_ips(self):
         """ Return a list of all the build instance IPs, i.e. hosts to pass to
         fabric. """
-        return map(lambda x: x.get_build_instance_private_ip(), self.builds_list)
+        return list(map(lambda x: x.get_build_instance_private_ip(), self.builds_list))
 
     def get_builds_list(self):
         return self.builds_list

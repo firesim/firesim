@@ -1,0 +1,22 @@
+name: run-scala-test
+description: "Runs the scala test with name <test-package>.<test-name>"
+
+inputs:
+  target-project:
+    description: "Target project"
+    required: false
+    default: "midasexamples"
+  test-name:
+    description: "Test name"
+    required: true
+  test-package:
+    description: "Test package"
+    required: false
+    default: "firesim.midasexamples"
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        .github/scripts/run-scala-test.py ${{ inputs.target-project }} ${{ inputs.test-package }}.${{ inputs.test-name }}
+      shell: bash

@@ -14,9 +14,9 @@ q = f.readlines()
 f.close()
 
 
-q = filter(lambda x: x.startswith('App:'), q)
-q = map(lambda x: x.strip().split(","), q)
-q = map(lambda x: list(map(lambda z: z.split(":"), x)), q)
+q = list(filter(lambda x: x.startswith('App:'), q))
+q = list(map(lambda x: x.strip().split(","), q))
+q = list(map(lambda x: list(map(lambda z: z.split(":"), x)), q))
 
 
 def arr_to_dict(q):
@@ -29,9 +29,9 @@ def arr_to_dict(q):
         as_dict.append(d)
     return as_dict
 
-cacheline_stride_bmark = filter(lambda x: ['RunType', '[16]'] in x, q)
-unit_stride_bmark = filter(lambda x: ['RunType', '[1]'] in x, q)
-random_bmark = filter(lambda x: ['RunType', '[0]'] in x, q)
+cacheline_stride_bmark = list(filter(lambda x: ['RunType', '[16]'] in x, q))
+unit_stride_bmark = list(filter(lambda x: ['RunType', '[1]'] in x, q))
+random_bmark = list(filter(lambda x: ['RunType', '[0]'] in x, q))
 
 def data_from_full_dict(array_of_dict):
     times = []

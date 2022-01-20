@@ -337,7 +337,7 @@ class RunFarm:
 
         if not forceterminate:
             # --forceterminate was not supplied, so confirm with the user
-            userconfirm = raw_input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
+            userconfirm = input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
         else:
             userconfirm = "yes"
 

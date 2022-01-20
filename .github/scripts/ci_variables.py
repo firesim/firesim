@@ -5,9 +5,9 @@ import os
 
 # CI instance environment variables
 # This is used as a unique tag for all instances launched in a workflow
-ci_workflow_id = os.environ['CIRCLE_WORKFLOW_ID']
-ci_commit_sha1 = os.environ['CIRCLE_SHA1']
+ci_workflow_run_id = os.environ['GITHUB_RUN_ID']
+ci_commit_sha1 = os.environ['GITHUB_SHA']
 # expanduser to replace the ~ present in the default, for portability
-ci_workdir = os.path.expanduser(os.environ['CIRCLE_WORKING_DIRECTORY'])
-ci_api_token = os.environ['CIRCLE_CI_API_TOKEN']
-
+ci_workdir = os.path.expanduser(os.environ['GITHUB_WORKSPACE'])
+ci_api_token = os.environ['GITHUB_TOKEN']
+ci_personal_api_token = os.environ['PERSONAL_ACCESS_TOKEN']

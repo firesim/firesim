@@ -6,8 +6,8 @@ RUN yum -y install sudo epel-release
 RUN yum -y install python-pip
 # Match the version on the dev ami
 RUN pip2 install --upgrade pip==18.0
-# Provide a baseline of version for circle CI to use.
-# If Circle CI uses its native version to initialize the repo, future submodule
+# Provide a baseline of version for GH-A CI to use.
+# If GH-A CI uses its native version to initialize the repo, future submodule
 # initializations with the machine-launch installed version of git produce very
 # non-intuitive results
 # (the chipyard submodule is initialized to an apparently random commit)
