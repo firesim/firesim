@@ -8,15 +8,17 @@ sudo chgrp centos /home/centos/machine-launchstatus
 sudo chown centos /home/centos/machine-launchstatus
 
 {
+# remove any older git versions and collateral first
+sudo yum -y remove git git224 git224-core ius-release.noarch
 sudo yum install -y ca-certificates
 sudo yum install -y mosh
 sudo yum groupinstall -y "Development tools"
-sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
+sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim java java-devel
 curl https://www.scala-sbt.org/sbt-rpm.repo | sudo tee /etc/yum.repos.d/scala-sbt-rpm.repo
 sudo yum install -y sbt texinfo gengetopt libffi-devel
 sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
 # deps for poky
-sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
+sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath wget
 # deps for qemu
 sudo yum install -y gtk3-devel
 # deps for firesim-software (note that rsync is installed but too old)
@@ -28,9 +30,8 @@ sudo yum install -y devtoolset-8-make
 # install DTC
 sudo yum -y install dtc
 
-# get a proper version of git
+# get a proper version of git (remove git that was reinstalled)
 sudo yum -y remove git
-sudo yum -y install epel-release
 sudo yum -y install https://repo.ius.io/ius-release-el7.rpm
 sudo yum -y install git224
 

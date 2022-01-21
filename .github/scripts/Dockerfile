@@ -12,7 +12,8 @@ RUN pip2 install --upgrade pip==18.0
 # non-intuitive results
 # (the chipyard submodule is initialized to an apparently random commit)
 # If we want to get rid of this we could reclone the repo under the updated git
-RUN yum -y install git
+RUN yum -y install https://repo.ius.io/ius-release-el7.rpm
+RUN yum -y install git224
 
 RUN adduser centos
 RUN usermod -aG wheel centos
