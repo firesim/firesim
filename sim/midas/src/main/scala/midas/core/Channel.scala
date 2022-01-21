@@ -97,7 +97,7 @@ class PipeChannelUnitTest(
 //  - ready -> rev.hReady
 //  - bits  -> target.ready
 //
-// WARNING: Target.fire() is meaningless unless are fwd and rev channels are
+// WARNING: Target.fire is meaningless unless are fwd and rev channels are
 // synchronized and carry valid tokens
 
 class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
@@ -114,7 +114,7 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   // Returns two directioned objects driven by this SimReadyValidIO hw instance
   def bifurcate(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
     // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
-    class BifurcationModule[T <: Data](gen: T) extends MultiIOModule {
+    class BifurcationModule[T <: Data](gen: T) extends Module {
       val fwd = IO(Decoupled(Valid(gen)))
       val rev = IO(Flipped(DecoupledIO(Bool())))
       val coupled = IO(Flipped(cloneType))
@@ -136,7 +136,7 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   // Returns two directioned objects which will drive this SimReadyValidIO hw instance
   def combine(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
     // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
-    class CombiningModule[T <: Data](gen: T) extends MultiIOModule {
+    class CombiningModule[T <: Data](gen: T) extends Module {
       val fwd = IO(Flipped(DecoupledIO(Valid(gen))))
       val rev = IO((Decoupled(Bool())))
       val coupled = IO(cloneType)
@@ -194,7 +194,7 @@ class ReadyValidChannel[T <: Data](
     (enqRevFired || io.enq.rev.hReady),
     (deqFwdFired || io.deq.fwd.hReady))
 
-  val targetFire = finishing.fire()
+  val targetFire = finishing.fire
   val enqBitsLast = RegEnable(enqFwdQ.io.deq.bits.bits, targetFire)
   // enqRev
   io.enq.rev.hValid := !enqRevFired

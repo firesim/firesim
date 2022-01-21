@@ -183,6 +183,7 @@ class PeekPokeTokenizedIO(private val targetIO: PeekPokeTargetIO) extends Record
   val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
   val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })
   override val elements = ListMap((ins ++ outs):_*)
+  override def cloneType = new PeekPokeTokenizedIO(targetIO).asInstanceOf[this.type]
 }
 
 object PeekPokeTokenizedIO {
@@ -191,7 +192,7 @@ object PeekPokeTokenizedIO {
   // serialiable port information
   def apply(key: PeekPokeKey): PeekPokeTokenizedIO = {
     // Instantiate a useless module from which we can get a hardware type with parsePorts
-    val dummyModule = Module(new MultiIOModule {
+    val dummyModule = Module(new Module {
       // This spoofs the sources that were passed to the companion object ioList
       // pokes and peeks are reversed because PeekPokeTargetIO is going to flip them
       val io = IO(new RegeneratedTargetIO(key.pokes, key.peeks))
@@ -212,6 +213,7 @@ class PeekPokeTargetIO(targetIO: Seq[(String, Data)]) extends Record {
     Seq("clock" -> clock) ++
     targetIO.map({ case (name, field) => name -> Flipped(chiselTypeOf(field)) })
   ):_*)
+  override def cloneType = new PeekPokeTargetIO(targetIO).asInstanceOf[this.type]
 }
 
 class PeekPokeBridge(targetIO: Seq[(String, Data)]) extends BlackBox

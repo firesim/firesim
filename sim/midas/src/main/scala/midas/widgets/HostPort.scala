@@ -35,6 +35,8 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
 
   val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
 
+  override def cloneType: this.type = new HostPortIO(targetPortProto).asInstanceOf[this.type]
+
   private[midas] def getClock(): Clock = {
     val allTargetClocks = SimUtils.findClocks(targetPortProto)
     require(allTargetClocks.nonEmpty,
@@ -104,7 +106,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
     }
   }
 
-  // These are lazy because parsePorts needs a directioned gen; these can be called once
+  // These are lazy because parsePorts needs a directioned gen; these can be called once 
   // this Record has been bound to Hardware
   //private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
   private lazy val (ins, outs, rvIns, rvOuts) = try {

@@ -28,6 +28,7 @@ class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) exte
   val enable = Output(Bool())
 
   val elements = ListMap((Seq("enable" -> enable) ++ args):_*)
+  override def cloneType = new PrintRecord(portType, formatString).asInstanceOf[this.type]
 
   // Gets the bit position of each argument after the record has been flattened to a UInt
   def argumentOffsets() = args.foldLeft(Seq(enable.getWidth))({
@@ -45,6 +46,7 @@ class PrintRecordBag(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, Str
   })
 
   val elements = ListMap(((resetPortName -> underGlobalReset) +: printRecords):_*)
+  override def cloneType = new PrintRecordBag(resetPortName, printPorts).asInstanceOf[this.type]
 
   // Generates a Bool indicating if at least one Printf has it's enable set on this cycle
   def hasEnabledPrint(): Bool = printRecords.map(_._2.enable).foldLeft(false.B)(_ || _) && !underGlobalReset
@@ -165,7 +167,7 @@ class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, 
     val widths = (printPort.printRecords.map(_._2.getWidth))
 
     // C-types for emission
-    val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) =>
+    val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
       UInt32(offsets.head.value + width) +: offsets}).tail.reverse
 
     val argumentCounts  = printPort.printRecords.map(_._2.args.size).map(UInt32(_))

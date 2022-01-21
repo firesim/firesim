@@ -27,7 +27,7 @@ class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   qB.io.deq.ready := false.B
 
   val enqPointer = RegInit(false.B)
-  when (io.enqA.fire() ^ io.enqB.fire()) {
+  when (io.enqA.fire ^ io.enqB.fire) {
     enqPointer := ~enqPointer
   }
 
@@ -40,7 +40,7 @@ class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   }
 
   val deqPointer = RegInit(false.B)
-  when (io.deq.fire()) {
+  when (io.deq.fire) {
     deqPointer := ~deqPointer
   }
 
@@ -121,8 +121,8 @@ class DynamicLatencyPipe[T <: Data] (
   // Add the implication on enq.fire to work around target reset problems for now
   assert(!io.enq.fire || io.latency =/= 0.U, "DynamicLatencyPipe only supports latencies > 0")
   val ram = Mem(entries, gen)
-  do_enq := io.enq.fire()
-  do_deq := io.deq.fire()
+  do_enq := io.enq.fire
+  do_deq := io.deq.fire
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -575,7 +575,7 @@ object AddressRangeCounter {
   def apply[T <: NastiAddressChannel](
       n: BigInt, req: DecoupledIO[T], en: Bool)(implicit p: Parameters) = {
     val counter = Module(new AddressRangeCounter(n))
-    counter.io.req.valid := req.fire() && en
+    counter.io.req.valid := req.fire && en
     counter.io.req.bits.addr := req.bits.addr
     counter.io.req.bits.len := req.bits.len
     counter.io.req.bits.size := req.bits.size
@@ -742,7 +742,7 @@ class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
 // Checks AXI4 transactions to ensure they conform to the bounds
 // set in the memory model configuration eg. Max burst lengths respected
 // NOTE: For use only in a FAME1 context
-class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends MultiIOModule {
+class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module {
   val axi4 = IO(Input(new NastiIO))
 
   assert(!axi4.ar.fire || axi4.ar.bits.len < cfg.maxReadLength.U,

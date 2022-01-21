@@ -32,7 +32,7 @@ class FreeList(entries: Int) extends Module {
     if (i == 0) false.B else true.B)))
   val next = ids.indexWhere((x:Bool) => x)
 
-  when(io.nextId.fire() || ~nextId.valid) {
+  when(io.nextId.fire || ~nextId.valid) {
     nextId.bits := next
     nextId.valid := ids.exists((x: Bool) => x)
     ids(next) := false.B
@@ -92,7 +92,7 @@ class AllocationIO(vIdWidth: Int, pIdWidth: Int) extends Bundle {
   val ready = Output(Bool())
   val valid = Input(Bool())
 
-  def fire(): Bool = ready && valid
+  def fire: Bool = ready && valid
 }
 
 
@@ -125,7 +125,7 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
   // Pointer to the parent of a entry being appended to a linked-list
   val parentEntryPtr = Wire(Valid(UInt()))
   parentEntryPtr.bits := rat.onlyIndexWhere(_.matchTail(io.next.vId))
-  parentEntryPtr.valid := io.next.fire() && rat.exists(_.matchTail(io.next.vId))
+  parentEntryPtr.valid := io.next.fire && rat.exists(_.matchTail(io.next.vId))
 
 
   for((entry,index) <- rat.zipWithIndex){
@@ -138,19 +138,19 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
       rat(index).setHead()
     }
     // Allocation: Add the new entry to the table
-    when(io.next.fire() && nextPId === index.U) {
+    when(io.next.fire && nextPId === index.U) {
       rat(index).setTranslation(io.next.vId)
       // We set the head bit if no linked-list exists for this vId, or
       // if the parent, and thus previous head, is about to be freed.
       when (~parentEntryPtr.valid ||
-            (io.trans.fire() && (io.trans.pId === parentEntryPtr.bits))){
+            (io.trans.fire && (io.trans.pId === parentEntryPtr.bits))){
         rat(index).setHead()
       }
     }
     // Deallocation: invalidate the entry = io.free.bits
     // Note this exploits last connect semantics to override the pushing
     // of new child to this entry when it is about to be freed.
-    when(io.trans.fire() && (index.U === io.trans.pId)) {
+    when(io.trans.fire && (index.U === io.trans.pId)) {
       assert(rat(index).head)
       nextHeadPtr := rat(index).next
       rat(index).pop()
@@ -233,8 +233,8 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
     rob.io.free.valid := xactionDone
     rob.io.free.bits := deqPIdReg.bits
 
-    when(rob.io.trans.fire()) {
-      deqPIdReg.valid := rob.io.trans.fire()
+    when(rob.io.trans.fire) {
+      deqPIdReg.valid := rob.io.trans.fire
       deqPIdReg.bits := rob.io.trans.pId
     }.elsewhen (targetFire && xactionDone) {
       deqPIdReg.valid := false.B
@@ -248,7 +248,7 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
     rob.io.next.valid := ~enqPIdReg.valid && io.enq.valid
     enqPId.bits := Mux(enqPIdReg.valid, enqPIdReg.bits, rob.io.next.pId)
     enqPId.valid := enqPIdReg.valid || rob.io.next.ready
-    when (io.enq.fire()) {
+    when (io.enq.fire) {
       when (io.enq.bits.last) {
         enqPIdReg.valid := false.B
       }.elsewhen (~enqPIdReg.valid) {
@@ -334,7 +334,7 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   }
 
   val idMatch = currReqReg.bits === io.enq.bits.id
-  val do_enq = io.enq.fire()
+  val do_enq = io.enq.fire
   val do_deq = targetFire && currReqReg.valid && haveAck && io.resp.tReady
   ackCounters.zipWithIndex foreach { case (count, idx) =>
     when (!(do_deq && do_enq && idMatch)) {

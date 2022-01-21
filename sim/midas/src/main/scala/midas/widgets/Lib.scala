@@ -343,37 +343,37 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   val rIndex = Reg(UInt(log2Up(numRegs).W))
   val wStrb = Reg(UInt(nastiWStrobeBits.W))
 
-  when(io.nasti.aw.fire()){
+  when(io.nasti.aw.fire){
     awFired := true.B
     wIndex := io.nasti.aw.bits.addr >> log2Up(nastiWStrobeBits)
     bId := io.nasti.aw.bits.id
     assert(io.nasti.aw.bits.len === 0.U)
   }
 
-  when(io.nasti.w.fire()){
+  when(io.nasti.w.fire){
     wFired := true.B
     wData := io.nasti.w.bits.data
     wStrb := io.nasti.w.bits.strb
   }
 
-  when(io.nasti.ar.fire()) {
+  when(io.nasti.ar.fire) {
     arFired := true.B
     rIndex := (io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0)
     rId := io.nasti.ar.bits.id
     assert(io.nasti.ar.bits.len === 0.U, "MCRFile only support single beat reads")
   }
 
-  when(io.nasti.r.fire()) {
+  when(io.nasti.r.fire) {
     arFired := false.B
   }
 
-  when(io.nasti.b.fire()) {
+  when(io.nasti.b.fire) {
     awFired := false.B
     wFired := false.B
     wCommited := false.B
   }
 
-  when(io.mcr.write(wIndex).fire()){
+  when(io.mcr.write(wIndex).fire){
     wCommited := true.B
   }
 
@@ -458,8 +458,8 @@ class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
   io.count := 0.U
 
   val do_flow = Wire(Bool())
-  val do_enq = io.enq.fire() && !do_flow
-  val do_deq = io.deq.fire() && !do_flow
+  val do_enq = io.enq.fire && !do_flow
+  val do_deq = io.deq.fire && !do_flow
 
   val maybe_full = RegInit(false.B)
   val enq_ptr = Counter(do_enq, entries)._1

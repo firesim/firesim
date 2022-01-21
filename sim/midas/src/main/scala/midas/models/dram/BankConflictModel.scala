@@ -115,7 +115,7 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
       busyCycles := busyCycles - 1.U
     }
 
-    when(newReference.fire() && newReference.bits.reference.bankAddr === idx.U){
+    when(newReference.fire && newReference.bits.reference.bankAddr === idx.U){
       busyCycles := marginalCycles + conflictPenalty
       conflictCount := Mux(busyCycles > 0.U, conflictCount + 1.U, conflictCount)
     }
@@ -135,7 +135,7 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
 
   // Take the readies from the arbiter, and kill the selected entry
   refUpdates.zip(selector.io.in).foreach({ case (ref, sel) =>
-    when(sel.fire()) { ref.valid := false.B } })
+    when(sel.fire) { ref.valid := false.B } })
 
   io.mmReg.bankConflicts := bankConflictCounts
 
