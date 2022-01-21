@@ -1,6 +1,6 @@
 import Tests._
 
-val chiselVersion = "3.5.0"
+val chiselVersion = "3.5-SNAPSHOT"
 
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
@@ -75,17 +75,17 @@ lazy val firesim    = (project in file("."))
     // Publish scala doc only for the library projects -- classes under this
     // project are all integration test-related
     unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(targetutils, midas, firesimLib),
-    siteSubdirName in ScalaUnidoc := apiDirectory.value + "/api",
+    ScalaUnidoc / siteSubdirName := apiDirectory.value + "/api",
     // Only delete the files in the docs branch that are in the directory were
     // trying to publish to.  This prevents dev-versions from blowing away
     // tagged versions and vice versa
-    includeFilter in ghpagesCleanSite := new sbt.io.PrefixFilter(apiDirectory.value),
-    excludeFilter in ghpagesCleanSite := NothingFilter,
+    ghpagesCleanSite / includeFilter := new sbt.io.PrefixFilter(apiDirectory.value),
+    ghpagesCleanSite / excludeFilter := NothingFilter,
 
     // Clobber the existing doc task to instead have it use the unified one
     Compile / doc := (doc in ScalaUnidoc).value,
     // Registers the unidoc-generated html with sbt-site
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), ScalaUnidoc / siteSubdirName),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
   .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
