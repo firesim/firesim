@@ -63,33 +63,6 @@ abstract class TutorialSuite(
     }
   }
 
-  /**
-    * Extracts all lines in a file that begin with a specific prefix, removing
-    * extra whitespace between the prefix and the remainder of the line
-    *
-    * @param filename Input file
-    * @param prefix The per-line prefix to filter with
-    * @param linesToDrop Some number of matched lines to be removed
-    * @param headerLines An initial number of lines to drop before filtering.
-    *        Assertions, Printf output have a single line header.
-    *        MLsim stdout has some unused output, so set this to 1 by default
-    *
-    */
-  def extractLines(filename: File, prefix: String, linesToDrop: Int = 0, headerLines: Int = 1): Seq[String] = {
-    val lines = Source.fromFile(filename).getLines.toList.drop(headerLines)
-    lines.filter(_.startsWith(prefix))
-         .dropRight(linesToDrop)
-         .map(_.stripPrefix(prefix).replaceAll(" +", " "))
-  }
-
-  def diffLines(expectedLines: Seq[String], actualLines: Seq[String]): Unit = {
-    assert(actualLines.size == expectedLines.size && actualLines.nonEmpty,
-      s"\nActual output had length ${actualLines.size}. Expected ${expectedLines.size}")
-    for ((vPrint, sPrint) <- expectedLines.zip(actualLines)) {
-      assert(sPrint == vPrint)
-    }
-  }
-
   // Checks that a bridge generated log in ${genDir}/${synthLog} matches output
   // generated directly by the RTL simulator (usually with printfs)
   def diffSynthesizedLog(synthLog: String,
