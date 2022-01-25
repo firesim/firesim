@@ -30,7 +30,12 @@ class GoldenGateCompilerPhase extends Phase {
     val state = CircuitState(allCircuits.head, firrtl.ChirrtlForm, annotations ++ midasAnnos)
 
     // Lower the target design and run additional target transformations before Golden Gate xforms
-    val targetLoweringCompiler = new Compiler(Forms.LowForm ++ p(TargetTransforms))
+    val targetLoweringCompiler = new Compiler(
+      Seq(
+        Dependency[midas.passes.RunConvertAssertsEarly],
+        Dependency(firrtl.transforms.formal.ConvertAsserts)) ++
+      Forms.LowForm ++
+      p(TargetTransforms))
     logger.info("Pre-GG Target Transformation Ordering\n")
     logger.info(targetLoweringCompiler.prettyPrint("  "))
     val loweredTarget = targetLoweringCompiler.execute(state)
