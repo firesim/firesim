@@ -86,6 +86,5 @@ class BaseF1Config extends Config(
   new WithAsyncResetReplacement ++
   new WithEC2F1Artefacts ++
   new WithILATopWiringTransform ++
-  new WithAutoILA ++
   new midas.F1Config
 )
