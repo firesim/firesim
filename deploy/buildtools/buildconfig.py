@@ -47,7 +47,7 @@ class BuildConfig:
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
         # retrieve the build host section
-        self.build_farm_host = recipe_config_dict.get('build-host', "default-build-host")
+        self.build_farm_host = recipe_config_dict.get('build-farm', "default-build-farm")
         build_farm_host_conf_dict = build_farm_hosts_configfile[self.build_farm_host]
 
         build_farm_host_type = build_farm_host_conf_dict["build-farm-type"]
