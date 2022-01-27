@@ -85,9 +85,9 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   val idWidth = nastiInputs.aw.bits.id
 
 
-  //These consists of transactions in flight with DRAM. The number of entries
-  //are 2x to accommodate the requests that are not yet deqed to DRAM and
-  //that are in DRAM. These structures store IDs of transactions, sent to DRAM
+  //These consists of transactions in flight with host-DRAM. The number of entries
+  //are 2x to accommodate the requests that are not yet dequeued to host-DRAM and
+  //that are in host-DRAM. These structures store IDs of transactions, sent to host-DRAM
   //and the responses are piggybacked with IDs in the same order.
   val arIDQueue = Module(new Queue(idWidth, cfg.maxReads*2))
   val awIDQueue = Module(new Queue(idWidth, cfg.maxWrites*2))
@@ -152,10 +152,10 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   val readCollisions = SatUpDownCounter(cfg.maxReads)
 
   writeCollisions.inc := awQueue.io.enq.fire && readMatcher.hit && io.nastiInputs.hBits.aw.valid 
-  writeCollisions.dec := xaction_order.io.deq.valid && xaction_order.io.deq.bits &&
+  writeCollisions.dec := xaction_order.io.deq.valid && !xaction_order.io.deq.bits &&
                            xaction_order_collisions.io.deq.valid && xaction_order_collisions.io.deq.bits
   readCollisions.inc := arQueue.io.enq.fire && writeMatcher.hit && io.nastiInputs.hBits.ar.valid
-  readCollisions.dec := !xaction_order.io.deq.valid && xaction_order.io.deq.bits &&
+  readCollisions.dec := xaction_order.io.deq.valid && xaction_order.io.deq.bits &&
                            xaction_order_collisions.io.deq.valid && xaction_order_collisions.io.deq.bits
 
   val noCollisions = writeCollisions.value === 0.U && readCollisions.value === 0.U
@@ -166,7 +166,6 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   val do_hread = (io.relaxed && noCollisions) ||
     (io.host_mem_idle || io.host_read_inflight) && xaction_order.io.deq.valid && xaction_order.io.deq.bits
 
-  //TODO relaxed version also should send requesnt in transaction order
   val do_hwrite = Mux((io.relaxed && noCollisions), !awCredits.empty,
     io.host_mem_idle && xaction_order.io.deq.valid && !xaction_order.io.deq.bits)
 
