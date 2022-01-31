@@ -183,7 +183,7 @@ jobs:
     name: documentation-check
     runs-on: ubuntu-18.04
     container:
-      image: firesim/firesim-ci:v1.1
+      image: firesim/firesim-ci:v1.3
       options: --entrypoint /bin/bash
       env:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit

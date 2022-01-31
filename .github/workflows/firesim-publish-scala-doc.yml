@@ -13,6 +13,7 @@ env:
   AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS-DEFAULT-REGION: ${{ secrets.AWS_DEFAULT_REGION }}
   FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  FIRESIM-REPO-DEP-KEY: ${{ secrets.FIRESIM_REPO_DEP_KEY }}
   LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
   LANGUAGE: "en_US:en"
   LC_ALL: "en_US.UTF-8"
@@ -22,7 +23,7 @@ jobs:
     name: publish-scala-doc
     runs-on: ubuntu-18.04
     container:
-      image: firesim/firesim-ci:v1.1
+      image: firesim/firesim-ci:v1.3
       options: --entrypoint /bin/bash
       env:
         JVM_MEMORY: 3500M # Default JVM maximum heap limit
