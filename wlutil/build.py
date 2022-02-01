@@ -335,7 +335,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
         else:
             binList.append(config['bin'])
 
-    if 'img' in config and buildImg:
+    if 'img' in config and buildImg and not config['img-hardcoded']:
         imgList.append(config['img'])
 
     if 'jobs' in config.keys():
@@ -345,7 +345,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
                 if jCfg['nodisk']:
                     binList.append(wlutil.noDiskPath(jCfg['bin']))
 
-            if 'img' in jCfg and buildImg:
+            if 'img' in jCfg and buildImg and not jCfg['img-hardcoded']:
                 imgList.append(jCfg['img'])
 
     opts = {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}

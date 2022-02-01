@@ -1,0 +1,9 @@
+{
+  "name" : "inherit-copy",
+  "workdir" : "inherit",
+  "base" : "inherit-parent.yaml",
+  "testing" : {
+    "refDir" : "refOutput/copy",
+    "strip" : true
+  }
+}

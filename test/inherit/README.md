@@ -1,0 +1,1 @@
+This tests a few inheritance properties. The "childOwnBin" test rebuilds a binary for itself but inherits other stuff from the parent. The 'copy' test inherits everything from the parent without modification.
