@@ -81,7 +81,8 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   //TODO also have to maintain awQueue address queue for read address matcher
   val nastiInputs = new NastiReqChannels 
   val addrWidth = nastiInputs.aw.bits.nastiXAddrBits 
-  val addrLength = nastiInputs.aw.bits.nastiXLenBits
+  val nastiLength = nastiInputs.aw.bits.nastiXLenBits
+  val nastiSize = nastiInputs.aw.bits.nastiXSizeBits
   val idWidth = nastiInputs.aw.bits.id
 
 
@@ -118,18 +119,22 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
     Seq(awCredits, wCredits) foreach { _.dec := write_req_done }
   }
 
-  val readMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxReads*2, addrWidth, addrLength)).io
+  val readMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxReads*2, addrWidth, nastiLength, nastiSize)).io
   readMatcher.enq.valid := arIDQueue.io.enq.fire
   readMatcher.enq.bits.addr := io.nastiInputs.hBits.ar.bits.addr
+  readMatcher.enq.bits.size := io.nastiInputs.hBits.ar.bits.size
   readMatcher.enq.bits.len := io.nastiInputs.hBits.ar.bits.len
   readMatcher.match_address.addr := io.nastiInputs.hBits.aw.bits.addr
+  readMatcher.match_address.size := io.nastiInputs.hBits.aw.bits.size
   readMatcher.match_address.len := io.nastiInputs.hBits.aw.bits.len
 
-  val writeMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxWrites*2, addrWidth, addrLength)).io
+  val writeMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxWrites*2, addrWidth, nastiLength, nastiSize)).io
   writeMatcher.enq.valid := awIDQueue.io.enq.fire 
   writeMatcher.enq.bits.addr := io.nastiInputs.hBits.aw.bits.addr
+  writeMatcher.enq.bits.size := io.nastiInputs.hBits.aw.bits.size
   writeMatcher.enq.bits.len := io.nastiInputs.hBits.aw.bits.len
   writeMatcher.match_address.addr := io.nastiInputs.hBits.ar.bits.addr
+  writeMatcher.match_address.size := io.nastiInputs.hBits.ar.bits.size
   writeMatcher.match_address.len := io.nastiInputs.hBits.ar.bits.len
 
   arIDQueue.io.enq.valid := tFireHelper.fire(arIDQueue.io.enq.ready) && io.nastiInputs.hBits.ar.valid
