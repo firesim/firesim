@@ -408,9 +408,9 @@ class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, size: Int, len
 
   io.hit := addrs.exists({entry =>  entry.valid && 
                                     ((entry.bits.addrmin <= inAddrMin && 
-                                      inAddrMin < entry.bits.addrmax) ||  
-                                    (inAddrMax <= entry.bits.addrmax && 
-                                      entry.bits.addrmin < inAddrMax))})
+                                      inAddrMin <= entry.bits.addrmax) ||  
+                                    (inAddrMin <= entry.bits.addrmin && 
+                                      entry.bits.addrmin <= inAddrMax))})
 }
 
 
@@ -818,10 +818,10 @@ class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module
     s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
 }
 
-class FIFOAlignedAddressMatcherUnitTest(val tranX: Int = 10000)(implicit p: Parameters) extends UnitTest {
+class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p: Parameters) extends UnitTest {
 
   val addrBits = 64
-  val sizeBits = 3
+  val sizeBits = 2
   val lenBits = 8
   val nastiP = p.alterPartial({
     case NastiKey => NastiParameters(64, 16, 4)
@@ -829,42 +829,47 @@ class FIFOAlignedAddressMatcherUnitTest(val tranX: Int = 10000)(implicit p: Para
 
   val tranXs = RegInit(0.U(12.W))
 
-  val enqdeq = RegInit(true.B)
+  val enqdeq = RegInit(false.B)
   enqdeq := !enqdeq
 
-  val enqAddr = LFSRNoiseMaker(5, enqdeq) 
+  val randEnqBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
+  val enqAddr = randEnqBits << 8     //To give ample space for beats in address 
   val enqSize = LFSRNoiseMaker(sizeBits, enqdeq) 
   val enqLen = LFSRNoiseMaker(lenBits, enqdeq) 
 
-  val inAddr = LFSRNoiseMaker(5, enqdeq) 
+  val randInBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
+  val inAddr = randInBits << 8      //to give ample space for beats in address 
   val inSize = LFSRNoiseMaker(sizeBits, enqdeq) 
   val inLen = LFSRNoiseMaker(lenBits, enqdeq) 
 
   val checker = Module(new FIFOAlignedAddressMatcher(16, addrBits, sizeBits, lenBits)).io
   
+  checker.match_address.addr := 0.U + inAddr 
+  checker.match_address.size := 0.U + inSize 
+  checker.match_address.len := 0.U + inLen 
+  checker.deq := enqdeq 
+
   when(!enqdeq) {
-    checker.match_address.addr := 0.U + inAddr 
-    checker.match_address.size := 0.U + inSize 
-    checker.match_address.len := 0.U + inLen 
-    checker.deq := true.B
     tranXs := tranXs + 1.U
-  } .otherwise {
-    checker.enq.bits.addr := 0.U + enqAddr 
-    checker.enq.bits.size := 0.U + enqSize 
-    checker.enq.bits.len := 0.U + enqLen 
-    checker.enq.valid := true.B
   }
 
+  checker.enq.bits.addr := 0.U + enqAddr 
+  checker.enq.bits.size := 0.U + enqSize 
+  checker.enq.bits.len := 0.U + enqLen 
+  checker.enq.valid := !enqdeq 
+
   val enqRange = (1.U << enqSize)*enqLen
-  val inRange = (1.U << enqSize)*inLen
+  val inRange = (1.U << inSize)*inLen
 
   val enqAddrEnd = enqAddr + enqRange
   val inAddrEnd = inAddr + inRange
 
-  val noOverlap = enqAddr < inAddr && enqAddrEnd < inAddr || enqAddr > inAddr && enqAddrEnd > inAddr 
+  val noOverlap = enqAddr < inAddr && enqAddrEnd < inAddr || enqAddr > inAddrEnd && enqAddrEnd > inAddrEnd 
 
-  assert(noOverlap && checker.hit || !noOverlap && !checker.hit)
+  val hit = !noOverlap && !enqdeq
 
-  io.finished := tranXs === tranX.U 
+  assert(!noOverlap && checker.hit || noOverlap && !checker.hit || !enqdeq )
+
+  io.finished := tranXs === tranXCount.U 
 
 }
