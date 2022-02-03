@@ -74,7 +74,7 @@ lazy val firesim    = (project in file("."))
     git.remoteRepo := "git@github.com:firesim/firesim.git",
     // Publish scala doc only for the library projects -- classes under this
     // project are all integration test-related
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(targetutils, midas, firesimLib),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(targetutils, midas, firesimLib),
     ScalaUnidoc / siteSubdirName := apiDirectory.value + "/api",
     // Only delete the files in the docs branch that are in the directory were
     // trying to publish to.  This prevents dev-versions from blowing away
@@ -83,9 +83,9 @@ lazy val firesim    = (project in file("."))
     ghpagesCleanSite / excludeFilter := NothingFilter,
 
     // Clobber the existing doc task to instead have it use the unified one
-    Compile / doc := (doc in ScalaUnidoc).value,
+    Compile / doc := (ScalaUnidoc / doc).value,
     // Registers the unidoc-generated html with sbt-site
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), ScalaUnidoc / siteSubdirName),
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
   .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
