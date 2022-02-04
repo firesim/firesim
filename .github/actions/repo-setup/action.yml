@@ -1,0 +1,9 @@
+name: repo-setup
+description: "Runs all baseline setup tasks up to scala compilation in the CI container."
+
+runs:
+  using: "composite"
+  steps:
+    - uses: ./.github/actions/machinelaunchscript
+    - uses: ./.github/actions/buildsetup
+    - uses: ./.github/actions/scala-build

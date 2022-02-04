@@ -62,8 +62,17 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
       size_t delimit_idx = sub_arg.find("=");
       size_t suffix_idx = sub_arg.find(suffix);
       std::string key = sub_arg.substr(0, suffix_idx).c_str();
-      int value = std::stoi(sub_arg.substr(delimit_idx+1).c_str());
-      model_configuration[key] = value;
+
+      // This is the only nullary plusarg supported by fased
+      // All other plusargs are key-value pairs that will be written to the bridge module
+      if (key == std::string("useHardwareDefaultRuntimeSettings")) {
+        require_all_runtime_settings = false;
+      } else if (suffix_idx == std::string::npos) {
+        throw std::runtime_error("[FASED] unknown nullary plusarg: " + key);
+      } else {
+        int value = std::stoi(sub_arg.substr(delimit_idx+1).c_str());
+        model_configuration[key] = value;
+      }
     }
   }
 
@@ -125,11 +134,16 @@ void FASEDMemoryTimingModel::init() {
       }
 
       if (!exclude) {
-        char buf[100];
-        sprintf(buf, "No value provided for configuration register: %s", pair.first.c_str());
-        throw std::runtime_error(buf);
+        if (require_all_runtime_settings) {
+          char buf[100];
+          sprintf(buf, "[FASED] No value provided for configuration register: %s", pair.first.c_str());
+          throw std::runtime_error(buf);
+        } else {
+          auto init_val = read(pair.first);
+          fprintf(stderr, "[FASED] Using hardware default of %u for configuration register %s\n", init_val, pair.first.c_str());
+        }
       } else {
-        fprintf(stderr, "Ignoring writeable register: %s\n", pair.first.c_str());
+        fprintf(stderr, "[FASED] Ignoring writeable register: %s\n", pair.first.c_str());
       }
     }
   }

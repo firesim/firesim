@@ -1,0 +1,16 @@
+#! /usr/bin/env expect
+
+set timeout -1
+
+set token [lindex $argv 0]
+set runner_name [lindex $argv 1]
+set unique_label [lindex $argv 2]
+
+spawn ./config.sh --url https://github.com/firesim/firesim --token $token
+
+send -- "\r"
+send -- "$runner_name\r"
+send -- "$unique_label\r"
+send -- "\r"
+
+expect eof

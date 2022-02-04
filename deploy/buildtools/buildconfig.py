@@ -2,7 +2,7 @@
 manager """
 
 from time import strftime, gmtime
-import ConfigParser
+import configparser
 import pprint
 from importlib import import_module
 

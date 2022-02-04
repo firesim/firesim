@@ -1,11 +1,11 @@
 
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/synthesized_assertions.h"
 #include <vector>
 
-class AssertTorture_t: public virtual simif_t
+class AssertTorture_t: public simif_peek_poke_t
 {
 public:
     std::vector<synthesized_assertions_t *> assert_endpoints;

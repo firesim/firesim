@@ -1,0 +1,8 @@
+name: buildsetup
+description: "Run firesim's build-setup.sh"
+
+runs:
+  using: "composite"
+  steps:
+    - run: ./build-setup.sh fast
+      shell: bash

@@ -1,0 +1,13 @@
+name: initialize-manager
+description: "Sets up the manager instance and firesim repo"
+
+inputs:
+  max-runtime-hours:
+    description: "Max runtime hours"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - run: .github/scripts/initialize-manager.py ${{ inputs.max-runtime-hours }}
+      shell: bash

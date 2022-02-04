@@ -1,11 +1,11 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "stdio.h"
 
 #define NTESTS 6
 
-class TwoAdders_t: virtual simif_t
+class TwoAdders_t: public simif_peek_poke_t
 {
 public:
   TwoAdders_t(int argc, char** argv) {}

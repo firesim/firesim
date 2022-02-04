@@ -17,8 +17,8 @@ class simif_emul_t : public virtual simif_t
   public:
     simif_emul_t() { }
     virtual ~simif_emul_t();
-    virtual void init(int argc, char** argv, bool log = false);
-    virtual int finish();
+    virtual void host_init(int argc, char** argv);
+    virtual int  host_finish();
 
     virtual void write(size_t addr, data_t data);
     virtual data_t read(size_t addr);

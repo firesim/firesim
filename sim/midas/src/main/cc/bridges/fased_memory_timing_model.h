@@ -122,6 +122,13 @@ private:
 
   bool has_latency_histograms() { return histograms.size() > 0; };
   size_t mem_size;
+  // By default, FASED requires that plus args for all timing model parameters
+  // are passed in to prevent accidental misconfigurations (ex. when
+  // DRAM timing parameters are passed to an LBP). When this is set, using the plus arg
+  // +mm_useHardwareDefaultRuntimeSettings_<idx>,
+  // the driver will instead use the hardware reset values (which map to the values emitted in the
+  // runtime.conf) and print those values to the log instead.
+  bool require_all_runtime_settings = true;
 };
 
 #endif // __FASED_MEMORY_TIMING_MODEL_H

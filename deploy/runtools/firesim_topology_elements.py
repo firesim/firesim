@@ -274,6 +274,11 @@ class FireSimServerNode(FireSimNode):
             localcap = local("""mkdir -p {}""".format(job_dir), capture=True)
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
+            
+            # add hw config summary per job
+            localcap = local("""echo "{}" > {}/HW_CFG_SUMMARY""".format(str(self.server_hardware_config), job_dir), capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()

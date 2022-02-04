@@ -337,7 +337,7 @@ class RunFarm:
 
         if not forceterminate:
             # --forceterminate was not supplied, so confirm with the user
-            userconfirm = raw_input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
+            userconfirm = input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
         else:
             userconfirm = "yes"
 
@@ -384,14 +384,17 @@ class InstanceDeployManager:
     def get_and_install_aws_fpga_sdk(self):
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
-        # TODO: we checkout a specific version of aws-fpga here, in case upstream
-        # master is bumped. But now we have to remember to change AWS_FPGA_FIRESIM_UPSTREAM_VERSION
-        # when we bump our stuff. Need a better way to do this.
-        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "6c707ab4a26c2766b916dad9d40727266fa0e4ef"
-        self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(AWS_FPGA_FIRESIM_UPSTREAM_VERSION))
+        with prefix('cd ../'), \
+             StreamLogger('stdout'), \
+             StreamLogger('stderr'):
+            # use local version of aws_fpga on runfarm nodes
+            aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
+            if "-dirty" in aws_fpga_upstream_version:
+                rootLogger.critical("Unable to use local changes to aws-fpga. Continuing without them.")
+        self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(aws_fpga_upstream_version))
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('git clone https://github.com/aws/aws-fpga')
-            run('cd aws-fpga && git checkout ' + AWS_FPGA_FIRESIM_UPSTREAM_VERSION)
+            run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
 
@@ -547,7 +550,7 @@ class InstanceDeployManager:
         self.instance_logger("Starting Vivado virtual JTAG.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
-  
+
     def kill_ila_server(self):
         """ Kill the vivado hw_server and virtual jtag """
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):

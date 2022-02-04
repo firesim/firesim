@@ -11,7 +11,7 @@ import os
 
 basedir = sys.argv[1] + "/"
 
-files = map(lambda x: basedir + x, os.listdir(basedir))
+files = list(map(lambda x: basedir + x, os.listdir(basedir)))
 
 def extract_stats_from_uartlog(uartlogpath):
     """ read a uartlog and get sim perf results """
@@ -44,10 +44,10 @@ def get_simperf_from_file(basedirname):
 
     return [numnodes, simperf_mhz]
 
-resultarray = map(get_simperf_from_file, files)
+resultarray = list(map(get_simperf_from_file, files))
 
-numnodes = map(lambda x: x[0], resultarray)
-simperf_mhz = map(lambda x: x[1][1], resultarray)
+numnodes = list(map(lambda x: x[0], resultarray))
+simperf_mhz = list(map(lambda x: x[1][1], resultarray))
 
 resultarray = zip(numnodes, simperf_mhz)
 

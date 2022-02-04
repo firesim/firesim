@@ -1,3 +1,5 @@
+#/usr/bin/env python3
+
 """ This script configures your AWS account to run FireSim. """
 
 import boto3

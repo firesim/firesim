@@ -13,6 +13,11 @@ class simif_f1_t: public virtual simif_t
   public:
     simif_f1_t(int argc, char** argv);
     virtual ~simif_f1_t();
+
+    // Unused by F1 since initialization / deinitization is done in the constructor
+    virtual void host_init(int argc, char** argv) {};
+    virtual int host_finish() { return 0; };
+
     virtual void write(size_t addr, uint32_t data);
     virtual uint32_t read(size_t addr);
     virtual ssize_t pull(size_t addr, char* data, size_t size);
