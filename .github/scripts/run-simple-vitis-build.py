@@ -4,12 +4,27 @@ import sys
 
 from fabric.api import *
 
-from common import manager_fsim_dir, set_fabric_firesim_pem
-
 def run_simple_vitis_build():
     """ Runs Base Vitis Build """
 
-    with prefix('cd {} && source sourceme-f1-manager.sh'.format(manager_fsim_dir)):
+    # assumptions:
+    #   - machine-launch-script requirements are already installed
+    #   - XILINX_VITIS, XILINX_XRT, XILINX_VIVADO are setup (in env / LD_LIBRARY_PATH / path / etc)
+    #   - RISCV toolchain is already installed
+
+    # repo should already be checked out
+
+    # TODO: Make this work locally
+    #run("./build-setup.sh --fast")
+
+    # HACK: take the RISC-V toolchain prebuilt
+    run("source /scratch/abejgonza/chipyard-work/chipyard/env-riscv-tools.sh")
+
+    # HACK: hacked around build-setup
+    run("./local-build-setup.sh --skip-toolchain")
+
+    # HACK: setup FireSim's env.sh
+    with prefix('source sourceme-f1-manager.sh'):
         with prefix('cd sim/'):
             rc = 0
             with settings(warn_only=True):
@@ -27,5 +42,4 @@ def run_simple_vitis_build():
                 print("Vitis replace-rtl successful.")
 
 if __name__ == "__main__":
-    set_fabric_firesim_pem()
     execute(run_simple_vitis_build, hosts=["localhost"])

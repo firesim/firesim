@@ -182,8 +182,7 @@ jobs:
 
   run-vitis-compile:
     name: run-vitis-compile
-    needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: local-fpga
     env:
       TERM: xterm-256-color
     steps:
