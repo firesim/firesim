@@ -248,7 +248,7 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
             {
                 'DeviceName': '/dev/sda1',
                 'Ebs': {
-                    'VolumeSize': 300,  # TODO: make this configurable from .ini?
+                    'VolumeSize': 300,  # TODO: make this configurable from .yaml?
                     'VolumeType': 'gp2',
                 },
             },

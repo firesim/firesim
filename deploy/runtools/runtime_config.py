@@ -4,7 +4,6 @@ simulation tasks. """
 from __future__ import print_function
 
 from time import strftime, gmtime
-import configparser
 import pprint
 import logging
 
@@ -25,16 +24,16 @@ CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 rootLogger = logging.getLogger()
 
 class RuntimeHWConfig:
-    """ A pythonic version of the entires in config_hwdb.ini """
+    """ A pythonic version of the entires in config_hwdb.yaml """
 
     def __init__(self, name, hwconfig_dict):
         self.name = name
         self.agfi = hwconfig_dict['agfi']
-        self.deploytriplet = hwconfig_dict['deploytripletoverride']
+        self.deploytriplet = hwconfig_dict['deploy-triplet-override']
         self.deploytriplet = self.deploytriplet if self.deploytriplet != "None" else None
         if self.deploytriplet is not None:
-            rootLogger.warning("Your config_hwdb.ini file is overriding a deploytriplet. Make sure you understand why!")
-        self.customruntimeconfig = hwconfig_dict['customruntimeconfig']
+            rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file.  Make sure you understand why!".format(name))
+        self.customruntimeconfig = hwconfig_dict['custom-runtime-config']
         self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
@@ -223,9 +222,12 @@ class RuntimeHWDB:
     as endpoints on the simulation. """
 
     def __init__(self, hardwaredbconfigfile):
-        agfidb_configfile = configparser.ConfigParser(allow_no_value=True)
-        agfidb_configfile.read(hardwaredbconfigfile)
-        agfidb_dict = {s:dict(agfidb_configfile.items(s)) for s in agfidb_configfile.sections()}
+
+        agfidb_configfile = None
+        with open(hardwaredbconfigfile, "r") as yaml_file:
+            agfidb_configfile = yaml.safe_load(yaml_file)
+
+        agfidb_dict = agfidb_configfile
 
         self.hwconf_dict = {s: RuntimeHWConfig(s, v) for s, v in agfidb_dict.items()}
 
@@ -237,12 +239,15 @@ class RuntimeHWDB:
 
 
 class InnerRuntimeConfiguration:
-    """ Pythonic version of config_runtime.ini """
+    """ Pythonic version of config_runtime.yaml """
 
     def __init__(self, runtimeconfigfile, configoverridedata):
-        runtime_configfile = configparser.ConfigParser(allow_no_value=True)
-        runtime_configfile.read(runtimeconfigfile)
-        runtime_dict = {s:dict(runtime_configfile.items(s)) for s in runtime_configfile.sections()}
+
+        runtime_configfile = None
+        with open(runtimeconfigfile, "r") as yaml_file:
+            runtime_configfile = yaml.safe_load(yaml_file)
+
+        runtime_dict = runtime_configfile
 
         # override parts of the runtime conf if specified
         configoverrideval = configoverridedata
@@ -261,28 +266,28 @@ class InnerRuntimeConfiguration:
         if runfarmtagprefix != "":
             runfarmtagprefix += "-"
 
-        self.runfarmtag = runfarmtagprefix + runtime_dict['runfarm']['runfarmtag']
+        self.runfarmtag = runfarmtagprefix + runtime_dict['run-farm']['run-farm-tag']
 
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
             # if specified, further prefix runfarmtag
             self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
 
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
-        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
+        self.f1_16xlarges_requested = int(runtime_dict['run-farm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['run-farm'] else 0
+        self.f1_4xlarges_requested = int(runtime_dict['run-farm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['run-farm'] else 0
+        self.m4_16xlarges_requested = int(runtime_dict['run-farm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['run-farm'] else 0
+        self.f1_2xlarges_requested = int(runtime_dict['run-farm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['run-farm'] else 0
 
-        self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
-        self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
-        self.spot_max_price = runtime_dict['runfarm']['spotmaxprice']
+        self.run_instance_market = runtime_dict['run-farm']['run-instance-market']
+        self.spot_interruption_behavior = runtime_dict['run-farm']['spot-interruption-behavior']
+        self.spot_max_price = runtime_dict['run-farm']['spot-max-price']
 
-        self.topology = runtime_dict['targetconfig']['topology']
-        self.no_net_num_nodes = int(runtime_dict['targetconfig']['no_net_num_nodes'])
-        self.linklatency = int(runtime_dict['targetconfig']['linklatency'])
-        self.switchinglatency = int(runtime_dict['targetconfig']['switchinglatency'])
-        self.netbandwidth = int(runtime_dict['targetconfig']['netbandwidth'])
-        self.profileinterval = int(runtime_dict['targetconfig']['profileinterval'])
+        self.topology = runtime_dict['target-config']['topology']
+        self.no_net_num_nodes = int(runtime_dict['target-config']['no-net-num-nodes'])
+        self.linklatency = int(runtime_dict['target-config']['link-latency'])
+        self.switchinglatency = int(runtime_dict['target-config']['switching-latency'])
+        self.netbandwidth = int(runtime_dict['target-config']['net-bandwidth'])
+        self.profileinterval = int(runtime_dict['target-config']['profile-interval'])
         # Default values
         self.trace_enable = False
         self.trace_select = "0"
@@ -301,22 +306,22 @@ class InnerRuntimeConfiguration:
             self.trace_select = runtime_dict['tracing'].get('selector', "0")
             self.trace_start = runtime_dict['tracing'].get('start', "0")
             self.trace_end = runtime_dict['tracing'].get('end', "-1")
-            self.trace_output_format = runtime_dict['tracing'].get('output_format', "0")
+            self.trace_output_format = runtime_dict['tracing'].get('output-format', "0")
         if 'autocounter' in runtime_dict:
-            self.autocounter_readrate = int(runtime_dict['autocounter'].get('readrate', "0"))
-        self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
-        if 'hostdebug' in runtime_dict:
-            self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
-            self.disable_asserts = runtime_dict['hostdebug'].get('disable_synth_asserts') == "yes"
-        if 'synthprint' in runtime_dict:
-            self.print_start = runtime_dict['synthprint'].get("start", "0")
-            self.print_end = runtime_dict['synthprint'].get("end", "-1")
-            self.print_cycle_prefix = runtime_dict['synthprint'].get("cycleprefix", "yes") == "yes"
+            self.autocounter_readrate = int(runtime_dict['autocounter'].get('read-rate', "0"))
+        self.defaulthwconfig = runtime_dict['target-config']['default-hw-config']
+        if 'host-debug' in runtime_dict:
+            self.zerooutdram = runtime_dict['host-debug'].get('zero-out-dram') == "yes"
+            self.disable_asserts = runtime_dict['host-debug'].get('disable-synth-asserts') == "yes"
+        if 'synth-print' in runtime_dict:
+            self.print_start = runtime_dict['synth-print'].get("start", "0")
+            self.print_end = runtime_dict['synth-print'].get("end", "-1")
+            self.print_cycle_prefix = runtime_dict['synth-print'].get("cycle-prefix", "yes") == "yes"
 
-        self.workload_name = runtime_dict['workload']['workloadname']
+        self.workload_name = runtime_dict['workload']['workload-name']
         # an extra tag to differentiate workloads with the same name in results names
-        self.suffixtag = runtime_dict['workload']['suffixtag'] if 'suffixtag' in runtime_dict['workload'] else ""
-        self.terminateoncompletion = runtime_dict['workload']['terminateoncompletion'] == "yes"
+        self.suffixtag = runtime_dict['workload']['suffix-tag'] if 'suffix-tag' in runtime_dict['workload'] else ""
+        self.terminateoncompletion = runtime_dict['workload']['terminate-on-completion'] == "yes"
 
     def __str__(self):
         return pprint.pformat(vars(self))

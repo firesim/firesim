@@ -280,10 +280,10 @@ def aws_create_afi(build_config):
 
         message_title = "FireSim FPGA Build Completed"
         agfi_entry = "[" + afiname + "]\n"
-        agfi_entry += "afgi=" + agfi + "\n"
-        agfi_entry += "deploytripletoverride=None\n"
-        agfi_entry += "customruntimeconfig=None\n"
-        message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+        agfi_entry += "    afgi: " + agfi + "\n"
+        agfi_entry += "    deploy-triplet-override: null\n"
+        agfi_entry += "    custom-runtime-config: null\n"
+        message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
 
         send_firesim_notification(message_title, message_body)
 
@@ -292,7 +292,7 @@ def aws_create_afi(build_config):
 
         # for convenience when generating a bunch of images. you can just
         # cat all the files in this directory after your builds finish to get
-        # all the entries to copy into config_hwdb.ini
+        # all the entries to copy into config_hwdb.yaml
         hwdb_entry_file_location = """{}/built-hwdb-entries/""".format(local_deploy_dir)
         local("mkdir -p " + hwdb_entry_file_location)
         with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:

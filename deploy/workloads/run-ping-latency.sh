@@ -10,7 +10,7 @@ set -e
 set -o pipefail
 
 if [ "$1" == "withlaunch" ]; then
-    firesim launchrunfarm -c workloads/ping-latency-config.ini
+    firesim launchrunfarm -c workloads/ping-latency-config.yaml
 fi
 
 ORIGDIR=$(pwd)
@@ -31,8 +31,8 @@ sleep 2
 
 for i in "${latencies[@]}"
 do
-    firesim infrasetup -c workloads/ping-latency-config.ini
-    firesim runworkload -c workloads/ping-latency-config.ini --overrideconfigdata "targetconfig linklatency $i"
+    firesim infrasetup -c workloads/ping-latency-config.yaml
+    firesim runworkload -c workloads/ping-latency-config.yaml --overrideconfigdata "targetconfig linklatency $i"
     # rename the output directory with the ping latency
     files=(*ping-latency*)
     originalfilename=${files[-1]}
@@ -41,5 +41,5 @@ done
 
 python3 $ORIGDIR/ping-latency/ping-latency-graph.py $(pwd)/$resultsdir
 
-firesim terminaterunfarm -c workloads/ping-latency-config.ini --forceterminate
+firesim terminaterunfarm -c workloads/ping-latency-config.yaml --forceterminate
 

@@ -10,7 +10,7 @@ set -e
 set -o pipefail
 
 if [ "$1" == "withlaunch" ]; then
-    firesim launchrunfarm -c workloads/bw-test-config.ini
+    firesim launchrunfarm -c workloads/bw-test-config.yaml
 fi
 
 ORIGDIR=$(pwd)
@@ -32,8 +32,8 @@ sleep 2
 
 for i in "${bandwidths[@]}"
 do
-    firesim infrasetup -c workloads/bw-test-config.ini
-    firesim runworkload -c workloads/bw-test-config.ini --overrideconfigdata "targetconfig netbandwidth $i"
+    firesim infrasetup -c workloads/bw-test-config.yaml
+    firesim runworkload -c workloads/bw-test-config.yaml --overrideconfigdata "targetconfig netbandwidth $i"
     # rename the output directory with the net bandwidth
     files=(*bw-test*)
     originalfilename=${files[-1]}
@@ -46,5 +46,5 @@ cd $ORIGDIR
 cd ../../
 git apply -R $ORIGDIR/bw-test-two-instances/switchpatch.patch
 
-firesim terminaterunfarm -c workloads/bw-test-config.ini --forceterminate
+firesim terminaterunfarm -c workloads/bw-test-config.yaml --forceterminate
 
