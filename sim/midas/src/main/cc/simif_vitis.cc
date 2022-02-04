@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
 
@@ -50,7 +51,7 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
     // https://xilinx.github.io/XRT/master/html/xclbintools.html
     auto fpga_mem_0 = xrt::bo(device_handle, u250_dram_channel_size_bytes, xrt::bo::flags::device_only, 0);
 
-    fprintf(stdout, "fpga_mem_0 offset: %llx\n", fpga_mem_0.address());
+    fprintf(stdout, "fpga_mem_0 offset: %" PRIx64 "\n", fpga_mem_0.address());
 
     fprintf(stdout, "DEBUG: Successfully opened kernel\n");
 

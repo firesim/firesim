@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <inttypes.h>
 
 /* Block Device Endpoint Driver
  *
@@ -172,13 +173,13 @@ void blockdev_t::do_read(struct blkdev_request &req) {
 
     /* Seek to correct place in the file. */
     if (fseek(_file, offset, SEEK_SET)) {
-        fprintf(stderr, "Could not seek to %llx\n", offset);
+        fprintf(stderr, "Could not seek to %" PRIx64 "\n", offset);
         abort();
     }
 
     /* Perform the read from file. */
     if (fread(blk_data, SECTOR_SIZE, req.len, _file) < req.len) {
-        fprintf(stderr, "Cannot read data at %llx\n", offset);
+        fprintf(stderr, "Cannot read data at %" PRIx64 "\n", offset);
         abort();
     }
 
@@ -258,13 +259,13 @@ void blockdev_t::handle_data(struct blkdev_data &data) {
 
     /* Seek to the right place to begin the write to file. */
     if (fseek(_file, tracker.offset, SEEK_SET)) {
-        fprintf(stderr, "Could not seek to %llx\n", tracker.offset);
+        fprintf(stderr, "Could not seek to %" PRIx64 "\n", tracker.offset);
         abort();
     }
 
     /* Perform the write to file. */
     if (fwrite(tracker.data, sizeof(uint64_t), tracker.count, _file) < tracker.count) {
-        fprintf(stderr, "Cannot write data at %llx\n", tracker.offset);
+        fprintf(stderr, "Cannot write data at %" PRIx64 "\n", tracker.offset);
         abort();
     }
 

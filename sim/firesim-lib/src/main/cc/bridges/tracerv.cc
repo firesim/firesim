@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -222,7 +223,7 @@ void tracerv_t::process_tokens(int num_beats) {
                 } else {
                     for (int q = 0; q < max_core_ipc; q++) {
                        if (OUTBUF[i+q+1] & valid_mask) {
-                           fprintf(this->tracefile, "Cycle: %016lld I%d: %016llx\n", OUTBUF[i+0], q, OUTBUF[i+q+1] & (~valid_mask));
+                           fprintf(this->tracefile, "Cycle: %016" PRId64 " I%d: %016" PRIx64 "\n", OUTBUF[i+0], q, OUTBUF[i+q+1] & (~valid_mask));
                        } else {
                            break;
                        }

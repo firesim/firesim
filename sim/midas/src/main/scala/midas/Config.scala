@@ -105,3 +105,33 @@ class VitisConfig extends Config(new Config((site, here, up) => {
 class HostDebugFeatures extends Config((site, here, up) => {
   case GenerateTokenIrrevocabilityAssertions => true
 })
+
+object DesiredHostFrequency extends Field[Int](90) // Host FPGA frequency, in MHz
+
+class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
+    case DesiredHostFrequency => freq
+})
+
+// Shortened names useful for appending to config strings in Make variables and build recipes
+class F190MHz extends WithDesiredHostFrequency(190)
+class F175MHz extends WithDesiredHostFrequency(175)
+class F160MHz extends WithDesiredHostFrequency(160)
+class F150MHz extends WithDesiredHostFrequency(150)
+class F140MHz extends WithDesiredHostFrequency(140)
+class F130MHz extends WithDesiredHostFrequency(130)
+class F120MHz extends WithDesiredHostFrequency(120)
+class F110MHz extends WithDesiredHostFrequency(110)
+class F100MHz extends WithDesiredHostFrequency(100)
+class  F90MHz extends WithDesiredHostFrequency(90)
+class  F85MHz extends WithDesiredHostFrequency(85)
+class  F80MHz extends WithDesiredHostFrequency(80)
+class  F75MHz extends WithDesiredHostFrequency(75)
+class  F70MHz extends WithDesiredHostFrequency(70)
+class  F65MHz extends WithDesiredHostFrequency(65)
+class  F60MHz extends WithDesiredHostFrequency(60)
+class  F55MHz extends WithDesiredHostFrequency(55)
+class  F50MHz extends WithDesiredHostFrequency(50)
+class  F45MHz extends WithDesiredHostFrequency(45)
+class  F40MHz extends WithDesiredHostFrequency(40)
+class  F35MHz extends WithDesiredHostFrequency(35)
+class  F30MHz extends WithDesiredHostFrequency(30)

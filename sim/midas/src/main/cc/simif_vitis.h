@@ -17,6 +17,10 @@ class simif_vitis_t: public virtual simif_t
     virtual ssize_t pull(size_t addr, char* data, size_t size);
     virtual ssize_t push(size_t addr, char* data, size_t size);
     uint32_t is_write_ready();
+
+    // Unused by Vitis since initialization / deinitization is done in the constructor
+    virtual void host_init(int argc, char** argv) {};
+    virtual int host_finish() { return 0; };
   private:
     int device_index;
     std::string binary_file;
