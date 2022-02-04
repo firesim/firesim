@@ -88,6 +88,18 @@ class F1Config extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
 
+class VitisConfig extends Config(new Config((site, here, up) => {
+  case Platform       => (p: Parameters) => new VitisShim()(p)
+  case HasDMAChannel  => false
+  // ID Width = 1 to avoid any potential zero-width wire issues.
+  case CtrlNastiKey   => NastiParameters(32, 12, 1)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x400000000L, // 16 GiB
+    beatBytes = 8,
+    idBits    = 16)
+  case HostMemNumChannels => 1
+}) ++ new SimConfig)
+
 // Turns on all additional synthesizable debug features for checking the
 // implementation of the simulator.
 class HostDebugFeatures extends Config((site, here, up) => {
