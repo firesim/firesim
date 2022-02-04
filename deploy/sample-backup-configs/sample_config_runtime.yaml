@@ -14,8 +14,8 @@ run-farm:
 
 target-config:
     # Set topology: no_net_config to run without a network simulation
-    topology: no_net_config
-    no-net-num-nodes: 1
+    topology: example_8config
+    no-net-num-nodes: 2
     link-latency: 6405
     switching-latency: 10
     net-bandwidth: 200
@@ -30,12 +30,12 @@ tracing:
     enable: no
 
     # Trace output formats. Only enabled if "enable" is set to "yes" above
-    # 0 :  human readable; 1 :  binary (compressed raw data); 2 :  flamegraph (stack
+    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
     # unwinding -> Flame Graph)
     output-format: 0
 
     # Trigger selector.
-    # 0 :  no trigger; 1 :  cycle count trigger; 2 :  program counter trigger; 3 :
+    # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
     # instruction trigger
     selector: 1
     start: 0
@@ -50,7 +50,7 @@ workload:
     suffix-tag: null
 
 host-debug:
-    # When enabled (: yes), Zeros-out FPGA-attached DRAM before simulations
+    # When enabled (=yes), Zeros-out FPGA-attached DRAM before simulations
     # begin (takes 2-5 minutes).
     # In general, this is not required to produce deterministic simulations on
     # target machines running linux. Enable if you observe simulation non-determinism.
@@ -67,5 +67,5 @@ synth-print:
     # for each clock domain.
     start: 0
     end: -1
-    # When enabled (: yes), prefix print output with the target cycle at which the print was triggered
+    # When enabled (=yes), prefix print output with the target cycle at which the print was triggered
     cycle-prefix: yes

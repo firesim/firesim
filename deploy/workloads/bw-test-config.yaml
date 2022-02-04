@@ -1,5 +1,5 @@
 run-farm:
-    run-farm-tag: bwtest-mainrun-farm
+    run-farm-tag: bwtest-mainrunfarm
     f1_16xlarges: 2
     m4_16xlarges: 1
     f1_4xlarges: 0

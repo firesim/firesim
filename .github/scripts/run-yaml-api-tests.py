@@ -6,8 +6,8 @@ from common import manager_fsim_dir, manager_ci_dir, manager_fsim_pem, set_fabri
 
 import sys
 
-def run_build_recipes_ini_api_tests():
-    """ Test config_{build, build_recipes}.ini APIs """
+def run_build_recipes_yaml_api_tests():
+    """ Test config_{build, build_recipes}.yaml APIs """
 
     def commands_to_run(commands, opts):
         """ Run a list of commands with the specified opts """
@@ -24,23 +24,30 @@ def run_build_recipes_ini_api_tests():
 
     def run_test(name):
         # test files should exist on the manager already
-        test_dir = "{}/ini-tests/failing-buildafi-files/{}".format(manager_ci_dir, name)
+        test_dir = "{}/yaml-tests/failing-buildafi-files/{}".format(manager_ci_dir, name)
 
         commands_to_run(
                 ["firesim buildafi"],
-                "-b {}/sample_config_build.ini -r {}/sample_config_build_recipes.ini".format(test_dir, test_dir))
+                "-b {}/sample_config_build.yaml -r {}/sample_config_build_recipes.yaml -s {}/sample_config_build_farm.yaml".format(test_dir, test_dir, test_dir))
 
     run_test("invalid-build-section")
-    run_test("invalid-recipe-inst-type")
+    run_test("invalid-aws-ec2-inst-type")
+    run_test("invalid-buildfarm-type")
+    run_test("invalid-aws-ec2-no-args")
+    run_test("invalid-unmanaged-no-args")
+    run_test("invalid-unmanaged-no-hosts")
 
-    # test invalid config_build.ini
+    # test invalid config_build.yaml
     commands_to_run(["firesim buildafi"], "-b ~/GHOST_FILE")
 
-    # test invalid config_build_recipes.ini
+    # test invalid config_build_recipes.yaml
     commands_to_run(["firesim buildafi"], "-r ~/GHOST_FILE")
 
-def run_runtime_hwdb_ini_api_tests():
-    """ Test config_{runtime, hwdb}.ini APIs """
+    # test invalid config_build_farm.yaml
+    commands_to_run(["firesim buildafi"], "-s ~/GHOST_FILE")
+
+def run_runtime_hwdb_yaml_api_tests():
+    """ Test config_{runtime, hwdb}.yaml APIs """
 
     def commands_to_run(commands, opts):
         """ Run a list of commands with the specified opts """
@@ -60,29 +67,29 @@ def run_runtime_hwdb_ini_api_tests():
 
     def run_test(name):
         # test files should exist on the manager already
-        test_dir = "{}/ini-tests/failing-runtime-files/{}".format(manager_ci_dir, name)
+        test_dir = "{}/yaml-tests/failing-runtime-files/{}".format(manager_ci_dir, name)
 
         commands_to_run(
                 ["firesim launchrunfarm", "firesim infrasetup", "firesim runworkload", "firesim terminaterunfarm -q"],
-                "-c {}/sample_config_runtime.ini -a {}/sample_config_hwdb.ini".format(test_dir, test_dir))
+                "-c {}/sample_config_runtime.yaml -a {}/sample_config_hwdb.yaml".format(test_dir, test_dir))
 
     run_test("hwdb-invalid-afi")
     run_test("runtime-invalid-hwconfig")
     run_test("runtime-invalid-topology")
     run_test("runtime-invalid-workloadname")
 
-    # test invalid config_runtime.ini
+    # test invalid config_runtime.yaml
     commands_to_run(["firesim launchrunfarm", "firesim infrasetup", "firesim runworkload", "firesim terminaterunfarm -q"], "-c ~/GHOST_FILE")
 
-    # test invalid config_hwdb.ini
+    # test invalid config_hwdb.yaml
     commands_to_run(["firesim launchrunfarm", "firesim infrasetup", "firesim runworkload", "firesim terminaterunfarm -q"], "-a ~/GHOST_FILE")
 
-def run_ini_api_tests():
-    """ Test manager .ini file APIs """
+def run_yaml_api_tests():
+    """ Test manager .yaml file APIs """
 
-    run_build_recipes_ini_api_tests()
-    run_runtime_hwdb_ini_api_tests()
+    run_build_recipes_yaml_api_tests()
+    run_runtime_hwdb_yaml_api_tests()
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
-    execute(run_ini_api_tests, hosts=["localhost"])
+    execute(run_yaml_api_tests, hosts=["localhost"])

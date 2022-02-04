@@ -1,23 +1,21 @@
 run-farm:
-    run-farm-tag: intspeed-runfarm
-    f1_16xlarges: 0
+    run-farm-tag: mainrunfarm
+    f1_16xlarges: 1
     m4_16xlarges: 0
     f1_4xlarges: 0
-    f1_2xlarges: 11
+    f1_2xlarges: 0
     run-instance-market: ondemand
     spot-interruption-behavior: terminate
     spot-max-price: ondemand
 
 target-config:
-    topology: no_net_config
-    no-net-num-nodes: 11
-    # These are unused
+    topology: INVALID_TOPOLOGY
+    no-net-num-nodes: 2
     link-latency: 6405
     switching-latency: 10
     net-bandwidth: 200
     profile-interval: -1
-    # Need not be single core.
-    default-hw-config: firesim-quadcore-no-nic-l2-llc4mb-ddr3
+    default-hw-config: testing-hwdb-entry
 
 tracing:
     enable: no
@@ -30,8 +28,8 @@ autocounter:
     read-rate: 0
 
 workload:
-    workload-name: spec17-intspeed.json
-    terminate-on-completion: yes
+    workload-name: linux-uniform.json
+    terminate-on-completion: no
     suffix-tag: null
 
 host-debug:

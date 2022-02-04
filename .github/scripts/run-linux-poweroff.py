@@ -16,7 +16,7 @@ def run_linux_poweroff():
         def run_w_timeout(workload, timeout):
             """ Run workload with a specific timeout
 
-            :arg: workload (str) - workload ini (abs path)
+            :arg: workload (str) - workload yaml (abs path)
             :arg: timeout (str) - timeout amount for the workload to run
             """
             rc = 0
@@ -36,8 +36,8 @@ def run_linux_poweroff():
             else:
                 print("Workload {} successful.".format(workload))
 
-        run_w_timeout("{}/deploy/workloads/linux-poweroff-all-no-nic.ini".format(manager_fsim_dir), "30m")
-        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "30m")
+        run_w_timeout("{}/deploy/workloads/linux-poweroff-all-no-nic.yaml".format(manager_fsim_dir), "30m")
+        run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.yaml".format(manager_fsim_dir), "30m")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()

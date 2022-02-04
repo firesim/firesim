@@ -20,6 +20,5 @@ local-build-farm:
         default-build-dir: null
         build-farm-hosts:
             - localhost
-            - "192.168.1.254":
                 # change location of build on build host (abs. path)
                 override-build-dir: null

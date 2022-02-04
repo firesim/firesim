@@ -135,6 +135,7 @@ def aws_build(global_build_config, bypass=False):
         message_title = "FireSim FPGA Build Failed"
 
         message_body = "Your FPGA build failed for triplet: " + build_config.get_chisel_triplet()
+        message_body += ".\nInspect the log output from IP address " + env.host_string + " for more information."
 
         send_firesim_notification(message_title, message_body)
 

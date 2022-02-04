@@ -11,6 +11,7 @@ run-farm:
 target-config:
     topology: no_net_config
     no-net-num-nodes: 10
+    # These are unused
     link-latency: 6405
     switching-latency: 10
     net-bandwidth: 200
@@ -29,7 +30,7 @@ autocounter:
 
 workload:
     workload-name: spec17-intrate.json
-    terminate-on-completion: no
+    terminate-on-completion: yes
     suffix-tag: null
 
 host-debug:

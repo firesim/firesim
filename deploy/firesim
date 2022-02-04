@@ -9,7 +9,6 @@ import argparse
 from time import sleep, strftime, gmtime
 import logging
 import random
-import string
 
 import argcomplete
 from fabric.api import *
@@ -21,7 +20,6 @@ from awstools.afitools import *
 
 # firesim buildtools
 from buildtools.buildafi import *
-from buildtools.build import *
 from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.buildconfig import BuildConfig
 
@@ -176,15 +174,15 @@ def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, termin
                                     terminatesomem4_16, forceterminate)
 
 def shareagfi(buildconf):
-    """ Share the agfis specified in the [agfistoshare] section with the users
-    specified in the [agfisharing] section """
+    """ Share the agfis specified in the agfis-to-share section with the users
+    specified in the share-with-accounts section """
     # share the image with all users
     for agfiname in buildconf.agfistoshare:
         agfi = buildconf.hwdb.get_runtimehwconfig_from_name(agfiname).agfi
 
         userlist = buildconf.acctids_to_sharewith
         share_agfi_in_all_regions(agfi, userlist)
-        rootLogger.info("AGFI '%s': %s has been shared with the users specified in [sharewithaccounts]",
+        rootLogger.info("AGFI '%s': %s has been shared with the users specified in share-with-accounts",
                         agfiname, agfi)
 
 
