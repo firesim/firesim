@@ -1,7 +1,7 @@
 //See LICENSE for license details.
 
 #include "PrintfModule.h"
-class NarrowPrintfModule_t: public print_module_t, virtual simif_t
+class NarrowPrintfModule_t: public print_module_t
 {
 public:
     NarrowPrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};

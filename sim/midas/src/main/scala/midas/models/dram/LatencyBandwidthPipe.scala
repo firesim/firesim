@@ -67,6 +67,7 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   wResp.bits := writePipe.io.deq.bits.xaction
   writePipe.io.deq.ready := wResp.ready && writeDone
 
+  assert(writePipe.io.enq.ready || !newWReq, "LBP write latency pipe would overflow.")
 
   // ***** Read Latency Pipe *****
   val readPipe = Module(new Queue(new ReadPipeEntry, cfg.maxReads, flow = true))
@@ -79,5 +80,7 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   rResp.valid := readPipe.io.deq.valid && readDone
   rResp.bits := readPipe.io.deq.bits.xaction
   readPipe.io.deq.ready := rResp.ready && readDone
+
+  assert(readPipe.io.enq.ready || !nastiReq.ar.fire, "LBP read latency pipe would overflow.")
 }
 

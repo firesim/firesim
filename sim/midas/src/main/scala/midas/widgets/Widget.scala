@@ -79,21 +79,34 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   //   For inputs, generates a registers and binds that to the map
   //   For outputs, direct binds the wire to the map
   def attachIO(io: Record, prefix: String = ""): Unit = {
-    def innerAttachIO(node: Data, name: String): Unit = node match {
+
+    /**
+      * For FASED memory timing models, initalize programmable registers to defaults if provided.
+      * See [[midas.models.HasProgrammableRegisters]] for more detail.
+      */
+    def getInitValue(field: Bits, parent: Data): Option[UInt] = parent match {
+      case p: midas.models.HasProgrammableRegisters if p.regMap.isDefinedAt(field) =>
+        Some(p.regMap(field).default.U)
+      case _ => None
+    }
+
+    def innerAttachIO(node: Data, parent: Data, name: String): Unit = node match {
       case (b: Bits) => (DataMirror.directionOf(b): @unchecked) match {
         case ActualDirection.Output => attach(b, s"${name}", ReadOnly)
-        case ActualDirection.Input => genWOReg(b, name)
+        case ActualDirection.Input =>
+          genAndAttachReg(b, name, getInitValue(b, parent))
       }
       case (v: Vec[_]) => {
-        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, s"${name}_$idx")})
+        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, node, s"${name}_$idx")})
       }
       case (r: Record) => {
-        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, s"${name}_${subName}")})
+        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, node, s"${name}_${subName}")})
       }
       case _ => new RuntimeException("Cannot bind to this sort of node...")
     }
-    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, s"${prefix}${name}")})
+    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, io, s"${prefix}${name}")})
   }
+
 
   def attachDecoupledSink(channel: DecoupledIO[UInt], name: String): Int = {
     crRegistry.allocate(DecoupledSinkEntry(channel, name))

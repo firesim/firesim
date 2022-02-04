@@ -8,7 +8,7 @@ import boto3
 from botocore.stub import Stubber
 from moto import mock_sns
 
-from mock import patch
+from unittest.mock import patch
 import pytest
 from pytest import raises
 

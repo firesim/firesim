@@ -50,7 +50,7 @@ void handle_sigterm(int sig) {
 
 simif_emul_t::~simif_emul_t() { }
 
-void simif_emul_t::init(int argc, char** argv, bool log) {
+void simif_emul_t::host_init(int argc, char** argv) {
   // Parse args
   std::vector<std::string> args(argv + 1, argv + argc);
   std::string waveform = "dump.vcd";
@@ -110,14 +110,11 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
   for (size_t i = 0 ; i < 10 ; i++) ::tick();
   top->reset = 0;
 #endif
-
-  simif_t::init(argc, argv, log);
 }
 
-int simif_emul_t::finish() {
-  int exitcode = simif_t::finish();
+int simif_emul_t::host_finish() {
   ::finish();
-  return exitcode;
+  return 0;
 }
 
 void simif_emul_t::advance_target() {

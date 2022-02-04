@@ -7,7 +7,7 @@ which has no license associated with it.
 """
 import sys
 import logging
-import cStringIO
+import io
 
 
 class StreamLogger(object):
@@ -37,7 +37,7 @@ class StreamLogger(object):
         self.__name = name
         self.__stream = getattr(sys, name)
         self.__logger = logger or logging.getLogger()
-        self.__buffer = cStringIO.StringIO()
+        self.__buffer = io.StringIO()
         self.__unbuffered = unbuffered
         self.__flush_on_new_line = flush_on_new_line
 

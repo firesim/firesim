@@ -4,6 +4,8 @@ set -ex
 set -o pipefail
 
 echo "machine launch script started" > /home/centos/machine-launchstatus
+sudo chgrp centos /home/centos/machine-launchstatus
+sudo chown centos /home/centos/machine-launchstatus
 
 {
 sudo yum install -y ca-certificates
@@ -51,36 +53,28 @@ sudo yum -y install graphviz python-devel
 # used for CI
 sudo yum -y install expect
 
-# pip2 no longer installed on FPGA developer AMIs
-sudo yum -y install python-pip
-# In the event it is (as on an older AMI), upgrade it just in case
-sudo pip2 install --upgrade pip==20.3.4
-# these need to match what's in deploy/requirements.txt
-sudo pip2 install fabric==1.14.0
-sudo pip2 install boto3==1.6.2
-sudo pip2 install colorama==0.3.7
-sudo pip2 install argcomplete==1.9.3
-sudo pip2 install graphviz==0.8.3
+# upgrade pip
+sudo pip3 install --upgrade pip==21.3.1
+# install requirements
+sudo python3 -m pip install fab-classic==1.19.1
+sudo python3 -m pip install boto3==1.20.21
+sudo python3 -m pip install colorama==0.4.3
+sudo python3 -m pip install argcomplete==1.12.3
+sudo python3 -m pip install graphviz==0.19
 # for some of our workload plotting scripts
-sudo pip2 install --upgrade --ignore-installed pyparsing
-sudo pip2 install numpy==1.16.6
-sudo pip2 install kiwisolver==1.1.0
-sudo pip2 install matplotlib==2.2.2
-sudo pip2 install pandas==0.22.0
-# new awscli on 1.6.0 AMI is broken with our versions of boto3
-sudo pip2 install awscli==1.15.76
-# pip2 should install pytest 4.6.X as it's the last py2 release. see:
-# https://pytest.org/en/latest/py27-py34-deprecation.html#what-this-means-for-general-users
-sudo pip2 install pytest
-# moto 1.3.1 is newest version that will work with boto3 1.6.2
-sudo pip2 install moto==1.3.1
+sudo python3 -m pip install pyparsing==3.0.6
+sudo python3 -m pip install numpy==1.19.5
+sudo python3 -m pip install kiwisolver==1.3.1
+sudo python3 -m pip install matplotlib==3.3.4
+sudo python3 -m pip install pandas==1.1.5
+sudo python3 -m pip install awscli==1.22.21
+sudo python3 -m pip install pytest==6.2.5
+sudo python3 -m pip install moto==2.2.17
 # needed for the awstools cmdline parsing
-sudo pip2 install pyyaml
+sudo python3 -m pip install pyyaml==5.4.1
 
-sudo activate-global-python-argcomplete
-
-# Upgrading pip2 clobbers the pip3 installation paths.
-sudo yum reinstall -y python36-pip
+# setup argcomplete
+activate-global-python-argcomplete
 
 } 2>&1 | tee /home/centos/machine-launchstatus.log
 

@@ -6,13 +6,14 @@ import pprint
 import logging
 import datetime
 
-from switch_model_config import *
-from firesim_topology_core import *
-from utils import MacAddress
+from runtools.switch_model_config import *
+from runtools.firesim_topology_core import *
+from runtools.utils import MacAddress
 from fabric.api import *
 from colorama import Fore, Style
 import types
 from run_farm import *
+from functools import reduce
 
 from util.streamlogger import StreamLogger
 
@@ -179,7 +180,7 @@ class FireSimTopologyWithPasses:
             # Filter out FireSimDummyServerNodes for actually deploying.
             # Infrastructure after this point will automatically look at the
             # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
-            downlinknodes = map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)])
+            downlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches (use new switch instance for each)
                 for node in switch_nodes:
@@ -481,22 +482,22 @@ class FireSimTopologyWithPasses:
 
             instancestate_map = dict()
             if terminateoncompletion:
-                for instip, instdata in instancestates.iteritems():
+                for instip, instdata in instancestates.items():
                     # if terminateoncompletion and all sims are terminated, the inst must have been terminated
-                    instancestate_map[instip] = all([x[1] for x in instdata['sims'].iteritems()])
+                    instancestate_map[instip] = all([x[1] for x in instdata['sims'].items()])
             else:
                 instancestate_map = {inst: False for inst in instancestates.keys()}
 
             switchstates = []
-            for instip, instdata in instancestates.iteritems():
-                for switchname, switchcompleted in instdata['switches'].iteritems():
+            for instip, instdata in instancestates.items():
+                for switchname, switchcompleted in instdata['switches'].items():
                     switchstates.append({'hostip': instip,
                                          'switchname': switchname,
                                          'running': not switchcompleted})
 
             simstates = []
-            for instip, instdata in instancestates.iteritems():
-                for simname, simcompleted in instdata['sims'].iteritems():
+            for instip, instdata in instancestates.items():
+                for simname, simcompleted in instdata['sims'].items():
                     simstates.append({'hostip': instip,
                                          'simname': simname,
                                          'running': not simcompleted})
@@ -512,7 +513,7 @@ class FireSimTopologyWithPasses:
             totalsims = len(simstates)
             totalinsts = len(instancestate_map.keys())
             runningsims = len([x for x in simstates if x['running']])
-            runninginsts = len([x for x in instancestate_map.iteritems() if not x[1]])
+            runninginsts = len([x for x in instancestate_map.items() if not x[1]])
 
             # clear the screen
             rootLogger.info('\033[2J')

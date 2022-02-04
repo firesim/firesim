@@ -1,12 +1,12 @@
 Building Docs
 --------------
 
-    sudo pip install -r requirements.txt
+    sudo python3 -m pip install -r requirements.txt
     make html
 
-Look in the `_build/html` directory for output. You can also run 
+Look in the `_build/html` directory for output. You can also run
 
-    python -m SimpleHTTPServer
+    python3 -m SimpleHTTPServer
 
 To get a proper locally-hosted version.
 

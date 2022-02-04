@@ -15,23 +15,19 @@ double diff_secs(midas_time_t end, midas_time_t start) {
 }
 
 simif_t::simif_t() {
-  pass = true;
-  t = 0;
-  fail_t = 0;
   seed = time(NULL); // FIXME: better initail seed?
   SIMULATIONMASTER_0_substruct_create;
   this->master_mmio_addrs = SIMULATIONMASTER_0_substruct;
   LOADMEMWIDGET_0_substruct_create;
   this->loadmem_mmio_addrs = LOADMEMWIDGET_0_substruct;
-  PEEKPOKEBRIDGEMODULE_0_substruct_create;
-  this->defaultiowidget_mmio_addrs = PEEKPOKEBRIDGEMODULE_0_substruct;
   CLOCKBRIDGEMODULE_0_substruct_create;
   this->clock_bridge_mmio_addrs = CLOCKBRIDGEMODULE_0_substruct;
 }
 
-void simif_t::init(int argc, char** argv, bool log) {
+void simif_t::init(int argc, char** argv) {
+  // Do any post-constructor initialization required before requesting MMIO
+  this->host_init(argc, argv);
   while(!read(this->master_mmio_addrs->INIT_DONE));
-  this->log = log;
   std::vector<std::string> args(argv + 1, argv + argc);
   std::string loadmem;
   bool fastloadmem = false;
@@ -70,6 +66,7 @@ uint64_t simif_t::hcycle() {
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
+<<<<<<< HEAD
 void simif_t::target_reset(int pulse_length) {
   poke(reset, 1);
   take_steps(pulse_length, true);
@@ -141,6 +138,8 @@ void simif_t::step(uint32_t n, bool blocking) {
   t += n;
 }
 
+=======
+>>>>>>> origin/local-fpga
 void simif_t::load_mem(std::string filename) {
   fprintf(stdout, "[loadmem] start loading\n");
   std::ifstream file(filename.c_str());

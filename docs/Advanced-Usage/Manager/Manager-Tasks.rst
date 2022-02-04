@@ -116,7 +116,7 @@ specifying an already existing LAUNCHTIME.
 
 This command will run for the configurations specified in :ref:`config-build` and
 :ref:`config-build-recipes` as with :ref:`firesim-buildafi`.  It is likely that you may want
-to comment out ``BUILD_NAME`` that successfully completed :ref:`firesim-builafi` before
+to comment out ``BUILD_NAME`` that successfully completed :ref:`firesim-buildafi` before
 running this command.
 
 

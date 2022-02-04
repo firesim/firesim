@@ -172,12 +172,12 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val mshr_available = mshrs.exists({m: MSHR => m.available() })
   val mshr_next_idx = mshrs.indexWhere({ m: MSHR => m.available() })
 
-  // TODO: Put this on a switch
   val mshrs_allocated = mshrs.count({m: MSHR => m.valid})
-  assert((mshrs_allocated < io.settings.activeMSHRs) || !mshr_available,
+  assert((mshrs_allocated < RegNext(io.settings.activeMSHRs)) || !mshr_available,
     "Too many runtime MSHRs exposed given runtime programmable limit")
-  assert((mshrs_allocated === io.settings.activeMSHRs) || mshr_available,
-    "Too few runtime MSHRs exposed given runtime programmable limit")
+
+  assert((mshrs_allocated === RegNext(io.settings.activeMSHRs)) || mshr_available,
+    "Too few runtime MSHRs exposed given runtime programmable limit.")
 
   val s2_ar_mem = Module(new Queue(new NastiReadAddressChannel, 2))
   val s2_aw_mem = Module(new Queue(new NastiWriteAddressChannel, 2))
