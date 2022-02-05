@@ -135,10 +135,6 @@
                         <a href="AutoCounterConsts.html" title="">AutoCounterConsts</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="AutoCounterToHostToken.html" title=""></a>
-                        <a href="AutoCounterToHostToken.html" title="">AutoCounterToHostToken</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="BRAMFlowQueue.html" title=""></a>
                         <a href="BRAMFlowQueue.html" title="">BRAMFlowQueue</a>
                       </li><li class="current-entities indented2">
@@ -234,7 +230,7 @@
                         <a class="class" href="DecoupledSourceEntry.html" title=""></a>
                         <a href="DecoupledSourceEntry.html" title="">DecoupledSourceEntry</a>
                       </li><li class="current-entities indented2">
-                        <span class="separator"></span>
+                        <a class="object" href="EventMetadata$.html" title=""></a>
                         <a class="class" href="" title="Captures target-side information about an annotated event"></a>
                         <a href="" title="Captures target-side information about an annotated event">EventMetadata</a>
                       </li><li class="current-entities indented2">
@@ -532,14 +528,16 @@
           <div id="content">
             <body class="class type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <a href="EventMetadata$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.widgets">widgets</a></p>
-        <h1>EventMetadata<span class="permalink">
+        <h1><a href="EventMetadata$.html" title="See companion object">EventMetadata</a><span class="permalink">
       <a href="../../midas/widgets/EventMetadata.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"></span></h3>
+        <h3><span class="morelinks"><div>
+            Companion <a href="EventMetadata$.html" title="See companion object">object EventMetadata</a>
+          </div></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
@@ -548,17 +546,17 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">EventMetadata</span><span class="params">(<span name="portName">portName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">EventMetadata</span><span class="params">(<span name="portName">portName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="opType">opType: <a href="../targetutils/PerfCounterOpType.html" class="extype" name="midas.targetutils.PerfCounterOpType">PerfCounterOpType</a></span>)</span><span class="result"> extends <a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Captures target-side information about an annotated event
-</p></div><dl class="paramcmts block"><dt class="param">portName</dt><dd class="cmt"><p>the name of the IF exposed to the bridge by the autocounter transform</p></dd><dt class="param">label</dt><dd class="cmt"><p>provides more detail about the nature of the event</p></dd><dt class="param">width</dt><dd class="cmt"><p>the bitwidth of the event</p></dd></dl><div class="toggleContainer block">
+</p></div><dl class="paramcmts block"><dt class="param">portName</dt><dd class="cmt"><p>the name of the IF exposed to the bridge by the autocounter transform</p></dd><dt class="param">label</dt><dd class="cmt"><p>The user provided <span class="extype" name="AutoCounterFirrtlAnnotation">AutoCounterFirrtlAnnotation</span>.label prepended with an instance path.</p></dd><dt class="param">description</dt><dd class="cmt"><p>A passthrough of <span class="extype" name="AutoCounterFirrtlAnnotation">AutoCounterFirrtlAnnotation</span>.description</p></dd><dt class="param">width</dt><dd class="cmt"><p>The bitwidth of the event</p></dd><dt class="param">opType</dt><dd class="cmt"><p>The type of accumulation operation to apply to event</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -584,7 +582,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.EventMetadata"><span>EventMetadata</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.EventMetadata"><span>EventMetadata</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="midas.widgets.AutoCounterConsts"><span>AutoCounterConsts</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -605,9 +603,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.EventMetadata#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(portName:String,label:String,width:Int):midas.widgets.EventMetadata"></a><a id="&lt;init&gt;:EventMetadata"></a>
+      <a id="&lt;init&gt;(portName:String,label:String,description:String,width:Int,opType:midas.targetutils.PerfCounterOpType):midas.widgets.EventMetadata"></a><a id="&lt;init&gt;:EventMetadata"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/EventMetadata.html#&lt;init&gt;(portName:String,label:String,width:Int):midas.widgets.EventMetadata" title="Permalink">
+      <a href="../../midas/widgets/EventMetadata.html#&lt;init&gt;(portName:String,label:String,description:String,width:Int,opType:midas.targetutils.PerfCounterOpType):midas.widgets.EventMetadata" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -616,10 +614,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">EventMetadata</span><span class="params">(<span name="portName">portName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
+        <span class="name">EventMetadata</span><span class="params">(<span name="portName">portName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="opType">opType: <a href="../targetutils/PerfCounterOpType.html" class="extype" name="midas.targetutils.PerfCounterOpType">PerfCounterOpType</a></span>)</span>
       </span>
       
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">portName</dt><dd class="cmt"><p>the name of the IF exposed to the bridge by the autocounter transform</p></dd><dt class="param">label</dt><dd class="cmt"><p>provides more detail about the nature of the event</p></dd><dt class="param">width</dt><dd class="cmt"><p>the bitwidth of the event</p></dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">portName</dt><dd class="cmt"><p>the name of the IF exposed to the bridge by the autocounter transform</p></dd><dt class="param">label</dt><dd class="cmt"><p>The user provided <span class="extype" name="AutoCounterFirrtlAnnotation">AutoCounterFirrtlAnnotation</span>.label prepended with an instance path.</p></dd><dt class="param">description</dt><dd class="cmt"><p>A passthrough of <span class="extype" name="AutoCounterFirrtlAnnotation">AutoCounterFirrtlAnnotation</span>.description</p></dd><dt class="param">width</dt><dd class="cmt"><p>The bitwidth of the event</p></dd><dt class="param">opType</dt><dd class="cmt"><p>The type of accumulation operation to apply to event</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -718,6 +716,38 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.widgets.AutoCounterConsts#counterWidth" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="counterWidth:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/EventMetadata.html#counterWidth:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">counterWidth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a></dd></dl></div>
+    </li><li name="midas.widgets.EventMetadata#description" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="description:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/EventMetadata.html#description:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">description</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -861,6 +891,22 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.widgets.EventMetadata#opType" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="opType:midas.targetutils.PerfCounterOpType"></a><a id="opType:PerfCounterOpType"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/EventMetadata.html#opType:midas.targetutils.PerfCounterOpType" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opType</span><span class="result">: <a href="../targetutils/PerfCounterOpType.html" class="extype" name="midas.targetutils.PerfCounterOpType">PerfCounterOpType</a></span>
+      </span>
+      
+      
     </li><li name="midas.widgets.EventMetadata#portName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="portName:String"></a>
       <span class="permalink">
@@ -877,6 +923,22 @@
       </span>
       
       
+    </li><li name="midas.widgets.AutoCounterConsts#sanitizeDescriptionForCSV" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sanitizeDescriptionForCSV(description:String):String"></a><a id="sanitizeDescriptionForCSV(String):String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/EventMetadata.html#sanitizeDescriptionForCSV(description:String):String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sanitizeDescriptionForCSV</span><span class="params">(<span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
@@ -995,6 +1057,8 @@
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
             </div><div class="parent" name="scala.Equals">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
+            </div><div class="parent" name="midas.widgets.AutoCounterConsts">
+              <h3>Inherited from <a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

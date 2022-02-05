@@ -275,6 +275,14 @@
                         <a href="PerfCounter$.html" title="">PerfCounter</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="trait" href="PerfCounterOpType.html" title=""></a>
+                        <a href="PerfCounterOpType.html" title="">PerfCounterOpType</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PerfCounterOps$.html" title=""></a>
+                        <a href="PerfCounterOps$.html" title="">PerfCounterOps</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="SynthesizePrintf$.html" title=""></a>
                         <a href="SynthesizePrintf$.html" title="">SynthesizePrintf</a>
                       </li><li class="current-entities indented2">
@@ -421,7 +429,7 @@
       
       
     </li><li name="midas.targetutils.AutoCounterFirrtlAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="AutoCounterFirrtlAnnotationextendsAnnotationwithDontTouchAllTargetswithProductwithSerializable"></a><a id="AutoCounterFirrtlAnnotation:AutoCounterFirrtlAnnotation"></a>
+      <a id="AutoCounterFirrtlAnnotationextendsAnnotationwithDontTouchAllTargetswithHasSerializationHintswithProductwithSerializable"></a><a id="AutoCounterFirrtlAnnotation:AutoCounterFirrtlAnnotation"></a>
       <span class="permalink">
       <a href="../../midas/targetutils/AutoCounterFirrtlAnnotation.html" title="Permalink">
         <i class="material-icons"></i>
@@ -432,7 +440,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="AutoCounter annotations." href="AutoCounterFirrtlAnnotation.html"><span class="name">AutoCounterFirrtlAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="clock">clock: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="reset">reset: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="coverGenerated">coverGenerated: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <span class="extype" name="firrtl.transforms.DontTouchAllTargets">DontTouchAllTargets</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="AutoCounter annotations." href="AutoCounterFirrtlAnnotation.html"><span class="name">AutoCounterFirrtlAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="clock">clock: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="reset">reset: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="opType">opType: <a href="PerfCounterOpType.html" class="extype" name="midas.targetutils.PerfCounterOpType">PerfCounterOpType</a> = <span class="symbol"><span class="name"><a href="PerfCounterOps$.html">PerfCounterOps.Accumulate</a></span></span></span>, <span name="coverGenerated">coverGenerated: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a> = <span class="symbol">false</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <span class="extype" name="firrtl.transforms.DontTouchAllTargets">DontTouchAllTargets</span> with <span class="extype" name="firrtl.annotations.HasSerializationHints">HasSerializationHints</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">AutoCounter annotations.</p><div class="fullcomment"><div class="comment cmt"><p>AutoCounter annotations. Do not emit the FIRRTL annotations unless you are
@@ -642,6 +650,22 @@ globalResetCondition if it is available.</p>
       </span>
       
       <p class="shortcomment cmt">This labels a target Mem so that it is extracted and replaced with a separate model.</p>
+    </li><li name="midas.targetutils.PerfCounterOpType" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PerfCounterOpTypeextendsAnyRef"></a><a id="PerfCounterOpType:PerfCounterOpType"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/PerfCounterOpType.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="PerfCounterOpType.html"><span class="name">PerfCounterOpType</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      
     </li><li name="midas.targetutils.TriggerSinkAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TriggerSinkAnnotationextendsAnnotationwithFAMEAnnotationwithDontTouchAllTargetswithProductwithSerializable"></a><a id="TriggerSinkAnnotation:TriggerSinkAnnotation"></a>
       <span class="permalink">
@@ -759,6 +783,22 @@ globalResetCondition if it is available.</p>
       </span>
       <span class="symbol">
         <a title="" href="PerfCounter$.html"><span class="name">PerfCounter</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.PerfCounterOps" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PerfCounterOps"></a><a id="PerfCounterOps:PerfCounterOps"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/PerfCounterOps$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="PerfCounterOps$.html"><span class="name">PerfCounterOps</span></a>
       </span>
       
       

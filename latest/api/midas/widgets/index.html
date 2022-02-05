@@ -247,10 +247,6 @@
                         <a href="AutoCounterConsts.html" title="">AutoCounterConsts</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="AutoCounterToHostToken.html" title=""></a>
-                        <a href="AutoCounterToHostToken.html" title="">AutoCounterToHostToken</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="BRAMFlowQueue.html" title=""></a>
                         <a href="BRAMFlowQueue.html" title="">BRAMFlowQueue</a>
                       </li><li class="current-entities indented2">
@@ -346,7 +342,7 @@
                         <a class="class" href="DecoupledSourceEntry.html" title=""></a>
                         <a href="DecoupledSourceEntry.html" title="">DecoupledSourceEntry</a>
                       </li><li class="current-entities indented2">
-                        <span class="separator"></span>
+                        <a class="object" href="EventMetadata$.html" title=""></a>
                         <a class="class" href="EventMetadata.html" title="Captures target-side information about an annotated event"></a>
                         <a href="EventMetadata.html" title="Captures target-side information about an annotated event">EventMetadata</a>
                       </li><li class="current-entities indented2">
@@ -812,22 +808,6 @@
       </span>
       
       
-    </li><li name="midas.widgets.AutoCounterToHostToken" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AutoCounterToHostTokenextendsBundlewithAutoCounterConsts"></a><a id="AutoCounterToHostToken:AutoCounterToHostToken"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterToHostToken.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="AutoCounterToHostToken.html"><span class="name">AutoCounterToHostToken</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a></span>
-      </span>
-      
-      
     </li><li name="midas.widgets.BRAMFlowQueue" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="BRAMFlowQueue[T&lt;:chisel3.Data]extendschisel3.Module"></a><a id="BRAMFlowQueue[T&lt;:Data]:BRAMFlowQueue[T]"></a>
       <span class="permalink">
@@ -1178,7 +1158,7 @@ that clock domain will fire in the simulator time step that consumes this clock 
       
       
     </li><li name="midas.widgets.EventMetadata" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="EventMetadataextendsProductwithSerializable"></a><a id="EventMetadata:EventMetadata"></a>
+      <a id="EventMetadataextendsAutoCounterConstswithProductwithSerializable"></a><a id="EventMetadata:EventMetadata"></a>
       <span class="permalink">
       <a href="../../midas/widgets/EventMetadata.html" title="Permalink">
         <i class="material-icons"></i>
@@ -1189,12 +1169,12 @@ that clock domain will fire in the simulator time step that consumes this clock 
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Captures target-side information about an annotated event" href="EventMetadata.html"><span class="name">EventMetadata</span></a><span class="params">(<span name="portName">portName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="Captures target-side information about an annotated event" href="EventMetadata.html"><span class="name">EventMetadata</span></a><span class="params">(<span name="portName">portName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="opType">opType: <a href="../targetutils/PerfCounterOpType.html" class="extype" name="midas.targetutils.PerfCounterOpType">PerfCounterOpType</a></span>)</span><span class="result"> extends <a href="AutoCounterConsts.html" class="extype" name="midas.widgets.AutoCounterConsts">AutoCounterConsts</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">Captures target-side information about an annotated event
 </p><div class="fullcomment"><div class="comment cmt"><p>Captures target-side information about an annotated event
-</p></div><dl class="paramcmts block"><dt class="param">portName</dt><dd class="cmt"><p>the name of the IF exposed to the bridge by the autocounter transform</p></dd><dt class="param">label</dt><dd class="cmt"><p>provides more detail about the nature of the event</p></dd><dt class="param">width</dt><dd class="cmt"><p>the bitwidth of the event</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">portName</dt><dd class="cmt"><p>the name of the IF exposed to the bridge by the autocounter transform</p></dd><dt class="param">label</dt><dd class="cmt"><p>The user provided <span class="extype" name="AutoCounterFirrtlAnnotation">AutoCounterFirrtlAnnotation</span>.label prepended with an instance path.</p></dd><dt class="param">description</dt><dd class="cmt"><p>A passthrough of <span class="extype" name="AutoCounterFirrtlAnnotation">AutoCounterFirrtlAnnotation</span>.description</p></dd><dt class="param">width</dt><dd class="cmt"><p>The bitwidth of the event</p></dd><dt class="param">opType</dt><dd class="cmt"><p>The type of accumulation operation to apply to event</p></dd></dl></div>
     </li><li name="midas.widgets.FuzzingUIntSourceBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FuzzingUIntSourceBridgeextendsBlackBoxwithBridge[midas.widgets.HostPortIO[midas.widgets.FuzzingUIntSourceTargetIO],midas.widgets.FuzzingUIntSourceBridgeModule]"></a><a id="FuzzingUIntSourceBridge:FuzzingUIntSourceBridge"></a>
       <span class="permalink">
@@ -2337,6 +2317,22 @@ runtime-configurable number of cycles. These are its elaboration-time parameters
       </span>
       <span class="symbol">
         <a title="" href="DecoupledCRIO$.html"><span class="name">DecoupledCRIO</span></a>
+      </span>
+      
+      
+    </li><li name="midas.widgets.EventMetadata" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EventMetadata"></a><a id="EventMetadata:EventMetadata"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/EventMetadata$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="EventMetadata$.html"><span class="name">EventMetadata</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       

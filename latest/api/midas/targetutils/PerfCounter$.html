@@ -195,6 +195,14 @@
                         <a href="" title="">PerfCounter</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="trait" href="PerfCounterOpType.html" title=""></a>
+                        <a href="PerfCounterOpType.html" title="">PerfCounterOpType</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="PerfCounterOps$.html" title=""></a>
+                        <a href="PerfCounterOps$.html" title="">PerfCounterOps</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="SynthesizePrintf$.html" title=""></a>
                         <a href="SynthesizePrintf$.html" title="">SynthesizePrintf</a>
                       </li><li class="current-entities indented2">
@@ -347,9 +355,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="midas.targetutils.PerfCounter#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(target:chisel3.UInt,label:String,message:String):Unit"></a><a id="apply(UInt,String,String):Unit"></a>
+      <a id="apply(target:chisel3.UInt,label:String,description:String):Unit"></a><a id="apply(UInt,String,String):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.UInt,label:String,message:String):Unit" title="Permalink">
+      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.UInt,label:String,description:String):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -358,15 +366,15 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       <p class="shortcomment cmt">A simplified variation of the full apply method above that uses the
 implicit clock and reset.</p>
     </li><li name="midas.targetutils.PerfCounter#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="apply(target:chisel3.UInt,clock:chisel3.Clock,reset:chisel3.Reset,label:String,message:String):Unit"></a><a id="apply(UInt,Clock,Reset,String,String):Unit"></a>
+      <a id="apply(target:chisel3.UInt,clock:chisel3.Clock,reset:chisel3.Reset,label:String,description:String,opType:midas.targetutils.PerfCounterOpType):Unit"></a><a id="apply(UInt,Clock,Reset,String,String,PerfCounterOpType):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.UInt,clock:chisel3.Clock,reset:chisel3.Reset,label:String,message:String):Unit" title="Permalink">
+      <a href="../../midas/targetutils/PerfCounter$.html#apply(target:chisel3.UInt,clock:chisel3.Clock,reset:chisel3.Reset,label:String,description:String,opType:midas.targetutils.PerfCounterOpType):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -375,7 +383,7 @@ implicit clock and reset.</p>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="clock">clock: <span class="extype" name="chisel3.Clock">Clock</span></span>, <span name="reset">reset: <span class="extype" name="chisel3.Reset">Reset</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">apply</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="clock">clock: <span class="extype" name="chisel3.Clock">Clock</span></span>, <span name="reset">reset: <span class="extype" name="chisel3.Reset">Reset</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="opType">opType: <a href="PerfCounterOpType.html" class="extype" name="midas.targetutils.PerfCounterOpType">PerfCounterOpType</a> = <span class="symbol"><span class="name"><a href="PerfCounterOps$.html">PerfCounterOps.Accumulate</a></span></span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
       <p class="shortcomment cmt">Labels a signal as an event for which an host-side counter (an
@@ -384,8 +392,9 @@ implicit clock and reset.</p>
 multiple occurances in a cycle (e.g., the number of instructions retired
 in a superscalar processor). NB: Golden Gate will not generate the
 coutner unless AutoCounter is enabled in your the platform config. See
-the docs for more info.</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The number of occurances of the event (in the current cycle)</p></dd><dt class="param">clock</dt><dd class="cmt"><p>The clock to which this event is sychronized.</p></dd><dt class="param">reset</dt><dd class="cmt"><p>If the event is asserted while under the provide reset, it
-is not counted. TODO: This should be made optional.</p></dd><dt class="param">label</dt><dd class="cmt"><p>A verilog-friendly identifier for the event signal</p></dd><dt class="param">message</dt><dd class="cmt"><p>A description of the event.</p></dd></dl></div>
+the docs.fires.im for end-to-end usage information.
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The number of occurances of the event (in the current cycle)</p></dd><dt class="param">clock</dt><dd class="cmt"><p>The clock to which this event is sychronized.</p></dd><dt class="param">reset</dt><dd class="cmt"><p>If the event is asserted while under the provide reset, it
+is not counted. TODO: This should be made optional.</p></dd><dt class="param">label</dt><dd class="cmt"><p>A verilog-friendly identifier for the event signal</p></dd><dt class="param">description</dt><dd class="cmt"><p>A human-friendly description of the event.</p></dd><dt class="param">opType</dt><dd class="cmt"><p>Defines how the bridge should be aggregated into a performance counter.</p></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -518,6 +527,24 @@ is not counted. TODO: This should be made optional.</p></dd><dt class="param">la
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.targetutils.PerfCounter#identity" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="identity(target:chisel3.UInt,label:String,description:String):Unit"></a><a id="identity(UInt,String,String):Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/PerfCounter$.html#identity(target:chisel3.UInt,label:String,description:String):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">identity</span><span class="params">(<span name="target">target: <span class="extype" name="chisel3.UInt">UInt</span></span>, <span name="label">label: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="description">description: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Passes the annotated UInt through to the driver without accumulation.</p><div class="fullcomment"><div class="comment cmt"><p>Passes the annotated UInt through to the driver without accumulation.
+Use cases:</p><ul><li>Custom accumulation / counting logic not supported by the driver</li><li>Providing runtime metadata along side standard accumulation registers</li></ul><p>Note: Under reset, the passthrough value is set to 0. This keeps event
+handling uniform in the transform.</p></div></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
