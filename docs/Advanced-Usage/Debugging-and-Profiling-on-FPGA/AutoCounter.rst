@@ -162,14 +162,21 @@ mode that uses Synthesizable Printfs (see
 :ref:`printf-synthesis`) to export counter results `as they are updated` rather than sampling them
 periodically with a dedicated Bridge. This mode can be enabled by prepending the
 ``WithAutoCounterCoverPrintf`` config to your ``PLATFORM_CONFIG`` instead of
-``WithAutoCounterCover``. In this mode, the counter values and the local cycle count will be printed
-every time the counter is incremented using a synthesized printf (hence, you
-will observe a series of printfs incrementing by 1). This mode may
-be useful for fine-grained observation of counters.  The counter values will be
-printed to the same output stream as other synthesizable printfs.  This mode
-uses considerably more FPGA resources per counter, and may consume considerable
-amounts of DMA bandwidth (since it prints every cycle a counter
-increments), which may adversly affect simulation performance (increased FMR).
+``WithAutoCounterCover``. Based on the selected event mode the printfs will have the following runtime behavior:
+
+* `Accumulate`: On a non-zero increment, the local cycle count and the new
+  counter value are printed. This produces a series of prints with
+  monotonically increasingly values.
+* `Identity`: On a transition of the annotated target, the local cycle count and
+  the new value are printed. Thus a target that transitions every cycle will
+  produce printf traffic every cycle.
+
+This mode may be useful for temporally fine-grained observation of counters.
+The counter values will be printed to the same output stream as other
+synthesizable printfs.  This mode uses considerably more FPGA resources per
+counter, and may consume considerable amounts of DMA bandwidth (since it prints
+every cycle a counter increments), which may adversly affect simulation
+performance (increased FMR).
 
 Reset & Timing Considerations
 ------------------------------

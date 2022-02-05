@@ -60,7 +60,8 @@ autocounter_t::autocounter_t(
             if (this->clock_info.to_base_cycles(this->readrate) != this->readrate_base_clock) {
                 fprintf(stderr,
 "[AutoCounter] Warning: requested sample rate of %" PRIu64 " [base] cycles does not map to a whole number\n\
-                       of cycles in clock domain: %s, (%d/%d) of base clock.\n",
+of cycles in clock domain: %s, (%d/%d) of base clock.\n\
+See the AutoCounter documentation on Reset And Timing Considerations for discussion.\n",
                        this->readrate_base_clock,
                        this->clock_info.domain_name,
                        this->clock_info.multiplier,
@@ -102,6 +103,9 @@ std::string replace_all(std::string str, const std::string& from, const std::str
     return str;
 }
 
+// Since description fields may have commas, quote them to prevent introducing extra delimiters.
+// Note, the standard way to escape double-quotes is to double them (" -> "")
+// https://stackoverflow.com/questions/17808511/properly-escape-a-double-quote-in-csv
 std::string quote_csv_element(std::string str) {
     std::string quoted = replace_all(str, "\"", "\"\"");
     return '"' + quoted + '"';
