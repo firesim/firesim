@@ -186,17 +186,32 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
 
     @staticmethod
     def request_build_farm_hosts(build_farm_host_dispatchers):
-        amt_requested = len(build_farm_host_dispatchers)
+        # TODO: this can be further optimized (spawn-like build farm hosts)
+        # double-check that build farms are the same
+        it_len = len(set([x.instance_type for x in build_farm_host_dispatchers]))
+        bim_len = len(set([x.build_instance_market for x in build_farm_host_dispatchers]))
+        sib_len = len(set([x.spot_interruption_behavior for x in build_farm_host_dispatchers]))
+        smp_len = len(set([x.spot_max_price for x in build_farm_host_dispatchers]))
+        if it_len == 1 and bim_len == 1 and sib_len == 1 and smp_len == 1: 
+            amt_requested = len(build_farm_host_dispatchers)
+            instance_type = build_farm_host_dispatchers[0].instance_type
+            build_instance_market = build_farm_host_dispatchers[0].build_instance_market
+            spot_interruption_behavior = build_farm_host_dispatchers[0].spot_interruption_behavior
+            spot_max_price = build_farm_host_dispatchers[0].spot_max_price
 
-        launched_objs = EC2BuildFarmHostDispatcher.ec2_launch_instances(
-            instance_type,
-            amt_requested,
-            build_instance_market,
-            spot_interruption_behavior,
-            spot_max_price)
+            launched_objs = EC2BuildFarmHostDispatcher.ec2_launch_instances(
+                instance_type,
+                amt_requested,
+                build_instance_market,
+                spot_interruption_behavior,
+                spot_max_price)
 
-        for bh, lo in zip(build_farm_host_dispatchers, launched_objs):
-            bh.launched_instance_object = lo
+            for bh, lo in zip(build_farm_host_dispatchers, launched_objs):
+                bh.launched_instance_object = lo
+        else:
+            # default to the original request function
+            for build_farm_host_dispatcher in build_farm_host_dispatchers:
+                 build_farm_host_dispatchers.request_build_farm_host()
 
     @staticmethod
     def ec2_launch_instances(inst_type, num_insts, build_inst_market, spot_int_behav, spot_max_price):
@@ -229,7 +244,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
 
     def wait_on_build_farm_host_initialization(self):
         """ Wait for EC2 instance launch. """
-        wait_on_build_farm_host_initializationes([self.launched_instance_object])
+        wait_on_instance_launches([self.launched_instance_object])
 
     def get_build_farm_host_ip(self):
         """ Get IP address associated with this dispatched instance.

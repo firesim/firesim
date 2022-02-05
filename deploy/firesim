@@ -59,7 +59,7 @@ def managerinit():
             m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format("DUMMY", conf_file), capture=True)
+            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
@@ -93,8 +93,8 @@ def buildafi(globalbuildconf):
 
     # forced to build locally
     for build_config in globalbuildconf.get_builds_list():
-        execute(replace_rtl, hosts=['localhost'])
-        execute(build_driver, hosts=['localhost'])
+        execute(replace_rtl, build_config, hosts=['localhost'])
+        execute(build_driver, build_config, hosts=['localhost'])
 
     def release_build_farm_hosts_handler(sig, frame):
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """

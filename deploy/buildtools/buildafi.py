@@ -59,7 +59,7 @@ def build_driver(build_config):
          prefix('cd sim/'), \
          InfoStreamLogger('stdout'), \
          InfoStreamLogger('stderr'):
-        run(buildconfig.make_recipe("PLATFORM=f1 driver"))
+        run(build_config.make_recipe("PLATFORM=f1 driver"))
 
 def remote_setup(build_config):
     """ Setup CL_DIR on remote machine

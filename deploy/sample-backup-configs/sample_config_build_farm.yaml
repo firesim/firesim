@@ -19,6 +19,6 @@ local-build-farm:
     args:
         default-build-dir: null
         build-farm-hosts:
-            - localhost
+            - localhost:
                 # change location of build on build host (abs. path)
                 override-build-dir: null

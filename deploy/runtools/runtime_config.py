@@ -6,6 +6,7 @@ from __future__ import print_function
 from time import strftime, gmtime
 import pprint
 import logging
+import yaml
 
 from fabric.api import *
 from awstools.awstools import *

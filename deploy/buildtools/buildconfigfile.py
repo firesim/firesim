@@ -11,6 +11,7 @@ from importlib import import_module
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
+from awstools.awstools import auto_create_bucket, get_snsname_arn
 
 rootLogger = logging.getLogger()
 
@@ -103,12 +104,14 @@ class BuildConfigFile:
                     sys.exit(1)
 
     def wait_on_build_farm_host_initializations(self):
-        """ Block until all build instances are launched """
+        """ Block until all build instances are initialized """
+        # TODO: batch optimize
         for build in self.builds_list:
             build.build_farm_host_dispatcher.wait_on_build_farm_host_initialization()
 
     def release_build_farm_hosts(self):
         """ Terminate all build instances that are launched """
+        # TODO: batch optimize
         for build in self.builds_list:
             build.build_farm_host_dispatcher.release_build_farm_host()
 
