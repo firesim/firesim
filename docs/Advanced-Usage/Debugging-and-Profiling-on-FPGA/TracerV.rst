@@ -35,7 +35,7 @@ Enabling Tracing at Runtime
 
 To improve simulation preformance, FireSim does not collect and record data
 from the TracerV Bridge by default. To enable collection, modify the ``enable``
-flag in the ``[tracing]`` section in your ``config_runtime.ini`` file to ``yes``
+flag in the ``[tracing]`` section in your ``config_runtime.yaml`` file to ``yes``
 instead of ``no``:
 
 .. code-block:: ini
@@ -59,7 +59,7 @@ Selecting a Trace Output Format
 ---------------------------------
 
 FireSim supports three trace output formats, which can be set in your
-``config_runtime.ini`` file with the ``output_format`` option in the
+``config_runtime.yaml`` file with the ``output_format`` option in the
 ``[tracing]`` section:
 
 .. code-block:: ini
@@ -88,7 +88,7 @@ stopping trace data collection.
 
 By default, TracerV does not use a trigger, so data collection starts at cycle
 0 and ends at the last cycle of the simulation. To change this, modify the
-following under the ``[tracing]`` section of your ``config_runtime.ini``.
+following under the ``[tracing]`` section of your ``config_runtime.yaml``.
 Use the ``selector`` field to choose the type of trigger (options are described
 below). The ``start`` and ``end`` fields are used to supply the start and end
 values for the trigger.
@@ -118,7 +118,7 @@ No trigger
 
 Records the trace for the entire simulation.
 
-This is option ``0`` in the ``.ini`` above.
+This is option ``0`` in the ``.yaml`` above.
 
 The ``start`` and ``end`` fields are ignored.
 
@@ -132,7 +132,7 @@ clock drives the uncore, and the core clock frequency is 2x the uncore frequency
 specifying start and end cycles of 100 and 200 result in instructions being collected
 between core-clock cycles 200 and 400.
 
-This is option ``1`` in the ``.ini`` above.
+This is option ``1`` in the ``.yaml`` above.
 
 The ``start`` and ``end`` fields are interpreted as decimal integers.
 
@@ -143,7 +143,7 @@ Program Counter (PC) value trigger
 Trace recording begins when a specified program counter value is reached
 and ends when a specified program counter value is reached.
 
-This is option ``2`` in the ``.ini`` above.
+This is option ``2`` in the ``.yaml`` above.
 
 The ``start`` and ``end`` fields are interpreted as hexadecimal values.
 
@@ -160,7 +160,7 @@ within the target software under evaluation, by inserting custom "NOP"
 instructions. Linux distributions included with FireSim include small trigger
 programs by default for this purpose; see the end of this subsection.
 
-This is option ``3`` in the ``.ini`` above.
+This is option ``3`` in the ``.yaml`` above.
 
 The ``start`` and ``end`` fields are interpreted as hexadecimal values. For
 each, the field is a 64-bit value, with the upper 32-bits representing a
@@ -182,14 +182,14 @@ application is running within Linux. To simplify the use of this triggering
 mechanism, workloads derived from ``br-base.json`` in FireMarshal automatically
 include the commands ``firesim-start-trigger`` and ``firesim-end-trigger``,
 which issue a ``addi x0, x1, 0`` and ``addi x0, x2, 0`` instruction
-respectively. In your ``config_runtime.ini``, if you set the following
+respectively. In your ``config_runtime.yaml``, if you set the following
 trigger settings:
 
-.. code-block:: ini
+.. code-block:: yaml
 
-    selector=3
-    start=ffffffff00008013
-    end=ffffffff00010013
+    selector: 3
+    start: ffffffff00008013
+    end: ffffffff00010013
 
 
 And then run the following at the bash prompt on the simulated system:
@@ -222,12 +222,12 @@ Interpreting the Trace Result
 Human readable output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is ``output_format=0``.
+This is ``output-format: 0``.
 
 The human readable trace output format looks like so:
 
 .. include:: TRACERV-HUMAN-READABLE-EXAMPLE
-   :code: ini
+   :code: yaml
 
 In this output, each line begins with the cycle (in decimal) in the core's
 clock domain that instruction was committed. For a given cycle, the instruction
@@ -248,7 +248,7 @@ given cycle, that cycle will be skipped in the output file.
 Binary output
 ^^^^^^^^^^^^^^^^^
 
-This is ``output_format=1``.
+This is ``output_format: 1``.
 
 This simply writes the 512 bits received from the FPGA each cycle to the output
 file in binary. Each 512-bit chunk is stored little-endian. The lowermost 64 bits stores the cycle,
@@ -258,7 +258,7 @@ the second 64-bits stores the address and valid bits of committed instruction  0
 Flame Graph output
 ^^^^^^^^^^^^^^^^^^^^
 
-This is ``output_format=2``. See the :ref:`tracerv-with-flamegraphs` section.
+This is ``output_format: 2``. See the :ref:`tracerv-with-flamegraphs` section.
 
 Caveats
 --------------------

@@ -41,20 +41,20 @@ Setting up the manager configuration
 -------------------------------------
 
 All runtime configuration options for the manager are set in a file called
-``firesim/deploy/config_runtime.ini``. In this guide, we will explain only the
+``firesim/deploy/config_runtime.yaml``. In this guide, we will explain only the
 parts of this file necessary for our purposes. You can find full descriptions of
 all of the parameters in the :ref:`manager-configuration-files` section.
 
 If you open up this file, you will see the following default config (assuming
 you have not modified it):
 
-.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+   :code: yaml
 
 We'll need to modify a couple of these lines.
 
 First, let's tell the manager to use the correct numbers and types of instances.
-You'll notice that in the ``[runfarm]`` section, the manager is configured to
+You'll notice that in the ``run-farm:`` section, the manager is configured to
 launch a Run Farm named ``mainrunfarm``, consisting of one ``f1.16xlarge`` and
 no ``m4.16xlarge``\ s, ``f1.4xlarge``\ s, or ``f1.2xlarge``\ s. The tag specified here allows the
 manager to differentiate amongst many parallel run farms (each running
@@ -65,95 +65,95 @@ Since we only want to simulate a single node, let's switch to using one
 
 ::
 
-    [runfarm]
+    run-farm:
     # per aws restrictions, this tag cannot be longer than 255 chars
-    runfarmtag=mainrunfarm
-    f1_16xlarges=0
-    f1_4xlarges=0
-    m4_16xlarges=0
-    f1_2xlarges=1
+    run-farm-tag: mainrunfarm
+    f1_16xlarges: 0
+    f1_4xlarges: 0
+    m4_16xlarges: 0
+    f1_2xlarges: 1
 
-You'll see other parameters here, like ``runinstancemarket``,
-``spotinterruptionbehavior``, and ``spotmaxprice``. If you're an experienced
+You'll see other parameters here, like ``run-instance-market``,
+``spot-interruption-behavior``, and ``spot-max-price``. If you're an experienced
 AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
-Now, let's change the ``[targetconfig]`` section to model the correct target design.
+Now, let's change the ``target-config:`` section to model the correct target design.
 By default, it is set to model an 8-node cluster with a cycle-accurate network.
 Instead, we want to model a single-node with no network. To do so, we will need
 to change a few items in this section:
 
 ::
 
-    [targetconfig]
-    topology=no_net_config
-    no_net_num_nodes=1
-    linklatency=6405
-    switchinglatency=10
-    netbandwidth=200
-    profileinterval=-1
+    target-config:
+        topology: no_net_config
+        no-net-num-nodes: 1
+        link-latency: 6405
+        switching-latency: 10
+        net-bandwidth: 200
+        profile-interval: -1
 
-    # This references a section from config_hwconfigs.ini
-    # In homogeneous configurations, use this to set the hardware config deployed
-    # for all simulators
-    defaulthwconfig=firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
+        # This references a section from config_hwdb.yaml
+        # In homogeneous configurations, use this to set the hardware config deployed
+        # for all simulators
+        default-hw-config=firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
 
 
 Note that we changed three of the parameters here: ``topology`` is now set to
 ``no_net_config``, indicating that we do not want a network. Then,
-``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
-one node. Lastly, we changed ``defaulthwconfig`` from
+``no-net-num-nodes`` is set to ``1``, indicating that we only want to simulate
+one node. Lastly, we changed ``default-hw-config`` from
 ``firesim-rocket-quadcore-nic-l2-llc4mb-ddr3`` to
 ``firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3``.  Notice the subtle difference in this
 last option? All we did is switch to a hardware configuration that does not
 have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 
-We will leave the last section (``[workload]``) unchanged here, since we do
-want to run the buildroot-based Linux on our simulated system. The ``terminateoncompletion``
+We will leave the last section (``workload:``) unchanged here, since we do
+want to run the buildroot-based Linux on our simulated system. The ``terminate-on-completion``
 feature is an advanced feature that you can learn more about in the
 :ref:`manager-configuration-files` section.
 
-As a final sanity check, your ``config_runtime.ini`` file should now look like this:
+As a final sanity check, your ``config_runtime.yaml`` file should now look like this:
 
 ::
 
 	# RUNTIME configuration for the FireSim Simulation Manager
 	# See docs/Configuration-Details.rst for documentation of all of these params.
 
-	[runfarm]
-	runfarmtag=mainrunfarm
+	run-farm:
+		run-farm-tag: mainrunfarm
 
-	f1_16xlarges=0
-	f1_4xlarges=0
-	m4_16xlarges=0
-	f1_2xlarges=1
+		f1_16xlarges: 0
+		f1_4xlarges: 0
+		m4_16xlarges: 0
+		f1_2xlarges: 1
+        
+		run-instance-market: ondemand
+		spot-interruption-behavior: terminate
+		spot-max-price: ondemand
 
-	runinstancemarket=ondemand
-	spotinterruptionbehavior=terminate
-	spotmaxprice=ondemand
-
-	[targetconfig]
-	topology=no_net_config
-	no_net_num_nodes=1
-	linklatency=6405
-	switchinglatency=10
-	netbandwidth=200
-    profileinterval=-1
-
-	# This references a section from config_hwconfigs.ini
-	# In homogeneous configurations, use this to set the hardware config deployed
-	# for all simulators
-	defaulthwconfig=firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
-
-	[workload]
-	workloadname=linux-uniform.json
-	terminateoncompletion=no
+	target-config:
+		topology: no_net_config
+		no-_net-_num-_nodes: 1
+		link-latency: 6405
+		switching-latency: 10
+		net-bandwidth: 200
+		profile-interval: -1
+		
+		# This references a section from config_hwdb.yaml
+		# In homogeneous configurations, use this to set the hardware config deployed
+		# for all simulators
+		default-hw-config: firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
+	
+	workload:
+		workload-name: linux-uniform.json
+		terminate-on-completion: no
 
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default-hw-config`` to ``firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3``.
 
 
 Launching a Simulation!
@@ -199,7 +199,7 @@ and then take a minute or two while your ``f1.2xlarge`` instance launches.
 Once the launches complete, you should see the instance id printed and the instance
 will also be visible in your AWS EC2 Management console. The manager will tag
 the instances launched with this operation with the value you specified above
-as the ``runfarmtag`` parameter from the ``config_runtime.ini`` file, which we left
+as the ``run-farm-tag`` parameter from the ``config_runtime.yaml`` file, which we left
 set as ``mainrunfarm``. This value allows the manager to tell multiple Run Farms
 apart -- i.e., you can have multiple independent Run Farms running different
 workloads/hardware configurations in parallel. This is detailed in the

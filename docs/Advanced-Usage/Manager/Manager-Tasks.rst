@@ -11,7 +11,7 @@ This page outlines all of the tasks that the FireSim manager supports.
 This is a setup command that does the following:
 
 * Run ``aws configure``, prompt for credentials
-* Replace the default config files (``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``, and ``config_hwdb.ini``) with clean example versions.
+* Replace the default config files (``config_runtime.yaml``, ``config_build.yaml``, ``config_build_recipes.yaml``, and ``config_hwdb.yaml``) with clean example versions.
 * Prompt the user for email address and subscribe them to notifications for their own builds.
 
 You can re-run this whenever you want to get clean configuration files -- you
@@ -101,9 +101,9 @@ running this command.
 This command allows you to share AGFIs that you have already built (that are
 listed in :ref:`config-hwdb`) with other users. It will take the
 named hardware configurations that you list in the ``[agfistoshare]`` section of
-``config_build.ini``, grab the respective AGFIs for each from
-``config_hwdb.ini``, and share them across all F1 regions with the users listed
-in the ``[sharewithaccounts]`` section of ``config_build.ini``. You can also specify ``public=public`` in ``[sharewithaccounts]`` to make the AGFIs public.
+``config_build.yaml``, grab the respective AGFIs for each from
+``config_hwdb.yaml``, and share them across all F1 regions with the users listed
+in the ``[sharewithaccounts]`` section of ``config_build.yaml``. You can also specify ``public=public`` in ``[sharewithaccounts]`` to make the AGFIs public.
 
 You must own the AGFIs in order to do this -- this will NOT let you share AGFIs
 that someone else owns and gave you access to.
@@ -117,10 +117,10 @@ that someone else owns and gave you access to.
 This command launches a Run Farm on which you run simulations. Run Farms
 consist of ``f1.16xlarge``, ``f1.4xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
 Before you run the command, you define the number of each that you want in
-``config_runtime.ini``.
+``config_runtime.yaml``.
 
 A launched Run Farm is tagged with a ``runfarmtag`` from
-``config_runtime.ini``, which is used to disambiguate multiple parallel Run
+``config_runtime.yaml``, which is used to disambiguate multiple parallel Run
 Farms; that is, you can have many Run Farms running, each running a different
 experiment at the same time, each with its own unique ``runfarmtag``. One
 convenient feature to add to your AWS management panel is the column for
@@ -129,11 +129,11 @@ that in the :ref:`fsimcluster-aws-panel` section.
 
 The other options in the ``[runfarm]`` section, ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice`` define *how* instances in
-the Run Farm are launched. See the documentation for ``config_runtime.ini`` for
+the Run Farm are launched. See the documentation for ``config_runtime.yaml`` for
 more details.
 
 **ERRATA**: One current requirement is that you must define a target config in
-the ``[targetconfig]`` section of ``config_runtime.ini`` that does not require
+the ``[targetconfig]`` section of ``config_runtime.yaml`` that does not require
 more resources than the Run Farm you are trying to launch. Thus, you should
 also setup your ``[targetconfig]`` parameters before trying to launch the
 corresponding Run Farm. This requirement will be removed in the future.
@@ -156,7 +156,7 @@ be by checking the AWS EC2 Management Panel.**
 -----------------------------
 
 This command terminates some or all of the instances in the Run Farm defined
-in your ``config_runtime.ini`` file, depending on the command line arguments
+in your ``config_runtime.yaml`` file, depending on the command line arguments
 you supply. By default, running ``firesim terminaterunfarm`` will terminate
 ALL instances with the specified ``runfarmtag``. When you run this command,
 it will prompt for confirmation that you want to terminate the listed instances.

@@ -4,18 +4,18 @@ Manager Configuration Files
 ===============================
 
 This page contains a centralized reference for all of the configuration options
-in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,
-and ``config_hwdb.ini``.
+in ``config_runtime.yaml``, ``config_build.yaml``, ``config_build_recipes.yaml``,
+and ``config_hwdb.yaml``.
 
 .. _config-runtime:
 
-``config_runtime.ini``
+``config_runtime.yaml``
 --------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+   :code: yaml
 
 Below, we outline each section and parameter in detail.
 
@@ -31,7 +31,7 @@ them.
 """""""""""""""
 
 Use ``runfarmtag`` to differentiate between different Run Farms in FireSim.
-Having multiple ``config_runtime.ini`` files with different ``runfarmtag``
+Having multiple ``config_runtime.yaml`` files with different ``runfarmtag``
 values allows you to run many experiments at once from the same manager instance.
 
 The instances launched by the ``launchrunfarm`` command will be tagged with
@@ -150,8 +150,8 @@ names within the topology itself, but all the ``example_Nconfig`` configurations
 are homogeneous and use this value for all nodes.
 
 You should set this to one of the hardware configurations you have defined already in
-``config_hwdb.ini``.  You should set this to the NAME (section title) of the
-hardware configuration from ``config_hwdb.ini``, NOT the actual agfi itself
+``config_hwdb.yaml``.  You should set this to the NAME (section title) of the
+hardware configuration from ``config_hwdb.yaml``, NOT the actual agfi itself
 (NOT something like ``agfi-XYZ...``).
 
 
@@ -254,13 +254,13 @@ when an assertion fires.
 
 .. _config-build:
 
-``config_build.ini``
+``config_build.yaml``
 --------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_build.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_build.yaml
+   :code: yaml
 
 Below, we outline each section and parameter in detail.
 
@@ -317,7 +317,7 @@ to set your max to the on-demand price for the instance.
 
 In this section, you can list as many build entries as you want to run
 for a particular call to the ``buildafi`` command (see
-``config_build_recipes.ini`` below for how to define a build entry). For
+``config_build_recipes.yaml`` below for how to define a build entry). For
 example, if we want to run the builds named ``[awesome-firesim-config]`` and ``[quad-core-awesome-firesim-config]``, we would
 write:
 
@@ -334,7 +334,7 @@ write:
 This is used by the ``shareagfi`` command to share the specified agfis with the
 users specified in the next (``[sharewithaccounts]``) section. In this section,
 you should specify the section title (i.e. the name you made up) for a hardware
-configuration in ``config_hwdb.ini``. For example, to share the hardware config:
+configuration in ``config_hwdb.yaml``. For example, to share the hardware config:
 
 ::
 
@@ -362,13 +362,13 @@ just for human readability, only the actual account IDs listed here matter. If y
 
 .. _config-build-recipes:
 
-``config_build_recipes.ini``
+``config_build_recipes.yaml``
 --------------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.yaml
+   :code: yaml
 
 Below, we outline each section and parameter in detail.
 
@@ -439,13 +439,13 @@ user-provided target project.
 
 .. _config-hwdb:
 
-``config_hwdb.ini``
+``config_hwdb.yaml``
 ---------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_hwdb.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_hwdb.yaml
+   :code: yaml
 
 
 This file tracks hardware configurations that you can deploy as simulated nodes
@@ -509,5 +509,5 @@ to the relative name of the config. For example,
 Add more hardware config sections, like ``[NAME_GOES_HERE_2]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can add as many of these entries to ``config_hwdb.ini`` as you want, following the format
+You can add as many of these entries to ``config_hwdb.yaml`` as you want, following the format
 discussed above (i.e. you provide ``agfi``, ``deploytripletoverride``, or ``customruntimeconfig``).

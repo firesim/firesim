@@ -25,17 +25,17 @@ To Build Binaries and RootFSes:
 
 Run Resource Requirements:
 
-.. include:: /../deploy/workloads/gapbs.ini
+.. include:: /../deploy/workloads/gapbs.yaml
    :start-line: 3
    :end-line: 6
-   :code: ini
+   :code: yaml
 
 
 To Run:
 
 .. code-block:: bash
 
-    ./run-workload.sh workloads/gapbs.ini --withlaunch
+    ./run-workload.sh workloads/gapbs.yaml --withlaunch
 
 Simulation times are host and target dependent. For reference, on a
 four-core rocket-based SoC with a DDR3 + 1 MiB LLC model, with a 90
