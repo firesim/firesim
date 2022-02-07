@@ -18,7 +18,7 @@ def firesim_input(prompt=None):
         rootLogger.critical(prompt)
 
     res = input()
-    rootLogger.debug("User Provided input():%s", res)
+    rootLogger.debug("User Provided input():'%s'", res)
 
     return res
 
