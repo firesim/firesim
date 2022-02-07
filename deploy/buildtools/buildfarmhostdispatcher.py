@@ -192,7 +192,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         bim_len = len(set([x.build_instance_market for x in build_farm_host_dispatchers]))
         sib_len = len(set([x.spot_interruption_behavior for x in build_farm_host_dispatchers]))
         smp_len = len(set([x.spot_max_price for x in build_farm_host_dispatchers]))
-        if it_len == 1 and bim_len == 1 and sib_len == 1 and smp_len == 1: 
+        if it_len == 1 and bim_len == 1 and sib_len == 1 and smp_len == 1:
             amt_requested = len(build_farm_host_dispatchers)
             instance_type = build_farm_host_dispatchers[0].instance_type
             build_instance_market = build_farm_host_dispatchers[0].build_instance_market

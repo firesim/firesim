@@ -81,8 +81,8 @@ def remote_setup(build_config):
         remote_home_dir = run('echo $HOME')
 
     # potentially override build dir
-    if build_config.build_host_dispatcher.override_remote_build_dir:
-        remote_home_dir = build_config.build_host_dispatcher.override_remote_build_dir
+    if build_config.build_farm_host_dispatcher.override_remote_build_dir:
+        remote_home_dir = build_config.build_farm_host_dispatcher.override_remote_build_dir
 
     remote_build_dir = "{}/firesim-build".format(remote_home_dir)
     remote_f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
@@ -98,14 +98,14 @@ def remote_setup(build_config):
             local_dir=local_awsfpga_dir,
             remote_dir=remote_f1_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
-            exclude="hdk/cl/developer_designs/cl_*",
+            exclude=["hdk/cl/developer_designs/cl_*"],
             extra_opts="-l", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
             local_dir="{}/{}/*".format(local_awsfpga_dir, fpga_build_postfix),
             remote_dir='{}/{}'.format(remote_awsfpga_dir, fpga_build_postfix),
-            exclude='build/checkpoints',
+            exclude=["build/checkpoints"],
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l", capture=True)
         rootLogger.debug(rsync_cap)
@@ -125,12 +125,12 @@ def aws_build(global_build_config, bypass=False):
 
     build_config = global_build_config.get_build_by_ip(env.host_string)
     if bypass:
-        build_config.build_host_dispatcher.release_build_host()
+        build_config.build_farm_host_dispatcher.release_build_farm_host()
         return
 
     # The default error-handling procedure. Send an email and teardown instance
     def on_build_failure():
-        """ Terminate build host and notify user that build failed """
+        """ Terminate build farm host and notify user that build failed """
 
         message_title = "FireSim FPGA Build Failed"
 
@@ -142,7 +142,7 @@ def aws_build(global_build_config, bypass=False):
         rootLogger.info(message_title)
         rootLogger.info(message_body)
 
-        build_config.build_host_dispatcher.release_build_host()
+        build_config.build_farm_host_dispatcher.release_build_farm_host()
 
     rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -158,10 +158,14 @@ def aws_build(global_build_config, bypass=False):
 
     # copy over generated RTL into local CL_DIR before remote
     with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-        run("""mkdir -p {}""".format(local_results_dir))
-        run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
+        localcap = local("""mkdir -p {}""".format(local_results_dir), capture=True)
+        rootLogger.debug(localcap)
+        rootLogger.debug(localcap.stderr)
+        localcap = local("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir), capture=True)
+        rootLogger.debug(localcap)
+        rootLogger.debug(localcap.stderr)
 
-    if build_config.build_host_dispatcher.is_local:
+    if build_config.build_farm_host_dispatcher.is_local:
         cl_dir = local_cl_dir
     else:
         cl_dir = remote_setup(build_config)
@@ -197,7 +201,7 @@ def aws_build(global_build_config, bypass=False):
         on_build_failure()
         return
 
-    build_config.build_host_dispatcher.release_build_host()
+    build_config.build_farm_host_dispatcher.release_build_farm_host()
 
 def aws_create_afi(build_config):
     """
@@ -280,7 +284,7 @@ def aws_create_afi(build_config):
         copy_afi_to_all_regions(afi)
 
         message_title = "FireSim FPGA Build Completed"
-        agfi_entry = "[" + afiname + "]\n"
+        agfi_entry = afiname + ":\n"
         agfi_entry += "    afgi: " + agfi + "\n"
         agfi_entry += "    deploy-triplet-override: null\n"
         agfi_entry += "    custom-runtime-config: null\n"
