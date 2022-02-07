@@ -34,18 +34,12 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Install Python CI requirements
         uses: ./.github/actions/repo-setup-aws
-        if: steps.job-start.outputs.run_result != 'success'
       - name: Launch AWS instance used for the FireSim manager (instance info found here)
         run: ./.github/scripts/launch-manager-instance.py
-        if: steps.job-start.outputs.run_result != 'success'
       - name: Setup N Github Actions Runners on AWS instance
         run: ./.github/scripts/setup-manager-self-hosted.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   setup-manager:
     name: setup-manager
@@ -53,17 +47,12 @@ jobs:
     runs-on: ${{ github.run_id }}
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
         uses: ./.github/actions/initialize-manager
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           max-runtime-hours: 10
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   build-default-workloads:
     name: build-default-workloads
@@ -73,12 +62,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Build default workloads (FireMarshal and paper workloads)
         run: .github/scripts/build-default-workloads.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-manager-pytests:
     name: run-manager-pytests
@@ -88,12 +73,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run pytests
         run: .github/scripts/run-manager-pytests.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-test-groupA:
     name: run-test-groupA
@@ -103,14 +84,10 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run CIGroupA Scala tests
         uses: ./.github/actions/run-scala-test
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupA"
-      - uses: ./.github/actions/job-end
 
   run-test-groupB:
     name: run-test-groupB
@@ -120,14 +97,10 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run CIGroupB Scala tests
         uses: ./.github/actions/run-scala-test
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupB"
-      - uses: ./.github/actions/job-end
 
   run-chipyard-tests:
     name: run-chipyard-tests
@@ -137,16 +110,12 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run other (CITests) Scala tests
         uses: ./.github/actions/run-scala-test
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           target-project: "firesim"
           test-package: "firesim.firesim"
           test-name: "CITests"
-      - uses: ./.github/actions/job-end
 
   run-basic-linux-poweroff:
     name: run-basic-linux-poweroff
@@ -157,12 +126,8 @@ jobs:
     environment: use-fpgas
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run linux-poweroff test
         run: .github/scripts/run-linux-poweroff.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-ini-api-tests:
     name: run-ini-api-tests
@@ -172,12 +137,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run .ini API verification tests
         run: .github/scripts/run-ini-api-tests.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   documentation-check:
     name: documentation-check
