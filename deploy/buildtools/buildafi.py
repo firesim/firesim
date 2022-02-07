@@ -224,7 +224,7 @@ def aws_create_afi(build_config):
     # construct the "tags" we store in the AGFI description
     tag_buildtriplet = build_config.get_chisel_triplet()
     tag_deploytriplet = tag_buildtriplet
-    if build_config.deploytriplet != "None":
+    if build_config.deploytriplet != None:
         tag_deploytriplet = build_config.deploytriplet
 
     # the asserts are left over from when we tried to do this with tags

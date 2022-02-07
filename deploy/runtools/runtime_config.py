@@ -31,11 +31,9 @@ class RuntimeHWConfig:
         self.name = name
         self.agfi = hwconfig_dict['agfi']
         self.deploytriplet = hwconfig_dict['deploy-triplet-override']
-        self.deploytriplet = self.deploytriplet if self.deploytriplet != "None" else None
         if self.deploytriplet is not None:
             rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file.  Make sure you understand why!".format(name))
         self.customruntimeconfig = hwconfig_dict['custom-runtime-config']
-        self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
 
@@ -321,7 +319,7 @@ class InnerRuntimeConfiguration:
 
         self.workload_name = runtime_dict['workload']['workload-name']
         # an extra tag to differentiate workloads with the same name in results names
-        self.suffixtag = runtime_dict['workload']['suffix-tag'] if 'suffix-tag' in runtime_dict['workload'] else ""
+        self.suffixtag = runtime_dict['workload']['suffix-tag'] if 'suffix-tag' in runtime_dict['workload'] else None
         self.terminateoncompletion = runtime_dict['workload']['terminate-on-completion'] == "yes"
 
     def __str__(self):
