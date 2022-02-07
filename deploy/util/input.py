@@ -15,7 +15,7 @@ def firesim_input(prompt=None):
 
     rootLogger = logging.getLogger()
     if prompt:
-	rootLogger.critical(prompt)
+        rootLogger.critical(prompt)
 
     res = input()
     rootLogger.debug("User Provided input():%s", res)

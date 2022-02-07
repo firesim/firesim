@@ -385,16 +385,16 @@ class InstanceDeployManager:
     def get_and_install_aws_fpga_sdk(self):
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
-	with prefix('cd ../'):
+        with prefix('cd ../'):
             # use local version of aws_fpga on runfarm nodes
             aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
             if "-dirty" in aws_fpga_upstream_version:
                 rootLogger.critical("Unable to use local changes to aws-fpga. Continuing without them.")
         self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(aws_fpga_upstream_version))
-	with warn_only():
+        with warn_only():
             run('git clone https://github.com/aws/aws-fpga')
             run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
-	with cd('/home/centos/aws-fpga'):
+        with cd('/home/centos/aws-fpga'):
             run('source sdk_setup.sh')
 
     def fpga_node_xdma(self):
