@@ -23,6 +23,7 @@ from buildtools.buildafi import *
 from buildtools.buildconfig import GlobalBuildConfig
 
 from util.streamlogger import StreamLogger, InfoStreamLogger
+from util.input import firesim_input
 
 ## below are tasks that users can call
 ## to add a task, add it here and to the choices array
@@ -81,7 +82,7 @@ def managerinit():
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    useremail = firesim_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
     if useremail != "":
         subscribe_to_firesim_topic(useremail)
     else:
@@ -116,7 +117,7 @@ def buildafi(globalbuildconf):
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+        userconfirm = firesim_input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
         if userconfirm == "yes":
             globalbuildconf.terminate_all_build_instances()
             rootLogger.info("Instances terminated. Please confirm in your AWS Management Console.")

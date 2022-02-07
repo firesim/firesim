@@ -8,6 +8,8 @@ from fabric.api import *
 from fabric.contrib.project import rsync_project
 import time
 
+from util.input import firesim_input
+
 rootLogger = logging.getLogger()
 
 def remote_kmsg(message):
@@ -336,7 +338,7 @@ class RunFarm:
 
         if not forceterminate:
             # --forceterminate was not supplied, so confirm with the user
-            userconfirm = input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
+            userconfirm = firesim_input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
         else:
             userconfirm = "yes"
 
