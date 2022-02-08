@@ -165,6 +165,18 @@ jobs:
       - name: Run linux-poweroff test
         run: .github/scripts/run-linux-poweroff.py
 
+  run-default-buildafi:
+    name: run-default-buildafi
+    needs: [run-basic-linux-poweroff]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    environment: build-afis
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run buildafi and commit changes
+        run: .github/scripts/run-default-buildafi.py
+
   run-ini-api-tests:
     name: run-ini-api-tests
     needs: [setup-manager]

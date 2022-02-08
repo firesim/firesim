@@ -11,3 +11,4 @@ ci_commit_sha1 = os.environ['GITHUB_SHA']
 ci_workdir = os.path.expanduser(os.environ['GITHUB_WORKSPACE'])
 ci_api_token = os.environ['GITHUB_TOKEN']
 ci_personal_api_token = os.environ['PERSONAL_ACCESS_TOKEN']
+ci_ref_name = os.environ['GITHUB_REF']
