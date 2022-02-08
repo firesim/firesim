@@ -64,8 +64,8 @@ void simif_f1_t::fpga_setup(int slot_id) {
     uint16_t pci_vendor_id = 0x1D0F; /* Amazon PCI Vendor ID */
     uint16_t pci_device_id = 0xF000; /* PCI Device ID preassigned by Amazon for F1 applications */
 
-    int rc = fpga_pci_init();
-    check_rc(rc, "fpga_pci_init FAILED");
+    int rc = fpga_mgmt_init();
+    check_rc(rc, "fpga_mgmt_init FAILED");
 
     /* check AFI status */
     struct fpga_mgmt_image_info info = {0};
