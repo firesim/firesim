@@ -43,6 +43,8 @@
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_AutoCounterModule
 #include "AutoCounterModule.h"
+#elif defined DESIGNNAME_AutoCounter32bRollover
+#include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterGlobalResetCondition
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule
