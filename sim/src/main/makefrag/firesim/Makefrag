@@ -152,7 +152,7 @@ nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 tracer_args = +tracefile=TRACEFILE
 blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
-autocounter_args = +autocounter-readrate=1000 +autocounter-filename=AUTOCOUNTERFILE
+autocounter_args = +autocounter-readrate=1000 +autocounter-filename-base=AUTOCOUNTERFILE
 # Neglecting this +arg will make the simulator use the same step size as on the
 # FPGA. This will make ML simulation more closely match results seen on the
 # FPGA at the expense of dramatically increased target runtime
