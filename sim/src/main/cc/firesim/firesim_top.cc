@@ -568,7 +568,7 @@ void firesim_top_t::run() {
     fprintf(stderr, "Commencing simulation.\n");
     record_start_times();
 
-    while (!simulation_complete() && !has_timed_out()) {
+    while (!simulation_complete() && !finished_scheduled_tasks()) {
         run_scheduled_tasks();
         take_steps(get_largest_stepsize(), false);
         while(!done() && !simulation_complete()){
@@ -582,10 +582,15 @@ void firesim_top_t::run() {
 
 int firesim_top_t::teardown() {
     int exitcode = exit_code();
-    if (exitcode) {
+
+    // If the simulator is idle and we've gotten here without any bridge
+    // indicating doneness, we've advanced to the +max_cycles limit in the fastest target clock domain.
+    bool max_cycles_timeout = !simulation_complete() && done() && finished_scheduled_tasks();
+
+    if (exitcode != 0) {
         fprintf(stderr, "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n", exitcode, get_end_tcycle());
-    } else if (!simulation_complete() && has_timed_out()) {
-        fprintf(stderr, "*** FAILED *** (timeout) after %" PRIu64 " cycles\n", get_end_tcycle());
+    } else if (max_cycles_timeout) {
+        fprintf(stderr, "*** FAILED *** +max_cycles specified timeout after %" PRIu64 " cycles\n", get_end_tcycle());
     } else {
         fprintf(stderr, "*** PASSED *** after %" PRIu64 " cycles\n", get_end_tcycle());
     }
@@ -601,5 +606,5 @@ int firesim_top_t::teardown() {
     }
 
     this->host_finish();
-    return (exitcode || has_timed_out()) ? EXIT_SUCCESS : EXIT_FAILURE;
+    return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
 }

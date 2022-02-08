@@ -11,7 +11,7 @@ import os
 
 basedir = sys.argv[1] + "/"
 
-files = map(lambda x: basedir + x, os.listdir(basedir))
+files = list(map(lambda x: basedir + x, os.listdir(basedir)))
 
 def process_uartlog(uartlogpath):
     """ process the log and then report the mean RTT for this link latency """
@@ -62,10 +62,10 @@ def get_simperf_from_file(basedirname):
 
     return [link_latency_us, simperf_mhz]
 
-resultarray = map(get_simperf_from_file, files)
+resultarray = list(map(get_simperf_from_file, files))
 
-link_latency = map(lambda x: x[0], resultarray)
-simperf_mhz = map(lambda x: x[1][1], resultarray)
+link_latency = list(map(lambda x: x[0], resultarray))
+simperf_mhz = list(map(lambda x: x[1][1], resultarray))
 
 resultarray = zip(link_latency, simperf_mhz)
 

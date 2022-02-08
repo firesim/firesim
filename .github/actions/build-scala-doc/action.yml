@@ -1,0 +1,10 @@
+name: build-scala-doc
+description: "Compiles Scala Doc"
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        source env.sh
+        make -C sim scaladoc
+      shell: bash

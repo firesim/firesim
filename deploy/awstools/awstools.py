@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from __future__ import print_function
 
 import random
@@ -151,7 +153,7 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
     else:
         assert False, "INVALID INSTANCE MARKET TYPE."
 
-def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None, randomsubnet=False):
+def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None, randomsubnet=False, user_data_file=None):
     """ Launch count instances of type instancetype, optionally with additional
     block devices mappings and instance tags
 
@@ -192,30 +194,37 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
         chosensubnet = subnets[startsubnet].subnet_id
         try:
-            instance = ec2.create_instances(ImageId=f1_image_id,
-                            EbsOptimized=True,
-                            BlockDeviceMappings=(blockdevices + [
-                                {
-                                    'DeviceName': '/dev/sdb',
-                                    'NoDevice': '',
-                                },
-                            ]),
-                            InstanceType=instancetype, MinCount=1, MaxCount=1,
-                            NetworkInterfaces=[
-                                {'SubnetId': chosensubnet,
-                                 'DeviceIndex':0,
-                                 'AssociatePublicIpAddress':True,
-                                 'Groups':[firesimsecuritygroup]}
-                            ],
-                            KeyName=keyname,
-                            TagSpecifications=([] if tags is None else [
-                                {
-                                    'ResourceType': 'instance',
-                                    'Tags': [{ 'Key': k, 'Value': v} for k, v in tags.items()],
-                                },
-                            ]),
-                            InstanceMarketOptions=marketconfig
-                        )
+            instance_args = {"ImageId":f1_image_id,
+                "EbsOptimized":True,
+                "BlockDeviceMappings":(blockdevices + [
+                    {
+                        'DeviceName': '/dev/sdb',
+                        'NoDevice': '',
+                    },
+                ]),
+                "InstanceType":instancetype,
+                "MinCount":1,
+                "MaxCount":1,
+                "NetworkInterfaces":[
+                    {'SubnetId': chosensubnet,
+                     'DeviceIndex':0,
+                     'AssociatePublicIpAddress':True,
+                     'Groups':[firesimsecuritygroup]}
+                ],
+                "KeyName":keyname,
+                "TagSpecifications":([] if tags is None else [
+                    {
+                        'ResourceType': 'instance',
+                        'Tags': [{ 'Key': k, 'Value': v} for k, v in tags.items()],
+                    },
+                ]),
+                "InstanceMarketOptions":marketconfig,
+            }
+            if user_data_file is not None:
+                with open(user_data_file, "r") as f:
+                    instance_args["UserData"] = ''.join(f.readlines())
+
+            instance = ec2.create_instances(**instance_args)
             instances += instance
 
         except client.exceptions.ClientError as e:
@@ -472,6 +481,7 @@ def main(args):
     parser.add_argument("--block_devices", type=yaml.safe_load, default=run_block_device_dict(), help="List of dicts with block device information. Used by \'launch\'.")
     parser.add_argument("--tags", type=yaml.safe_load, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
     parser.add_argument("--filters", type=yaml.safe_load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
+    parser.add_argument("--user_data_file", default=None, help="File path to use as user data (run on initialization). Used by \'launch\'.")
     args = parser.parse_args(args)
 
     if args.command == "launch":
@@ -483,7 +493,8 @@ def main(args):
             args.spot_max_price,
             args.block_devices,
             args.tags,
-            args.random_subnet)
+            args.random_subnet,
+            args.user_data_file)
         instids = get_instance_ids_for_instances(insts)
         print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)

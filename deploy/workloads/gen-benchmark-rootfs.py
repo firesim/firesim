@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -49,7 +49,7 @@ def copy_base_rootfs(base_rootfs, dest):
         os.makedirs(BUILD_DIR)
     except OSError:
         pass
-    print "Copying base rootfs {} to {}".format(base_rootfs, dest)
+    print("Copying base rootfs {} to {}".format(base_rootfs, dest))
     shutil.copy2(base_rootfs, dest)
 
 def mount_rootfs(rootfs):
@@ -60,7 +60,7 @@ def mount_rootfs(rootfs):
     rc = subprocess.check_output(["sudo", "mount", "-t", EXT_TYPE, rootfs, MOUNT_POINT])
 
 def cp_target(src, target_dest):
-    print "Copying src: {} to {} in target filesystem.".format(src, target_dest)
+    print("Copying src: {} to {} in target filesystem.".format(src, target_dest))
     if not os.path.isdir(target_dest):
         dirname = os.path.dirname(target_dest)
     else:
@@ -84,7 +84,7 @@ def generate_init_script(command):
     init_script_body = init_script_head + "    " + command + init_script_tail
 
     temp_script = BUILD_DIR + "/temp"
-    with open(temp_script, 'wb') as f:
+    with open(temp_script, 'w') as f:
         f.write(init_script_body)
 
     cp_target(temp_script, INIT_SCRIPT_NAME)
@@ -106,7 +106,7 @@ class Workload:
         self.outputs = outputs
 
     def generate_rootfs(self, base_rootfs, overlay, gen_init, output_dir):
-        print "\nGenerating a Rootfs image for " + self.name
+        print("\nGenerating a Rootfs image for " + self.name)
         dest_rootfs = output_dir + "/" + self.name + "." + EXT_TYPE
 
         copy_base_rootfs(base_rootfs, dest_rootfs)

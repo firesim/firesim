@@ -241,4 +241,6 @@ abstract class SplitTransactionModel(cfg: BaseConfig)(implicit p: Parameters)
   awQueue.io.enq.bits := nastiReq.aw.bits
   awQueue.io.enq.valid := nastiReq.aw.fire
   awQueue.io.deq.ready := newWReq
+  assert(awQueue.io.enq.ready || !nastiReq.aw.fire,
+    "AW queue in SplitTransaction timing model would overflow.")
 }

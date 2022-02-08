@@ -1,0 +1,10 @@
+name: install-ci-python-reqs
+description: "Installs python deps for manager-managing CI container"
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        pip3 install --upgrade pip==21.3.1
+        python3 -m pip install -r .github/scripts/requirements.txt
+      shell: bash
