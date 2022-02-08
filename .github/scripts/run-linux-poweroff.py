@@ -5,6 +5,7 @@ import sys
 from fabric.api import *
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
+from ci_variables import ci_workflow_run_id
 
 def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
@@ -19,6 +20,9 @@ def run_linux_poweroff():
             :arg: workload (str) - workload ini (abs path)
             :arg: timeout (str) - timeout amount for the workload to run
             """
+            # rename runfarm tag with a unique tag based on the ci workflow
+            run("sed -i 's/runfarmtag=.*/runfarmtag={}/g' {}".format(ci_workflow_run_id, workload))
+
             rc = 0
             with settings(warn_only=True):
                 # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
