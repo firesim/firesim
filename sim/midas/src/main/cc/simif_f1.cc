@@ -67,9 +67,6 @@ void simif_f1_t::fpga_setup(int slot_id) {
     int rc = fpga_mgmt_init();
     check_rc(rc, "fpga_mgmt_init FAILED");
 
-    rc = fpga_pci_init();
-    check_rc(rc, "fpga_pci_init FAILED");
-
     /* check AFI status */
     struct fpga_mgmt_image_info info = {0};
 
