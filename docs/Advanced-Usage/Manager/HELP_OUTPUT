@@ -2,14 +2,13 @@ usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
                [-r BUILDRECIPESCONFIGFILE] [-a HWDBCONFIGFILE]
                [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
                [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
-               [-m TERMINATESOMEM416] [-q]
-               
-               {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+               [-m TERMINATESOMEM416] [-q] [-t LAUNCHTIME]
+               {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck,tar2afi}
 
 FireSim Simulation Manager.
 
 positional arguments:
-  {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+  {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck,tar2afi}
                         Management task to run.
 
 optional arguments:
@@ -42,5 +41,10 @@ optional arguments:
   -m TERMINATESOMEM416, --terminatesomem416 TERMINATESOMEM416
                         Only used by terminatesome. Terminates this many of
                         the previously launched m4.16xlarges.
-  -q, --forceterminate  For terminaterunfarm, force termination without
-                        prompting user for confirmation. Defaults to False
+  -q, --forceterminate  For terminaterunfarm and buildafi, force termination
+                        without prompting user for confirmation. Defaults to
+                        False
+  -t LAUNCHTIME, --launchtime LAUNCHTIME
+                        Give the "Y-m-d--H-M-S" prefix of results-build
+                        directory. Useful for tar2afi when finishing a partial
+                        buildafi

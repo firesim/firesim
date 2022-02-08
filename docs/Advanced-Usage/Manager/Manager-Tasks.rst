@@ -73,6 +73,17 @@ This directory will contain:
 
 - ``FireSim-generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
 
+If this command is cancelled by a SIGINT, it will prompt for confirmation
+that you want to terminate the build instances.
+If you respond in the affirmative, it will move forward with the termination.
+If you do not want to have to confirm the termination (e.g. you are using this
+command in a script), you can give the command the ``--forceterminate`` command
+line argument. For example, the following will TERMINATE ALL BUILD INSTANCES IN THE
+BUILD FARM WITHOUT PROMPTING FOR CONFIRMATION IF A SIGINT IS RECEIVED:
+
+::
+
+    firesim buildafi --forceterminate
 
 .. _firesim-tar2afi:
 

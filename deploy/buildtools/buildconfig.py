@@ -130,6 +130,8 @@ class GlobalBuildConfig:
 
         self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
 
+        self.forceterminate = args.forceterminate
+
 
     def launch_build_instances(self):
         """ Launch an instance for the builds we want to do """

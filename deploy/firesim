@@ -116,7 +116,11 @@ def buildafi(globalbuildconf):
     def terminate_instances_handler(sig, frame):
         """ Handler that prompts to terminate build instances if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+
+        userconfirm = "yes"
+        if globalbuildconf.forceterminate == False:
+            userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+
         if userconfirm == "yes":
             globalbuildconf.terminate_all_build_instances()
             rootLogger.info("Instances terminated. Please confirm in your AWS Management Console.")
@@ -247,7 +251,7 @@ def construct_firesim_argparser():
                         help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
     parser.add_argument('-q', '--forceterminate', action='store_true',
-                        help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
+                        help='For terminaterunfarm and buildafi, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
 
