@@ -103,7 +103,7 @@ class RuntimeHWConfig:
 
         # TODO: supernode support
         tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
-        autocounterfile = "+autocounter-filename=AUTOCOUNTERFILE"
+        autocounterfile = "+autocounter-filename-base=AUTOCOUNTERFILE"
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
