@@ -15,7 +15,7 @@ def run_default_buildafi():
         with settings(warn_only=True):
             # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
             # pty=False needed to avoid issues with screen -ls stalling in fabric
-            rc = run("timeout {} firesim buildafi --forceterminate &> buildafi.log".format(timeout), pty=False).return_code
+            rc = run("timeout 16h firesim buildafi --forceterminate &> buildafi.log", pty=False).return_code
         if rc != 0:
             print("Buildafi failed. Printing last lines of log. See buildafi.log for full info")
             print("Log start =================================================================")
@@ -25,7 +25,7 @@ def run_default_buildafi():
         else:
             # parse the output yamls, replace the sample hwdb's agfi line
             hwdb_entry_dir = "{}/deploy/built-hwdb-entries".format(manager_fsim_dir)
-            built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x)]
+            built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x))]
 
             sample_hwdb_postfix = "deploy/sample-backup-configs/sample_config_hwdb.ini"
             sample_hwdb_filename = "{}/{}".format(manager_fsim_dir, sample_hwdb_postfix)

@@ -83,7 +83,7 @@ jobs:
       - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
         uses: ./.github/actions/initialize-manager
         with:
-          max-runtime-hours: 10
+          max-runtime-hours: 20
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
 
