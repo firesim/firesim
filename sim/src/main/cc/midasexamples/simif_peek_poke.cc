@@ -123,7 +123,7 @@ int simif_peek_poke_t::teardown() {
   record_end_times();
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
-  fprintf(stderr, "SEED: %ld\n", get_seed());
+  fprintf(stderr, "\nSEED: %ld\n", get_seed());
   this->print_simulation_performance_summary();
 
   this->host_finish();
