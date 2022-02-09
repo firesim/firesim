@@ -121,7 +121,7 @@ bool simif_peek_poke_t::expect(size_t id, mpz_t& expected) {
 
 int simif_peek_poke_t::teardown() {
   record_end_times();
-  fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
+  fprintf(stderr, "[%s] %s Test\n", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) { fprintf(stdout, " at cycle %llu", fail_t); }
   fprintf(stderr, "SEED: %ld\n", get_seed());
   this->print_simulation_performance_summary();

@@ -47,7 +47,7 @@ class simif_peek_poke_t: public virtual simif_t
 
   private:
     // simulation information
-    bool log;
+    bool log = true;
     bool pass = true;
     uint64_t t = 0;
     uint64_t fail_t = 0;
