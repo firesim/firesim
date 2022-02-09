@@ -51,9 +51,8 @@ class simif_peek_poke_t: public virtual simif_t
     bool pass = true;
     uint64_t t = 0;
     uint64_t fail_t = 0;
-    // random numbers
-    PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
 
+    PEEKPOKEBRIDGEMODULE_struct * defaultiowidget_mmio_addrs;
 
     bool wait_on(size_t flag_addr, double timeout) {
       midas_time_t start = timestamp();

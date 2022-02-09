@@ -9,7 +9,7 @@ simif_peek_poke_t::simif_peek_poke_t() {
 
 void simif_peek_poke_t::target_reset(int pulse_length) {
   poke(reset, 1);
-  take_steps(pulse_length, true);
+  this->step(pulse_length, true);
   poke(reset, 0);
 }
 
@@ -44,7 +44,9 @@ data_t simif_peek_poke_t::peek(size_t id, bool blocking) {
     }
     throw;
   }
-  if (log && blocking && !wait_on_stable_peeks(0.1))
+
+  bool peek_may_be_unstable = blocking && !wait_on_stable_peeks(0.1);
+  if (log && peek_may_be_unstable)
     fprintf(stderr, "* WARNING : The following peek is on an unstable value!\n");
   data_t value = read(((unsigned int*) OUTPUT_ADDRS)[id]);
   if (log)
