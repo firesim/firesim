@@ -1,12 +1,13 @@
 name: firesim-ci-process
 
 on:
-  # run ci when pring to dev/master/main (note: ci runs on the merge commit of the pr!)
+  # run ci when pring to dev/master/main/local-fpga (note: ci runs on the merge commit of the pr!)
   pull_request:
     branches:
       - dev
       - master
       - main
+      - local-fpga
 
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
@@ -176,6 +177,20 @@ jobs:
         id: job-start
       - name: Run .ini API verification tests
         run: .github/scripts/run-ini-api-tests.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
+
+  run-vitis-compile:
+    name: run-vitis-compile
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - name: Run simple Vitis build
+        run: .github/scripts/run-simple-vitis-build.py
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 

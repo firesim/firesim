@@ -2,7 +2,8 @@
 
 package firesim.passes
 
-import firesim.util.{DesiredHostFrequency, BuildStrategy}
+import firesim.util.{BuildStrategy}
+import midas.{DesiredHostFrequency}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.stage.GoldenGateOutputFileAnnotation
 
