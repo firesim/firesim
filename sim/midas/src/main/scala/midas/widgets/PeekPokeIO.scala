@@ -192,7 +192,7 @@ object PeekPokeTokenizedIO {
   // serialiable port information
   def apply(key: PeekPokeKey): PeekPokeTokenizedIO = {
     // Instantiate a useless module from which we can get a hardware type with parsePorts
-    val dummyModule = Module(new MultiIOModule {
+    val dummyModule = Module(new Module {
       // This spoofs the sources that were passed to the companion object ioList
       // pokes and peeks are reversed because PeekPokeTargetIO is going to flip them
       val io = IO(new RegeneratedTargetIO(key.pokes, key.peeks))

@@ -69,11 +69,11 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   // Host request gating -- wait until we have a complete W transaction before
   // we issue it.
   val wCredits = SatUpDownCounter(cfg.maxWrites)
-  wCredits.inc := awQueue.io.enq.fire()
-  wCredits.dec := wQueue.io.deq.fire() && wQueue.io.deq.bits.last
+  wCredits.inc := awQueue.io.enq.fire
+  wCredits.dec := wQueue.io.deq.fire && wQueue.io.deq.bits.last
   val awCredits = SatUpDownCounter(cfg.maxWrites)
-  awCredits.inc := wQueue.io.enq.fire() && wQueue.io.enq.bits.last
-  awCredits.dec := awQueue.io.deq.fire()
+  awCredits.inc := wQueue.io.enq.fire && wQueue.io.enq.bits.last
+  awCredits.dec := awQueue.io.deq.fire
 
   // All the sources of host stalls
   val tFireHelper = DecoupledHelper(
@@ -99,7 +99,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   }
 
 
-  val read_req_done = arQueue.io.enq.fire()
+  val read_req_done = arQueue.io.enq.fire
 
   // FIFO that tracks the relative order of reads and writes are they are received 
   // bit 0 = Read, bit 1 = Write

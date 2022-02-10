@@ -100,16 +100,16 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
 
 
   val pendingReads = SatUpDownCounter(cfg.maxReads)
-  pendingReads.inc := tNasti.ar.fire()
-  pendingReads.dec := tNasti.r.fire() && tNasti.r.bits.last
+  pendingReads.inc := tNasti.ar.fire
+  pendingReads.dec := tNasti.r.fire && tNasti.r.bits.last
 
   val pendingAWReq = SatUpDownCounter(cfg.maxWrites)
-  pendingAWReq.inc := tNasti.aw.fire()
-  pendingAWReq.dec := tNasti.b.fire()
+  pendingAWReq.inc := tNasti.aw.fire
+  pendingAWReq.dec := tNasti.b.fire
 
   val pendingWReq = SatUpDownCounter(cfg.maxWrites)
-  pendingWReq.inc := tNasti.w.fire() && tNasti.w.bits.last
-  pendingWReq.dec := tNasti.b.fire()
+  pendingWReq.inc := tNasti.w.fire && tNasti.w.bits.last
+  pendingWReq.dec := tNasti.b.fire
 
   assert(!tNasti.ar.valid || (tNasti.ar.bits.burst === NastiConstants.BURST_INCR),
     "Illegal ar request: memory model only supports incrementing bursts")
@@ -239,7 +239,7 @@ abstract class SplitTransactionModel(cfg: BaseConfig)(implicit p: Parameters)
   }
 
   awQueue.io.enq.bits := nastiReq.aw.bits
-  awQueue.io.enq.valid := nastiReq.aw.fire()
+  awQueue.io.enq.valid := nastiReq.aw.fire
   awQueue.io.deq.ready := newWReq
   assert(awQueue.io.enq.ready || !nastiReq.aw.fire,
     "AW queue in SplitTransaction timing model would overflow.")
