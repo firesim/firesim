@@ -3,36 +3,36 @@
 set -ex
 set -o pipefail
 
-echo "machine launch script started" > /home/centos/machine-launchstatus
-sudo chgrp centos /home/centos/machine-launchstatus
-sudo chown centos /home/centos/machine-launchstatus
+echo "machine launch script started" > $HOME/machine-launchstatus
 
 {
-sudo yum install -y ca-certificates
-sudo yum install -y mosh
-sudo yum groupinstall -y "Development tools"
-sudo yum install -y gmp-devel mpfr-devel libmpc-devel zlib-devel vim git java java-devel
-curl https://www.scala-sbt.org/sbt-rpm.repo | sudo tee /etc/yum.repos.d/scala-sbt-rpm.repo
-sudo yum install -y sbt texinfo gengetopt libffi-devel
-sudo yum install -y expat-devel libusb1-devel ncurses-devel cmake "perl(ExtUtils::MakeMaker)"
+sudo apt-get update
+sudo apt-get install -y ca-certificates
+sudo apt-get install -y mosh
+sudo apt-get install -y libgmp-dev libmpfr-dev libmpc-dev zlib1g-dev vim default-jdk default-jre
+# install sbt: https://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html#Ubuntu+and+other+Debian-based+distributions
+echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+sudo apt-get update
+sudo apt-get install -y sbt
+sudo apt-get install -y texinfo gengetopt libffi-dev
+sudo apt-get install -y libexpat1-dev libusb-dev libncurses5-dev cmake libextutils-makemaker-cpanfile-perl
 # deps for poky
-sudo yum install -y python36 patch diffstat texi2html texinfo subversion chrpath git wget
+sudo apt-get install -y python3.8 patch diffstat texi2html texinfo subversion chrpath git wget
 # deps for qemu
-sudo yum install -y gtk3-devel
+sudo apt-get install -y libgtk-3-dev
 # deps for firesim-software (note that rsync is installed but too old)
-sudo yum install -y python36-pip python36-devel rsync
+sudo apt-get install -y python3-pip python3.8-dev rsync
 # Install GNU make 4.x (needed to cross-compile glibc 2.28+)
-sudo yum install -y centos-release-scl
-sudo yum install -y devtoolset-8-make
+sudo apt-get install -y make
 
 # install DTC
-sudo yum -y install dtc
+sudo apt-get -y install device-tree-compiler
 
-# get a proper version of git
-sudo yum -y remove git
-sudo yum -y install epel-release
-sudo yum -y install https://repo.ius.io/ius-release-el7.rpm
-sudo yum -y install git224
+# install git >= 2.17
+sudo add-apt-repository ppa:git-core/ppa -y
+sudo apt-get update
+sudo apt-get install git -y
 
 # install verilator
 if ! command -v verilator &> /dev/null
@@ -76,8 +76,9 @@ sudo python3 -m pip install pyyaml==5.4.1
 # setup argcomplete
 activate-global-python-argcomplete
 
-} 2>&1 | tee /home/centos/machine-launchstatus.log
+# default /bin/sh to bash (not dash)
+sudo dpkg-reconfigure -p critical dash
 
-# get a regular prompt
-echo "PS1='\u@\H:\w\\$ '" >> /home/centos/.bashrc
-echo "machine launch script completed" >> /home/centos/machine-launchstatus
+} 2>&1 | tee $HOME/machine-launchstatus.log
+
+echo "machine launch script completed" >> $HOME/machine-launchstatus

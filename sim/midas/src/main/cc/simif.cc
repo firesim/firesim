@@ -3,6 +3,7 @@
 #include "simif.h"
 #include <fstream>
 #include <algorithm>
+#include <inttypes.h>
 
 midas_time_t timestamp(){
   struct timeval tv;
@@ -44,7 +45,7 @@ void simif_t::init(int argc, char** argv) {
     }
   }
   gen.seed(seed);
-  fprintf(stderr, "random min: 0x%llx, random max: 0x%llx\n", gen.min(), gen.max());
+  fprintf(stderr, "random min: 0x%" PRIx64 ", random max: 0x%" PRIx64 "\n", gen.min(), gen.max());
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
@@ -165,7 +166,7 @@ void simif_t::print_simulation_performance_summary() {
     fprintf(stderr, "%.3f KHz\n", measured_host_frequency);
   }
 
-  fprintf(stderr, "Target Cycles Emulated: %llu\n", end_tcycle);
+  fprintf(stderr, "Target Cycles Emulated: %" PRIu64 "\n", end_tcycle);
   fprintf(stderr, "Effective Target Frequency: ");
   if (sim_speed > 1000.0) {
     fprintf(stderr,"%.3f MHz\n", sim_speed / 1000.0);
