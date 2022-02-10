@@ -5,6 +5,7 @@ package models
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{ParameterizedBundle, GenericParameterizedBundle, UIntIsOneOf}
 import freechips.rocketchip.unittest.UnitTest
+import freechips.rocketchip.tilelink._
 import junctions._
 
 import chisel3._
@@ -265,6 +266,28 @@ trait HasAXI4Id extends HasNastiParameters { val id = UInt(nastiXIdBits.W) }
 trait HasAXI4IdAndLen extends HasAXI4Id { val len = UInt(nastiXLenBits.W) }
 trait HasReqMetaData extends HasAXI4IdAndLen { val addr = UInt(nastiXAddrBits.W) }
 
+class NastiAddressAttr (val addrBits: Int, val sizeBits: Int, val lenBits: Int)
+  (implicit val p: Parameters) extends Bundle { 
+  val addr = UInt(addrBits.W)
+  val size = UInt(sizeBits.W) 
+  val len = UInt(lenBits.W) 
+}
+
+class AddressLimits (val addrBits: Int) extends Bundle {
+  val addrmin = UInt(addrBits.W)
+  val addrmax = UInt(addrBits.W)
+}
+
+
+object AddressRangePair {
+  def apply(addr: UInt, size: UInt, len: UInt): (UInt, UInt) = {
+    val bytes = 1.U << size
+    val dataSize = bytes * len
+    val addrMax = addr + dataSize 
+    (addr, addrMax)
+  }
+}
+
 class TransactionMetaData(implicit val p: Parameters) extends Bundle with HasAXI4IdAndLen {
   val isWrite = Bool()
 }
@@ -348,6 +371,50 @@ class AXI4Releaser(implicit p: Parameters) extends Module {
   io.b.bits := io.egressResp.bBits
   io.egressResp.bReady := io.b.ready
 }
+
+class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, size: Int, len: Int) 
+  (implicit val p: Parameters) extends Module with HasFIFOPointers {
+  val io  = IO(new Bundle {
+    val enq = Flipped(Valid(new NastiAddressAttr(addrWidth, size, len)))
+    val deq = Input(Bool())
+    val match_address = Input(new NastiAddressAttr(addrWidth, size, len))
+    val hit = Output(Bool())
+  })
+
+  val addrs = RegInit(VecInit(Seq.fill(entries)({
+    val w = Wire(Valid(new AddressLimits(addrWidth)))
+    w.valid := false.B
+    w.bits := DontCare
+    w
+  })))
+  do_enq := io.enq.valid
+  do_deq := io.deq
+
+  val (addrmin, addrmax) = AddressRangePair(io.enq.bits.addr,
+                                            io.enq.bits.size,
+                                            io.enq.bits.len)
+  assert(!full || (!do_enq || do_deq)) // Since we don't have backpressure, check for overflow
+  when (do_enq) {
+    addrs(enq_ptr.value).valid := true.B
+    addrs(enq_ptr.value).bits.addrmin := addrmin 
+    addrs(enq_ptr.value).bits.addrmax := addrmax 
+  }
+
+  when (do_deq) {
+    addrs(deq_ptr.value).valid := false.B
+  }
+
+  val (inAddrMin, inAddrMax) = AddressRangePair(io.match_address.addr,
+                                            io.match_address.size,
+                                            io.match_address.len)
+
+  io.hit := addrs.exists({entry =>  entry.valid && 
+                                    ((entry.bits.addrmin <= inAddrMin && 
+                                      inAddrMin <= entry.bits.addrmax) ||  
+                                    (inAddrMin <= entry.bits.addrmin && 
+                                      entry.bits.addrmin <= inAddrMax))})
+}
+
 
 class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with HasFIFOPointers {
   val io  = IO(new Bundle {
@@ -751,4 +818,60 @@ class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends MultiI
     s"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
   assert(!axi4.aw.fire || axi4.aw.bits.len < cfg.maxWriteLength.U,
     s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+}
+
+class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p: Parameters) extends UnitTest {
+
+  val addrBits = 64
+  val sizeBits = 2
+  val lenBits = 8
+  val nastiP = p.alterPartial({
+    case NastiKey => NastiParameters(64, 16, 4)
+  })
+
+  val tranXs = RegInit(0.U(12.W))
+
+  val enqdeq = RegInit(false.B)
+  enqdeq := !enqdeq
+
+  val randEnqBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
+  val enqAddr = randEnqBits << 8     //To give ample space for beats in address 
+  val enqSize = LFSRNoiseMaker(sizeBits, enqdeq) 
+  val enqLen = LFSRNoiseMaker(lenBits, enqdeq) 
+
+  val randInBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
+  val inAddr = randInBits << 8      //to give ample space for beats in address 
+  val inSize = LFSRNoiseMaker(sizeBits, enqdeq) 
+  val inLen = LFSRNoiseMaker(lenBits, enqdeq) 
+
+  val checker = Module(new FIFOAlignedAddressMatcher(16, addrBits, sizeBits, lenBits)).io
+  
+  checker.match_address.addr := 0.U + inAddr 
+  checker.match_address.size := 0.U + inSize 
+  checker.match_address.len := 0.U + inLen 
+  checker.deq := enqdeq 
+
+  when(!enqdeq) {
+    tranXs := tranXs + 1.U
+  }
+
+  checker.enq.bits.addr := 0.U + enqAddr 
+  checker.enq.bits.size := 0.U + enqSize 
+  checker.enq.bits.len := 0.U + enqLen 
+  checker.enq.valid := !enqdeq 
+
+  val enqRange = (1.U << enqSize)*enqLen
+  val inRange = (1.U << inSize)*inLen
+
+  val enqAddrEnd = enqAddr + enqRange
+  val inAddrEnd = inAddr + inRange
+
+  val noOverlap = enqAddr < inAddr && enqAddrEnd < inAddr || enqAddr > inAddrEnd && enqAddrEnd > inAddrEnd 
+
+  val hit = !noOverlap && !enqdeq
+
+  assert(!noOverlap && checker.hit || noOverlap && !checker.hit || !enqdeq )
+
+  io.finished := tranXs === tranXCount.U 
+
 }

@@ -7,7 +7,7 @@ import freechips.rocketchip.util.{DecoupledHelper}
 import junctions._
 
 import chisel3._
-import chisel3.util.{Queue}
+import chisel3.util.{Queue, Decoupled}
 
 import midas.core.{HostDecoupled}
 import midas.widgets.{SatUpDownCounter}
@@ -55,7 +55,10 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
     // This is target valid and not decoupled because the model has handshaked
     // the target-level channels already for us
     val nastiInputs = Flipped(HostDecoupled((new ValidNastiReqChannels)))
+    val nastiWRespInputs = Flipped(Decoupled(new NastiWriteResponseChannel)) 
+    val nastiRRespInputs = Flipped(Decoupled(new NastiReadDataChannel)) 
     val nastiOutputs = new NastiReqChannels
+    val nastiRespOutputs = new NastiRespChannels 
     val relaxed = Input(Bool())
     val host_mem_idle = Input(Bool())
     val host_read_inflight = Input(Bool())
@@ -69,18 +72,35 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   // Host request gating -- wait until we have a complete W transaction before
   // we issue it.
   val wCredits = SatUpDownCounter(cfg.maxWrites)
-  wCredits.inc := awQueue.io.enq.fire()
-  wCredits.dec := wQueue.io.deq.fire() && wQueue.io.deq.bits.last
+  wCredits.inc := awQueue.io.enq.fire
+  wCredits.dec := wQueue.io.deq.fire && wQueue.io.deq.bits.last
   val awCredits = SatUpDownCounter(cfg.maxWrites)
-  awCredits.inc := wQueue.io.enq.fire() && wQueue.io.enq.bits.last
-  awCredits.dec := awQueue.io.deq.fire()
+  awCredits.inc := wQueue.io.enq.fire && wQueue.io.enq.bits.last
+  awCredits.dec := awQueue.io.deq.fire
+
+  //TODO also have to maintain awQueue address queue for read address matcher
+  val nastiInputs = new NastiReqChannels 
+  val addrWidth = nastiInputs.aw.bits.nastiXAddrBits 
+  val nastiLength = nastiInputs.aw.bits.nastiXLenBits
+  val nastiSize = nastiInputs.aw.bits.nastiXSizeBits
+  val idWidth = nastiInputs.aw.bits.id
+
+
+  //These consists of transactions in flight with host-DRAM. The number of entries
+  //are 2x to accommodate the requests that are not yet dequeued to host-DRAM and
+  //that are in host-DRAM. These structures store IDs of transactions, sent to host-DRAM
+  //and the responses are piggybacked with IDs in the same order.
+  val arIDQueue = Module(new Queue(idWidth, cfg.maxReads*2))
+  val awIDQueue = Module(new Queue(idWidth, cfg.maxWrites*2))
 
   // All the sources of host stalls
   val tFireHelper = DecoupledHelper(
     io.nastiInputs.hValid,
     awQueue.io.enq.ready,
     wQueue.io.enq.ready,
-    arQueue.io.enq.ready)
+    arQueue.io.enq.ready,
+    arIDQueue.io.enq.ready,
+    awIDQueue.io.enq.ready)
 
 
   val ingressUnitStall = !tFireHelper.fire(io.nastiInputs.hValid)
@@ -94,28 +114,68 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
                        ((awCredits.value < wCredits.value) && awCredits.inc) ||
                         awCredits.inc && wCredits.inc
 
+  val read_req_done = arQueue.io.enq.fire
   when (!io.relaxed) {
     Seq(awCredits, wCredits) foreach { _.dec := write_req_done }
   }
 
+  val readMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxReads*2, addrWidth, nastiLength, nastiSize)).io
+  readMatcher.enq.valid := arIDQueue.io.enq.fire
+  readMatcher.enq.bits.addr := io.nastiInputs.hBits.ar.bits.addr
+  readMatcher.enq.bits.size := io.nastiInputs.hBits.ar.bits.size
+  readMatcher.enq.bits.len := io.nastiInputs.hBits.ar.bits.len
+  readMatcher.match_address.addr := io.nastiInputs.hBits.aw.bits.addr
+  readMatcher.match_address.size := io.nastiInputs.hBits.aw.bits.size
+  readMatcher.match_address.len := io.nastiInputs.hBits.aw.bits.len
 
-  val read_req_done = arQueue.io.enq.fire()
+  val writeMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxWrites*2, addrWidth, nastiLength, nastiSize)).io
+  writeMatcher.enq.valid := awIDQueue.io.enq.fire 
+  writeMatcher.enq.bits.addr := io.nastiInputs.hBits.aw.bits.addr
+  writeMatcher.enq.bits.size := io.nastiInputs.hBits.aw.bits.size
+  writeMatcher.enq.bits.len := io.nastiInputs.hBits.aw.bits.len
+  writeMatcher.match_address.addr := io.nastiInputs.hBits.ar.bits.addr
+  writeMatcher.match_address.size := io.nastiInputs.hBits.ar.bits.size
+  writeMatcher.match_address.len := io.nastiInputs.hBits.ar.bits.len
 
+  arIDQueue.io.enq.valid := tFireHelper.fire(arIDQueue.io.enq.ready) && io.nastiInputs.hBits.ar.valid
+  arIDQueue.io.enq.bits := io.nastiInputs.hBits.ar.bits.id
+  awIDQueue.io.enq.valid := tFireHelper.fire(awIDQueue.io.enq.ready) && io.nastiInputs.hBits.aw.valid
+  awIDQueue.io.enq.bits := io.nastiInputs.hBits.aw.bits.id
   // FIFO that tracks the relative order of reads and writes are they are received 
   // bit 0 = Read, bit 1 = Write
   val xaction_order = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
-  xaction_order.io.enqA.valid := read_req_done
+  val xaction_order_collisions = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
   xaction_order.io.enqA.bits := true.B
-  xaction_order.io.enqB.valid := write_req_done
   xaction_order.io.enqB.bits := false.B
+  xaction_order_collisions.io.enqA.valid := read_req_done
+  xaction_order_collisions.io.enqA.bits := writeMatcher.hit
+  xaction_order_collisions.io.enqB.valid := write_req_done
+  xaction_order_collisions.io.enqB.bits := readMatcher.hit
 
-  val do_hread = io.relaxed ||
+  val writeCollisions = SatUpDownCounter(cfg.maxWrites)
+
+  val readCollisions = SatUpDownCounter(cfg.maxReads)
+
+  writeCollisions.inc := awQueue.io.enq.fire && readMatcher.hit && io.nastiInputs.hBits.aw.valid 
+  writeCollisions.dec := xaction_order.io.deq.valid && !xaction_order.io.deq.bits &&
+                           xaction_order_collisions.io.deq.valid && xaction_order_collisions.io.deq.bits
+  readCollisions.inc := arQueue.io.enq.fire && writeMatcher.hit && io.nastiInputs.hBits.ar.valid
+  readCollisions.dec := xaction_order.io.deq.valid && xaction_order.io.deq.bits &&
+                           xaction_order_collisions.io.deq.valid && xaction_order_collisions.io.deq.bits
+
+  val noCollisions = writeCollisions.value === 0.U && readCollisions.value === 0.U
+
+  xaction_order.io.enqA.valid := read_req_done 
+  xaction_order.io.enqB.valid := write_req_done
+
+  val do_hread = (io.relaxed && noCollisions) ||
     (io.host_mem_idle || io.host_read_inflight) && xaction_order.io.deq.valid && xaction_order.io.deq.bits
 
-  val do_hwrite = Mux(io.relaxed, !awCredits.empty,
+  val do_hwrite = Mux((io.relaxed && noCollisions), !awCredits.empty,
     io.host_mem_idle && xaction_order.io.deq.valid && !xaction_order.io.deq.bits)
 
   xaction_order.io.deq.ready := io.nastiOutputs.ar.fire || io.nastiOutputs.aw.fire
+  xaction_order_collisions.io.deq.ready := io.nastiOutputs.ar.fire || io.nastiOutputs.aw.fire
 
   val do_hwrite_data_reg = RegInit(false.B)
   when (io.nastiOutputs.aw.fire) {
@@ -124,7 +184,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
     do_hwrite_data_reg := false.B
   }
 
-  val do_hwrite_data = Mux(io.relaxed, !wCredits.empty, do_hwrite_data_reg)
+  val do_hwrite_data = Mux((io.relaxed && noCollisions), !wCredits.empty, do_hwrite_data_reg)
 
 
   io.nastiInputs.hReady := !ingressUnitStall
@@ -134,6 +194,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
 
   io.nastiOutputs.ar <> arQueue.io.deq
   io.nastiOutputs.ar.valid := do_hread && arQueue.io.deq.valid
+  io.nastiOutputs.ar.bits.id := 0.U 
   arQueue.io.deq.ready := do_hread && io.nastiOutputs.ar.ready
 
   awQueue.io.enq.bits := io.nastiInputs.hBits.aw.bits
@@ -142,7 +203,18 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   wQueue.io.enq.valid := tFireHelper.fire(wQueue.io.enq.ready) && io.nastiInputs.hBits.w.valid
 
   io.nastiOutputs.aw.bits := awQueue.io.deq.bits
+  io.nastiOutputs.aw.bits.id := 0.U 
   io.nastiOutputs.w.bits := wQueue.io.deq.bits
+
+  io.nastiRespOutputs.r <> io.nastiRRespInputs
+  io.nastiRespOutputs.b <> io.nastiWRespInputs
+  io.nastiRespOutputs.b.bits.id := awIDQueue.io.deq.bits
+  io.nastiRespOutputs.r.bits.id := arIDQueue.io.deq.bits
+  awIDQueue.io.deq.ready := io.nastiWRespInputs.fire
+  arIDQueue.io.deq.ready := io.nastiRRespInputs.fire && io.nastiRRespInputs.bits.last
+  writeMatcher.deq := io.nastiWRespInputs.fire
+  readMatcher.deq := io.nastiRRespInputs.fire && io.nastiRRespInputs.bits.last
+  
 
   io.nastiOutputs.aw.valid := do_hwrite && awQueue.io.deq.valid
   awQueue.io.deq.ready := do_hwrite && io.nastiOutputs.aw.ready

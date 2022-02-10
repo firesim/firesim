@@ -126,6 +126,7 @@ class CheckHardwiredValuesTest extends FASEDTest("AXI4Fuzzer", "NT10e3_AddrBits1
 
 class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_QuadChannel_DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
+class AXI4FuzzerFCFSTestWithRestrictedAddr extends FASEDTest("AXI4Fuzzer", "FCFSConfigWithRestrictedAddr", "DefaultF1Config")
 class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig", "DefaultF1Config")
 class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "DefaultF1Config") {
   //override def runTests = {
