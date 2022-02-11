@@ -37,7 +37,7 @@ VERSION=`grep '^VERSION_ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"'`
 MAJOR=${VERSION%.*}
 ARCH=`uname -m`
 
-if [ $FLAVOR != "ubuntu" ] || [ $FLAVOR != "centos" ]; then
+if [ $FLAVOR != "ubuntu" ] && [ $FLAVOR != "centos" ]; then
     echo "Unknown OS flavor $FLAVOR"
     exit 1
 fi
@@ -116,9 +116,9 @@ elif [ $FLAVOR == "ubuntu" ]; then
     # firemarshal deps
     UB_LIST+=( python3-pip python3.8-dev rsync )
     # cross-compile glibc 2.28+ deps
-    RH_LIST+=( make )
+    UB_LIST+=( make )
     # misc deps
-    UB_LIST=( \
+    UB_LIST+=( \
         sbt \
         ca-certificates \
         mosh \
@@ -147,9 +147,8 @@ elif [ $FLAVOR == "ubuntu" ]; then
 fi
 
 # install verilator
-git clone http://git.veripool.org/git/verilator
+git clone http://git.veripool.org/git/verilator --depth 1 --branch v4.034
 cd verilator/
-git checkout v4.034
 autoconf && ./configure && make -j4 && sudo make install
 cd ..
 
