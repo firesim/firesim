@@ -559,7 +559,7 @@ like printf synthesis, are expressed in terms of this base clock.
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a>, <span class="extype" name="chisel3.BlackBox">BlackBox</span>, <span class="extype" name="chisel3.internal.BaseBlackBox">BaseBlackBox</span>, <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a>, <span class="extype" name="chisel3.BlackBox">BlackBox</span>, <span class="extype" name="chisel3.internal.BaseBlackBox">BaseBlackBox</span>, <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span>, <span class="extype" name="chisel3.experimental.hierarchy.IsInstantiable">IsInstantiable</span>, <span class="extype" name="chisel3.internal.HasId">HasId</span>, <span class="extype" name="chisel3.internal.InstanceId">InstanceId</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -585,7 +585,7 @@ like printf synthesis, are expressed in terms of this base clock.
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.RationalClockBridge"><span>RationalClockBridge</span></li><li class="in" name="midas.widgets.ClockBridgeConsts"><span>ClockBridgeConsts</span></li><li class="in" name="chisel3.BlackBox"><span>BlackBox</span></li><li class="in" name="chisel3.internal.BaseBlackBox"><span>BaseBlackBox</span></li><li class="in" name="chisel3.experimental.BaseModule"><span>BaseModule</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.RationalClockBridge"><span>RationalClockBridge</span></li><li class="in" name="midas.widgets.ClockBridgeConsts"><span>ClockBridgeConsts</span></li><li class="in" name="chisel3.BlackBox"><span>BlackBox</span></li><li class="in" name="chisel3.internal.BaseBlackBox"><span>BaseBlackBox</span></li><li class="in" name="chisel3.experimental.BaseModule"><span>BaseModule</span></li><li class="in" name="chisel3.experimental.hierarchy.IsInstantiable"><span>IsInstantiable</span></li><li class="in" name="chisel3.internal.HasId"><span>HasId</span></li><li class="in" name="chisel3.internal.InstanceId"><span>InstanceId</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -863,22 +863,6 @@ like printf synthesis, are expressed in terms of this base clock.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chisel3.internal.HasId#computeName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]"></a><a id="computeName(Option[String],Option[String]):Option[String]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/RationalClockBridge.html#computeName(defaultPrefix:Option[String],defaultSeed:Option[String]):Option[String]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">computeName</span><span class="params">(<span name="defaultPrefix">defaultPrefix: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="defaultSeed">defaultSeed: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HasId</dd></dl></div>
     </li><li name="chisel3.experimental.BaseModule#desiredName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="desiredName:String"></a>
       <span class="permalink">
@@ -968,22 +952,6 @@ like printf synthesis, are expressed in terms of this base clock.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chisel3.experimental.BaseModule#getIds" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getIds:Seq[chisel3.internal.HasId]"></a><a id="getIds:Seq[HasId]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/RationalClockBridge.html#getIds:Seq[chisel3.internal.HasId]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getIds</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="chisel3.internal.HasId">HasId</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>BaseModule</dd></dl></div>
     </li><li name="chisel3.experimental.BaseModule#getModulePorts" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getModulePorts:Seq[chisel3.Data]"></a><a id="getModulePorts:Seq[Data]"></a>
       <span class="permalink">
@@ -1048,7 +1016,7 @@ like printf synthesis, are expressed in terms of this base clock.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>BaseModule → HasId → InstanceId</dd></dl></div>
-    </li><li name="midas.widgets.RationalClockBridge#io" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="midas.widgets.RationalClockBridge#io" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="io:chisel3.Bundle{valclocks:chisel3.Vec[chisel3.Clock]}"></a><a id="io:Bundle{valclocks:chisel3.Vec[chisel3.Clock]}"></a>
       <span class="permalink">
       <a href="../../midas/widgets/RationalClockBridge.html#io:chisel3.Bundle{valclocks:chisel3.Vec[chisel3.Clock]}" title="Permalink">
@@ -1063,7 +1031,7 @@ like printf synthesis, are expressed in terms of this base clock.
         <span class="name">io</span><span class="result">: <span class="extype" name="chisel3.Bundle">Bundle</span> { val clocks: chisel3.Vec[chisel3.Clock] }</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.RationalClockBridge">RationalClockBridge</a> → BlackBox</dd></dl></div>
+      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
@@ -1476,6 +1444,8 @@ like printf synthesis, are expressed in terms of this base clock.
               <h3>Inherited from <span class="extype" name="chisel3.internal.BaseBlackBox">BaseBlackBox</span></h3>
             </div><div class="parent" name="chisel3.experimental.BaseModule">
               <h3>Inherited from <span class="extype" name="chisel3.experimental.BaseModule">BaseModule</span></h3>
+            </div><div class="parent" name="chisel3.experimental.hierarchy.IsInstantiable">
+              <h3>Inherited from <span class="extype" name="chisel3.experimental.hierarchy.IsInstantiable">IsInstantiable</span></h3>
             </div><div class="parent" name="chisel3.internal.HasId">
               <h3>Inherited from <span class="extype" name="chisel3.internal.HasId">HasId</span></h3>
             </div><div class="parent" name="chisel3.internal.InstanceId">

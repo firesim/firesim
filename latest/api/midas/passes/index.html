@@ -287,6 +287,10 @@
                         <a href="package$$ReplaceExpression$.html" title="A utility for matching and replacing FIRRTL expression trees">ReplaceExpression</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="RunConvertAssertsEarly.html" title="Ensure ConvertAsserts is run as early as possible"></a>
+                        <a href="RunConvertAssertsEarly.html" title="Ensure ConvertAsserts is run as early as possible">RunConvertAssertsEarly</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="package$$SignalInfo.html" title="A utility for keeping statements defining and connecting signals to a piece of hardware together with a reference to the component."></a>
                         <a href="package$$SignalInfo.html" title="A utility for keeping statements defining and connecting signals to a piece of hardware together with a reference to the component.">SignalInfo</a>
                       </li><li class="current-entities indented2">
@@ -808,6 +812,28 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
       </span>
       
       <p class="shortcomment cmt">A pass that simply applies a (Circuit) =&gt; Circuit function.</p>
+    </li><li name="midas.passes.RunConvertAssertsEarly" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RunConvertAssertsEarlyextendsTransformwithDependencyAPIMigration"></a><a id="RunConvertAssertsEarly:RunConvertAssertsEarly"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/RunConvertAssertsEarly.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="Ensure ConvertAsserts is run as early as possible" href="RunConvertAssertsEarly.html"><span class="name">RunConvertAssertsEarly</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Ensure ConvertAsserts is run as early as possible</p><div class="fullcomment"><div class="comment cmt"><p>Ensure ConvertAsserts is run as early as possible</p><p>This transform does nothing but inject a dependency such that
+ConvertAsserts runs as early in the compiler as possible (before
+RemoveCHIRRTL). This permits new assertion nodes to be lowered into the
+old form such they can be detected by AssertionSynthesis. There is
+currently no simple mechanism to re-associate an assert-printf pair,
+without introducing new annotations.
+</p></div></div>
     </li><li name="midas.passes.SignalInfo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SignalInfoextendsProductwithSerializable"></a><a id="SignalInfo:SignalInfo"></a>
       <span class="permalink">
