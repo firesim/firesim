@@ -21,24 +21,23 @@ def run_linux_poweroff():
             :arg: timeout (str) - timeout amount for the workload to run
             """
             # rename runfarm tag with a unique tag based on the ci workflow
-            run("sed -i 's/runfarmtag=.*/runfarmtag={}/g' {}".format(ci_workflow_run_id, workload))
-
-            rc = 0
-            with settings(warn_only=True):
-                # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
-                # pty=False needed to avoid issues with screen -ls stalling in fabric
-                rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload), pty=False).return_code
-            if rc != 0:
-                # need to confirm that instance is off
-                print("Workload {} failed. Printing last lines of log. See {}.log for full info".format(workload, workload))
-                print("Log start:")
-                run("tail -n 100 {}.log".format(workload))
-                print("Log end.")
-                print("Terminating workload")
-                run("firesim terminaterunfarm -q -c {}".format(workload))
-                sys.exit(rc)
-            else:
-                print("Workload {} successful.".format(workload))
+            with prefix('export FIRESIM_RUNFARM_PREFIX={}'.format(ci_workflow_run_id)):
+                rc = 0
+                with settings(warn_only=True):
+                    # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
+                    # pty=False needed to avoid issues with screen -ls stalling in fabric
+                    rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload), pty=False).return_code
+                if rc != 0:
+                    # need to confirm that instance is off
+                    print("Workload {} failed. Printing last lines of log. See {}.log for full info".format(workload, workload))
+                    print("Log start:")
+                    run("tail -n 100 {}.log".format(workload))
+                    print("Log end.")
+                    print("Terminating workload")
+                    run("firesim terminaterunfarm -q -c {}".format(workload))
+                    sys.exit(rc)
+                else:
+                    print("Workload {} successful.".format(workload))
 
         run_w_timeout("{}/deploy/workloads/linux-poweroff-all-no-nic.ini".format(manager_fsim_dir), "30m")
         run_w_timeout("{}/deploy/workloads/linux-poweroff-nic.ini".format(manager_fsim_dir), "30m")
