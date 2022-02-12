@@ -24,7 +24,7 @@ testchip_dir=$(TOP_DIR)/generators/testchipip/src/main/resources
 testchip_csrc_dir=$(testchip_dir)/testchipip/csrc
 dramsim_dir=$(TOP_DIR)/tools/DRAMSim2
 
-override CXXFLAGS := $(CXXFLAGS) -std=c++11 -Wall -I$(dramsim_dir) -I$(testchip_csrc_dir)
+override CXXFLAGS := $(CXXFLAGS) -Wall -I$(dramsim_dir) -I$(testchip_csrc_dir)
 
 include $(util_dir)/utils.mk
 
@@ -32,8 +32,7 @@ $(OUT_DIR)/dramsim2_ini: $(testchip_dir)/dramsim2_ini
 	ln -sf $< $@
 
 override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
-# The trailing whitespace is important for some reason...
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas 
+override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas # The trailing whitespace is important for some reason...
 
 design_v  := $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
 design_h  := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.h

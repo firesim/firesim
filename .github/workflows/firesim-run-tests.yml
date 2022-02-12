@@ -180,6 +180,20 @@ jobs:
         if: steps.job-start.outputs.run_result != 'success'
       - uses: ./.github/actions/job-end
 
+  run-vitis-compile:
+    name: run-vitis-compile
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - name: Run simple Vitis build
+        run: .github/scripts/run-simple-vitis-build.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
+
   documentation-check:
     name: documentation-check
     runs-on: ubuntu-18.04
