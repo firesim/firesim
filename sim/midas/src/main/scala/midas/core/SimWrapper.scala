@@ -277,7 +277,7 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   * 2) Generates channels to interconnect those models and bridges by analyzing [[FAMEChannelConnectionAnnotation]]s.
   * 3) Exposes ReadyValid interfaces for all channels sourced or sunk by a bridge as I/O
   */
-class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with UnpackedWrapperConfig {
+class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) extends Module with UnpackedWrapperConfig {
   outer =>
   // Filter FCCAs presented to the top-level IO constructor. Remove all FCCAs:
   // - That are loopback channels (these don't connect to bridges).

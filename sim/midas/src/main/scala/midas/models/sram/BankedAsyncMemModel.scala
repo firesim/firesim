@@ -15,7 +15,7 @@ class BankedAsyncMemChiselModel(
   dataWidth: Int,
   nReads: Int,
   nWrites: Int,
-  hostParams: BankedAsyncMemChiselModel.HostParams = BankedAsyncMemChiselModel.HostParams(4, 2, false, true)) extends MultiIOModule {
+  hostParams: BankedAsyncMemChiselModel.HostParams = BankedAsyncMemChiselModel.HostParams(4, 2, false, true)) extends Module {
 
   // Channelized IO
   val channels = IO(new RegfileModelIO(depth, dataWidth, nReads, nWrites))
