@@ -95,12 +95,16 @@ Setting up the FireSim Repo
 
 We're finally ready to fetch FireSim's sources. Run:
 
-::
+.. parsed-literal::
 
     git clone https://github.com/firesim/firesim
     cd firesim
+    # checkout latest official firesim release
+    git checkout |version|
     ./build-setup.sh fast
 
+The ``build-setup.sh`` script will validate that you are on a tagged branch,
+otherwise it will prompt for confirmation.
 This will have initialized submodules and installed the RISC-V tools and
 other dependencies.
 
