@@ -73,7 +73,7 @@ Each workload (root/job) is run in its own screen session. In order to interact 
 
 When running a single workload, FireMarshal attaches to its screen session by default. When running multiple workloads, the user must manually attach to a session of their choice.
 
-FireMarshal only exits after all launched workloads exited.
+FireMarshal only exits after all launched workloads exit.
 
 ``-a --all``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

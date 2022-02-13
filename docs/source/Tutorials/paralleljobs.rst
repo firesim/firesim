@@ -53,7 +53,7 @@ Let us now launch both jobs in this workload using:
 
 FireMarshal uses separate screen sessions to run workloads in parallel. It exits only after all launched workloads have exited. 
 
-One can attach to a workload to interact with or observe it using standard screen syntax and the screen session identifiers listed in the output of the ``launch`` command. 
+One can attach to a workload to interact with or observe it by opening a new terminal (with tmux for instance), using standard screen syntax, and the screen session identifiers listed in the output of the ``launch`` command. 
 
 For instance, attach to job ``j0``, using:
 
