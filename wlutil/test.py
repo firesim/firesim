@@ -1,7 +1,6 @@
 import pathlib as pl
 import difflib
 from contextlib import contextmanager
-import pathlib
 import logging
 import traceback
 import textwrap
