@@ -373,7 +373,8 @@ bare-metal workloads that generate their own raw boot code.
 img
 ^^^^^^^^
 Explicit path to the rootfs to use. This will override any generated rootfs
-created during the build process.
+created during the build process. This means filesystem-related options like
+overlay or 'run'/'command' will no longer work.
 
 *Non-heritable*
 

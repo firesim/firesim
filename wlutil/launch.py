@@ -1,19 +1,27 @@
 import socket
 import logging
-from .wlutil import *
+import os
+import sys
+import subprocess as sp
+from . import wlutil
+
 
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
 def get_free_tcp_port():
-	tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	tcp.bind(('', 0))
-	addr, port = tcp.getsockname()
-	tcp.close()
-	return str(port)
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp.bind(('', 0))
+    addr, port = tcp.getsockname()
+    tcp.close()
+    return str(port)
+
 
 # Returns a command string to launch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, nodisk=False):
+    log = logging.getLogger()
 
-    if 'img' in config and not nodisk:
+    if 'img' in config and config['img-hardcoded']:
+        log.warn("You have hard-coded a disk image in your workload. Spike does not support disk images, your workload may not work correctly. Consider building with the '--nodisk' option (for linux-based workloads).")
+    elif 'img' in config and not nodisk:
         raise ValueError("Spike does not support disk-based configurations")
 
     if 'spike' in config:
@@ -24,23 +32,22 @@ def getSpikeCmd(config, nodisk=False):
     cmd = [spikeBin,
            config.get('spike-args', ''),
            ' -p' + str(config['cpus']),
-           ' -m' + str( int(config['mem'] / (1024*1024)) )]
-    
+           ' -m' + str(int(config['mem'] / (1024*1024)))]
+
     if nodisk:
-        cmd.append(str(noDiskPath(config['bin'])))
+        cmd.append(str(wlutil.noDiskPath(config['bin'])))
     else:
         cmd.append(str(config['bin']))
 
     return " ".join(cmd)
 
+
 # Returns a command string to luanch the given config in qemu. Must be called with shell=True.
 def getQemuCmd(config, nodisk=False):
-    log = logging.getLogger()
-
     launch_port = get_free_tcp_port()
 
     if nodisk:
-        exe = str(noDiskPath(config['bin']))
+        exe = str(wlutil.noDiskPath(config['bin']))
     else:
         exe = str(config['bin'])
 
@@ -54,7 +61,7 @@ def getQemuCmd(config, nodisk=False):
            '-bios none',
            '-smp', str(config['cpus']),
            '-machine', 'virt',
-           '-m', str( int(config['mem'] / (1024*1024)) ),
+           '-m', str(int(config['mem'] / (1024*1024))),
            '-kernel', exe,
            '-object', 'rng-random,filename=/dev/urandom,id=rng0',
            '-device', 'virtio-rng-device,rng=rng0',
@@ -66,6 +73,7 @@ def getQemuCmd(config, nodisk=False):
                      '-drive', 'file=' + str(config['img']) + ',format=raw,id=hd0']
 
     return " ".join(cmd) + " " + config.get('qemu-args', '')
+
 
 def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
     """Launches the specified workload in functional simulation.
@@ -85,16 +93,16 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
 
     if spike and baseConfig.get('spike', True) is None:
         raise RuntimeError("This workload does not support spike")
-    
+
     if not spike and baseConfig.get('qemu', True) is None:
         raise RuntimeError("This workload does not support qemu")
 
-    if jobs == None:
-        configs = [ baseConfig ]
+    if jobs is None:
+        configs = [baseConfig]
     else:
-        configs = [ baseConfig['jobs'][j] for j in jobs ]
+        configs = [baseConfig['jobs'][j] for j in jobs]
 
-    baseResDir = getOpt('res-dir') / getOpt('run-name')
+    baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
     for config in configs:
         if config['launch']:
             runResDir = baseResDir / config['name']
@@ -102,9 +110,6 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
             os.makedirs(runResDir)
 
             if spike:
-                if 'img' in config and not config['nodisk']:
-                    sys.exit("Spike currently does not support disk-based " +
-                            "configurations. Please use an initramfs based image.")
                 cmd = getSpikeCmd(config, config['nodisk'])
             else:
                 cmd = getQemuCmd(config, config['nodisk'])
@@ -114,21 +119,21 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
                 log.info("For live output see: " + str(uartLog))
             with open(uartLog, 'wb', buffering=0) as uartF:
                 with sp.Popen(cmd.split(), stderr=sp.STDOUT, stdout=sp.PIPE) as p:
-                        for c in iter(lambda: p.stdout.read(1), b''):
-                            if interactive:
-                                sys.stdout.buffer.write(c)
-                                sys.stdout.flush()
-                            uartF.write(c)
+                    for c in iter(lambda: p.stdout.read(1), b''):
+                        if interactive:
+                            sys.stdout.buffer.write(c)
+                            sys.stdout.flush()
+                        uartF.write(c)
 
             if 'outputs' in config:
-                outputSpec = [ FileSpec(src=f, dst=runResDir) for f in config['outputs']]
-                copyImgFiles(config['img'], outputSpec, direction='out')
+                outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
+                wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
 
     if 'post_run_hook' in baseConfig:
         prhCmd = [baseConfig['post_run_hook'].path] + baseConfig['post_run_hook'].args + [baseResDir]
-        log.info("Running post_run_hook script: " + ' '.join([ str(x) for x in prhCmd]))
+        log.info("Running post_run_hook script: " + ' '.join([str(x) for x in prhCmd]))
         try:
-            run(prhCmd, cwd=config['workdir'])
+            wlutil.run(prhCmd, cwd=config['workdir'])
         except sp.CalledProcessError as e:
             log.info("\nRun output available in: " + str(baseResDir))
             raise RuntimeError("Post run hook failed:\n" + str(e.output))

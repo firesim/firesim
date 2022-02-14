@@ -4,11 +4,10 @@ import subprocess as sp
 import sys
 import os
 import pathlib as pth
-import re
 
 # Should be the directory containing the test
 testSrc = pth.Path(__file__).parent.resolve()
-copyBinCfg = testSrc.parent / "inherit-childCopyBin.yaml"
+copyCfg = testSrc.parent / "inherit-copy.yaml"
 ownBinCfg = testSrc.parent / "inherit-childOwnBin.yaml"
 parentCfg = testSrc.parent / "inherit-parent.yaml"
 
@@ -29,9 +28,9 @@ binDir = managerPath.parent / 'images'
 print("Cleaning the test:")
 try:
     sp.run(str(managerPath) + " clean " + str(ownBinCfg), shell=True, check=True)
-    sp.run(str(managerPath) + " clean " + str(copyBinCfg), shell=True, check=True)
+    sp.run(str(managerPath) + " clean " + str(copyCfg), shell=True, check=True)
     sp.run(str(managerPath) + " clean " + str(parentCfg), shell=True, check=True)
-except Exception as e :
+except Exception as e:
     print("Test Failure: clean command failed: ", str(e), file=sys.stderr)
     sys.exit(1)
 
@@ -46,14 +45,14 @@ if sp.call(str(managerPath) + " test " + str(ownBinCfg), shell=True) != 0:
     print("Inherit Test Failure: failed to build inherit-childOwnBin", file=sys.stderr)
     sys.exit(1)
 
-# Parent binary should not have been built since the child had to build its own 
+# Parent binary should not have been built since the child had to build its own
 if (binDir / "inherit-parent-bin").exists():
     print("Parent was built, Marshal didn't mark the child to build its own binary")
     sys.exit(1)
 
 print("Testing child (can inherit bin) workload:")
-if sp.call(str(managerPath) + " test " + str(copyBinCfg), shell=True) != 0:
-    print("Inherit Test Failure: failed to build childbin", file=sys.stderr)
+if sp.call(str(managerPath) + " test " + str(copyCfg), shell=True) != 0:
+    print("Inherit Test Failure: failed to build inherit-copy", file=sys.stderr)
     sys.exit(1)
 
 # Parent binary should have been built since the child can use it

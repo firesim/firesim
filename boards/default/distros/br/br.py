@@ -1,10 +1,7 @@
 import os
-import subprocess as sp
 import shutil
-import logging
 import string
 import pathlib
-import git
 import doit
 import hashlib
 import wlutil
@@ -67,8 +64,8 @@ def hashOpts(opts):
 def mergeOpts(base, new):
     """Given two ['distro']['opts'] objects, return a merged version"""
     merged = {
-            "configs" : base['configs'] + new['configs'],
-            "environment" : {**base['environment'], **new['environment']}
+            "configs": base['configs'] + new['configs'],
+            "environment": {**base['environment'], **new['environment']}
     }
 
     return merged
@@ -104,11 +101,12 @@ def initOpts(cfg):
     # Expand any variables the user provided for their environment (including
     # the workload path variable we add)
     os.environ[cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
-    for k,v in opts['environment'].items():
+    for k, v in opts['environment'].items():
         opts['environment'][k] = os.path.expandvars(v)
     os.environ = envBackup
 
     opts['environment'][cfg['name'].upper().replace("-", "_") + "_PATH"] = str(cfg['workdir'])
+
 
 class Builder:
     """A builder object will be created for each unique set of options (as
@@ -125,20 +123,18 @@ class Builder:
 
         self.outputImg = wlutil.getOpt('image-dir') / (self.name + ".img")
 
-
     def getWorkload(self):
         return {
-                'name' : self.name,
-                'isDistro' : True,
-                'distro' : {
-                    'name' : 'br',
-                    'opts' : { 'configs' : [] }
+                'name': self.name,
+                'isDistro': True,
+                'distro': {
+                    'name': 'br',
+                    'opts': {'configs': []}
                 },
-                'workdir' : br_dir,
-                'builder' : self,
-                'img' : self.outputImg
+                'workdir': br_dir,
+                'builder': self,
+                'img': self.outputImg
                 }
-
 
     def configure(self, env):
         """Construct the final buildroot configuration for this environment. After
@@ -154,17 +150,16 @@ class Builder:
             f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer['gcc']+'=y\n')
             f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer['gcc']+'"\n')
             f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer['gcc']+'=y\n')
-            f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
+            f.write('BR2_JLEVEL='+str(wlutil.getOpt('jlevel'))+'\n')
 
         # Default Configuration (allows us to bump BR independently of our configs)
         defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
         wlutil.run(['make', 'defconfig'], cwd=(br_dir / 'buildroot'), env=env)
         shutil.copy(br_dir / 'buildroot' / '.config', defconfig)
 
-        kFrags = [ defconfig, toolKfrag ] + self.opts['configs']
+        kFrags = [defconfig, toolKfrag] + self.opts['configs']
         mergeScript = br_dir / 'merge_config.sh'
         wlutil.run([mergeScript] + kFrags, cwd=(br_dir / 'buildroot'), env=env)
-
 
     # Build a base image in the requested format and return an absolute path to that image
     def buildBaseImage(self):
@@ -179,20 +174,18 @@ class Builder:
             env = os.environ.copy()
             env.pop('PERL_MM_OPT', None)
             env = {**env, **self.opts['environment']}
-            
+
             self.configure(env)
 
             # This is unfortunate but buildroot can't remove things from the
             # image without rebuilding everything from scratch. It adds 20min
             # to the unit tests and anyone who builds a custom buildroot.
             wlutil.run(['make', 'clean'], cwd=br_dir / "buildroot", env=env)
-
             wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
             shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
 
         except wlutil.SubmoduleError as e:
             return doit.exceptions.TaskFailed(e)
-
 
     def fileDeps(self):
         # List all files that should be checked to determine if BR is uptodate
@@ -202,13 +195,11 @@ class Builder:
 
         return deps
 
-
     # Return True if the base image is up to date, or False if it needs to be
     # rebuilt. This is in addition to the files in fileDeps()
     def upToDate(self):
         return [wlutil.config_changed(wlutil.checkGitStatus(br_dir / 'buildroot')),
                 wlutil.config_changed(hashOpts(self.opts))]
-
 
     # Set up the image such that, when run in qemu, it will run the script "script"
     # If None is passed for script, any existing bootscript will be deleted
@@ -219,7 +210,7 @@ class Builder:
         # script that init will run last. This script will run the /firesim.sh
         # script at boot. We just overwrite this script.
         scriptDst = overlay / 'firesim.sh'
-        if script != None:
+        if script is not None:
             shutil.copy(script, scriptDst)
         else:
             scriptDst.unlink()
@@ -231,24 +222,23 @@ class Builder:
         scriptDst.chmod(0o755)
 
         with open(overlay / 'etc/init.d/S99run', 'w') as f:
-            if args == None:
+            if args is None:
                 f.write(initTemplate.substitute(args=''))
             else:
                 f.write(initTemplate.substitute(args=' '.join(args)))
 
         return overlay
 
-
     def stripUart(self, lines):
         stripped = []
         inBody = False
-        for l in lines:
+        for line in lines:
             if not inBody:
-                if re.match("launching firesim workload run/command", l):
+                if re.match("launching firesim workload run/command", line):
                     inBody = True
             else:
-                if re.match("firesim workload run/command done", l):
+                if re.match("firesim workload run/command done", line):
                     break
-                stripped.append(l)
+                stripped.append(line)
 
         return stripped

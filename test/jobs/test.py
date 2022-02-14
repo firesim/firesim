@@ -5,7 +5,6 @@ import subprocess as sp
 import sys
 import os
 import pathlib as pth
-import re
 
 # Should be the directory containing the test
 testSrc = pth.Path(__file__).parent.resolve()
@@ -23,10 +22,11 @@ else:
             sys.exit(1)
 
 outs = {
-        "root" : "root : run",
-        "j0" : "j0 : run",
-        "j1" : "j1 : run"
+        "root": "root : run",
+        "j0": "j0 : run",
+        "j1": "j1 : run"
         }
+
 
 def checkOuts(want, stdout):
     stdout = stdout.decode("utf-8")
@@ -40,6 +40,7 @@ def checkOuts(want, stdout):
             return False
 
     return True
+
 
 # Safety first kids: Always clean before you test
 print("Cleaning the test the first time:")

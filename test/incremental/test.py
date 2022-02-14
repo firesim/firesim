@@ -7,9 +7,7 @@ Usage: ./test.py PATH/TO/MARSHAL
 
 import subprocess as sp
 import sys
-import os
 import pathlib as pth
-import re
 
 usage = """Usage: ./test.py PATH/TO/MARSHAL"""
 
@@ -24,7 +22,7 @@ if len(sys.argv) != 2:
 
 managerPath = pth.Path(sys.argv[1])
 if not managerPath.exists:
-    print("Provided marshal command does not exist: ",managerPath)
+    print("Provided marshal command does not exist: ", managerPath)
     sys.exit(1)
 
 # Reset the test, just in case it was left in a weird state
@@ -52,7 +50,7 @@ finally:
     # Put everything back where we found it
     with (testSrc / "testFile").open('w') as f:
         f.write("Global : file")
-    
+
     sp.check_call(str(managerPath) + " clean " + str(testCfg), shell=True)
 
 print("Incremental test success", file=sys.stderr)
