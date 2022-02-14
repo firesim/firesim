@@ -4,11 +4,10 @@ Contributing to FireMarshal
 ## Contributing Changes
 We welcome contributions to FireMarshal through [github
 PRs](https://github.com/firesim/FireMarshal/pulls). **All PRs should be against
-the dev branch**. Master is only updated by the FireMarshal maintainers and
-serves as the stable release branch.
+the master branch**.
 
 Before submitting a PR:
-* Merge origin/dev to ensure you have the latest changes.
+* Merge origin/master to ensure you have the latest changes.
 * Run ./fullTest.py to ensure the basic unit-tests still work
 * Ensure all code passes lint (this will be enforced by github). You can
   manually check each file (or a glob) with the following command:
@@ -20,7 +19,6 @@ Before submitting a PR:
 * For bugs and feature requests: use the github issue tracker: https://github.com/firesim/FireMarshal/issues
 
 ## Branch management:
-1) **master**: Stable release. Updated by FireMarshal maintainers as part of a release. 
-2) **dev**: Unstable development. Dev should (hopefully) work at all times, but
-   there are no guarantees. All changes should be PRd against dev. 
-3) **All other branches**: Private development branches, typically not suitable for use.
+1) **tagged releases**: All stable releases are tagged and tracked with githubs releases mechanism.
+1) **master**: Unstable development. Master should work at all times, but there are no guarantees that bugs haven't been introduced.
+2) **All other branches**: Private development branches, typically not suitable for use.
