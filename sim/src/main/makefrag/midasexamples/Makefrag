@@ -32,7 +32,7 @@ endif
 
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
+		$(addprefix $(chipyard_dir)/generators/, rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
@@ -44,11 +44,11 @@ vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator, \
+	$(call run_scala_main,$(firesim_sbt_project),freechips.rocketchip.system.Generator, \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
+		--configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG))
 
 ##########################
 # Driver Sources & Flags #

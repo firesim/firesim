@@ -13,7 +13,7 @@ class AsyncMemModelGen(val depth: Int, val dataWidth: Int) extends ModelGenerato
   val emitRTLImpl = () => new AsyncMemChiselRTL(depth, dataWidth)
 }
 
-class AsyncMemChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int = 2, val nWrites: Int = 2) extends MultiIOModule {
+class AsyncMemChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int = 2, val nWrites: Int = 2) extends Module {
   val channels = IO(new RegfileRTLIO(depth, dataWidth, nReads, nWrites))
   val data = Mem(depth, UInt(dataWidth.W))
 
@@ -43,7 +43,7 @@ object AsyncMemChiselModel {
   }
 }
 
-class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 2, val nWrites: Int = 2) extends MultiIOModule {
+class AsyncMemChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int = 2, val nWrites: Int = 2) extends Module {
 
   // FSM states and helper functions
   //import AsyncMemChiselModel.ReadState
