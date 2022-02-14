@@ -1,7 +1,6 @@
 import socket
 import logging
 import os
-import sys
 import subprocess as sp
 from . import wlutil
 
