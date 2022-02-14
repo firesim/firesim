@@ -1,0 +1,19 @@
+[
+  {
+    "architecture": "x86_64",
+    "creation_date": "2021-07-20T16:21:59.000Z",
+    "ami_id": "ami-03f32123533983fdb",
+    "image_location": "aws-marketplace/FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc",
+    "image_type": "machine",
+    "public": true,
+    "owner_id": "679593333241",
+    "state": "available",
+    "description": "FPGA Developer AMI with Xilinx 2021.1 toolset and XRT 202110.2.11.634",
+    "hypervisor": "xen",
+    "name": "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc",
+    "root_device_name": "/dev/sda1",
+    "root_device_type": "ebs",
+    "sriov": "simple",
+    "virtualization_type": "hvm"
+  }
+]
