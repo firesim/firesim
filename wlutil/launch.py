@@ -33,7 +33,11 @@ def get_free_tcp_port():
 # Returns a command string to launch the given config in spike. Must be called with shell=True.
 def getSpikeCmd(config, nodisk=False):
 
-    if 'img' in config and not nodisk:
+    log = logging.getLogger()
+    
+    if 'img' in config and config['img-hardcoded']:
+        log.warn("You have hard-coded a disk image in your workload. Spike does not support disk images, your workload may not work correctly. Consider building with the '--nodisk' option (for linux-based workloads).")
+    elif 'img' in config and not nodisk:
         raise ValueError("Spike does not support disk-based configurations")
 
     if 'spike' in config:
@@ -126,9 +130,6 @@ def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
                 os.makedirs(runResDir)
 
                 if spike:
-                    if 'img' in config and not config['nodisk']:
-                        sys.exit("\nSpike currently does not support disk-based " +
-                                 "configurations. Please use an initramfs based image.")
                     cmd = getSpikeCmd(config, config['nodisk'])
                 else:
                     cmd = getQemuCmd(config, config['nodisk'])
