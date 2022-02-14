@@ -201,13 +201,13 @@ class RunFarm:
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
-        available_f1_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'f1.16xlarge'))
-        available_f1_4_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_4_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'f1.4xlarge'))
-        available_m4_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_m4_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'm4.16xlarge'))
-        available_f1_2_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_2_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'f1.2xlarge'))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
@@ -285,13 +285,13 @@ class RunFarm:
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
         f1_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
         f1_4_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
         m4_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
         f1_2_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
 
         f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
         f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)

@@ -159,12 +159,51 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
         assert False, "INVALID INSTANCE MARKET TYPE."
 
 def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None,
-                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(minutes=0)):
-    """ Launch count instances of type instancetype, optionally with additional
-    block devices mappings and instance tags
+                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(), additive=True):
+    """ Launch `count` instances of type `instancetype`
 
-         This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
+    Using `instancemarket`, `spotinerruptionbehavior` and `spotmaxprice` to define instance market conditions
+    (see also: construct_market_conditions)
+
+    This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
+    The ordering of availablility zones can be randomized by passing`randomsubnet=True`
+
+    Parameters
+    ----------
+    instancetype : str
+        String acceptable by `boto3.ec2.create_instances()` `InstanceType` parameter
+    count : int
+        The number of instances to launch
+    instancemarket
+    spotinterruptionbehavior
+    spotmaxprice
+    blockdevices
+    tags : dict of tag names to string values, default=None
+        Dict of tags
+    randomsubnet : bool, default=False
+        If true, subnets will be chosen randomly instead of starting from 0 and proceeding incrementally.
+    user_data_file : str, default=None
+        Path to readable file.  Contents of file are passed as `UserData` to AWS
+    timeout : datetime.timedelta, default=timedelta() (immediate timeout after attempting all subnets)
+        `timedelta` object representing how long we should continue to try asking for instances
+    additive : bool, default=True
+        When true, create `count` instances, regardless of whether any already exist. When False, only
+        create instances until there are `count` total instances that match `tags` and `instancetype`
+        If `tags` are not passed, `additive` must be `True` or `UserError` is thrown.
+
+    Return type
+    -----------
+    list(boto.ec2.Instance)
+
+    Returns
+    -------
+    list of instance resources.  If `additive` is True, this list contains only the instances created in this
+    call.  When `additive` is False, it contains all instances matching `tags` whether created in this call or not
     """
+
+    if tags is None and not additive:
+        raise ValueError("additive=False requires tags to be given")
+
 
     aws_resource_names_dict = aws_resource_names()
     keyname = aws_resource_names_dict['keyname']
@@ -191,8 +230,8 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     # starting with the first subnet, keep trying until you get the instances you need
     startsubnet = 0
 
-    if 'fsimcluster' in tags.keys():
-        instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(tags['fsimcluster'], instancetype))
+    if tags and not additive:
+        instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(tags, instancetype))
     else:
         instances = []
 
@@ -232,7 +271,7 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
                 ]),
                 "InstanceMarketOptions":marketconfig,
             }
-            if user_data_file is not None:
+            if user_data_file:
                 with open(user_data_file, "r") as f:
                     instance_args["UserData"] = ''.join(f.readlines())
 
@@ -240,28 +279,31 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
             instances += instance
 
         except client.exceptions.ClientError as e:
-            rootLogger.info(e)
+            rootLogger.debug(e)
             startsubnet += 1
             if (startsubnet < len(subnets)):
-                rootLogger.info("This probably means there was no more capacity in this availability zone. Trying the next one.")
+                rootLogger.debug("This probably means there was no more capacity in this availability zone. Trying the next one.")
             else:
-                rootLogger.critical("we tried all subnets, but there was insufficient capacity to launch your instances")
+                rootLogger.info("Tried all subnets, but there was insufficient capacity to launch your instances")
                 startsubnet = 0
                 if first_subnet_wraparound is None:
-                    first_subnet_wraparound = datetime.now()
-                    time.sleep(1) # ensure first elapsed time is non-zero
+                    # so that we are guaranteed that the default timeout of `timedelta()` aka timedelta(0)
+                    # will cause timeout the very first time, we make the first_subnet_wraparound happen a bit in the
+                    # past
+                    first_subnet_wraparound = datetime.now() - timedelta(microseconds=1)
 
                 time_elapsed = datetime.now() - first_subnet_wraparound
-                rootLogger.critical("have been trying for {} and using timeout of {}".format(time_elapsed, timeout))
-                rootLogger.critical("""only {} of {} {} instances have been launched""".format(len(instances), count, instancetype))
+                rootLogger.info("have been trying for {} using timeout of {}".format(time_elapsed, timeout))
+                rootLogger.info("""only {} of {} {} instances have been launched""".format(len(instances), count, instancetype))
                 if time_elapsed > timeout:
                     rootLogger.critical("""Aborting! only the following {} instances were launched""".format(len(instances)))
                     rootLogger.critical(instances)
                     rootLogger.critical("To continue trying to allocate instances, you can rerun launchrunfarm")
                     sys.exit(1)
                 else:
-                    rootLogger.critical("However, we're going to be patient and keep trying after sleeping for a bit...")
+                    rootLogger.info("Will keep trying after sleeping for a bit...")
                     time.sleep(30)
+                    rootLogger.info("Continuing to request remaining {}, {} instances".format(count - len(instances), instancetype))
     return instances
 
 def run_block_device_dict():
@@ -302,8 +344,15 @@ def get_instances_with_filter(filters, allowed_states=['pending', 'running', 'sh
                 instances.extend(res['Instances'])
     return instances
 
-def get_instances_by_tag_type(fsimclustertag, instancetype):
-    """ return list of instances that match a tag and instance type """
+def get_run_instances_by_tag_type(fsimclustertag, instancetype):
+    """ return list of instances that match fsimclustertag and instance type """
+    return get_instances_by_tag_type(
+        tags={'fsimcluster': fsimclustertag},
+        instancetype=instancetype
+    )
+
+def get_instances_by_tag_type(tags, instancetype):
+    """ return list of instances that match all tags and instance type """
     res = boto3.resource('ec2')
 
     instances = res.instances.filter(
@@ -320,12 +369,15 @@ def get_instances_by_tag_type(fsimclustertag, instancetype):
                     'running',
                 ]
             },
+        ]
+            +
+        [
             {
-                'Name': 'tag:fsimcluster',
+                'Name': 'tag:{}'.format(k),
                 'Values': [
-                    fsimclustertag,
+                    v,
                 ]
-            },
+            } for k, v in tags.items()
         ]
     )
     return instances

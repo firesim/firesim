@@ -277,7 +277,7 @@ class InnerRuntimeConfiguration:
         if 'launch_instances_timeout_minutes' in runtime_dict['runfarm']:
             self.launch_timeout = timedelta(minutes=int(runtime_dict['runfarm']['launch_instances_timeout_minutes']))
         else:
-            self.launch_timeout = timedelta(minutes=60)
+            self.launch_timeout = timedelta() # default to legacy behavior of not waiting
 
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
