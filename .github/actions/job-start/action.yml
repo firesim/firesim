@@ -1,3 +1,8 @@
+# With the job-end action, this provides the machinery to skip running jobs
+# that have previously passed. This is not supported on EC2-manager hosted
+# jobs, where all related jobs must be re-run when restarting the workflow (since the
+# previous spot-instance manager is terminated on a failure)
+
 name: job-start
 description: "Setup a job status"
 outputs:
