@@ -363,8 +363,6 @@ class marshalCtx(collections.MutableMapping):
                 print("WARNING: unable to determine CPU count, defaulting jlevel to 1. You may explicitly set the jlevel in your marshal-config.yaml.")
                 self['jlevel'] = 1
 
-        self['jlevel'] = '-j' + str(self['jlevel'])
-
     def setRunName(self, configPath, operation):
         """Helper function for formatting a  unique run name. You are free to
         set the 'run-name' option directly if you don't need the help.

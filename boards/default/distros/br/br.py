@@ -150,7 +150,7 @@ class Builder:
             f.write('BR2_TOOLCHAIN_GCC_AT_LEAST_'+toolVer['gcc']+'=y\n')
             f.write('BR2_TOOLCHAIN_GCC_AT_LEAST="'+toolVer['gcc']+'"\n')
             f.write('BR2_TOOLCHAIN_EXTERNAL_GCC_'+toolVer['gcc']+'=y\n')
-            f.write('BR2_JLEVEL='+str(os.cpu_count())+'\n')
+            f.write('BR2_JLEVEL='+str(wlutil.getOpt('jlevel'))+'\n')
 
         # Default Configuration (allows us to bump BR independently of our configs)
         defconfig = wlutil.getOpt('gen-dir') / 'brDefConfig'
@@ -181,7 +181,6 @@ class Builder:
             # image without rebuilding everything from scratch. It adds 20min
             # to the unit tests and anyone who builds a custom buildroot.
             wlutil.run(['make', 'clean'], cwd=br_dir / "buildroot", env=env)
-
             wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
             shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
 

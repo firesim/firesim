@@ -3,6 +3,28 @@
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 Versioning follows semantic versioning as described here: https://semver.org/spec/v2.0.0.html
 
+## [1.12.1] - 2022-01-21
+This maintenence release mostly fixes bugs and improves some under-the-covers
+behaviors.
+
+### Added
+
+### Fixed
+* PR #200 makes disk mounting/unmounting more reliable
+* PRs #207 and #222 change how build parallelism is handled. jLevels now
+  default to the number of available cores and buildroot uses the user-provided
+  jlevel.
+* PR #224 fixes hard-coded disk images. These seem to have stopped working
+  properly at some point. Incidentally, this also allows bare-metal workloads
+  to specify a hard-coded disk image that will be installed to FireSim but does
+  nothing in functional simulation.
+
+### Changed
+* PR #203 switches to a more recent and minimal fedora base image
+* PR #211 Changes the configuration loading process to only attempt to load
+  workloads that were actually required. Previously, FireMarshal would load all
+  configs in its path, even if it wouldn't use them.
+
 ## [1.12.0] - 2021-04-11
 This is a fairly small release that adds initial support for a chip tapeout
 prototyping board, yaml support, and a few improvements to the buildroot distro

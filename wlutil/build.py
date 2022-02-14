@@ -36,7 +36,7 @@ def buildBusybox():
         return doit.exceptions.TaskFailed(e)
 
     shutil.copy(wlutil.getOpt('wlutil-dir') / 'busybox-config', wlutil.getOpt('busybox-dir') / '.config')
-    wlutil.run(['make', wlutil.getOpt('jlevel')], cwd=wlutil.getOpt('busybox-dir'))
+    wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=wlutil.getOpt('busybox-dir'))
     shutil.copy(wlutil.getOpt('busybox-dir') / 'busybox', wlutil.getOpt('initramfs-dir') / 'disk' / 'bin/')
     return True
 
@@ -335,7 +335,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
         else:
             binList.append(config['bin'])
 
-    if 'img' in config and buildImg:
+    if 'img' in config and buildImg and not config['img-hardcoded']:
         imgList.append(config['img'])
 
     if 'jobs' in config.keys():
@@ -345,7 +345,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
                 if jCfg['nodisk']:
                     binList.append(wlutil.noDiskPath(jCfg['bin']))
 
-            if 'img' in jCfg and buildImg:
+            if 'img' in jCfg and buildImg and not jCfg['img-hardcoded']:
                 imgList.append(jCfg['img'])
 
     opts = {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}
@@ -423,7 +423,7 @@ def makeModules(cfg):
     if ('modules' in linCfg) and (len(linCfg['modules']) != 0):
         # Prepare the linux source for building external modules
         wlutil.run(["make"] + wlutil.getOpt('linux-make-args') +
-                   ["modules_prepare", wlutil.getOpt('jlevel')],
+                   ["modules_prepare", '-j' + str(wlutil.getOpt('jlevel'))],
                    cwd=linCfg['source'])
 
         makeCmd = "make LINUXSRC=" + str(linCfg['source'])
@@ -468,7 +468,7 @@ def makeBBL(config, nodisk=False):
         configureArgs += config['firmware']['bbl-build-args']
 
     wlutil.run(['../configure'] + configureArgs, cwd=bblBuild)
-    wlutil.run(['make', wlutil.getOpt('jlevel')], cwd=bblBuild)
+    wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=bblBuild)
 
     return bblBuild / 'bbl'
 
@@ -534,7 +534,7 @@ def makeBin(config, nodisk=False):
 
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
             generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
-            wlutil.run(['make'] + wlutil.getOpt('linux-make-args') + ['vmlinux', 'Image', wlutil.getOpt('jlevel')], cwd=config['linux']['source'])
+            wlutil.run(['make'] + wlutil.getOpt('linux-make-args') + ['vmlinux', 'Image', '-j' + str(wlutil.getOpt('jlevel'))], cwd=config['linux']['source'])
 
         if 'use-bbl' in config.get('firmware', {}) and config['firmware']['use-bbl']:
             fw = makeBBL(config, nodisk)
