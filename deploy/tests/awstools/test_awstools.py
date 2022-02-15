@@ -80,8 +80,9 @@ class TestSNS(object):
 
         aws_res_mock.assert_called_once()
 
-from packaging import version.parse
-@pytest.mark.skipif(version.parse(moto.__version__) < version.parse("3.0.4"), "These tests require https://github.com/spulec/moto/pull/4853")
+from packaging import version
+from moto import __version__ as moto_version
+@pytest.mark.skipif(version.parse(moto_version) < version.parse("3.0.4dev"), reason="These tests require https://github.com/spulec/moto/pull/4853")
 @pytest.mark.usefixtures("aws_test_credentials")
 class TestLaunchInstances(object):
     """Test functions in awstools that Launch EC2 Instances"""
@@ -179,7 +180,7 @@ class TestLaunchInstances(object):
 
     @mock_ec2
     def test_additive_instance_creation(self):
-        """create_instances expand_runfarm_by_count=True always adds `count`"""
+        """create_instances always_expand=True always adds `count`"""
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
@@ -194,13 +195,13 @@ class TestLaunchInstances(object):
         instances = launch_instances(type, 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
-                                     expand_runfarm_by_count=True)
+                                     always_expand=True)
         instances.should.have.length_of(1)
 
         instances = launch_instances(type, 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
-                                     expand_runfarm_by_count=True)
+                                     always_expand=True)
         instances.should.have.length_of(1)
 
         # There should be two instances total now, across two reservations
@@ -212,7 +213,7 @@ class TestLaunchInstances(object):
 
     @mock_ec2
     def test_non_additive_requires_tags(self):
-        """create_instances expand_runfarm_by_count=False throws if tags aren't given"""
+        """create_instances always_expand=False throws if tags aren't given"""
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
@@ -228,11 +229,11 @@ class TestLaunchInstances(object):
             launch_instances(type, 1,
                              instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                              blockdevices=run_block_device_dict(),
-                             expand_runfarm_by_count=False)
+                             always_expand=False)
 
     @mock_ec2
     def test_non_additive_instance_creation(self):
-        """create_instances expand_runfarm_by_count=False checks for existing instances when tags!=None"""
+        """create_instances always_expand=False checks for existing instances when tags!=None"""
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
@@ -248,14 +249,14 @@ class TestLaunchInstances(object):
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
                                      tags = {'fsimcluster': 'testcluster'},
-                                     expand_runfarm_by_count=False)
+                                     always_expand=False)
         instances.should.have.length_of(1)
 
         instances = launch_instances(type, 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
                                      tags = {'fsimcluster': 'testcluster'},
-                                     expand_runfarm_by_count=False)
+                                     always_expand=False)
         instances.should.have.length_of(1)
 
         # There should be one instance total now, across one reservation

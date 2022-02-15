@@ -279,6 +279,8 @@ class InnerRuntimeConfiguration:
         else:
             self.launch_timeout = timedelta() # default to legacy behavior of not waiting
 
+        self.always_expand = runtime_dict['runfarm'].get('always_expand_runfarm', "yes") == "yes"
+
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
         self.spot_max_price = runtime_dict['runfarm']['spotmaxprice']
@@ -362,7 +364,8 @@ class RuntimeConfig:
                                self.innerconf.run_instance_market,
                                self.innerconf.spot_interruption_behavior,
                                self.innerconf.spot_max_price,
-                               self.innerconf.launch_timeout)
+                               self.innerconf.launch_timeout,
+                               self.innerconf.always_expand)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(

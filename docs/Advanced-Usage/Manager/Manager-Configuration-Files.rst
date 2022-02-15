@@ -40,16 +40,41 @@ you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
+``always_expand_runfarm``
+"""""""""""""""""""""""""
+When ``yes`` (the default behavior when not given) the number of instances
+of each type (see ``f1_16xlarges`` etc. below)  are launched every time you
+run ``launchrunfarm``.
+
+When ``no``, ``launchrunfarm`` looks for already existing instances that
+match ``runfarmtag`` and treat ``f1_16xlarges`` (and other 'instance-type'
+values below) as a total count.
+
+For example, if you have ``f1_2xlarges`` set to 100 and the first time you
+run ``launchrunfarm`` you have ``launch_instances_timeout_minutes`` set to 0
+(i.e. giveup after receiving a ``ClientError`` for each AvailabilityZone) and
+AWS is only able to provide you 75 ``f1_2xlarges`` because of capacity issues,
+``always_expand_runfarm`` changes the behavior of ``launchrunfarm`` in subsequent
+attempts.  ``yes`` means ``launchrunfarm`` will try to launch 100 ``f1_2xlarges``
+again.  ``no`` means that ``launchrunfarm`` will only try to launch an additional
+25 ``f1_2xlarges`` because it will see that there are already 75 that have been launched
+with the same ``runfarmtag``.
+
 ``f1_16xlarges``, ``m4_16xlarges``, ``f1_4xlarges``, ``f1_2xlarges``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Set these three values respectively based on the number and types of instances
+Set these values respectively based on the number and types of instances
 you need. While we could automate this setting, we choose not to, so that
 users are never surprised by how many instances they are running.
 
 Note that these values are ONLY used to launch instances. After launch, the
 manager will query the AWS API to find the instances of each type that have the
 ``runfarmtag`` set above assigned to them.
+
+Also refer to ``always_expand_runfarm`` which determines whether ``launchrunfarm``
+treats these counts as an incremental amount to be launched every time it is envoked
+or a total number of instances of that type and ``runfarm`` tag that should be made
+to exist.  Note, ``launchrunfarm`` will never terminate instances.
 
 ``launch_instances_timeout_minutes``
 """"""""""""""""""""""""""""""""""""
