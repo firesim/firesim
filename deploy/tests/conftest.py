@@ -30,5 +30,5 @@ def aws_test_credentials():
 # This can't really be done as a fixture because it needs to be defined at moto import time
 # I don't like defining it in pytest.ini because the pwd used by pytest-env plugin
 # is dependent on where pytest is invoked and intellij will run it in subdirs of deploy...
-os.environ['MOTO_AMIS_PATH'] = '{}/test_amis_snake.json'.format(dirname(__file__))
+os.environ['MOTO_AMIS_PATH'] = '{}/test_amis.json'.format(dirname(__file__))
 
