@@ -3,7 +3,7 @@ name: firesim-publish-scala-doc
 on:
   push:
     branches:
-      - dev
+      - main
     tags:
       - '[0-9]*.[0-9]*.[0-9]*'
 

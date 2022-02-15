@@ -1,11 +1,9 @@
 name: firesim-ci-process
 
 on:
-  # run ci when pring to dev/master/main (note: ci runs on the merge commit of the pr!)
+  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
   pull_request:
     branches:
-      - dev
-      - master
       - main
 
 env:
