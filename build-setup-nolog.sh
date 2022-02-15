@@ -140,7 +140,7 @@ if [ "$IS_LIBRARY" = false ]; then
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
     cd $RDIR/target-design/chipyard
-    ./scripts/init-submodules-no-riscv-tools.sh --no-firesim
+    ./scripts/init-submodules-no-riscv-tools.sh --skip-validate
     cd $RDIR
 
     # Configure firemarshal to know where our firesim installation is.
