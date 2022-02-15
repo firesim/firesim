@@ -3,13 +3,13 @@ FireSim Continuous Integration
 
 Helpful Links:
 * Workflow GUI - https://github.com/firesim/firesim/actions
-* Chipyard Explanation of Github Actions (GH-A) - https://github.com/ucb-bar/chipyard/blob/dev/.github/CI_README.md
+* Chipyard Explanation of Github Actions (GH-A) - https://github.com/ucb-bar/chipyard/blob/main/.github/CI_README.md
 
 Github Actions (GH-A) Description
 ---------------------------------
 
 Much of the following CI infrastructure is based on the Chipyard CI.
-For a basic explanation of how the GH-A CI works, see https://github.com/ucb-bar/chipyard/blob/dev/.github/CI_README.md.
+For a basic explanation of how the GH-A CI works, see https://github.com/ucb-bar/chipyard/blob/main/.github/CI_README.md.
 However, there are a couple of notable differences/comments as follows:
 
 * In order to provide a fresh environment to test changes, the CI dynamically spawns a AWS instance and sets up GH-A

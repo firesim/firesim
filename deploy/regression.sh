@@ -9,12 +9,12 @@ echo "Diffing config_hwdb.ini against sample_config_hwdb.ini:"
 diff config_hwdb.ini sample-backup-configs/sample_config_hwdb.ini
 local_diff_rc=$?
 
-echo "Diffing sample_config_hwdb.ini against origin/dev:"
-git diff --exit-code origin/dev -- sample-backup-configs/sample_config_hwdb.ini
+echo "Diffing sample_config_hwdb.ini against origin/main:"
+git diff --exit-code origin/main -- sample-backup-configs/sample_config_hwdb.ini
 remote_diff_rc=$?
 
 if [[ $local_diff_rc = 0 && $remote_diff_rc = 0 ]]; then
-    echo "Local HWDB does not differ from origin/dev."
+    echo "Local HWDB does not differ from origin/main."
     echo "Did you update config_hwdb.ini with new AGFIs?"
     exit 1
 fi
