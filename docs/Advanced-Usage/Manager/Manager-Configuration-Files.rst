@@ -62,7 +62,7 @@ to launch each instance type for 60 minutes, possibly trying up to a total of
 four hours.
 
 This limit starts to be applied from the first time ``launchrunfarm`` receives a
-``ClientError`` response in all AvailabilityZones for your region.  In other words,
+``ClientError`` response in all AvailabilityZones (AZs) for your region.  In other words,
 if you request more instances than can possibly be requested in the given limit but AWS
 is able to satisfy all of the requests, the limit will not be enforced.
 
