@@ -12,6 +12,7 @@ from fabric.contrib.project import rsync_project
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
+from util.git import git_origin_sha_is_pushed
 
 rootLogger = logging.getLogger()
 
@@ -164,28 +165,30 @@ def aws_create_afi(global_build_config, buildconfig):
     s3bucket = global_build_config.s3_bucketname
     afiname = buildconfig.name
 
+    # tags will be expected to awstools.TAG_DICT_SCHEMA.validate(tags)
+    tags = {}
+
     # construct the "tags" we store in the AGFI description
-    tag_buildtriplet = buildconfig.get_chisel_triplet()
-    tag_deploytriplet = tag_buildtriplet
+    tags['firesim-buildtriplet'] = buildconfig.get_chisel_triplet()
+    tags['firesim-deploytriplet'] = tag_buildtriplet
     if buildconfig.deploytriplet != "None":
-        tag_deploytriplet = buildconfig.deploytriplet
+        tags['firesim-deploytriplet'] = buildconfig.deploytriplet
 
-    # the asserts are left over from when we tried to do this with tags
-    # - technically I don't know how long these descriptions are allowed to be,
-    # but it's at least 256*3, so I'll leave these here for now as sanity
-    # checks.
-    assert len(tag_buildtriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for buildtriplet"
-    assert len(tag_deploytriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploytriplet"
+    toplevel_superproject_path = "."
+    while True:
+        next_higher_superproject = local(
+            f"git -C {toplevel_superproject_path} rev-parse --show-superproject-working-tree",
+             capture=True
+        )
+        if next_higher_superproject == "":
+            break
+        toplevel_superproject_path = next_higher_superproject
 
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
-        hash = local("git rev-parse HEAD", capture=True)
-    tag_fsimcommit = hash + is_dirty_str
-
-    assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
+    tags['firesim-origin'], tags['firesim-commit'], tags['firesim-ispushed'] = git_origin_sha_is_pushed(".")
+    tags['top-origin'], tags['top-commit'], tags['top-ispushed'] = git_origin_sha_is_pushed(toplevel_superproject_path)
 
     # construct the serialized description from these tags.
-    description = firesim_tags_to_description(tag_buildtriplet, tag_deploytriplet, tag_fsimcommit)
+    description = firesim_tags_to_description(tags)
 
     # if we're unlucky, multiple vivado builds may launch at the same time. so we
     # append the build node IP + a random string to diff them in s3

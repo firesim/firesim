@@ -1,7 +1,9 @@
 """ Tools to help manage afis. """
-
+import distutils.util
 import logging
 import boto3
+from pprint import pformat
+from schema import Schema, And, SchemaError, Or, Use
 
 rootLogger = logging.getLogger()
 
@@ -95,18 +97,69 @@ def share_agfi_in_all_regions(agfi_id, useridlist):
         afi_id = get_afi_for_agfi(agfi_id, region)
         share_afi_with_users(afi_id, region, useridlist)
 
-def firesim_tags_to_description(buildtriplet, deploytriplet, commit):
-    """ Serialize the tags we want to set for storage in the AGFI description """
-    return """firesim-buildtriplet:{},firesim-deploytriplet:{},firesim-commit:{}""".format(buildtriplet,deploytriplet,commit)
+# max length of tag values is taken from early in FireSim when AWS tags were used and
+# had a limit of 256.  The AWS API does not document a constraint on the length of
+# description on https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateFpgaImage.html
+# retrieved on 03MAR2022
+ILLEGAL_KV_CHARS=':,'
+STR256 = And(str, lambda s: len(s) < 256, lambda s: all([c not in s for c in ILLEGAL_KV_CHARS]),
+	     error=f"Must be string shorter than 256, not containing {pformat(ILLEGAL_KV_CHARS)}"
+	    )
+STRBOOL = Or(And(str, Use(distutils.util.strtobool)),bool)
+TAG_DICT_SCHEMA = Schema({
+    'firesim-buildtriplet': STR256,
+    'firesim-deploytriplet': STR256,
+    'firesim-commit': STR256,
+    'firesim-origin': STR256,
+    'firesim-ispushed': STRBOOL,
+    'top-commit': STR256,
+    'top-origin': STR256,
+    'top-ispushed': STRBOOL,
+})
 
-def firesim_description_to_tags(description):
+# ensure that someone doesn't add a key that has illegal characters into schema
+for k in TAG_DICT_SCHEMA.schema.keys():
+    try:
+        STR256.validate(k)
+    except SchemaError as e:
+        raise SchemaError(f'TAG_DICT_SCHEMA key {k} failed to validate with STR256') from e
+
+def firesim_tags_to_description(tags: dict) -> str:
+    """ Serialize the tags we want to set for storage in the AGFI description
+
+    Args:
+        tags: dict of tags that conforms to tag_dict_schema.validate(tags)
+
+    Throws:
+        subclass of `schema.SchemaError` if `tags` fails to validate
+
+    Returns:
+        Serialized tags
+    """
+    validated = TAG_DICT_SCHEMA.validate(tags)
+    return ",".join([f"{k}:{v}" for k, v in validated.items()])
+
+def firesim_description_to_tags(description: str) -> dict:
     """ Deserialize the tags we want to read from the AGFI description string.
-    Return dictionary of keys/vals [buildtriplet, deploytriplet, commit]. """
+
+    Args:
+        AGFI description string
+
+    Returns:
+         dictionary of keys/vals [buildtriplet, deploytriplet, commit].
+         that should validate to `TAG_DICT_SCHEMA`.  However, it will
+         only log any exception during validation as a warning.
+    """
     returndict = dict()
     desc_split = description.split(",")
     for keypair in desc_split:
         splitpair = keypair.split(":")
         returndict[splitpair[0]] = splitpair[1]
+    try:
+        TAG_DICT_SCHEMA.validate(returndict)
+    except SchemaError as ex:
+        rootLogger.warning(f"Encountered schema validation error when deserializing {description}",
+                           exc_info=ex)
     return returndict
 
 def get_firesim_tagval_for_afi(afi_id, tagkey):

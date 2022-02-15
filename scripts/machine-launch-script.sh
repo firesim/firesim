@@ -69,6 +69,7 @@ sudo python3 -m pip install pytest==6.2.5
 sudo python3 -m pip install pytest-dependency==0.5.1
 sudo python3 -m pip install moto==2.2.17
 sudo python3 -m pip install sure==2.0.0
+sudo python3 -m pip install schema==0.7.5
 # needed for the awstools cmdline parsing
 sudo python3 -m pip install pyyaml==5.4.1
 
