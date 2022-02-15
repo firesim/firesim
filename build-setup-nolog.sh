@@ -76,7 +76,7 @@ tag_ret_code=$?
 set -e
 if [ $tag_ret_code -ne 0 ]; then
     if [ "$SKIP_VALIDATE" = false ]; then
-        read -p "WARNING: You are not on a official release of FireSim.\nType \"y\" to continue if this is intended, otherwise see https://docs.fires.im/en/stable/Initial-Setup/Setting-up-your-Manager-Instance.html#setting-up-the-firesim-repo: " validate
+        read -p "WARNING: You are not on an official release of FireSim.\nType \"y\" to continue if this is intended, otherwise see https://docs.fires.im/en/stable/Initial-Setup/Setting-up-your-Manager-Instance.html#setting-up-the-firesim-repo: " validate
         [[ $validate == [yY] ]] || exit 5
         echo "Setting up non-official FireSim release"
     fi
