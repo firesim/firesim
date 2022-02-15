@@ -159,7 +159,7 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
         assert False, "INVALID INSTANCE MARKET TYPE."
 
 def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None,
-                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(), additive=True):
+                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(), expand_runfarm_by_count=True):
     """ Launch `count` instances of type `instancetype`
 
     Using `instancemarket`, `spotinerruptionbehavior` and `spotmaxprice` to define instance market conditions
@@ -186,10 +186,10 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
         Path to readable file.  Contents of file are passed as `UserData` to AWS
     timeout : datetime.timedelta, default=timedelta() (immediate timeout after attempting all subnets)
         `timedelta` object representing how long we should continue to try asking for instances
-    additive : bool, default=True
+    expand_runfarm_by_count : bool, default=True
         When true, create `count` instances, regardless of whether any already exist. When False, only
         create instances until there are `count` total instances that match `tags` and `instancetype`
-        If `tags` are not passed, `additive` must be `True` or `ValueError` is thrown.
+        If `tags` are not passed, `expand_runfarm_by_count` must be `True` or `ValueError` is thrown.
 
     Return type
     -----------
@@ -197,12 +197,12 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
     Returns
     -------
-    list of instance resources.  If `additive` is True, this list contains only the instances created in this
-    call.  When `additive` is False, it contains all instances matching `tags` whether created in this call or not
+    list of instance resources.  If `expand_runfarm_by_count` is True, this list contains only the instances created in this
+    call.  When `expand_runfarm_by_count` is False, it contains all instances matching `tags` whether created in this call or not
     """
 
-    if tags is None and not additive:
-        raise ValueError("additive=False requires tags to be given")
+    if tags is None and not expand_runfarm_by_count:
+        raise ValueError("expand_runfarm_by_count=False requires tags to be given")
 
 
     aws_resource_names_dict = aws_resource_names()
@@ -230,7 +230,7 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     # starting with the first subnet, keep trying until you get the instances you need
     startsubnet = 0
 
-    if tags and not additive:
+    if tags and not expand_runfarm_by_count:
         instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(tags, instancetype))
     else:
         instances = []

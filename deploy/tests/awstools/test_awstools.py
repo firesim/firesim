@@ -179,7 +179,7 @@ class TestLaunchInstances(object):
 
     @mock_ec2
     def test_additive_instance_creation(self):
-        """create_instances additive=True always adds `count`"""
+        """create_instances expand_runfarm_by_count=True always adds `count`"""
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
@@ -194,13 +194,13 @@ class TestLaunchInstances(object):
         instances = launch_instances(type, 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
-                                     additive=True)
+                                     expand_runfarm_by_count=True)
         instances.should.have.length_of(1)
 
         instances = launch_instances(type, 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
-                                     additive=True)
+                                     expand_runfarm_by_count=True)
         instances.should.have.length_of(1)
 
         # There should be two instances total now, across two reservations
@@ -212,7 +212,7 @@ class TestLaunchInstances(object):
 
     @mock_ec2
     def test_non_additive_requires_tags(self):
-        """create_instances additive=False throws if tags aren't given"""
+        """create_instances expand_runfarm_by_count=False throws if tags aren't given"""
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
@@ -228,11 +228,11 @@ class TestLaunchInstances(object):
             launch_instances(type, 1,
                              instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                              blockdevices=run_block_device_dict(),
-                             additive=False)
+                             expand_runfarm_by_count=False)
 
     @mock_ec2
     def test_non_additive_instance_creation(self):
-        """create_instances additive=False checks for existing instances when tags!=None"""
+        """create_instances expand_runfarm_by_count=False checks for existing instances when tags!=None"""
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
@@ -248,14 +248,14 @@ class TestLaunchInstances(object):
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
                                      tags = {'fsimcluster': 'testcluster'},
-                                     additive=False)
+                                     expand_runfarm_by_count=False)
         instances.should.have.length_of(1)
 
         instances = launch_instances(type, 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
                                      blockdevices=run_block_device_dict(),
                                      tags = {'fsimcluster': 'testcluster'},
-                                     additive=False)
+                                     expand_runfarm_by_count=False)
         instances.should.have.length_of(1)
 
         # There should be one instance total now, across one reservation
