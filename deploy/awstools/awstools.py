@@ -162,7 +162,7 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
                      tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(), always_expand=True):
     """ Launch `count` instances of type `instancetype`
 
-    Using `instancemarket`, `spotinerruptionbehavior` and `spotmaxprice` to define instance market conditions
+    Using `instancemarket`, `spotinterruptionbehavior` and `spotmaxprice` to define instance market conditions
     (see also: construct_market_conditions)
 
     This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
