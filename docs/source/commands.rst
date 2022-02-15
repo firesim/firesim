@@ -58,13 +58,22 @@ the image or binary definitions but would still like to test the other.
 
 launch
 --------------------------------------
-The launch command will run the workload in either Qemu (a high-performance
-functional simulator) or spike (the official RISC-V ISA simulator). Qemu will
-be used by default and is the best choice in most circumstances.
+
+The launch command will run the workload in either Qemu (a high-performance functional simulator) or spike (the official RISC-V ISA simulator). Qemu will be used by default and is the best choice in most circumstances.
 
 ::
 
   ./marshal launch [-s] [-a] [-j JOB] config
+
+Each workload (root/job) is run in its own screen session. In order to interact with or observe a workload, one can attach to the corresponding screen session using standard screen syntax and the identifier listed in the output of ``launch``.
+
+::
+
+  screen -r <screen-identifier>
+
+When running a single workload, FireMarshal attaches to its screen session by default. When running multiple workloads, the user must manually attach to a session of their choice.
+
+FireMarshal only exits after all launched workloads exit.
 
 ``-a --all``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -74,9 +83,7 @@ Launch all jobs in the workload. Jobs will be run sequentially. See the
 ``-j --job``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In workloads with multiple jobs, you can specify which job(s) to launch.
-FireMarshal does not currently support running networked jobs concurrently.
-However, you can run multiple jobs in a single launch command, they will be run
-sequentially. Jobs are identified by their ``name`` attribute. Multiple ``-j``
+FireMarshal supports running multiple jobs concurrently but does not support networked jobs yet. Jobs are identified by their ``name`` attribute. Multiple ``-j``
 options may be passed to invoke multiple jobs. Use ``--all`` to launch all jobs
 in the workload. If neither ``--job`` nor ``--all`` are provided, the root
 workload will be run. The root workload is the parent of all the jobs (i.e. the

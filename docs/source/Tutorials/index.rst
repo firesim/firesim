@@ -7,4 +7,5 @@ Tutorials
    :maxdepth: 1
 
    quickstart
+   paralleljobs
    custom
