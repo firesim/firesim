@@ -189,7 +189,7 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     additive : bool, default=True
         When true, create `count` instances, regardless of whether any already exist. When False, only
         create instances until there are `count` total instances that match `tags` and `instancetype`
-        If `tags` are not passed, `additive` must be `True` or `UserError` is thrown.
+        If `tags` are not passed, `additive` must be `True` or `ValueError` is thrown.
 
     Return type
     -----------
