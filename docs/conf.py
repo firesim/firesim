@@ -139,6 +139,7 @@ html_context = {
     "version": version
 }
 
+# add rst to end of each rst source file
 # can put custom strings here that are generated from this file
 rst_epilog = f"""
 .. |overall_version| replace:: {version}
