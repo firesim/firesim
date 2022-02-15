@@ -19,15 +19,17 @@ RDIR=$(pwd)
 FASTINSTALL=false
 IS_LIBRARY=false
 SKIP_TOOLCHAIN=false
+SKIP_VALIDATE=false
 
 function usage
 {
-    echo "usage: build-setup.sh [ fast | --fast] [--skip-toolchain] [--library]"
+    echo "usage: build-setup.sh [ fast | --fast] [--skip-toolchain] [--library] [--skip-validate]"
     echo "   fast: if set, pulls in a pre-compiled RISC-V toolchain for an EC2 manager instance"
     echo "   skip-toolchain: if set, skips RISC-V toolchain handling (cloning or building)."
     echo "                   The user must define $RISCV in their env to provide their own toolchain."
     echo "   library: if set, initializes submodules assuming FireSim is being used"
     echo "            as a library submodule. Implies --skip-toolchain "
+    echo "   skip-validate: if set, skips checking if user is on release tagged branch"
 }
 
 if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
@@ -48,6 +50,9 @@ do
         --skip-toolchain)
             SKIP_TOOLCHAIN=true;
             ;;
+        --skip-validate)
+            SKIP_VALIDATE=true;
+            ;;
         -h | -H | --help)
             usage
             exit
@@ -63,6 +68,21 @@ do
     esac
     shift
 done
+
+# before doing anything verify that you are on a release branch/tag
+set +e
+tag=$(git describe --exact-match --tags)
+tag_ret_code=$?
+set -e
+if [ $tag_ret_code -ne 0 ]; then
+    if [ "$SKIP_VALIDATE" = false ]; then
+        read -p "WARNING: You are not on an official release of FireSim.\nType \"y\" to continue if this is intended, otherwise see https://docs.fires.im/en/stable/Initial-Setup/Setting-up-your-Manager-Instance.html#setting-up-the-firesim-repo: " validate
+        [[ $validate == [yY] ]] || exit 5
+        echo "Setting up non-official FireSim release"
+    fi
+else
+    echo "Setting up official FireSim release: $tag"
+fi
 
 if [ "$SKIP_TOOLCHAIN" = true ]; then
     if [ -z "$RISCV" ]; then

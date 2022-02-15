@@ -1,10 +1,5 @@
-.. FireSim documentation master file, created by
-   sphinx-quickstart on Thu Apr 26 23:51:51 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to FireSim's documentation!
-===================================
+Welcome to FireSim's documentation (version "|version|")!
+===========================================================
 
 New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
