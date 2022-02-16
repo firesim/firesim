@@ -21,7 +21,7 @@ runs:
           make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND='set apiDirectory := \"${{ github.ref_type }}\"; ghpagesPushSite'
         else
           source env.sh
-          export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for dev:${{ github.sha }}"
+          export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for main:${{ github.sha }}"
           make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND="ghpagesPushSite"
         fi
       shell: bash
