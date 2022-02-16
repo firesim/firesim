@@ -11,6 +11,7 @@ from moto import mock_sns, mock_ec2
 from unittest.mock import patch
 import pytest
 import sure
+import re
 
 # In case you put any package-level tests, make sure they use the test credentials too
 pytestmark = pytest.mark.usefixtures("aws_test_credentials")
@@ -80,9 +81,26 @@ class TestSNS(object):
 
         aws_res_mock.assert_called_once()
 
+@mock_ec2
+@pytest.mark.dependency()
+def test_get_f1_ami_id():
+    """get_f1_ami_id() shouldn't throw or return an invalid ami id"""
+
+    # local imports of code-under-test ensure moto has mocks
+    # registered before any possible calls out to AWS
+    from awstools.awstools import get_f1_ami_id
+    try:
+        ami = get_f1_ami_id()
+    except Exception as e:
+        pytest.fail(f"get_f1_ami_id() raised {e} and this likely means you need to run 'scripts/update_test_amis.py'")
+
+    if re.match(r"^ami-[0-9a-f]+$",ami) is None:
+        pytest.fail(f"'{ami}' doesn't look like a legit AMI ID and this likely means you need to run 'scripts/update_test_amis.py'")
+
 from packaging import version
 from moto import __version__ as moto_version
 @pytest.mark.skipif(version.parse(moto_version) < version.parse("3.0.4dev"), reason="These tests require https://github.com/spulec/moto/pull/4853")
+@pytest.mark.dependency(depends=["test_get_f1_ami_id"])
 @pytest.mark.usefixtures("aws_test_credentials")
 class TestLaunchInstances(object):
     """Test functions in awstools that Launch EC2 Instances"""

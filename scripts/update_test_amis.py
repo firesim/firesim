@@ -1,47 +1,28 @@
+#!/usr/bin/env python3
+
+# firesim tweaked version of https://raw.githubusercontent.com/spulec/moto/871591f7f17458c10ce039d6e2f36abe3430fec5/scripts/get_amis.py
+
 import boto3
 import json
+import sure
 
-# Taken from free tier list when creating an instance
+import os, sys
+deploy_path = os.path.join(os.path.dirname(__file__), "../deploy")
+sys.path.append(deploy_path)
+
+from awstools.awstools import get_f1_ami_id
+
+our_ami = get_f1_ami_id()
+print(f"Current FPGA Dev AMI used by firesim is {our_ami}")
+
 instances = [
-    "ami-760aaa0f",
-    "ami-bb9a6bc2",
-    "ami-35e92e4c",
-    "ami-785db401",
-    "ami-b7e93bce",
-    "ami-dca37ea5",
-    "ami-999844e0",
-    "ami-9b32e8e2",
-    "ami-f8e54081",
-    "ami-bceb39c5",
-    "ami-03cf127a",
-    "ami-1ecc1e67",
-    "ami-c2ff2dbb",
-    "ami-12c6146b",
-    "ami-d1cb19a8",
-    "ami-61db0918",
-    "ami-56ec3e2f",
-    "ami-84ee3cfd",
-    "ami-86ee3cff",
-    "ami-f0e83a89",
-    "ami-1f12c066",
-    "ami-afee3cd6",
-    "ami-1812c061",
-    "ami-77ed3f0e",
-    "ami-3bf32142",
-    "ami-6ef02217",
-    "ami-f4cf1d8d",
-    "ami-3df32144",
-    "ami-c6f321bf",
-    "ami-24f3215d",
-    "ami-fa7cdd89",
-    "ami-1e749f67",
-    "ami-a9cc1ed0",
-    "ami-8104a4f8",
+    our_ami,
 ]
 
-client = boto3.client("ec2", region_name="eu-west-1")
+client = boto3.client("ec2")
 
 test = client.describe_images(ImageIds=instances)
+test["Images"].shouldnt.be.empty
 
 result = []
 for image in test["Images"]:
@@ -64,6 +45,11 @@ for image in test["Images"]:
         }
         result.append(tmp)
     except Exception as err:
-        pass
+        raise # we can't afford to ignore any AMIs in our list, we need them all to be available
 
-print(json.dumps(result, indent=2))
+test_ami_path = os.path.join(deploy_path, "tests/test_amis.json")
+with open(test_ami_path, 'w') as test_amis:
+    json.dump(result, test_amis, indent=2)
+
+print(f"Updated {test_ami_path}")
+os.system(f"git diff {test_ami_path}")
