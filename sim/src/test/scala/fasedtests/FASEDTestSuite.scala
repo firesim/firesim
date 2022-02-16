@@ -98,6 +98,7 @@ abstract class FASEDTest(
   runTest("verilator", false)
 }
 
+class AXI4StrideLBPTest extends FASEDTest("AXI4Strider", "DefaultConfig", "DefaultF1Config")
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
 
 // Sanity checks that target output is the same when using the default runtime

@@ -20,6 +20,8 @@ case object NumTransactions extends Field[Int](10000)
 case object MaxFlight extends Field[Int](128)
 case object NumMemoryChannels extends Field[Int](1)
 case object FuzzerAddressMaskKey extends Field[BigInt]
+case object AXI4StrideLength extends Field[Int](8)
+case object NumBeats extends Field[Int](1)
 
 class WithSlavePortParams extends Config((site, here, up) => {
   case AXI4SlavePort => AXI4SlavePortParameters(
