@@ -1,7 +1,46 @@
 # Changelog
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
-**Developers: Please add descriptions of your changes to this PR as your PRs are merged into Dev**
+
+## [1.13.0] - 2022-02-15
+Highlights include a bump to Chisel 3.5 & FIRRTL 1.5, Vivado 2020.2 & Developer AMI 1.10, considerable FPGA QoR optimizations, and standardized file emission stategy from Golden Gate (all file names described [here](https://docs.fires.im/en/1.13.0/Golden-Gate/Output-Files.html)). 
+
+### Added
+* A Basic Floorplan for DRAM Controllers #798 
+* A ResetPulseBridge to drive reset a conventional bridge #782
+  * This is used in place of peek poke to avoid an early deadlock condition.
+ * A global reset condition to mask off events during reset #791
+* Support for XDC Emission that is Hierarchy-Mutation Robust. #825
+* Multi-cycle constraints to improve fmax on multiclock designs. #834 
+* Bake-in FASED default runtime configuration into hardware #889
+
+### Changed
+* Bumped to AMI 1.10 / AWS FPGA 1.4.19 / Vivado 2020.2 #788
+* libelf + libdwarf now installed to a firesim-local sysroot @ sim/lib-install #806
+* Improved host IFs to make it easier to define  bridges with custom channelization #778 
+* Use a Standard File Emission Strategy #802
+* Only use required DRAM channels to save FPGA resources #816 
+* Limit builddir directory name length by omitting chisel_triplet #826
+* install ca-certificates for latest root certs #840
+* Removed -o and -E options in Golden Gate's CLI #851
+* Changed word addresses to byte addresses in drivers #857  
+* Provide a more informative env.sh on build-setup failure  #885 
+* Use Published Dependencies For Chisel + FIRRTL #893 
+* Factor peek/poke out of simif_t #864
+* Chisel 3.5 / FIRRTL 1.5 Bump using Published Deps #899
+* Allow launchrunfarm to retry up to a specified timeout #940
+
+### Fixed
+* Reject non-hardware types in calls to PerfCounter & FPGADebug #865
+* FASED elaboration error in AXI4 width adapter when using all host DRAM  #881
+* Driver Return Code #910
+
+### Removed
+* Source dependency on Barstools (ucb-bar/barstools) #803  
+* Misc FASED Chisel Utilities + GeneratorUtils + PlusArgReader Pass #812
+* FIRRTL IR node helpers in midas.passes.util #811 
+* Boost Dependency #806
+* WithAutoILA from default recipes #913
 
 ## [1.12.0] - 2021-06-14
 Updates default AGFIs to fully utilize multiclock support, fixes a gnarly
