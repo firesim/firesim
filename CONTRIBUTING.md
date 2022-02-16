@@ -8,7 +8,7 @@ Contributing to FireSim
 2) main = development branch. Substantial code changes and feature additions must be based against this branch.
 
 #### External Dependencies:
-1) Other repos in FireSim github org: must be pointing to tagged version in firesim/firesim tagged branch. Likewise, firesim/firesim main should point at dev/main/master branches in submodules (depending on the name of their dev branch).
+1) Other repos in FireSim github org: must be pointing to tagged version in firesim/firesim tagged branch. Likewise, firesim/firesim main should point at dev/main/master branches in submodules (depending on the name of their equivalent "main" branch).
 2) Forks in FireSim github org: master/main reflects newest upstream that we’ve bumped to, firesim branch that reflects what’s submoduled in firesim/firesim, firesim is the default branch of the fork
 3) ucb-bar hosted dependencies: firesim branch that reflects what’s submoduled in firesim, should follow the same PR discipline as merging into firesim/firesim tagged release branch
 
