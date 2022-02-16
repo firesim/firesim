@@ -122,20 +122,20 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   val readMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxReads*2, addrWidth, nastiLength, nastiSize)).io
   readMatcher.enq.valid := arIDQueue.io.enq.fire
   readMatcher.enq.bits.addr := io.nastiInputs.hBits.ar.bits.addr
-  readMatcher.enq.bits.size := io.nastiInputs.hBits.ar.bits.size
-  readMatcher.enq.bits.len := io.nastiInputs.hBits.ar.bits.len
+  readMatcher.enq.bits.beatBytes := io.nastiInputs.hBits.ar.bits.size
+  readMatcher.enq.bits.numBeats := io.nastiInputs.hBits.ar.bits.len
   readMatcher.match_address.addr := io.nastiInputs.hBits.aw.bits.addr
-  readMatcher.match_address.size := io.nastiInputs.hBits.aw.bits.size
-  readMatcher.match_address.len := io.nastiInputs.hBits.aw.bits.len
+  readMatcher.match_address.beatBytes := io.nastiInputs.hBits.aw.bits.size
+  readMatcher.match_address.numBeats := io.nastiInputs.hBits.aw.bits.len
 
   val writeMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxWrites*2, addrWidth, nastiLength, nastiSize)).io
   writeMatcher.enq.valid := awIDQueue.io.enq.fire 
   writeMatcher.enq.bits.addr := io.nastiInputs.hBits.aw.bits.addr
-  writeMatcher.enq.bits.size := io.nastiInputs.hBits.aw.bits.size
-  writeMatcher.enq.bits.len := io.nastiInputs.hBits.aw.bits.len
+  writeMatcher.enq.bits.beatBytes := io.nastiInputs.hBits.aw.bits.size
+  writeMatcher.enq.bits.numBeats := io.nastiInputs.hBits.aw.bits.len
   writeMatcher.match_address.addr := io.nastiInputs.hBits.ar.bits.addr
-  writeMatcher.match_address.size := io.nastiInputs.hBits.ar.bits.size
-  writeMatcher.match_address.len := io.nastiInputs.hBits.ar.bits.len
+  writeMatcher.match_address.beatBytes := io.nastiInputs.hBits.ar.bits.size
+  writeMatcher.match_address.numBeats := io.nastiInputs.hBits.ar.bits.len
 
   arIDQueue.io.enq.valid := tFireHelper.fire(arIDQueue.io.enq.ready) && io.nastiInputs.hBits.ar.valid
   arIDQueue.io.enq.bits := io.nastiInputs.hBits.ar.bits.id

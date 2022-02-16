@@ -264,11 +264,10 @@ trait HasAXI4Id extends HasNastiParameters { val id = UInt(nastiXIdBits.W) }
 trait HasAXI4IdAndLen extends HasAXI4Id { val len = UInt(nastiXLenBits.W) }
 trait HasReqMetaData extends HasAXI4IdAndLen { val addr = UInt(nastiXAddrBits.W) }
 
-class NastiAddressAttr (val addrBits: Int, val sizeBits: Int, val lenBits: Int)
-  (implicit val p: Parameters) extends Bundle { 
+class NastiAddressAttr (val addrBits: Int, val beatBytesBits: Int, val numBeatsBits: Int) extends Bundle { 
   val addr = UInt(addrBits.W)
-  val size = UInt(sizeBits.W) 
-  val len = UInt(lenBits.W) 
+  val beatBytes = UInt(beatBytesBits.W) 
+  val numBeats = UInt(numBeatsBits.W) 
 }
 
 class AddressLimits (val addrBits: Int) extends Bundle {
@@ -278,9 +277,9 @@ class AddressLimits (val addrBits: Int) extends Bundle {
 
 
 object AddressRangePair {
-  def apply(addr: UInt, size: UInt, len: UInt): (UInt, UInt) = {
-    val bytes = 1.U << size
-    val dataSize = bytes * len
+  def apply(addr: UInt, beatBytes: UInt, numBeats: UInt): (UInt, UInt) = {
+    val bytes = 1.U << beatBytes
+    val dataSize = bytes * (numBeats + 1.U)
     val addrMax = addr + dataSize 
     (addr, addrMax)
   }
@@ -370,12 +369,12 @@ class AXI4Releaser(implicit p: Parameters) extends Module {
   io.egressResp.bReady := io.b.ready
 }
 
-class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, size: Int, len: Int) 
+class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatBytes: Int, numBeats: Int) 
   (implicit val p: Parameters) extends Module with HasFIFOPointers {
   val io  = IO(new Bundle {
-    val enq = Flipped(Valid(new NastiAddressAttr(addrWidth, size, len)))
+    val enq = Flipped(Valid(new NastiAddressAttr(addrWidth, beatBytes, numBeats)))
     val deq = Input(Bool())
-    val match_address = Input(new NastiAddressAttr(addrWidth, size, len))
+    val match_address = Input(new NastiAddressAttr(addrWidth, beatBytes, numBeats))
     val hit = Output(Bool())
   })
 
@@ -389,8 +388,8 @@ class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, size: Int, len
   do_deq := io.deq
 
   val (addrmin, addrmax) = AddressRangePair(io.enq.bits.addr,
-                                            io.enq.bits.size,
-                                            io.enq.bits.len)
+                                            io.enq.bits.beatBytes,
+                                            io.enq.bits.numBeats)
   assert(!full || (!do_enq || do_deq)) // Since we don't have backpressure, check for overflow
   when (do_enq) {
     addrs(enq_ptr.value).valid := true.B
@@ -403,8 +402,8 @@ class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, size: Int, len
   }
 
   val (inAddrMin, inAddrMax) = AddressRangePair(io.match_address.addr,
-                                            io.match_address.size,
-                                            io.match_address.len)
+                                            io.match_address.beatBytes,
+                                            io.match_address.numBeats)
 
   io.hit := addrs.exists({entry =>  entry.valid && 
                                     ((entry.bits.addrmin <= inAddrMin && 
@@ -821,32 +820,32 @@ class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module
 class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p: Parameters) extends UnitTest {
 
   val addrBits = 64
-  val sizeBits = 2
-  val lenBits = 8
+  val beatBytesBits = 2
+  val numBeatsBits = 8
   val nastiP = p.alterPartial({
     case NastiKey => NastiParameters(64, 16, 4)
   })
 
-  val tranXs = RegInit(0.U(12.W))
+  val tranXs = RegInit(0.U(log2Ceil(tranXCount + 1).W))
 
   val enqdeq = RegInit(false.B)
   enqdeq := !enqdeq
 
   val randEnqBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
   val enqAddr = randEnqBits << 8     //To give ample space for beats in address 
-  val enqSize = LFSRNoiseMaker(sizeBits, enqdeq) 
-  val enqLen = LFSRNoiseMaker(lenBits, enqdeq) 
+  val enqBytes = LFSRNoiseMaker(beatBytesBits, enqdeq) 
+  val enqBeats = LFSRNoiseMaker(numBeatsBits, enqdeq) 
 
   val randInBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
   val inAddr = randInBits << 8      //to give ample space for beats in address 
-  val inSize = LFSRNoiseMaker(sizeBits, enqdeq) 
-  val inLen = LFSRNoiseMaker(lenBits, enqdeq) 
+  val inBytes = LFSRNoiseMaker(beatBytesBits, enqdeq) 
+  val inBeats = LFSRNoiseMaker(numBeatsBits, enqdeq) 
 
-  val checker = Module(new FIFOAlignedAddressMatcher(16, addrBits, sizeBits, lenBits)).io
+  val checker = Module(new FIFOAlignedAddressMatcher(16, addrBits, beatBytesBits, numBeatsBits)).io
   
   checker.match_address.addr := 0.U + inAddr 
-  checker.match_address.size := 0.U + inSize 
-  checker.match_address.len := 0.U + inLen 
+  checker.match_address.beatBytes := 0.U + inBytes 
+  checker.match_address.numBeats := 0.U + inBeats 
   checker.deq := enqdeq 
 
   when(!enqdeq) {
@@ -854,12 +853,12 @@ class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p:
   }
 
   checker.enq.bits.addr := 0.U + enqAddr 
-  checker.enq.bits.size := 0.U + enqSize 
-  checker.enq.bits.len := 0.U + enqLen 
+  checker.enq.bits.beatBytes := 0.U + enqBytes 
+  checker.enq.bits.numBeats := 0.U + enqBeats 
   checker.enq.valid := !enqdeq 
 
-  val enqRange = (1.U << enqSize)*enqLen
-  val inRange = (1.U << inSize)*inLen
+  val enqRange = (1.U << enqBytes)*(enqBeats + 1.U)
+  val inRange = (1.U << inBytes)*(inBeats + 1.U)
 
   val enqAddrEnd = enqAddr + enqRange
   val inAddrEnd = inAddr + inRange
