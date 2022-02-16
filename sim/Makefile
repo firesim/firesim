@@ -6,19 +6,20 @@ endif
 
 firesim_base_dir := $(abspath .)
 
+.PHONY: default
 default: compile
 
 ##################
 #   Parameters   #
 ##################
 
-# Multiple target-projects, each with it's own chisel generator, co-exist in firesim.
+# Multiple target-projects, each with their own chisel generator, co-exist in firesim.
 # Their sources exist in:
 # src/main/{cc, scala, makefrag}/<target-project-name>
 #
 # Currently these projects are:
-# 	firesim: the default, rocket-chip-based target-designs
-# 	midasexamples: simple chisel designs demonstrating how to build midas-style simulators
+# 	firesim: the default, Chipyard-based target-designs
+# 	midasexamples: simple chisel designs demonstrating FireSim's features
 TARGET_PROJECT ?= firesim
 
 # Users can override this to point at a makefrag defined in a parent project
@@ -45,12 +46,6 @@ sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" 
 SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
 SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/target/active.json
-
-# By default build chisel3/firrtl and other subprojects from source
-# Workaround: Specify a firrtl version in system properties so that Treadle uses a
-# compatible version of FIRRTL and not 1.5-SNAPSHOT (which is the default
-# specified in it's build.sbt, and is not overridden by Chipyard's build.sbt)
-override SBT_OPTS += -DfirrtlVersion=1.4.1 -Dsbt.sourcemode=true -Dsbt.workspace=$(chipyard_dir)/tools
 
 ifdef ENABLE_SBT_THIN_CLIENT
 override SCALA_BUILDTOOL_DEPS += $(SBT_THIN_CLIENT_TIMESTAMP)
@@ -95,8 +90,6 @@ endif
 # Include target-specific sources and input generation recipes
 include $(TARGET_PROJECT_MAKEFRAG)
 
-verilog: $(VERILOG)
-compile: $(VERILOG)
 
 # Phony targets for launching the sbt shell and running scalatests
 SBT_COMMAND ?= shell

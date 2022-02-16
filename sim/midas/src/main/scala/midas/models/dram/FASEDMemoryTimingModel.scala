@@ -234,7 +234,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Since there is no diplomatic AXI4 width converter, use the TL one
     val xbar = LazyModule(new TLXbar)
     val error = LazyModule(new TLError(DevNullParams(
-        Seq(AddressSet(BigInt(1) << p(MemNastiKey).addrBits, 0xff)),
+        Seq(AddressSet(BigInt(1) << p(NastiKey).addrBits, 0xff)),
         maxAtomic = 1,
         maxTransfer = p(HostMemChannelKey).maxXferBytes),
       beatBytes = hostWidthBytes))
@@ -295,12 +295,12 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     // Track outstanding requests to the host memory system
     val hOutstandingReads = SatUpDownCounter(cfg.maxReads)
-    hOutstandingReads.inc := toHostDRAM.ar.fire()
-    hOutstandingReads.dec := toHostDRAM.r.fire() && toHostDRAM.r.bits.last
+    hOutstandingReads.inc := toHostDRAM.ar.fire
+    hOutstandingReads.dec := toHostDRAM.r.fire && toHostDRAM.r.bits.last
     hOutstandingReads.max := cfg.maxReads.U
     val hOutstandingWrites = SatUpDownCounter(cfg.maxWrites)
-    hOutstandingWrites.inc := toHostDRAM.aw.fire()
-    hOutstandingWrites.dec := toHostDRAM.b.fire()
+    hOutstandingWrites.inc := toHostDRAM.aw.fire
+    hOutstandingWrites.dec := toHostDRAM.b.fire
     hOutstandingWrites.max := cfg.maxWrites.U
 
     val host_mem_idle = hOutstandingReads.empty && hOutstandingWrites.empty
@@ -358,9 +358,9 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     writeEgress.io.resp.tReady := model.io.egressResp.bReady
     model.io.egressResp.bBits := writeEgress.io.resp.tBits
 
-    ingress.reset     := reset.toBool || tReset && tFireHelper.fire(ingressReady)
-    readEgress.reset  := reset.toBool || tReset && targetFire
-    writeEgress.reset := reset.toBool || tReset && targetFire
+    ingress.reset     := reset.asBool || tReset && tFireHelper.fire(ingressReady)
+    readEgress.reset  := reset.asBool || tReset && targetFire
+    writeEgress.reset := reset.asBool || tReset && targetFire
 
 
     if (cfg.params.localHCycleCount) {
@@ -509,7 +509,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
       // Ingress latencies
       val iReadLatencyHist = HostLatencyHistogram(
-        ingress.io.nastiInputs.hBits.ar.fire() && targetFire,
+        ingress.io.nastiInputs.hBits.ar.fire && targetFire,
         ingress.io.nastiInputs.hBits.ar.bits.id,
         ingress.io.nastiOutputs.ar.fire,
         ingress.io.nastiOutputs.ar.bits.id,
@@ -518,7 +518,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       attachIO(iReadLatencyHist, "ingressReadLatencyHist_")
 
       val iWriteLatencyHist = HostLatencyHistogram(
-        ingress.io.nastiInputs.hBits.aw.fire() && targetFire,
+        ingress.io.nastiInputs.hBits.aw.fire && targetFire,
         ingress.io.nastiInputs.hBits.aw.bits.id,
         ingress.io.nastiOutputs.aw.fire,
         ingress.io.nastiOutputs.aw.bits.id,
@@ -552,7 +552,6 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     genCRFile()
     dontTouch(targetFire)
     chisel3.experimental.annotate(Fame1ChiselAnnotation(model, "targetFire"))
-    getDefaultSettings("runtime.conf")
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
       def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
@@ -581,29 +580,30 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         case None => println("  No LLC Model Instantiated\n")
       }
     }
+  }
 
-    // Accepts an elaborated memory model and generates a runtime configuration for it
-    private def emitSettings(fileName: String, settings: Seq[(String, String)])(implicit p: Parameters): Unit = {
-      val file = new File(p(OutputDir), fileName)
-      val writer = new FileWriter(file, wId != 0)
-      settings.foreach({
-        case (field, value) => writer.write(s"+mm_${field}_${wId}=${value}\n")
-      })
-      writer.close
-    }
+  /**
+    * Disambiguates between multiple fased instances by using wId (this
+    * increments for each instantion of widgets of the same class), which
+    * is defined in Widget
+    */
+  def settingsToString(settings: Seq[(String, String)]): String =
+    settings.map { case (field, value) => s"+mm_${field}_${wId}=${value}" }.mkString("\n")
 
-    def getSettings(fileName: String)(implicit p: Parameters) {
-      println("\nGenerating a Midas Memory Model Configuration File")
-      val functionalModelSettings = funcModelRegs.getFuncModelSettings()
-      val timingModelSettings = model.io.mmReg.getTimingModelSettings()
-      emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
-    }
+  /**
+    * Used by the runtime configuration generator, and not the main GG flow.
+    */
+  def getSettings: String = {
+    println("\nGenerating a Midas Memory Model Configuration File")
+    val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
+    val timingModelSettings = module.model.io.mmReg.getTimingModelSettings()
+    settingsToString(functionalModelSettings ++ timingModelSettings)
+  }
 
-    def getDefaultSettings(fileName: String)(implicit p: Parameters) {
-      val functionalModelSettings = funcModelRegs.getDefaults()
-      val timingModelSettings = model.io.mmReg.getDefaults()
-      emitSettings(fileName, functionalModelSettings ++ timingModelSettings)
-    }
+  override def defaultPlusArgs: Option[String] = {
+    val functionalModelSettings = module.funcModelRegs.getDefaults()
+    val timingModelSettings = module.model.io.mmReg.getDefaults()
+    Some(settingsToString(functionalModelSettings ++ timingModelSettings))
   }
 }
 

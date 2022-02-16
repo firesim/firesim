@@ -12,9 +12,9 @@ import firrtl.Utils.BoolType
 import firrtl.transforms.{DedupModules}
 import firrtl.passes.MemPortUtils.memPortField
 import WrappedType.wt
-import Utils._
-import mdf.macrolib.SRAMMacro
-import mdf.macrolib.Utils.readMDFFromString
+
+import midas.passes.fame.{Or, And, Negate}
+
 
 import chisel3.experimental.ChiselAnnotation
 
@@ -26,7 +26,7 @@ private[passes] class Fame1Transform extends firrtl.passes.Pass {
   type Enables = collection.mutable.HashMap[String, Boolean]
   type Statements = collection.mutable.ArrayBuffer[Statement]
   private val targetFirePort = Port(NoInfo, "targetFire", Input, BoolType)
-  private val targetFire = wref(targetFirePort.name, targetFirePort.tpe)
+  private val targetFire = WRef(targetFirePort.name, targetFirePort.tpe)
 
   private def collect(ens: Enables)(s: Statement): Statement = {
     s match {
@@ -45,23 +45,23 @@ private[passes] class Fame1Transform extends firrtl.passes.Pass {
                       (s: Statement): Statement = s match {
     case s: WDefInstance =>
       Block(Seq(s,
-        Connect(NoInfo, wsub(wref(s.name), "targetFire"), targetFire)
+        Connect(NoInfo, WSubField(WRef(s.name), "targetFire"), targetFire)
       ))
     case s: DefRegister =>
-      val regRef = wref(s.name, s.tpe)
+      val regRef = WRef(s.name, s.tpe)
       stmts += Conditionally(NoInfo, targetFire, EmptyStmt, Connect(NoInfo, regRef, regRef))
-      s.copy(reset = and(s.reset, targetFire))
+      s.copy(reset = And(s.reset, targetFire))
     case s: Print =>
-      s.copy(en = and(s.en, targetFire))
+      s.copy(en = And(s.en, targetFire))
     case s: Stop =>
-      s.copy(en = and(s.en, targetFire))
+      s.copy(en = And(s.en, targetFire))
     case s: Connect => s.loc match {
       case e: WSubField => ens get e.serialize match {
         case None => s
         case Some(false) =>
-          s.copy(expr = and(s.expr, targetFire))
+          s.copy(expr = And(s.expr, targetFire))
         case Some(true) => // inverted port
-          s.copy(expr = or(s.expr, not(targetFire)))
+          s.copy(expr = Or(s.expr, Negate(targetFire)))
       }
       case _ => s
     }
@@ -114,7 +114,7 @@ class ModelFame1Transform(f1Modules: Map[String, String], f1ModuleSuffix: String
     def collectTargetFires(stmts: Statements)(s: Statement): Statement = s match {
       case s: WDefInstance if f1Modules.keys.toSeq.contains(s.module) =>
         val targetFireName = f1Modules(s.module)
-        stmts += Connect(NoInfo, wsub(wref(s.name), "targetFire"), wref(targetFireName, UnknownType))
+        stmts += Connect(NoInfo, WSubField(WRef(s.name), "targetFire"), WRef(targetFireName, UnknownType))
         s
       case s => s map collectTargetFires(stmts)
     }

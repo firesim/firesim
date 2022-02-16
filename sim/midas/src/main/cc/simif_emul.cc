@@ -50,7 +50,7 @@ void handle_sigterm(int sig) {
 
 simif_emul_t::~simif_emul_t() { }
 
-void simif_emul_t::init(int argc, char** argv, bool log) {
+void simif_emul_t::host_init(int argc, char** argv) {
   // Parse args
   std::vector<std::string> args(argv + 1, argv + argc);
   std::string waveform = "dump.vcd";
@@ -110,14 +110,11 @@ void simif_emul_t::init(int argc, char** argv, bool log) {
   for (size_t i = 0 ; i < 10 ; i++) ::tick();
   top->reset = 0;
 #endif
-
-  simif_t::init(argc, argv, log);
 }
 
-int simif_emul_t::finish() {
-  int exitcode = simif_t::finish();
+int simif_emul_t::host_finish() {
   ::finish();
-  return exitcode;
+  return 0;
 }
 
 void simif_emul_t::advance_target() {
@@ -141,16 +138,14 @@ void simif_emul_t::wait_read(std::unique_ptr<mmio_t>& mmio, void *data) {
 
 void simif_emul_t::write(size_t addr, data_t data) {
   size_t strb = (1 << CTRL_STRB_BITS) - 1;
-  // LS by 2 (the AXI4 size field) because the driver presents word addresses, but AXI4-lite expects
-  // byte addresses
   static_assert(CTRL_AXI4_SIZE == 2, "AXI4-lite control interface has unexpected size");
-  master->write_req(addr << CTRL_AXI4_SIZE, CTRL_AXI4_SIZE, 0, &data, &strb);
+  master->write_req(addr, CTRL_AXI4_SIZE, 0, &data, &strb);
   wait_write(master);
 }
 
 data_t simif_emul_t::read(size_t addr) {
   data_t data;
-  master->read_req(addr << CTRL_AXI4_SIZE, CTRL_AXI4_SIZE, 0);
+  master->read_req(addr, CTRL_AXI4_SIZE, 0);
   wait_read(master, &data);
   return data;
 }

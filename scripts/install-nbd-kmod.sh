@@ -10,7 +10,7 @@ KSRC='3.10.0-957.5.1.el7'
 
 # other vars
 TARGET=x86_64
-DISTSITE='http://vault.centos.org/7.6.1810'
+DISTSITE='http://mirror.nsc.liu.se/centos-store/7.6.1810'
 
 GENERICBUILDDIR=$(pwd)/build
 NBDBUILDDIR=$GENERICBUILDDIR/nbdbuild

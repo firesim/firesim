@@ -21,8 +21,6 @@ case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
-  override def cloneType = new PipeChannelIO(gen)(p).asInstanceOf[this.type]
-
 }
 
 class PipeChannel[T <: ChLeafType](
@@ -37,7 +35,7 @@ class PipeChannel[T <: ChLeafType](
   io.out <> tokens.io.deq
 
   if (latency == 1) {
-    val initializing = RegNext(reset.toBool)
+    val initializing = RegNext(reset.asBool)
     when(initializing) {
       tokens.io.enq.valid := true.B
       tokens.io.enq.bits := 0.U.asTypeOf(tokens.io.enq.bits)
@@ -99,14 +97,13 @@ class PipeChannelUnitTest(
 //  - ready -> rev.hReady
 //  - bits  -> target.ready
 //
-// WARNING: Target.fire() is meaningless unless are fwd and rev channels are
+// WARNING: Target.fire is meaningless unless are fwd and rev channels are
 // synchronized and carry valid tokens
 
 class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
   val fwd = new HostReadyValid
   val rev = Flipped(new HostReadyValid)
-  override def cloneType = new SimReadyValidIO(gen).asInstanceOf[this.type]
 
   def generateFwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
     AssertTokenIrrevocable(fwd.hValid, Cat(target.valid, target.bits.asUInt), fwd.hReady, suggestedName)
@@ -117,7 +114,7 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   // Returns two directioned objects driven by this SimReadyValidIO hw instance
   def bifurcate(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
     // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
-    class BifurcationModule[T <: Data](gen: T) extends MultiIOModule {
+    class BifurcationModule[T <: Data](gen: T) extends Module {
       val fwd = IO(Decoupled(Valid(gen)))
       val rev = IO(Flipped(DecoupledIO(Bool())))
       val coupled = IO(Flipped(cloneType))
@@ -139,7 +136,7 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   // Returns two directioned objects which will drive this SimReadyValidIO hw instance
   def combine(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
     // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
-    class CombiningModule[T <: Data](gen: T) extends MultiIOModule {
+    class CombiningModule[T <: Data](gen: T) extends Module {
       val fwd = IO(Flipped(DecoupledIO(Valid(gen))))
       val rev = IO((Decoupled(Bool())))
       val coupled = IO(cloneType)
@@ -167,7 +164,6 @@ class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bun
   val enq = Flipped(SimReadyValid(gen))
   val deq = SimReadyValid(gen)
   val targetReset = Flipped(Decoupled(Bool()))
-  override def cloneType = new ReadyValidChannelIO(gen)(p).asInstanceOf[this.type]
 }
 
 class ReadyValidChannel[T <: Data](
@@ -198,7 +194,7 @@ class ReadyValidChannel[T <: Data](
     (enqRevFired || io.enq.rev.hReady),
     (deqFwdFired || io.deq.fwd.hReady))
 
-  val targetFire = finishing.fire()
+  val targetFire = finishing.fire
   val enqBitsLast = RegEnable(enqFwdQ.io.deq.bits.bits, targetFire)
   // enqRev
   io.enq.rev.hValid := !enqRevFired
@@ -213,7 +209,7 @@ class ReadyValidChannel[T <: Data](
   enqFwdQ.io.deq.ready := finishing.fire(enqFwdQ.io.deq.valid)
   deqRevQ.io.deq.ready := finishing.fire(deqRevQ.io.deq.valid)
 
-  reference.reset := reset.toBool || targetFire && io.targetReset.bits
+  reference.reset := reset.asBool || targetFire && io.targetReset.bits
   reference.io.enq.valid := targetFire && enqFwdQ.io.deq.bits.valid
   reference.io.enq.bits  := Mux(targetFire, enqFwdQ.io.deq.bits.bits, enqBitsLast)
   reference.io.deq.ready := targetFire && deqRevQ.io.deq.bits
@@ -259,7 +255,7 @@ class ReadyValidChannelUnitTest(
   // that will more closely the FPGA
   val enqCount = RegInit(0.U(log2Ceil(queueDepth + 1).W))
   val memFullyDefined = enqCount === queueDepth.U
-  enqCount := Mux(!memFullyDefined && reference.io.enq.fire && !reference.reset.toBool, enqCount + 1.U, enqCount)
+  enqCount := Mux(!memFullyDefined && reference.io.enq.fire && !reference.reset.asBool, enqCount + 1.U, enqCount)
 
   // Track the target cycle at which all entries are known
   val memFullyDefinedCycle = RegInit(1.U(log2Ceil(2*timeout).W))

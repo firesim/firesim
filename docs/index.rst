@@ -1,10 +1,5 @@
-.. FireSim documentation master file, created by
-   sphinx-quickstart on Thu Apr 26 23:51:51 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to FireSim's documentation!
-===================================
+Welcome to FireSim's documentation (version "|version|")!
+===========================================================
 
 New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
@@ -33,7 +28,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
    :maxdepth: 3
-   :caption: Golden Gate (MIDAS II) Docs:
+   :caption: Compiler (Golden Gate) Docs:
 
    Golden-Gate/Overview
    Golden-Gate/LI-BDN
@@ -41,6 +36,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Golden-Gate/Bridge-Walkthrough
    Golden-Gate/Triggers
    Golden-Gate/Resource-Optimizations
+   Golden-Gate/Output-Files
 
 Indices and tables
 ==================

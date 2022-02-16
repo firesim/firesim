@@ -3,10 +3,11 @@
 package midas
 package widgets
 
+import midas.stage.GoldenGateOutputFileAnnotation
+
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
+import chisel3.experimental.DataMirror
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
@@ -34,6 +35,8 @@ class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
   val ctrl = Flipped(WidgetMMIO())
 }
 abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
+  require(p(CtrlNastiKey).dataBits == 32, "Control bus data width must be 32b per AXI4-lite standard")
+
   override def module: WidgetImp
   val (wName, wId) = Widget.assignName(this)
   this.suggestName(wName)
@@ -53,19 +56,20 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   }
 
   val customSize: Option[BigInt] = None
-  def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.io.ctrl.nastiXDataBits/8))))
+  def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.ctrlWidth/8))))
 
   def printCRs = module.crRegistry.printCRs
+
+  def defaultPlusArgs: Option[String] = None
 }
 
 abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
-  val crRegistry = new MCRFileMap()
+  val ctrlWidth = p(CtrlNastiKey).dataBits
+  val crRegistry = new MCRFileMap(ctrlWidth / 8)
   def numRegs = crRegistry.numRegs
 
   def io: WidgetIO
 
-  // Default case we set the region to be large enough to hold the CRs
-  lazy val ctrlWidth = io.ctrl.nastiXDataBits
   def numChunks(e: Bits): Int = ((e.getWidth + ctrlWidth - 1) / ctrlWidth)
 
   def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
@@ -76,21 +80,34 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   //   For inputs, generates a registers and binds that to the map
   //   For outputs, direct binds the wire to the map
   def attachIO(io: Record, prefix: String = ""): Unit = {
-    def innerAttachIO(node: Data, name: String): Unit = node match {
-      case (b: Bits) => (directionOf(b): @unchecked) match {
+
+    /**
+      * For FASED memory timing models, initalize programmable registers to defaults if provided.
+      * See [[midas.models.HasProgrammableRegisters]] for more detail.
+      */
+    def getInitValue(field: Bits, parent: Data): Option[UInt] = parent match {
+      case p: midas.models.HasProgrammableRegisters if p.regMap.isDefinedAt(field) =>
+        Some(p.regMap(field).default.U)
+      case _ => None
+    }
+
+    def innerAttachIO(node: Data, parent: Data, name: String): Unit = node match {
+      case (b: Bits) => (DataMirror.directionOf(b): @unchecked) match {
         case ActualDirection.Output => attach(b, s"${name}", ReadOnly)
-        case ActualDirection.Input => genWOReg(b, name)
+        case ActualDirection.Input =>
+          genAndAttachReg(b, name, getInitValue(b, parent))
       }
       case (v: Vec[_]) => {
-        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, s"${name}_$idx")})
+        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, node, s"${name}_$idx")})
       }
       case (r: Record) => {
-        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, s"${name}_${subName}")})
+        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, node, s"${name}_${subName}")})
       }
       case _ => new RuntimeException("Cannot bind to this sort of node...")
     }
-    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, s"${prefix}${name}")})
+    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, io, s"${prefix}${name}")})
   }
+
 
   def attachDecoupledSink(channel: DecoupledIO[UInt], name: String): Int = {
     crRegistry.allocate(DecoupledSinkEntry(channel, name))
@@ -112,7 +129,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
       name: String,
       default: Option[T] = None,
       masterDriven: Boolean = true): T = {
-    require(wire.getWidth <= io.ctrl.nastiXDataBits)
+    require(wire.getWidth <= ctrlWidth)
     val reg = default match {
       case None => Reg(wire.cloneType)
       case Some(init) => RegInit(init)
@@ -133,13 +150,12 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
 
   def genWideRORegInit[T <: Bits](default: T, name: String): T = {
-    val cW = io.ctrl.nastiXDataBits
     val reg = RegInit(default)
     val shadowReg = Reg(default.cloneType)
     shadowReg.suggestName(s"${name}_mmreg")
-    val baseAddr = Seq.tabulate((default.getWidth + cW - 1) / cW)({ i =>
-      val msb = math.min(cW * (i + 1) - 1, default.getWidth - 1)
-      val slice = shadowReg(msb, cW * i)
+    val baseAddr = Seq.tabulate((default.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
+      val msb = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
+      val slice = shadowReg(msb, ctrlWidth * i)
       attach(slice, s"${name}_$i", ReadOnly)
     }).head
     // When a read request is made of the low order address snapshot the entire register
@@ -236,8 +252,7 @@ trait HasWidgets {
   }
 
   def genHeader(sb: StringBuilder) {
-    // Converts byte addresses to AXI4-lite (i.e., 32-bit wide) word addresses
-    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start >> 2, sb))
+    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, sb))
   }
 
   def printWidgets {
@@ -255,4 +270,17 @@ trait HasWidgets {
     val base = (addrMap(w.getWName).start >> log2Up(channelWidth/8))
     base + w.getCRAddr(crName)
   }
+
+  /**
+    * Iterates through all bound widgets requesting default plusArgs if
+    * applicable, which are then serialized to a file.  This is mostly useful
+    * for bridges that do not have defaults baked into the driver, such as
+    * FASED, where plus args _must_ be provided.
+    */
+  def emitDefaultPlusArgsFile(): Unit =
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      // Append an extra \n to prevent the file from being empty.
+      body = widgets.map(_.defaultPlusArgs).flatten.mkString("\n") + "\n",
+      fileSuffix = ".runtime.conf"
+    )
 }

@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -47,7 +47,7 @@ const size_t multireg_r_data_ios[multireg_n_copies][multireg_n_reads] =
     { io_accesses_3_reads_0_data, io_accesses_3_reads_1_data },
     { io_accesses_4_reads_0_data, io_accesses_4_reads_1_data } };
 
-class MultiRegfile_t: virtual simif_t
+class MultiRegfile_t: public simif_peek_poke_t
 {
 public:
 

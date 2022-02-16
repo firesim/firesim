@@ -13,10 +13,12 @@ import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation}
 import firrtl.stage.{Forms, FirrtlCircuitAnnotation}
 import firrtl.stage.transforms.Compiler
 
-class GoldenGateCompilerPhase extends Phase with ConfigLookup {
+class GoldenGateCompilerPhase extends Phase {
 
-  override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
-  override val optionalPrerequisiteOf = Seq(Dependency[firrtl.stage.phases.WriteEmitted])
+  override val prerequisites = Seq(
+    Dependency(midas.stage.Checks),
+    Dependency(midas.stage.AddDerivedAnnotations),
+    Dependency[CreateParametersInstancePhase])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val allCircuits = annotations.collect({ case FirrtlCircuitAnnotation(circuit) => circuit })
@@ -28,7 +30,12 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
     val state = CircuitState(allCircuits.head, firrtl.ChirrtlForm, annotations ++ midasAnnos)
 
     // Lower the target design and run additional target transformations before Golden Gate xforms
-    val targetLoweringCompiler = new Compiler(Forms.LowForm ++ p(TargetTransforms))
+    val targetLoweringCompiler = new Compiler(
+      Seq(
+        Dependency[midas.passes.RunConvertAssertsEarly],
+        Dependency(firrtl.transforms.formal.ConvertAsserts)) ++
+      Forms.LowForm ++
+      p(TargetTransforms))
     logger.info("Pre-GG Target Transformation Ordering\n")
     logger.info(targetLoweringCompiler.prettyPrint("  "))
     val loweredTarget = targetLoweringCompiler.execute(state)
@@ -40,7 +47,10 @@ class GoldenGateCompilerPhase extends Phase with ConfigLookup {
 
     // Lower and emit simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      Dependency[firrtl.VerilogEmitter] +:
+      // We should probably ensure all provided Host Transforms run before
+      // these two.  Perhaps we should just use a fourth compiler, or make sure
+      // user provided passes specify the right prerequisites?
+      Seq(Dependency[firrtl.SystemVerilogEmitter], Dependency(midas.passes.WriteXDCFile)) ++:
       p(HostTransforms),Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(hostLoweringCompiler.prettyPrint("  "))

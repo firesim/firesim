@@ -1,9 +1,9 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/synthesized_assertions.h"
 
-class MulticlockAssertModule_t: virtual simif_t
+class MulticlockAssertModule_t: public simif_peek_poke_t
 {
 public:
     std::vector<synthesized_assertions_t *> assert_endpoints;

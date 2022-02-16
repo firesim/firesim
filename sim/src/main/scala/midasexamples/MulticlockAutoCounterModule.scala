@@ -13,23 +13,26 @@ import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 // from verilator/vcs and compare against the two files produced by
 // the bridges
 class MulticlockAutoCounterModule(implicit p: Parameters) extends RawModule {
-  val clockBridge = RationalClockBridge(RationalClock("ThirdRate", 1, 3))
-  val List(refClock, div2Clock) = clockBridge.io.clocks.toList
+  val clockBridge = RationalClockBridge(RationalClock("SlowClock", 1, 3))
+  val List(refClock, slowClock) = clockBridge.io.clocks.toList
   val reset = WireInit(false.B)
-  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.toBool)
+  val slowReset = ResetCatchAndSync(slowClock, reset.asBool)
   // Used to let printfs that emit the correct validation output
   val instPath = "MulticlockAutoCounterModule_AutoCounterModuleDUT"
   withClockAndReset(refClock, reset) {
     val lfsr = chisel3.util.random.LFSR(16)
-    val fullRateMod = Module(new AutoCounterModuleDUT(instName = "secondRate"))
+    val fullRateMod = Module(new AutoCounterModuleDUT(instName = "secondRate")(new AutoCounterValidator))
     fullRateMod.io.a := lfsr(0)
     val peekPokeBridge = PeekPokeBridge(refClock, reset)
   }
-  withClockAndReset(div2Clock, resetHalfRate) {
+
+  withClockAndReset(slowClock, slowReset) {
     val lfsr = chisel3.util.random.LFSR(16)
-    val fullRateMod = Module(new AutoCounterModuleDUT("AUTOCOUNTER_PRINT_THIRDRATE ",
-                                                      instName = "thirdRate",
-                                                      clockDivision = 3))
+    val fullRateMod = Module(new AutoCounterModuleDUT("slowClock")(
+      new AutoCounterValidator(
+        domainName = "SlowClock",
+        printfPrefix = "AUTOCOUNTER_PRINT_SLOWCLOCK ",
+        clockDivision = 3)))
     fullRateMod.io.a := lfsr(0)
   }
 }

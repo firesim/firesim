@@ -8,8 +8,15 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
+import midas.targetutils.{PerfCounterOpType, PerfCounterOps}
+import midas.widgets.CppGenerationUtils.{genConstStatic, genArray}
+
 trait AutoCounterConsts {
   val counterWidth = 64
+
+  /* Quotes the description escapes potentially troublesome characters */
+  def sanitizeDescriptionForCSV(description: String): String =
+    '"' + description.replaceAll("\"", "\"\"") + '"'
 }
 
 /**
@@ -17,33 +24,52 @@ trait AutoCounterConsts {
   *
   * @param portName the name of the IF exposed to the bridge by the autocounter transform
   *
-  * @param label provides more detail about the nature of the event
+  * @param label The user provided [[AutoCounterFirrtlAnnotation]].label prepended with an instance path.
   *
-  * @param width the bitwidth of the event
+  * @param description A passthrough of [[AutoCounterFirrtlAnnotation]].description
+  *
+  * @param width The bitwidth of the event
+  *
+  * @param opType The type of accumulation operation to apply to event
   */
-case class EventMetadata(portName: String, label: String, width: Int)
+case class EventMetadata(
+  portName: String,
+  label: String,
+  description: String,
+  width: Int,
+  opType: PerfCounterOpType) extends AutoCounterConsts
 
-class AutoCounterBundle(eventMetadata: Seq[EventMetadata], triggerName: String) extends Record {
+object EventMetadata {
+  val localCycleCount = EventMetadata(
+    "N/A",
+    "local_cycle",
+    "Clock cycles elapsed in the local domain.",
+    1,
+    PerfCounterOps.Accumulate)
+}
+
+class AutoCounterBundle(
+    eventMetadata: Seq[EventMetadata],
+    triggerName: String,
+    resetPortName: String) extends Record {
   val triggerEnable = Input(Bool())
+  val underGlobalReset = Input(Bool())
   val events = eventMetadata.map(e => e.portName -> Input(UInt(e.width.W)))
-  val elements = collection.immutable.ListMap(((triggerName, triggerEnable) +:
-                                               events):_*)
-  override def cloneType = new AutoCounterBundle(eventMetadata, triggerName).asInstanceOf[this.type]
+  val elements = collection.immutable.ListMap((
+    (triggerName, triggerEnable) +:
+    (resetPortName, underGlobalReset) +:
+    events):_*)
+  override def cloneType = new AutoCounterBundle(eventMetadata, triggerName, resetPortName).asInstanceOf[this.type]
 }
 
-class AutoCounterToHostToken(val numCounters: Int) extends Bundle with AutoCounterConsts {
-  val data_out = Vec(numCounters, UInt(counterWidth.W))
-  val cycle = UInt(counterWidth.W)
-}
-
-class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: String)(implicit p: Parameters)
+class AutoCounterBridgeModule(
+    eventMetadata: Seq[EventMetadata],
+    triggerName: String,
+    resetPortName: String)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) with AutoCounterConsts {
   lazy val module = new BridgeModuleImp(this) {
-    val numCounters = eventMetadata.size
-    val labels = eventMetadata.map(_.label)
-
     val io = IO(new WidgetIO())
-    val hPort = IO(HostPort(new AutoCounterBundle(eventMetadata, triggerName)))
+    val hPort = IO(HostPort(new AutoCounterBundle(eventMetadata, triggerName, resetPortName)))
     val trigger = hPort.hBits.triggerEnable
     val cycles = RegInit(0.U(counterWidth.W))
     val acc_cycles = RegInit(0.U(counterWidth.W))
@@ -74,38 +100,58 @@ class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: St
       cycles := cycles + 1.U
     }
 
-    val counters = hPort.hBits.events.unzip._2.map({ increment =>
-      val count = RegInit(0.U(counterWidth.W))
-      when (targetFire) {
-        count := count + increment
+    val counters = for (((_, field), metadata) <- hPort.hBits.events.zip(eventMetadata)) yield {
+      metadata.opType match {
+        case PerfCounterOps.Accumulate =>
+          val count = RegInit(0.U(counterWidth.W))
+          when (targetFire && !hPort.hBits.underGlobalReset) {
+            count := count + field
+          }
+          count
+        // Under local reset identity fields are zeroed out. This matches that behavior.
+        case PerfCounterOps.Identity =>
+          Mux(hPort.hBits.underGlobalReset, 0.U, field).pad(counterWidth)
       }
-      count
-    }).toSeq
+    }
 
     val periodcycles = RegInit(0.U(64.W))
     val isSampleCycle = periodcycles === readrate
+    // Pipeline sample by one cycle, so that events on the final clock cycle of
+    // the interval can be captured.  This has the effect of making a signal
+    // that is always high read a multiple of N, where N is the sampling rate.
+    val doSample = RegInit(false.B)
     when (targetFire && isSampleCycle) {
       periodcycles := 0.U
+      doSample := true.B
     } .elsewhen (targetFire) {
       periodcycles := periodcycles + 1.U
+      doSample := false.B
     }
 
-    val btht_queue = Module(new Queue(new AutoCounterToHostToken(numCounters), 2))
+    val allEventMetadata = EventMetadata.localCycleCount +: eventMetadata
+    val allCounters      = cycles +: counters
 
-    btht_queue.io.enq.valid := isSampleCycle & targetFire & trigger
-    btht_queue.io.enq.bits.data_out := VecInit(counters)
-    btht_queue.io.enq.bits.cycle := cycles
+    assert(allCounters.size == allEventMetadata.size)
+    val numCounters = allCounters.size
+    val labels = allEventMetadata.map(_.label)
+
+    val btht_queue = Module(new Queue(Vec(numCounters, UInt(counterWidth.W)), 2))
+
+    btht_queue.io.enq.valid := doSample && targetFire && trigger
+    btht_queue.io.enq.bits := VecInit(allCounters)
     hPort.toHost.hReady := targetFire
 
-    val (lowCountAddrs, highCountAddrs) = (for ((counter, label) <- btht_queue.io.deq.bits.data_out.zip(labels)) yield {
+    val (lowCountAddrs, highCountAddrs) = (for ((counter, label) <- btht_queue.io.deq.bits.zip(labels)) yield {
       val lowAddr = attach(counter(hostCounterLowWidth-1, 0), s"autocounter_low_${label}", ReadOnly)
       val highAddr = attach(counter >> hostCounterLowWidth, s"autocounter_high_${label}", ReadOnly)
       (lowAddr, highAddr)
     }).unzip
 
     //communication with the driver
-    attach(btht_queue.io.deq.bits.cycle(hostCyclesLowWidth-1, 0), "cycles_low", ReadOnly)
-    attach(btht_queue.io.deq.bits.cycle >> hostCyclesLowWidth, "cycles_high", ReadOnly)
+    // These are not current used, but are convienent to poke at from the driver
+    attach(btht_queue.io.deq.bits(0)(hostCyclesLowWidth-1, 0), "cycles_low", ReadOnly)
+    attach(btht_queue.io.deq.bits(0) >> hostCyclesLowWidth, "cycles_high", ReadOnly)
+
     attach(readrate_low, "readrate_low", WriteOnly)
     attach(readrate_high, "readrate_high", WriteOnly)
     attach(initDone, "init_done", WriteOnly)
@@ -120,6 +166,14 @@ class AutoCounterBridgeModule(eventMetadata: Seq[EventMetadata], triggerName: St
       crRegistry.genHeader(headerWidgetName, base, sb, lowCountAddrs ++ highCountAddrs)
       crRegistry.genArrayHeader(headerWidgetName, base, sb)
       emitClockDomainInfo(headerWidgetName, sb)
+      sb.append(genConstStatic(s"${headerWidgetName}_event_count",  UInt32(allEventMetadata.size)))
+      sb.append(genArray(s"${headerWidgetName}_event_types",  allEventMetadata.map { m => CStrLit(m.opType.toString) }))
+      sb.append(genArray(s"${headerWidgetName}_event_labels", allEventMetadata.map { m => CStrLit(m.label) } ))
+      sb.append(genArray(s"${headerWidgetName}_event_descriptions", allEventMetadata.map { m => CStrLit(m.description) } ))
+      sb.append(genArray(s"${headerWidgetName}_event_addr_hi", highCountAddrs.map { offset => UInt32(base + offset) } ))
+      sb.append(genArray(s"${headerWidgetName}_event_addr_lo", lowCountAddrs.map {  offset => UInt32(base + offset) } ))
+      sb.append(genArray(s"${headerWidgetName}_event_widths", allEventMetadata.map { m => UInt32(m.width) } ))
+      sb.append(genArray(s"${headerWidgetName}_accumulator_widths", allEventMetadata.map { m => UInt32(m.counterWidth) } ))
     }
     genCRFile()
   }

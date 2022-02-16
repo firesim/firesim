@@ -10,6 +10,8 @@ import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{DMANastiKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
+import midas.stage.GoldenGateOutputFileAnnotation
+import midas.targetutils.xdc._
 
 case object AXIDebugPrint extends Field[Boolean]
 
@@ -34,10 +36,24 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...
-    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 1 << p(CtrlNastiKey).idBits)
+    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire, 1 << p(CtrlNastiKey).idBits)
     top.module.ctrl.aw.bits.id := wCounterValue
 
-    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 1 << p(CtrlNastiKey).idBits)
+    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire, 1 << p(CtrlNastiKey).idBits)
     top.module.ctrl.ar.bits.id := rCounterValue
+
+    // Capture FPGA-toolflow related verilog defines
+    def channelInUse(idx: Int): String = if (idx < top.dramChannelsRequired) "1" else "0"
+
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      s"""|// Optionally instantiate additional memory channels if required.
+          |// The first channel (C) is provided by the shell and is not optional.
+          |`define USE_DDR_CHANNEL_A ${channelInUse(1)}
+          |`define USE_DDR_CHANNEL_B ${channelInUse(2)}
+          |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
+          |""".stripMargin,
+      fileSuffix = ".defines.vh")
+
+    SpecifyXDCCircuitPaths(Some("firesim_top"), Some("WRAPPER_INST/CL/firesim_top"))
   }
 }

@@ -29,7 +29,7 @@ class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
 
   def valid(): Bool = (wb_in_flight || acq_in_flight) && enabled
   def available(): Bool = !valid && enabled
-  def setCollision(set_addr: UInt): Bool = (set_addr === this.set_addr) && valid 
+  def setCollision(set_addr: UInt): Bool = (set_addr === this.set_addr) && valid
 
   // Call on a MSHR register; sets all pertinent fields (leaving enabled untouched)
   def allocate(
@@ -42,8 +42,6 @@ class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
     acq_in_flight := do_acq
     xaction := new_xaction
   }
-
-  override def cloneType = new MSHR(llcKey)(p).asInstanceOf[this.type]
 }
 
 object MSHR {
@@ -63,7 +61,6 @@ class BlockMetadata(tagBits: Int) extends Bundle {
   val tag = UInt(tagBits.W)
   val valid = Bool()
   val dirty = Bool()
-  override def cloneType = new BlockMetadata(tagBits).asInstanceOf[this.type]
 }
 
 class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
@@ -114,7 +111,6 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle
 case class WRange(min: Int, max: Int) {
   def minBits: Int = log2Ceil(min)
   def maxBits: Int = log2Ceil(max)
-  override def toString(): String = s"[${min},${max}]"
 }
 
 case class LLCParams(
@@ -172,12 +168,12 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val mshr_available = mshrs.exists({m: MSHR => m.available() })
   val mshr_next_idx = mshrs.indexWhere({ m: MSHR => m.available() })
 
-  // TODO: Put this on a switch
   val mshrs_allocated = mshrs.count({m: MSHR => m.valid})
-  assert((mshrs_allocated < io.settings.activeMSHRs) || !mshr_available,
+  assert((mshrs_allocated < RegNext(io.settings.activeMSHRs)) || !mshr_available,
     "Too many runtime MSHRs exposed given runtime programmable limit")
-  assert((mshrs_allocated === io.settings.activeMSHRs) || mshr_available,
-    "Too few runtime MSHRs exposed given runtime programmable limit")
+
+  assert((mshrs_allocated === RegNext(io.settings.activeMSHRs)) || mshr_available,
+    "Too few runtime MSHRs exposed given runtime programmable limit.")
 
   val s2_ar_mem = Module(new Queue(new NastiReadAddressChannel, 2))
   val s2_aw_mem = Module(new Queue(new NastiWriteAddressChannel, 2))
@@ -284,7 +280,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
 
   // Refill Issue
-  // For now always fetch whole cache lines from DRAM, even if fewer beats are required for 
+  // For now always fetch whole cache lines from DRAM, even if fewer beats are required for
   // a write-triggered refill
   val current_line_addr = io.settings.regenPhysicalAddress(s1_set_addr, s1_tag_addr)
   s2_ar_mem.io.enq.bits := NastiReadAddressChannel(

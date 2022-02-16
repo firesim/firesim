@@ -13,7 +13,7 @@ import freechips.rocketchip.subsystem.{ExtMem, MemoryPortParams}
 
 import junctions.{NastiKey, NastiParameters}
 import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.widgets.{PeekPokeBridge, RationalClockBridge}
+import midas.widgets.{PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
 
 case class FuzzerParameters(numTransactions: Int, maxFlight: Int, overrideAddress: Option[AddressSet])
 case object FuzzerParametersKey extends Field[Seq[FuzzerParameters]]()
@@ -73,7 +73,7 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,
                                      axi4.ar.bits.addr.getWidth,
                                      axi4.ar.bits.id.getWidth)
-      val fasedInstance =  FASEDBridge(clock, axi4, reset.toBool,
+      val fasedInstance =  FASEDBridge(clock, axi4, reset.asBool,
         CompleteConfig(p(firesim.configs.MemModelKey),
                        nastiKey,
                        Some(AXI4EdgeSummary(edge)),
@@ -86,9 +86,13 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
   val reset = WireInit(false.B)
   val clockBridge = RationalClockBridge()
   val clock = clockBridge.io.clocks(0)
-  withClockAndReset(clock, reset) {
+
+  val resetBridge = Module(new ResetPulseBridge(ResetPulseBridgeParameters()))
+  resetBridge.io.clock := clock
+  withClockAndReset(clock, resetBridge.io.reset) {
+    val dummyReset = WireInit(false.B)
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
-    val peekPokeBridge = PeekPokeBridge(clock, reset,
+    val peekPokeBridge = PeekPokeBridge(clock, dummyReset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
   }

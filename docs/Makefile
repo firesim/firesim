@@ -2,8 +2,8 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
+SPHINXOPTS    = -w warnings.txt -n -W
+SPHINXBUILD   = python3 -msphinx
 SPHINXPROJ    = FireSim
 SOURCEDIR     = .
 BUILDDIR      = _build

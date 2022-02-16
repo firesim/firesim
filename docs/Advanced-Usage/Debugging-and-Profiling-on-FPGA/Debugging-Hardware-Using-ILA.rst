@@ -1,3 +1,5 @@
+.. _auto-ila:
+
 AutoILA: Simple Integrated Logic Analyzer (ILA) Insertion
 ===================================================================
 
@@ -11,10 +13,16 @@ and provided and interface for setting trigger and viewing samples waveforms
 from the FPGA. For more information about ILAs, please refer to the Xilinx
 guide on the topic.
 
-MIDAS, in its ``targetutils`` package, provides annotations for labeling
+The ``midas.targetutils`` package provides annotations for labeling
 signals directly in the Chisel source. These will be consumed by a downstream
 FIRRTL pass which wires out the annotated signals, and binds them to an
 appropriately sized ILA instance.
+
+Enabling AutoILA
+----------------
+
+To enable AutoILA, mixin `WithAutoILA` must be prepended to the
+`PLATFORM_CONFIG`. Prior to version 1.13, this was done by default.
 
 Annotating Signals
 ------------------------
@@ -33,7 +41,7 @@ vararg of chisel3.Data. Invoke it as follows:
        FpgaDebug(out1, in1)
     }
 
-You can annotate signals throughout FireSim, including in MIDAS and
+You can annotate signals throughout FireSim, including in Golden Gate
 Rocket-Chip Chisel sources, with the only exception being the Chisel3 sources
 themselves (eg. in Chisel3.util.Queue).
 

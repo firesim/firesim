@@ -1,9 +1,9 @@
 //See LICENSE for license details.
 
 #include <stack>
-#include "simif.h"
+#include "simif_peek_poke.h"
 
-class Stack_t: public virtual simif_t
+class Stack_t: public simif_peek_poke_t
 {
 public:
   Stack_t(int argc, char** argv) {}

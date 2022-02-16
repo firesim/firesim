@@ -44,7 +44,14 @@ public:
 
   void emit_file_header(std::ostream& os) {
     os << file_header();
-  }
+  };
+
+  std::string as_csv_row() {
+    char buf[200];
+    sprintf(buf, "Clock Domain Name, %s, Base Multiplier, %d, Base Divisor, %d\n",
+            domain_name, multiplier, divisor);
+    return std::string(buf);
+  };
 
 };
 

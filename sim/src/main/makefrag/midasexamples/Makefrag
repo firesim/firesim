@@ -14,15 +14,15 @@ name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
+# This is prefix is currently assumed by the fpga build flow
+BASE_FILE_NAME := FireSim-generated
+
 ##########################
 # RTL Generation         #
 ##########################
 long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
-
-VERILOG := $(GENERATED_DIR)/FPGATop.v
-HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
 
 ifdef FIRESIM_STANDALONE
 	firesim_sbt_project := firesim
@@ -32,12 +32,10 @@ endif
 
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
+		$(addprefix $(chipyard_dir)/generators/, rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
-
-CONF_NAME ?= runtime.conf
 
 SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
 mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
@@ -46,13 +44,11 @@ vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator, \
+	$(call run_scala_main,$(firesim_sbt_project),freechips.rocketchip.system.Generator, \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
-	# Remove once runtime conf generation is generalized, and something is always emitted
-	touch $(GENERATED_DIR)/$(CONF_NAME)
+		--configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG))
 
 ##########################
 # Driver Sources & Flags #
@@ -61,7 +57,9 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS
 driver_dir = $(firesim_base_dir)/src/main/cc
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
-DRIVER_CC := $(driver_dir)/midasexamples/Driver.cc \
+DRIVER_CC := \
+		$(driver_dir)/midasexamples/simif_peek_poke.cc \
+		$(driver_dir)/midasexamples/Driver.cc \
 		$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* )))  \
 		$(RISCV)/lib/libfesvr.a
 
@@ -75,7 +73,7 @@ TARGET_LD_FLAGS :=
 # PointerChaser requires a custom memory initialization
 ifeq ($(DESIGN),PointerChaser)
 LOADMEM ?= $(GENERATED_DIR)/mem_init.hex
-ARGS    ?= `cat runtime.conf`
+ARGS    ?= `cat $(SIM_RUNTIME_CONF)`
 
 $(LOADMEM): src/main/resources/midasexamples/generate_memory_init.py
 	$< --output_file $@

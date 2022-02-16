@@ -1,10 +1,10 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/endpoint.h"
 #include "bridges/fased_memory_timing_model.h"
 
-class PointerChaser_t: virtual simif_t
+class PointerChaser_t: public simif_peek_poke_t
 {
 public:
   PointerChaser_t(int argc, char** argv) {

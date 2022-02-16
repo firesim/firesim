@@ -3,8 +3,9 @@ simulation tasks. """
 
 from __future__ import print_function
 
+from datetime import timedelta
 from time import strftime, gmtime
-import ConfigParser
+import configparser
 import pprint
 import logging
 
@@ -19,6 +20,7 @@ import os
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
+LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
@@ -63,6 +65,14 @@ class RuntimeHWConfig:
         fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
         return fpga_driver_local
 
+    def get_local_shared_libraries(self):
+        """ Returns a list of path tuples, (A, B), where:
+            A is the local file path on the manager instance to the library
+            B is the destination file path on the runfarm instance relative to the driver """
+
+        return [[LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
+                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]]
+
     def get_local_runtimeconf_binaryname(self):
         """ Get the name of the runtimeconf file. """
         return "runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
@@ -96,7 +106,7 @@ class RuntimeHWConfig:
 
         # TODO: supernode support
         tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
-        autocounterfile = "+autocounter-filename=AUTOCOUNTERFILE"
+        autocounterfile = "+autocounter-filename-base=AUTOCOUNTERFILE"
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
@@ -214,7 +224,7 @@ class RuntimeHWDB:
     as endpoints on the simulation. """
 
     def __init__(self, hardwaredbconfigfile):
-        agfidb_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        agfidb_configfile = configparser.ConfigParser(allow_no_value=True)
         agfidb_configfile.read(hardwaredbconfigfile)
         agfidb_dict = {s:dict(agfidb_configfile.items(s)) for s in agfidb_configfile.sections()}
 
@@ -231,7 +241,7 @@ class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.ini """
 
     def __init__(self, runtimeconfigfile, configoverridedata):
-        runtime_configfile = ConfigParser.ConfigParser(allow_no_value=True)
+        runtime_configfile = configparser.ConfigParser(allow_no_value=True)
         runtime_configfile.read(runtimeconfigfile)
         runtime_dict = {s:dict(runtime_configfile.items(s)) for s in runtime_configfile.sections()}
 
@@ -263,6 +273,13 @@ class InnerRuntimeConfiguration:
         self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
         self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
         self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
+
+        if 'launch_instances_timeout_minutes' in runtime_dict['runfarm']:
+            self.launch_timeout = timedelta(minutes=int(runtime_dict['runfarm']['launch_instances_timeout_minutes']))
+        else:
+            self.launch_timeout = timedelta() # default to legacy behavior of not waiting
+
+        self.always_expand = runtime_dict['runfarm'].get('always_expand_runfarm', "yes") == "yes"
 
         self.run_instance_market = runtime_dict['runfarm']['runinstancemarket']
         self.spot_interruption_behavior = runtime_dict['runfarm']['spotinterruptionbehavior']
@@ -346,7 +363,9 @@ class RuntimeConfig:
                                self.innerconf.runfarmtag,
                                self.innerconf.run_instance_market,
                                self.innerconf.spot_interruption_behavior,
-                               self.innerconf.spot_max_price)
+                               self.innerconf.spot_max_price,
+                               self.innerconf.launch_timeout,
+                               self.innerconf.always_expand)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(

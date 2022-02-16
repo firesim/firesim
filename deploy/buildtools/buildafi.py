@@ -42,7 +42,7 @@ def replace_rtl(conf, buildconfig):
          InfoStreamLogger('stderr'):
         run(buildconfig.make_recipe("replace-rtl"))
         run("""mkdir -p {}/results-build/{}/""".format(ddir, builddir))
-        run("""cp $CL_DIR/design/cl_firesim_generated.sv {}/results-build/{}/cl_firesim_generated.sv""".format(ddir, builddir))
+        run("""cp $CL_DIR/design/FireSim-generated.sv {}/results-build/{}/FireSim-generated.sv""".format(ddir, builddir))
 
     # build the fpga driver that corresponds with this version of the RTL
     with prefix('cd ' + ddir + '/../'), \
@@ -104,13 +104,13 @@ def aws_build(global_build_config, bypass=False):
         rsync_cap = rsync_project(local_dir=ddir + "/../platforms/f1/aws-fpga",
                       remote_dir='/home/centos/firesim-build/platforms/f1/',
                       ssh_opts="-o StrictHostKeyChecking=no",
-                      exclude="hdk/cl/developer_designs/cl_*",
+                      exclude=["hdk/cl/developer_designs/cl_*"],
                       extra_opts="-l", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(local_dir=ddir + "/../platforms/f1/aws-fpga/{}/*".format(fpgabuilddir),
                       remote_dir='/home/centos/firesim-build/platforms/f1/aws-fpga/' + remotefpgabuilddir,
-                      exclude='build/checkpoints',
+                      exclude=['build/checkpoints'],
                       ssh_opts="-o StrictHostKeyChecking=no",
                       extra_opts="-l", capture=True)
         rootLogger.debug(rsync_cap)

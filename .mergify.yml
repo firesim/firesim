@@ -2,12 +2,13 @@ pull_request_rules:
   - name: backport to master
     conditions:
       - merged
-      - base=dev
+      - base=main
+      - milestone=1.13.x
       - label="Please Backport"
     actions:
       backport:
         branches:
-          - master
+          - 1.13.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:

@@ -5,6 +5,7 @@ import logging
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from util.streamlogger import StreamLogger
 from fabric.api import *
+from fabric.contrib.project import rsync_project
 
 rootLogger = logging.getLogger()
 
@@ -273,6 +274,11 @@ class FireSimServerNode(FireSimNode):
             localcap = local("""mkdir -p {}""".format(job_dir), capture=True)
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
+            
+            # add hw config summary per job
+            localcap = local("""echo "{}" > {}/HW_CFG_SUMMARY""".format(str(self.server_hardware_config), job_dir), capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()
@@ -296,7 +302,14 @@ class FireSimServerNode(FireSimNode):
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
                 for outputfile in jobinfo.outputs:
-                    get(remote_path=mountpoint + outputfile, local_path=job_dir)
+                    rsync_cap = rsync_project(remote_dir=mountpoint + outputfile,
+                            local_dir=job_dir,
+                            ssh_opts="-o StrictHostKeyChecking=no",
+                            extra_opts="-L",
+                            upload=False,
+                            capture=True)
+                    rootLogger.debug(rsync_cap)
+                    rootLogger.debug(rsync_cap.stderr)
 
             ## unmount
             with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -313,7 +326,14 @@ class FireSimServerNode(FireSimNode):
         remote_sim_run_dir = """/home/centos/sim_slot_{}/""".format(simserverindex)
         for simoutputfile in jobinfo.simoutputs:
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-                get(remote_path=remote_sim_run_dir + simoutputfile, local_path=job_dir)
+                rsync_cap = rsync_project(remote_dir=remote_sim_run_dir + simoutputfile,
+                        local_dir=job_dir,
+                        ssh_opts="-o StrictHostKeyChecking=no",
+                        extra_opts="-L",
+                        upload=False,
+                        capture=True)
+                rootLogger.debug(rsync_cap)
+                rootLogger.debug(rsync_cap.stderr)
 
     def get_sim_kill_command(self, slotno):
         """ return the command to kill the simulation. assumes it will be
@@ -335,8 +355,7 @@ class FireSimServerNode(FireSimNode):
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
 
         # shared libraries
-        all_paths.append(["$RISCV/lib/libdwarf.so", "libdwarf.so.1"])
-        all_paths.append(["$RISCV/lib/libelf.so", "libelf.so.1"])
+        all_paths += self.server_hardware_config.get_local_shared_libraries()
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
@@ -497,8 +516,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                               self.get_rootfs_name()])
 
         # shared libraries
-        all_paths.append(["$RISCV/lib/libdwarf.so", "libdwarf.so.1"])
-        all_paths.append(["$RISCV/lib/libelf.so", "libelf.so.1"])
+        all_paths += self.server_hardware_config.get_local_shared_libraries()
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 

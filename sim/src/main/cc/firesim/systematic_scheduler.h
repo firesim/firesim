@@ -8,6 +8,15 @@
 // Maximum step size in MIDAS's master is capped to width of the simulation bus
 constexpr uint64_t MAX_MIDAS_STEP = (1LL << sizeof(data_t) * 8) - 1;
 
+// Schedules a series of tasks that must run a specific cycles on the FPGA, but
+// may be associated with multiple bridges / touch non-bridge simulator
+// collateral (e.g, reservoir sampling for strober.)
+//
+// This class does that by providing cycle deltas (i.e., a credit) that can be
+// fed into some mechanism (e.g., peek/poke or a bridge) to advance the
+// simulator to the time of the desired task. The onus is on the parent class /
+// instantiator to ensure the simulator has advanced to the desired cycle
+// before running the scheduled task.
 class systematic_scheduler_t
 {
     typedef std::function<uint64_t()> task_t;
@@ -24,9 +33,10 @@ class systematic_scheduler_t
         // Assumption: The simulator is idle. (simif::done() == true)
         // Invokes all tasks that wish to be executed on our current target cycle
         void run_scheduled_tasks();
+        // Unless overriden, assume the simulator will run (effectively) forever
         uint64_t max_cycles = -1;
-        // As above, assumes the simulator is idle.
-        bool has_timed_out() { return current_cycle == max_cycles; };
+        // Returns true if no further tasks are scheduled before specified horizon (max_cycles).
+        bool finished_scheduled_tasks() { return current_cycle == max_cycles; };
 
     private:
         uint64_t default_step_size = MAX_MIDAS_STEP;

@@ -19,7 +19,7 @@ VCS ?= vcs -full64
 override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
 	-notice -line +lint=all,noVCDE,noONGS,noUI -quiet -debug_pp +no_notifier -cpp $(CXX) \
 	-top $(TB) \
-	-Mdir=$(GEN_DIR)/$(DESIGN)-debug.csrc \
+	-Mdir=$(GEN_DIR)/$(DRIVER_NAME)-debug.csrc \
 	+vc+list \
 	-CFLAGS "$(CXXFLAGS) $(CFLAGS) -D_GNU_SOURCE -DVCS -I$(VCS_HOME)/include" \
 	-LDFLAGS "$(LDFLAGS)" \
@@ -35,16 +35,16 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 vcs_v := $(emul_v) $(vcs_wrapper_v)
 vcs_cc := $(emul_cc) $(vcs_harness)
 
-$(OUT_DIR)/$(DESIGN): $(vcs_v) $(vcs_cc) $(emul_h)
+$(OUT_DIR)/$(DRIVER_NAME): $(vcs_v) $(vcs_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/$(DESIGN).csrc
-	rm -rf $(OUT_DIR)/$(DESIGN).daidir
+	rm -rf $(GEN_DIR)/$(DRIVER_NAME).csrc
+	rm -rf $(OUT_DIR)/$(DRIVER_NAME).daidir
 	$(VCS) $(VCS_FLAGS) \
 	-o $@ $(vcs_v) $(vcs_cc)
 
-$(OUT_DIR)/$(DESIGN)-debug: $(vcs_v) $(vcs_cc) $(emul_h)
+$(OUT_DIR)/$(DRIVER_NAME)-debug: $(vcs_v) $(vcs_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/$(DESIGN)-debug.csrc
-	rm -rf $(OUT_DIR)/$(DESIGN)-debug.daidir
+	rm -rf $(GEN_DIR)/$(DRIVER_NAME)-debug.csrc
+	rm -rf $(OUT_DIR)/$(DRIVER_NAME)-debug.daidir
 	$(VCS) $(VCS_FLAGS) +define+DEBUG \
 	-o $@ $(vcs_v) $(vcs_cc)

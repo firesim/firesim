@@ -6,7 +6,6 @@ package passes
 import midas.core._
 
 import freechips.rocketchip.config.Parameters
-import chisel3.core.DataMirror.directionOf
 
 import firrtl._
 import firrtl.annotations._
@@ -51,7 +50,7 @@ private[midas] class MidasTransforms extends Transform {
       new EmitFirrtl("post-autocounter.fir"),
       new fame.EmitFAMEAnnotations("post-autocounter.json"),
       new ResolveAndCheck,
-      new AssertPass,
+      new AssertionSynthesis,
       new PrintSynthesis,
       new ResolveAndCheck,
       new EmitFirrtl("post-debug-synthesis.fir"),
@@ -60,6 +59,7 @@ private[midas] class MidasTransforms extends Transform {
       TriggerWiring,
       new EmitFirrtl("post-trigger-wiring.fir"),
       new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
+      GlobalResetConditionWiring,
       // We should consider moving these lower
       ChannelClockInfoAnalysis,
       UpdateBridgeClockInfo,

@@ -1,0 +1,10 @@
+version, `version number`
+clock info,domain name,multiplier,M,divisor,N
+labels,local_clock,label0,label1,...,labelN
+"description","local clock cycle","desc0","desc1",...,"descN"
+event width,1,width0,width1,...,widthN
+acculator width,64,64,64,...,64
+type,Increment,type0,type1,...,typeN
+N ,cycle @ time N,value0 @ tN,value1 @ tN,...,value @ tN
+...,...,...,...,...,..
+kN,cycle @ time kN,value0 @ tkN,value1 @ tkN,...,valueN @ tkN

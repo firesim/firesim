@@ -241,7 +241,7 @@ class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config)
   }
 
   val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_, _), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
@@ -262,7 +262,7 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
 
   val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_), _, _, Some(sinks)) =>
+    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_,_), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
@@ -277,7 +277,7 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   * 2) Generates channels to interconnect those models and bridges by analyzing [[FAMEChannelConnectionAnnotation]]s.
   * 3) Exposes ReadyValid interfaces for all channels sourced or sunk by a bridge as I/O
   */
-class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) extends MultiIOModule with UnpackedWrapperConfig {
+class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) extends Module with UnpackedWrapperConfig {
   outer =>
   // Filter FCCAs presented to the top-level IO constructor. Remove all FCCAs:
   // - That are loopback channels (these don't connect to bridges).
@@ -299,7 +299,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
     TargetBoxAnnotation(target.toAbsoluteTarget)
   })
 
-  target.io.hostReset := reset.toBool
+  target.io.hostReset := reset.asBool
   target.io.hostClock := clock
   import chisel3.ExplicitCompileOptions.NotStrict // FIXME
 
@@ -436,7 +436,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
   channelGroups foreach { case (name,  annos) => genPipeChannel(annos, name) }
 
   // Generate clock channels
-  val clockChannels = chAnnos.collect({case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_),_,_,_)  => ch })
+  val clockChannels = chAnnos.collect({case ch @ FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_,_),_,_,_)  => ch })
   require(clockChannels.size == 1)
   genClockChannel(clockChannels.head)
 }

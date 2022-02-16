@@ -1,10 +1,10 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
 class MulticlockChecker {
   public:
-   simif_t * sim;
+   simif_peek_poke_t * sim;
    uint32_t field_address;
    int numerator, denominator;
    int cycle = 0;
@@ -13,7 +13,7 @@ class MulticlockChecker {
    uint32_t slow_domain_reg = 0;
    uint32_t fast_domain_reg_out = 0;
 
-   MulticlockChecker(simif_t * sim, uint32_t field_address, int numerator, int denominator):
+   MulticlockChecker(simif_peek_poke_t * sim, uint32_t field_address, int numerator, int denominator):
      sim(sim), field_address(field_address), numerator(numerator), denominator(denominator) {};
    void expect_and_update(uint64_t poked_value){
     sim->expect(field_address, fast_domain_reg_out);
@@ -33,7 +33,7 @@ class MulticlockChecker {
    };
 };
 
-class TrivialMulticlock_t: virtual simif_t
+class TrivialMulticlock_t: public simif_peek_poke_t
 {
 public:
   TrivialMulticlock_t(int argc, char** argv) {}

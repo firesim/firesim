@@ -19,6 +19,9 @@ name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
 OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
+# This is prefix is currently assumed by the fpga build flow
+BASE_FILE_NAME := FireSim-generated
+
 ##################
 # RTL Generation #
 ##################
@@ -26,25 +29,21 @@ long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
-VERILOG := $(GENERATED_DIR)/FPGATop.v
-HEADER  := $(GENERATED_DIR)/$(DESIGN)-const.h
-
-CONF_NAME ?= runtime.conf
 firesim_sbt_project := {file:${firesim_base_dir}/}firesim
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-		$(addprefix $(chipyard_dir)/generators/, chipyard rocket-chip/src, rocket-chip/api-config-chipsalliance)
+		$(addprefix (chipyard_dir)/generators/, rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator, \
+	$(call run_scala_main,$(firesim_sbt_project),freechips.rocketchip.system.Generator, \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
+		--configs $(TARGET_CONFIG_PACKAGE).$(TARGET_CONFIG))
 
 ##########################
 # Driver Sources & Flags #
@@ -53,7 +52,8 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS
 driver_dir = $(firesim_base_dir)/src/main/cc
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, fasedtests/* firesim/systematic_scheduler))) \
-	    $(RISCV)/lib/libfesvr.a
+		$(driver_dir)/midasexamples/simif_peek_poke.cc \
+		$(RISCV)/lib/libfesvr.a
 
 TARGET_CXX_FLAGS := -g -O2 -I$(driver_dir) -I$(driver_dir)/fasedtests -I$(RISCV)/include
 TARGET_LD_FLAGS :=
@@ -82,17 +82,24 @@ vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
+logfile = $(if $(LOGFILE),$(abspath $(LOGFILE)),$(OUTPUT_DIR)/$1.out)
+waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$1.$2)
+
 run-verilator: $(verilator)
-	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+	mkdir -p $(OUTPUT_DIR)
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> $(call logfile,verilator)
 
 run-verilator-debug: $(verilator_debug)
-	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+	mkdir -p $(OUTPUT_DIR)
+	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
 
 run-vcs: $(vcs)
-	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> err
+	mkdir -p $(OUTPUT_DIR)
+	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> $(call logfile,vcs)
 
 run-vcs-debug: $(vcs_debug)
-	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=waves.vpd 2> err
+	mkdir -p $(OUTPUT_DIR)
+	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)
 
 .PHONY: run-xsim
 run-xsim: $(xsim)

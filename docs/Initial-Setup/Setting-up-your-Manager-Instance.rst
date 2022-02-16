@@ -7,11 +7,11 @@ Launching a "Manager Instance"
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
 Since we will deploy the heavy lifting to separate ``c5.4xlarge`` and
-``f1`` instances later, the Manager Instance can be a relatively cheap instance. 
+``f1`` instances later, the Manager Instance can be a relatively cheap instance.
 In this guide, however, we will use a ``c5.4xlarge``,
-running the AWS FPGA Developer AMI. (Be sure to subscribe to the AMI 
-if you have not done so. See :ref:`ami-subscription`. Note that it 
-might take a few minutes after subscribing to the AMI to be able to 
+running the AWS FPGA Developer AMI. (Be sure to subscribe to the AMI
+if you have not done so. See :ref:`ami-subscription`. Note that it
+might take a few minutes after subscribing to the AMI to be able to
 launch instances using it.)
 
 Head to the `EC2 Management
@@ -25,7 +25,7 @@ To launch a manager instance, follow these steps:
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
 2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
-   ``FPGA Developer AMI - 1.6.1`` and select the AMI that appears (there 
+   ``FPGA Developer AMI - 1.11.0`` and select the AMI that appears (there
    should be only one). **DO NOT USE ANY OTHER VERSION.**
 3. When prompted to choose an instance type, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge``.
@@ -95,12 +95,17 @@ Setting up the FireSim Repo
 
 We're finally ready to fetch FireSim's sources. Run:
 
-::
+.. parsed-literal::
 
     git clone https://github.com/firesim/firesim
     cd firesim
+    # checkout latest official firesim release
+    # note: this may not be the latest release if the documentation version != "stable"
+    git checkout |version|
     ./build-setup.sh fast
 
+The ``build-setup.sh`` script will validate that you are on a tagged branch,
+otherwise it will prompt for confirmation.
 This will have initialized submodules and installed the RISC-V tools and
 other dependencies.
 

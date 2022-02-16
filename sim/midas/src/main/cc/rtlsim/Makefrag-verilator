@@ -5,7 +5,7 @@
 # Compulsory variables:
 # 	OUT_DIR: See Makefile
 # 	GEN_DIR: See Makefile
-# 	DESIGN: See Makefile
+# 	DRIVER_NAME: See Makefile
 # 	emul_cc: C++ sources
 # 	emul_h: C++ headers
 # 	emul_v: verilog sources and headers
@@ -33,18 +33,18 @@ override VERILATOR_FLAGS := \
 	-LDFLAGS "$(LDFLAGS) " \
 	$(VERILATOR_FLAGS)
 
-$(OUT_DIR)/V$(DESIGN): $(verilator_v) $(verilator_cc) $(emul_h)
+$(OUT_DIR)/V$(DRIVER_NAME): $(verilator_v) $(verilator_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/V$(DESIGN).csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) -Mdir $(GEN_DIR)/V$(DESIGN).csrc \
-	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN).csrc/V$(top_module).h" \
+	rm -rf $(GEN_DIR)/V$(DRIVER_NAME).csrc
+	$(VERILATOR) $(VERILATOR_FLAGS) -Mdir $(GEN_DIR)/V$(DRIVER_NAME).csrc \
+	-CFLAGS "-include $(GEN_DIR)/V$(DRIVER_NAME).csrc/V$(top_module).h" \
 	-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DESIGN).csrc -f V$(top_module).mk
+	$(MAKE) -C $(GEN_DIR)/V$(DRIVER_NAME).csrc -f V$(top_module).mk
 
-$(OUT_DIR)/V$(DESIGN)-debug: $(verilator_v) $(verilator_cc) $(emul_h)
+$(OUT_DIR)/V$(DRIVER_NAME)-debug: $(verilator_v) $(verilator_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/V$(DESIGN)-debug.csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --trace -Mdir $(GEN_DIR)/V$(DESIGN)-debug.csrc \
-	-CFLAGS "-include $(GEN_DIR)/V$(DESIGN)-debug.csrc/V$(top_module).h" \
+	rm -rf $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc
+	$(VERILATOR) $(VERILATOR_FLAGS) --trace -Mdir $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc \
+	-CFLAGS "-include $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc/V$(top_module).h" \
 	-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DESIGN)-debug.csrc -f V$(top_module).mk
+	$(MAKE) -C $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc -f V$(top_module).mk

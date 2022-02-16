@@ -191,7 +191,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
 
       // Step 6) Synchronize and aggregate local counts into global counts in the base clock domain
       val refClockRT = wiredState.annotations.collectFirst({
-        case FAMEChannelConnectionAnnotation(_,TargetClockChannel(_),_,_,Some(clock :: _)) => clock
+        case FAMEChannelConnectionAnnotation(_,TargetClockChannel(_,_),_,_,Some(clock :: _)) => clock
       }).get
 
       // We only need to use a single register to synchronize a signal in GG, we use two here

@@ -29,6 +29,8 @@
 #include "WireInterconnect.h"
 #elif defined DESIGNNAME_AssertModule
 #include "AssertModule.h"
+#elif defined DESIGNNAME_AssertGlobalResetCondition
+#include "AssertTorture.h"
 #elif defined DESIGNNAME_PrintfModule
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_NarrowPrintfModule
@@ -37,7 +39,13 @@
 #include "MulticlockPrintfModule.h"
 #elif defined DESIGNNAME_TriggerPredicatedPrintf
 #include "PrintfModule.h"
+#elif defined DESIGNNAME_PrintfGlobalResetCondition
+#include "PrintfModule.h"
 #elif defined DESIGNNAME_AutoCounterModule
+#include "AutoCounterModule.h"
+#elif defined DESIGNNAME_AutoCounter32bRollover
+#include "AutoCounterModule.h"
+#elif defined DESIGNNAME_AutoCounterGlobalResetCondition
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule
 #include "AutoCounterCoverModule.h"
@@ -79,6 +87,8 @@
 #include "PassthroughModels.h"
 #elif defined DESIGNNAME_PassthroughModelBridgeSource
 #include "PassthroughModels.h"
+#elif defined DESIGNNAME_ResetPulseBridgeTest
+#include "ResetPulseBridgeTest.h"
 #endif
 
 class dut_emul_t:
@@ -102,7 +112,7 @@ public:
 int main(int argc, char** argv)
 {
   dut_emul_t dut(argc, argv);
-  dut.init(argc, argv, true);
+  dut.init(argc, argv);
   dut.run();
-  return dut.finish();
+  return dut.teardown();
 }

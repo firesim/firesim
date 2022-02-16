@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,7 +24,7 @@ const size_t multireg_output_ios[multireg_n_copies] =
 
 uint32_t inputs[] = { 45, 9, 11, 13, 99, 2, 8, 15, 16, 12, 1 };
 
-class MultiReg_t: virtual simif_t
+class MultiReg_t: public simif_peek_poke_t
 {
 public:
   MultiReg_t(int argc, char** argv) {}

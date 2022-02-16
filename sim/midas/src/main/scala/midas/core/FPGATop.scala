@@ -7,8 +7,6 @@ import junctions._
 import midas.widgets._
 import chisel3._
 import chisel3.util._
-import chisel3.core.ActualDirection
-import chisel3.core.DataMirror.directionOf
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
@@ -78,7 +76,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
     "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   lazy val config = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
-  val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
+  val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
   // according to their memoryRegionName. Requested addresses will be unified
@@ -114,33 +112,52 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
   val loadMem = addWidget(new LoadMemWidget(totalDRAMAllocated))
   // Host DRAM handling
   val memChannelParams = p(HostMemChannelKey)
-  val memAXI4Node = AXI4SlaveNode(Seq.tabulate(p(HostMemNumChannels)) { channel =>
+  // Define multiple single-channel nodes, instead of one multichannel node to more easily 
+  // bind a subset to the XBAR.
+  val memAXI4Nodes = Seq.tabulate(p(HostMemNumChannels)) { channel =>
     val device = new MemoryDevice
     val base = channel * memChannelParams.size
-    AXI4SlavePortParameters(
-      slaves = Seq(AXI4SlaveParameters(
-        address       = Seq(AddressSet(base, memChannelParams.size - 1)),
-        resources     = device.reg,
-        regionType    = RegionType.UNCACHED, // cacheable
-        executable    = false,
-        supportsWrite = TransferSizes(1, memChannelParams.maxXferBytes),
-        supportsRead  = TransferSizes(1, memChannelParams.maxXferBytes),
-        interleavedId = Some(0))), // slave does not interleave read responses
-      beatBytes = memChannelParams.beatBytes)
-  })
+    AXI4SlaveNode(
+      Seq(AXI4SlavePortParameters(
+        slaves = Seq(AXI4SlaveParameters(
+          address       = Seq(AddressSet(base, memChannelParams.size - 1)),
+          resources     = device.reg,
+          regionType    = RegionType.UNCACHED, // cacheable
+          executable    = false,
+          supportsWrite = TransferSizes(1, memChannelParams.maxXferBytes),
+          supportsRead  = TransferSizes(1, memChannelParams.maxXferBytes),
+          interleavedId = Some(0))), // slave does not interleave read responses
+        beatBytes = memChannelParams.beatBytes)
+    ))
+  }
 
   // In keeping with the Nasti implementation, we put all channels on a single XBar.
   val xbar = AXI4Xbar()
-  p(HostMemIdSpaceKey) match {
+
+  private def bindActiveHostChannel(channelNode: AXI4SlaveNode): Unit = p(HostMemIdSpaceKey) match {
     case Some(AXI4IdSpaceConstraint(idBits, maxFlight)) =>
-      (memAXI4Node :*= AXI4Buffer()
-                   :*= AXI4UserYanker(Some(maxFlight))
-                   :*= AXI4IdIndexer(idBits)
-                   :*= AXI4Buffer()
-                   :*= xbar)
+      (channelNode := AXI4Buffer()
+                   := AXI4UserYanker(Some(maxFlight))
+                   := AXI4IdIndexer(idBits)
+                   := AXI4Buffer()
+                   := xbar)
     case None =>
-      (memAXI4Node :*= AXI4Buffer()
-                   :*= xbar)
+      (channelNode := AXI4Buffer()
+                   := xbar)
+  }
+
+  // Connect only as many channels as needed by bridges requesting host DRAM.
+  // Always connect one channel because:
+  // 1) It is still assumed in some places, see loadmem
+  // 2) Almost all simulators we've built to date require at least one channel
+  // 3) In F1, the first DRAM channel cannot be omitted.
+  val dramChannelsRequired = math.max(1, math.ceil(totalDRAMAllocated.toDouble / p(HostMemChannelKey).size.toLong).toInt)
+  for ((node, idx) <- memAXI4Nodes.zipWithIndex) {
+    if (idx < dramChannelsRequired) {
+      bindActiveHostChannel(node)
+    } else {
+      node := AXI4TieOff()
+    }
   }
 
   xbar := loadMem.toHostMemory
@@ -199,7 +216,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   dontTouch(ctrl)
   dontTouch(mem)
   dontTouch(dma)
-  (mem zip outer.memAXI4Node.in).foreach { case (io, (bundle, _)) =>
+  (mem zip outer.memAXI4Nodes.map(_.in.head)).foreach { case (io, (bundle, _)) =>
     require(bundle.params.idBits <= p(HostMemChannelKey).idBits,
       s"""| Required memory channel ID bits exceeds that present on host.
           | Required: ${bundle.params.idBits} Available: ${p(HostMemChannelKey).idBits}
@@ -259,7 +276,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   }
 
   outer.genCtrlIO(ctrl)
-  outer.printHostDRAMSummary
+  outer.printHostDRAMSummary()
+  outer.emitDefaultPlusArgsFile()
 
   val addrConsts = dmaAddrMap.map {
     case AddrMapEntry(name, MemRange(addr, _, _)) =>

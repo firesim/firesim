@@ -1,0 +1,10 @@
+name: machinelaunchscript
+description: "Run FireSim's machine-launch-script.sh"
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        sudo yum -y remove git git224 git224-core ius-release.noarch # remove any older git versions and collateral first
+        cd scripts/ && /usr/bin/bash machine-launch-script.sh
+      shell: bash

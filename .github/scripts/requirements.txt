@@ -1,0 +1,5 @@
+fab-classic==1.19.1
+boto3==1.20.21
+pytz
+pyyaml
+requests

@@ -30,11 +30,11 @@ scala_srcs := $(shell find $(BASE_DIR) -name "*.scala")
 
 $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	mkdir -p $(@D)
-	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); runMain chipyard.Generator \
+	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); runMain freechips.rocketchip.system.Generator \
 		--target-dir $(GEN_DIR) \
 		--name $(DESIGN) \
 		--top-module freechips.rocketchip.unittest.TestHarness \
-		--legacy-configs midas.unittest:$(CONFIG)"
+		--configs midas.unittest.$(CONFIG)"
 	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
 
 $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
@@ -48,6 +48,9 @@ emul_h     :=
 emul_cc    :=
 
 # VCS Makefrag arguments
+# Since we're reusing the makefrags we use to build metasimulators, we need to
+# set DRIVER_NAME. We set it here so simulator binaries are named V$(DESIGN) / $(DESIGN)
+DRIVER_NAME := $(DESIGN)
 ifeq ($(EMUL),vcs)
 vcs_wrapper_v := $(vsrc)/TestDriver.v
 VCS_FLAGS = +verbose

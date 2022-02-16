@@ -1,70 +1,58 @@
-Debugging & Testing with RTL Simulation
-=======================================
+.. _meta-simulation:
 
-Simulation of a single FireSim node using software RTL simulators like
-Verilator, Synopsys VCS, or XSIM, is the most productive way to catch bugs
-before generating an AGFI.
+Debugging & Testing with Meta-Simulation
+=========================================
 
-FireSim provides flows to do RTL simulation at three different levels of
-the design/abstraction hierarchy. Ordered from least to most detailed, they are:
+When we speak of RTL simulation in FireSim, we are generally referring to
+`meta-simulation`: simulating the FireSim simulator's RTL, typically using VCS or
+verilator. In contrast, we we'll refer to simulation of the target's RTL
+as target-level simulation. Target-level simulation in Chipyard is described at length
+`here <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulation.html>`_.
 
-- **Target-Level**: This simulates just the RTL of the target-design (Rocket
-  Chip). There are no host-level features being simulated. Supported
-  simulators: VCS, Verilator.
-- **MIDAS-Level**: This simulates the target-design after it's been transformed
-  by MIDAS.  The target- and host-clock are decoupled. FPGA-hosted simulation
-  models are present.  Abstract models for host-FPGA provided services, like
-  DRAM, memory-mapped IO, and PCIS are used here. Supported simulators: VCS,
-  Verilator.
-- **FPGA-Level**: This is a complete simulation of the design that will passed
-  to the FPGA tools, including clock-domain crossings, width adapters, PLLS,
-  FPGA-periphery blocks like DRAM and PCI-E controllers. This leverages the
-  simulation flow provided by AWS. Supported simulators: VCS, Vivado XSIM.
+Meta-simulation is the most productive way to catch bugs
+before generating an AGFI, and a means for reproducing bugs seen on the FPGA.
+By default, meta-simulation uses an abstract but fast model of the host: the
+FPGA's DRAM controllers are modeled with DRAMSim2, the PCI-E subsystem is not
+simulated, instead the driver presents DMA and MMIO traffic directly via
+verilog DPI. Since FireSim simulations are robust against timing differences
+across hosts, target behavior observed in an FPGA-hosted simulation should be
+exactly reproducible in a meta-simulation.
 
-
-Generally, MIDAS-level simulations are only slightly slower than target-level
-ones. Moving to FPGA-Level is very expensive. This illustrated in the chart
-below.
-
-====== ===== =======  ========= ============= ============= =======
-Level  Waves VCS      Verilator Verilator -O1 Verilator -O2 XSIM
-====== ===== =======  ========= ============= ============= =======
-Target Off   4.8 kHz  3.9 kHz   6.6 kHz       N/A           N/A
-Target On    0.8 kHz  3.0 kHz   5.1 kHz       N/A           N/A
-MIDAS  Off   3.8 kHz  2.4 kHz   4.5 kHz       5.3 KHz       N/A
-MIDAS  On    2.9 kHz  1.5 kHz   2.7 kHz       3.4 KHz       N/A
-FPGA   On    2.3  Hz  N/A       N/A           N/A           0.56 Hz
-====== ===== =======  ========= ============= ============= =======
-
-Note that using more agressive optimization levels when compiling the
-Verilated-design dramatically lengths compile time:
+Generally, meta-simulators are only slightly slower than target-level
+ones. This illustrated in the chart below.
 
 ====== ===== =======  ========= ============= =============
-Level  Waves VCS      Verilator Verilator -O1 Verilator -O2
+Type   Waves VCS      Verilator Verilator -O1 Verilator -O2
 ====== ===== =======  ========= ============= =============
-MIDAS  Off   35s      48s       3m32s         4m35s
-MIDAS  On    35s      49s       5m27s         6m33s
+Target Off   4.8 kHz  3.9 kHz   6.6 kHz       N/A
+Target On    0.8 kHz  3.0 kHz   5.1 kHz       N/A
+Meta   Off   3.8 kHz  2.4 kHz   4.5 kHz       5.3 KHz
+Meta   On    2.9 kHz  1.5 kHz   2.7 kHz       3.4 KHz
+====== ===== =======  ========= ============= =============
+
+Note that using more aggressive optimization levels when compiling the
+Verilated-design dramatically lengthens compile time:
+
+====== ===== =======  ========= ============= =============
+Type   Waves VCS      Verilator Verilator -O1 Verilator -O2
+====== ===== =======  ========= ============= =============
+Meta   Off   35s      48s       3m32s         4m35s
+Meta   On    35s      49s       5m27s         6m33s
 ====== ===== =======  ========= ============= =============
 
 Notes: Default configurations of a single-core, Rocket-based instance running
 rv64ui-v-add. Frequencies are given in target-Hz. Presently, the default
-compiler flags passed to Verilator and VCS differ from level to level. Hence,
+compiler flags passed to Verilator and VCS differ between meta-simulation and target-level simulation. Hence,
 these numbers are only intended to ball park simulation speeds, not provide a
-scientific comparison between simulators. VCS numbers collected on Millenium,
-Verilator numbers collected on a c4.4xlarge. (ML verilator version: 4.002, TL
+scientific comparison between simulators. VCS numbers collected on a local Berkeley machine,
+Verilator numbers collected on a c4.4xlarge. (meta-simulation verilator version: 4.002, target-level
 verilator version: 3.904)
 
-Target-Level Simulation
---------------------------
 
-This is described in the documentation for `Chipyard <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulation.html>`_.
-
-MIDAS-Level Simulation
+Running Meta-Simulation
 ------------------------
 
-MIDAS-level simulations are run out of the ``firesim/sim`` directory. Currently, FireSim
-lacks support for MIDAS-level simulation of the NIC since DMA\_PCIS is not yet
-supported.
+Meta-simulations are run out of the ``firesim/sim`` directory.
 
 ::
 
@@ -106,11 +94,10 @@ Additionally, you can run a unique binary in the following way:
     make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>-debug
 
 
---------
 Examples
---------
+++++++++
 
-Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
+Run all RISCV-tools assembly and benchmark tests on a Verilated simulator.
 
 ::
 
@@ -119,7 +106,7 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator.
     make -j run-asm-tests
     make -j run-bmark-tests
 
-Run all RISCV-tools assembly and benchmark tests on a verilated simulator with waveform dumping.
+Run all RISCV-tools assembly and benchmark tests on a Verilated simulator with waveform dumping.
 
 ::
 
@@ -127,7 +114,7 @@ Run all RISCV-tools assembly and benchmark tests on a verilated simulator with w
     make -j run-asm-tests-debug
     make -j run-bmark-tests-debug
 
-Run rv64ui-p-simple (a single assembly test) on a verilated simulator.
+Run rv64ui-p-simple (a single assembly test) on a Verilated simulator.
 
 ::
 
@@ -143,88 +130,56 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
     make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
 
 
-FPGA-Level Simulation
-----------------------------
+Understanding A Meta-Simulation Waveform
+----------------------------------------
 
-As with MIDAS-level simulations, FPGA-level simulations run out of
-``firesim/sim``.
+Module Hierarchy
+++++++++++++++++
+To build out a simulator, Golden Gate adds multiple layers of module hierarchy to the target
+design and performs additional hierarchy mutations to implement bridges and
+resource optimizations. Meta-simulation uses the ``FPGATop`` module as the
+top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1).
+The original top-level of the input design is nested three levels below FPGATop:
 
-Since FPGA-level simulation is up to 1000x slower than MIDAS-level simulation,
-FPGA-level simulation should only be used in two cases:
+.. figure:: /img/metasim-module-hierarchy.png
 
-1. MIDAS-level simulation of the simulation is working, but running the
-   simulator on the FPGA is not.
-2. You've made changes to the AWS Shell/IP/cl\_firesim.sv in aws-fpga
-   and want to test them.
+    The module hierarchy visible in a typical meta-simulation.
 
-FPGA-level simulation consists of two components:
-
-1. A FireSim-f1 driver that talks to a simulated DUT instead of the FPGA
-2. The DUT, a simulator compiled with either XSIM or VCS, that receives commands from the aforementioned
-   FireSim-f1 driver
-
------
-Usage
------
-
-To run a simulation you need to make both the DUT and driver targets by typing:
-
-::
-
-    make xsim
-    make xsim-dut <VCS=1> & # Launch the DUT
-    make run-xsim SIM_BINARY=<PATH/TO/BINARY/FOR/TARGET/TO/RUN> # Launch the driver
+Note that many other bridges (under ``FPGATop``), channel implementations
+(under ``SimWrapper``), and optimized models (under ``FAMETop``) may be
+present, and vary from target to target. Under the ``FAMETop`` module instance
+you will find the original top-level module (``FireSimPDES_``, in this case),
+however it has now been host-decoupled using the default LI-BDN FAME
+transformation and is referred to as the `hub model`. It will have ready-valid
+I/O interfaces for all of the channels bound to it, and internally containing
+additional channel enqueue and clock firing logic to control the advance of
+simulated time. Additionally, modules for bridges and optimized models will no
+longer be found contained in this submodule hierarchy. Instead, I/O for those
+extracted modules will now be as channel interfaces.
 
 
-When following this process, you should wait until ``make xsim-dut`` prints
-``opening driver to xsim`` before running ``make run-xsim`` (getting these prints from
-``make xsim-dut`` will take a while).
-..
-   Additionally, you will want to use
-   ``DESIGN=FireSim``, since the XSim scripts included with ``aws-fpga`` do
-   not support DMA PCIS.
+Clock Edges and Event Timing
+++++++++++++++++++++++++++++
+Since FireSim derives target clocks by clock gating a single host clock, and
+since bridges and optimized models may introduce stalls of their own, timing of
+target clock edges in a meta-simulation will appear contorted relative to a
+conventional target-simulation. This is expected.
 
-Once both processes are running, you should see:
-
-::
-
-    opening driver to xsim
-    opening xsim to driver
-
-This indicates that the DUT and driver are successfully communicating.
-Eventually, the DUT will print a commit trace Rocket Chip. There will
-be a long pause (minutes, possibly an hour, depending on the size of the
-binary) after the first 100 instructions, as the program is being loaded
-into FPGA DRAM.
-
-XSIM is used by default, and will work on EC2 instances with the FPGA developer
-AMI.  If you have a license, setting ``VCS=1`` will use VCS to compile the DUT
-(4x faster than XSIM). Berkeley users running on the Millennium machines should
-be able to source ``firesim/scripts/setup-vcsmx-env.sh`` to setup their
-environment for VCS-based FPGA-level simulation.
-
-The waveforms are dumped in the FPGA build directories(
-``firesim/platforms/f1/aws-fpga/hdk/cl/developer_designs/cl_<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>``).
-
-For XSIM:
-
-::
-
-    <BUILD_DIR>/verif/sim/vivado/test_firesim_c/tb.wdb
-
-And for VCS:
-
-::
-
-    <BUILD_DIR>/verif/sim/vcs/test_firesim_c/test_null.vpd
-
-
-When finished, be sure to kill any lingering processes if you interrupted simulation prematurely.
+Finding The Source Of Simulation Stalls
++++++++++++++++++++++++++++++++++++++++
+In the best case, FireSim simulators will be able to launch new target clock
+pulses on every host clock cycle. In other words, for single-clock targets the
+simulation can run at FMR = 1. In the single clock case, delays are introduced
+by bridges (like FASED memory timing models) and optimized models. You can
+identify which bridges are responsible for additional delays between target
+clocks by filtering for input valid and output ready to the hub model.  When
+input valid is deasserted, the corresponding bridge or model has not yet produced a token for the
+current timestep, effectively stalling the hub.
 
 Scala Tests
 -----------
 
-To make it easier to do RTL-simulation-based regression testing, the scala
+To make it easier to do RTL-simulation-based regression testing, the Scala
 tests wrap calls to Makefiles, and run a limited set of tests on a set of selected
 designs, including all of the MIDAS examples and FireSimNoNIC.
 
