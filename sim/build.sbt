@@ -77,7 +77,7 @@ lazy val firesim    = (project in file("."))
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(targetutils, midas, firesimLib),
     ScalaUnidoc / siteSubdirName := apiDirectory.value + "/api",
     // Only delete the files in the docs branch that are in the directory were
-    // trying to publish to.  This prevents dev-versions from blowing away
+    // trying to publish to.  This prevents main-versions from blowing away
     // tagged versions and vice versa
     ghpagesCleanSite / includeFilter := new sbt.io.PrefixFilter(apiDirectory.value),
     ghpagesCleanSite / excludeFilter := NothingFilter,

@@ -24,7 +24,7 @@ def initialize_manager_hosted():
         # wait until machine launch is complete
         with cd(manager_home_dir):
             with settings(warn_only=True):
-                rc = run("timeout 10m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)").return_code
+                rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)").return_code
                 if rc != 0:
                     run("cat machine-launchstatus.log")
                     raise Exception("machine-launch-script.sh failed to run")
