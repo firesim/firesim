@@ -88,6 +88,9 @@ jobs:
         uses: ./.github/actions/initial-scala-compile
 
   build-default-workloads:
+    # Conditionally build rootfs images only if deploying to FPGA to save CI resources
+    # https://stackoverflow.com/questions/62325286/run-github-actions-when-pull-requests-have-a-specific-label/62331521#comment122159108_62331521
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: build-default-workloads
     needs: [setup-manager]
     runs-on: ${{ github.run_id }}
@@ -151,12 +154,12 @@ jobs:
           test-name: "CITests"
 
   run-basic-linux-poweroff:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff
     needs: [build-default-workloads]
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
-    environment: use-fpgas
     steps:
       - uses: actions/checkout@v2
       - name: Run linux-poweroff test
