@@ -405,6 +405,7 @@ class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatBytes: Int
                                             io.match_address.beatBytes,
                                             io.match_address.numBeats)
 
+  addrs.map(entry => when(entry.valid) {printf("Dut     : enq address %d enqAddrEnd %d, inaddr %d, inAddrEnd %d  \n", entry.bits.addrmin, entry.bits.addrmax, inAddrMin, inAddrMax)})
   io.hit := addrs.exists({entry =>  entry.valid && 
                                     ((entry.bits.addrmin <= inAddrMin && 
                                       inAddrMin <= entry.bits.addrmax) ||  
@@ -817,8 +818,9 @@ class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module
     s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
 }
 
-class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p: Parameters) extends UnitTest {
+class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 5000, val q : Double = 0.5)(implicit p: Parameters) extends UnitTest {
 
+  require (0.0 <= q && q < 1)
   val addrBits = 64
   val beatBytesBits = 2
   val numBeatsBits = 8
@@ -828,34 +830,43 @@ class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p:
 
   val tranXs = RegInit(0.U(log2Ceil(tranXCount + 1).W))
 
-  val enqdeq = RegInit(false.B)
-  enqdeq := !enqdeq
+  val (enq :: check :: deq :: Nil) = Enum(3)
+  val state = RegInit(enq)
 
-  val randEnqBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
+  when(state === enq) { state := check}
+  .elsewhen(state === check) {state := deq}
+  .otherwise {state := enq}
+
+  val allow = ((q * 65535.0).toInt).U <= LFSRNoiseMaker(16, state === deq)
+  val randEnqBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, state === deq) 
   val enqAddr = randEnqBits << 8     //To give ample space for beats in address 
-  val enqBytes = LFSRNoiseMaker(beatBytesBits, enqdeq) 
-  val enqBeats = LFSRNoiseMaker(numBeatsBits, enqdeq) 
+  val enqBytes = LFSRNoiseMaker(beatBytesBits, state === deq) 
+  val enqBeats = LFSRNoiseMaker(numBeatsBits, state === deq) 
 
-  val randInBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, enqdeq) 
+  val randInBits = 0.U(addrBits.W) + LFSRNoiseMaker(5, state === deq) 
   val inAddr = randInBits << 8      //to give ample space for beats in address 
-  val inBytes = LFSRNoiseMaker(beatBytesBits, enqdeq) 
-  val inBeats = LFSRNoiseMaker(numBeatsBits, enqdeq) 
+  val inBytes = LFSRNoiseMaker(beatBytesBits, state === deq) 
+  val inBeats = LFSRNoiseMaker(numBeatsBits, state === deq) 
 
   val checker = Module(new FIFOAlignedAddressMatcher(16, addrBits, beatBytesBits, numBeatsBits)).io
   
-  checker.match_address.addr := 0.U + inAddr 
-  checker.match_address.beatBytes := 0.U + inBytes 
-  checker.match_address.numBeats := 0.U + inBeats 
-  checker.deq := enqdeq 
+  checker.match_address.addr := inAddr 
+  checker.match_address.beatBytes := inBytes 
+  checker.match_address.numBeats := inBeats 
+  checker.deq := state === deq && allow 
 
-  when(!enqdeq) {
+  when(state === deq) {
     tranXs := tranXs + 1.U
   }
 
-  checker.enq.bits.addr := 0.U + enqAddr 
-  checker.enq.bits.beatBytes := 0.U + enqBytes 
-  checker.enq.bits.numBeats := 0.U + enqBeats 
-  checker.enq.valid := !enqdeq 
+  when(allow) {
+    checker.enq.bits.addr := enqAddr 
+  } .otherwise {
+    checker.enq.bits.addr := inAddr 
+  }
+  checker.enq.bits.beatBytes := enqBytes 
+  checker.enq.bits.numBeats := enqBeats 
+  checker.enq.valid := state === enq && allow 
 
   val enqRange = (1.U << enqBytes)*(enqBeats + 1.U)
   val inRange = (1.U << inBytes)*(inBeats + 1.U)
@@ -863,11 +874,11 @@ class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 2000)(implicit p:
   val enqAddrEnd = enqAddr + enqRange
   val inAddrEnd = inAddr + inRange
 
-  val noOverlap = enqAddr < inAddr && enqAddrEnd < inAddr || enqAddr > inAddrEnd && enqAddrEnd > inAddrEnd 
+  val noOverlap = (enqAddr < inAddr && enqAddrEnd < inAddr || enqAddr > inAddrEnd && enqAddrEnd > inAddrEnd) || !allow 
 
-  val hit = !noOverlap && !enqdeq
 
-  assert(!noOverlap && checker.hit || noOverlap && !checker.hit || !enqdeq )
+  printf("Harness : enq address %d enqAddrEnd %d, inaddr %d, inAddrEnd %d unittest %b, checker %b \n", enqAddr, enqAddrEnd, inAddr, inAddrEnd, noOverlap, checker.hit)
+  assert(!noOverlap && checker.hit || noOverlap && !checker.hit || (state === enq) )
 
   io.finished := tranXs === tranXCount.U 
 
