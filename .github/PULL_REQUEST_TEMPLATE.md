@@ -1,4 +1,18 @@
-<!-- Provide a brief description of the PR, if the title is insufficient -->
+<!-- 
+First, please ensure that the title of your PR is sufficient to include in the next changelog.
+Refer to https://github.com/firesim/firesim/releases for examples and feel free to ask reviewers for help.
+
+Then, make sure to label your PR with one of the changelog:<section> labels to indicate which section
+of the changelog should contain this PR's title:
+  changelog:added
+  changelog:changed
+  changelog:fixed
+  changelog:removed
+
+If you feel that this PR should not be included in the changelog, you must still label it with
+changelog:omit
+
+Provide a brief description of the PR immediately below this comment, if the title is insufficient -->
 
 #### Related PRs / Issues
 
@@ -26,5 +40,6 @@
 - [ ] (If applicable) Did you mark the PR as "Please Backport"?
 
 ### Reviewer Checklist (only modified by reviewer)
+- [ ] Is the title suitable for inclusion in the changelog and does the PR have a `changelog:<topic>` label?
 - [ ] Did you mark the proper release milestone?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
