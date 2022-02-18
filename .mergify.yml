@@ -1,9 +1,11 @@
 pull_request_rules:
-  - name: backport to master
+  # For FireSim version 1.x.y, here let x = minor, y = patch
+  # Only support backporting to the last minor release branch.
+  # This rule will need to be updated on minor releases.
+  - name: backport to latest minor release
     conditions:
       - merged
       - base=main
-      - milestone=1.13.x
       - label="Please Backport"
     actions:
       backport:
