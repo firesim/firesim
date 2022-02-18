@@ -58,12 +58,6 @@ jobs:
               - '**/*.md'
               - '**/.gitignore'
 
-      - id: check
-        run: |
-            echo ${{ steps.filter.outputs.all_count}
-            echo ${{ steps.filter.outputs.skip-manager_count}
-            echo ${{ steps.filter.outputs.docs_count }}
-
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
     needs: change-filters
