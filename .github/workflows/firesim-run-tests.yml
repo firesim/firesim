@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-18.04
     # Queried by downstream jobs to determine if they should run.
     outputs:
-      needs-docs:    ${{ steps.filter.outputs.docs == 'true' }}
+      needs-docs:    ${{ steps.filter.outputs.docs }}
       needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
 
     steps:
@@ -58,10 +58,16 @@ jobs:
               - '**/*.md'
               - '**/.gitignore'
 
+      - id: check
+        run: |
+            echo ${{ steps.filter.outputs.all_count}
+            echo ${{ steps.filter.outputs.skip-manager_count}
+            echo ${{ steps.filter.outputs.docs_count }}
+
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
     needs: change-filters
-    if: needs.change-filters.outputs.needs-manager
+    if: needs.change-filters.outputs.needs-manager == 'true'
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -174,7 +180,7 @@ jobs:
   documentation-check:
     name: documentation-check
     needs: change-filters
-    if: needs.change-filters.outputs.needs-docs
+    if: needs.change-filters.outputs.needs-docs == 'true'
     runs-on: ubuntu-18.04
     container:
       image: firesim/firesim-ci:v1.3
