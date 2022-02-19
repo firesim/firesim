@@ -169,7 +169,7 @@ class RunFarm:
 
     def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
                  run_instance_market, spot_interruption_behavior,
-                 spot_max_price):
+                 spot_max_price, launch_timeout, always_expand):
         self.f1_16s = [F1_16() for x in range(num_f1_16)]
         self.f1_4s = [F1_4() for x in range(num_f1_4)]
         self.f1_2s = [F1_2() for x in range(num_f1_2)]
@@ -179,6 +179,9 @@ class RunFarm:
         self.run_instance_market = run_instance_market
         self.spot_interruption_behavior = spot_interruption_behavior
         self.spot_max_price = spot_max_price
+
+        self.launch_timeout = launch_timeout
+        self.always_expand = always_expand
 
     def bind_mock_instances_to_objects(self):
         """ Only used for testing. Bind mock Boto3 instances to objects. """
@@ -199,13 +202,13 @@ class RunFarm:
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
-        available_f1_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'f1.16xlarge'))
-        available_f1_4_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_4_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'f1.4xlarge'))
-        available_m4_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_m4_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'm4.16xlarge'))
-        available_f1_2_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_2_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.runfarmtag, 'f1.2xlarge'))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
@@ -251,19 +254,22 @@ class RunFarm:
         num_f1_2xlarges = len(self.f1_2s)
         num_m4_16xlarges = len(self.m4_16s)
 
+        timeout = self.launch_timeout
+        always_expand = self.always_expand
+
         # actually launch the instances
         f1_16s = launch_run_instances('f1.16xlarge', num_f1_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
-                                      spotmaxprice)
+                                      spotmaxprice, timeout, always_expand)
         f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, runfarmtag,
                                      runinstancemarket, spotinterruptionbehavior,
-                                     spotmaxprice)
+                                     spotmaxprice, timeout, always_expand)
         m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
-                                      spotmaxprice)
+                                      spotmaxprice, timeout, always_expand)
         f1_2s = launch_run_instances('f1.2xlarge', num_f1_2xlarges, runfarmtag,
                                      runinstancemarket, spotinterruptionbehavior,
-                                     spotmaxprice)
+                                     spotmaxprice, timeout, always_expand)
 
         # wait for instances to finish launching
         # TODO: maybe we shouldn't do this, but just let infrasetup block. That
@@ -281,13 +287,13 @@ class RunFarm:
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
         f1_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
         f1_4_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
         m4_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
         f1_2_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
+            get_run_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
 
         f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
         f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)

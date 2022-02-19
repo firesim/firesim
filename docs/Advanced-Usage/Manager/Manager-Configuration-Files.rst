@@ -40,10 +40,30 @@ you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
+``always_expand_runfarm``
+"""""""""""""""""""""""""
+When ``yes`` (the default behavior when not given) the number of instances
+of each type (see ``f1_16xlarges`` etc. below)  are launched every time you
+run ``launchrunfarm``.
+
+When ``no``, ``launchrunfarm`` looks for already existing instances that
+match ``runfarmtag`` and treat ``f1_16xlarges`` (and other 'instance-type'
+values below) as a total count.
+
+For example, if you have ``f1_2xlarges`` set to 100 and the first time you
+run ``launchrunfarm`` you have ``launch_instances_timeout_minutes`` set to 0
+(i.e. giveup after receiving a ``ClientError`` for each AvailabilityZone) and
+AWS is only able to provide you 75 ``f1_2xlarges`` because of capacity issues,
+``always_expand_runfarm`` changes the behavior of ``launchrunfarm`` in subsequent
+attempts.  ``yes`` means ``launchrunfarm`` will try to launch 100 ``f1_2xlarges``
+again.  ``no`` means that ``launchrunfarm`` will only try to launch an additional
+25 ``f1_2xlarges`` because it will see that there are already 75 that have been launched
+with the same ``runfarmtag``.
+
 ``f1_16xlarges``, ``m4_16xlarges``, ``f1_4xlarges``, ``f1_2xlarges``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Set these three values respectively based on the number and types of instances
+Set these values respectively based on the number and types of instances
 you need. While we could automate this setting, we choose not to, so that
 users are never surprised by how many instances they are running.
 
@@ -51,6 +71,30 @@ Note that these values are ONLY used to launch instances. After launch, the
 manager will query the AWS API to find the instances of each type that have the
 ``runfarmtag`` set above assigned to them.
 
+Also refer to ``always_expand_runfarm`` which determines whether ``launchrunfarm``
+treats these counts as an incremental amount to be launched every time it is envoked
+or a total number of instances of that type and ``runfarm`` tag that should be made
+to exist.  Note, ``launchrunfarm`` will never terminate instances.
+
+``launch_instances_timeout_minutes``
+""""""""""""""""""""""""""""""""""""
+
+Integer number of minutes that the ``launchrunfarm`` command will attempt to
+request new instances before giving up.  This limit is used for each of the types
+of instances being requested.  For example, if you set to 60,
+and you are requesting all four types of instances, ``launchrunfarm`` will try
+to launch each instance type for 60 minutes, possibly trying up to a total of
+four hours.
+
+This limit starts to be applied from the first time ``launchrunfarm`` receives a
+``ClientError`` response in all AvailabilityZones (AZs) for your region.  In other words,
+if you request more instances than can possibly be requested in the given limit but AWS
+is able to satisfy all of the requests, the limit will not be enforced.
+
+To experience the old (<= 1.12) behavior, set this limit to 0 and ``launchrunfarm``
+will exit the first time it receives ``ClientError`` across all AZ's. The old behavior
+is also the default if ``launch_instances_timeout_minutes`` is not included in the
+``config_runtime.ini``.
 
 ``runinstancemarket``
 """"""""""""""""""""""
