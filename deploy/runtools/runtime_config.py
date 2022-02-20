@@ -242,11 +242,9 @@ class InnerRuntimeConfiguration:
 
     def __init__(self, runtimeconfigfile, configoverridedata):
 
-        runtime_configfile = None
+        runtime_dict = None
         with open(runtimeconfigfile, "r") as yaml_file:
-            runtime_configfile = yaml.safe_load(yaml_file)
-
-        runtime_dict = runtime_configfile
+            runtime_dict = yaml.safe_load(yaml_file)
 
         # override parts of the runtime conf if specified
         configoverrideval = configoverridedata

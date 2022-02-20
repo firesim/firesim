@@ -107,7 +107,7 @@ class WorkloadConfig:
         self.post_run_hook = workloadjson.get("post_run_hook")
 
         appendsuffix = ""
-        if suffixtag != None:
+        if suffixtag:
             appendsuffix = "-" + suffixtag
 
         # we set this up as an absolute path to simplify later use

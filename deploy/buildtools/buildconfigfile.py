@@ -32,32 +32,32 @@ class BuildConfigFile:
 
         self.args = args
 
-        global_build_configfile = None
+        global_build_config_file = None
         with open(args.buildconfigfile, "r") as yaml_file:
-            global_build_configfile = yaml.safe_load(yaml_file)
+            global_build_config_file = yaml.safe_load(yaml_file)
 
         # aws specific options
-        self.agfistoshare = global_build_configfile['agfis-to-share']
-        self.acctids_to_sharewith = global_build_configfile['share-with-accounts'].values()
+        self.agfistoshare = global_build_config_file['agfis-to-share']
+        self.acctids_to_sharewith = global_build_config_file['share-with-accounts'].values()
 
         # this is a list of actual builds to run
-        builds_to_run_list = global_build_configfile['builds']
+        builds_to_run_list = global_build_config_file['builds']
 
-        build_recipes_configfile = None
+        build_recipes_config_file = None
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
-            build_recipes_configfile = yaml.safe_load(yaml_file)
+            build_recipes_config_file = yaml.safe_load(yaml_file)
 
-        build_farm_hosts_configfile = None
+        build_farm_hosts_config_file = None
         with open(args.buildfarmconfigfile, "r") as yaml_file:
-            build_farm_hosts_configfile = yaml.safe_load(yaml_file)
+            build_farm_hosts_config_file = yaml.safe_load(yaml_file)
 
         build_recipes = dict()
-        for section_name, section_dict in build_recipes_configfile.items():
+        for section_name, section_dict in build_recipes_config_file.items():
             if section_name in builds_to_run_list:
                 build_recipes[section_name] = BuildConfig(
                     section_name,
                     section_dict,
-                    build_farm_hosts_configfile,
+                    build_farm_hosts_config_file,
                     self,
                     launch_time)
 
@@ -121,7 +121,7 @@ class BuildConfigFile:
         Parameters:
             nodeip (str): IP address of build wanted
         Returns:
-            (BuildConfig or None): Build config of input IP or None
+            (BuildConfig or None): BuildConfig for `nodeip`. Returns None if `nodeip` is not found.
         """
 
         for build in self.builds_list:

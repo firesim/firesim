@@ -38,7 +38,7 @@ class BuildFarmHostDispatcher(object):
     @staticmethod
     def request_build_farm_hosts(build_farm_host_dispatchers):
         """ Request multiple build farm hosts """
-        return
+        raise NotImplementedError
 
     def wait_on_build_farm_host_initialization(self):
         """ Ensure build farm host is launched and ready to be used. """
@@ -99,7 +99,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
             else:
                 raise Exception("Unknown build farm host type")
 
-            if self.ip_addr == "localhost":
+            if self.ip_addr in ["localhost", "127.0.0.1"]:
                 self.is_local = True
 
             rootLogger.info("Using host {} for {} with IP address: {}".format(self.build_config.build_farm_host, self.build_config.get_chisel_triplet(), self.ip_addr))
@@ -108,7 +108,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
             raise Exception("ERROR: Less IPs available than builds. Add more IPs.")
 
     def request_build_farm_host(self):
-        """ In this case, nothing happens since IP address should be pre-setup. """
+        """ Nothing happens since the provided IP address is already granted by something outside FireSim. """
         return
 
     @staticmethod
@@ -116,7 +116,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         return
 
     def wait_on_build_farm_host_initialization(self):
-        """ In this case, nothing happens since IP address should be pre-setup. """
+        """ Nothing happens since the provided IP address is already granted by something outside FireSim. """
         return
 
     def get_build_farm_host_ip(self):
@@ -129,7 +129,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         return self.ip_addr
 
     def release_build_farm_host(self):
-        """ In this case, nothing happens. Up to the IP address to cleanup after itself. """
+        """ Nothing happens. Up to the IP address provider to cleanup after itself. """
         return
 
 class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):

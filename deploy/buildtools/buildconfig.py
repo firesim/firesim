@@ -20,16 +20,16 @@ def inheritors(klass):
     return subclasses
 
 class BuildConfig:
-    """ Represents a single build configuration used to build RTL/drivers/AFIs. """
+    """ Represents a single build configuration used to build RTL, drivers, and bitstreams. """
 
-    def __init__(self, name, recipe_config_dict, build_farm_hosts_configfile, global_build_config, launch_time):
+    def __init__(self, name, recipe_config_dict, build_farm_hosts_config_file, global_build_config, launch_time):
         """ Initialization function.
 
         Parameters:
             name (str): Name of config i.e. name of build_recipe.yaml section
             recipe_config_dict (dict): build_recipe.yaml options associated with name
-            build_farm_hosts_configfile (dict): Parsed representation of build_farm_hosts.yaml file
-            global_build_config (BuildConfigFile): Global build config file
+            build_farm_hosts_config_file (dict): Parsed representation of build_farm_hosts.yaml file
+            global_build_config (Buildconfig_file): Global build config file
             launch_time (str): Time manager was launched
         """
 
@@ -54,7 +54,7 @@ class BuildConfig:
 
         # retrieve the build host section
         self.build_farm_host = recipe_config_dict.get('build-farm', "default-build-farm")
-        build_farm_host_conf_dict = build_farm_hosts_configfile[self.build_farm_host]
+        build_farm_host_conf_dict = build_farm_hosts_config_file[self.build_farm_host]
 
         build_farm_host_type = build_farm_host_conf_dict["build-farm-type"]
         build_farm_host_args = build_farm_host_conf_dict["args"]
@@ -98,7 +98,7 @@ class BuildConfig:
 
     # Builds up a string for a make invocation using the tuple variables
     def make_recipe(self, recipe):
-        """" Create make command based of build config parameters and input.
+        """" Create make command for a given recipe.
 
         Parameters:
             recipe (str): Make variables / target to run
