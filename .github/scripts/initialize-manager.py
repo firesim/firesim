@@ -31,7 +31,7 @@ def initialize_manager(max_runtime):
             run("git clone {} {}".format(ci_workdir, manager_fsim_dir))
 
         with cd(manager_fsim_dir):
-            run("./build-setup.sh --fast")
+            run("./build-setup.sh --fast --skip-validate")
 
         # Initialize marshal submodules early because it appears some form of
         # contention between submodule initialization and the jgit SBT plugin

@@ -118,8 +118,8 @@ Again on the ``t2.nano`` instance, do the following:
     sudo pip3 install --upgrade pip
     sudo python3 -m pip install boto3
     sudo python3 -m pip install --upgrade awscli
-    wget https://raw.githubusercontent.com/firesim/firesim/master/scripts/aws-setup.py
-    ./aws-setup.py
+    wget https://raw.githubusercontent.com/firesim/firesim/master/deploy/awstools/aws_setup.py
+    ./aws_setup.py
 
 This will create a VPC named ``firesim`` and a security group named
 ``firesim`` in your account.

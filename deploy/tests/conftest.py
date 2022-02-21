@@ -1,6 +1,6 @@
 import pytest
-from pprint import pprint
 import os
+from os.path import dirname
 
 # fixtures defined in this file will be available to all tests. see
 # https://docs.pytest.org/en/4.6.x/example/simple.html#package-directory-level-fixtures-setups
@@ -23,3 +23,12 @@ def aws_test_credentials():
     # Provide a default region, since one may not already be configured (true of CI)
     # This was an arbitrary selection
     os.environ['AWS_DEFAULT_REGION'] = 'us-west-2'
+
+
+# Point moto to JSON of AMI's to load for various EC2 queries
+# The builtin AMI JSON doesn't have the FPGA Development AMI
+# This can't really be done as a fixture because it needs to be defined at moto import time
+# I don't like defining it in pytest.ini because the pwd used by pytest-env plugin
+# is dependent on where pytest is invoked and intellij will run it in subdirs of deploy...
+os.environ['MOTO_AMIS_PATH'] = '{}/test_amis.json'.format(dirname(__file__))
+
