@@ -86,7 +86,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       val countType = UIntType(IntWidth(64))
       val zeroLit = UIntLiteral(0, IntWidth(64))
 
-      def generatePrintf(label: String, clock: ReferenceTarget, valueToPrint: WRef, printEnable: Expression, printName: String): Unit = {
+      def generatePrintf(label: String, clock: ReferenceTarget, valueToPrint: WRef, printEnable: Expression, suggestedPrintName: String): Unit = {
         // Generate a trigger sink and annotate it
         val triggerName = moduleNS.newName("trigger")
         val trigger = DefWire(NoInfo, triggerName, BoolType)
@@ -95,8 +95,9 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
         // Now emit a printf using all the generated hardware
         val printFormat = StringLit(s"""[AutoCounter] $label: %d\n""")
+        val printName = moduleNS.newName(suggestedPrintName)
         val printStmt = Print(NoInfo, printFormat, Seq(valueToPrint),
-                              WRef(clock.ref), And(WRef(trigger), printEnable))
+                              WRef(clock.ref), And(WRef(trigger), printEnable), printName)
         addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(valueToPrint.name))), mT, printFormat.string, Some(printName))
         addedStmts += printStmt
       }

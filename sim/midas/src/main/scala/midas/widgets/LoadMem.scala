@@ -58,26 +58,26 @@ class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
   io.mem.ar.bits := DontCare
   io.mem.r.ready := false.B
 
-  when (io.req.fire()) {
+  when (io.req.fire) {
     wZero := io.req.bits.zero
     wAddr := io.req.bits.addr
     wLen  := io.req.bits.len
     state := s_addr
   }
 
-  when (io.mem.aw.fire()) {
+  when (io.mem.aw.fire) {
     wBeatsLeft := nextBurstLen - 1.U
     wLen := wLen - nextBurstLen
     wAddr := wAddr + burstBytes
     state := s_data
   }
 
-  when (io.mem.w.fire()) {
+  when (io.mem.w.fire) {
     wBeatsLeft := wBeatsLeft - 1.U
     when (wBeatsLeft === 0.U) { state := s_resp }
   }
 
-  when (io.mem.b.fire()) {
+  when (io.mem.b.fire) {
     state := Mux(wLen === 0.U, s_idle, s_addr)
   }
 }

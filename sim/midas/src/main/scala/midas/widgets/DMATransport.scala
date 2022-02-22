@@ -33,11 +33,11 @@ trait DMAToHostCPU extends HasDMA {
   // incoming/outgoing queue counts to replace ready/valid for batching
   val outgoingCount = RegInit(0.U(32.W))
 
-  when (outgoingPCISdat.io.enq.fire() && outgoingPCISdat.io.deq.fire()) {
+  when (outgoingPCISdat.io.enq.fire && outgoingPCISdat.io.deq.fire) {
     outgoingCount := outgoingCount
-  } .elsewhen (outgoingPCISdat.io.enq.fire()) {
+  } .elsewhen (outgoingPCISdat.io.enq.fire) {
     outgoingCount := outgoingCount + 1.U
-  } .elsewhen (outgoingPCISdat.io.deq.fire()) {
+  } .elsewhen (outgoingPCISdat.io.deq.fire) {
     outgoingCount := outgoingCount - 1.U
   } .otherwise {
     outgoingCount := outgoingCount
@@ -59,7 +59,7 @@ trait DMAToHostCPU extends HasDMA {
 
   val readBeatCounter = RegInit(0.U(9.W))
   val lastReadBeat = readBeatCounter === ar_queue.bits.len
-  when (dma.r.fire()) {
+  when (dma.r.fire) {
     readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
   }
 
@@ -85,11 +85,11 @@ trait DMAFromHostCPU extends HasDMA {
   // incoming/outgoing queue counts to replace ready/valid for batching
   val incomingCount = RegInit(0.U(32.W))
 
-  when (incomingPCISdat.io.enq.fire() && incomingPCISdat.io.deq.fire()) {
+  when (incomingPCISdat.io.enq.fire && incomingPCISdat.io.deq.fire) {
     incomingCount := incomingCount
-  } .elsewhen (incomingPCISdat.io.enq.fire()) {
+  } .elsewhen (incomingPCISdat.io.enq.fire) {
     incomingCount := incomingCount + 1.U
-  } .elsewhen (incomingPCISdat.io.deq.fire()) {
+  } .elsewhen (incomingPCISdat.io.deq.fire) {
     incomingCount := incomingCount - 1.U
   } .otherwise {
     incomingCount := incomingCount
@@ -114,7 +114,7 @@ trait DMAFromHostCPU extends HasDMA {
 
   val writeBeatCounter = RegInit(0.U(9.W))
   val lastWriteBeat = writeBeatCounter === aw_queue.bits.len
-  when (w_queue.fire()) {
+  when (w_queue.fire) {
     writeBeatCounter := Mux(lastWriteBeat, 0.U, writeBeatCounter + 1.U)
   }
 

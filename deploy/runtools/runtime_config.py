@@ -3,6 +3,7 @@ simulation tasks. """
 
 from __future__ import print_function
 
+from datetime import timedelta
 from time import strftime, gmtime
 import pprint
 import logging
@@ -285,6 +286,14 @@ class InnerRuntimeConfiguration:
         self.switchinglatency = int(runtime_dict['target-config']['switching-latency'])
         self.netbandwidth = int(runtime_dict['target-config']['net-bandwidth'])
         self.profileinterval = int(runtime_dict['target-config']['profile-interval'])
+
+        if 'launch-instances-timeout-minutes' in runtime_dict['run-farm']:
+            self.launch_timeout = timedelta(minutes=int(runtime_dict['run-farm']['launch-instances-timeout-minutes']))
+        else:
+            self.launch_timeout = timedelta() # default to legacy behavior of not waiting
+
+        self.always_expand = runtime_dict['run-farm'].get('always-expand-runfarm', "yes") == "yes"
+
         # Default values
         self.trace_enable = False
         self.trace_select = "0"
@@ -357,7 +366,9 @@ class RuntimeConfig:
                                self.innerconf.runfarmtag,
                                self.innerconf.run_instance_market,
                                self.innerconf.spot_interruption_behavior,
-                               self.innerconf.spot_max_price)
+                               self.innerconf.spot_max_price,
+                               self.innerconf.launch_timeout,
+                               self.innerconf.always_expand)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(

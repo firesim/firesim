@@ -4,10 +4,12 @@
 
 run-farm:
     run-farm-tag: mainrunfarm
+    always-expand-runfarm: yes
     f1_16xlarges: 1
     m4_16xlarges: 0
     f1_4xlarges: 0
     f1_2xlarges: 0
+    launch-instances-timeout-minutes: 60
     run-instance-market: ondemand
     spot-interruption-behavior: terminate
     spot-max-price: ondemand

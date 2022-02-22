@@ -258,8 +258,6 @@ object NastiQueue {
 class NastiArbiterIO(arbN: Int)(implicit p: Parameters) extends Bundle {
   val master = Vec(arbN, new NastiIO).flip
   val slave = new NastiIO
-  override def cloneType =
-    new NastiArbiterIO(arbN).asInstanceOf[this.type]
 }
 
 /** Arbitrate among arbN masters requesting to a single slave */
@@ -275,12 +273,12 @@ class NastiArbiter(val arbN: Int)(implicit p: Parameters) extends NastiModule {
     val w_chosen = Reg(UInt(width = arbIdBits))
     val w_done = Reg(init = true.B)
 
-    when (aw_arb.io.out.fire()) {
+    when (aw_arb.io.out.fire) {
       w_chosen := aw_arb.io.chosen
       w_done := false.B
     }
 
-    when (io.slave.w.fire() && io.slave.w.bits.last) {
+    when (io.slave.w.fire && io.slave.w.bits.last) {
       w_done := true.B
     }
 
@@ -317,9 +315,9 @@ class NastiArbiter(val arbN: Int)(implicit p: Parameters) extends NastiModule {
     io.slave.b.ready := io.master(wroq.io.deq.head.data).b.ready
 
     rroq.io.deq.head.tag := io.slave.r.bits.id
-    rroq.io.deq.head.valid := io.slave.r.fire() && io.slave.r.bits.last
+    rroq.io.deq.head.valid := io.slave.r.fire && io.slave.r.bits.last
     wroq.io.deq.head.tag := io.slave.b.bits.id
-    wroq.io.deq.head.valid := io.slave.b.fire()
+    wroq.io.deq.head.valid := io.slave.b.fire
 
     assert(!rroq.io.deq.head.valid || rroq.io.deq.head.matches,
       "NastiArbiter: read response mismatch")
@@ -360,8 +358,8 @@ class NastiArbiter(val arbN: Int)(implicit p: Parameters) extends NastiModule {
 class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
   val io = (new NastiIO).flip
 
-  when (io.ar.fire()) { printf("Invalid read address %x\n", io.ar.bits.addr) }
-  when (io.aw.fire()) { printf("Invalid write address %x\n", io.aw.bits.addr) }
+  when (io.ar.fire) { printf("Invalid read address %x\n", io.ar.bits.addr) }
+  when (io.aw.fire) { printf("Invalid write address %x\n", io.aw.bits.addr) }
 
   val r_queue = Module(new Queue(new NastiReadAddressChannel, 1))
   r_queue.io.enq <> io.ar
@@ -380,9 +378,9 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
   io.r.bits.resp := RESP_DECERR
   io.r.bits.last := beats_left === UInt(0)
 
-  r_queue.io.deq.ready := io.r.fire() && io.r.bits.last
+  r_queue.io.deq.ready := io.r.fire && io.r.bits.last
 
-  when (io.r.fire()) {
+  when (io.r.fire) {
     when (beats_left === UInt(0)) {
       responding := false.B
     } .otherwise {
@@ -393,8 +391,8 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
   val draining = Reg(init = false.B)
   io.w.ready := draining
 
-  when (io.aw.fire()) { draining := true.B }
-  when (io.w.fire() && io.w.bits.last) { draining := false.B }
+  when (io.aw.fire) { draining := true.B }
+  when (io.w.fire && io.w.bits.last) { draining := false.B }
 
   val b_queue = Module(new Queue(UInt(width = nastiWIdBits), 1))
   b_queue.io.enq.valid := io.aw.valid && !draining
@@ -409,8 +407,6 @@ class NastiErrorSlave(implicit p: Parameters) extends NastiModule {
 class NastiRouterIO(nSlaves: Int)(implicit p: Parameters) extends Bundle {
   val master = (new NastiIO).flip
   val slave = Vec(nSlaves, new NastiIO)
-  override def cloneType =
-    new NastiRouterIO(nSlaves).asInstanceOf[this.type]
 }
 
 /** Take a single Nasti master and route its requests to various slaves
@@ -521,11 +517,11 @@ class NastiRouter(nSlaves: Int, routeSel: UInt => UInt)(implicit p: Parameters)
 
   for (i <- 0 to nSlaves) {
     b_arb.io.in(i) <> all_slaves(i).b
-    aw_queue.io.deq(i).valid := all_slaves(i).b.fire()
+    aw_queue.io.deq(i).valid := all_slaves(i).b.fire
     aw_queue.io.deq(i).tag := all_slaves(i).b.bits.id
 
     r_arb.io.in(i) <> all_slaves(i).r
-    ar_queue.io.deq(i).valid := all_slaves(i).r.fire() && all_slaves(i).r.bits.last
+    ar_queue.io.deq(i).valid := all_slaves(i).r.fire && all_slaves(i).r.bits.last
     ar_queue.io.deq(i).tag := all_slaves(i).r.bits.id
 
     assert(!aw_queue.io.deq(i).valid || aw_queue.io.deq(i).matches,
@@ -575,8 +571,6 @@ class NastiInterconnectIO(val nMasters: Int, val nSlaves: Int)
    * a master to the slaves. Hence why the declarations seem to be backwards. */
   val masters = Vec(nMasters, new NastiIO).flip
   val slaves = Vec(nSlaves, new NastiIO)
-  override def cloneType =
-    new NastiInterconnectIO(nMasters, nSlaves).asInstanceOf[this.type]
 }
 
 abstract class NastiInterconnect(implicit p: Parameters) extends NastiModule()(p) {

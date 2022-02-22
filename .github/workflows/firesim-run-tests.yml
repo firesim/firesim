@@ -1,11 +1,9 @@
 name: firesim-ci-process
 
 on:
-  # run ci when pring to dev/master/main/local-fpga (note: ci runs on the merge commit of the pr!)
+  # run ci when pring to main/local-fpga (note: ci runs on the merge commit of the pr!)
   pull_request:
     branches:
-      - dev
-      - master
       - main
       - local-fpga
 
@@ -30,23 +28,50 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-18.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-docs:    ${{ steps.filter.outputs.docs }}
+      needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # If any of the files changed match, do a doc build
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # If all files match to this filter, skip the main ci pipeline
+            skip-manager:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-manager == 'true'
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Install Python CI requirements
         uses: ./.github/actions/repo-setup-aws
-        if: steps.job-start.outputs.run_result != 'success'
       - name: Launch AWS instance used for the FireSim manager (instance info found here)
         run: ./.github/scripts/launch-manager-instance.py
-        if: steps.job-start.outputs.run_result != 'success'
       - name: Setup N Github Actions Runners on AWS instance
         run: ./.github/scripts/setup-manager-self-hosted.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   setup-manager:
     name: setup-manager
@@ -54,17 +79,12 @@ jobs:
     runs-on: ${{ github.run_id }}
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
         uses: ./.github/actions/initialize-manager
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           max-runtime-hours: 10
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   build-default-workloads:
     name: build-default-workloads
@@ -74,12 +94,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Build default workloads (FireMarshal and paper workloads)
         run: .github/scripts/build-default-workloads.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-manager-pytests:
     name: run-manager-pytests
@@ -89,12 +105,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run pytests
         run: .github/scripts/run-manager-pytests.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-test-groupA:
     name: run-test-groupA
@@ -104,14 +116,10 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run CIGroupA Scala tests
         uses: ./.github/actions/run-scala-test
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupA"
-      - uses: ./.github/actions/job-end
 
   run-test-groupB:
     name: run-test-groupB
@@ -121,14 +129,10 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run CIGroupB Scala tests
         uses: ./.github/actions/run-scala-test
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           test-name: "CIGroupB"
-      - uses: ./.github/actions/job-end
 
   run-chipyard-tests:
     name: run-chipyard-tests
@@ -138,16 +142,12 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run other (CITests) Scala tests
         uses: ./.github/actions/run-scala-test
-        if: steps.job-start.outputs.run_result != 'success'
         with:
           target-project: "firesim"
           test-package: "firesim.firesim"
           test-name: "CITests"
-      - uses: ./.github/actions/job-end
 
   run-basic-linux-poweroff:
     name: run-basic-linux-poweroff
@@ -158,12 +158,8 @@ jobs:
     environment: use-fpgas
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run linux-poweroff test
         run: .github/scripts/run-linux-poweroff.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-yaml-api-tests:
     name: run-yaml-api-tests
@@ -173,12 +169,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/job-start
-        id: job-start
       - name: Run .yaml API verification tests
         run: .github/scripts/run-yaml-api-tests.py
-        if: steps.job-start.outputs.run_result != 'success'
-      - uses: ./.github/actions/job-end
 
   run-vitis-compile:
     name: run-vitis-compile
@@ -196,6 +188,8 @@ jobs:
 
   documentation-check:
     name: documentation-check
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-docs == 'true'
     runs-on: ubuntu-18.04
     container:
       image: firesim/firesim-ci:v1.3
