@@ -5,17 +5,18 @@
 # edit config_build.yaml to actually "turn on" a config to be built when you run
 # buildafi
 
-# Example Build Recipe
-# example-recipe-name:
-#    # DESIGN SPECIFIC
-#    DESIGN: TopModule
-#    TARGET_CONFIG: Config
+###########
+# Schema:
+###########
+# <NAME>:
+#    DESIGN: <>
+#    TARGET_CONFIG: <>
 #    deploy-triplet: null
-#    # RUN PLATFORM SPECIFIC
 #    PLATFORM_CONFIG: Config
 #    post-build-hook: null
+#    # REQUIRED: TODO: Will move to "run platform" work
 #    s3-bucket-name: firesim-AWSUSERNAME
-#    # BUILD PLATFORM SPECIFIC
+#    # OPTIONAL: Specific build platform to use. If unspecified, default to "default-build-farm"
 #    build-farm: default-build-farm
 
 # Quad-core, Rocket-based recipes
