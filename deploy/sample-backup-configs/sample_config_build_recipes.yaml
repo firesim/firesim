@@ -27,7 +27,6 @@ firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
     PLATFORM_CONFIG: WithAutoILA_F90MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # NB: This has a faster host-clock frequency than the NIC-based design, because
 # its uncore runs at half rate relative to the tile.
@@ -38,7 +37,6 @@ firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3:
     PLATFORM_CONFIG: WithAutoILA_F140MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # Single-core, BOOM-based recipes
 firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
@@ -48,7 +46,6 @@ firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
     PLATFORM_CONFIG: WithAutoILA_F65MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # NB: This has a faster host-clock frequency than the NIC-based design, because
 # its uncore runs at half rate relative to the tile.
@@ -59,7 +56,6 @@ firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3:
     PLATFORM_CONFIG: WithAutoILA_F75MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # Single-core, CVA6-based recipes
 firesim-cva6-singlecore-no-nic-l2-llc4mb-ddr3:
@@ -69,7 +65,6 @@ firesim-cva6-singlecore-no-nic-l2-llc4mb-ddr3:
     PLATFORM_CONFIG: WithAutoILA_F90MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # Single-core, Rocket-based recipes with Gemmini
 firesim-rocket-singlecore-gemmini-no-nic-l2-llc4mb-ddr3:
@@ -79,7 +74,6 @@ firesim-rocket-singlecore-gemmini-no-nic-l2-llc4mb-ddr3:
     PLATFORM_CONFIG: WithAutoILA_F110MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # RAM Optimizations enabled by adding _MCRams PLATFORM_CONFIG string
 firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts:
@@ -89,7 +83,6 @@ firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3-ramopts:
     PLATFORM_CONFIG: WithAutoILA_MCRams_F90MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # Supernode configurations -- multiple instances of an SoC in a single simulator
 firesim-supernode-rocket-singlecore-nic-l2-lbp:
@@ -99,7 +92,6 @@ firesim-supernode-rocket-singlecore-nic-l2-lbp:
     PLATFORM_CONFIG: WithAutoILA_F85MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
 
 # MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on run farm
 midasexamples-gcd:
@@ -110,4 +102,3 @@ midasexamples-gcd:
     PLATFORM_CONFIG: DefaultF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
-    build-farm: default-build-farm
