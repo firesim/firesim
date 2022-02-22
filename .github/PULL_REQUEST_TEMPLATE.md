@@ -35,9 +35,18 @@ Provide a brief description of the PR immediately below this comment, if the tit
 - [ ] Did you state the UI / API impact?
 - [ ] Did you specify the Verilog / AGFI compatibility impact?
 <!-- Do this if this PR changes verilog or breaks the default AGFIs -->
-- [ ] (If applicable) Did you regenerate and publicly share default AGFIs?
+- [ ] If applicable, did you regenerate and publicly share default AGFIs?
+<!--
+  CI will check linux boot on default targets, when the <ci:fpga-deploy> label is applied. Do this on:
+  - Chipyard bumps / AGFIs updates / RTL or Driver changes affecting default targets.
+  - If in doubt request a deployment, or ask another developer.
+
+  NB: This *label* should be applied before the PR is created, or the branch
+  will need to be resychronized to trigger a new CI workflow with the FPGA-deployment jobs.
+-->
+- [ ] If applicable, did you apply the `ci:fpga-deploy` label?
 <!-- Do this if this PR is a bugfix that should be applied to the latest release -->
-- [ ] (If applicable) Did you mark the PR as "Please Backport"?
+- [ ] If applicable, did you apply the `Please Backport` label?
 
 ### Reviewer Checklist (only modified by reviewer)
 - [ ] Is the title suitable for inclusion in the changelog and does the PR have a `changelog:<topic>` label?
