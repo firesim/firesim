@@ -6,7 +6,7 @@ Building Docs
 
 Look in the `_build/html` directory for output. You can also run
 
-    python3 -m SimpleHTTPServer
+    python3 -m http.server
 
 To get a proper locally-hosted version.
 

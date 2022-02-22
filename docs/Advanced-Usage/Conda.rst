@@ -1,0 +1,183 @@
+Non-Source Dependency Management
+================================
+
+In :doc:`/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
+of ``scripts/machine-launch-script.sh`` into the EC2 Management Console and
+that script installed many dependencies that FireSim needs using
+`conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
+manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_.
+
+In many situations, you may not need to know anything about conda.  By default, the
+``machine-launch-script.sh`` installs conda and all of the FireSim dependencies into ``/opt/conda``
+and adds the required setup to the system-wide ``/etc/profile.d/conda.sh`` init script to add
+``/opt/conda`` to everyone's path.
+
+However, the script is also flexible.  For example, if you do not have root access, you can specify
+an alternate install location with the ``--prefix`` option to ``machine-launch-script.sh``.  The only requirement
+is that you are able to write into the install location.  See ``machine-launch-script.sh --help`` for more details.
+
+.. warning::
+
+    Without root access you can do many things, like :doc:`/Building-a-FireSim-AFI`,
+    :ref:`meta-simulation` of a FireSim system using Verilator or even developing new features in FireSim.
+    However, to :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently requires that
+    you are able to act as root via ``sudo``.
+
+Updating a Package Version
+--------------------------
+
+If you need a newer version of package and you are brave, the most expedient method to see whether there
+is a newer version available on `conda-forge`_ is to run ``conda update <package-name>``.  If you are lucky,
+and the dependencies of the package you want to update are simple, you'll see output that looks something like
+this:
+
+::
+
+    bash-4.2$ conda update moto
+    Collecting package metadata (current_repodata.json): done
+    Solving environment: done
+
+    ## Package Plan ##
+
+      environment location: /opt/conda
+
+      added / updated specs:
+        - moto
+
+
+    The following NEW packages will be INSTALLED:
+
+      graphql-core       conda-forge/noarch::graphql-core-3.2.0-pyhd8ed1ab_0
+
+    The following packages will be UPDATED:
+
+      moto                                  2.2.19-pyhd8ed1ab_0 --> 3.1.0-pyhd8ed1ab_0
+
+    Proceed ([y]/n)?
+
+
+The addition of ``graphql-core`` makes sense when looking at the `diff of moto's setup.py between
+2.2.19 and 3.1.0 <https://github.com/spulec/moto/compare/2.2.19...3.1.0#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7>`_
+because it was clearly added as a new dependence.
+
+And this output tells us that latest version of moto available is 3.1.0.  Now, you might be tempted to
+hit ``<<Enter>>`` and move forward with your life.
+
+.. attention::
+
+    However, it is always a better idea to modify the version in ``machine-launch-script.sh`` so that:
+    #. you remember to commit and share the new version requirement.
+    #. you are providing a complete set of requirements for conda to solve
+
+So, modify ``machine-launch-script.sh`` with the updated version of ``moto``, and run it.  If you'd like to see what
+it will do first, feel free to give it the ``--dry-run`` option, look at the output and then run again leaving ``--dry-run``
+off.
+
+In this case, when you are finished, you can run ``conda list --revisions`` and you should see output
+like the following:
+
+::
+
+    bash-4.2$ conda list --revisions
+    2022-03-15 19:21:10  (rev 0)
+    +_libgcc_mutex-0.1 (conda-forge/linux-64)
+    +_openmp_mutex-4.5 (conda-forge/linux-64)
+    +_sysroot_linux-64_curr_repodata_hack-3 (conda-forge/noarch)
+    +alsa-lib-1.2.3 (conda-forge/linux-64)
+    +appdirs-1.4.4 (conda-forge/noarch)
+    +argcomplete-1.12.3 (conda-forge/noarch)
+
+     ...   many packages elided for this example ...
+
+    +xxhash-0.8.0 (conda-forge/linux-64)
+    +xz-5.2.5 (conda-forge/linux-64)
+    +yaml-0.2.5 (conda-forge/linux-64)
+    +zipp-3.7.0 (conda-forge/noarch)
+    +zlib-1.2.11 (conda-forge/linux-64)
+    +zstd-1.5.2 (conda-forge/linux-64)
+
+    2022-03-15 19:34:06  (rev 1)
+         moto  {2.2.19 (conda-forge/noarch) -> 3.1.0 (conda-forge/noarch)}
+
+
+
+Multiple Environments
+---------------------
+
+In the example above, we only wanted to update a single package and it was fairly straightforward -- it only updated
+that package and installed a new dependence.  However, what if we're making a larger change and we think we might
+need to have both sets of tools around for awhile?
+
+In this case, make use of the ``--env <name>`` option of ``machine-launch-script.sh``.  By giving a descriptive
+name with that option, you will create another 'environment'.  You can see a listing of available environments
+by running ``conda env list`` to get output similar to:
+
+::
+
+    bash-4.2$   conda env list
+    # conda environments:
+    #
+    base                     /opt/conda
+    doc_writing           *  /opt/conda/envs/doc_writing
+    firesim_oss_220203       /opt/conda/envs/firesim_oss_220203
+
+In the output above, you can see that I had the 'base' environment that is created when you install conda.  I also
+created a 'doc_writing' environment to show some of the examples pasted earlier.  Finally, I created a datestamped
+firesim environment from a month or so ago.
+
+You can also see that 'doc_writing' has an asterisk next to it, indicating that it is the currently 'activated' environment.
+To switch to a different environment, I could ``conda activate <name>`` e.g. ``conda activate firesim_oss_220203``
+
+By default, ``machine-launch-script.sh`` installs the requirements into 'base' and runs ``conda init`` to ensure that the
+'base' environment is activated at login.
+
+Adding a New Dependency
+-----------------------
+
+Look for what you need in this order:
+
+#. `The existing conda-forge packages list <feedstock-list>`_.  Keep in mind that since conda spans several domains, the
+   package name may not be exactly the same as a name from PyPI or one of the system package managers.
+#. `Adding a conda-forge recipe <https://conda-forge.org/#add_recipe>`_
+#. `PyPI <https://pypi.org/>`_ (for Python packages).  While it is possible to install packages with pip into a conda
+   environment, `there are caveats <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html?highlight=pip#using-pip-in-an-environment>`_.
+   In short, you're less likely to create a mess if you have one system calculating dependencies and manipulating packages
+   in your environment.
+#. System packages as a last resort.  It's very difficult to have the same tools on different platforms when they are being
+   built and shipped by different systems and organizations.  That being said, in a pinch, you can find platform-specific
+   setup in ``machine-launch-script.sh``.
+
+Building From Source
+--------------------
+
+If you find that a package is missing an optional feature, consider looking up it's 'feedstock' (aka recipe) repo in
+`The existing conda-forge packages list <feedstock-list>`_.  and submitting an issue or PR.
+
+If you instead need to enable debugging or possibly actively hack on the source of something we package:
+
+#. Find the feedstock repo in the `feedstock-list`_
+#. Clone the feedstock repo and modify ``recipe/build.sh`` (or ``recipe/meta.yaml`` if there isn't a build script)
+#. ``python build-locally.py`` to `build using the conda-forge docker container <https://conda-forge.org/docs/maintainer/updating_pkgs.html#testing-changes-locally>`_
+   If the build is successful, you will have an installable conda package in ``build_artifacts/linux-64`` that can be
+   installed using ``conda install -c ./build_artifacts <packagename>``
+
+If you are developing a Python package, it is usually easiest to install all dependencies using conda and then your package in 'development mode' using
+``pip install -e <path to clone>`` (and making sure that you are using ``pip`` from your environment).
+
+
+Running conda with sudo
+-----------------------
+
+If you look closely at ``machine-launch-script.sh``, you will notice that it always uses the full path
+to ``$CONDA_EXE``.  This is because ``/etc/sudoers`` typically doesn't bless our custom install prefix of ``/opt/conda``
+in the ``secure_path``.
+
+
+Additional Resources
+--------------------
+* `conda-forge`_
+* `Conda Documentation <https://conda.io/projects/conda/en/latest/index.html>`_
+
+
+.. _conda-forge: https://conda-forge.org
+.. _feedstock-list: https://conda-forge.org/feedstock-outputs/
