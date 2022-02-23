@@ -74,12 +74,15 @@ sudo python3 -m pip install moto==2.2.17
 sudo python3 -m pip install sure==2.0.0
 # needed for the awstools cmdline parsing
 sudo python3 -m pip install pyyaml==5.4.1
-sudo python3 -m pip install mypy=0.931
+sudo python3 -m pip install mypy==0.931
 
 # setup argcomplete
 activate-global-python-argcomplete
 
 } 2>&1 | tee /home/centos/machine-launchstatus.log
+
+# add python installs to PATH
+echo "export PATH=/usr/local/bin:\$PATH" >> /home/centos/.bashrc
 
 # get a regular prompt
 echo "PS1='\u@\H:\w\\$ '" >> /home/centos/.bashrc
