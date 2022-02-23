@@ -1,82 +1,100 @@
 import logging
 import sys
+import typing
+from typing import Any, Dict, Optional, List
 
 from awstools.awstools import *
+from buildtools.buildconfig import BuildConfig
+import boto # type: ignore
 
 rootLogger = logging.getLogger()
 
 class BuildFarmHostDispatcher(object):
-    """ Abstract class to manage how to handle a single build farm host (request, wait, release, etc). """
+    """Abstract class to manage how to handle a single build farm host (request, wait, release, etc).
 
-    NAME = ""
+    Attributes:
+        NAME: Human-readable name (used as the "build-farm-type" in the YAML).
+        build_config: Build config associated with the dispatcher.
+        args: Set of args/options associated with the dispatcher.
+        is_local: Is the dispatcher the same as the manager host?
+        override_remote_build_dir: Override name of build dir on build host (default to $HOME).
+    """
+    NAME: str = ""
+    build_config: BuildConfig
+    args: Dict[str, Any]
+    is_local: bool
+    override_remote_build_dir: Optional[str]
 
-    def __init__(self, build_config, args):
-        """ Initialization function.
-
-        Parameters:
-            build_config (BuildConfig): Build config associated with this dispatcher
-            args (list/dict): List/Dict of args (i.e. options) passed to the dispatcher
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         """
-
+        Args:
+            build_config: Build config associated with this dispatcher.
+            args: Args (i.e. options) passed to the dispatcher.
+        """
         self.build_config = build_config
         self.args = args
-
-        # used if dispatcher refers to local build farm
         self.is_local = False
-
         self.override_remote_build_dir = None
 
-    def parse_args(self):
-        """ Parse default build farm arguments. Can be overridden by child classes. """
+    def parse_args(self) -> None:
+        """Parse default build farm arguments."""
         raise NotImplementedError
 
-    def request_build_farm_host(self):
-        """ Request build farm host to use for build. """
+    def request_build_farm_host(self) -> None:
+        """Request build farm host to use for build."""
         raise NotImplementedError
 
     # technically not inherited, but put here to make things clear
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers):
-        """ Request multiple build farm hosts """
+    def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
+        """Request multiple build farm hosts."""
         raise NotImplementedError
 
-    def wait_on_build_farm_host_initialization(self):
-        """ Ensure build farm host is launched and ready to be used. """
+    def wait_on_build_farm_host_initialization(self) -> None:
+        """Ensure build farm host is launched and ready to be used."""
         raise NotImplementedError
 
-    def get_build_farm_host_ip(self):
-        """ Get IP address associated with this dispatched build farm host. """
+    def get_build_farm_host_ip(self) -> str:
+        """Get IP address associated with this dispatched build farm host.
+
+        Returns:
+            IP address for the specific build host.
+        """
         raise NotImplementedError
 
-    def release_build_farm_host(self):
-        """ Release the build farm host. """
+    def release_build_farm_host(self) -> None:
+        """Release the build farm host."""
         raise NotImplementedError
 
 class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
-    """ Dispatcher class that uses the IP address given as the build farm host. """
+    """Dispatcher class that uses a set of predetermined IPs as the build farm host.
 
-    NAME = "unmanaged"
+    Attributes:
+        dispatch_counter: Counter to track number of hosts launched.
+        ip_addr: IP address associated with build farm hosts.
+        dispatch_id: ID of build host (determined from `dispatch_counter`).
+    """
+    NAME: str = "unmanaged"
+    dispatch_counter: int = 0
+    ip_addr: str
+    dispatch_id: int
 
-    dispatch_counter = 0
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        """Initialization function. Sets IP address and determines if it is localhost.
 
-    def __init__(self, build_config, args):
-        """ Initialization function. Sets IP address and determines if it is localhost.
-
-        Parameters:
-            build_config (BuildConfig): Build config associated with this dispatcher
-            args (list): List of args (i.e. options) passed to the dispatcher
+        Args:
+            build_config: Build config associated with this dispatcher.
+            args: Args (i.e. options) passed to the dispatcher.
         """
-
         BuildFarmHostDispatcher.__init__(self, build_config, args)
 
-        # ip addrs associated with build farm host
-        self.ip_addr = None
+        self.ip_addr = ""
 
         self.dispatch_id = IPAddrBuildFarmHostDispatcher.dispatch_counter
         IPAddrBuildFarmHostDispatcher.dispatch_counter += 1
 
-    def parse_args(self):
-        """ Parse build farm host arguments. """
+    def parse_args(self) -> None:
+        """Parse build farm host arguments."""
         build_farm_hosts_list = self.args["build-farm-hosts"]
         if len(build_farm_hosts_list) > self.dispatch_id:
             default_build_dir = self.args.get("default-build-dir")
@@ -107,60 +125,68 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
             rootLogger.critical("ERROR: Less IPs available than builds. Add more IPs.")
             raise Exception("ERROR: Less IPs available than builds. Add more IPs.")
 
-    def request_build_farm_host(self):
-        """ Nothing happens since the provided IP address is already granted by something outside FireSim. """
+    def request_build_farm_host(self) -> None:
+        """Nothing happens since the provided IP address is already granted by something outside FireSim."""
         return
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers):
+    def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
+        """Nothing happens since the provided IP addresses are already granted by something outside FireSim."""
         return
 
-    def wait_on_build_farm_host_initialization(self):
-        """ Nothing happens since the provided IP address is already granted by something outside FireSim. """
+    def wait_on_build_farm_host_initialization(self) -> None:
+        """Nothing happens since the provided IP address is already granted by something outside FireSim."""
         return
 
-    def get_build_farm_host_ip(self):
-        """ Get IP address associated with this dispatched build farm host.
+    def get_build_farm_host_ip(self) -> str:
+        """Get IP address associated with this dispatched build farm host.
 
         Returns:
-            (str): IP address given as the dispatcher arg
+            IP address given as part of the dispatcher args.
         """
-
         return self.ip_addr
 
-    def release_build_farm_host(self):
-        """ Nothing happens. Up to the IP address provider to cleanup after itself. """
+    def release_build_farm_host(self) -> None:
+        """ Nothing happens. Up to the IP address provider to cleanup after itself."""
         return
 
 class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
-    """ Dispatcher class to manage an AWS EC2 instance as the build farm host. """
+    """Dispatcher class to manage an AWS EC2 instance as the build farm host.
 
-    NAME = "aws-ec2"
+    Attributes:
+        launched_instance_object: instance object associated with the build farm host.
+        instance_type: instance object type
+        build_instance_market: instance market type
+        spot_interruption_behavior: if spot instance, the interruption behavior
+        spot_max_price: if spot instance, the max price
+    """
+    NAME: str = "aws-ec2"
+    launched_instance_object: boto.ec2.Instance
+    instance_type: str
+    build_instance_market: str
+    spot_interruption_behavior: str
+    spot_max_price: str
 
-    def __init__(self, build_config, args):
-        """ Initialization function. Setup AWS instance variables.
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        """Initialization function. Sets AWS instance variables.
 
-        Parameters:
-            build_config (BuildConfig): Build config associated with this dispatcher
-            args (dict): Dict of args (i.e. options) passed to the dispatcher
+        Args:
+            build_config: Build config associated with this dispatcher.
+            args: Args (i.e. options) passed to the dispatcher.
         """
-
         BuildFarmHostDispatcher.__init__(self, build_config, args)
 
-        # instance object associated with the build farm host
         self.launched_instance_object = None
-
-        # aws specific options
-        self.instance_type = None
-        self.build_instance_market = None
-        self.spot_interruption_behavior = None
-        self.spot_max_price = None
+        self.instance_type = ""
+        self.build_instance_market = ""
+        self.spot_interruption_behavior = ""
+        self.spot_max_price = ""
 
         # ec2 hosts will never be local
         self.is_local = False
 
-    def parse_args(self):
-        """ Parse build farm host arguments. """
+    def parse_args(self) -> None:
+        """Parse build farm host arguments."""
         # get aws specific args
         self.instance_type = self.args['instance-type']
         self.build_instance_market = self.args['build-instance-market']
@@ -169,9 +195,8 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
 
         self.override_remote_build_dir = self.args.get("build-dir")
 
-    def request_build_farm_host(self):
-        """ Launch an AWS EC2 instance for the build config. """
-
+    def request_build_farm_host(self) -> None:
+        """Launch an AWS EC2 instance for the build config."""
         build_instance_market = self.build_instance_market
         spot_interruption_behavior = self.spot_interruption_behavior
         spot_max_price = self.spot_max_price
@@ -185,7 +210,8 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
             spot_max_price)[0]
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers):
+    def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
+        """Launch multiple AWS EC2 instances for the build configs."""
         # TODO: this can be further optimized (spawn-like build farm hosts)
         # double-check that build farms are the same
         it_len = len(set([x.instance_type for x in build_farm_host_dispatchers]))
@@ -214,7 +240,16 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
                  build_farm_host_dispatchers.request_build_farm_host()
 
     @staticmethod
-    def ec2_launch_instances(inst_type, num_insts, build_inst_market, spot_int_behav, spot_max_price):
+    def ec2_launch_instances(inst_type: str, num_insts: int, build_inst_market: str, spot_int_behav: str, spot_max_price: str) -> List[boto.ec2.Instance]:
+        """Launch EC2 instances based on arguments.
+
+        Args:
+            inst_type: instance object type
+            num_insts: number of instances to launch
+            build_inst_market: instance market type
+            spot_int_behav: if spot instance, the interruption behavior
+            spot_max_price: if spot instance, the max price
+        """
         # get access to the runfarmprefix, which we will apply to build
         # instances too now.
         aws_resource_names_dict = aws_resource_names()
@@ -242,20 +277,19 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
             tags={ 'fsimbuildcluster': buildfarmprefix },
             randomsubnet=True)
 
-    def wait_on_build_farm_host_initialization(self):
-        """ Wait for EC2 instance launch. """
+    def wait_on_build_farm_host_initialization(self) -> None:
+        """Wait for EC2 instance launch."""
         wait_on_instance_launches([self.launched_instance_object])
 
-    def get_build_farm_host_ip(self):
-        """ Get IP address associated with this dispatched instance.
+    def get_build_farm_host_ip(self) -> str:
+        """Get private IP address associated with this dispatched instance.
 
         Returns:
-            (str): IP address of EC2 build farm host
+            IP address given as part of the dispatcher args.
         """
-
         return self.launched_instance_object.private_ip_address
 
-    def release_build_farm_host(self):
+    def release_build_farm_host(self) -> None:
         """ Terminate the EC2 instance running this build. """
         instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
         rootLogger.info("Terminating build instances {}. Please confirm in your AWS Management Console".format(instance_ids))

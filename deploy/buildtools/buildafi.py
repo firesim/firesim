@@ -6,9 +6,9 @@ import string
 import logging
 import os
 
-from fabric.api import *
-from fabric.contrib.console import confirm
-from fabric.contrib.project import rsync_project
+from fabric.api import * # type: ignore
+from fabric.contrib.console import confirm  # type: ignore
+from fabric.contrib.project import rsync_project # type: ignore
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
@@ -113,7 +113,7 @@ def remote_setup(build_config):
 
     return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
-@parallel
+@parallel # type: ignore
 def aws_build(global_build_config, bypass=False):
     """ Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
     Must run after replace_rtl and build_driver are run.
@@ -306,8 +306,8 @@ def aws_create_afi(build_config):
         if build_config.post_build_hook:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 localcap = local("""{} {}""".format(build_config.post_build_hook,
-                                                    results_build_dir,
-                                                    capture=True))
+                                                    results_build_dir),
+                                                    capture=True)
                 rootLogger.debug("[localhost] " + str(localcap))
                 rootLogger.debug("[localhost] " + str(localcap.stderr))
 

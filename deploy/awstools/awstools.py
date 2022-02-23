@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 import time
 import sys
 
-import boto3
-import botocore
-from botocore import exceptions
-from fabric.api import local, hide, settings
+import boto3 # type: ignore
+import botocore # type: ignore
+from botocore import exceptions # type: ignore
+from fabric.api import local, hide, settings # type: ignore
 
 # setup basic config for logging
 if __name__ == '__main__':
@@ -34,7 +34,7 @@ def valid_aws_configure_creds():
 
     This DOES NOT perform any deeper validation.
     """
-    import botocore.session
+    import botocore.session # type: ignore
     session = botocore.session.get_session()
     creds = session.get_credentials()
     if creds is None:

@@ -1,7 +1,7 @@
 """ Tools to help manage afis. """
 
 import logging
-import boto3
+import boto3 # type: ignore
 
 rootLogger = logging.getLogger()
 

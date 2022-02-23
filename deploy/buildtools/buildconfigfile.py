@@ -129,23 +129,6 @@ class BuildConfigFile:
                 return build
         return None
 
-    def get_build_farm_host_ips(self):
-        """ Get all the build instance IPs (later passed to fabric as hosts).
-
-        Returns:
-            (list[str]): List of IP addresses to build on
-        """
-        return list(self.build_ip_set)
-
-    def get_builds_list(self):
-        """ Get all the build configurations.
-
-        Returns:
-            (list[BuildConfig]): List of build configs
-        """
-
-        return self.builds_list
-
     def __str__(self):
         """ Print the class.
 
