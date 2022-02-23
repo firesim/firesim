@@ -43,8 +43,8 @@ loopfunc () {
     # arg 1 is num nodes
     # arg 2 is num f116xlarges to kill AFTERWARDS
     # arg 3 is num m416xlarges to kill AFTERWARDS
-    firesim infrasetup -c workloads/simperf-test-scale-config.yaml --overrideconfigdata "targetconfig topology example_$1config"
-    firesim runworkload -c workloads/simperf-test-scale-config.yaml --overrideconfigdata "targetconfig topology example_$1config"
+    firesim infrasetup -c workloads/simperf-test-scale-config.yaml --overrideconfigdata "target-config topology example_$1config"
+    firesim runworkload -c workloads/simperf-test-scale-config.yaml --overrideconfigdata "target-config topology example_$1config"
     # rename the output directory with the ping latency
     files=(*simperf-test-scale*)
     originalfilename=${files[-1]}

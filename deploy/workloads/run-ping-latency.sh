@@ -32,7 +32,7 @@ sleep 2
 for i in "${latencies[@]}"
 do
     firesim infrasetup -c workloads/ping-latency-config.yaml
-    firesim runworkload -c workloads/ping-latency-config.yaml --overrideconfigdata "targetconfig linklatency $i"
+    firesim runworkload -c workloads/ping-latency-config.yaml --overrideconfigdata "target-config link-latency $i"
     # rename the output directory with the ping latency
     files=(*ping-latency*)
     originalfilename=${files[-1]}

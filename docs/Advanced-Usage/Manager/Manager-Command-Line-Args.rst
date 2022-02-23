@@ -45,14 +45,14 @@ This lets you specify a custom hardware database config file. By default,
 This lets you override a single value from the runtime config file. For
 example, if you want to use a link latency of 3003 cycles for a particular run
 (and your ``config_runtime.yaml`` file specifies differently), you can pass
-``--overrideconfigdata targetconfig linklatency 6405`` to the manager. This
+``--overrideconfigdata target-config link-latency 6405`` to the manager. This
 can be used with any task that uses the runtime config.
 
 
 ``--launchtime`` ``TIMESTAMP``
 ---------------------------------------------------
 
-Specifies the "Y-m-d--H-M-S" timestamp to be used as the prefix in 
+Specifies the "Y-m-d--H-M-S" timestamp to be used as the prefix in
 results-build directories.  Useful when wanting to run tar2afi after an
 aborted buildafi was manually fixed.
 
