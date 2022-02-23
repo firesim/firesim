@@ -241,7 +241,7 @@ def construct_firesim_argparser():
     argcomplete.autocomplete(parser)
     return parser.parse_args()
 
-def main(args):
+def firesim_main(args):
     """ Main function for FireSim manager. """
     # large timeouts, retry connections
     env.timeout = 100
@@ -328,7 +328,7 @@ if __name__ == '__main__':
 
     exitcode = 0
     try:
-        main(args)
+        firesim_main(args)
     except:
         # log all exceptions that make it this far
         rootLogger.exception("Fatal error.")

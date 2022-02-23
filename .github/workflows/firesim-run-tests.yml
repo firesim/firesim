@@ -108,6 +108,17 @@ jobs:
       - name: Run pytests
         run: .github/scripts/run-manager-pytests.py
 
+  run-python-typecheck:
+    name: run-python-typecheck
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run mypy type checker
+        run: .github/scripts/run-mypy-typechecker.py
+
   run-test-groupA:
     name: run-test-groupA
     needs: [setup-manager]

@@ -570,7 +570,7 @@ def send_firesim_notification(subject, body):
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
 
-def main(args):
+def awstools_main(args):
     import argparse
     import yaml
     parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -611,4 +611,4 @@ def main(args):
 
 if __name__ == '__main__':
     import sys
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(awstools_main(sys.argv[1:]))

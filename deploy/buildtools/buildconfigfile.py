@@ -75,7 +75,7 @@ class BuildConfigFile:
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
-        self.builds_list = build_recipes.values()
+        self.builds_list = list(build_recipes.values())
         self.build_ip_set = set()
 
     def setup(self) -> None:

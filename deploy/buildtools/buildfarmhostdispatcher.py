@@ -44,7 +44,6 @@ class BuildFarmHostDispatcher(object):
         """Request build farm host to use for build."""
         raise NotImplementedError
 
-    # technically not inherited, but put here to make things clear
     @staticmethod
     def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
         """Request multiple build farm hosts."""
@@ -105,8 +104,8 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
                 # add element { ip-addr: { arg1: val1, arg2: val2, ... } }
                 assert(len(build_farm_host.keys()) == 1)
 
-                self.ip_addr = build_farm_host.keys()[0]
-                ip_args = build_farm_host.values()[0]
+                self.ip_addr = list(build_farm_host.keys())[0]
+                ip_args = list(build_farm_host.values())[0]
 
                 self.override_remote_build_dir = ip_args.get("override-build-dir", default_build_dir)
             elif type(build_farm_host) is str:
@@ -130,7 +129,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         return
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
+    def request_build_farm_hosts(build_farm_host_dispatchers: List[IPAddrBuildFarmHostDispatcher]) -> None: # type: ignore[override]
         """Nothing happens since the provided IP addresses are already granted by something outside FireSim."""
         return
 
@@ -210,7 +209,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
             spot_max_price)[0]
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
+    def request_build_farm_hosts(build_farm_host_dispatchers: List[EC2BuildFarmHostDispatcher]) -> None: # type: ignore[override]
         """Launch multiple AWS EC2 instances for the build configs."""
         # TODO: this can be further optimized (spawn-like build farm hosts)
         # double-check that build farms are the same
@@ -237,7 +236,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         else:
             # default to the original request function
             for build_farm_host_dispatcher in build_farm_host_dispatchers:
-                 build_farm_host_dispatchers.request_build_farm_host()
+                 build_farm_host_dispatcher.request_build_farm_host()
 
     @staticmethod
     def ec2_launch_instances(inst_type: str, num_insts: int, build_inst_market: str, spot_int_behav: str, spot_max_price: str) -> List[Instance]:
