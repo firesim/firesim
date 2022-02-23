@@ -1,11 +1,13 @@
 import logging
 import sys
 import typing
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, TYPE_CHECKING
+from boto.ec2 import Instance # type: ignore
 
 from awstools.awstools import *
-from buildtools.buildconfig import BuildConfig
-from boto.ec2 import Instance # type: ignore
+
+if TYPE_CHECKING:
+    from buildtools.buildconfig import BuildConfig
 
 rootLogger = logging.getLogger()
 

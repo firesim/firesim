@@ -6,10 +6,10 @@ import string
 import logging
 import os
 from typing import Optional
-
 from fabric.api import prefix, local, run, env, lcd # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
+
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
@@ -19,7 +19,7 @@ from buildtools.buildconfigfile import BuildConfigFile
 rootLogger = logging.getLogger()
 
 def get_deploy_dir() -> str:
-    """.Determine where the firesim/deploy directory is and return its path.
+    """Determine where the firesim/deploy directory is and return its path.
 
     Returns:
         Path to firesim/deploy directory.

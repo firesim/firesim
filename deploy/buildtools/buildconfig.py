@@ -1,13 +1,15 @@
 from time import strftime, gmtime
 import pprint
 from importlib import import_module
-from typing import Set, Type
+from typing import Set, Type, Any, Optional, Dict, TYPE_CHECKING
 
 from awstools.awstools import *
-from buildtools.buildfarmhostdispatcher import *
-from buildtools.buildconfigfile import BuildConfigFile
+from buildtools.buildfarmhostdispatcher import BuildFarmHostDispatcher
 
-def inheritors(klass: Type[BuildFarmHostDispatcher]) -> Set[Type[BuildFarmHostDispatcher]]:
+if TYPE_CHECKING:
+    from buildtools.buildconfigfile import BuildConfigFile
+
+def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
     """Determine the subclasses that inherit from the input class.
 
     Args:

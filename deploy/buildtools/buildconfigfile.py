@@ -6,7 +6,7 @@ import yaml
 from collections import defaultdict
 from importlib import import_module
 from argparse import Namespace
-from typing import Dict, Optional, List, Set
+from typing import Dict, Optional, List, Set, TYPE_CHECKING
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
