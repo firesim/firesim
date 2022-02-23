@@ -5,31 +5,34 @@ import random
 import string
 import logging
 import os
+from typing import Optional
 
-from fabric.api import * # type: ignore
+from fabric.api import prefix, local, run, env, lcd # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
+from buildtools.buildconfig import BuildConfig
+from buildtools.buildconfigfile import BuildConfigFile
 
 rootLogger = logging.getLogger()
 
-def get_deploy_dir():
-    """ Determine where the firesim/deploy directory is and return its path.
+def get_deploy_dir() -> str:
+    """.Determine where the firesim/deploy directory is and return its path.
 
     Returns:
-        (str): Path to firesim/deploy directory
+        Path to firesim/deploy directory.
     """
     with StreamLogger('stdout'), StreamLogger('stderr'):
         deploydir = local("pwd", capture=True)
     return deploydir
 
-def replace_rtl(build_config):
-    """ Generate Verilog from build config
+def replace_rtl(build_config: BuildConfig) -> None:
+    """Generate Verilog from build config.
 
-    Parameters:
-        build_config (BuildConfig): Build configuration to make Verilog from
+    Args:
+        build_config: Build configuration to make Verilog from.
     """
     rootLogger.info("Building Verilog for {}".format(str(build_config.get_chisel_triplet())))
 
@@ -43,11 +46,11 @@ def replace_rtl(build_config):
          InfoStreamLogger('stderr'):
         run(build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
-def build_driver(build_config):
-    """ Build FireSim FPGA driver from build config
+def build_driver(build_config: BuildConfig) -> None:
+    """Build FireSim FPGA driver from build config.
 
-    Parameters:
-        build_config (BuildConfig): Build configuration to make driver from
+    Args:
+        build_config: Build configuration to make driver from.
     """
     rootLogger.info("Building FPGA driver for {}".format(str(build_config.get_chisel_triplet())))
 
@@ -61,15 +64,15 @@ def build_driver(build_config):
          InfoStreamLogger('stderr'):
         run(build_config.make_recipe("PLATFORM=f1 driver"))
 
-def remote_setup(build_config):
-    """ Setup CL_DIR on remote machine
+def remote_setup(build_config: BuildConfig) -> str:
+    """Setup CL_DIR on remote machine.
 
-    Parameters:
-        build_config (BuildConfig): Build configuration to determine paths
+    Args:
+        build_config: Build configuration to determine paths.
+
     Returns:
-        (str): Path to remote CL_DIR directory (that is setup)
+        Path to remote CL_DIR directory (that is setup).
     """
-
     fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(build_config.get_chisel_triplet())
 
     # local paths
@@ -114,23 +117,27 @@ def remote_setup(build_config):
     return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
 @parallel # type: ignore
-def aws_build(global_build_config, bypass=False):
-    """ Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
+def aws_build(build_config_file: BuildConfigFile, bypass: bool = False) -> None:
+    """Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
     Must run after replace_rtl and build_driver are run.
 
-    Parameters:
-        global_build_config (BuildConfigFile): Global build file
-        bypass (bool): If true, immediately return and terminate instance. Used for testing purposes
+    Args:
+        build_config_file: Global build file.
+        bypass: If true, immediately return and terminate instance. Used for testing purposes.
     """
+    build_config = build_config_file.get_build_by_ip(env.host_string)
 
-    build_config = global_build_config.get_build_by_ip(env.host_string)
+    if not build_config:
+        rootLogger.info("Failed to find build config for IP address: {}. Unable to release build farm host.".format(env.host_string))
+        return
+
     if bypass:
         build_config.build_farm_host_dispatcher.release_build_farm_host()
         return
 
     # The default error-handling procedure. Send an email and teardown instance
     def on_build_failure():
-        """ Terminate build farm host and notify user that build failed """
+        """Terminate build farm host and notify user that build failed."""
 
         message_title = "FireSim FPGA Build Failed"
 
@@ -203,16 +210,15 @@ def aws_build(global_build_config, bypass=False):
 
     build_config.build_farm_host_dispatcher.release_build_farm_host()
 
-def aws_create_afi(build_config):
-    """
-    Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI)
+def aws_create_afi(build_config: BuildConfig) -> Optional[bool]:
+    """Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI).
 
-    Parameters:
-        build_config (BuildConfig): Build config to determine paths
+    Args:
+        build_config: Build config to determine paths.
+
     Returns:
-        (bool or None): True on success, None on error
+        `True` on success, `None` on error.
     """
-
     local_deploy_dir = get_deploy_dir()
     local_results_dir = "{}/results-build/{}".format(local_deploy_dir, build_config.get_build_dir_name())
 
@@ -224,7 +230,7 @@ def aws_create_afi(build_config):
     # construct the "tags" we store in the AGFI description
     tag_buildtriplet = build_config.get_chisel_triplet()
     tag_deploytriplet = tag_buildtriplet
-    if build_config.deploytriplet != None:
+    if build_config.deploytriplet:
         tag_deploytriplet = build_config.deploytriplet
 
     # the asserts are left over from when we tried to do this with tags
@@ -314,4 +320,4 @@ def aws_create_afi(build_config):
         rootLogger.info("Build complete! AFI ready. See {}.".format(os.path.join(hwdb_entry_file_location,afiname)))
         return True
     else:
-        return
+        return None

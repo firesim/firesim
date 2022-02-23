@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, List
 
 from awstools.awstools import *
 from buildtools.buildconfig import BuildConfig
-import boto # type: ignore
+from boto.ec2 import Instance # type: ignore
 
 rootLogger = logging.getLogger()
 
@@ -161,7 +161,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         spot_max_price: if spot instance, the max price
     """
     NAME: str = "aws-ec2"
-    launched_instance_object: boto.ec2.Instance
+    launched_instance_object: Instance
     instance_type: str
     build_instance_market: str
     spot_interruption_behavior: str
@@ -240,7 +240,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
                  build_farm_host_dispatchers.request_build_farm_host()
 
     @staticmethod
-    def ec2_launch_instances(inst_type: str, num_insts: int, build_inst_market: str, spot_int_behav: str, spot_max_price: str) -> List[boto.ec2.Instance]:
+    def ec2_launch_instances(inst_type: str, num_insts: int, build_inst_market: str, spot_int_behav: str, spot_max_price: str) -> List[Instance]:
         """Launch EC2 instances based on arguments.
 
         Args:
