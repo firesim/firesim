@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
 
-from __future__ import with_statement, print_function
 import sys
 import os
 import signal
@@ -9,17 +8,16 @@ import argparse
 from time import sleep, strftime, gmtime
 import logging
 import random
-
 import argcomplete # type: ignore
 from fabric.api import * # type: ignore
-# firesim runtools
+import string
+
 from runtools.runtime_config import RuntimeConfig
 
-from awstools.awstools import valid_aws_configure_creds, get_aws_userid
+from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscribe_to_firesim_topic
 from awstools.afitools import *
 
-# firesim buildtools
-from buildtools.buildafi import *
+from buildtools.buildafi import replace_rtl, build_driver, aws_build, aws_create_afi
 from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.buildconfig import BuildConfig
 

@@ -1,19 +1,16 @@
 import logging
 import sys
-import typing
-from typing import Any, Dict, Optional, List, TYPE_CHECKING
 
 from awstools.awstools import *
 
+# typing imports
+from typing import Any, Dict, Optional, List, TYPE_CHECKING
+from mypy_boto3_ec2.service_resource import Instance
+# TODO: Solved by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
-    from mypy_boto3_ec2.service_resource import Instance
 else:
     BuildConfig = object
-    BuildFarmHostDispatcher = object
-    IPAddrBuildFarmHostDispatcher = object
-    EC2BuildFarmHostDispatcher = object
-    Instance = object
 
 rootLogger = logging.getLogger()
 
@@ -53,7 +50,7 @@ class BuildFarmHostDispatcher(object):
         raise NotImplementedError
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List[BuildFarmHostDispatcher]) -> None:
+    def request_build_farm_hosts(build_farm_host_dispatchers: List['BuildFarmHostDispatcher']) -> None:
         """Request multiple build farm hosts."""
         raise NotImplementedError
 
@@ -137,7 +134,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         return
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List[IPAddrBuildFarmHostDispatcher]) -> None: # type: ignore[override]
+    def request_build_farm_hosts(build_farm_host_dispatchers: List['IPAddrBuildFarmHostDispatcher']) -> None: # type: ignore[override]
         """Nothing happens since the provided IP addresses are already granted by something outside FireSim."""
         return
 
@@ -217,7 +214,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
             spot_max_price)[0]
 
     @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List[EC2BuildFarmHostDispatcher]) -> None: # type: ignore[override]
+    def request_build_farm_hosts(build_farm_host_dispatchers: List['EC2BuildFarmHostDispatcher']) -> None: # type: ignore[override]
         """Launch multiple AWS EC2 instances for the build configs."""
         # TODO: this can be further optimized (spawn-like build farm hosts)
         # double-check that build farms are the same

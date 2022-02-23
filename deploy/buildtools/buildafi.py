@@ -5,7 +5,6 @@ import random
 import string
 import logging
 import os
-from typing import Optional
 from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
@@ -13,6 +12,9 @@ from fabric.contrib.project import rsync_project # type: ignore
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
+
+# typing imports
+from typing import Optional
 from buildtools.buildconfig import BuildConfig
 from buildtools.buildconfigfile import BuildConfigFile
 
@@ -117,13 +119,14 @@ def remote_setup(build_config: BuildConfig) -> str:
     return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
 @parallel
-def aws_build(build_config_file: BuildConfigFile, bypass: bool = False) -> None:
+def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypassVivado: bool = True) -> None:
     """Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
     Must run after replace_rtl and build_driver are run.
 
     Args:
         build_config_file: Global build file.
-        bypass: If true, immediately return and terminate instance. Used for testing purposes.
+        bypassAll: If true, immediately return and terminate build host. Used for testing purposes.
+        bypassVivado: If true, execute the function up until Vivado is called, then terminate build host. Used for testing purposes.
     """
     build_config = build_config_file.get_build_by_ip(env.host_string)
 
@@ -131,7 +134,7 @@ def aws_build(build_config_file: BuildConfigFile, bypass: bool = False) -> None:
         rootLogger.info("Failed to find build config for IP address: {}. Unable to release build farm host.".format(env.host_string))
         return
 
-    if bypass:
+    if bypassAll:
         build_config.build_farm_host_dispatcher.release_build_farm_host()
         return
 
@@ -176,6 +179,10 @@ def aws_build(build_config_file: BuildConfigFile, bypass: bool = False) -> None:
         cl_dir = local_cl_dir
     else:
         cl_dir = remote_setup(build_config)
+
+    if bypassVivado:
+        build_config.build_farm_host_dispatcher.release_build_farm_host()
+        return
 
     vivado_result = 0
     with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):

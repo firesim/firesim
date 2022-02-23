@@ -1,11 +1,13 @@
 from time import strftime, gmtime
 import pprint
 from importlib import import_module
-from typing import Set, Type, Any, Optional, Dict, TYPE_CHECKING
 
 from awstools.awstools import *
 from buildtools.buildfarmhostdispatcher import BuildFarmHostDispatcher
 
+# typing imports
+from typing import Set, Type, Any, Optional, Dict, TYPE_CHECKING
+# TODO: Solved by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
 else:
