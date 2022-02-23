@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 import time
 import sys
 
-import boto3 # type: ignore
-import botocore # type: ignore
-from botocore import exceptions # type: ignore
+import boto3
+import botocore
+from botocore import exceptions
 from fabric.api import local, hide, settings # type: ignore
 
 # setup basic config for logging
@@ -34,7 +34,7 @@ def valid_aws_configure_creds():
 
     This DOES NOT perform any deeper validation.
     """
-    import botocore.session # type: ignore
+    import botocore.session
     session = botocore.session.get_session()
     creds = session.get_credentials()
     if creds is None:
@@ -570,7 +570,7 @@ def send_firesim_notification(subject, body):
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
 
-def awstools_main(args):
+def main(args):
     import argparse
     import yaml
     parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -611,4 +611,4 @@ def awstools_main(args):
 
 if __name__ == '__main__':
     import sys
-    sys.exit(awstools_main(sys.argv[1:]))
+    sys.exit(main(sys.argv[1:]))

@@ -2,7 +2,7 @@
 
 """ This script configures your AWS account to run FireSim. """
 
-import boto3 # type: ignore
+import boto3
 
 vpcname = 'firesim'
 secgroupname = 'firesim'

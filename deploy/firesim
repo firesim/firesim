@@ -15,7 +15,7 @@ from fabric.api import * # type: ignore
 # firesim runtools
 from runtools.runtime_config import RuntimeConfig
 
-from awstools.awstools import *
+from awstools.awstools import valid_aws_configure_creds, get_aws_userid
 from awstools.afitools import *
 
 # firesim buildtools
@@ -241,7 +241,7 @@ def construct_firesim_argparser():
     argcomplete.autocomplete(parser)
     return parser.parse_args()
 
-def firesim_main(args):
+def main(args):
     """ Main function for FireSim manager. """
     # large timeouts, retry connections
     env.timeout = 100
@@ -328,7 +328,7 @@ if __name__ == '__main__':
 
     exitcode = 0
     try:
-        firesim_main(args)
+        main(args)
     except:
         # log all exceptions that make it this far
         rootLogger.exception("Fatal error.")

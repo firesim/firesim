@@ -2,12 +2,18 @@ import logging
 import sys
 import typing
 from typing import Any, Dict, Optional, List, TYPE_CHECKING
-from boto.ec2 import Instance # type: ignore
 
 from awstools.awstools import *
 
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
+    from mypy_boto3_ec2.service_resource import Instance
+else:
+    BuildConfig = object
+    BuildFarmHostDispatcher = object
+    IPAddrBuildFarmHostDispatcher = object
+    EC2BuildFarmHostDispatcher = object
+    Instance = object
 
 rootLogger = logging.getLogger()
 
@@ -177,7 +183,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         """
         BuildFarmHostDispatcher.__init__(self, build_config, args)
 
-        self.launched_instance_object = None
+        self.launched_instance_object = None # type: ignore
         self.instance_type = ""
         self.build_instance_market = ""
         self.spot_interruption_behavior = ""

@@ -8,6 +8,8 @@ from buildtools.buildfarmhostdispatcher import BuildFarmHostDispatcher
 
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
+else:
+    BuildConfigFile = object
 
 def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
     """Determine the subclasses that inherit from the input class.

@@ -6,7 +6,7 @@ import string
 import logging
 import os
 from typing import Optional
-from fabric.api import prefix, local, run, env, lcd # type: ignore
+from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
@@ -116,7 +116,7 @@ def remote_setup(build_config: BuildConfig) -> str:
 
     return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
-@parallel # type: ignore
+@parallel
 def aws_build(build_config_file: BuildConfigFile, bypass: bool = False) -> None:
     """Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
     Must run after replace_rtl and build_driver are run.
