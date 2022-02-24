@@ -369,12 +369,18 @@ class AXI4Releaser(implicit p: Parameters) extends Module {
   io.egressResp.bReady := io.b.ready
 }
 
-class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatBytes: Int, numBeats: Int) 
+/**This structure checks if the incoming transaction has overlap of address with ones in the Queue
+  *@param entries to specify the total number of slots in structure
+  *@param addrWidth to specify the width of the address the entry holds.
+  *@param beatBytesBits no. of Bits to specify the number of Bytes in each beat the trasaction supports Eg. 0 -> 1 Byte, 1 -> 2 Bytes, 2 -> 4 Bytes
+  *@param numBeatsBits no. of Bits to specify total number of beats supported in a transaction
+**/
+class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatBytesBits: Int, numBeatsBits: Int) 
   (implicit val p: Parameters) extends Module with HasFIFOPointers {
   val io  = IO(new Bundle {
-    val enq = Flipped(Valid(new NastiAddressAttr(addrWidth, beatBytes, numBeats)))
+    val enq = Flipped(Valid(new NastiAddressAttr(addrWidth, beatBytesBits, numBeatsBits)))
     val deq = Input(Bool())
-    val match_address = Input(new NastiAddressAttr(addrWidth, beatBytes, numBeats))
+    val match_address = Input(new NastiAddressAttr(addrWidth, beatBytesBits, numBeatsBits))
     val hit = Output(Bool())
   })
 
@@ -390,7 +396,7 @@ class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatBytes: Int
   val (addrmin, addrmax) = AddressRangePair(io.enq.bits.addr,
                                             io.enq.bits.beatBytes,
                                             io.enq.bits.numBeats)
-  assert(!full || (!do_enq || do_deq)) // Since we don't have backpressure, check for overflow
+  assert(!full || (!do_enq || do_deq)) // FIFOAlignedAddressMatcher would overflow but cannot backpressure.
   when (do_enq) {
     addrs(enq_ptr.value).valid := true.B
     addrs(enq_ptr.value).bits.addrmin := addrmin 
@@ -405,12 +411,12 @@ class FIFOAlignedAddressMatcher(val entries: Int, addrWidth: Int, beatBytes: Int
                                             io.match_address.beatBytes,
                                             io.match_address.numBeats)
 
-  addrs.map(entry => when(entry.valid) {printf("Dut     : enq address %d enqAddrEnd %d, inaddr %d, inAddrEnd %d  \n", entry.bits.addrmin, entry.bits.addrmax, inAddrMin, inAddrMax)})
   io.hit := addrs.exists({entry =>  entry.valid && 
                                     ((entry.bits.addrmin <= inAddrMin && 
                                       inAddrMin <= entry.bits.addrmax) ||  
                                     (inAddrMin <= entry.bits.addrmin && 
-                                      entry.bits.addrmin <= inAddrMax))})
+                                      entry.bits.addrmin <= inAddrMax))
+  })
 }
 
 
@@ -877,8 +883,7 @@ class FIFOAlignedAddressMatcherUnitTest(val tranXCount : Int = 5000, val q : Dou
   val noOverlap = (enqAddr < inAddr && enqAddrEnd < inAddr || enqAddr > inAddrEnd && enqAddrEnd > inAddrEnd) || !allow 
 
 
-  printf("Harness : enq address %d enqAddrEnd %d, inaddr %d, inAddrEnd %d unittest %b, checker %b \n", enqAddr, enqAddrEnd, inAddr, inAddrEnd, noOverlap, checker.hit)
-  assert(!noOverlap && checker.hit || noOverlap && !checker.hit || (state === enq) )
+  assert(!noOverlap && checker.hit || noOverlap && !checker.hit || (state === enq), "Address Overlap mismatch")
 
   io.finished := tranXs === tranXCount.U 
 

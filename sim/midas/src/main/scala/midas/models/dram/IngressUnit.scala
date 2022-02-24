@@ -78,7 +78,6 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   awCredits.inc := wQueue.io.enq.fire && wQueue.io.enq.bits.last
   awCredits.dec := awQueue.io.deq.fire
 
-  //TODO also have to maintain awQueue address queue for read address matcher
   val nastiInputs = new NastiReqChannels 
   val addrWidth = nastiInputs.aw.bits.nastiXAddrBits 
   val nastiLength = nastiInputs.aw.bits.nastiXLenBits
@@ -86,12 +85,14 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   val idWidth = nastiInputs.aw.bits.id
 
 
-  //These consists of transactions in flight with host-DRAM. The number of entries
-  //are 2x to accommodate the requests that are not yet dequeued to host-DRAM and
+  //These consists of transactions in flight with host-DRAM. The entries
+  //accommodate the requests that are not yet dequeued to host-DRAM and
   //that are in host-DRAM. These structures store IDs of transactions, sent to host-DRAM
   //and the responses are piggybacked with IDs in the same order.
-  val arIDQueue = Module(new Queue(idWidth, cfg.maxReads*2))
-  val awIDQueue = Module(new Queue(idWidth, cfg.maxWrites*2))
+  //The transactions are assigned same ID to prevent re-orderings.
+  //For the same reason W->W reorderings need not be worried about
+  val arIDQueue = Module(new Queue(idWidth, cfg.maxReads))
+  val awIDQueue = Module(new Queue(idWidth, cfg.maxWrites))
 
   // All the sources of host stalls
   val tFireHelper = DecoupledHelper(
@@ -119,7 +120,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
     Seq(awCredits, wCredits) foreach { _.dec := write_req_done }
   }
 
-  val readMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxReads*2, addrWidth, nastiLength, nastiSize)).io
+  val readMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxReads, addrWidth, nastiLength, nastiSize)).io
   readMatcher.enq.valid := arIDQueue.io.enq.fire
   readMatcher.enq.bits.addr := io.nastiInputs.hBits.ar.bits.addr
   readMatcher.enq.bits.beatBytes := io.nastiInputs.hBits.ar.bits.size
@@ -128,7 +129,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   readMatcher.match_address.beatBytes := io.nastiInputs.hBits.aw.bits.size
   readMatcher.match_address.numBeats := io.nastiInputs.hBits.aw.bits.len
 
-  val writeMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxWrites*2, addrWidth, nastiLength, nastiSize)).io
+  val writeMatcher = Module(new FIFOAlignedAddressMatcher(cfg.maxWrites, addrWidth, nastiLength, nastiSize)).io
   writeMatcher.enq.valid := awIDQueue.io.enq.fire 
   writeMatcher.enq.bits.addr := io.nastiInputs.hBits.aw.bits.addr
   writeMatcher.enq.bits.beatBytes := io.nastiInputs.hBits.aw.bits.size
@@ -141,9 +142,12 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
   arIDQueue.io.enq.bits := io.nastiInputs.hBits.ar.bits.id
   awIDQueue.io.enq.valid := tFireHelper.fire(awIDQueue.io.enq.ready) && io.nastiInputs.hBits.aw.valid
   awIDQueue.io.enq.bits := io.nastiInputs.hBits.aw.bits.id
+
   // FIFO that tracks the relative order of reads and writes are they are received 
   // bit 0 = Read, bit 1 = Write
   val xaction_order = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
+
+  // FIFO that specifies if a particular write has collision with reads in the Queue 
   val xaction_order_collisions = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
   xaction_order.io.enqA.bits := true.B
   xaction_order.io.enqB.bits := false.B
