@@ -65,15 +65,6 @@ def run_default_buildafi():
 
             run("firesim shareagfi -a {} -b {}".format(sample_hwdb_filename, sample_build_filename))
 
-            # make PR
-            # TODO: probably more efficient way? - https://github.com/marketplace/actions/add-commit
-            run("git clone --depth 1 {} temp-firesim".format(manager_fsim_dir))
-            with prefix("cd temp-firesim"):
-                run("git checkout {}".format(ci_ref_name))
-                run("cp {} {}".format(sample_hwdb_filename, sample_hwdb_postfix))
-                run("git commit -am \"Update HWDB\"")
-                run("git push origin {}".format(ci_ref_name))
-
 if __name__ == "__main__":
     set_fabric_firesim_pem()
     execute(run_default_buildafi, hosts=["localhost"])
