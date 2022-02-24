@@ -256,7 +256,12 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
 
     # append the tags from the manager to the launched instance
     extra_tags = get_manager_tags()
-    extra_tags.pop('Name', None) # filter out the 'Name'
+    # filter out the 'Name'
+    extra_tags.pop('Name', None)
+    # filter out any tags with the word 'manager' (for CI)
+    for k in extra_tags.keys()
+        if "manager" in k:
+            del extra_tags[k]
     tags.update(extra_tags)
     rootLogger.debug(tags)
 
