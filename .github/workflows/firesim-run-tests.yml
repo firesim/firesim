@@ -166,8 +166,9 @@ jobs:
         run: .github/scripts/run-linux-poweroff.py
 
   run-default-buildafi:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:buildafi-deploy')
     name: run-default-buildafi
-    needs: [run-basic-linux-poweroff]
+    needs: [setup-manager]
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
