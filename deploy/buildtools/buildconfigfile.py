@@ -5,7 +5,7 @@ import sys
 import yaml
 from collections import defaultdict
 from importlib import import_module
-from argparse import Namespace
+from fabric.api import parallel # type: ignore
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
@@ -13,6 +13,7 @@ from awstools.awstools import auto_create_bucket, get_snsname_arn
 
 # typing imports
 from typing import Dict, Optional, List, Set, TYPE_CHECKING
+from argparse import Namespace
 
 rootLogger = logging.getLogger()
 
@@ -153,10 +154,15 @@ class BuildConfigFile:
         return None
 
     @parallel
-    def build_bitstream(self, bypass=False):
+    def build_bitstream(self, bypass: bool = False) -> None:
+        """Run bitstream builds in parallel.
+        Must run after `replace_rtl` and `build_driver` are run.
+
+        Args:
+            bypass: If true, immediately return and terminate build host. Used for testing purposes.
+        """
         build_config = self.get_build_by_ip(env.host_string)
-        build_config.fpga_bit_builder_dispatcher.build_bitstream()
-        return
+        build_config.fpga_bit_builder_dispatcher.build_bitstream(bypass)
 
     def __str__(self) -> str:
         """Print the class.

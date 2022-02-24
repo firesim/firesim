@@ -1,50 +1,73 @@
-""" This converts the build configuration files into something usable by the
-manager """
-
-from __future__ import with_statement
-from time import strftime, gmtime
-import ConfigParser
-import pprint
-import sys
+import yaml
 import json
 import time
 import random
 import string
 import logging
+import os
+from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
+from fabric.contrib.console import confirm # type: ignore
+from fabric.contrib.project import rsync_project # type: ignore
 
-from fabric.api import *
-from fabric.contrib.console import confirm
-from fabric.contrib.project import rsync_project
 from awstools.afitools import *
-from awstools.awstools import *
-from buildtools.build import get_deploy_dir
+from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
+
+from typing import Optional, TYPE_CHECKING
+# TODO: Solved by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
+if TYPE_CHECKING:
+    from buildtools.buildconfig import BuildConfig
+else:
+    BuildConfig = object
 
 rootLogger = logging.getLogger()
 
-def get_deploy_dir():
-    """ Must use local here. determine where the firesim/deploy dir is """
+def get_deploy_dir() -> str:
+    """Determine where the firesim/deploy directory is and return its path.
+
+    Returns:
+        Path to firesim/deploy directory.
+    """
     with StreamLogger('stdout'), StreamLogger('stderr'):
         deploydir = local("pwd", capture=True)
     return deploydir
 
 class BitBuilder:
-    def __init__(self, build_config):
+    """Abstract class to manage how to build a bitstream for a build config.
+
+    Attributes:
+        build_config: Build config to build a bitstream for.
+    """
+    build_config: BuildConfig
+
+    def __init__(self, build_config: BuildConfig) -> None:
+        """
+        Args:
+            build_config: Build config to build a bitstream for.
+        """
         self.build_config = build_config
-        return
 
-    def replace_rtl(self):
+    def replace_rtl(self) -> None:
+        """Generate Verilog from build config."""
         raise NotImplementedError
 
-    def build_driver(self):
+    def build_driver(self) -> None:
+        """Build FireSim FPGA driver from build config."""
         raise NotImplementedError
 
-    def build_bitstream(self, bypass=False):
+    def build_bitstream(self, bypass: bool = False) -> None:
+        """Run bitstream build and terminate the build host at the end.
+        Must run after `replace_rtl` and `build_driver` are run.
+
+        Args:
+            bypass: If true, immediately return and terminate build host. Used for testing purposes.
+        """
         raise NotImplementedError
 
 class F1BitBuilder(BitBuilder):
-    def replace_rtl(self):
-        """ Generate Verilog from build config """
+    """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config."""
+    def replace_rtl(self) -> None:
+        """Generate Verilog from build config."""
         rootLogger.info("Building Verilog for {}".format(str(self.build_config.get_chisel_triplet())))
 
         with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
@@ -57,8 +80,8 @@ class F1BitBuilder(BitBuilder):
             InfoStreamLogger('stderr'):
             run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
-    def build_driver(build_config):
-        """ Build FireSim FPGA driver from build config """
+    def build_driver(self) -> None:
+        """Build FireSim FPGA driver from build config."""
         rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
 
         with prefix('cd {}'.format(get_deploy_dir() + "/../")), \
@@ -71,13 +94,12 @@ class F1BitBuilder(BitBuilder):
             InfoStreamLogger('stderr'):
             run(self.build_config.make_recipe("PLATFORM=f1 driver"))
 
-    def remote_setup(self):
-        """ Setup CL_DIR on remote machine
+    def remote_setup(self) -> str:
+        """Setup CL_DIR on remote machine.
 
         Returns:
-            (str): Path to remote CL_DIR directory (that is setup)
+            Path to remote CL_DIR directory (that is setup).
         """
-
         fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(self.build_config.get_chisel_triplet())
 
         # local paths
@@ -89,8 +111,8 @@ class F1BitBuilder(BitBuilder):
             remote_home_dir = run('echo $HOME')
 
         # potentially override build dir
-        if self.build_config.build_host_dispatcher.override_remote_build_dir:
-            remote_home_dir = self.build_config.build_host_dispatcher.override_remote_build_dir
+        if self.build_config.build_farm_host_dispatcher.override_remote_build_dir:
+            remote_home_dir = self.build_config.build_farm_host_dispatcher.override_remote_build_dir
 
         remote_build_dir = "{}/firesim-build".format(remote_home_dir)
         remote_f1_platform_dir = "{}/platforms/f1/".format(remote_build_dir)
@@ -106,14 +128,14 @@ class F1BitBuilder(BitBuilder):
                 local_dir=local_awsfpga_dir,
                 remote_dir=remote_f1_platform_dir,
                 ssh_opts="-o StrictHostKeyChecking=no",
-                exclude="hdk/cl/developer_designs/cl_*",
+                exclude=["hdk/cl/developer_designs/cl_*"],
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
             rsync_cap = rsync_project(
                 local_dir="{}/{}/*".format(local_awsfpga_dir, fpga_build_postfix),
                 remote_dir='{}/{}'.format(remote_awsfpga_dir, fpga_build_postfix),
-                exclude='build/checkpoints',
+                exclude=["build/checkpoints"],
                 ssh_opts="-o StrictHostKeyChecking=no",
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
@@ -121,13 +143,14 @@ class F1BitBuilder(BitBuilder):
 
         return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
-    def build_bitstream(self, bypass=False):
-        """ Run Vivado, convert tar -> AGFI/AFI. Then terminate the instance at the end.
-        bypass: since this function takes a long time, bypass just returns for
-        testing purposes when set to True. """
+    def build_bitstream(self, bypass: bool = False) -> None:
+        """Run Vivado, convert tar -> AGFI/AFI, and then terminate the instance at the end.
 
+        Args:
+            bypass: If true, immediately return and terminate build host. Used for testing purposes.
+        """
         if bypass:
-            self.build_config.build_host_dispatcher.release_build_host()
+            self.build_config.build_farm_host_dispatcher.release_build_farm_host()
             return
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -162,10 +185,10 @@ class F1BitBuilder(BitBuilder):
             run("""mkdir -p {}""".format(local_results_dir))
             run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
 
-        if self.build_config.build_host_dispatcher.is_local:
+        if self.build_config.build_farm_host_dispatcher.is_local:
             cl_dir = local_cl_dir
         else:
-            cl_dir = remote_setup(self.build_config)
+            cl_dir = self.remote_setup()
 
         vivado_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
@@ -194,19 +217,18 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return
 
-        if not aws_create_afi(self.build_config):
+        if not self.aws_create_afi():
             on_build_failure()
             return
 
-        self.build_config.build_host_dispatcher.release_build_host()
+        self.build_config.build_farm_host_dispatcher.release_build_farm_host()
 
-    def aws_create_afi(self):
+    def aws_create_afi(self) -> Optional[bool]:
+        """Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI).
+
+        Returns:
+            `True` on success, `None` on error.
         """
-        Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI)
-
-        :return: None on error
-        """
-
         local_deploy_dir = get_deploy_dir()
         local_results_dir = "{}/results-build/{}".format(local_deploy_dir, self.build_config.get_build_dir_name())
 
@@ -218,7 +240,7 @@ class F1BitBuilder(BitBuilder):
         # construct the "tags" we store in the AGFI description
         tag_buildtriplet = self.build_config.get_chisel_triplet()
         tag_deploytriplet = tag_buildtriplet
-        if self.build_config.deploytriplet != "None":
+        if self.build_config.deploytriplet:
             tag_deploytriplet = self.build_config.deploytriplet
 
         # the asserts are left over from when we tried to do this with tags
@@ -300,12 +322,12 @@ class F1BitBuilder(BitBuilder):
             if self.build_config.post_build_hook:
                 with StreamLogger('stdout'), StreamLogger('stderr'):
                     localcap = local("""{} {}""".format(self.build_config.post_build_hook,
-                                                        results_build_dir,
-                                                        capture=True))
+                                                        results_build_dir),
+                                                        capture=True)
                     rootLogger.debug("[localhost] " + str(localcap))
                     rootLogger.debug("[localhost] " + str(localcap.stderr))
 
             rootLogger.info("Build complete! AFI ready. See {}.".format(os.path.join(hwdb_entry_file_location,afiname)))
             return True
         else:
-            return
+            return None

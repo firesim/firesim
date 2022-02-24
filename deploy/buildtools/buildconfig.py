@@ -108,9 +108,7 @@ class BuildConfig:
 
         self.build_farm_host_dispatcher.parse_args()
 
-        self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform')
-        if self.fpga_bit_builder_dispatcher_class_name == None:
-            self.fpga_bit_builder_dispatcher_class_name = "F1BitBuilder"
+        self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform', "F1BitBuilder")
         # create run platform dispatcher object using class given and pass args to it
         self.fpga_bit_builder_dispatcher = getattr(
             import_module("buildtools.bitbuilder"),
