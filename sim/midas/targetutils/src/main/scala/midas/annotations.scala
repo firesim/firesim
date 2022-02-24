@@ -162,6 +162,19 @@ object ExcludeInstanceAsserts {
     }
 }
 
+sealed trait PerfCounterOpType
+
+object PerfCounterOps {
+  /**
+    *  Takes the annotated UInt and adds it to an accumulation register generated in the bridge
+    */
+  case object Accumulate extends PerfCounterOpType
+  /** Takes the annotated UInt and exposes it directly to the driver
+    * NB: Fields longer than 64b are not supported, and must be divided into
+    * smaller segments that are sepearate annotated
+    */
+  case object Identity extends PerfCounterOpType
+}
 
 /**
   * AutoCounter annotations. Do not emit the FIRRTL annotations unless you are
@@ -174,9 +187,10 @@ case class AutoCounterFirrtlAnnotation(
   clock: ReferenceTarget,
   reset: ReferenceTarget,
   label: String,
-  message: String,
+  description: String,
+  opType: PerfCounterOpType = PerfCounterOps.Accumulate,
   coverGenerated: Boolean = false)
-    extends firrtl.annotations.Annotation with DontTouchAllTargets {
+    extends firrtl.annotations.Annotation with DontTouchAllTargets with HasSerializationHints {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -188,6 +202,7 @@ case class AutoCounterFirrtlAnnotation(
   def shouldBeIncluded(modList: Seq[String]): Boolean = !coverGenerated || modList.contains(target.module)
   def enclosingModule(): String = target.module
   def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, enclosingModule)
+  def typeHints(): Seq[Class[_]] = Seq(opType.getClass)
 }
 
 case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
@@ -201,15 +216,36 @@ case class AutoCounterCoverModuleAnnotation(target: String) extends ChiselAnnota
   def toFirrtl =  AutoCounterCoverModuleFirrtlAnnotation(ModuleTarget("",target))
 }
 
+
 object PerfCounter {
+  private def emitAnnotation(
+      target: chisel3.UInt,
+      clock: chisel3.Clock,
+      reset: Reset,
+      label: String,
+      description: String,
+      opType: PerfCounterOpType): Unit = {
+    requireIsHardware(target, "Target passed to PerfCounter:")
+    requireIsHardware(clock,  "Clock passed to PerfCounter:")
+    requireIsHardware(reset,  "Reset passed to PerfCounter:")
+    annotate(new ChiselAnnotation {
+      def toFirrtl = AutoCounterFirrtlAnnotation(
+        target.toTarget,
+        clock.toTarget,
+        reset.toTarget,
+        label,
+        description,
+        opType)
+    })
+  }
+
   /**
     * Labels a signal as an event for which an host-side counter (an
     * "AutoCounter") should be generated).  Events can be multi-bit to encode
     * multiple occurances in a cycle (e.g., the number of instructions retired
     * in a superscalar processor). NB: Golden Gate will not generate the
     * coutner unless AutoCounter is enabled in your the platform config. See
-    * the docs for more info.
-    *
+    * the docs.fires.im for end-to-end usage information.
     *
     * @param target The number of occurances of the event (in the current cycle) 
     *
@@ -220,31 +256,44 @@ object PerfCounter {
     *
     * @param label A verilog-friendly identifier for the event signal
     *
-    * @param message A description of the event.
+    * @param description A human-friendly description of the event.
+    *
+    * @param opType Defines how the bridge should be aggregated into a performance counter.
     *
     */
-  def apply(target: chisel3.UInt,
-            clock: chisel3.Clock,
-            reset: Reset,
-            label: String,
-            message: String): Unit = {
-    requireIsHardware(target, "Target passed to PerfCounter:")
-    requireIsHardware(clock,  "Clock passed to PerfCounter:")
-    requireIsHardware(reset,  "Reset passed to PerfCounter:")
-    annotate(new ChiselAnnotation {
-      def toFirrtl = AutoCounterFirrtlAnnotation(
-        target.toTarget,
-        clock.toTarget,
-        reset.toTarget, label, message)
-    })
-  }
+  def apply(
+      target: chisel3.UInt,
+      clock: chisel3.Clock,
+      reset: Reset,
+      label: String,
+      description: String,
+      opType: PerfCounterOpType = PerfCounterOps.Accumulate): Unit =
+    emitAnnotation(target, clock, reset, label, description, opType)
 
   /**
     * A simplified variation of the full apply method above that uses the
     * implicit clock and reset.
     */
-  def apply(target: chisel3.UInt, label: String, message: String): Unit =
-    apply(target, Module.clock, Module.reset, label, message)
+  def apply(target: chisel3.UInt, label: String, description: String): Unit =
+    emitAnnotation(target, Module.clock, Module.reset, label, description, PerfCounterOps.Accumulate)
+
+  /**
+    * Passes the annotated UInt through to the driver without accumulation.
+    * Use cases:
+    *   - Custom accumulation / counting logic not supported by the driver
+    *   - Providing runtime metadata along side standard accumulation registers
+    *
+    * Note: Under reset, the passthrough value is set to 0. This keeps event
+    * handling uniform in the transform.
+    *
+    */
+  def identity(target: chisel3.UInt, label: String, description: String): Unit = {
+    require(target.getWidth <= 64,
+      s"""|PerfCounter.identity can only accept fields <= 64b wide. Provided target for label:
+          |  $label
+          |was ${target.getWidth}b.""".stripMargin)
+    emitAnnotation(target, Module.clock, Module.reset, label, description, opType = PerfCounterOps.Identity)
+  }
 }
 
 // Need serialization utils to be upstreamed to FIRRTL before i can use these.

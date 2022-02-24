@@ -1,0 +1,224 @@
+name: firesim-ci-process
+
+on:
+  # run ci when pring to main/local-fpga (note: ci runs on the merge commit of the pr!)
+  pull_request:
+    branches:
+      - main
+      - local-fpga
+
+env:
+  PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS-ACCESS-KEY-ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS-DEFAULT-REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+
+jobs:
+  cancel-prior-workflows:
+    name: cancel-prior-workflows
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Cancel previous workflow runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-18.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-docs:    ${{ steps.filter.outputs.docs }}
+      needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # If any of the files changed match, do a doc build
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # If all files match to this filter, skip the main ci pipeline
+            skip-manager:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+
+  setup-self-hosted-manager:
+    name: setup-self-hosted-manager
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-manager == 'true'
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python CI requirements
+        uses: ./.github/actions/repo-setup-aws
+      - name: Launch AWS instance used for the FireSim manager (instance info found here)
+        run: ./.github/scripts/launch-manager-instance.py
+      - name: Setup N Github Actions Runners on AWS instance
+        run: ./.github/scripts/setup-manager-self-hosted.py
+
+  setup-manager:
+    name: setup-manager
+    needs: [setup-self-hosted-manager]
+    runs-on: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
+        uses: ./.github/actions/initialize-manager
+        with:
+          max-runtime-hours: 10
+      - name: Initial Scala compilation
+        uses: ./.github/actions/initial-scala-compile
+
+  build-default-workloads:
+    name: build-default-workloads
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build default workloads (FireMarshal and paper workloads)
+        run: .github/scripts/build-default-workloads.py
+
+  run-manager-pytests:
+    name: run-manager-pytests
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run pytests
+        run: .github/scripts/run-manager-pytests.py
+
+  run-python-typecheck:
+    name: run-python-typecheck
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run mypy type checker
+        run: .github/scripts/run-mypy-typechecker.py
+
+  run-test-groupA:
+    name: run-test-groupA
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run CIGroupA Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          test-name: "CIGroupA"
+
+  run-test-groupB:
+    name: run-test-groupB
+    needs: [run-test-groupA]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run CIGroupB Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          test-name: "CIGroupB"
+
+  run-chipyard-tests:
+    name: run-chipyard-tests
+    needs: [run-test-groupB]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run other (CITests) Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          target-project: "firesim"
+          test-package: "firesim.firesim"
+          test-name: "CITests"
+
+  run-basic-linux-poweroff:
+    name: run-basic-linux-poweroff
+    needs: [build-default-workloads]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    environment: use-fpgas
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run linux-poweroff test
+        run: .github/scripts/run-linux-poweroff.py
+
+  run-yaml-api-tests:
+    name: run-yaml-api-tests
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run .yaml API verification tests
+        run: .github/scripts/run-yaml-api-tests.py
+
+  run-vitis-compile:
+    name: run-vitis-compile
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - name: Run simple Vitis build
+        run: .github/scripts/run-simple-vitis-build.py
+        if: steps.job-start.outputs.run_result != 'success'
+      - uses: ./.github/actions/job-end
+
+  documentation-check:
+    name: documentation-check
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-docs == 'true'
+    runs-on: ubuntu-18.04
+    container:
+      image: firesim/firesim-ci:v1.3
+      options: --entrypoint /bin/bash
+      env:
+        JVM_MEMORY: 3500M # Default JVM maximum heap limit
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/job-start
+        id: job-start
+      - name: Check that documentation builds with no warnings/errors
+        if: steps.job-start.outputs.run_result != 'success'
+        run: |
+          sudo yum update -y
+          sudo yum install -y python3-pip make
+          sudo pip3 install -r docs/requirements.txt
+          make -C docs html
+      - name: Show error log from sphinx if failed
+        if: ${{ steps.job-start.outputs.run_result != 'success' && failure() }}
+        run: cat /tmp/sphinx-err*.log
+      - uses: ./.github/actions/job-end

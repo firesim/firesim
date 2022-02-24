@@ -43,6 +43,8 @@
 #include "PrintfModule.h"
 #elif defined DESIGNNAME_AutoCounterModule
 #include "AutoCounterModule.h"
+#elif defined DESIGNNAME_AutoCounter32bRollover
+#include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterGlobalResetCondition
 #include "AutoCounterModule.h"
 #elif defined DESIGNNAME_AutoCounterCoverModule
@@ -110,7 +112,7 @@ public:
 int main(int argc, char** argv)
 {
   dut_emul_t dut(argc, argv);
-  dut.init(argc, argv, true);
+  dut.init(argc, argv);
   dut.run();
-  return dut.finish();
+  return dut.teardown();
 }

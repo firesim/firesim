@@ -33,7 +33,7 @@ object DRAMMasEnums extends HasDRAMMASConstants {
 
 case class JSONField(value: BigInt, units: String)
 
-class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasProgrammableRegisters 
+class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasProgrammableRegisters
     with HasConsoleUtils {
   // The most vanilla of DRAM timings
   val tAL = UInt(maxDRAMTimingBits.W)
@@ -101,9 +101,6 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
       case _ => None
     }
   }
-
-  override def cloneType = new DRAMProgrammableTimings().asInstanceOf[this.type]
-
 }
 
 case class DRAMBackendKey(writeDepth: Int, readDepth: Int, latencyBits: Int)
@@ -325,8 +322,6 @@ class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
     val rowHit =  row.foldLeft(true.B)({ case (p, addr) => p && addr === rowAddr })
     rank === rankAddr && bank === bankAddr && rowHit
   }
-
-  override def cloneType = new MASEntry(key)(p).asInstanceOf[this.type]
 }
 
 class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends MASEntry(key)(p) {
@@ -337,7 +332,6 @@ class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends M
   // and the entry isn't personally ready
   def wantPRE(): Bool = !isReady && mayPRE // Don't need the dummy args
   def wantACT(): Bool = !isReady
-  override def cloneType = new FirstReadyFCFSEntry(key)(p).asInstanceOf[this.type]
 }
 
 // Tracks the state of a bank, including:
@@ -350,7 +344,7 @@ class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends M
 // A necessary condition for the controller to issue a CMD that uses this bank
 // is that the can{CMD} bit be high. The controller of course all extra-bank
 // timing and resource constraints are met. The controller must also ensure CAS
-// commands use the open ROW. 
+// commands use the open ROW.
 
 class BankStateTrackerO(key: DramOrganizationParams) extends GenericParameterizedBundle(key)
     with CommandLegalBools {
@@ -448,7 +442,7 @@ class BankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMM
 // A necessary condition for the controller to issue a CMD that uses this bank
 // is that the can{CMD} bit be high. The controller of course all extra-bank
 // timing and resource constraints are met. The controller must also ensure CAS
-// commands use the open ROW. 
+// commands use the open ROW.
 
 class RankStateTrackerO(key: DramOrganizationParams) extends GenericParameterizedBundle(key)
     with CommandLegalBools {

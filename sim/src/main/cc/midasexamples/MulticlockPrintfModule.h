@@ -3,7 +3,7 @@
 #include "PrintfModule.h"
 
 #ifdef DESIGNNAME_MulticlockPrintfModule
-class MulticlockPrintfModule_t: public print_module_t, virtual simif_t
+class MulticlockPrintfModule_t: public print_module_t
 {
 public:
   MulticlockPrintfModule_t(int argc, char** argv): print_module_t(argc, argv) {};

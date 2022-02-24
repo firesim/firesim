@@ -89,17 +89,18 @@ DROMAJO_REQS = $(DROMAJO_H) $(DROMAJO_ROM) $(DROMAJO_DTB)
 
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
-DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
+DRIVER_H = \
+	$(shell find $(driver_dir) -name "*.h") \
 	$(shell find $(firesim_lib_dir) -name "*.h") \
 	$(DROMAJO_REQS) \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
 
-DRIVER_CC = $(wildcard $(addprefix $(driver_dir)/, $(addsuffix .cc, firesim/*))) \
+DRIVER_CC = \
+	    $(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top systematic_scheduler firesim_$(PLATFORM))) \
 	    $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 	    $(RISCV)/lib/libfesvr.a \
 	    $(DROMAJO_LIB) \
 	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
-
 
 # Per-repository dependencies (e.g., libdwarf) are installed under this sysroot
 firesim_local_sysroot = $(firesim_base_dir)/lib-install
@@ -152,7 +153,7 @@ nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
 	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
 tracer_args = +tracefile=TRACEFILE
 blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
-autocounter_args = +autocounter-readrate=1000 +autocounter-filename=AUTOCOUNTERFILE
+autocounter_args = +autocounter-readrate=1000 +autocounter-filename-base=AUTOCOUNTERFILE
 # Neglecting this +arg will make the simulator use the same step size as on the
 # FPGA. This will make ML simulation more closely match results seen on the
 # FPGA at the expense of dramatically increased target runtime

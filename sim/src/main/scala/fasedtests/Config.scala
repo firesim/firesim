@@ -54,6 +54,7 @@ class WithNTransactions(num: Int) extends Config((site, here, up) => {
   case NumTransactions => num
 })
 
+class NT10e3 extends WithNTransactions(1000)
 class NT10e5 extends WithNTransactions(100000)
 class NT10e6 extends WithNTransactions(1000000)
 class NT10e7 extends WithNTransactions(10000000)

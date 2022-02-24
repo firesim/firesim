@@ -1,0 +1,8 @@
+builds:
+    - testing-recipe-name
+
+agfis-to-share:
+    - testing-recipe-name
+
+share-with-accounts:
+    INVALID_NAME: 123456789012

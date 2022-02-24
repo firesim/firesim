@@ -2,11 +2,11 @@
 
 #include <memory>
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "AutoCounterModule.h"
 
 #ifdef DESIGNNAME_AutoCounterCoverModule
-class AutoCounterCoverModule_t: public autocounter_module_t, virtual simif_t
+class AutoCounterCoverModule_t: public autocounter_module_t
 {
 public:
     AutoCounterCoverModule_t(int argc, char** argv): autocounter_module_t(argc, argv) {};

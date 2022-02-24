@@ -4,18 +4,18 @@ Manager Configuration Files
 ===============================
 
 This page contains a centralized reference for all of the configuration options
-in ``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``,
-and ``config_hwdb.ini``.
+in ``config_runtime.yaml``, ``config_build.yaml``, ``config_build_recipes.yaml``,
+and ``config_hwdb.yaml``.
 
 .. _config-runtime:
 
-``config_runtime.ini``
+``config_runtime.yaml``
 --------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+   :code: yaml
 
 Below, we outline each section and parameter in detail.
 
@@ -31,7 +31,7 @@ them.
 """""""""""""""
 
 Use ``runfarmtag`` to differentiate between different Run Farms in FireSim.
-Having multiple ``config_runtime.ini`` files with different ``runfarmtag``
+Having multiple ``config_runtime.yaml`` files with different ``runfarmtag``
 values allows you to run many experiments at once from the same manager instance.
 
 The instances launched by the ``launchrunfarm`` command will be tagged with
@@ -40,10 +40,30 @@ you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
+``always_expand_runfarm``
+"""""""""""""""""""""""""
+When ``yes`` (the default behavior when not given) the number of instances
+of each type (see ``f1_16xlarges`` etc. below)  are launched every time you
+run ``launchrunfarm``.
+
+When ``no``, ``launchrunfarm`` looks for already existing instances that
+match ``runfarmtag`` and treat ``f1_16xlarges`` (and other 'instance-type'
+values below) as a total count.
+
+For example, if you have ``f1_2xlarges`` set to 100 and the first time you
+run ``launchrunfarm`` you have ``launch_instances_timeout_minutes`` set to 0
+(i.e. giveup after receiving a ``ClientError`` for each AvailabilityZone) and
+AWS is only able to provide you 75 ``f1_2xlarges`` because of capacity issues,
+``always_expand_runfarm`` changes the behavior of ``launchrunfarm`` in subsequent
+attempts.  ``yes`` means ``launchrunfarm`` will try to launch 100 ``f1_2xlarges``
+again.  ``no`` means that ``launchrunfarm`` will only try to launch an additional
+25 ``f1_2xlarges`` because it will see that there are already 75 that have been launched
+with the same ``runfarmtag``.
+
 ``f1_16xlarges``, ``m4_16xlarges``, ``f1_4xlarges``, ``f1_2xlarges``
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Set these three values respectively based on the number and types of instances
+Set these values respectively based on the number and types of instances
 you need. While we could automate this setting, we choose not to, so that
 users are never surprised by how many instances they are running.
 
@@ -51,6 +71,30 @@ Note that these values are ONLY used to launch instances. After launch, the
 manager will query the AWS API to find the instances of each type that have the
 ``runfarmtag`` set above assigned to them.
 
+Also refer to ``always_expand_runfarm`` which determines whether ``launchrunfarm``
+treats these counts as an incremental amount to be launched every time it is envoked
+or a total number of instances of that type and ``runfarm`` tag that should be made
+to exist.  Note, ``launchrunfarm`` will never terminate instances.
+
+``launch_instances_timeout_minutes``
+""""""""""""""""""""""""""""""""""""
+
+Integer number of minutes that the ``launchrunfarm`` command will attempt to
+request new instances before giving up.  This limit is used for each of the types
+of instances being requested.  For example, if you set to 60,
+and you are requesting all four types of instances, ``launchrunfarm`` will try
+to launch each instance type for 60 minutes, possibly trying up to a total of
+four hours.
+
+This limit starts to be applied from the first time ``launchrunfarm`` receives a
+``ClientError`` response in all AvailabilityZones (AZs) for your region.  In other words,
+if you request more instances than can possibly be requested in the given limit but AWS
+is able to satisfy all of the requests, the limit will not be enforced.
+
+To experience the old (<= 1.12) behavior, set this limit to 0 and ``launchrunfarm``
+will exit the first time it receives ``ClientError`` across all AZ's. The old behavior
+is also the default if ``launch_instances_timeout_minutes`` is not included in the
+``config_runtime.ini``.
 
 ``runinstancemarket``
 """"""""""""""""""""""
@@ -150,8 +194,8 @@ names within the topology itself, but all the ``example_Nconfig`` configurations
 are homogeneous and use this value for all nodes.
 
 You should set this to one of the hardware configurations you have defined already in
-``config_hwdb.ini``.  You should set this to the NAME (section title) of the
-hardware configuration from ``config_hwdb.ini``, NOT the actual agfi itself
+``config_hwdb.yaml``.  You should set this to the NAME (section title) of the
+hardware configuration from ``config_hwdb.yaml``, NOT the actual agfi itself
 (NOT something like ``agfi-XYZ...``).
 
 
@@ -254,13 +298,13 @@ when an assertion fires.
 
 .. _config-build:
 
-``config_build.ini``
+``config_build.yaml``
 --------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_build.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_build.yaml
+   :code: yaml
 
 Below, we outline each section and parameter in detail.
 
@@ -317,7 +361,7 @@ to set your max to the on-demand price for the instance.
 
 In this section, you can list as many build entries as you want to run
 for a particular call to the ``buildafi`` command (see
-``config_build_recipes.ini`` below for how to define a build entry). For
+``config_build_recipes.yaml`` below for how to define a build entry). For
 example, if we want to run the builds named ``[awesome-firesim-config]`` and ``[quad-core-awesome-firesim-config]``, we would
 write:
 
@@ -334,7 +378,7 @@ write:
 This is used by the ``shareagfi`` command to share the specified agfis with the
 users specified in the next (``[sharewithaccounts]``) section. In this section,
 you should specify the section title (i.e. the name you made up) for a hardware
-configuration in ``config_hwdb.ini``. For example, to share the hardware config:
+configuration in ``config_hwdb.yaml``. For example, to share the hardware config:
 
 ::
 
@@ -362,13 +406,13 @@ just for human readability, only the actual account IDs listed here matter. If y
 
 .. _config-build-recipes:
 
-``config_build_recipes.ini``
+``config_build_recipes.yaml``
 --------------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_build_recipes.yaml
+   :code: yaml
 
 Below, we outline each section and parameter in detail.
 
@@ -439,13 +483,13 @@ user-provided target project.
 
 .. _config-hwdb:
 
-``config_hwdb.ini``
+``config_hwdb.yaml``
 ---------------------------
 
 Here is a sample of this configuration file:
 
-.. include:: /../deploy/sample-backup-configs/sample_config_hwdb.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_hwdb.yaml
+   :code: yaml
 
 
 This file tracks hardware configurations that you can deploy as simulated nodes
@@ -509,5 +553,5 @@ to the relative name of the config. For example,
 Add more hardware config sections, like ``[NAME_GOES_HERE_2]``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can add as many of these entries to ``config_hwdb.ini`` as you want, following the format
+You can add as many of these entries to ``config_hwdb.yaml`` as you want, following the format
 discussed above (i.e. you provide ``agfi``, ``deploytripletoverride``, or ``customruntimeconfig``).

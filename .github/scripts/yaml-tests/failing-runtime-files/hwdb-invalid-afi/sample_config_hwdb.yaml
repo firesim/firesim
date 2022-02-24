@@ -1,0 +1,4 @@
+testing-hwdb-entry:
+    agfi: INVALID_AGFI
+    deploy-triplet-override: null
+    custom-runtime-config: null

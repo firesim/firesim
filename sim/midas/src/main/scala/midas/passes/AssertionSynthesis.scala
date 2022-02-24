@@ -54,6 +54,11 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
         }
         asserts(mname)(en.serialize) = (idx, name, clockName)
         DefNode(info, name, en)
+      case firrtl.ir.Verification(Formal.Assert,_,_,_,en,_) =>
+        throw new RuntimeException(
+          s"""|New Verification.Assert IR nodes cannot currently be synthesized.
+              |EnsureConvert asserts run early in lowering translate them into a synthesizable form.
+              |See midas.passes.RunConvertAssertsEarly.""".stripMargin)
       case s => s
     }
 

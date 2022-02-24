@@ -1,28 +1,44 @@
-""" This converts the build configuration files into something usable by the
-manager """
-
 from time import strftime, gmtime
-import ConfigParser
 import pprint
 import logging
 import sys
+import yaml
+from collections import defaultdict
+from importlib import import_module
+from argparse import Namespace
 
 from runtools.runtime_config import RuntimeHWDB
-from awstools.awstools import auto_create_bucket, get_snsname_arn
 from buildtools.buildconfig import BuildConfig
+from awstools.awstools import auto_create_bucket, get_snsname_arn
+
+# typing imports
+from typing import Dict, Optional, List, Set, TYPE_CHECKING
 
 rootLogger = logging.getLogger()
 
 class BuildConfigFile:
-    """ Class representing the "global" build config file i.e. sample_config_build.ini. """
+    """Class representing the "global" build config file i.e. `config_build.yaml`.
 
-    def __init__(self, args):
-        """ Initialize function.
+    Attributes:
+        args: Args passed by the top-level manager argparse.
+        agfistoshare: List of build recipe names (associated w/ AGFIs) to share.
+        acctids_to_sharewith: List of AWS account names to share AGFIs with.
+        hwdb: Object holding all HWDB entries.
+        builds_list: List of build recipe names to build.
+        build_ip_set: List of IPs to use for builds.
+    """
+    args: Namespace
+    agfistoshare: List[str]
+    acctids_to_sharewith: List[str]
+    hwdb: RuntimeHWDB
+    builds_list: List[BuildConfig]
+    build_ip_set: Set[str]
 
-        Parameters:
-            args (argparse.Namespace): Object holding arg attributes
+    def __init__(self, args: Namespace) -> None:
         """
-
+        Args:
+            args: Object holding arg attributes.
+        """
         if args.launchtime:
             launch_time = args.launchtime
         else:
@@ -30,103 +46,111 @@ class BuildConfigFile:
 
         self.args = args
 
-        global_build_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        global_build_configfile.optionxform = str
-        global_build_configfile.read(args.buildconfigfile)
+        global_build_config_file = None
+        with open(args.buildconfigfile, "r") as yaml_file:
+            global_build_config_file = yaml.safe_load(yaml_file)
 
         # aws specific options
-        self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
-        self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
+        self.agfistoshare = global_build_config_file['agfis-to-share']
+        self.acctids_to_sharewith = global_build_config_file['share-with-accounts'].values()
 
         # this is a list of actual builds to run
-        builds_to_run_list = map(lambda x: x[0], global_build_configfile.items('builds'))
+        builds_to_run_list = global_build_config_file['builds']
 
-        build_recipes_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        build_recipes_configfile.optionxform = str
-        build_recipes_configfile.read(args.buildrecipesconfigfile)
+        build_recipes_config_file = None
+        with open(args.buildrecipesconfigfile, "r") as yaml_file:
+            build_recipes_config_file = yaml.safe_load(yaml_file)
 
-        build_hosts_configfile = ConfigParser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        build_hosts_configfile.optionxform = str
-        build_hosts_configfile.read(args.buildhostsconfigfile)
+        build_farm_hosts_config_file = None
+        with open(args.buildfarmconfigfile, "r") as yaml_file:
+            build_farm_hosts_config_file = yaml.safe_load(yaml_file)
 
         build_recipes = dict()
-        for section in build_recipes_configfile.sections():
-            build_recipes[section] = BuildConfig(
-                section,
-                dict(build_recipes_configfile.items(section)),
-                build_hosts_configfile,
-                self,
-                launch_time)
+        for section_name, section_dict in build_recipes_config_file.items():
+            if section_name in builds_to_run_list:
+                build_recipes[section_name] = BuildConfig(
+                    section_name,
+                    section_dict,
+                    build_farm_hosts_config_file,
+                    self,
+                    launch_time)
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
-        self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
+        self.builds_list = list(build_recipes.values())
         self.build_ip_set = set()
 
-    def setup(self):
-        """ Setup based on the types of buildhosts """
+    def setup(self) -> None:
+        """Setup based on the types of build farm hosts."""
         for build in self.builds_list:
             auto_create_bucket(build.s3_bucketname)
 
-        #check to see email notifications can be subscribed
+        # check to see email notifications can be subscribed
         get_snsname_arn()
 
-    def request_build_hosts(self):
-        """ Launch an instance for the builds. Exits the program if an IP address is reused. """
-        # TODO: optimization: batch together items using the same buildhost
+    def request_build_farm_hosts(self) -> None:
+        """Launch an instance for the builds. Exits the program if an IP address is reused."""
+
+        def categorize(seq: List[BuildConfig]) -> Dict[str, List[BuildConfig]]:
+            """Bucket build configs by their build farm host dispatcher name.
+
+            Args:
+                seq: List of build configs to categorize.
+
+            Returns:
+                Dict of lists where the key is the build farm host name and the list holds
+                the build configs associated with it.
+            """
+            class_names = list(map(lambda x: x.build_farm_host_dispatcher.__class__.__name__, seq))
+            class_builds_zipped = zip(class_names, seq)
+
+            d = defaultdict(list)
+            for c, b in class_builds_zipped:
+                d[c].append(b)
+
+            return d
+
+        cat = categorize(self.builds_list)
+
+        for bhd_class, build_farm_hosts in cat.items():
+            # batch launching build farm hosts of similar types
+            getattr(import_module("buildtools.buildfarmhostdispatcher"),
+                bhd_class).request_build_farm_hosts(list(map(lambda x: x.build_farm_host_dispatcher, build_farm_hosts)))
+
+            for build in build_farm_hosts:
+                num_ips = len(self.build_ip_set)
+                ip = build.build_farm_host_dispatcher.get_build_farm_host_ip()
+                self.build_ip_set.add(ip)
+                if num_ips == len(self.build_ip_set):
+                    rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
+                    self.release_build_farm_hosts()
+                    sys.exit(1)
+
+    def wait_on_build_farm_host_initializations(self) -> None:
+        """Block until all build instances are initialized."""
+        # TODO: batch optimize
         for build in self.builds_list:
-            build.build_host_dispatcher.request_build_host()
-            num_ips = len(self.build_ip_set)
-            ip = build.build_host_dispatcher.get_build_host_ip()
-            self.build_ip_set.add(ip)
-            if num_ips == len(self.build_ip_set):
-                rootLogger.critical("ERROR: Duplicate {} IP used when launching instance".format(ip))
-                self.release_build_hosts()
-                sys.exit(1)
+            build.build_farm_host_dispatcher.wait_on_build_farm_host_initialization()
 
-    def wait_on_build_host_initializations(self):
-        """ Block until all build instances are launched """
+    def release_build_farm_hosts(self) -> None:
+        """Terminate all build instances that are launched."""
+        # TODO: batch optimize
         for build in self.builds_list:
-            build.build_host_dispatcher.wait_on_build_host_initialization()
+            build.build_farm_host_dispatcher.release_build_farm_host()
 
-    def release_build_hosts(self):
-        """ Terminate all build instances that are launched """
-        for build in self.builds_list:
-            build.build_host_dispatcher.release_build_host()
+    def get_build_by_ip(self, nodeip: str) -> Optional[BuildConfig]:
+        """Obtain the build config For a particular IP address.
 
-    def get_build_by_ip(self, nodeip):
-        """ For a particular IP (aka instance), return the build config it is running.
+        Args:
+            nodeip: IP address of build config wanted
 
-        Parameters:
-            nodeip (str): IP address of build wanted
         Returns:
-            (BuildConfig or None): Build config of input IP or None
+            BuildConfig for `nodeip`. Returns `None` if `nodeip` is not found.
         """
-
         for build in self.builds_list:
-            if build.build_host_dispatcher.get_build_host_ip() == nodeip:
+            if build.build_farm_host_dispatcher.get_build_farm_host_ip() == nodeip:
                 return build
         return None
-
-    def get_build_host_ips(self):
-        """ Get all the build instance IPs (later passed to fabric as hosts).
-
-        Returns:
-            (list[str]): List of IP addresses to build on
-        """
-        return list(self.build_ip_set)
-
-    def get_builds_list(self):
-        """ Get all the build configurations.
-
-        Returns:
-            (list[BuildConfig]): List of build configs
-        """
-
-        return self.builds_list
 
     @parallel
     def build_bitstream(self, bypass=False):
@@ -134,10 +158,10 @@ class BuildConfigFile:
         build_config.fpga_bit_builder_dispatcher.build_bitstream()
         return
 
-    def __str__(self):
-        """ Print the class.
+    def __str__(self) -> str:
+        """Print the class.
 
         Returns:
-            (str): String representation of the class
+            String representation of the class.
         """
         return pprint.pformat(vars(self))

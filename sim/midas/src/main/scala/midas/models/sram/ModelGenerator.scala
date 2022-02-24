@@ -6,6 +6,6 @@ import chisel3.experimental.{DataMirror, requireIsChiselType}
 import collection.immutable.ListMap
 
 trait ModelGenerator {
-  val emitModel: () => MultiIOModule
-  val emitRTLImpl: () => MultiIOModule
+  val emitModel: () => Module
+  val emitRTLImpl: () => Module
 }

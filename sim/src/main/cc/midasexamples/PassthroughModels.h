@@ -1,9 +1,9 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "stdio.h"
 
-class PassthroughModelDriver: virtual simif_t
+class PassthroughModelDriver: public simif_peek_poke_t
 {
 public:
   PassthroughModelDriver(int argc, char** argv) {}

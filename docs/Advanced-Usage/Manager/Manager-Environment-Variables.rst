@@ -6,7 +6,7 @@ Manager Environment Variables
 This page contains a centralized reference for the environment variables used
 by the manager.
 
-.. _config-runtime:
+.. _runfarm-prefix:
 
 ``FIRESIM_RUNFARM_PREFIX``
 --------------------------

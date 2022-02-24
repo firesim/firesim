@@ -223,7 +223,7 @@ object FAMEModuleTransformer {
           XDCFiles.Implementation,
           s"""|create_generated_clock -name ${clockName} -source [get_pins -of [get_clocks host_clock]] [get_pins {}] -divide_by 1
               |set_multicycle_path $clockMFMR -setup -from [get_clocks $clockName] -to [get_clocks $clockName]
-              |set_multicycle_path 1 -hold  -from [get_clocks $clockName] -to [get_clocks $clockName]
+              |set_multicycle_path ${clockMFMR - 1} -hold  -from [get_clocks $clockName] -to [get_clocks $clockName]
               |""".stripMargin,
           bufferOutputRT)
         addedAnnos += xdcAnno

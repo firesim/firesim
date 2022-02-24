@@ -53,29 +53,29 @@ Prerequisites
 #. You must have a design that integrates the TracerV bridge. See the :ref:`tracerv-bridge` section.
 
 
-Enabling Flame Graph generation in ``config_runtime.ini``
+Enabling Flame Graph generation in ``config_runtime.yaml``
 --------------------------------------------------------------
 
-To enable Flame Graph generation for a simulation, you must set ``enable=yes`` and
-``output_format=2`` in the ``[tracing]`` section of your ``config_runtime.ini``
+To enable Flame Graph generation for a simulation, you must set ``enable: yes`` and
+``output-format: 2`` in the ``tracing:`` section of your ``config_runtime.yaml``
 file, for example:
 
-.. code-block:: ini
+.. code-block:: yaml
 
-    [tracing]
-    enable=yes
+    tracing:
+        enable: yes
 
-    # Trace output formats. Only enabled if "enable" is set to "yes" above
-    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
-    # unwinding -> Flame Graph)
-    output_format=2
+        # Trace output formats. Only enabled if "enable" is set to "yes" above
+        # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
+        # unwinding -> Flame Graph)
+        output-format: 2
 
-    # Trigger selector.
-    # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
-    # instruction trigger
-    selector=1
-    start=0
-    end=-1
+        # Trigger selector.
+        # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
+        # instruction trigger
+        selector: 1
+        start: 0
+        end: -1
 
 
 The trigger selector settings can be set as described in the
@@ -139,7 +139,7 @@ The ``gen-all-flamegraphs-fireperf.sh`` script will automatically produce a
 flame graph for each generated trace.
 
 Lastly, if you have created a new workload definition, make sure you update
-your ``config_runtime.ini`` to use this new workload definition.
+your ``config_runtime.yaml`` to use this new workload definition.
 
 
 Running a simulation

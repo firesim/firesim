@@ -48,5 +48,5 @@ class FireSimTopology(UserTopologies):
         # the default mapper is used, which handles no network and simple networked cases.
         self.custom_mapper = None
         self.no_net_num_nodes = no_net_num_nodes
-        configfunc = getattr(self, user_topology_name)
-        configfunc()
+        config_func = getattr(self, user_topology_name)
+        config_func()

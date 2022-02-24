@@ -189,9 +189,9 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
 
   // Take the readies from the arbiter, and kill the selected entry
   val entriesStillReady = refUpdates.zip(columnArbiter.io.in) map { case (ref, sel) =>
-    when (sel.fire()) { ref.valid := false.B }
+    when (sel.fire) { ref.valid := false.B }
     // If the entry is not killed, but shares the same open row as the killed reference, return true
-    !sel.fire() && ref.valid && ref.bits.isReady &&
+    !sel.fire && ref.valid && ref.bits.isReady &&
     cmdBank === ref.bits.bankAddr && cmdRank === ref.bits.rankAddr
   }
 
@@ -238,7 +238,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
     bankHasReadyEntries(Cat(cmdRank, cmdBank)) := memReqDone && otherReadyEntries || selectedCmd === cmd_act
   }
 
-  when (newReference.bits.isReady & newReference.fire()){
+  when (newReference.bits.isReady & newReference.fire){
     bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) := true.B
   }
 

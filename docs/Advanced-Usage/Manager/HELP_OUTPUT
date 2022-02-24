@@ -16,16 +16,16 @@ optional arguments:
   -h, --help            show this help message and exit
   -c RUNTIMECONFIGFILE, --runtimeconfigfile RUNTIMECONFIGFILE
                         Optional custom runtime/workload config file. Defaults
-                        to config_runtime.ini.
+                        to config_runtime.yaml.
   -b BUILDCONFIGFILE, --buildconfigfile BUILDCONFIGFILE
                         Optional custom build config file. Defaults to
-                        config_build.ini.
+                        config_build.yaml.
   -r BUILDRECIPESCONFIGFILE, --buildrecipesconfigfile BUILDRECIPESCONFIGFILE
                         Optional custom build recipe config file. Defaults to
-                        config_build_recipes.ini.
+                        config_build_recipes.yaml.
   -a HWDBCONFIGFILE, --hwdbconfigfile HWDBCONFIGFILE
                         Optional custom HW database config file. Defaults to
-                        config_hwdb.ini.
+                        config_hwdb.yaml.
   -x OVERRIDECONFIGDATA, --overrideconfigdata OVERRIDECONFIGDATA
                         Override a single value from one of the the RUNTIME
                         e.g.: --overrideconfigdata "targetconfig linklatency

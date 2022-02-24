@@ -1,8 +1,8 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 
-class Parity_t: virtual simif_t
+class Parity_t: public simif_peek_poke_t
 {
 public:
   Parity_t(int argc, char** argv) {}
