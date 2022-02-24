@@ -172,7 +172,6 @@ jobs:
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
-    environment: build-afis
     steps:
       - uses: actions/checkout@v2
       - name: Run buildafi and commit changes
