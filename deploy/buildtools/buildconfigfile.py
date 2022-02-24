@@ -5,7 +5,6 @@ import sys
 import yaml
 from collections import defaultdict
 from importlib import import_module
-from argparse import Namespace
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
@@ -13,6 +12,7 @@ from awstools.awstools import auto_create_bucket, get_snsname_arn
 
 # typing imports
 from typing import Dict, Optional, List, Set, TYPE_CHECKING
+from argparse import Namespace
 
 rootLogger = logging.getLogger()
 

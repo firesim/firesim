@@ -7,7 +7,9 @@ from buildtools.buildfarmhostdispatcher import BuildFarmHostDispatcher
 
 # typing imports
 from typing import Set, Type, Any, Optional, Dict, TYPE_CHECKING
-# TODO: Solved by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
+# needed to avoid type-hint circular dependencies
+# TODO: Solved in 3.7.+ by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
+#       and normal "import <module> as ..." syntax (see https://www.reddit.com/r/Python/comments/cug90e/how_to_not_create_circular_dependencies_when/)
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
 else:
