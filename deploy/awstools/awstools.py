@@ -28,6 +28,56 @@ rootLogger = logging.getLogger()
 # by running scripts/update_test_amis.py
 f1_ami_name = "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
+def get_manager_instance_id():
+    """Get current manager instance id, if applicable.
+
+    Returns:
+        A ``str`` of the instance id or ``None``
+    """
+    # This takes multiple minutes without a timeout from the CI container. In
+    # practise it should resolve nearly instantly on an initialized EC2 instance.
+    curl_connection_timeout = 10
+    with settings(warn_only=True), hide('everything'):
+        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/meta-data/instance-id""".format(curl_connection_timeout), capture=True)
+
+    if res.return_code:
+        return None
+    else:
+        return res.stdout
+
+def get_manager_tags():
+    """Get current manager tags.
+
+    Returns:
+        A ``dict`` of tags (name -> value). Empty if no tags found or can't access the inst id.
+    """
+    resptags = {}
+
+    inst_id = get_manager_instance_id()
+    rootLogger.debug(inst_id)
+    if inst_id:
+        # Look up this instance's ID, if we do not have permission to describe tags, return empty dict
+        client = boto3.client('ec2')
+        try:
+            resp = client.describe_tags(
+                Filters=[
+                    {
+                        'Name': 'resource-id',
+                        'Values': [
+                            inst_id,
+                        ]
+                    },
+                ]
+            )
+        except client.exceptions.ClientError:
+            return resptags
+
+        for pair in resp['Tags']:
+            resptags[pair['Key']] = pair['Value']
+        rootLogger.debug(resptags)
+
+    return resptags
+
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
     vpcname, securitygroupname, keyname, etc.
@@ -58,56 +108,20 @@ def aws_resource_names():
         'runfarmprefix':     None,
     }
 
-    resp = None
-    res = None
-    # This takes multiple minutes without a timeout from the CI container. In
-    # practise it should resolve nearly instantly on an initialized EC2 instance.
-    curl_connection_timeout = 10
-    with settings(warn_only=True), hide('everything'):
-        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/meta-data/instance-id""".format(curl_connection_timeout), capture=True)
+    resptags = get_manager_tags()
+    if resptags:
+        in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
+        if not in_tutorial_mode:
+            return base_dict
 
-    # Use the default dictionary if we're not on an EC2 instance (e.g., when a
-    # manager is launched from CI; during demos)
-    if res.return_code != 0:
-        return base_dict
-
-
-    # Look up this instance's ID, if we do not have permission to describe tags, use the default dictionary
-    client = boto3.client('ec2')
-    try:
-        instanceid = res.stdout
-        rootLogger.debug(instanceid)
-
-        resp = client.describe_tags(
-            Filters=[
-                {
-                    'Name': 'resource-id',
-                    'Values': [
-                        instanceid,
-                    ]
-                },
-            ]
-        )
-    except client.exceptions.ClientError:
-        return base_dict
-
-    resptags = {}
-    for pair in resp['Tags']:
-        resptags[pair['Key']] = pair['Value']
-    rootLogger.debug(resptags)
-
-    in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
-    if not in_tutorial_mode:
-        return base_dict
-
-    # at this point, assume we are in tutorial mode and get all tags we need
-    base_dict['tutorial_mode']     = True
-    base_dict['vpcname']           = resptags['firesim-tutorial-username']
-    base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
-    base_dict['keyname']           = resptags['firesim-tutorial-username']
-    base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
-    base_dict['snsname']           = resptags['firesim-tutorial-username']
-    base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
+        # at this point, assume we are in tutorial mode and get all tags we need
+        base_dict['tutorial_mode']     = True
+        base_dict['vpcname']           = resptags['firesim-tutorial-username']
+        base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
+        base_dict['keyname']           = resptags['firesim-tutorial-username']
+        base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
+        base_dict['snsname']           = resptags['firesim-tutorial-username']
+        base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
 
     return base_dict
 
@@ -205,7 +219,6 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     if tags is None and not always_expand:
         raise ValueError("always_expand=False requires tags to be given")
 
-
     aws_resource_names_dict = aws_resource_names()
     keyname = aws_resource_names_dict['keyname']
     securitygroupname = aws_resource_names_dict['securitygroupname']
@@ -240,6 +253,12 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
         rootLogger.info("Already have {} of {} {} instances.".format(len(instances), count, instancetype))
         if len(instances) < count:
             rootLogger.info("Launching remaining {} {} instances".format(count - len(instances), instancetype))
+
+    # append the tags from the manager to the launched instance
+    extra_tags = get_manager_tags()
+    extra_tags.pop('Name', None) # filter out the 'Name'
+    tags.update(extra_tags)
+    rootLogger.debug(tags)
 
     first_subnet_wraparound = None
 
@@ -592,4 +611,6 @@ def main(args):
 
 if __name__ == '__main__':
     import sys
-    sys.exit(main(sys.argv[1:]))
+    #sys.exit(main(sys.argv[1:]))
+    mycustom()
+
