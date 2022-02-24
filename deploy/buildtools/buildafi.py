@@ -119,7 +119,7 @@ def remote_setup(build_config: BuildConfig) -> str:
     return "{}/{}".format(remote_awsfpga_dir, fpga_build_postfix)
 
 @parallel
-def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypassVivado: bool = True) -> None:
+def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypassVivado: bool = False) -> None:
     """Run Vivado, convert tar into AGFI/AFI. Terminate the instance at the end.
     Must run after replace_rtl and build_driver are run.
 
