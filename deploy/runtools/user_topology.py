@@ -381,7 +381,7 @@ class UserTopologies(object):
 #    def example_sha3hetero_2config(self):
 #        self.roots= [FireSimSwitchNode()]
 #        servers = [FireSimServerNode(server_hardware_config=
-#                     "fireboom-singlecore-nic-l2-llc4mb-ddr3"),
+#                     "firesim-boom-singlecore-nic-l2-llc4mb-ddr3"),
 #                   FireSimServerNode(server_hardware_config=
-#                     "firesim-singlecore-sha3-nic-l2-llc4mb-ddr3")]
+#                     "firesim-rocket-singlecore-sha3-nic-l2-llc4mb-ddr3")]
 #        self.roots[0].add_downlinks(servers)
