@@ -20,6 +20,7 @@ def run_linux_poweroff():
             :arg: workload (str) - workload ini (abs path)
             :arg: timeout (str) - timeout amount for the workload to run
             """
+            log_tail_length = 100
             # rename runfarm tag with a unique tag based on the ci workflow
             with prefix('export FIRESIM_RUNFARM_PREFIX={}'.format(ci_workflow_run_id)):
                 rc = 0
@@ -27,13 +28,11 @@ def run_linux_poweroff():
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
                     rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload), pty=False).return_code
+                    print(" Printing last {} lines of log. See {}.log for full info.".format(log_tail_length, workload))
+                    run("tail -n {} {}.log".format(log_tail_length, workload))
                 if rc != 0:
                     # need to confirm that instance is off
-                    print("Workload {} failed. Printing last lines of log. See {}.log for full info".format(workload, workload))
-                    print("Log start:")
-                    run("tail -n 100 {}.log".format(workload))
-                    print("Log end.")
-                    print("Terminating workload")
+                    print("Workload {} failed. Terminating runfarm.".format(workload))
                     run("firesim terminaterunfarm -q -c {}".format(workload))
                     sys.exit(rc)
                 else:

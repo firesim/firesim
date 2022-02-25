@@ -1,12 +1,12 @@
 name: firesim-ci-process
 
 on:
-  # run ci when pring to dev/master/main (note: ci runs on the merge commit of the pr!)
+  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
   pull_request:
     branches:
-      - dev
-      - master
       - main
+      - '1.[0-9]*.x'
+
 
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
@@ -29,8 +29,41 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-18.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-docs:    ${{ steps.filter.outputs.docs }}
+      needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # If any of the files changed match, do a doc build
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # If all files match to this filter, skip the main ci pipeline
+            skip-manager:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-manager == 'true'
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -55,6 +88,9 @@ jobs:
         uses: ./.github/actions/initial-scala-compile
 
   build-default-workloads:
+    # Conditionally build rootfs images only if deploying to FPGA to save CI resources
+    # https://stackoverflow.com/questions/62325286/run-github-actions-when-pull-requests-have-a-specific-label/62331521#comment122159108_62331521
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: build-default-workloads
     needs: [setup-manager]
     runs-on: ${{ github.run_id }}
@@ -118,12 +154,12 @@ jobs:
           test-name: "CITests"
 
   run-basic-linux-poweroff:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff
     needs: [build-default-workloads]
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
-    environment: use-fpgas
     steps:
       - uses: actions/checkout@v2
       - name: Run linux-poweroff test
@@ -142,6 +178,8 @@ jobs:
 
   documentation-check:
     name: documentation-check
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-docs == 'true'
     runs-on: ubuntu-18.04
     container:
       image: firesim/firesim-ci:v1.3
