@@ -9,3 +9,4 @@ tags
 build
 scala-doc-env.sh
 *.swp
+deploy/workloads/sha3*
