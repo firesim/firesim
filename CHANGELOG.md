@@ -2,6 +2,26 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.13.3] - 2022-03-01
+More small updates to AMI string in deploy area.
+
+### Fixed
+* Update AMI string in deploy to 1.11.1 #977
+
+## [1.13.2] - 2022-02-28
+More small clarifications to the documentation.
+
+### Fixed
+* Update AMI string in documentation to 1.11.1 #972 #973
+
+## [1.13.1] - 2022-02-27
+Small clarifications to the documentation and fixes the FPGA simulation driver initialization.
+
+### Fixed
+* Use `--skip-validate` in CI #957 #960
+* Fix AWS FPGA init API (use `fpga_mpgmt_init`) #950
+* Clarify AMI search term in documentation #967
+
 ## [1.13.0] - 2022-02-15
 Highlights include a bump to Chisel 3.5 & FIRRTL 1.5, Vivado 2020.2 & Developer AMI 1.10, considerable FPGA QoR optimizations, and standardized file emission stategy from Golden Gate (all file names described [here](https://docs.fires.im/en/1.13.0/Golden-Gate/Output-Files.html)). 
 
