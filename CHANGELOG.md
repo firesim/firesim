@@ -2,6 +2,18 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.13.2] - 2022-02-28
+More small clarifications to the documentation.
+
+### Added
+
+### Changed
+
+### Fixed
+* Update AMI string in documentation to 1.11.1 #972 #973
+
+### Removed
+
 ## [1.13.1] - 2022-02-27
 Small clarifications to the documentation and fixes the FPGA simulation driver initialization.
 
