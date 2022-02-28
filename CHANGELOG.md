@@ -2,6 +2,12 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.13.3] - 2022-03-01
+More small updates to AMI string in deploy area.
+
+### Fixed
+* Update AMI string in deploy to 1.11.1 #977
+
 ## [1.13.2] - 2022-02-28
 More small clarifications to the documentation.
 
