@@ -1,8 +1,8 @@
 [
   {
-    "ami_id": "ami-03f32123533983fdb",
-    "name": "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc",
-    "description": "FPGA Developer AMI with Xilinx 2021.1 toolset and XRT 202110.2.11.634",
+    "ami_id": "ami-02d069917d7c319a3",
+    "name": "FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc",
+    "description": "FPGA Developer AMI with Xilinx 2021.1 toolset and XRT with log4j updated to 2.17",
     "owner_id": "679593333241",
     "public": true,
     "virtualization_type": "hvm",
