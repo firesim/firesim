@@ -38,6 +38,7 @@ jobs:
     outputs:
       needs-docs:    ${{ steps.filter.outputs.docs }}
       needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+      needs-manager-python-only: ${{ steps.filter.outputs.python-manager }}
 
     steps:
       - uses: actions/checkout@v2
@@ -58,6 +59,14 @@ jobs:
               - *docs-filter
               - '**/*.md'
               - '**/.gitignore'
+
+            # Python-specific manager filter
+            python-manager:
+              - 'deploy/firesim'
+              - 'deploy/awstools/**'
+              - 'deploy/buildtools/**'
+              - 'deploy/runtools/**'
+              - 'deploy/util/**'
 
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
@@ -99,7 +108,8 @@ jobs:
 
   run-manager-pytests:
     name: run-manager-pytests
-    needs: [setup-manager]
+    needs: [setup-manager, change-filters]
+    if: needs.change-filters.outputs.needs-manager-python-only == 'true'
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
