@@ -66,14 +66,14 @@ def build_driver(build_config: BuildConfig) -> None:
          InfoStreamLogger('stderr'):
         run(build_config.make_recipe("PLATFORM=f1 driver"))
 
-def cl_dir_setup(build_config: BuildConfig) -> str:
+def cl_dir_setup(build_config: BuildConfig) -> Optional[str]:
     """Setup CL_DIR on build host.
 
     Args:
         build_config: Build configuration to determine paths.
 
     Returns:
-        Path to CL_DIR directory (that is setup).
+        Path to CL_DIR directory (that is setup) or `None` if invalid.
     """
     fpga_build_postfix = f"hdk/cl/developer_designs/cl_{build_config.get_chisel_triplet()}"
 
@@ -81,6 +81,10 @@ def cl_dir_setup(build_config: BuildConfig) -> str:
     local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
 
     dest_build_dir = build_config.build_farm_host_dispatcher.dest_build_dir
+    if not dest_build_dir:
+        rootLogger.critical(f"ERROR: Invalid build dir of {dest_build_dir}")
+        return None
+
     dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
     dest_awsfpga_dir = f"{dest_f1_platform_dir}/aws-fpga"
 
@@ -153,6 +157,9 @@ def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypas
 
     # 'cl_dir' holds the eventual directory in which vivado will run.
     cl_dir = cl_dir_setup(build_config)
+    if not cl_dir:
+        on_build_failure()
+        return
 
     if bypassVivado:
         build_config.build_farm_host_dispatcher.release_build_farm_host()

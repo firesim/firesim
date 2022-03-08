@@ -39,11 +39,14 @@ class BuildFarmHostDispatcher(metaclass=abc.ABCMeta):
         self.args = args
         self.dest_build_dir = ""
 
-    @abc.abstractmethod
-    @property
     @staticmethod
+    @abc.abstractmethod
     def NAME() -> str:
-        """Human-readable name (used as the "build-farm-type" in the YAML)."""
+        """Human-readable name (used as the "build-farm-type" in the YAML).
+
+        Returns:
+            Human-readable name.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -102,10 +105,13 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         self.dispatch_id = IPAddrBuildFarmHostDispatcher.dispatch_counter
         IPAddrBuildFarmHostDispatcher.dispatch_counter += 1
 
-    @property
     @staticmethod
     def NAME() -> str:
-        """Human-readable name (used as the "build-farm-type" in the YAML)."""
+        """Human-readable name (used as the "build-farm-type" in the YAML).
+
+        Returns:
+            Human-readable name.
+        """
         return "unmanaged"
 
     def parse_args(self) -> None:
@@ -191,10 +197,13 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         self.spot_interruption_behavior = ""
         self.spot_max_price = ""
 
-    @property
     @staticmethod
     def NAME() -> str:
-        """Human-readable name (used as the "build-farm-type" in the YAML)."""
+        """Human-readable name (used as the "build-farm-type" in the YAML).
+
+        Returns:
+            Human-readable name.
+        """
         return "aws-ec2"
 
     def parse_args(self) -> None:
@@ -234,7 +243,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
                 },
             ],
             tags={ 'fsimbuildcluster': buildfarmprefix },
-            randomsubnet=True)
+            randomsubnet=True)[0]
 
     def wait_on_build_farm_host_initialization(self) -> None:
         """Wait for EC2 instance launch."""
@@ -251,5 +260,5 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
     def release_build_farm_host(self) -> None:
         """ Terminate the EC2 instance running this build. """
         instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
-        rootLogger.info(f"Terminating build instances {instance_ids}. Please confirm in your AWS Management Console")
+        rootLogger.info(f"Terminating build instance {instance_ids}. Please confirm in your AWS Management Console")
         terminate_instances(instance_ids, dryrun=False)

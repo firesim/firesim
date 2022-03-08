@@ -238,7 +238,7 @@ $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 
 $(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
-	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || :
+	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
 $(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
