@@ -3,9 +3,9 @@ import sys
 
 from awstools.awstools import *
 
-# typing imports
+# imports needed for python type checking
 from typing import Any, Dict, Optional, List, TYPE_CHECKING
-from mypy_boto3_ec2.service_resource import Instance
+from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 # needed to avoid type-hint circular dependencies
 # TODO: Solved in 3.7.+ by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
 #       and normal "import <module> as ..." syntax (see https://www.reddit.com/r/Python/comments/cug90e/how_to_not_create_circular_dependencies_when/)
@@ -23,14 +23,12 @@ class BuildFarmHostDispatcher(object):
         NAME: Human-readable name (used as the "build-farm-type" in the YAML).
         build_config: Build config associated with the dispatcher.
         args: Set of args/options associated with the dispatcher.
-        is_local: Is the dispatcher the same as the manager host?
-        override_remote_build_dir: Override name of build dir on build host (default to $HOME).
+        dest_build_dir: Name of build dir on build host.
     """
     NAME: str = ""
     build_config: BuildConfig
     args: Dict[str, Any]
-    is_local: bool
-    override_remote_build_dir: Optional[str]
+    dest_build_dir: str
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         """
@@ -40,8 +38,7 @@ class BuildFarmHostDispatcher(object):
         """
         self.build_config = build_config
         self.args = args
-        self.is_local = False
-        self.override_remote_build_dir = None
+        self.dest_build_dir = ""
 
     def parse_args(self) -> None:
         """Parse default build farm arguments."""
@@ -49,11 +46,6 @@ class BuildFarmHostDispatcher(object):
 
     def request_build_farm_host(self) -> None:
         """Request build farm host to use for build."""
-        raise NotImplementedError
-
-    @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List['BuildFarmHostDispatcher']) -> None:
-        """Request multiple build farm hosts."""
         raise NotImplementedError
 
     def wait_on_build_farm_host_initialization(self) -> None:
@@ -73,12 +65,12 @@ class BuildFarmHostDispatcher(object):
         raise NotImplementedError
 
 class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
-    """Dispatcher class that uses a set of predetermined IPs as the build farm host.
+    """Dispatcher class that selects from a set of user-determined IPs to allocate a new build farm host.
 
     Attributes:
         dispatch_counter: Counter to track number of hosts launched.
-        ip_addr: IP address associated with build farm hosts.
-        dispatch_id: ID of build host (determined from `dispatch_counter`).
+        ip_addr: IP address associated with build farm host.
+        dispatch_id: Index into list of user-provided IPs (determined from `dispatch_counter`).
     """
     NAME: str = "unmanaged"
     dispatch_counter: int = 0
@@ -101,9 +93,10 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
 
     def parse_args(self) -> None:
         """Parse build farm host arguments."""
-        build_farm_hosts_list = self.args["build-farm-hosts"]
+        build_farm_hosts_key = "build-farm-hosts"
+        build_farm_hosts_list = self.args[build_farm_hosts_key]
         if len(build_farm_hosts_list) > self.dispatch_id:
-            default_build_dir = self.args.get("default-build-dir")
+            default_build_dir = self.args["default-build-dir"]
 
             build_farm_host = build_farm_hosts_list[self.dispatch_id]
 
@@ -114,30 +107,23 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
                 self.ip_addr = list(build_farm_host.keys())[0]
                 ip_args = list(build_farm_host.values())[0]
 
-                self.override_remote_build_dir = ip_args.get("override-build-dir", default_build_dir)
+                self.dest_build_dir = ip_args.get("override-build-dir", default_build_dir)
             elif type(build_farm_host) is str:
                 # add element w/ defaults
 
                 self.ip_addr = build_farm_host
-                self.override_remote_build_dir = default_build_dir
+                self.dest_build_dir = default_build_dir
             else:
-                raise Exception("Unknown build farm host type")
+                raise Exception(f"""Unexpected yaml type provided in "{build_farm_hosts_key}" list. Must be dict or str.""")
 
-            if self.ip_addr in ["localhost", "127.0.0.1"]:
-                self.is_local = True
-
-            rootLogger.info("Using host {} for {} with IP address: {}".format(self.build_config.build_farm_host, self.build_config.get_chisel_triplet(), self.ip_addr))
+            rootLogger.info(f"Using host {self.build_config.build_farm_host_name} for {self.build_config.get_chisel_triplet()} with IP address: {self.ip_addr}")
         else:
-            rootLogger.critical("ERROR: Less IPs available than builds. Add more IPs.")
-            raise Exception("ERROR: Less IPs available than builds. Add more IPs.")
+            error_msg = f"ERROR: Fewer IPs available than builds. {self.build_config.build_config_file.num_builds} IPs requested but got {len(build_farm_hosts_list)} IPs"
+            rootLogger.critical(error_msg)
+            raise Exception(error_msg)
 
     def request_build_farm_host(self) -> None:
         """Nothing happens since the provided IP address is already granted by something outside FireSim."""
-        return
-
-    @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List['IPAddrBuildFarmHostDispatcher']) -> None: # type: ignore[override]
-        """Nothing happens since the provided IP addresses are already granted by something outside FireSim."""
         return
 
     def wait_on_build_farm_host_initialization(self) -> None:
@@ -167,7 +153,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         spot_max_price: if spot instance, the max price
     """
     NAME: str = "aws-ec2"
-    launched_instance_object: Instance
+    launched_instance_object: EC2InstanceResource
     instance_type: str
     build_instance_market: str
     spot_interruption_behavior: str
@@ -188,9 +174,6 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         self.spot_interruption_behavior = ""
         self.spot_max_price = ""
 
-        # ec2 hosts will never be local
-        self.is_local = False
-
     def parse_args(self) -> None:
         """Parse build farm host arguments."""
         # get aws specific args
@@ -199,63 +182,10 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         self.spot_interruption_behavior = self.args['spot-interruption-behavior']
         self.spot_max_price = self.args['spot-max-price']
 
-        self.override_remote_build_dir = self.args.get("build-dir")
+        self.dest_build_dir = self.args["build-dir"]
 
     def request_build_farm_host(self) -> None:
         """Launch an AWS EC2 instance for the build config."""
-        build_instance_market = self.build_instance_market
-        spot_interruption_behavior = self.spot_interruption_behavior
-        spot_max_price = self.spot_max_price
-
-        num_instances = 1
-        self.launched_instance_object = EC2BuildFarmHostDispatcher.ec2_launch_instances(
-            self.instance_type,
-            num_instances,
-            build_instance_market,
-            spot_interruption_behavior,
-            spot_max_price)[0]
-
-    @staticmethod
-    def request_build_farm_hosts(build_farm_host_dispatchers: List['EC2BuildFarmHostDispatcher']) -> None: # type: ignore[override]
-        """Launch multiple AWS EC2 instances for the build configs."""
-        # TODO: this can be further optimized (spawn-like build farm hosts)
-        # double-check that build farms are the same
-        it_len = len(set([x.instance_type for x in build_farm_host_dispatchers]))
-        bim_len = len(set([x.build_instance_market for x in build_farm_host_dispatchers]))
-        sib_len = len(set([x.spot_interruption_behavior for x in build_farm_host_dispatchers]))
-        smp_len = len(set([x.spot_max_price for x in build_farm_host_dispatchers]))
-        if it_len == 1 and bim_len == 1 and sib_len == 1 and smp_len == 1:
-            amt_requested = len(build_farm_host_dispatchers)
-            instance_type = build_farm_host_dispatchers[0].instance_type
-            build_instance_market = build_farm_host_dispatchers[0].build_instance_market
-            spot_interruption_behavior = build_farm_host_dispatchers[0].spot_interruption_behavior
-            spot_max_price = build_farm_host_dispatchers[0].spot_max_price
-
-            launched_objs = EC2BuildFarmHostDispatcher.ec2_launch_instances(
-                instance_type,
-                amt_requested,
-                build_instance_market,
-                spot_interruption_behavior,
-                spot_max_price)
-
-            for bh, lo in zip(build_farm_host_dispatchers, launched_objs):
-                bh.launched_instance_object = lo
-        else:
-            # default to the original request function
-            for build_farm_host_dispatcher in build_farm_host_dispatchers:
-                 build_farm_host_dispatcher.request_build_farm_host()
-
-    @staticmethod
-    def ec2_launch_instances(inst_type: str, num_insts: int, build_inst_market: str, spot_int_behav: str, spot_max_price: str) -> List[Instance]:
-        """Launch EC2 instances based on arguments.
-
-        Args:
-            inst_type: instance object type
-            num_insts: number of instances to launch
-            build_inst_market: instance market type
-            spot_int_behav: if spot instance, the interruption behavior
-            spot_max_price: if spot instance, the max price
-        """
         # get access to the runfarmprefix, which we will apply to build
         # instances too now.
         aws_resource_names_dict = aws_resource_names()
@@ -265,12 +195,12 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
 
         buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
 
-        return launch_instances(
-            inst_type,
-            num_insts,
-            build_inst_market,
-            spot_int_behav,
-            spot_max_price,
+        self.launched_instance_object = launch_instances(
+            self.instance_type,
+            1,
+            self.build_instance_market,
+            self.spot_interruption_behavior,
+            self.spot_max_price,
             blockdevices=[
                 {
                     'DeviceName': '/dev/sda1',
@@ -298,5 +228,5 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
     def release_build_farm_host(self) -> None:
         """ Terminate the EC2 instance running this build. """
         instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
-        rootLogger.info("Terminating build instances {}. Please confirm in your AWS Management Console".format(instance_ids))
+        rootLogger.info(f"Terminating build instances {instance_ids}. Please confirm in your AWS Management Console")
         terminate_instances(instance_ids, dryrun=False)

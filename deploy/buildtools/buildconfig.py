@@ -5,7 +5,7 @@ from importlib import import_module
 from awstools.awstools import *
 from buildtools.buildfarmhostdispatcher import BuildFarmHostDispatcher
 
-# typing imports
+# imports needed for python type checking
 from typing import Set, Type, Any, Optional, Dict, TYPE_CHECKING
 # needed to avoid type-hint circular dependencies
 # TODO: Solved in 3.7.+ by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
@@ -17,6 +17,7 @@ else:
 
 def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
     """Determine the subclasses that inherit from the input class.
+    This is taken from https://stackoverflow.com/questions/5881873/python-find-all-classes-which-inherit-from-this-one.
 
     Args:
         klass: Input class.
@@ -48,7 +49,7 @@ class BuildConfig:
         PLATFORM_CONFIG: Platform config to build.
         s3_bucketname: S3 bucketname for AFI builds.
         post_build_hook: Post build hook script.
-        build_farm_host: Name of build farm host type.
+        build_farm_host_name: Name of build farm host given by user.
         build_farm_host_dispatcher: Build farm host dispatcher object.
     """
     name: str
@@ -61,10 +62,15 @@ class BuildConfig:
     PLATFORM_CONFIG: str
     s3_bucketname: str
     post_build_hook: str
-    build_farm_host: str
+    build_farm_host_name: str
     build_farm_host_dispatcher: BuildFarmHostDispatcher
 
-    def __init__(self, name: str, recipe_config_dict: Dict[str, Any], build_farm_hosts_config_file: Dict[str, Any], build_config_file: BuildConfigFile, launch_time: str) -> None:
+    def __init__(self,
+            name: str,
+            recipe_config_dict: Dict[str, Any],
+            build_farm_hosts_config_file: Dict[str, Any],
+            build_config_file: BuildConfigFile,
+            launch_time: str) -> None:
         """
         Args:
             name: Name of config i.e. name of `config_build_recipe.yaml` section.
@@ -93,15 +99,15 @@ class BuildConfig:
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
         # retrieve the build host section
-        self.build_farm_host = recipe_config_dict.get('build-farm', "default-build-farm")
-        build_farm_host_conf_dict = build_farm_hosts_config_file[self.build_farm_host]
+        self.build_farm_host_name = recipe_config_dict.get('build-farm', "default-build-farm")
+        build_farm_host_conf_dict = build_farm_hosts_config_file[self.build_farm_host_name]
 
-        build_farm_host_type = build_farm_host_conf_dict["build-farm-type"]
+        build_farm_host_type_name = build_farm_host_conf_dict["build-farm-type"]
         build_farm_host_args = build_farm_host_conf_dict["args"]
 
         build_farm_host_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(BuildFarmHostDispatcher)])
 
-        build_farm_host_dispatcher_class_name = build_farm_host_dispatch_dict[build_farm_host_type]
+        build_farm_host_dispatcher_class_name = build_farm_host_dispatch_dict[build_farm_host_type_name]
 
         # create dispatcher object using class given and pass args to it
         self.build_farm_host_dispatcher = getattr(
@@ -124,7 +130,7 @@ class BuildConfig:
         Returns:
             Chisel triplet
         """
-        return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
+        return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
     def get_build_dir_name(self) -> str:
         """Get the name of the local build directory.
@@ -132,7 +138,7 @@ class BuildConfig:
         Returns:
             Name of local build directory (based on time/name).
         """
-        return """{}-{}""".format(self.launch_time, self.name)
+        return f"{self.launch_time}-{self.name}"
 
     def make_recipe(self, recipe: str) -> str:
         """Create make command for a given recipe using the tuple variables.
@@ -143,9 +149,4 @@ class BuildConfig:
         Returns:
             Fully specified make command.
         """
-        return """make {} DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""".format(
-            "" if self.TARGET_PROJECT is None else "TARGET_PROJECT=" + self.TARGET_PROJECT,
-            self.DESIGN,
-            self.TARGET_CONFIG,
-            self.PLATFORM_CONFIG,
-            recipe)
+        return f"""make {"" if self.TARGET_PROJECT is None else "TARGET_PROJECT=" + self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""

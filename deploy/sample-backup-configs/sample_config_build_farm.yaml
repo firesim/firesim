@@ -1,4 +1,5 @@
-### Build Farm Config File ###
+# Build-time build farm design configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
 ###########
 # Schema:
@@ -31,19 +32,18 @@ default-build-farm:
         spot-interruption-behavior: terminate
         # REQUIRED: if using spot instances, determine the max price
         spot-max-price: ondemand
-        # OPTIONAL: change location of build directory on build host.
-        # defaults to `$HOME/firesim-build`.
-        build-dir: null
+        # REQUIRED: default location of build directory on build host
+        build-dir: /home/centos/firesim-build
 
 # Unmanaged list of build hosts. Assumed that they are pre-setup to run builds.
 local-build-farm:
     build-farm-type: unmanaged
     args:
-        # OPTIONAL: Change location of build directory on build host.
-        # defaults to `$HOME/firesim-build`.
-        default-build-dir: null
-        # REQUIRED: List of IP addresses (or "localhost"). Each can have an optional
-        # argument specifying to override the default build directory.
+        # REQUIRED: default location of build directory on build host
+        default-build-dir: /home/centos/firesim-build
+        # REQUIRED: List of IP addresses (or "localhost"). Each can have an OPTIONAL
+        # argument, called "override-build-dir", specifying to override the default
+        # build directory.
         #
         # Ex:
         # build-farm-hosts:

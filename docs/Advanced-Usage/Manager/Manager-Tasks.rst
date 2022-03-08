@@ -69,10 +69,7 @@ This directory will contain:
 
 - ``AGFI_INFO``: Describes the state of the AFI being built, while the manager is running. Upon build completion, this contains the AGFI/AFI that was produced, along with its metadata.
 
-- ``cl_firesim:``: This directory is essentially the Vivado project that built the FPGA image, in the state it was in when the Vivado build process completed. This contains reports, stdout from the build, and the final tar file produced by Vivado.
-
-- ``FireSim-generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
-
+- ``cl_firesim:``: This directory is essentially the Vivado project that built the FPGA image, in the state it was in when the Vivado build process completed. This contains reports, stdout from the build, and the final tar file produced by Vivado. This also contains a copy of the generated verilog (``FireSim-generated.sv``) used to produce this build.
 
 .. _firesim-tar2afi:
 
