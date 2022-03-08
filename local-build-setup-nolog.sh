@@ -7,7 +7,7 @@
 
 # Under library mode, (2) is skipped.
 
-# TODO: build FireSim linux distro here?
+# TODO: build FireSim Linux distro here?
 
 # exit script if any command fails
 set -e
