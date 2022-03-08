@@ -1,0 +1,36 @@
+{
+  "datasets":[
+    {
+      "name":"Host Read Latency",
+      "key":"hostReadLatency"
+    },
+    {
+      "name":"Host Write Latency",
+      "key":"hostWriteLatency"
+    },
+    {
+      "name":"Target Read Latency",
+      "key":"targetReadLatency"
+    },
+    {
+      "name":"Target Write Latency",
+      "key":"targetWriteLatency"
+    },
+    {
+      "name":"Ingress Read Latency",
+      "key":"ingressReadLatency"
+    },
+    {
+      "name":"Ingress Write Latency",
+      "key":"ingressWriteLatency"
+    },
+    {
+      "name":"Total Read Latency",
+      "key":"totalReadLatency"
+    },
+    {
+      "name":"Total Write Latency",
+      "key":"totalWriteLatency"
+    }
+  ]
+}

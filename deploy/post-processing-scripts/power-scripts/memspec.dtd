@@ -1,0 +1,13 @@
+<!ELEMENT memspec (parameter*,memarchitecturespec,memtimingspec,mempowerspec)>
+
+<!ELEMENT parameter EMPTY>
+<!ATTLIST parameter id CDATA #REQUIRED>
+<!ATTLIST parameter type CDATA #IMPLIED>
+<!ATTLIST parameter value CDATA #REQUIRED>
+<!ATTLIST parameter unit CDATA #IMPLIED>
+
+<!ELEMENT memarchitecturespec (parameter*)>
+
+<!ELEMENT memtimingspec (parameter*)>
+
+<!ELEMENT mempowerspec (parameter*)>
