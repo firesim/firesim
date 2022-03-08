@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: FireSim Mailing List
+    url: https://groups.google.com/forum/#!forum/firesim
+    about: Please ask and answer FireSim questions here.
+  - name: Chipyard Mailing List
+    url: https://groups.google.com/forum/#!forum/chipyard
+    about: Please ask and answer Chipyard questions here.
+  - name: Rocket Chip Support
+    url: https://github.com/chipsalliance/rocket-chip/issues
+    about: Please ask and answer Rocket Chip questions here.
+  - name: Chisel Support
+    url: https://www.chisel-lang.org/community.html
+    about: Please ask and answer Chisel questions here.
