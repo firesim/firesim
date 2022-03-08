@@ -1,5 +1,6 @@
 import logging
 import sys
+import abc
 
 from awstools.awstools import *
 
@@ -16,16 +17,14 @@ else:
 
 rootLogger = logging.getLogger()
 
-class BuildFarmHostDispatcher(object):
+class BuildFarmHostDispatcher(metaclass=abc.ABCMeta):
     """Abstract class to manage how to handle a single build farm host (request, wait, release, etc).
 
     Attributes:
-        NAME: Human-readable name (used as the "build-farm-type" in the YAML).
         build_config: Build config associated with the dispatcher.
         args: Set of args/options associated with the dispatcher.
         dest_build_dir: Name of build dir on build host.
     """
-    NAME: str = ""
     build_config: BuildConfig
     args: Dict[str, Any]
     dest_build_dir: str
@@ -40,18 +39,29 @@ class BuildFarmHostDispatcher(object):
         self.args = args
         self.dest_build_dir = ""
 
+    @abc.abstractmethod
+    @property
+    @staticmethod
+    def NAME() -> str:
+        """Human-readable name (used as the "build-farm-type" in the YAML)."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def parse_args(self) -> None:
         """Parse default build farm arguments."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def request_build_farm_host(self) -> None:
         """Request build farm host to use for build."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def wait_on_build_farm_host_initialization(self) -> None:
         """Ensure build farm host is launched and ready to be used."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def get_build_farm_host_ip(self) -> str:
         """Get IP address associated with this dispatched build farm host.
 
@@ -60,10 +70,12 @@ class BuildFarmHostDispatcher(object):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
     def release_build_farm_host(self) -> None:
         """Release the build farm host."""
         raise NotImplementedError
 
+@BuildFarmHostDispatcher.register
 class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
     """Dispatcher class that selects from a set of user-determined IPs to allocate a new build farm host.
 
@@ -72,7 +84,6 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         ip_addr: IP address associated with build farm host.
         dispatch_id: Index into list of user-provided IPs (determined from `dispatch_counter`).
     """
-    NAME: str = "unmanaged"
     dispatch_counter: int = 0
     ip_addr: str
     dispatch_id: int
@@ -90,6 +101,12 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
 
         self.dispatch_id = IPAddrBuildFarmHostDispatcher.dispatch_counter
         IPAddrBuildFarmHostDispatcher.dispatch_counter += 1
+
+    @property
+    @staticmethod
+    def NAME() -> str:
+        """Human-readable name (used as the "build-farm-type" in the YAML)."""
+        return "unmanaged"
 
     def parse_args(self) -> None:
         """Parse build farm host arguments."""
@@ -142,6 +159,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
         """ Nothing happens. Up to the IP address provider to cleanup after itself."""
         return
 
+@BuildFarmHostDispatcher.register
 class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
     """Dispatcher class to manage an AWS EC2 instance as the build farm host.
 
@@ -152,7 +170,6 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         spot_interruption_behavior: if spot instance, the interruption behavior
         spot_max_price: if spot instance, the max price
     """
-    NAME: str = "aws-ec2"
     launched_instance_object: EC2InstanceResource
     instance_type: str
     build_instance_market: str
@@ -173,6 +190,12 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         self.build_instance_market = ""
         self.spot_interruption_behavior = ""
         self.spot_max_price = ""
+
+    @property
+    @staticmethod
+    def NAME() -> str:
+        """Human-readable name (used as the "build-farm-type" in the YAML)."""
+        return "aws-ec2"
 
     def parse_args(self) -> None:
         """Parse build farm host arguments."""

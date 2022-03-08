@@ -105,14 +105,10 @@ class BuildConfig:
         build_farm_host_type_name = build_farm_host_conf_dict["build-farm-type"]
         build_farm_host_args = build_farm_host_conf_dict["args"]
 
-        build_farm_host_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(BuildFarmHostDispatcher)])
-
-        build_farm_host_dispatcher_class_name = build_farm_host_dispatch_dict[build_farm_host_type_name]
+        build_farm_host_dispatch_dict = dict([(x.NAME(), x) for x in inheritors(BuildFarmHostDispatcher)])
 
         # create dispatcher object using class given and pass args to it
-        self.build_farm_host_dispatcher = getattr(
-            import_module("buildtools.buildfarmhostdispatcher"),
-            build_farm_host_dispatcher_class_name)(self, build_farm_host_args)
+        self.build_farm_host_dispatcher = build_farm_host_dispatch_dict[build_farm_host_type_name](self, build_farm_host_args)
 
         self.build_farm_host_dispatcher.parse_args()
 
