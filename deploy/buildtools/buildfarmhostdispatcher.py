@@ -133,7 +133,7 @@ class IPAddrBuildFarmHostDispatcher(BuildFarmHostDispatcher):
             else:
                 raise Exception(f"""Unexpected yaml type provided in "{build_farm_hosts_key}" list. Must be dict or str.""")
 
-            rootLogger.info(f"Using host {self.build_config.build_farm_host_name} for {self.build_config.get_chisel_triplet()} with IP address: {self.ip_addr}")
+            rootLogger.info(f"Using {self.build_config.build_farm_name} build farm for {self.build_config.get_chisel_triplet()} with IP address: {self.ip_addr}")
         else:
             error_msg = f"ERROR: Fewer IPs available than builds. {self.build_config.build_config_file.num_builds} IPs requested but got {len(build_farm_hosts_list)} IPs"
             rootLogger.critical(error_msg)

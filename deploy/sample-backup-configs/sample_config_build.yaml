@@ -1,6 +1,8 @@
 # Build-time build design / AGFI configuration for the FireSim Simulation Manager
 # See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
+default-build-farm: ec2-build-farm
+
 builds:
     # this section references builds defined in config_build_recipes.yaml
     # if you add a build here, it will be built when you run buildafi

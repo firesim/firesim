@@ -64,9 +64,11 @@ class BuildConfigFile:
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
             build_recipes_config_file = yaml.safe_load(yaml_file)
 
-        build_farm_hosts_config_file = None
+        build_farm_config_file = None
         with open(args.buildfarmconfigfile, "r") as yaml_file:
-            build_farm_hosts_config_file = yaml.safe_load(yaml_file)
+            build_farm_config_file = yaml.safe_load(yaml_file)
+
+        build_farm_name = global_build_config_file["default-build-farm"]
 
         build_recipes = dict()
         for section_name, section_dict in build_recipes_config_file.items():
@@ -74,7 +76,8 @@ class BuildConfigFile:
                 build_recipes[section_name] = BuildConfig(
                     section_name,
                     section_dict,
-                    build_farm_hosts_config_file,
+                    build_farm_name,
+                    build_farm_config_file,
                     self,
                     launch_time)
 

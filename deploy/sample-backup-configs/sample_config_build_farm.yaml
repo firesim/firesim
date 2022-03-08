@@ -4,9 +4,7 @@
 ###########
 # Schema:
 ###########
-# # Unique name for build farm. Build farm named "default-build-farm" will
-# # be the default build farm used for all recipes without a specific build
-# # farm used.
+# # Unique name for build farm.
 # <NAME>:
 #     # Human readable name of the build farm type.
 #     # This can be determined from the `NAME` field in `BuildFarmHostDispatcher`
@@ -17,11 +15,10 @@
 #         # object. Determined by looking at `parse_args` function of class.
 #         <K/V pairs of args>
 
-# THIS WILL BE USED IF BUILDFARM NOT SPECIFIED IN RECIPE
 # Note: For large designs (ones that would fill a EC2.2xlarge/Xilinx VU9P)
 # Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
 # non-default instance type.
-default-build-farm:
+ec2-build-farm:
     build-farm-type: aws-ec2
     args:
         # REQUIRED: instance type to use per build

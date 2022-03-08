@@ -49,7 +49,7 @@ class BuildConfig:
         PLATFORM_CONFIG: Platform config to build.
         s3_bucketname: S3 bucketname for AFI builds.
         post_build_hook: Post build hook script.
-        build_farm_host_name: Name of build farm host given by user.
+        build_farm_name: Name of build farm given by user.
         build_farm_host_dispatcher: Build farm host dispatcher object.
     """
     name: str
@@ -62,20 +62,22 @@ class BuildConfig:
     PLATFORM_CONFIG: str
     s3_bucketname: str
     post_build_hook: str
-    build_farm_host_name: str
+    build_farm_name: str
     build_farm_host_dispatcher: BuildFarmHostDispatcher
 
     def __init__(self,
             name: str,
             recipe_config_dict: Dict[str, Any],
-            build_farm_hosts_config_file: Dict[str, Any],
+            build_farm_name: str,
+            build_farm_config_file: Dict[str, Any],
             build_config_file: BuildConfigFile,
             launch_time: str) -> None:
         """
         Args:
             name: Name of config i.e. name of `config_build_recipe.yaml` section.
             recipe_config_dict: `config_build_recipe.yaml` options associated with name.
-            build_farm_hosts_config_file: Parsed representation of `config_build_farm_hosts.yaml` file.
+            build_farm_name: Name of build farm. Corresponds to top-level key of specific build farm in `config_build_farm.yaml` file.
+            build_farm_config_file: Parsed representation of `config_build_farm.yaml` file.
             build_config_file: Global build config file.
             launch_time: Time manager was launched.
         """
@@ -99,16 +101,16 @@ class BuildConfig:
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
         # retrieve the build host section
-        self.build_farm_host_name = recipe_config_dict.get('build-farm', "default-build-farm")
-        build_farm_host_conf_dict = build_farm_hosts_config_file[self.build_farm_host_name]
+        self.build_farm_name = build_farm_name
+        build_farm_conf_dict = build_farm_config_file[self.build_farm_name]
 
-        build_farm_host_type_name = build_farm_host_conf_dict["build-farm-type"]
-        build_farm_host_args = build_farm_host_conf_dict["args"]
+        build_farm_type_name = build_farm_conf_dict["build-farm-type"]
+        build_farm_args = build_farm_conf_dict["args"]
 
-        build_farm_host_dispatch_dict = dict([(x.NAME(), x) for x in inheritors(BuildFarmHostDispatcher)])
+        build_farm_dispatch_dict = dict([(x.NAME(), x) for x in inheritors(BuildFarmHostDispatcher)])
 
         # create dispatcher object using class given and pass args to it
-        self.build_farm_host_dispatcher = build_farm_host_dispatch_dict[build_farm_host_type_name](self, build_farm_host_args)
+        self.build_farm_host_dispatcher = build_farm_dispatch_dict[build_farm_type_name](self, build_farm_args)
 
         self.build_farm_host_dispatcher.parse_args()
 

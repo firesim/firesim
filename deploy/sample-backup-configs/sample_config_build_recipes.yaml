@@ -16,8 +16,6 @@
 #    post-build-hook: null
 #    # REQUIRED: TODO: Will move to "run platform" work
 #    s3-bucket-name: firesim-AWSUSERNAME
-#    # OPTIONAL: Specific build platform to use. If unspecified, default to "default-build-farm"
-#    build-farm: default-build-farm
 
 # Quad-core, Rocket-based recipes
 firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
