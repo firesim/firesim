@@ -11,6 +11,7 @@ import random
 import argcomplete # type: ignore
 from fabric.api import * # type: ignore
 import string
+from typing import Dict, Callable
 
 from runtools.runtime_config import RuntimeConfig
 
@@ -25,6 +26,25 @@ from util.streamlogger import StreamLogger
 
 ## below are tasks that users can call
 ## to add a task, add it here and to the choices array
+
+"""Registry of tasks that use `BuildConfigFile`"""
+BUILD_TASKS: Dict[str, Callable] = {}
+"""Registry of tasks that use `RuntimeConfig`"""
+RUN_TASKS: Dict[str, Callable] = {}
+
+def _register_task(taskmap: Dict[str, Callable], task: Callable):
+    """Map `task.__name__` to `task` in `taskmap`
+    Args:
+        taskmap: dict mapping task names to the callable task
+        task: callable task
+
+    Returns:
+        None
+    """
+    tn = task.__name__
+    if tn in taskmap:
+        raise KeyError(f'Task {tn} already registered in {taskmap.__name__}')
+    taskmap[tn] = task
 
 def managerinit():
     """ Setup FireSim manager components. """
@@ -72,18 +92,22 @@ def managerinit():
 def infrasetup(runtime_conf):
     """ do infrasetup. """
     runtime_conf.infrasetup()
+_register_task(RUN_TASKS, infrasetup)
 
 def boot(runtime_conf):
     """ do boot. """
     runtime_conf.boot()
+_register_task(RUN_TASKS, boot)
 
 def kill(runtime_conf):
     """ do kill. """
     runtime_conf.kill()
+_register_task(RUN_TASKS, kill)
 
 def runworkload(runtime_conf):
     """ do runworkload. """
     runtime_conf.run_workload()
+_register_task(RUN_TASKS, runworkload)
 
 def buildafi(build_config_file):
     """ Starting from local Chisel, build an AFI for all of the specified
@@ -121,6 +145,7 @@ def buildafi(build_config_file):
     # run builds, then terminate instances
     execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set)
 
+_register_task(BUILD_TASKS, buildafi)
 
 def tar2afi(build_config_file):
     """
@@ -137,11 +162,14 @@ def tar2afi(build_config_file):
     for build_config in build_config_file.builds_list:
         execute(aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
+_register_task(BUILD_TASKS, tar2afi)
+
 
 def runcheck(runtime_conf):
     """ Do nothing, just let the config process run. """
     pass
 
+_register_task(RUN_TASKS, runcheck)
 
 def launchrunfarm(runtime_conf):
     """ This starts an FPGA run farm, based on the parameters listed in the
@@ -154,6 +182,7 @@ def launchrunfarm(runtime_conf):
     # short versions of config file vars
     runtime_conf.runfarm.launch_run_farm()
 
+_register_task(RUN_TASKS, launchrunfarm)
 
 def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
                      terminatesomem4_16, forceterminate):
@@ -183,6 +212,7 @@ def shareagfi(build_config):
         rootLogger.info("AGFI '%s': %s has been shared with the users specified in share-with-accounts",
                         agfiname, agfi)
 
+_register_task(BUILD_TASKS, shareagfi)
 
 def construct_firesim_argparser():
     # parse command line args
@@ -190,17 +220,8 @@ def construct_firesim_argparser():
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=[
                             'managerinit',
-                            'buildafi',
-                            'launchrunfarm',
-                            'infrasetup',
-                            'boot',
-                            'kill',
                             'terminaterunfarm',
-                            'runworkload',
-                            'shareagfi',
-                            'runcheck',
-                            'tar2afi'
-                            ])
+                            ] + list(RUN_TASKS) + list(BUILD_TASKS))
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
                         help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
                         default='config_runtime.yaml')
@@ -237,7 +258,7 @@ def construct_firesim_argparser():
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
 
     argcomplete.autocomplete(parser)
-    return parser.parse_args()
+    return parser
 
 def main(args):
     """ Main function for FireSim manager. """
@@ -259,9 +280,9 @@ def main(args):
     if args.task == 'managerinit':
         managerinit()
 
-    if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
+    if args.task in BUILD_TASKS:
         build_config_file = BuildConfigFile(args)
-        globals()[args.task](build_config_file)
+        BUILD_TASKS[args.task](build_config_file)
 
     if args.task == 'terminaterunfarm':
         runtime_conf = RuntimeConfig(args)
@@ -270,11 +291,11 @@ def main(args):
                          args.terminatesomef12, args.terminatesomem416,
                          args.forceterminate)
 
-    if args.task in ['launchrunfarm', 'infrasetup', 'boot', 'kill', 'runworkload', 'runcheck']:
+    if args.task in RUN_TASKS:
         # construct simulation config
         simconf = RuntimeConfig(args)
         # run task
-        globals()[args.task](simconf)
+        RUN_TASKS[args.task](simconf)
 
 if __name__ == '__main__':
     # set the program working dir to wherever firesim is located
@@ -286,7 +307,7 @@ if __name__ == '__main__':
     # parse args BEFORE setting up logs, otherwise argcomplete will cause
     # junk log files to be created. also lets us use args.task in the logfile
     # name
-    args = construct_firesim_argparser()
+    args = construct_firesim_argparser().parse_args()
 
     # logging setup
     def logfilename():

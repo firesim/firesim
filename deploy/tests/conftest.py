@@ -1,6 +1,7 @@
 import pytest
 import os
 from os.path import dirname
+from pathlib import Path
 
 # fixtures defined in this file will be available to all tests. see
 # https://docs.pytest.org/en/4.6.x/example/simple.html#package-directory-level-fixtures-setups
@@ -32,3 +33,10 @@ def aws_test_credentials():
 # is dependent on where pytest is invoked and intellij will run it in subdirs of deploy...
 os.environ['MOTO_AMIS_PATH'] = '{}/test_amis.json'.format(dirname(__file__))
 
+
+# enable simple `import firesim` work for testing without checking in a symlink or reorganizing
+firesim_py = Path(__file__).parent.parent / 'firesim.py'
+try:
+    firesim_py.symlink_to('firesim')
+except FileExistsError:
+    pass
