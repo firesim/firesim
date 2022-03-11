@@ -259,7 +259,7 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     # filter out the 'Name'
     extra_tags.pop('Name', None)
     # filter out any tags with the word 'manager' (for CI)
-    for k in extra_tags.keys()
+    for k in extra_tags.keys():
         if "manager" in k:
             del extra_tags[k]
     tags.update(extra_tags)
