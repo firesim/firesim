@@ -1,8 +1,0 @@
-testing-build-farm:
-    build-farm-type: aws-ec2
-    args:
-        instance-type: z1d.2xlarge
-        build-instance-market: ondemand
-        spot-interruption-behavior: terminate
-        spot-max-price: ondemand
-        build-dir: null

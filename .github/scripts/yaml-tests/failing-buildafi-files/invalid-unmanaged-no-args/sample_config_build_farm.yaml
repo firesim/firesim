@@ -1,3 +1,0 @@
-testing-build-farm:
-    build-farm-type: unmanaged
-    args:
