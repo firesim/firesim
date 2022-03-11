@@ -160,7 +160,7 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
         assert False, "INVALID INSTANCE MARKET TYPE."
 
 def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None,
-                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(), always_expand=True):
+                     tags=None, randomsubnet=False, user_data_file=None, timeout=timedelta(), always_expand=True, ami_id=None):
     """ Launch `count` instances of type `instancetype`
 
     Using `instancemarket`, `spotinterruptionbehavior` and `spotmaxprice` to define instance market conditions
@@ -191,6 +191,9 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
         When true, create `count` instances, regardless of whether any already exist. When False, only
         create instances until there are `count` total instances that match `tags` and `instancetype`
         If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
+    ami_id : Optional[str], default=None
+        Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
+        `awstools.get_f1_ami_id()`.
 
     Return type
     -----------
@@ -223,9 +226,10 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
         Filters=[{'Name':'group-name', 'Values': [securitygroupname]}])['SecurityGroups'][0]['GroupId']
 
     marketconfig = construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice)
-    f1_image_id = get_f1_ami_id()
 
-    if blockdevices is None:
+    f1_image_id = ami_id if ami_id else get_f1_ami_id()
+
+    if not blockdevices:
         blockdevices = []
 
     # starting with the first subnet, keep trying until you get the instances you need
@@ -566,6 +570,7 @@ def main(args):
     parser.add_argument("--tags", type=yaml.safe_load, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
     parser.add_argument("--filters", type=yaml.safe_load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
     parser.add_argument("--user_data_file", default=None, help="File path to use as user data (run on initialization). Used by \'launch\'.")
+    parser.add_argument("--ami_id", default=get_f1_ami_id(), help="Override AMI ID used for launch. Defaults to \'awstools.get_f1_ami_id()\'. Used by \'launch\'.")
     args = parser.parse_args(args)
 
     if args.command == "launch":
@@ -578,7 +583,8 @@ def main(args):
             args.block_devices,
             args.tags,
             args.random_subnet,
-            args.user_data_file)
+            args.user_data_file,
+            args.ami_id)
         instids = get_instance_ids_for_instances(insts)
         print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)
