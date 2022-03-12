@@ -38,6 +38,12 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Golden-Gate/Resource-Optimizations
    Golden-Gate/Output-Files
 
+.. toctree::
+   :maxdepth: 3
+   :caption: Developer Docs:
+
+   Developer-Docs/Driver-and-Compiler
+
 Indices and tables
 ==================
 
