@@ -3,6 +3,7 @@ simulation tasks. """
 
 from __future__ import print_function
 
+import argparse
 from datetime import timedelta
 from time import strftime, gmtime
 import pprint
@@ -336,10 +337,12 @@ class RuntimeConfig:
     """ This class manages the overall configuration of the manager for running
     simulation tasks. """
 
-    def __init__(self, args):
+    def __init__(self, args: argparse.Namespace):
         """ This reads runtime configuration files, massages them into formats that
         the rest of the manager expects, and keeps track of other info. """
         self.launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
+
+        self.args = args
 
         # construct pythonic db of hardware configurations available to us at
         # runtime.
