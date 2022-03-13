@@ -94,18 +94,18 @@ def buildafi(build_config_file):
         execute(replace_rtl, build_config, hosts=['localhost'])
         execute(build_driver, build_config, hosts=['localhost'])
 
-    def release_build_farm_hosts_handler(sig, frame):
+    def release_build_hosts_handler(sig, frame):
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
         userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
         if userconfirm == "yes":
-            build_config_file.release_build_farm_hosts()
+            build_config_file.release_build_hosts()
             rootLogger.info("Build farm hosts released.")
         else:
             rootLogger.info("Build farm release skipped. There may still be build farm hosts running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, release_build_farm_hosts_handler)
+    signal.signal(signal.SIGINT, release_build_hosts_handler)
 
     # pre-setup stuff (things that need to be done before build farm hosts are spawned/killed)
     # specific to the build farm host
@@ -113,10 +113,10 @@ def buildafi(build_config_file):
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
-    build_config_file.request_build_farm_hosts()
+    build_config_file.request_build_hosts()
 
     # confirm that build farm hosts have finished booting
-    build_config_file.wait_on_build_farm_host_initializations()
+    build_config_file.wait_on_build_host_initializations()
 
     # run builds, then terminate instances
     execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set)

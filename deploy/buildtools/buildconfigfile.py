@@ -9,12 +9,33 @@ from importlib import import_module
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
 from awstools.awstools import auto_create_bucket, get_snsname_arn
+from buildtools.buildfarm import BuildFarm
 
 # imports needed for python type checking
-from typing import Dict, Optional, List, Set, TYPE_CHECKING
+from typing import Dict, Optional, List, Set, Type, Any, TYPE_CHECKING
 from argparse import Namespace
 
 rootLogger = logging.getLogger()
+
+def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
+    """Determine the subclasses that inherit from the input class.
+    This is taken from https://stackoverflow.com/questions/5881873/python-find-all-classes-which-inherit-from-this-one.
+
+    Args:
+        klass: Input class.
+
+    Returns:
+        Set of subclasses that inherit from input class.
+    """
+    subclasses = set()
+    work = [klass]
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return subclasses
 
 class BuildConfigFile:
     """Class representing the "global" build config file i.e. `config_build.yaml`.
@@ -27,6 +48,7 @@ class BuildConfigFile:
         builds_list: List of build recipe names to build.
         build_ip_set: List of IPs to use for builds.
         num_builds: Number of builds to run.
+        build_farm: Build farm used to host builds.
     """
     args: Namespace
     agfistoshare: List[str]
@@ -35,6 +57,7 @@ class BuildConfigFile:
     builds_list: List[BuildConfig]
     build_ip_set: Set[str]
     num_builds: int
+    build_farm: BuildFarm
 
     def __init__(self, args: Namespace) -> None:
         """
@@ -64,20 +87,12 @@ class BuildConfigFile:
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
             build_recipes_config_file = yaml.safe_load(yaml_file)
 
-        build_farm_config_file = None
-        with open(args.buildfarmconfigfile, "r") as yaml_file:
-            build_farm_config_file = yaml.safe_load(yaml_file)
-
-        build_farm_name = global_build_config_file["default-build-farm"]
-
         build_recipes = dict()
         for section_name, section_dict in build_recipes_config_file.items():
             if section_name in builds_to_run_list:
                 build_recipes[section_name] = BuildConfig(
                     section_name,
                     section_dict,
-                    build_farm_name,
-                    build_farm_config_file,
                     self,
                     launch_time)
 
@@ -86,38 +101,56 @@ class BuildConfigFile:
         self.builds_list = list(build_recipes.values())
         self.build_ip_set = set()
 
+        # retrieve the build host section
+        build_farm_config_file = None
+        with open(args.buildfarmconfigfile, "r") as yaml_file:
+            build_farm_config_file = yaml.safe_load(yaml_file)
+
+        build_farm_name = global_build_config_file["default-build-farm"]
+        build_farm_conf_dict = build_farm_config_file[build_farm_name]
+
+        build_farm_type_name = build_farm_conf_dict["build-farm-type"]
+        build_farm_args = build_farm_conf_dict["args"]
+
+        build_farm_dispatch_dict = dict([(x.NAME(), x) for x in inheritors(BuildFarm)])
+
+        # create dispatcher object using class given and pass args to it
+        self.build_farm = build_farm_dispatch_dict[build_farm_type_name](self, build_farm_args)
+
+        self.build_farm.parse_args()
+
     def setup(self) -> None:
-        """Setup based on the types of build farm hosts."""
+        """Setup based on the types of build hosts."""
         for build in self.builds_list:
             auto_create_bucket(build.s3_bucketname)
 
         # check to see email notifications can be subscribed
         get_snsname_arn()
 
-    def request_build_farm_hosts(self) -> None:
+    def request_build_hosts(self) -> None:
         """Launch an instance for the builds. Exits the program if an IP address is reused."""
         for build in self.builds_list:
-            build.build_farm_host_dispatcher.request_build_farm_host()
+            self.build_farm.request_build_host(build)
             num_ips = len(self.build_ip_set)
-            ip = build.build_farm_host_dispatcher.get_build_farm_host_ip()
+            ip = self.build_farm.get_build_host_ip(build)
             self.build_ip_set.add(ip)
             if num_ips == len(self.build_ip_set):
                 rootLogger.critical(f"ERROR: Duplicate {ip} IP used when launching instance")
-                self.release_build_farm_hosts()
+                self.release_build_hosts()
                 sys.exit(1)
 
-    def wait_on_build_farm_host_initializations(self) -> None:
+    def wait_on_build_host_initializations(self) -> None:
         """Block until all build instances are initialized."""
         for build in self.builds_list:
-            build.build_farm_host_dispatcher.wait_on_build_farm_host_initialization()
+            self.build_farm.wait_on_build_host_initialization(build)
 
-    def release_build_farm_hosts(self) -> None:
+    def release_build_hosts(self) -> None:
         """Terminate all build instances that are launched."""
         for build in self.builds_list:
-            build.build_farm_host_dispatcher.release_build_farm_host()
+            self.build_farm.release_build_host(build)
 
     def get_build_by_ip(self, nodeip: str) -> Optional[BuildConfig]:
-        """Obtain the build config For a particular IP address.
+        """Obtain the build config for a particular IP address.
 
         Args:
             nodeip: IP address of build config wanted
@@ -126,7 +159,7 @@ class BuildConfigFile:
             BuildConfig for `nodeip`. Returns `None` if `nodeip` is not found.
         """
         for build in self.builds_list:
-            if build.build_farm_host_dispatcher.get_build_farm_host_ip() == nodeip:
+            if self.build_farm.get_build_host_ip(build) == nodeip:
                 return build
         return None
 

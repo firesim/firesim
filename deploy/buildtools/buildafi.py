@@ -66,24 +66,20 @@ def build_driver(build_config: BuildConfig) -> None:
          InfoStreamLogger('stderr'):
         run(build_config.make_recipe("PLATFORM=f1 driver"))
 
-def cl_dir_setup(build_config: BuildConfig) -> Optional[str]:
+def cl_dir_setup(chisel_triplet: str, dest_build_dir: str) -> Optional[str]:
     """Setup CL_DIR on build host.
 
     Args:
-        build_config: Build configuration to determine paths.
+        chisel_triplet: Build config chisel triplet used to uniquely identify build dir.
+        dest_build_dir: Destination base directory to use.
 
     Returns:
         Path to CL_DIR directory (that is setup) or `None` if invalid.
     """
-    fpga_build_postfix = f"hdk/cl/developer_designs/cl_{build_config.get_chisel_triplet()}"
+    fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_triplet}"
 
     # local paths
     local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
-
-    dest_build_dir = build_config.build_farm_host_dispatcher.dest_build_dir
-    if not dest_build_dir:
-        rootLogger.critical(f"ERROR: Invalid build dir of {dest_build_dir}")
-        return None
 
     dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
     dest_awsfpga_dir = f"{dest_f1_platform_dir}/aws-fpga"
@@ -126,16 +122,16 @@ def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypas
     build_config = build_config_file.get_build_by_ip(env.host_string)
 
     if not build_config:
-        rootLogger.info(f"Failed to find build config for IP address: {env.host_string}. Unable to release build farm host.")
+        rootLogger.info(f"Failed to find build config for IP address: {env.host_string}. Unable to release build host.")
         return
 
     if bypassAll:
-        build_config.build_farm_host_dispatcher.release_build_farm_host()
+        build_config_file.build_farm.release_build_host(build_config)
         return
 
     # The default error-handling procedure. Send an email and teardown instance
     def on_build_failure():
-        """Terminate build farm host and notify user that build failed."""
+        """Terminate build host and notify user that build failed."""
 
         message_title = "FireSim FPGA Build Failed"
 
@@ -147,7 +143,7 @@ def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypas
         rootLogger.info(message_title)
         rootLogger.info(message_body)
 
-        build_config.build_farm_host_dispatcher.release_build_farm_host()
+        build_config_file.build_farm.release_build_host(build_config)
 
     rootLogger.info("Building AWS F1 AGFI from Verilog")
 
@@ -156,13 +152,13 @@ def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypas
     local_results_dir = f"{local_deploy_dir}/results-build/{build_config.get_build_dir_name()}"
 
     # 'cl_dir' holds the eventual directory in which vivado will run.
-    cl_dir = cl_dir_setup(build_config)
+    cl_dir = cl_dir_setup(build_config.get_chisel_triplet(), build_config_file.build_farm.get_build_host(build_config).dest_build_dir)
     if not cl_dir:
         on_build_failure()
         return
 
     if bypassVivado:
-        build_config.build_farm_host_dispatcher.release_build_farm_host()
+        build_config_file.build_farm.release_build_host(build_config)
         return
 
     vivado_result = 0
@@ -196,7 +192,7 @@ def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypas
         on_build_failure()
         return
 
-    build_config.build_farm_host_dispatcher.release_build_farm_host()
+    build_config_file.build_farm.release_build_host(build_config)
 
 def aws_create_afi(build_config: BuildConfig) -> Optional[bool]:
     """Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI).
