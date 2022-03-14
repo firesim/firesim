@@ -1,5 +1,6 @@
 import logging
 import pytest
+from pytest_mock import MockerFixture
 from textwrap import dedent
 import re
 import sure
@@ -13,8 +14,8 @@ rootLogger = logging.getLogger()
 # In case you put any package-level tests, make sure they use the test credentials too
 pytestmark = pytest.mark.usefixtures("aws_test_credentials")
 
-def test_task_with_no_parameters(monkeypatch):
-    monkeypatch.setattr(firesim, 'TASKS', {})
+def test_task_with_no_parameters(mocker: MockerFixture):
+    mocker.patch.dict(firesim.TASKS, clear=True)
 
     def my_favorite_task():
         pass
@@ -23,8 +24,8 @@ def test_task_with_no_parameters(monkeypatch):
     register_task(my_favorite_task)
     firesim.TASKS.should.contain('my_favorite_task')
 
-def test_task_with_annotated_parameter(monkeypatch):
-    monkeypatch.setattr(firesim, 'TASKS', {})
+def test_task_with_annotated_parameter(mocker: MockerFixture):
+    mocker.patch.dict(firesim.TASKS, clear=True)
 
     def my_favorite_task(config: RuntimeConfig):
         pass
@@ -72,8 +73,8 @@ def task_param_xtor_not_namespace(config: XtorDoesNotTakeNamespace):
         (task_param_xtor_unannotated, TypeError, re.compile(r'needs type annotation on.*first parameter')),
     ]
 )
-def test_task_with_annotated_parameter(monkeypatch, task, exception, regex):
-    monkeypatch.setattr(firesim, 'TASKS', {})
+def test_task_with_annotated_parameter(mocker: MockerFixture, task, exception, regex):
+    mocker.patch.dict(firesim.TASKS, clear=True)
 
     register_task.when.called_with(task).should.throw(exception, regex)
     firesim.TASKS.should.be.empty
@@ -87,8 +88,8 @@ class SecondReg:
     def duplicate_task(self, config: RuntimeConfig):
         pass
 
-def test_duplicate_registration(monkeypatch):
-    monkeypatch.setattr(firesim, 'TASKS', {})
+def test_duplicate_registration(mocker: MockerFixture):
+    mocker.patch.dict(firesim.TASKS, clear=True)
 
     # it is more likely that these functions would be in two different modules maybe but
     # for the purposes of testing, having them be in two different classes works too
@@ -99,9 +100,23 @@ def test_duplicate_registration(monkeypatch):
     firesim.TASKS.should.be.empty
     register_task(one.duplicate_task)
     firesim.TASKS.should.contain('duplicate_task')
-    assert False, firesim.TASKS['duplicate_task']
     register_task.when.called_with(two.duplicate_task).should.throw(KeyError, re.compile(r'Task.*already registered by'))
 
 
 def test_decorated_task_callability():
     firesim.managerinit.when.called_with().should.throw(FiresimTaskAccessViolation)
+
+@pytest.mark.parametrize('tn', list(firesim.TASKS.keys()) + list(firesim.TASKS.keys()))
+def test_main_dispatching(mocker: MockerFixture, task_mocker, tn: str):
+    mocker.patch.dict('os.environ', {'FIRESIM_SOURCED': '1'})
+    parser = firesim.construct_firesim_argparser()
+
+    task_mocker.patch(tn)
+
+    args = parser.parse_args([tn])
+    firesim.main(args)
+    if firesim.TASKS[tn]['config']:
+        firesim.TASKS[tn]['task'].assert_called_once()
+        firesim.TASKS[tn]['config'].assert_called_once_with(args)
+    else:
+        firesim.TASKS[tn]['task'].assert_called_once_with()
