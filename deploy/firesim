@@ -308,6 +308,18 @@ def construct_firesim_argparser():
     argcomplete.autocomplete(parser)
     return parser
 
+def check_env() -> None:
+    """Check assumptions about environment setup
+
+    Raises:
+        `SystemExit` if any assumption is violated
+    """
+    # make sure that sourceme-f1 was sourced
+    if os.environ.get('FIRESIM_SOURCED') is None:
+        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
+        exit(1)
+
+
 def main(args):
     """ Main function for FireSim manager. """
     # large timeouts, retry connections
@@ -316,11 +328,6 @@ def main(args):
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
-
-    # make sure that sourceme-f1 was sourced
-    if os.environ.get('FIRESIM_SOURCED') is None:
-        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
-        exit(1)
 
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
@@ -374,6 +381,8 @@ if __name__ == '__main__':
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('nose').setLevel(logging.WARNING)
     logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+    check_env()
 
     # lastly - whenever you use run/local/put/etc from fabric, you need to wrap
     # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
