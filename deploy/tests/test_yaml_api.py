@@ -1,13 +1,10 @@
 from abc import ABC, abstractmethod
-from fabric.api import env
+from dataclasses import dataclass
 import logging
-import os
 from os import fspath
 from pathlib import Path
-from pprint import pprint
 import pytest
 import re
-import shlex
 try:
     # shlex.join is added in 3.8
     from shlex import join as shjoin
@@ -17,10 +14,11 @@ except ImportError:
 
 import sure
 from textwrap import dedent
-from unittest.mock import patch
 import yaml
 
 import firesim
+from buildtools.buildconfigfile import BuildConfigFile
+from runtools.runtime_config import RuntimeConfig
 
 
 from typing import TYPE_CHECKING
@@ -55,9 +53,13 @@ class TmpYaml:
     def load(self, stream:'_ReadStream') -> None:
         self.data = yaml.safe_load(stream)
 
-    def dump(self) -> None:
-        self.path.write_text(yaml.dump(self.data))
+    def dump(self) -> str:
+        return yaml.dump(self.data)
 
+    def write(self) -> None:
+        self.path.write_text(self.dump())
+
+@dataclass
 class TmpYamlSet(ABC):
     """Aggregate Fixture Encapsulating group of configs that get populated by the sample-backup-configs
        by default and can be manipulated either via YAML api or clobbering them
@@ -70,10 +72,6 @@ class TmpYamlSet(ABC):
        Methods:
 
     """
-    @abstractmethod
-    def __init__(self) -> None:
-        pass
-
     @abstractmethod
     def write(self) -> None:
         """Iterates the TmpYaml members calling their dump"""
@@ -91,6 +89,7 @@ class TmpYamlSet(ABC):
         """Returns string of cmdline options needed for firesim argparser"""
         pass
 
+@dataclass
 class BuildTmpYamlSet(TmpYamlSet):
     """Concrete TmpYamlSet for build configs
 
@@ -101,17 +100,11 @@ class BuildTmpYamlSet(TmpYamlSet):
     farm: TmpYaml
     hwdb: TmpYaml
 
-    def __init__(self, build, recipes, farm, hwdb):
-        self.build = build
-        self.recipes = recipes
-        self.farm = farm
-        self.hwdb = hwdb
-
     def write(self):
-        self.build.dump()
-        self.recipes.dump()
-        self.farm.dump()
-        self.hwdb.dump()
+        self.build.write()
+        self.recipes.write()
+        self.farm.write()
+        self.hwdb.write()
 
     @property
     def args(self):
@@ -125,6 +118,7 @@ class BuildTmpYamlSet(TmpYamlSet):
     def cmdline(self):
         return shjoin(self.args)
 
+@dataclass
 class RunTmpYamlSet(TmpYamlSet):
     """Concrete TmpYamlSet for run configs
 
@@ -133,13 +127,9 @@ class RunTmpYamlSet(TmpYamlSet):
     hwdb: TmpYaml
     run: TmpYaml
 
-    def __init__(self, hwdb, run):
-        self.hwdb = hwdb
-        self.run = run
-
     def write(self):
-        self.hwdb.dump()
-        self.run.dump()
+        self.hwdb.write()
+        self.run.write()
 
     @property
     def args(self):
@@ -193,26 +183,16 @@ def non_existent_file(tmp_path):
     return file
 
 @pytest.fixture()
-def firesim_argparser():
-    return firesim.construct_firesim_argparser()
-
-@pytest.fixture()
-def fs_cl2args(firesim_argparser):
-    """fixture that bundles calling parse_args and shlex.split to abbreviate usage in tests"""
-    return lambda x: firesim_argparser.parse_args(shlex.split(x))
+def firesim_parse_args():
+    return lambda x: firesim.construct_firesim_argparser().parse_args(x)
 
 @pytest.mark.usefixtures("aws_test_credentials")
 class TestConfigBuildAPI:
     """ Test config_{build, build_recipes}.yaml APIs """
 
-    # run_test("invalid-build-section")
-    @patch('firesim.buildafi')
-    def test_invalid_build_section(self, buildafi_mock, build_yamls, fs_cl2args):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
+    def test_invalid_build_section(self, task_mocker, build_yamls, firesim_parse_args):
+        m = task_mocker.patch('buildafi', wrap_config=True)
+
         # at the beginning of the test build_yamls contains the backup-sample-configs
         # but we can show exactly what we're doing different from the default by
         build_yamls.build.load(dedent("""
@@ -226,62 +206,16 @@ class TestConfigBuildAPI:
             """))
 
         build_yamls.write()
-        args = fs_cl2args(' '.join(['buildafi']+build_yamls.args))
-        pprint(build_yamls.build.data)
+        args = firesim_parse_args(['buildafi'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError)
-        buildafi_mock.assert_not_called()
+        m['task'].assert_not_called()
+        m['config'].assert_called_once_with(args)
 
-
-    @patch('firesim.buildafi')
-    def test_programmatic_invalid_build_section(self, buildafi_mock, build_yamls, firesim_argparser):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
-        # at the beginning of the test build_yamls contains the backup-sample-configs
-        # but we can show exactly what we're doing different from the default by
-        # by programatically modifying from the sample to remove all the builds
-        #build_yamls.build.data['builds'] = []
-        # lol sometimes, it's hard to tell exactly how the yaml will get loaded because None is what you get
-        build_yamls.build.data['builds'] = None
-        build_yamls.write()
-        args = firesim_argparser.parse_args(['buildafi'] + build_yamls.args)
-        pprint(build_yamls.build.data)
-        firesim.main.when.called_with(args).should.throw(TypeError)
-        buildafi_mock.assert_not_called()
-
-
-    # run_test("invalid-aws-ec2-inst-type")
-    @pytest.mark.skip(reason="unclear as to what this is testing even in Abe's impl")
-    @patch('firesim.buildafi')
-    def test_invalid_aws_ec2_inst_type(self, buildafi_mock, build_yamls, firesim_argparser):
-
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-
-        os.environ['FIRESIM_SOURCED'] = '1'
-        build_yamls.farm.data['ec2-build-farm']['args']['instance-type'] = 'INVALID_TYPE'
-        build_yamls.write()
-        args = firesim_argparser.parse_args(['buildafi'] + build_yamls.args)
-        firesim.main(args)
-        buildafi_mock.assert_not_called()
-
-
-    # run_test("invalid-buildfarm-type")
-    @pytest.mark.xfail(reason="uncomment default-build-farm, test recipe needs update")
-    @patch('firesim.buildafi')
-    def test_invalid_buildfarm_type(self, buildafi_mock, build_yamls, firesim_argparser):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
+    def test_invalid_buildfarm_type(self, task_mocker, build_yamls, firesim_parse_args):
+        m = task_mocker.patch('buildafi', wrap_config=True)
 
         build_yamls.build.load(dedent("""
-            #default-build-farm: testing-build-farm
+            default-build-farm: testing-build-farm
             builds:
                 - testing-recipe-name
 
@@ -308,95 +242,124 @@ class TestConfigBuildAPI:
                 build-farm: testing-build-farm
             """))
         build_yamls.write()
-        args = firesim_argparser.parse_args(['buildafi'] + build_yamls.args)
+        args = firesim_parse_args(['buildafi'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(KeyError, re.compile(r'INVALID_BUILD_FARM_TYPE'))
-        buildafi_mock.assert_not_called()
+        # the exception should happen while building the config, before the task is actually called
+        m['config'].assert_called_once_with(args)
+        m['task'].assert_not_called()
 
-    # run_test("invalid-aws-ec2-no-args")
-    # run_test("invalid-unmanaged-no-args")
-    @patch('firesim.buildafi')
     @pytest.mark.parametrize('farm_name',
                              ['ec2-build-farm',
-                              pytest.param(
-                                  'local-build-farm',
-                                  marks=pytest.mark.xfail(reason="Doesn't fail before calling buildafi")
-                              )])
-    def test_invalid_farm_missing_args(self, buildafi_mock, build_yamls, firesim_argparser, farm_name):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
+                              'local-build-farm',
+                              ])
+    def test_invalid_farm_missing_args(self, task_mocker, build_yamls, firesim_parse_args, farm_name):
+        m = task_mocker.patch('buildafi', wrap_config=True)
 
+        build_yamls.build.data.should.contain('default-build-farm')
+        build_yamls.build.data['default-build-farm'] = farm_name
+        build_yamls.farm.data[farm_name].should.contain('args')
         build_yamls.farm.data[farm_name]['args'] = None
 
         build_yamls.write()
-        args = firesim_argparser.parse_args(['buildafi'] + build_yamls.args)
-        #firesim.main(args)
+        args = firesim_parse_args(['buildafi'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError, re.compile(r'object is not subscriptable'))
-        buildafi_mock.assert_not_called()
+        m['task'].assert_not_called()
 
 
-    # run_test("invalid-unmanaged-no-hosts")
-    @pytest.mark.xfail(reason="No longer fails before buildafi is called")
-    @patch('firesim.buildafi')
-    def test_invalid_unmanaged_missing_args(self, buildafi_mock, build_yamls, firesim_argparser):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
+    def test_invalid_unmanaged_missing_args(self, task_mocker, build_yamls, firesim_parse_args):
+        m = task_mocker.patch('buildafi', wrap_config=True)
 
-        build_yamls.farm.data['local-build-farm']['args']['hosts'] = None
+        build_yamls.build.data['default-build-farm'] = 'local-build-farm'
+        build_yamls.farm.data['local-build-farm']['args']['build-farm-hosts'] = None
 
         build_yamls.write()
-        args = firesim_argparser.parse_args(['buildafi'] + build_yamls.args)
-        #firesim.main(args)
+        args = firesim_parse_args(['buildafi'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError)
-        buildafi_mock.assert_not_called()
+        m['task'].assert_not_called()
 
-    # test invalid config_build.yaml
-    @patch('firesim.buildafi')
+    @pytest.mark.parametrize('task_name', [tn for tn in firesim.TASKS if
+                                           firesim.TASKS[tn]['config'] is BuildConfigFile])
     @pytest.mark.parametrize('opt', ['-b',
-                                     pytest.param('-r',
-                                                  marks=pytest.mark.xfail(reason="Depends on managerinit being run beforehand.")
-                                                  ),
-                                     pytest.param('-s',
-                                                  marks=pytest.mark.xfail(reason="Depends on managerinit being run beforehand.")
-                                                  ),
+                                     '-r',
+                                     '-s',
                                     ])
-    def test_config_existence(self, buildafi_mock, fs_cl2args, opt, non_existent_file):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.BUILD_TASKS['buildafi'] = buildafi_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
-        args = fs_cl2args(f'buildafi {opt} "{non_existent_file}"')
+    def test_config_existence(self, task_mocker, build_yamls, firesim_parse_args, task_name, opt, non_existent_file):
+        m = task_mocker.patch(task_name, wrap_config=True)
+
+        build_yamls.write()
+        args = firesim_parse_args([task_name] + build_yamls.args + [opt, fspath(non_existent_file)])
         firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'GHOST_FILE'))
-        buildafi_mock.assert_not_called()
+        m['task'].assert_not_called()
+        m['config'].assert_called_once_with(args)
 
 @pytest.mark.usefixtures("aws_test_credentials")
 class TestConfigRunAPI:
     """ Test config_{runtime, hwdb}.yaml APIs """
 
-    # run_test("hwdb-invalid-afi")
-    # run_test("runtime-invalid-hwconfig")
-    # run_test("runtime-invalid-topology")
-    # run_test("runtime-invalid-workloadname")
+    def test_invalid_default_hw_config(self, task_mocker, run_yamls, firesim_parse_args, sample_backup_configs, monkeypatch):
+        task_name = 'runcheck'
+        m = task_mocker.patch(task_name, wrap_config=True)
+        #TODO the hardcoded relative paths to workload JSON make it challenging
+        #to give each unit test it's own sandbox.  Need to think about this more.
+        monkeypatch.chdir(sample_backup_configs.parent)
 
-    @patch('firesim.runcheck')
+
+        run_yamls.run.data['target-config'].should.contain('default-hw-config')
+        run_yamls.run.data['target-config']['default-hw-config'] = 'INVALID_CONFIG'
+
+        run_yamls.hwdb.data.should_not.contain('INVALID_CONFIG')
+
+        run_yamls.write()
+        args = firesim_parse_args([task_name] + run_yamls.args)
+        firesim.main.when.called_with(args).should.throw(KeyError, re.compile(r'INVALID_CONFIG'))
+        m['task'].assert_not_called()
+        m['config'].assert_called_once_with(args)
+
+    def test_invalid_topology(self, task_mocker, run_yamls, firesim_parse_args, sample_backup_configs, monkeypatch):
+        task_name = 'runcheck'
+        m = task_mocker.patch(task_name, wrap_config=True)
+        #TODO the hardcoded relative paths to workload JSON make it challenging
+        #to give each unit test it's own sandbox.  Need to think about this more.
+        monkeypatch.chdir(sample_backup_configs.parent)
+
+
+        run_yamls.run.data['target-config'].should.contain('topology')
+        run_yamls.run.data['target-config']['topology'] = 'INVALID_TOPOLOGY'
+
+        run_yamls.write()
+        args = firesim_parse_args([task_name] + run_yamls.args)
+        firesim.main.when.called_with(args).should.throw(AttributeError, re.compile(r'INVALID_TOPOLOGY'))
+        m['task'].assert_not_called()
+        m['config'].assert_called_once_with(args)
+
+    def test_invalid_workloadname(self, task_mocker, run_yamls, firesim_parse_args, sample_backup_configs, monkeypatch):
+        task_name = 'runcheck'
+        m = task_mocker.patch(task_name, wrap_config=True)
+        #TODO the hardcoded relative paths to workload JSON make it challenging
+        #to give each unit test it's own sandbox.  Need to think about this more.
+        monkeypatch.chdir(sample_backup_configs.parent)
+
+        run_yamls.run.data['workload'].should.contain('workload-name')
+        run_yamls.run.data['workload']['workload-name'] = 'INVALID_WORKLOAD'
+
+        run_yamls.write()
+        args = firesim_parse_args([task_name] + run_yamls.args)
+        firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'INVALID_WORKLOAD'))
+        m['task'].assert_not_called()
+        m['config'].assert_called_once_with(args)
+
+
+    @pytest.mark.parametrize('task_name', [tn for tn in firesim.TASKS if
+                                           firesim.TASKS[tn]['config'] is RuntimeConfig])
     @pytest.mark.parametrize('opt',
                              ['-a',
-                              pytest.param('-c',
-                                          marks=pytest.mark.xfail(reason="Depends on managerinit being run beforehand.")
-                                           )
+                              '-c',
                               ])
-    def test_config_existence(self, checkconfig_mock, fs_cl2args, opt, non_existent_file):
-        # @patch modifies the symbol table with our Mock but we're dispatching through
-        # a dict and that needs to be patched as well, otherwise our mock won't be called but
-        # the real function will be
-        firesim.RUN_TASKS['checkconfig'] = checkconfig_mock
-        os.environ['FIRESIM_SOURCED'] = '1'
-        args = fs_cl2args(f'runcheck {opt} "{non_existent_file}"')
+    def test_config_existence(self, task_mocker, run_yamls, firesim_parse_args, task_name, opt, non_existent_file):
+        m = task_mocker.patch(task_name, wrap_config=True)
+
+        run_yamls.write()
+        args = firesim_parse_args([task_name] + run_yamls.args + [opt, fspath(non_existent_file)])
         firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'GHOST_FILE'))
-        checkconfig_mock.assert_not_called()
+        m['task'].assert_not_called()
+        m['config'].assert_called_once_with(args)
