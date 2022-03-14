@@ -46,8 +46,8 @@ def register_task(task: Callable) -> Callable:
     Args:
         task: callable task that either has no parameters or
               the first parameter must be typed with a class
-              that accepts a argparse.Namespace as the only parameter
-              it's constructor
+              that accepts `argparse.Namespace` as the only parameter
+              in it's constructor
 
     Returns:
         a stub that raises `FiresimTaskAccessViolation` to ensure that the
