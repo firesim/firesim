@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import json
 import logging
 from os import fspath
 from pathlib import Path
@@ -31,6 +32,27 @@ rootLogger = logging.getLogger()
 # In case you put any package-level tests, make sure they use the test credentials too
 pytestmark = pytest.mark.usefixtures("aws_test_credentials")
 
+class TmpJson:
+    def __init__(self, tmp_dir: Path, sample_config: Path) -> None:
+        """
+        Args:
+            tmp_dir: path to temporary directory
+            sample_config: path to the sample config that is
+                           used to initialize our data
+        """
+        config_name = sample_config.parent / sample_config.name
+
+        self.path = tmp_dir / config_name
+        self.load(sample_config.read_text())
+
+    def load(self, txt: str) -> None:
+        self.data = json.loads(txt)
+
+    def dump(self) -> str:
+        return json.dumps(self.data)
+
+    def write(self) -> None:
+        self.path.write_text(self.dump())
 
 class TmpYaml:
     """Encapsulate our pattern for using sample-backup-configs"""
@@ -126,10 +148,12 @@ class RunTmpYamlSet(TmpYamlSet):
     """
     hwdb: TmpYaml
     run: TmpYaml
+    wkld: TmpJson
 
     def write(self):
         self.hwdb.write()
         self.run.write()
+        self.wkld.write()
 
     @property
     def args(self):
@@ -143,6 +167,12 @@ class RunTmpYamlSet(TmpYamlSet):
 @pytest.fixture()
 def sample_backup_configs() -> Path:
     dir = Path(__file__).parent.parent / 'sample-backup-configs'
+    dir.is_dir().should.equal(True)
+    return dir
+
+@pytest.fixture()
+def workloads() -> Path:
+    dir = Path(__file__).parent.parent / 'workloads'
     dir.is_dir().should.equal(True)
     return dir
 
@@ -171,8 +201,12 @@ def scy_runtime(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_runtime.yaml')
 
 @pytest.fixture()
-def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml) -> RunTmpYamlSet:
-    return RunTmpYamlSet(scy_hwdb, scy_runtime)
+def linux_uniform_json(tmp_path: Path, workloads: Path) -> TmpJson:
+    return TmpJson(tmp_path, workloads / 'linux-uniform.json')
+
+@pytest.fixture()
+def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml, linux_uniform_json: TmpJson) -> RunTmpYamlSet:
+    return RunTmpYamlSet(scy_hwdb, scy_runtime, linux_uniform_json)
 
 @pytest.fixture()
 def non_existent_file(tmp_path):
