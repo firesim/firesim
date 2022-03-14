@@ -6,7 +6,7 @@ import re
 import sure
 
 import firesim
-from firesim import register_task
+from firesim import register_task, FiresimTaskAccessViolation
 from runtools.runtime_config import RuntimeConfig
 
 rootLogger = logging.getLogger()
@@ -116,3 +116,6 @@ def test_main_dispatching(mocker: MockerFixture, task_mocker, tn: str):
         firesim.TASKS[tn]['config'].assert_called_once_with(args)
     else:
         firesim.TASKS[tn]['task'].assert_called_once_with()
+
+def test_decorated_task_callability():
+    firesim.managerinit.when.called_with().should.throw(FiresimTaskAccessViolation)
