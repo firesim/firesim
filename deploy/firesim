@@ -37,6 +37,9 @@ class Task(TypedDict):
 """Registry of tasks """
 TASKS: Dict[str, Task] = {}
 
+class FiresimTaskAccessViolation(Exception):
+    pass
+
 def register_task(task: Callable) -> Callable:
     """Decorator to Map `task.__name__` to `task` in `TASKS`
 
@@ -47,7 +50,8 @@ def register_task(task: Callable) -> Callable:
               it's constructor
 
     Returns:
-        task
+        a stub that raises `FiresimTaskAccessViolation` to ensure that the
+        task is only callable via `TASKS`
     """
     tn = task.__name__
     if tn in TASKS:
@@ -76,9 +80,16 @@ def register_task(task: Callable) -> Callable:
             else:
                 raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
 
-
     TASKS[tn] = {'task': task, 'config': config_class}
-    return task
+
+    # we don't want this function to be callable any way other than via firesim.main()
+    # so that we know programmatic changes to TASKS are followed (currently for testing purposes)
+    # so we don't return the original callable task, we return a lambda that raises
+    def inner():
+        raise FiresimTaskAccessViolation(f"Called '{tn}' without going through TASKS")
+    # or actually, we define a closure with def and return that because lambdas that raise
+    # are convoluted
+    return inner
 
 ## below are tasks that users can call
 ## to add a task, add it here, using the @register_task decorator in it's definition
