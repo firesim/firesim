@@ -5,7 +5,7 @@ import re
 import sure
 
 import firesim
-from firesim import register_task
+from firesim import register_task, FiresimTaskAccessViolation
 from runtools.runtime_config import RuntimeConfig
 
 rootLogger = logging.getLogger()
@@ -101,3 +101,7 @@ def test_duplicate_registration(monkeypatch):
     firesim.TASKS.should.contain('duplicate_task')
     assert False, firesim.TASKS['duplicate_task']
     register_task.when.called_with(two.duplicate_task).should.throw(KeyError, re.compile(r'Task.*already registered by'))
+
+
+def test_decorated_task_callability():
+    firesim.managerinit.when.called_with().should.throw(FiresimTaskAccessViolation)
