@@ -8,3 +8,4 @@ backup_config_*.yaml
 generated-topology-diagrams/
 logs/*.log
 built-hwdb-entries/
+/firesim.py
