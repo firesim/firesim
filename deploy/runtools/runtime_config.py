@@ -18,6 +18,7 @@ from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 import os
+import sys
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
@@ -209,7 +210,7 @@ class RuntimeHWConfig:
             if localcap.failed:
                 rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
-                exit(1)
+                sys.exit(1)
 
         self.driver_built = True
 

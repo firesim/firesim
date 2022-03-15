@@ -315,7 +315,7 @@ def check_env() -> None:
     # make sure that sourceme-f1 was sourced
     if os.environ.get('FIRESIM_SOURCED') is None:
         rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
-        exit(1)
+        sys.exit(1)
 
 
 def main(args):
@@ -395,4 +395,4 @@ if __name__ == '__main__':
         exitcode = 1
     finally:
         rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
-        exit(exitcode)
+        sys.exit(exitcode)
