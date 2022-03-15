@@ -70,7 +70,7 @@ sudo python3 -m pip install pandas==1.1.5
 sudo python3 -m pip install awscli==1.22.21
 sudo python3 -m pip install pytest==6.2.5
 sudo python3 -m pip install pytest-dependency==0.5.1
-sudo python3 -m pip install pytest-mock==3.7.0
+sudo python3 -m pip install pytest-mock==3.6.1
 sudo python3 -m pip install moto==2.2.17
 sudo python3 -m pip install sure==2.0.0
 # needed for the awstools cmdline parsing
