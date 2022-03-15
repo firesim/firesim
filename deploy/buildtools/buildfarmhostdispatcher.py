@@ -176,7 +176,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         spot_interruption_behavior: if spot instance, the interruption behavior
         spot_max_price: if spot instance, the max price
     """
-    launched_instance_object: EC2InstanceResource
+    launched_instance_object: Optional[EC2InstanceResource]
     instance_type: str
     build_instance_market: str
     spot_interruption_behavior: str
@@ -191,7 +191,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         """
         BuildFarmHostDispatcher.__init__(self, build_config, args)
 
-        self.launched_instance_object = None # type: ignore
+        self.launched_instance_object = None
         self.instance_type = ""
         self.build_instance_market = ""
         self.spot_interruption_behavior = ""
@@ -255,6 +255,7 @@ class EC2BuildFarmHostDispatcher(BuildFarmHostDispatcher):
         Returns:
             IP address given as part of the dispatcher args.
         """
+        assert self.launched_instance_object is not None, "host must be 'requested' before getting the ip" # for typing
         return self.launched_instance_object.private_ip_address
 
     def release_build_farm_host(self) -> None:
