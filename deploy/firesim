@@ -37,7 +37,7 @@ class Task(TypedDict):
 """Registry of tasks """
 TASKS: Dict[str, Task] = {}
 
-class FiresimTaskAccessViolation(Exception):
+class FiresimTaskAccessViolation(RuntimeError):
     pass
 
 def register_task(task: Callable) -> Callable:
@@ -247,9 +247,7 @@ def terminaterunfarm(runtime_conf: RuntimeConfig):
        that many instances of the specified types and leave all others
        untouched.
     """
-    args = runtime_conf.args
-    runtime_conf.terminate_run_farm(args.terminatesomef1_16, args.terminatesomef1_4, args.terminatesomef1_2,
-                                    args.terminatesomem4_16, args.forceterminate)
+    runtime_conf.terminate_run_farm()
 
 @register_task
 def shareagfi(build_config: BuildConfigFile):

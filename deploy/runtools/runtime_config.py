@@ -391,11 +391,11 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                           terminatesomem4_16, forceterminate):
+    def terminate_run_farm(self):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                                        terminatesomem4_16, forceterminate)
+        args = self.args
+        self.runfarm.terminate_run_farm(args.terminatesomef1_16, args.terminatesomef1_4, args.terminatesomef1_2,
+                                        args.terminatesomem4_16, args.forceterminate)
 
     def infrasetup(self):
         """ directly called by top-level infrasetup command. """
