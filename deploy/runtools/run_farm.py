@@ -4,8 +4,8 @@ import re
 import logging
 
 from awstools.awstools import *
-from fabric.api import * # type: ignore
-from fabric.contrib.project import rsync_project # type: ignore
+from fabric.api import *
+from fabric.contrib.project import rsync_project
 from util.streamlogger import StreamLogger
 import time
 

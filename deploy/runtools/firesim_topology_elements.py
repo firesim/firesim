@@ -4,8 +4,8 @@ import logging
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from util.streamlogger import StreamLogger
-from fabric.api import * # type: ignore
-from fabric.contrib.project import rsync_project # type: ignore
+from fabric.api import *
+from fabric.contrib.project import rsync_project
 
 rootLogger = logging.getLogger()
 

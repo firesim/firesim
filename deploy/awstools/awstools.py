@@ -13,7 +13,7 @@ import sys
 import boto3
 import botocore
 from botocore import exceptions
-from fabric.api import local, hide, settings # type: ignore
+from fabric.api import local, hide, settings
 
 # setup basic config for logging
 if __name__ == '__main__':

@@ -1,0 +1,6 @@
+from typing import Any
+
+VERSION: Any
+
+def git_sha() -> None: ...
+def get_version(form: str = ...): ...

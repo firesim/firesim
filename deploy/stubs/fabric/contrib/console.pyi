@@ -1,0 +1,3 @@
+from fabric.api import prompt as prompt
+
+def confirm(question, default: bool = ...): ...

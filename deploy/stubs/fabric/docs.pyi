@@ -1,0 +1,3 @@
+from fabric.tasks import WrappedCallableTask as WrappedCallableTask
+
+def unwrap_tasks(module, hide_nontasks: bool = ...) -> None: ...

@@ -9,7 +9,7 @@ from time import sleep, strftime, gmtime
 import logging
 import random
 import argcomplete # type: ignore
-from fabric.api import * # type: ignore
+from fabric.api import *
 import string
 
 from runtools.runtime_config import RuntimeConfig

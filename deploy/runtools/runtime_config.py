@@ -9,7 +9,7 @@ import pprint
 import logging
 import yaml
 
-from fabric.api import * # type: ignore
+from fabric.api import *
 from awstools.awstools import *
 from awstools.afitools import *
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses

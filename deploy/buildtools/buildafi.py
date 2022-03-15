@@ -5,9 +5,9 @@ import random
 import string
 import logging
 import os
-from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
-from fabric.contrib.console import confirm  # type: ignore
-from fabric.contrib.project import rsync_project # type: ignore
+from fabric.api import prefix, local, run, env, lcd, parallel
+from fabric.contrib.console import confirm
+from fabric.contrib.project import rsync_project
 
 from awstools.afitools import *
 from awstools.awstools import send_firesim_notification

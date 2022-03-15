@@ -9,7 +9,7 @@ import datetime
 from runtools.switch_model_config import *
 from runtools.firesim_topology_core import *
 from runtools.utils import MacAddress
-from fabric.api import * # type: ignore
+from fabric.api import *
 from colorama import Fore, Style # type: ignore
 import types
 from functools import reduce
@@ -18,7 +18,7 @@ from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
 
-@parallel # type: ignore
+@parallel
 def instance_liveness():
     """ confirm that all instances are running first. """
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
