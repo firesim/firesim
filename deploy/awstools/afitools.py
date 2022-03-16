@@ -24,8 +24,9 @@ def get_afi_for_agfi(agfi_id, region=None):
     region = region if region is not None else get_current_region()
 
     client = boto3.client('ec2', region_name=region)
-    result = client.describe_fpga_images(
-        Filters=[
+    paginator = client.get_paginator('describe_fpga_images')
+    operation_params = {
+        'Filters': [
             {
                 'Name': 'fpga-image-global-id',
                 'Values': [
@@ -33,9 +34,13 @@ def get_afi_for_agfi(agfi_id, region=None):
                 ]
             },
         ]
-    )
-    rootLogger.debug(result)
-    return result['FpgaImages'][0]['FpgaImageId']
+    }
+    page_iterator = paginator.paginate(**operation_params)
+    fpga_images_all = []
+    for page in page_iterator:
+        fpga_images_all += page['FpgaImages']
+    rootLogger.debug(fpga_images_all)
+    return fpga_images_all[0]['FpgaImageId']
 
 def copy_afi_to_all_regions(afi_id, starting_region=None):
     """ Copies an AFI to all regions, excluding the specified region.
