@@ -14,13 +14,13 @@ def get_current_region():
     boto_session = boto3.session.Session()
     return boto_session.region_name
 
-def paginated_describe_fpga_images(client, operation_params):
-    paginator = client.get_paginator('describe_fpga_images')
+def depaginated_boto_query(client, operation, operation_params, return_key):
+    paginator = client.get_paginator(operation)
     page_iterator = paginator.paginate(**operation_params)
-    fpga_images_all = []
+    return_values_all = []
     for page in page_iterator:
-        fpga_images_all += page['FpgaImages']
-    return fpga_images_all
+        return_values_all += page[return_key]
+    return return_values_all
 
 def get_afi_for_agfi(agfi_id, region=None):
     """ Get the AFI for the AGFI in the specified region.
@@ -42,7 +42,7 @@ def get_afi_for_agfi(agfi_id, region=None):
             },
         ]
     }
-    fpga_images_all = paginated_describe_fpga_images(client, operation_params)
+    fpga_images_all = depaginated_boto_query(client, 'describe_fpga_images', operation_params, 'FpgaImages')
     rootLogger.debug(fpga_images_all)
     return fpga_images_all[0]['FpgaImageId']
 
@@ -126,7 +126,7 @@ def get_firesim_tagval_for_afi(afi_id, tagkey):
             afi_id
         ]
     }
-    result = paginated_describe_fpga_images(client, operation_params)[0]['Description']
+    result = depaginated_boto_query(client, 'describe_fpga_images', operation_params, 'FpgaImages')[0]['Description']
     return firesim_description_to_tags(result)[tagkey]
 
 def get_firesim_tagval_for_agfi(agfi_id, tagkey):
