@@ -2,6 +2,7 @@
 
 import logging
 import boto3
+from awstools.awstools import depaginated_boto_query
 
 rootLogger = logging.getLogger()
 
@@ -13,14 +14,6 @@ def get_fpga_regions():
 def get_current_region():
     boto_session = boto3.session.Session()
     return boto_session.region_name
-
-def depaginated_boto_query(client, operation, operation_params, return_key):
-    paginator = client.get_paginator(operation)
-    page_iterator = paginator.paginate(**operation_params)
-    return_values_all = []
-    for page in page_iterator:
-        return_values_all += page[return_key]
-    return return_values_all
 
 def get_afi_for_agfi(agfi_id, region=None):
     """ Get the AFI for the AGFI in the specified region.
