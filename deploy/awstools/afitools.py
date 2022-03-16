@@ -14,6 +14,14 @@ def get_current_region():
     boto_session = boto3.session.Session()
     return boto_session.region_name
 
+def paginated_describe_fpga_images(client, operation_params):
+    paginator = client.get_paginator('describe_fpga_images')
+    page_iterator = paginator.paginate(**operation_params)
+    fpga_images_all = []
+    for page in page_iterator:
+        fpga_images_all += page['FpgaImages']
+    return fpga_images_all
+
 def get_afi_for_agfi(agfi_id, region=None):
     """ Get the AFI for the AGFI in the specified region.
     region = None means use default region
@@ -24,7 +32,6 @@ def get_afi_for_agfi(agfi_id, region=None):
     region = region if region is not None else get_current_region()
 
     client = boto3.client('ec2', region_name=region)
-    paginator = client.get_paginator('describe_fpga_images')
     operation_params = {
         'Filters': [
             {
@@ -35,10 +42,7 @@ def get_afi_for_agfi(agfi_id, region=None):
             },
         ]
     }
-    page_iterator = paginator.paginate(**operation_params)
-    fpga_images_all = []
-    for page in page_iterator:
-        fpga_images_all += page['FpgaImages']
+    fpga_images_all = paginated_describe_fpga_images(client, operation_params)
     rootLogger.debug(fpga_images_all)
     return fpga_images_all[0]['FpgaImageId']
 
@@ -117,12 +121,12 @@ def firesim_description_to_tags(description):
 def get_firesim_tagval_for_afi(afi_id, tagkey):
     """ Given an afi_id, and tag key, return the FireSim tag value of the afi."""
     client = boto3.client('ec2')
-    result = client.describe_fpga_images(
-        FpgaImageIds=[
+    operation_params = {
+        'FpgaImageIds': [
             afi_id
         ]
-    )['FpgaImages'][0]['Description']
-
+    }
+    result = paginated_describe_fpga_images(client, operation_params)[0]['Description']
     return firesim_description_to_tags(result)[tagkey]
 
 def get_firesim_tagval_for_agfi(agfi_id, tagkey):
