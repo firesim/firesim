@@ -14,4 +14,4 @@ make f1
 # build target software
 cd ../sw/firesim-software
 ./init-submodules.sh
-./marshal -v build br-base.json
+marshal -v build br-base.json
