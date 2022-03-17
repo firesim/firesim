@@ -109,9 +109,20 @@ class TestLaunchInstances(object):
         ids.shouldnt.be.empty
 
         ec2_client = boto3.client('ec2')
-        desc = ec2_client.describe_instances(InstanceIds=ids)
-        desc['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
-        tags = {t['Key']:t['Value'] for t in desc['Reservations'][0]['Instances'][0]['Tags']}
+
+        paginator = ec2_client.get_paginator('describe_instances')
+
+        operation_params = {
+            'InstanceIds': ids
+        }
+        page_iterator = paginator.paginate(**operation_params)
+
+        all_reservations = []
+        for page in page_iterator:
+            page['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
+            all_reservations += page['Reservations']
+
+        tags = {t['Key']:t['Value'] for t in all_reservations[0]['Instances'][0]['Tags']}
         tags.should.have.key('fsimcluster')
         tags['fsimcluster'].should.equal('testcluster')
         tags.should.have.key('secondtag')
@@ -120,9 +131,15 @@ class TestLaunchInstances(object):
     @mock_ec2
     def test_moto_resets_instances_between_tests(self):
         ec2_client = boto3.client('ec2')
-        desc = ec2_client.describe_instances()
-        desc['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
-        desc['Reservations'].should.be.empty
+        paginator = ec2_client.get_paginator('describe_instances')
+        page_iterator = paginator.paginate()
+
+        all_reservations = []
+        for page in page_iterator:
+            page['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
+            all_reservations += page['Reservations']
+
+        all_reservations.should.be.empty
 
     @mock_ec2
     def test_can_query_multiple_instance_tags(self):
@@ -156,10 +173,17 @@ class TestLaunchInstances(object):
 
         # There should be two instances total now, across two reservations
         ec2_client = boto3.client('ec2')
-        desc = ec2_client.describe_instances()
-        desc['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
-        desc['Reservations'].should.have.length_of(2)
-        [i for r in desc['Reservations'] for i in r['Instances']].should.have.length_of(2)
+
+        paginator = ec2_client.get_paginator('describe_instances')
+        page_iterator = paginator.paginate()
+
+        all_reservations = []
+        for page in page_iterator:
+            page['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
+            all_reservations += page['Reservations']
+        all_reservations.should.have.length_of(2)
+
+        [i for r in all_reservations for i in r['Instances']].should.have.length_of(2)
 
         # get_instances_by_tag_type with both tags should only return one instance
         instances = get_instances_by_tag_type({**tag1, **tag2},type)
@@ -169,9 +193,19 @@ class TestLaunchInstances(object):
         ids = [i.id for i in instances]
         ids.shouldnt.be.empty
 
-        desc = ec2_client.describe_instances(InstanceIds=ids)
-        desc['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
-        tags = {t['Key']:t['Value'] for t in desc['Reservations'][0]['Instances'][0]['Tags']}
+        operation_params = {
+            'InstanceIds': ids
+        }
+
+        paginator = ec2_client.get_paginator('describe_instances')
+        page_iterator = paginator.paginate(**operation_params)
+
+        all_reservations = []
+        for page in page_iterator:
+            page['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
+            all_reservations += page['Reservations']
+
+        tags = {t['Key']:t['Value'] for t in all_reservations[0]['Instances'][0]['Tags']}
         tags.should.equal({**tag1, **tag2})
 
         # get_instances_by_tag_type with only the original tag should return both instances
@@ -206,10 +240,17 @@ class TestLaunchInstances(object):
 
         # There should be two instances total now, across two reservations
         ec2_client = boto3.client('ec2')
-        desc = ec2_client.describe_instances()
-        desc['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
-        desc['Reservations'].should.have.length_of(2)
-        [i for r in desc['Reservations'] for i in r['Instances']].should.have.length_of(2)
+
+        paginator = ec2_client.get_paginator('describe_instances')
+        page_iterator = paginator.paginate()
+
+        all_reservations = []
+        for page in page_iterator:
+            page['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
+            all_reservations += page['Reservations']
+        all_reservations.should.have.length_of(2)
+
+        [i for r in all_reservations for i in r['Instances']].should.have.length_of(2)
 
     @mock_ec2
     def test_non_additive_requires_tags(self):
@@ -261,7 +302,13 @@ class TestLaunchInstances(object):
 
         # There should be one instance total now, across one reservation
         ec2_client = boto3.client('ec2')
-        desc = ec2_client.describe_instances()
-        desc['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
-        desc['Reservations'].should.have.length_of(1)
-        [i for r in desc['Reservations'] for i in r['Instances']].should.have.length_of(1)
+        paginator = ec2_client.get_paginator('describe_instances')
+        page_iterator = paginator.paginate()
+
+        all_reservations = []
+        for page in page_iterator:
+            page['ResponseMetadata']['HTTPStatusCode'].should.equal(200)
+            all_reservations += page['Reservations']
+        all_reservations.should.have.length_of(1)
+
+        [i for r in all_reservations for i in r['Instances']].should.have.length_of(1)
