@@ -9,7 +9,7 @@ from time import sleep, strftime, gmtime
 import logging
 import random
 import argcomplete # type: ignore
-from fabric.api import * # type: ignore
+from fabric.api import local, hide, warn_only, env, execute # type: ignore
 import string
 from typing import Dict, Callable, Type, Optional
 try:
@@ -106,7 +106,7 @@ def managerinit() -> None:
         rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
         # DO NOT wrap this local call with StreamLogger, we don't want creds to get
         # stored in the log
-        local("aws configure") # type: ignore
+        local("aws configure")
 
         # check again
         valid_creds = valid_aws_configure_creds()
@@ -116,18 +116,18 @@ def managerinit() -> None:
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
     for conf_file in config_files:
-        with warn_only(), hide('everything'): # type: ignore
-            m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True) # type: ignore
+        with warn_only(), hide('everything'):
+            m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
     rootLogger.info("Creating initial config files from examples.")
-    with hide('everything'): # type: ignore
+    with hide('everything'):
         for conf_file in config_files:
-            m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True) # type: ignore
+            m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True) # type: ignore
+            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
@@ -166,8 +166,8 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
 
     # forced to build locally
     for build_config in build_config_file.builds_list:
-        execute(replace_rtl, build_config, hosts=['localhost']) # type: ignore
-        execute(build_driver, build_config, hosts=['localhost']) # type: ignore
+        execute(replace_rtl, build_config, hosts=['localhost'])
+        execute(build_driver, build_config, hosts=['localhost'])
 
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
@@ -194,7 +194,7 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
     build_config_file.wait_on_build_host_initializations()
 
     # run builds, then terminate instances
-    execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set) # type: ignore
+    execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set)
 
 
 @register_task
@@ -211,7 +211,7 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
 
     for build_config in build_config_file.builds_list:
-        execute(aws_create_afi, build_config_file, build_config, hosts=['localhost']) # type: ignore
+        execute(aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
 @register_task
@@ -320,11 +320,11 @@ def check_env() -> None:
 def main(args: argparse.Namespace) -> None:
     """ Main function for FireSim manager. """
     # large timeouts, retry connections
-    env.timeout = 100 # type: ignore
-    env.connection_attempts = 10 # type: ignore
+    env.timeout = 100
+    env.connection_attempts = 10
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
-    env.disable_known_hosts = True # type: ignore
+    env.disable_known_hosts = True
 
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
