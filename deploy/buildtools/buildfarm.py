@@ -31,6 +31,12 @@ class BuildHost:
     ip_address: Optional[str]
 
     def __init__(self, dest_build_dir: str, build_config: Optional[BuildConfig] = None, ip_address: Optional[str] = None) -> None:
+        """
+        Args:
+            dest_build_dir: Name of build dir on build host.
+            build_config: Build config associated with the build host.
+            ip_address: IP address of build host.
+        """
         self.build_config = build_config
         self.ip_address = ip_address
         self.dest_build_dir = dest_build_dir
@@ -238,6 +244,12 @@ class EC2BuildHost(BuildHost):
     launched_instance_object: EC2InstanceResource
 
     def __init__(self, build_config: BuildConfig, inst_obj: EC2InstanceResource, dest_build_dir: str) -> None:
+        """
+        Args:
+            build_config: Build config associated with the build host.
+            inst_obj: Boto instance object associated with the build host.
+            dest_build_dir: Name of build dir on build host.
+        """
         super().__init__(build_config=build_config, dest_build_dir=dest_build_dir)
         self.launched_instance_object = inst_obj
 
