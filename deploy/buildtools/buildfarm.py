@@ -28,9 +28,9 @@ class BuildHost:
     """
     build_config: Optional[BuildConfig]
     dest_build_dir: str
-    ip_address: str
+    ip_address: Optional[str]
 
-    def __init__(self, build_config: Optional[BuildConfig] = None, dest_build_dir: str = "", ip_address: str = "") -> None:
+    def __init__(self, dest_build_dir: str, build_config: Optional[BuildConfig] = None, ip_address: Optional[str] = None) -> None:
         self.build_config = build_config
         self.ip_address = ip_address
         self.dest_build_dir = dest_build_dir
@@ -112,7 +112,10 @@ class BuildFarm(metaclass=abc.ABCMeta):
         Returns:
             IP address for the specific build host.
         """
-        return self.get_build_host(build_config).ip_address
+        build_host = self.get_build_host(build_config)
+        ip_address = build_host.ip_address
+        assert ip_address is not None, f"Unassigned IP address for build host: {build_host}"
+        return ip_address
 
     @abc.abstractmethod
     def release_build_host(self, build_config: BuildConfig) -> None:
@@ -122,6 +125,7 @@ class BuildFarm(metaclass=abc.ABCMeta):
             build_config: Build config to find build host to terminate.
         """
         return
+
 
 class IPAddrBuildFarm(BuildFarm):
     """Build farm that selects from a set of user-determined IPs to allocate a new build host.
@@ -224,6 +228,7 @@ class IPAddrBuildFarm(BuildFarm):
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
 
+
 class EC2BuildHost(BuildHost):
     """Class representing an EC2-specific build host instance.
 
@@ -232,8 +237,8 @@ class EC2BuildHost(BuildHost):
     """
     launched_instance_object: EC2InstanceResource
 
-    def __init__(self, build_config: BuildConfig, inst_obj: EC2InstanceResource) -> None:
-        super().__init__(build_config)
+    def __init__(self, build_config: BuildConfig, inst_obj: EC2InstanceResource, dest_build_dir: str) -> None:
+        super().__init__(build_config=build_config, dest_build_dir=dest_build_dir)
         self.launched_instance_object = inst_obj
 
     def __repr__(self) -> str:
@@ -321,7 +326,7 @@ class EC2BuildFarm(BuildFarm):
             tags={ 'fsimbuildcluster': buildfarmprefix },
             randomsubnet=True)[0]
 
-        self.build_hosts.append(EC2BuildHost(build_config, inst_obj))
+        self.build_hosts.append(EC2BuildHost(build_config=build_config, inst_obj=inst_obj, dest_build_dir=self.dest_build_dir))
 
     def wait_on_build_host_initialization(self, build_config: BuildConfig) -> None:
         """Wait for EC2 instance launch.
@@ -349,4 +354,3 @@ class EC2BuildFarm(BuildFarm):
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
-
