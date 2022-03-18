@@ -66,7 +66,7 @@ def build_driver(build_config: BuildConfig) -> None:
          InfoStreamLogger('stderr'):
         run(build_config.make_recipe("PLATFORM=f1 driver"))
 
-def cl_dir_setup(chisel_triplet: str, dest_build_dir: str) -> Optional[str]:
+def cl_dir_setup(chisel_triplet: str, dest_build_dir: str) -> str:
     """Setup CL_DIR on build host.
 
     Args:
@@ -153,9 +153,6 @@ def aws_build(build_config_file: BuildConfigFile, bypassAll: bool = False, bypas
 
     # 'cl_dir' holds the eventual directory in which vivado will run.
     cl_dir = cl_dir_setup(build_config.get_chisel_triplet(), build_config_file.build_farm.get_build_host(build_config).dest_build_dir)
-    if not cl_dir:
-        on_build_failure()
-        return
 
     if bypassVivado:
         build_config_file.build_farm.release_build_host(build_config)

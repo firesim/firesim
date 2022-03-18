@@ -117,8 +117,6 @@ class BuildConfigFile:
         # create dispatcher object using class given and pass args to it
         self.build_farm = build_farm_dispatch_dict[build_farm_type_name](self, build_farm_args)
 
-        self.build_farm.parse_args()
-
     def setup(self) -> None:
         """Setup based on the types of build hosts."""
         for build in self.builds_list:
@@ -131,13 +129,14 @@ class BuildConfigFile:
         """Launch an instance for the builds. Exits the program if an IP address is reused."""
         for build in self.builds_list:
             self.build_farm.request_build_host(build)
-            num_ips = len(self.build_ip_set)
             ip = self.build_farm.get_build_host_ip(build)
-            self.build_ip_set.add(ip)
-            if num_ips == len(self.build_ip_set):
-                rootLogger.critical(f"ERROR: Duplicate {ip} IP used when launching instance")
+            if ip in self.build_ip_set:
+                error_msg = f"ERROR: Duplicate {ip} IP used when launching instance."
+                rootLogger.critical(error_msg)
                 self.release_build_hosts()
-                sys.exit(1)
+                raise Exception(error_msg)
+            else:
+                self.build_ip_set.add(ip)
 
     def wait_on_build_host_initializations(self) -> None:
         """Block until all build instances are initialized."""
