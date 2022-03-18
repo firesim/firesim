@@ -96,7 +96,7 @@ def register_task(task: Callable) -> Callable:
 
 
 @register_task
-def managerinit():
+def managerinit() -> None:
     """ Setup FireSim manager components. """
 
     valid_creds = valid_aws_configure_creds()
@@ -106,7 +106,7 @@ def managerinit():
         rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
         # DO NOT wrap this local call with StreamLogger, we don't want creds to get
         # stored in the log
-        local("aws configure")
+        local("aws configure") # type: ignore
 
         # check again
         valid_creds = valid_aws_configure_creds()
@@ -116,18 +116,18 @@ def managerinit():
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
     for conf_file in config_files:
-        with warn_only(), hide('everything'):
-            m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
+        with warn_only(), hide('everything'): # type: ignore
+            m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True) # type: ignore
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
     rootLogger.info("Creating initial config files from examples.")
-    with hide('everything'):
+    with hide('everything'): # type: ignore
         for conf_file in config_files:
-            m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
+            m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True) # type: ignore
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
+            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True) # type: ignore
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
@@ -140,47 +140,47 @@ def managerinit():
     rootLogger.info("FireSim Manager setup completed.")
 
 @register_task
-def infrasetup(runtime_conf: RuntimeConfig):
+def infrasetup(runtime_conf: RuntimeConfig) -> None:
     """ do infrasetup. """
     runtime_conf.infrasetup()
 
 @register_task
-def boot(runtime_conf: RuntimeConfig):
+def boot(runtime_conf: RuntimeConfig) -> None:
     """ do boot. """
     runtime_conf.boot()
 
 @register_task
-def kill(runtime_conf: RuntimeConfig):
+def kill(runtime_conf: RuntimeConfig) -> None:
     """ do kill. """
     runtime_conf.kill()
 
 @register_task
-def runworkload(runtime_conf: RuntimeConfig):
+def runworkload(runtime_conf: RuntimeConfig) -> None:
     """ do runworkload. """
     runtime_conf.run_workload()
 
 @register_task
-def buildafi(build_config_file: BuildConfigFile):
+def buildafi(build_config_file: BuildConfigFile) -> None:
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
     # forced to build locally
     for build_config in build_config_file.builds_list:
-        execute(replace_rtl, build_config, hosts=['localhost'])
-        execute(build_driver, build_config, hosts=['localhost'])
+        execute(replace_rtl, build_config, hosts=['localhost']) # type: ignore
+        execute(build_driver, build_config, hosts=['localhost']) # type: ignore
 
-    def release_build_farm_hosts_handler(sig, frame):
+    def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
         userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
         if userconfirm == "yes":
-            build_config_file.release_build_farm_hosts()
+            build_config_file.release_build_hosts()
             rootLogger.info("Build farm hosts released.")
         else:
             rootLogger.info("Build farm release skipped. There may still be build farm hosts running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, release_build_farm_hosts_handler)
+    signal.signal(signal.SIGINT, release_build_hosts_handler)
 
     # pre-setup stuff (things that need to be done before build farm hosts are spawned/killed)
     # specific to the build farm host
@@ -188,17 +188,17 @@ def buildafi(build_config_file: BuildConfigFile):
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
-    build_config_file.request_build_farm_hosts()
+    build_config_file.request_build_hosts()
 
     # confirm that build farm hosts have finished booting
-    build_config_file.wait_on_build_farm_host_initializations()
+    build_config_file.wait_on_build_host_initializations()
 
     # run builds, then terminate instances
-    execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set)
+    execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set) # type: ignore
 
 
 @register_task
-def tar2afi(build_config_file: BuildConfigFile):
+def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
     Starting from the tarball generated by Vivado generate an AFI
 
@@ -211,18 +211,17 @@ def tar2afi(build_config_file: BuildConfigFile):
     """
 
     for build_config in build_config_file.builds_list:
-        execute(aws_create_afi, build_config_file, build_config, hosts=['localhost'])
-
+        execute(aws_create_afi, build_config_file, build_config, hosts=['localhost']) # type: ignore
 
 
 @register_task
-def runcheck(runtime_conf: RuntimeConfig):
+def runcheck(runtime_conf: RuntimeConfig) -> None:
     """ Do nothing, just let the config process run. """
     pass
 
 
 @register_task
-def launchrunfarm(runtime_conf: RuntimeConfig):
+def launchrunfarm(runtime_conf: RuntimeConfig) -> None:
     """ This starts an FPGA run farm, based on the parameters listed in the
     [runfarm] section of the config file. Instances are
     a) tagged with "runfarmtag" so that the manager can find them in the future
@@ -235,7 +234,7 @@ def launchrunfarm(runtime_conf: RuntimeConfig):
 
 
 @register_task
-def terminaterunfarm(runtime_conf: RuntimeConfig):
+def terminaterunfarm(runtime_conf: RuntimeConfig) -> None:
     """ Terminate instances in the run farm.
 
     This works in 2 modes:
@@ -250,20 +249,20 @@ def terminaterunfarm(runtime_conf: RuntimeConfig):
     runtime_conf.terminate_run_farm()
 
 @register_task
-def shareagfi(build_config: BuildConfigFile):
+def shareagfi(build_config_file: BuildConfigFile) -> None:
     """ Share the agfis specified in the agfis-to-share section with the users
     specified in the share-with-accounts section """
     # share the image with all users
-    for agfiname in build_config.agfistoshare:
-        agfi = build_config.hwdb.get_runtimehwconfig_from_name(agfiname).agfi
+    for agfiname in build_config_file.agfistoshare:
+        agfi = build_config_file.hwdb.get_runtimehwconfig_from_name(agfiname).agfi
 
-        userlist = build_config.acctids_to_sharewith
+        userlist = build_config_file.acctids_to_sharewith
         share_agfi_in_all_regions(agfi, userlist)
         rootLogger.info("AGFI '%s': %s has been shared with the users specified in share-with-accounts",
                         agfiname, agfi)
 
 
-def construct_firesim_argparser():
+def construct_firesim_argparser() -> argparse.ArgumentParser:
     # parse command line args
     parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
     parser.add_argument('task', type=str,
@@ -318,14 +317,14 @@ def check_env() -> None:
         sys.exit(1)
 
 
-def main(args):
+def main(args: argparse.Namespace) -> None:
     """ Main function for FireSim manager. """
     # large timeouts, retry connections
-    env.timeout = 100
-    env.connection_attempts = 10
+    env.timeout = 100 # type: ignore
+    env.connection_attempts = 10 # type: ignore
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
-    env.disable_known_hosts = True
+    env.disable_known_hosts = True # type: ignore
 
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
@@ -349,7 +348,7 @@ if __name__ == '__main__':
     args = construct_firesim_argparser().parse_args()
 
     # logging setup
-    def logfilename():
+    def logfilename() -> str:
         """ Construct a unique log file name from: date + 16 char random. """
         timeline = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
         randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
