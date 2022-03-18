@@ -196,6 +196,8 @@ class TestConfigBuildAPI:
         # at the beginning of the test build_yamls contains the backup-sample-configs
         # but we can show exactly what we're doing different from the default by
         build_yamls.build.load(dedent("""
+            default-build-farm: ec2-build-farm
+
             builds:
 
             agfis-to-share:
@@ -216,6 +218,7 @@ class TestConfigBuildAPI:
 
         build_yamls.build.load(dedent("""
             default-build-farm: testing-build-farm
+
             builds:
                 - testing-recipe-name
 
