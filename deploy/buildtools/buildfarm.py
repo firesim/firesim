@@ -142,7 +142,7 @@ class IPAddrBuildFarm(BuildFarm):
         """
         super().__init__(args)
 
-        self.parse_args()
+        self._parse_args()
 
     @staticmethod
     def NAME() -> str:
@@ -153,7 +153,7 @@ class IPAddrBuildFarm(BuildFarm):
         """
         return "unmanaged"
 
-    def parse_args(self) -> None:
+    def _parse_args(self) -> None:
         """Parse build host arguments."""
         self.build_hosts_allocated = 0
 
@@ -223,7 +223,7 @@ class IPAddrBuildFarm(BuildFarm):
         return
 
     def __repr__(self) -> str:
-        return f"{type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} build_hosts_allocated={self.build_hosts_allocated})"
+        return f"< {type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} build_hosts_allocated={self.build_hosts_allocated}) >"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
@@ -242,7 +242,7 @@ class EC2BuildHost(BuildHost):
         self.launched_instance_object = inst_obj
 
     def __repr__(self) -> str:
-        return f"{type(self)}(build_config={self.build_config!r}, dest_build_dir={self.dest_build_dir}, ip_address={self.ip_address}, launched_instance_object={self.launched_instance_object})"
+        return f"{type(self)}(build_config={self.build_config!r}, dest_build_dir={self.dest_build_dir}, ip_address={self.ip_address}, launched_instance_object={self.launched_instance_object!r})"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
@@ -269,7 +269,7 @@ class EC2BuildFarm(BuildFarm):
         """
         super().__init__(args)
 
-        self.parse_args()
+        self._parse_args()
 
     @staticmethod
     def NAME() -> str:
@@ -280,7 +280,7 @@ class EC2BuildFarm(BuildFarm):
         """
         return "aws-ec2"
 
-    def parse_args(self) -> None:
+    def _parse_args(self) -> None:
         """Parse build host arguments."""
         # get aws specific args
         self.instance_type = self.args['instance-type']
@@ -350,7 +350,7 @@ class EC2BuildFarm(BuildFarm):
         terminate_instances(instance_ids, dryrun=False)
 
     def __repr__(self) -> str:
-        return f"{type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} instance_type={self.instance_type} build_instance_market={self.build_instance_market} spot_interruption_behavior={self.spot_interruption_behavior} spot_max_price={self.spot_max_price})"
+        return f"< {type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} instance_type={self.instance_type} build_instance_market={self.build_instance_market} spot_interruption_behavior={self.spot_interruption_behavior} spot_max_price={self.spot_max_price}) >"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
