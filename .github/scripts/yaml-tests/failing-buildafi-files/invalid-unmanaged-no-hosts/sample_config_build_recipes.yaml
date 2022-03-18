@@ -1,8 +1,0 @@
-testing-recipe-name:
-    DESIGN: TopModule
-    TARGET_CONFIG: Config
-    deploy-triplet: null
-    PLATFORM_CONFIG: Config
-    post-build-hook: null
-    s3-bucket-name: TESTING_BUCKET_NAME
-    build-farm: testing-build-farm

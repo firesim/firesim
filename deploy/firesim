@@ -11,6 +11,13 @@ import random
 import argcomplete # type: ignore
 from fabric.api import * # type: ignore
 import string
+from typing import Dict, Callable, Type, Optional
+try:
+    # added in 3.8
+    from typing import TypedDict
+except ImportError:
+    TypedDict = dict
+from inspect import signature
 
 from runtools.runtime_config import RuntimeConfig
 
@@ -23,9 +30,72 @@ from buildtools.buildconfig import BuildConfig
 
 from util.streamlogger import StreamLogger
 
-## below are tasks that users can call
-## to add a task, add it here and to the choices array
+class Task(TypedDict):
+    task: Callable
+    config: Optional[Callable]
 
+"""Registry of tasks """
+TASKS: Dict[str, Task] = {}
+
+class FiresimTaskAccessViolation(RuntimeError):
+    pass
+
+def register_task(task: Callable) -> Callable:
+    """Decorator to Map `task.__name__` to `task` in `TASKS`
+
+    Args:
+        task: callable task that either has no parameters or
+              the first parameter must be typed with a class
+              that accepts `argparse.Namespace` as the only parameter
+              in it's constructor
+
+    Returns:
+        a stub that raises `FiresimTaskAccessViolation` to ensure that the
+        task is only callable via `TASKS`
+    """
+    tn = task.__name__
+    if tn in TASKS:
+        raise KeyError(f"Task '{tn}' already registered by {TASKS[tn]}")
+
+    config_class = None
+
+    # introspect the type of config that this task takes (it's first param)
+    sig = signature(task)
+    if sig.parameters:
+        first = next(iter(sig.parameters.values()))
+        if first.annotation is first.empty:
+            raise TypeError(f'{tn}, requires type annotation on first parameter, {first.name}')
+        else:
+            config_class = first.annotation
+
+            # check that the first parameter takes a Namespace passed to its constructor
+            csig = signature(config_class)
+            if csig.parameters:
+                cfirst = next(iter(csig.parameters.values()))
+                if cfirst.annotation is cfirst.empty:
+                    raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
+                                    f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
+                else:
+                    assert cfirst.annotation is argparse.Namespace
+            else:
+                raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
+
+    TASKS[tn] = {'task': task, 'config': config_class}
+
+    # we don't want this function to be callable any way other than via firesim.main()
+    # so that we know programmatic changes to TASKS are followed (currently for testing purposes)
+    # so we don't return the original callable task, we return a lambda that raises
+    def inner():
+        raise FiresimTaskAccessViolation(f"Called '{tn}' without going through TASKS")
+    # or actually, we define a closure with def and return that because lambdas that raise
+    # are convoluted
+    return inner
+
+## below are tasks that users can call
+## to add a task, add it here, using the @register_task decorator in it's definition
+
+
+@register_task
 def managerinit() -> None:
     """ Setup FireSim manager components. """
 
@@ -69,22 +139,27 @@ def managerinit() -> None:
 
     rootLogger.info("FireSim Manager setup completed.")
 
+@register_task
 def infrasetup(runtime_conf: RuntimeConfig) -> None:
     """ do infrasetup. """
     runtime_conf.infrasetup()
 
+@register_task
 def boot(runtime_conf: RuntimeConfig) -> None:
     """ do boot. """
     runtime_conf.boot()
 
+@register_task
 def kill(runtime_conf: RuntimeConfig) -> None:
     """ do kill. """
     runtime_conf.kill()
 
+@register_task
 def runworkload(runtime_conf: RuntimeConfig) -> None:
     """ do runworkload. """
     runtime_conf.run_workload()
 
+@register_task
 def buildafi(build_config_file: BuildConfigFile) -> None:
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
@@ -94,7 +169,7 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
         execute(replace_rtl, build_config, hosts=['localhost']) # type: ignore
         execute(build_driver, build_config, hosts=['localhost']) # type: ignore
 
-    def release_build_hosts_handler(sig, frame):
+    def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
         userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
@@ -122,6 +197,7 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
     execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set) # type: ignore
 
 
+@register_task
 def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
     Starting from the tarball generated by Vivado generate an AFI
@@ -138,11 +214,13 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
         execute(aws_create_afi, build_config_file, build_config, hosts=['localhost']) # type: ignore
 
 
+@register_task
 def runcheck(runtime_conf: RuntimeConfig) -> None:
     """ Do nothing, just let the config process run. """
     pass
 
 
+@register_task
 def launchrunfarm(runtime_conf: RuntimeConfig) -> None:
     """ This starts an FPGA run farm, based on the parameters listed in the
     [runfarm] section of the config file. Instances are
@@ -155,8 +233,8 @@ def launchrunfarm(runtime_conf: RuntimeConfig) -> None:
     runtime_conf.runfarm.launch_run_farm()
 
 
-def terminaterunfarm(runtime_conf: RuntimeConfig, terminatesomef1_16: int, terminatesomef1_4: int, terminatesomef1_2: int,
-        terminatesomem4_16: int, forceterminate: bool) -> None:
+@register_task
+def terminaterunfarm(runtime_conf: RuntimeConfig) -> None:
     """ Terminate instances in the run farm.
 
     This works in 2 modes:
@@ -168,9 +246,9 @@ def terminaterunfarm(runtime_conf: RuntimeConfig, terminatesomef1_16: int, termi
        that many instances of the specified types and leave all others
        untouched.
     """
-    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                                    terminatesomem4_16, forceterminate)
+    runtime_conf.terminate_run_farm()
 
+@register_task
 def shareagfi(build_config_file: BuildConfigFile) -> None:
     """ Share the agfis specified in the agfis-to-share section with the users
     specified in the share-with-accounts section """
@@ -184,23 +262,11 @@ def shareagfi(build_config_file: BuildConfigFile) -> None:
                         agfiname, agfi)
 
 
-def construct_firesim_argparser() -> argparse.Namespace:
+def construct_firesim_argparser() -> argparse.ArgumentParser:
     # parse command line args
     parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
     parser.add_argument('task', type=str,
-                        help='Management task to run.', choices=[
-                            'managerinit',
-                            'buildafi',
-                            'launchrunfarm',
-                            'infrasetup',
-                            'boot',
-                            'kill',
-                            'terminaterunfarm',
-                            'runworkload',
-                            'shareagfi',
-                            'runcheck',
-                            'tar2afi'
-                            ])
+                        help='Management task to run.', choices=list(TASKS))
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
                         help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
                         default='config_runtime.yaml')
@@ -237,7 +303,19 @@ def construct_firesim_argparser() -> argparse.Namespace:
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
 
     argcomplete.autocomplete(parser)
-    return parser.parse_args()
+    return parser
+
+def check_env() -> None:
+    """Check assumptions about environment setup
+
+    Raises:
+        `SystemExit` if any assumption is violated
+    """
+    # make sure that sourceme-f1 was sourced
+    if os.environ.get('FIRESIM_SOURCED') is None:
+        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
+        sys.exit(1)
+
 
 def main(args: argparse.Namespace) -> None:
     """ Main function for FireSim manager. """
@@ -248,33 +326,14 @@ def main(args: argparse.Namespace) -> None:
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True # type: ignore
 
-    # make sure that sourceme-f1 was sourced
-    if os.environ.get('FIRESIM_SOURCED') is None:
-        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
-        exit(1)
-
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
-    # tasks that have a special config/dispatch setup
-    if args.task == 'managerinit':
-        managerinit()
+    t = TASKS[args.task]
+    if t['config']:
+        t['task'](t['config'](args))
+    else:
+        t['task']()
 
-    if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
-        build_config_file = BuildConfigFile(args)
-        globals()[args.task](build_config_file)
-
-    if args.task == 'terminaterunfarm':
-        runtime_conf = RuntimeConfig(args)
-        terminaterunfarm(runtime_conf, args.terminatesomef116,
-                         args.terminatesomef14,
-                         args.terminatesomef12, args.terminatesomem416,
-                         args.forceterminate)
-
-    if args.task in ['launchrunfarm', 'infrasetup', 'boot', 'kill', 'runworkload', 'runcheck']:
-        # construct simulation config
-        simconf = RuntimeConfig(args)
-        # run task
-        globals()[args.task](simconf)
 
 if __name__ == '__main__':
     # set the program working dir to wherever firesim is located
@@ -286,7 +345,7 @@ if __name__ == '__main__':
     # parse args BEFORE setting up logs, otherwise argcomplete will cause
     # junk log files to be created. also lets us use args.task in the logfile
     # name
-    args = construct_firesim_argparser()
+    args = construct_firesim_argparser().parse_args()
 
     # logging setup
     def logfilename() -> str:
@@ -320,6 +379,8 @@ if __name__ == '__main__':
     logging.getLogger('nose').setLevel(logging.WARNING)
     logging.getLogger("paramiko").setLevel(logging.WARNING)
 
+    check_env()
+
     # lastly - whenever you use run/local/put/etc from fabric, you need to wrap
     # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
     # unfortunately there's no proper way to do it with fabric
@@ -333,4 +394,4 @@ if __name__ == '__main__':
         exitcode = 1
     finally:
         rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
-        exit(exitcode)
+        sys.exit(exitcode)

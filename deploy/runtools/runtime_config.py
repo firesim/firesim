@@ -3,6 +3,7 @@ simulation tasks. """
 
 from __future__ import print_function
 
+import argparse
 from datetime import timedelta
 from time import strftime, gmtime
 import pprint
@@ -17,6 +18,7 @@ from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 import os
+import sys
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
@@ -208,7 +210,7 @@ class RuntimeHWConfig:
             if localcap.failed:
                 rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
-                exit(1)
+                sys.exit(1)
 
         self.driver_built = True
 
@@ -336,10 +338,12 @@ class RuntimeConfig:
     """ This class manages the overall configuration of the manager for running
     simulation tasks. """
 
-    def __init__(self, args):
+    def __init__(self, args: argparse.Namespace):
         """ This reads runtime configuration files, massages them into formats that
         the rest of the manager expects, and keeps track of other info. """
         self.launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
+
+        self.args = args
 
         # construct pythonic db of hardware configurations available to us at
         # runtime.
@@ -388,11 +392,11 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                           terminatesomem4_16, forceterminate):
+    def terminate_run_farm(self):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                                        terminatesomem4_16, forceterminate)
+        args = self.args
+        self.runfarm.terminate_run_farm(args.terminatesomef1_16, args.terminatesomef1_4, args.terminatesomef1_2,
+                                        args.terminatesomem4_16, args.forceterminate)
 
     def infrasetup(self):
         """ directly called by top-level infrasetup command. """

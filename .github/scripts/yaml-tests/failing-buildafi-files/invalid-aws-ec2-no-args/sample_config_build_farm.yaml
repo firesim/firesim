@@ -1,3 +1,0 @@
-testing-build-farm:
-    build-farm-type: aws-ec2
-    args:

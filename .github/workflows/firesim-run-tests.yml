@@ -182,17 +182,6 @@ jobs:
       - name: Run linux-poweroff test
         run: .github/scripts/run-linux-poweroff.py
 
-  run-yaml-api-tests:
-    name: run-yaml-api-tests
-    needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run .yaml API verification tests
-        run: .github/scripts/run-yaml-api-tests.py
-
   run-vitis-compile:
     name: run-vitis-compile
     runs-on: local-fpga

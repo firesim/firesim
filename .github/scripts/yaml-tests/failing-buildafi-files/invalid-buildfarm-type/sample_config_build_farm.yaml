@@ -1,4 +1,0 @@
-testing-build-farm:
-    build-farm-type: INVALID_BUILD_FARM_TYPE
-    args:
-        DUMMY-ARG: null

@@ -1,5 +1,0 @@
-testing-build-farm:
-    build-farm-type: unmanaged
-    args:
-        default-build-dir: null
-        build-farm-hosts:
