@@ -71,14 +71,6 @@ class BuildConfig:
                 self.s3_bucketname = aws_resource_names_dict['s3bucketname']
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
-    def __repr__(self) -> str:
-        """Print the class.
-
-        Returns:
-            String representation of the class
-        """
-        return "BuildConfig Object:\n" + pprint.pformat(vars(self), indent=10)
-
     def get_chisel_triplet(self) -> str:
         """Get the unique build-specific '-' deliminated triplet.
 
@@ -105,3 +97,11 @@ class BuildConfig:
             Fully specified make command.
         """
         return f"""make {"" if self.TARGET_PROJECT is None else "TARGET_PROJECT=" + self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
+
+    def __repr__(self) -> str:
+        return f"< {type(self)}(name={self.name!r}, build_config_file={self.build_config_file!r}) @{id(self)} >"
+
+    def __str__(self) -> str:
+        return pprint.pformat(vars(self), width=1, indent=10)
+
+

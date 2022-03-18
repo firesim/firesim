@@ -35,6 +35,13 @@ class BuildHost:
         self.ip_address = ip_address
         self.dest_build_dir = dest_build_dir
 
+    def __repr__(self) -> str:
+        return f"{type(self)}(build_config={self.build_config!r}, dest_build_dir={self.dest_build_dir} ip_address={self.ip_address})"
+
+    def __str__(self) -> str:
+        return pprint.pformat(vars(self), width=1, indent=10)
+
+
 class BuildFarm(metaclass=abc.ABCMeta):
     """Abstract class representing a build farm managing multiple build hosts (request, wait, release, etc).
 
@@ -211,6 +218,12 @@ class IPAddrBuildFarm(BuildFarm):
         """
         return
 
+    def __repr__(self) -> str:
+        return f"{type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} build_hosts_allocated={self.build_hosts_allocated})"
+
+    def __str__(self) -> str:
+        return pprint.pformat(vars(self), width=1, indent=10)
+
 class EC2BuildHost(BuildHost):
     """Class representing an EC2-specific build host instance.
 
@@ -222,6 +235,13 @@ class EC2BuildHost(BuildHost):
     def __init__(self, build_config: BuildConfig, inst_obj: EC2InstanceResource) -> None:
         super().__init__(build_config)
         self.launched_instance_object = inst_obj
+
+    def __repr__(self) -> str:
+        return f"{type(self)}(build_config={self.build_config!r}, dest_build_dir={self.dest_build_dir}, ip_address={self.ip_address}, launched_instance_object={self.launched_instance_object})"
+
+    def __str__(self) -> str:
+        return pprint.pformat(vars(self), width=1, indent=10)
+
 
 class EC2BuildFarm(BuildFarm):
     """Build farm to manage AWS EC2 instances as the build hosts.
@@ -323,3 +343,10 @@ class EC2BuildFarm(BuildFarm):
         instance_ids = get_instance_ids_for_instances([build_host.launched_instance_object])
         rootLogger.info(f"Terminating build instance {instance_ids}. Please confirm in your AWS Management Console")
         terminate_instances(instance_ids, dryrun=False)
+
+    def __repr__(self) -> str:
+        return f"{type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} instance_type={self.instance_type} build_instance_market={self.build_instance_market} spot_interruption_behavior={self.spot_interruption_behavior} spot_max_price={self.spot_max_price})"
+
+    def __str__(self) -> str:
+        return pprint.pformat(vars(self), width=1, indent=10)
+
