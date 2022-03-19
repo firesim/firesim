@@ -188,9 +188,9 @@ if [ "$SKIP_TOOLCHAIN" != true ]; then
         # Build the toolchain through chipyard (whether as top or as library)
         cd "$target_chipyard_dir"
         if [ "$FASTINSTALL" = "true" ] ; then
-            ./scripts/build-toolchains.sh ec2fast
+            MAKE=make ./scripts/build-toolchains.sh ec2fast
         else
-            ./scripts/build-toolchains.sh
+            MAKE=make ./scripts/build-toolchains.sh
         fi
     )
     source "$target_chipyard_dir/env.sh"
