@@ -7,8 +7,8 @@ that script installed many dependencies that FireSim needs using
 `conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
 manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_.
 
-In many situations, you may not need to know anything about conda.  By default, the
-``machine-launch-script.sh`` installs conda and all of the FireSim dependencies into ``/opt/conda``
+In many situations, you may not need to know anything about ``conda``.  By default, the
+``machine-launch-script.sh`` installs ``conda`` and all of the FireSim dependencies into ``/opt/conda``
 and adds the required setup to the system-wide ``/etc/profile.d/conda.sh`` init script to add
 ``/opt/conda`` to everyone's path.
 
@@ -60,14 +60,14 @@ The addition of ``graphql-core`` makes sense when looking at the `diff of moto's
 2.2.19 and 3.1.0 <https://github.com/spulec/moto/compare/2.2.19...3.1.0#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7>`_
 because it was clearly added as a new dependence.
 
-And this output tells us that latest version of moto available is 3.1.0.  Now, you might be tempted to
+And this output tells us that latest version of ``moto`` available is 3.1.0.  Now, you might be tempted to
 hit ``<<Enter>>`` and move forward with your life.
 
 .. attention::
 
     However, it is always a better idea to modify the version in ``machine-launch-script.sh`` so that:
     #. you remember to commit and share the new version requirement.
-    #. you are providing a complete set of requirements for conda to solve
+    #. you are providing a complete set of requirements for ``conda`` to solve
 
 So, modify ``machine-launch-script.sh`` with the updated version of ``moto``, and run it.  If you'd like to see what
 it will do first, feel free to give it the ``--dry-run`` option, look at the output and then run again leaving ``--dry-run``
@@ -121,7 +121,7 @@ by running ``conda env list`` to get output similar to:
     doc_writing           *  /opt/conda/envs/doc_writing
     firesim_oss_220203       /opt/conda/envs/firesim_oss_220203
 
-In the output above, you can see that I had the 'base' environment that is created when you install conda.  I also
+In the output above, you can see that I had the 'base' environment that is created when you install ``conda``.  I also
 created a 'doc_writing' environment to show some of the examples pasted earlier.  Finally, I created a datestamped
 firesim environment from a month or so ago.
 
@@ -136,10 +136,10 @@ Adding a New Dependency
 
 Look for what you need in this order:
 
-#. `The existing conda-forge packages list <feedstock-list>`_.  Keep in mind that since conda spans several domains, the
+#. `The existing conda-forge packages list <feedstock-list>`_.  Keep in mind that since ``conda`` spans several domains, the
    package name may not be exactly the same as a name from PyPI or one of the system package managers.
 #. `Adding a conda-forge recipe <https://conda-forge.org/#add_recipe>`_
-#. `PyPI <https://pypi.org/>`_ (for Python packages).  While it is possible to install packages with pip into a conda
+#. `PyPI <https://pypi.org/>`_ (for Python packages).  While it is possible to install packages with pip into a ``conda``
    environment, `there are caveats <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html?highlight=pip#using-pip-in-an-environment>`_.
    In short, you're less likely to create a mess if you have one system calculating dependencies and manipulating packages
    in your environment.
@@ -158,10 +158,10 @@ If you instead need to enable debugging or possibly actively hack on the source 
 #. Find the feedstock repo in the `feedstock-list`_
 #. Clone the feedstock repo and modify ``recipe/build.sh`` (or ``recipe/meta.yaml`` if there isn't a build script)
 #. ``python build-locally.py`` to `build using the conda-forge docker container <https://conda-forge.org/docs/maintainer/updating_pkgs.html#testing-changes-locally>`_
-   If the build is successful, you will have an installable conda package in ``build_artifacts/linux-64`` that can be
+   If the build is successful, you will have an installable ``conda`` package in ``build_artifacts/linux-64`` that can be
    installed using ``conda install -c ./build_artifacts <packagename>``
 
-If you are developing a Python package, it is usually easiest to install all dependencies using conda and then your package in 'development mode' using
+If you are developing a Python package, it is usually easiest to install all dependencies using ``conda`` and then your package in 'development mode' using
 ``pip install -e <path to clone>`` (and making sure that you are using ``pip`` from your environment).
 
 
