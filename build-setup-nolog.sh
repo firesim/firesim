@@ -211,8 +211,9 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     marshal_dir=$RDIR/sw/firesim-software
 
     # Setup for using qcow2 images
-    cd $RDIR
-    ./scripts/install-nbd-kmod.sh
+    # XXX skip this for now because it needs rpmbuild and other things from the Development Tools  group
+    #cd $RDIR
+    #./scripts/install-nbd-kmod.sh
 
     # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
     # pull down some IP, so we don't have to waste time doing it each time on
