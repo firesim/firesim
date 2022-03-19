@@ -165,7 +165,7 @@ set -o pipefail
     # obvi this would need to be made linux-specific if we supported other MacOS or Windows
     CONDA_PACKAGE_SPECS+=( "kernel-headers_linux-64>=2.6.38" )
     # firemarshal deps
-    CONDA_PACKAGE_SPECS+=( rsync psutil doit gitpython humanfriendly e2fsprogs ctags yacc bison flex expat )
+    CONDA_PACKAGE_SPECS+=( rsync psutil doit gitpython humanfriendly e2fsprogs ctags bison flex expat )
     # cross-compile glibc 2.28+ deps
     CONDA_PACKAGE_SPECS+=( make )
     # other misc deps
