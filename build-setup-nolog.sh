@@ -185,6 +185,10 @@ if [ "$SKIP_TOOLCHAIN" != true ]; then
             . "${devtoolset}/enable"
         fi
 
+	# chipyards build-toolchains.sh make defaults to gnumake or gmake but we 
+	# have latest make installed as make
+	export MAKE=make
+
         # Build the toolchain through chipyard (whether as top or as library)
         cd "$target_chipyard_dir"
         if [ "$FASTINSTALL" = "true" ] ; then
@@ -209,6 +213,8 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     # Install firesim-software dependencies
     # We always setup the symlink correctly above, so use sw/firesim-software
     marshal_dir=$RDIR/sw/firesim-software
+    # the only ones missing are libguestfs-tools
+    sudo yum install -y libguestfs-tools bc
 
     # Setup for using qcow2 images
     # XXX skip this for now because it needs rpmbuild and other things from the Development Tools  group
