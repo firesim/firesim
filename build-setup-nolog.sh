@@ -215,13 +215,23 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
     #cd $RDIR
     #./scripts/install-nbd-kmod.sh
 
-    # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
-    # pull down some IP, so we don't have to waste time doing it each time on
-    # worker instances
-    AWSFPGA=$RDIR/platforms/f1/aws-fpga
-    cd $AWSFPGA
-    bash -c "source ./sdk_setup.sh"
-    bash -c "source ./hdk_setup.sh"
+    (
+	if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
+	    # don't set it if it isn't already set but strip out -DNDEBUG because
+	    # the sdk software has assertion-only variable usage that will end up erroring
+	    # under NDEBUG with -Wall and -Werror
+	    export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+	fi
+
+
+	# Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
+	# pull down some IP, so we don't have to waste time doing it each time on
+	# worker instances
+	AWSFPGA=$RDIR/platforms/f1/aws-fpga
+	cd $AWSFPGA
+	bash -c "source ./sdk_setup.sh"
+	bash -c "source ./hdk_setup.sh"
+    )
 fi
 
 # Per-repository dependencies are installed under this sysroot
