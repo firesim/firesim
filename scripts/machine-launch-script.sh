@@ -168,6 +168,8 @@ set -o pipefail
     CONDA_PACKAGE_SPECS+=( rsync psutil doit gitpython humanfriendly e2fsprogs ctags bison flex expat )
     # cross-compile glibc 2.28+ deps
     CONDA_PACKAGE_SPECS+=( make )
+    # build-libelf wants autoconf
+    CONDA_PACKAGE_SPECS+=( autoconf automake libtool )
     # other misc deps
     CONDA_PACKAGE_SPECS+=(
         sbt \
