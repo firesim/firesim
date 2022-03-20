@@ -68,7 +68,7 @@ set -o pipefail
         exit 1
     fi
 
-    if [[ "$(uname -io)" != "x86_64 GNU/Linux" ]]; then
+    if [[ "$(uname -mo)" != "x86_64 GNU/Linux" ]]; then
         echo "::ERROR:: $0 only supports 'x86_64 GNU/Linux' not '$(uname -io)'"
         exit 1
     fi
