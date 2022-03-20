@@ -230,7 +230,7 @@ set -o pipefail
         CONDA_ENV_BIN="${CONDA_INSTALL_PREFIX}/bin"
     else
         CONDA_ENV_BIN="${CONDA_INSTALL_PREFIX}/envs/${CONDA_ENV_NAME}/bin"
-        if [[ -d "${CONDA_INSTALL_PREFIX}" ]]; then
+        if [[ -d "${CONDA_INSTALL_PREFIX}/envs/${CONDA_ENV_NAME}" ]]; then
             # 'create' clobbers the existing environment and doesn't leave a revision entry in
             # `conda list --revivsions`, so use install instead
             CONDA_SUBCOMMAND=install
