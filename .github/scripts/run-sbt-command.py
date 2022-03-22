@@ -15,7 +15,7 @@ def run_sbt_command(target_project, command):
     command -- the command to run
     """
 
-    with cd(manager_fsim_dir), prefix('source env.sh --skip-validate'):
+    with cd(manager_fsim_dir), prefix('source env.sh'):
         run("make -C sim sbt SBT_COMMAND={} TARGET_PROJECT={}".format(command, target_project))
 
 if __name__ == "__main__":
