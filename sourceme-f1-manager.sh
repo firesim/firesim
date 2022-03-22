@@ -4,11 +4,12 @@
 
 unamestr=$(uname)
 RDIR=$(pwd)
-AWSFPGA=$RDIR/platforms/f1/aws-fpga
-export CL_DIR=$AWSFPGA/hdk/cl/developer_designs/cl_firesim
 
 # setup risc-v tools
-source ./env.sh
+source ./env.sh "$@"
+
+AWSFPGA=$RDIR/platforms/f1/aws-fpga
+export CL_DIR=$AWSFPGA/hdk/cl/developer_designs/cl_firesim
 
 # put the manager on the user path
 export PATH=$PATH:$(pwd)/deploy

@@ -40,7 +40,7 @@ def initialize_manager(max_runtime):
         with cd(manager_marshal_dir):
             run("./init-submodules.sh")
 
-        with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh"):
+        with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh --skip-validate"):
             run(".github/scripts/firesim-managerinit.expect {} {} {}".format(
                 os.environ["AWS-ACCESS-KEY-ID"],
                 os.environ["AWS-SECRET-ACCESS-KEY"],

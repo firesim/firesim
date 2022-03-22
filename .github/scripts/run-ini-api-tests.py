@@ -12,7 +12,7 @@ def run_build_recipes_ini_api_tests():
     def commands_to_run(commands, opts):
         """ Run a list of commands with the specified opts """
         for command in commands:
-            with prefix('cd {} && source sourceme-f1-manager.sh'.format(manager_fsim_dir)):
+            with prefix('cd {} && source sourceme-f1-manager.sh --skip-validate'.format(manager_fsim_dir)):
                 rc = 0
                 with settings(warn_only=True):
                     rc = run("{} {}".format(command, opts)).return_code
@@ -45,7 +45,7 @@ def run_runtime_hwdb_ini_api_tests():
     def commands_to_run(commands, opts):
         """ Run a list of commands with the specified opts """
         for command in commands:
-            with prefix('cd {} && source sourceme-f1-manager.sh'.format(manager_fsim_dir)):
+            with prefix('cd {} && source sourceme-f1-manager.sh --skip-validate'.format(manager_fsim_dir)):
                 rc = 0
                 with settings(warn_only=True):
                     rc = run("{} {}".format(command, opts)).return_code

@@ -10,7 +10,7 @@ from ci_variables import ci_workflow_run_id
 def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
 
-    with prefix('cd {} && source sourceme-f1-manager.sh'.format(manager_fsim_dir)):
+    with prefix('cd {} && source sourceme-f1-manager.sh --skip-validate'.format(manager_fsim_dir)):
         run("cd sw/firesim-software && ./marshal -v build br-base.json && ./marshal -v install br-base.json")
         run("cd deploy/workloads/ && make linux-poweroff")
 
