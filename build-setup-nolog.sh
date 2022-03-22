@@ -295,6 +295,7 @@ unset CPPFLAGS
 
 # check for any other occurances and warn the user
 env | grep -- -DNDEBUG && echo "::WARNING:: you still seem to have -DNDEBUG in your environment. This is known to cause problems."
+true # ensure env.sh exits 0
 \0
 END_NDEBUG
 env_append "$NDEBUG_CHECK"
