@@ -81,4 +81,7 @@ sudo dpkg-reconfigure -p critical dash
 
 } 2>&1 | tee $HOME/machine-launchstatus.log
 
+# add python installs to PATH
+echo "export PATH=/usr/local/bin:\$PATH" >> /home/centos/.bashrc
+
 echo "machine launch script completed" >> $HOME/machine-launchstatus

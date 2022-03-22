@@ -24,7 +24,7 @@
 	url = git://sourceware.org/git/elfutils.git
 [submodule "sim/firesim-lib/src/main/cc/lib/libdwarf"]
 	path = sim/firesim-lib/src/main/cc/lib/libdwarf
-	url = git://git.code.sf.net/p/libdwarf/code
+	url = https://github.com/davea42/libdwarf-code
 [submodule "platforms/vitis"]
 	path = platforms/vitis
 	url = https://github.com/firesim/vitis-shell.git

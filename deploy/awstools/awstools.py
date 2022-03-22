@@ -13,7 +13,7 @@ import sys
 import boto3
 import botocore
 from botocore import exceptions
-from fabric.api import local, hide, settings
+from fabric.api import local, hide, settings # type: ignore
 
 # setup basic config for logging
 if __name__ == '__main__':
@@ -27,6 +27,25 @@ rootLogger = logging.getLogger()
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
 f1_ami_name = "FPGA Developer AMI - 1.11.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+
+def valid_aws_configure_creds():
+    """ See if aws configure has been run. Returns False if aws configure
+    needs to be run, else True.
+
+    This DOES NOT perform any deeper validation.
+    """
+    import botocore.session
+    session = botocore.session.get_session()
+    creds = session.get_credentials()
+    if creds is None:
+        return False
+    if session.get_credentials().access_key == '':
+        return False
+    if session.get_credentials().secret_key == '':
+        return False
+    if session.get_config_variable('region') == '':
+        return False
+    return True
 
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
@@ -322,7 +341,7 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
             {
                 'DeviceName': '/dev/sda1',
                 'Ebs': {
-                    'VolumeSize': 300,  # TODO: make this configurable from .ini?
+                    'VolumeSize': 300,  # TODO: make this configurable from .yaml?
                     'VolumeType': 'gp2',
                 },
             },

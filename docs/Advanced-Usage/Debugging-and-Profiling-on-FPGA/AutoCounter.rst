@@ -97,19 +97,19 @@ The filtered modules can be indicated using one of two methods:
 AutoCounter Runtime Parameters
 ---------------------------------
 AutoCounter currently takes a single runtime configurable parameter, defined
-under the ``[autocounter]`` section in the ``config_runtime.ini`` file.  The
-``readrate`` parameter defines the rate at which the counters should be read,
+under the ``autocounter:`` section in the ``config_runtime.yaml`` file.  The
+``read-rate`` parameter defines the rate at which the counters should be read,
 and is measured in target-cycles of the base target-clock (clock 0 produced by the ClockBridge). 
 Hence, if the read-rate is defined to be 100 and the tile frequency is 2x the base clock (ex., which may drive the uncore),
 the simulator will read and print the values of the counters every 200 core-clock cycles.
 If the core-domain clock is the base clock, it would do so every 100 cycles.
 By default, the read-rate is set to 0 cycles, which disables AutoCounter.
 
-.. code-block:: ini
+.. code-block:: yaml
 
-   [autocounter]
-   # read counters every 100 cycles
-   readrate=100
+   autocounter:
+       # read counters every 100 cycles
+       read-rate: 100
 
 
 .. Note:: AutoCounter is designed as a coarse-grained observability mechanism, as sampling 

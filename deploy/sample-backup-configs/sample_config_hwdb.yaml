@@ -1,0 +1,36 @@
+# Hardware config database for FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+# Hardware configs represent a combination of an agfi, a deploytriplet override
+# (if needed), and a custom runtime config (if needed)
+
+# The AGFIs provided below are public and available to all users.
+# Only AGFIs for the latest release of FireSim are guaranteed to be available.
+# If you are using an older version of FireSim, you will need to generate your
+# own images.
+
+firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
+    agfi: agfi-0989ed902efe56405
+    deploy-triplet-override: null
+    custom-runtime-config: null
+
+firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3:
+    agfi: agfi-0ece41b969f14b414
+    deploy-triplet-override: null
+    custom-runtime-config: null
+
+firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
+    agfi: agfi-0878b36466b017ce0
+    deploy-triplet-override: null
+    custom-runtime-config: null
+
+firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3:
+    agfi: agfi-0a8f04ece3a21b243
+    deploy-triplet-override: null
+    custom-runtime-config: null
+
+firesim-supernode-rocket-singlecore-nic-l2-lbp:
+    agfi: agfi-05e9bda7b308d99ea
+    deploy-triplet-override: null
+    custom-runtime-config: null
+

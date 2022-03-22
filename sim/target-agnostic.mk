@@ -176,7 +176,7 @@ $(PLATFORM) = $(OUTPUT_DIR)/$(DESIGN)-$(PLATFORM)
 $(PLATFORM): $($(PLATFORM))
 
 .PHONY: driver
-driver: $(PLATFORM)
+driver: $($(PLATFORM))
 
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
@@ -238,7 +238,7 @@ $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 
 $(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
-	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D)
+	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
 $(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
