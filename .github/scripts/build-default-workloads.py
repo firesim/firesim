@@ -13,8 +13,9 @@ def build_default_workloads():
         # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
         with settings(warn_only=True):
             rc = run("marshal -v build br-base.json &> br-base.full.log").return_code
+            print(f"marshal exit code was '{rc}'")
+            run("cat br-base.full.log")
             if rc != 0:
-                run("cat br-base.full.log")
                 raise Exception("Building br-base.json failed to run")
 
         run("make linux-poweroff")
