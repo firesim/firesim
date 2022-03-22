@@ -275,6 +275,37 @@ set +e
 ./gen-tags.sh
 set -e
 
+
+
+read -r -d '\0' NDEBUG_CHECK <<'END_NDEBUG'
+# Ensure that we don't have -DNDEBUG anywhere in our environment
+
+# check and fixup the known place where conda will put it
+if [[ "$CPPFLAGS" == *"-DNDEBUG"* ]]; then
+    echo "::INFO:: removing '-DNDEBUG' from CPPFLAGS as we prefer to leave assertions in place"
+    export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+fi
+
+# XXX generalize the /opt/conda path and/or possibly capture the conda environment in use here
+# set FLAGS to minimal set of ones that are needed to make things work with conda
+export LDFLAGS="-Wl,-rpath,/opt/conda/lib -Wl,-rpath-link,/opt/conda/lib -L/opt/conda/lib"
+export CXXFLAGS="-isystem /opt/conda/include"
+export CFLAGS="-isystem /opt/conda/include"
+unset CPPFLAGS
+
+# check for any other occurances and warn the user
+env | grep -- -DNDEBUG && echo "::WARNING:: you still seem to have -DNDEBUG in your environment. This is known to cause problems."
+\0
+END_NDEBUG
+env_append "$NDEBUG_CHECK"
+
+# original conda flags that cause failures in midas tests
+#LDFLAGS=-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/opt/conda/lib -Wl,-rpath-link,/opt/conda/lib -L/opt/conda/lib
+#CXXFLAGS=-fvisibility-inlines-hidden -std=c++17 -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /opt/conda/include
+#CFLAGS=-march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /opt/conda/include
+#CPPFLAGS= -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -isystem /opt/conda/include
+
+
 # Write out the generated env.sh indicating successful completion.
 echo "$env_string" > env.sh
 
