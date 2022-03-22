@@ -120,29 +120,7 @@ echo \"Please review build-setup-log for more information.\"
 return 1"
 echo "$bad_env" > env.sh
 
-
-read -r -d '\0' SOURCE_ONCE_CHECK <<'END_CHECK'
-while test $# -gt 0
-do
-   case "$1" in
-        --skip-validate)
-            SKIP_VALIDATE=true;
-            ;;
-        *) echo "Unknown argument $1"
-	         ;;
-   esac
-   shift
-done
-if [[ "${FIRESIM_ENV_SOURCED:-zzz}" != zzz  && "$SKIP_VALIDATE" != true ]]; then 
-    read -p $'WARNING: You have already sourced a firesim env. Type "y" to continue if this is intended, otherwise please use a new shell ' validate
-    [[ "$validate" == [yY] ]] || return 5
-fi
-
-export FIRESIM_ENV_SOURCED=1
-\0
-END_CHECK
-env_append "$SOURCE_ONCE_CHECK"
-
+env_append "export FIRESIM_ENV_SOURCED=1"
 
 git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive #--jobs 8

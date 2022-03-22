@@ -2,12 +2,11 @@
 # without using the manager at all.
 
 unamestr=$(uname)
-
-# setup risc-v tools
-source ./env.sh "$@"
-
 RDIR=$(pwd)
 AWSFPGA=$RDIR/platforms/f1/aws-fpga
+
+# setup risc-v tools
+source ./env.sh
 
 # setup AWS tools
 cd $AWSFPGA
