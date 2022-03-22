@@ -28,6 +28,14 @@ rootLogger = logging.getLogger()
 # by running scripts/update_test_amis.py
 f1_ami_name = "FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
+def depaginated_boto_query(client, operation, operation_params, return_key):
+    paginator = client.get_paginator(operation)
+    page_iterator = paginator.paginate(**operation_params)
+    return_values_all = []
+    for page in page_iterator:
+        return_values_all += page[return_key]
+    return return_values_all
+
 def aws_resource_names():
     """ Get names for various aws resources the manager relies on. For example:
     vpcname, securitygroupname, keyname, etc.
@@ -78,8 +86,8 @@ def aws_resource_names():
         instanceid = res.stdout
         rootLogger.debug(instanceid)
 
-        resp = client.describe_tags(
-            Filters=[
+        operation_params = {
+            'Filters': [
                 {
                     'Name': 'resource-id',
                     'Values': [
@@ -87,12 +95,13 @@ def aws_resource_names():
                     ]
                 },
             ]
-        )
+        }
+        resp_pairs = depaginated_boto_query(client, 'describe_tags', operation_params, 'Tags')
     except client.exceptions.ClientError:
         return base_dict
 
     resptags = {}
-    for pair in resp['Tags']:
+    for pair in resp_pairs:
         resptags[pair['Key']] = pair['Value']
     rootLogger.debug(resptags)
 
@@ -218,12 +227,19 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     client = boto3.client('ec2')
 
     vpcfilter = [{'Name':'tag:Name', 'Values': [vpcname]}]
+    # docs show 'NextToken' / 'MaxResults' which suggests pagination, but
+    # the boto3 source says collections handle pagination automatically,
+    # so assume this is fine
+    # https://github.com/boto/boto3/blob/1.20.21/boto3/resources/collection.py#L32
     firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))
     subnets = list(firesimvpc[0].subnets.filter())
     if randomsubnet:
         random.shuffle(subnets)
-    firesimsecuritygroup = client.describe_security_groups(
-        Filters=[{'Name':'group-name', 'Values': [securitygroupname]}])['SecurityGroups'][0]['GroupId']
+
+    operation_params = {
+        'Filters': [{'Name':'group-name', 'Values': [securitygroupname]}]
+    }
+    firesimsecuritygroup = depaginated_boto_query(client, 'describe_security_groups', operation_params, 'SecurityGroups')[0]['GroupId']
 
     marketconfig = construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice)
 
@@ -336,10 +352,11 @@ def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, sp
 def get_instances_with_filter(filters, allowed_states=['pending', 'running', 'shutting-down', 'stopping', 'stopped']):
     """ Produces a list of instances based on a set of provided filters """
     ec2_client = boto3.client('ec2')
-
-    instance_res = ec2_client.describe_instances(Filters=filters +
-        [{'Name': 'instance-state-name', 'Values' : allowed_states}]
-    )['Reservations']
+    operation_params = {
+        'Filters': filters +
+            [{'Name': 'instance-state-name', 'Values' : allowed_states}]
+    }
+    instance_res = depaginated_boto_query(ec2_client, 'describe_instances', operation_params, 'Reservations')
 
     instances = []
     # Collect all instances across all reservations
@@ -360,6 +377,7 @@ def get_instances_by_tag_type(tags, instancetype):
     """ return list of instances that match all tags and instance type """
     res = boto3.resource('ec2')
 
+    # see note above. collections automatically handle pagination
     instances = res.instances.filter(
         Filters = [
             {
