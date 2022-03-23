@@ -39,12 +39,14 @@ class FireSimTopologyWithPasses:
                  defaulttraceoutputformat,
                  defaultautocounterreadrate, terminateoncompletion,
                  defaultzerooutdram, defaultdisableasserts,
-                 defaultprintstart, defaultprintend, defaultprintcycleprefix):
+                 defaultprintstart, defaultprintend, defaultprintcycleprefix,
+                 build_recipes, default_metasim_mode):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
         self.run_farm = run_farm
         self.hwdb = hwdb
+        self.build_recipes = build_recipes
         self.workload = workload
         self.firesimtopol = FireSimTopology(user_topology_name, no_net_num_nodes)
         self.defaulthwconfig = defaulthwconfig
@@ -64,6 +66,7 @@ class FireSimTopologyWithPasses:
         self.defaultprintend = defaultprintend
         self.defaultprintcycleprefix = defaultprintcycleprefix
         self.terminateoncompletion = terminateoncompletion
+        self.default_metasim_mode = default_metasim_mode
 
         self.phase_one_passes()
 
@@ -278,17 +281,23 @@ class FireSimTopologyWithPasses:
             make the API call and cache the result for the deploytriplet.
         """
         servers = self.firesimtopol.get_dfs_order_servers()
-        defaulthwconfig_obj = self.hwdb.get_runtimehwconfig_from_name(self.defaulthwconfig)
+        metasimulation_mode = self.default_metasim_mode
+
+        if not metasimulation_mode:
+            defaulthwconfig_obj = self.hwdb.get_runtimehwconfig_from_name(self.defaulthwconfig)
+        else:
+            defaulthwconfig_obj = self.build_recipes.get_runtimehwconfig_from_name(self.defaulthwconfig)
 
         for server in servers:
             servhwconf = server.get_server_hardware_config()
             if servhwconf is None:
-                # 2)
                 server.set_server_hardware_config(defaulthwconfig_obj)
             else:
-                # 1)
-                server.set_server_hardware_config(self.hwdb.get_runtimehwconfig_from_name(servhwconf))
-            # 3)
+                if not metasimulation_mode:
+                    servhwconfobj = self.hwdb.get_runtimehwconfig_from_name(servhwconf)
+                else:
+                    servhwconfobj = self.build_recipes.get_runtimehwconfig_from_name(servhwconf)
+                server.set_server_hardware_config(servhwconfobj)
             server.get_server_hardware_config().get_deploytriplet_for_config()
 
     def pass_apply_default_network_params(self):

@@ -97,7 +97,8 @@ class RuntimeHWConfig:
                                               autocounter_readrate, all_shmemportnames,
                                               enable_zerooutdram, disable_asserts,
                                               print_start, print_end,
-                                              enable_print_cycle_prefix):
+                                              enable_print_cycle_prefix,
+                                              extra_plusargs="", extra_args=""):
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -144,7 +145,7 @@ class RuntimeHWConfig:
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
         # TODO: supernode support (tracefile, trace-select.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} {extra_plusargs} +permissive-off {command_bootbinaries} {extra_args} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid,
             driver=driver,
             runtimeconf=runtimeconf,
@@ -158,7 +159,9 @@ class RuntimeHWConfig:
             zero_out_dram=zero_out_dram,
             disable_asserts=disable_asserts_arg,
             command_shmemportnames=command_shmemportnames,
+            extra_plusargs=extra_plusargs,
             command_bootbinaries=command_bootbinaries,
+            extra_args=extra_args,
             trace_select=trace_select,
             trace_start=trace_start,
             trace_end=trace_end,
@@ -219,6 +222,135 @@ class RuntimeHWConfig:
         return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, str(self.customruntimeconfig))
 
 
+class RuntimeBuildRecipeConfig(RuntimeHWConfig):
+    """ A pythonic version of the entires in config_build_recipes.ini for
+    runtime use."""
+
+    def __init__(self, name, build_recipe_dict, default_metasim_host_sim):
+        self.name = name
+        self.agfi = "Metasim" # for __str__ to work
+        self.deploytriplet = build_recipe_dict['design'] + "-" + build_recipe_dict['target_config'] + "-" + build_recipe_dict['platform_config'] 
+
+        self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
+        self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
+        # note whether we've built a copy of the simulation driver for this hwconf
+        self.driver_built = False
+        self.metasim_host_simulator = default_metasim_host_sim
+
+    def get_local_driver_binaryname(self):
+        """ Get the name of the driver binary. """
+        prefix = ""
+        suffix = ""
+        if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
+            prefix = "V"
+        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
+            suffix = "-debug"
+
+        return prefix + self.get_design_name() + suffix
+
+    def get_local_driver_path(self):
+        """ return relative local path of the driver used to run this sim. """
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
+        metasim_driver_local = drivers_software_base + self.get_local_driver_binaryname()
+        return metasim_driver_local
+
+    def get_local_shared_libraries(self):
+        """ Returns a list of path tuples, (A, B), where:
+            A is the local file path on the manager instance to the library
+            B is the destination file path on the runfarm instance relative to the driver """
+
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
+
+        return [
+                [LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
+                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"],
+                # copy the whole dramsim2_ini directory
+                [drivers_software_base + "/dramsim2_ini", ""]
+        ]
+
+    def get_local_runtimeconf_binaryname(self):
+        """ Get the name of the runtimeconf file. """
+        return self.get_design_name() + "-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
+
+    def get_local_runtime_conf_path(self):
+        """ return relative local path of the runtime conf used to run this sim. """
+        my_deploytriplet = self.get_deploytriplet_for_config()
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
+        my_runtimeconfig = self.customruntimeconfig
+        if my_runtimeconfig is None:
+            runtime_conf_local = drivers_software_base + self.get_local_runtimeconf_binaryname()
+        else:
+            runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
+        return runtime_conf_local
+
+    def get_boot_simulation_command(self, slotid, all_macs,
+                                              all_rootfses, all_linklatencies,
+                                              all_netbws, profile_interval,
+                                              all_bootbinaries, trace_enable,
+                                              trace_select, trace_start, trace_end,
+                                              trace_output_format,
+                                              autocounter_readrate, all_shmemportnames,
+                                              enable_zerooutdram, disable_asserts,
+                                              print_start, print_end,
+                                              enable_print_cycle_prefix,
+                                              extra_plusargs="", extra_args=""):
+        """ return the command used to boot the meta simulation."""
+        full_extra_plusargs = " +fesvr-step-size=128 +dramsim +max-cycles=100000000" + extra_plusargs
+        if self.metasim_host_simulator == "vcs":
+            vcs_plusargs = " +vcs+initreg+0 +vcs+initmem+0 "
+            full_extra_plusargs = vcs_plusargs + full_extra_plusargs
+        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
+            full_extra_plusargs += " +waveform=waveform.vpd "
+        # TODO: spike-dasm support
+        full_extra_args = " 2> sim_stderr.out " + extra_args
+
+        return super(RuntimeBuildRecipeConfig, self).get_boot_simulation_command(slotid, all_macs,
+                                              all_rootfses, all_linklatencies,
+                                              all_netbws, profile_interval,
+                                              all_bootbinaries, trace_enable,
+                                              trace_select, trace_start, trace_end,
+                                              trace_output_format,
+                                              autocounter_readrate, all_shmemportnames,
+                                              enable_zerooutdram, disable_asserts,
+                                              print_start, print_end,
+                                              enable_print_cycle_prefix,
+                                              full_extra_plusargs, full_extra_args)
+
+
+    def build_fpga_driver(self):
+        """ Build metasim driver for running simulation """
+        if self.driver_built:
+            # we already built the driver at some point
+            return
+        triplet_pieces = self.get_deploytriplet_for_config().split("-")
+        design = triplet_pieces[0]
+        target_config = triplet_pieces[1]
+        platform_config = triplet_pieces[2]
+        rootLogger.info("Building Metasim driver for " + str(self.get_deploytriplet_for_config()))
+        with prefix('cd ../'), \
+             prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
+             prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
+             prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
+             prefix('source ./sourceme-f1-manager.sh'), \
+             prefix('cd sim/'), \
+             StreamLogger('stdout'), \
+             StreamLogger('stderr'):
+            localcap = None
+            with settings(warn_only=True):
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {host_sim}""".format(design, target_config, platform_config, host_sim=self.metasim_host_simulator)
+                localcap = local(driverbuildcommand, capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
+            if localcap.failed:
+                rootLogger.info("Metasim driver build failed. Exiting. See log for details.")
+                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
+                exit(1)
+
+        self.driver_built = True
+
+
 class RuntimeHWDB:
     """ This class manages the hardware configurations that are available
     as endpoints on the simulation. """
@@ -235,6 +367,21 @@ class RuntimeHWDB:
 
     def __str__(self):
         return pprint.pformat(vars(self))
+
+
+class RuntimeBuildRecipes(RuntimeHWDB):
+    """ Same as RuntimeHWDB, but use information from build recipes entries
+    instead of hwdb for metasimulation."""
+
+    def __init__(self, build_recipes_config_file, metasim_host_simulator):
+        recipes_config_file = configparser.ConfigParser(allow_no_value=True)
+        recipes_config_file.read(build_recipes_config_file)
+
+        recipes_dict = {s:dict(recipes_config_file.items(s)) for s in recipes_config_file.sections()}
+
+        self.hwconf_dict = {s: RuntimeBuildRecipeConfig(s, v, metasim_host_simulator) for s, v in recipes_dict.items()}
+
+
 
 
 class InnerRuntimeConfiguration:
@@ -257,6 +404,18 @@ class InnerRuntimeConfiguration:
             rootLogger.warning("""[{}]""".format(overridesection))
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
+
+        self.metasimulation_enabled = False
+        self.metasimulation_host_simulator = 'verilator'
+        if 'metasimulation' in runtime_dict:
+            metasim_dict = runtime_dict['metasimulation']
+            if 'metasimulation_enabled' in metasim_dict:
+                self.metasimulation_enabled = metasim_dict['metasimulation_enabled'] == 'yes'
+            if 'metasimulation_host_simulator' in metasim_dict:
+                self.metasimulation_host_simulator = metasim_dict['metasimulation_host_simulator']
+            if 'metasimulation_waveform_enabled' in metasim_dict:
+                if metasim_dict['metasimulation_waveform_enabled'] == 'yes':
+                    self.metasimulation_host_simulator += '-debug'
 
         runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
         if runfarmtagprefix != "":
@@ -347,6 +506,9 @@ class RuntimeConfig:
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
 
+        self.runtime_build_recipes = RuntimeBuildRecipes(args.buildrecipesconfigfile, self.innerconf.metasimulation_host_simulator)
+        rootLogger.debug(self.runtime_build_recipes)
+
         # construct a privateip -> instance obj mapping for later use
         #self.instancelookuptable = instance_privateip_lookup_table(
         #    f1_16_instances + f1_2_instances + m4_16_instances)
@@ -379,7 +541,8 @@ class RuntimeConfig:
             self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion,
             self.innerconf.zerooutdram, self.innerconf.disable_asserts,
             self.innerconf.print_start, self.innerconf.print_end,
-            self.innerconf.print_cycle_prefix)
+            self.innerconf.print_cycle_prefix, self.runtime_build_recipes,
+            self.innerconf.metasimulation_enabled)
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """

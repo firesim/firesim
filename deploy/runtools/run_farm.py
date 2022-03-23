@@ -669,15 +669,17 @@ class InstanceDeployManager:
             self.load_nbd_module()
 
             # clear/flash fpgas
-            self.clear_fpgas()
-            self.flash_fpgas()
+            print("TODO: fix this")
+            #self.clear_fpgas()
+            #self.flash_fpgas()
 
             # re-load XDMA
             self.load_xdma()
 
             #restart (or start form scratch) ila server
-            self.kill_ila_server()
-            self.start_ila_server()
+            print("TODO: fix this")
+            #self.kill_ila_server()
+            #self.start_ila_server()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
