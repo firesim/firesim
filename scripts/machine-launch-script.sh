@@ -1,7 +1,8 @@
 #!/bin/bash
 
 CONDA_INSTALL_PREFIX=/opt/conda
-CONDA_INSTALLER=https://github.com/conda-forge/miniforge/releases/download/4.11.0-4/Miniforge3-4.11.0-4-Linux-x86_64.sh
+CONDA_INSTALLER_VERSION=4.12.0-0
+CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
 CONDA_ENV_NAME="base"
 
 DRY_RUN_OPTION=""
@@ -151,7 +152,7 @@ set -o pipefail
 
     # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#using-the-compiler-packages
     #    for notes on using the conda compilers
-    CONDA_PACKAGE_SPECS=( gcc_linux-64 gxx_linux-64 )
+    #CONDA_PACKAGE_SPECS+=( gcc_linux-64 gxx_linux-64 )
 
 
     # poky deps
