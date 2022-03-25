@@ -152,6 +152,7 @@ def main():
 
             if ret != 0:
                 log.error("Failed to build workload " + cfgName)
+                failCount += 1
 
         elif args.command == "launch":
             # job-configs are named special internally
@@ -165,6 +166,7 @@ def main():
             except Exception:
                 log.exception("Failed to launch workload:")
                 outputPath = None
+                failCount += 1
 
             if outputPath is not None:
                 log.info("Workload outputs available at: " + str(outputPath))
@@ -220,8 +222,14 @@ def main():
         else:
             log.error("FAILURE: " + str(failCount) + " tests failed")
             sys.exit(1)
+    elif args.command == 'build':
+        if failCount:
+            log.error(f"FAILURE: {failCount} builds failed")
+            sys.exit(1)
+        else:
+            log.info("SUCCESS: All builds completed successfully!")
 
-    sys.exit(0)
+    sys.exit(0 if failCount == 0 else 1)
 
 
 if __name__ == "__main__":
