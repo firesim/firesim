@@ -94,7 +94,7 @@ class UserTopologies(object):
             """ In a custom mapper, you have access to the firesim topology with passes,
             where you can access the run_farm instance objects via the
 
-            fsim_topol_with_passes.mapper_* functions.
+            fsim_topol_with_passes.run_farm.mapper_* functions.
 
             To map, call add_switch or add_simulation on run farm instance
             objs in the aforementioned arrays.
