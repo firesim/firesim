@@ -163,33 +163,21 @@ class FireSimTopologyWithPasses:
         servers = self.firesimtopol.get_dfs_order_servers()
         serverind = 0
 
-        for f1_16x in self.run_farm.f1_16s:
-            for x in range(f1_16x.get_num_fpga_slots_max()):
-                f1_16x.add_simulation(servers[serverind])
+        while len(servers) > serverind:
+            # this call will exit(1) if no such instances are available.
+            instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(1)
+            allocd_instance = self.run_farm.mapper_alloc_instance(instance_type)
+
+            for x in range(allocd_instance.get_num_fpga_slots_max()):
+                allocd_instance.add_simulation(servers[serverind])
                 serverind += 1
                 if len(servers) == serverind:
                     return
-        for f1_4x in self.run_farm.f1_4s:
-            for x in range(f1_4x.get_num_fpga_slots_max()):
-                f1_4x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        for f1_2x in self.run_farm.f1_2s:
-            for x in range(f1_2x.get_num_fpga_slots_max()):
-                f1_2x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
     def pass_simple_networked_host_node_mapping(self):
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
-        f1_2s_used = 0
-        f1_4s_used = 0
-        f1_16s_used = 0
-        m4_16s_used = 0
+        switch_host_inst_type = self.run_farm.mapper_get_default_switch_host_inst_type_name()
 
         for switch in switches:
             # Filter out FireSimDummyServerNodes for actually deploying.
@@ -198,43 +186,35 @@ class FireSimTopologyWithPasses:
             downlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches
-                self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
-                m4_16s_used += 1
+                self.run_farm.mapper_alloc_instance(switch_host_inst_type).add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 # all downlinks are simulations
-                if (len(downlinknodes) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
-                    self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
-                    self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
-                    f1_2s_used += 1
-                elif (len(downlinknodes) <= 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
-                    self.run_farm.f1_4s[f1_4s_used].add_switch(switch)
-                    for server in downlinknodes:
-                        self.run_farm.f1_4s[f1_4s_used].add_simulation(server)
-                    f1_4s_used += 1
-                else:
-                    self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
-                    for server in downlinknodes:
-                        self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
-                    f1_16s_used += 1
+                num_downlinks = len(downlinknodes)
+
+                inst_type_for_downlinks = self.run_farm.mapper_get_min_sim_host_inst_type_name(num_downlinks)
+                inst = self.run_farm.mapper_alloc_instance(inst_type_for_downlinks)
+
+                inst.add_switch(switch)
+                for server in downlinknodes:
+                    inst.add_simulation(server)
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
-    def mapping_use_one_f1_16xlarge(self):
-        """ Just put everything on one f1.16xlarge """
+    def mapping_use_one_8_fpga_host(self):
+        """ Just put everything on one host that has at least 8 fpgas."""
+
         switches = self.firesimtopol.get_dfs_order_switches()
-        f1_2s_used = 0
-        f1_16s_used = 0
-        m4_16s_used = 0
+        instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(8)
 
         for switch in switches:
-            self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
+            inst = self.run_farm.mapper_alloc_instance(instance_type)
+            inst.add_switch(switch)
             downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 for server in downlinknodes:
-                    self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
+                    inst.add_simulation(server)
             elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 assert False, "MIXED DOWNLINKS NOT SUPPORTED."
-        f1_16s_used += 1
 
     def pass_perform_host_node_mapping(self):
         """ This pass assigns host nodes to nodes in the abstract FireSim

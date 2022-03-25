@@ -302,9 +302,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             vcs_plusargs = " +vcs+initreg+0 +vcs+initmem+0 "
             full_extra_plusargs = vcs_plusargs + full_extra_plusargs
         if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
-            full_extra_plusargs += " +waveform=waveform.vpd "
+            full_extra_plusargs += " +waveform=metasim_waveform.vpd "
         # TODO: spike-dasm support
-        full_extra_args = " 2> sim_stderr.out " + extra_args
+        full_extra_args = " 2> metasim_stderr.out " + extra_args
 
         return super(RuntimeBuildRecipeConfig, self).get_boot_simulation_command(slotid, all_macs,
                                               all_rootfses, all_linklatencies,
@@ -413,9 +413,6 @@ class InnerRuntimeConfiguration:
                 self.metasimulation_enabled = metasim_dict['metasimulation_enabled'] == 'yes'
             if 'metasimulation_host_simulator' in metasim_dict:
                 self.metasimulation_host_simulator = metasim_dict['metasimulation_host_simulator']
-            if 'metasimulation_waveform_enabled' in metasim_dict:
-                if metasim_dict['metasimulation_waveform_enabled'] == 'yes':
-                    self.metasimulation_host_simulator += '-debug'
 
         runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
         if runfarmtagprefix != "":
@@ -428,10 +425,22 @@ class InnerRuntimeConfiguration:
             # if specified, further prefix runfarmtag
             self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
 
-        self.f1_16xlarges_requested = int(runtime_dict['runfarm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['runfarm'] else 0
-        self.f1_4xlarges_requested = int(runtime_dict['runfarm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['runfarm'] else 0
-        self.m4_16xlarges_requested = int(runtime_dict['runfarm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['runfarm'] else 0
-        self.f1_2xlarges_requested = int(runtime_dict['runfarm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['runfarm'] else 0
+
+        self.instances_requested_dict = dict()
+        for instance_type in runtime_dict['runfarminstances'].keys():
+            self.instances_requested_dict[instance_type] = int(runtime_dict['runfarminstances'][instance_type])
+
+        old_style_instance_count_params = ['f1_16xlarges', 'f1_4xlarges',
+                                           'f1_2xlarges', 'm4_16xlarges']
+        for old_param in old_style_instance_count_params:
+            if old_param in runtime_dict['runfarm']:
+                rootLogger.critical("WARNING: You are using the old style of specifying instance counts in a runfarm. Please see [TODO] for migration instructions. The old style will be removed in the next major version FireSim release (1.15.X).")
+                new_style_param = old_param.replace('_', '.')[:-1]
+
+                if new_style_param in self.instances_requested_dict.keys():
+                    rootLogger.critical("WARNING: You have also specified instance counts using the new style. We will ignore the counts specified in the old style. Please see [TODO] for migration instructions. The old style will be removed in the next major version FireSim release (1.15.X).")
+                else:
+                    self.instances_requested_dict[new_style_param] = int(runtime_dict['runfarm'][old_param])
 
         if 'launch_instances_timeout_minutes' in runtime_dict['runfarm']:
             self.launch_timeout = timedelta(minutes=int(runtime_dict['runfarm']['launch_instances_timeout_minutes']))
@@ -509,19 +518,12 @@ class RuntimeConfig:
         self.runtime_build_recipes = RuntimeBuildRecipes(args.buildrecipesconfigfile, self.innerconf.metasimulation_host_simulator)
         rootLogger.debug(self.runtime_build_recipes)
 
-        # construct a privateip -> instance obj mapping for later use
-        #self.instancelookuptable = instance_privateip_lookup_table(
-        #    f1_16_instances + f1_2_instances + m4_16_instances)
-
         # setup workload config obj, aka a list of workloads that can be assigned
         # to a server
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
                                        self.innerconf.suffixtag)
 
-        self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
-                               self.innerconf.f1_4xlarges_requested,
-                               self.innerconf.f1_2xlarges_requested,
-                               self.innerconf.m4_16xlarges_requested,
+        self.runfarm = RunFarm(self.innerconf.instances_requested_dict,
                                self.innerconf.runfarmtag,
                                self.innerconf.run_instance_market,
                                self.innerconf.spot_interruption_behavior,
@@ -548,11 +550,9 @@ class RuntimeConfig:
         """ directly called by top-level launchrunfarm command. """
         self.runfarm.launch_run_farm()
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                           terminatesomem4_16, forceterminate):
+    def terminate_run_farm(self, terminate_some_dict, forceterminate):
         """ directly called by top-level terminaterunfarm command. """
-        self.runfarm.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                                        terminatesomem4_16, forceterminate)
+        self.runfarm.terminate_run_farm(terminate_some_dict, forceterminate)
 
     def infrasetup(self):
         """ directly called by top-level infrasetup command. """

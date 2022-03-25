@@ -58,13 +58,17 @@ class NBDTracker(object):
         return self.allocated_dict[imagename]
 
 
-class EC2Inst(object):
+class EC2HostInst(object):
     # TODO: this is leftover from when we could only support switch slots.
     # This can be removed once self.switch_slots is dynamically allocated.
     # Just make it arbitrarily large for now.
     SWITCH_SLOTS = 100000
 
-    def __init__(self):
+    def __init__(self, fpga_slots, metasim_slots):
+        self.NUM_FPGA_SLOTS = fpga_slots
+        self.fpga_slots = [None for x in range(self.NUM_FPGA_SLOTS)]
+        self.fpga_slots_consumed = 0
+
         self.boto3_instance_object = None
         self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
         self.switch_slots_consumed = 0
@@ -99,17 +103,9 @@ class EC2Inst(object):
         self._next_port += 1
         return retport
 
-class F1_Instance(EC2Inst):
-    FPGA_SLOTS = 0
-
-    def __init__(self):
-        self.fpga_slots = []
-        self.fpga_slots_consumed = 0
-        super(F1_Instance, self).__init__()
-
     def get_num_fpga_slots_max(self):
         """ Get the number of fpga slots. """
-        return self.FPGA_SLOTS
+        return self.NUM_FPGA_SLOTS
 
     def get_num_fpga_slots_consumed(self):
         """ Get the number of fpga slots. """
@@ -117,48 +113,11 @@ class F1_Instance(EC2Inst):
 
     def add_simulation(self, firesimservernode):
         """ Add a simulation to the next available slot. """
-        assert self.fpga_slots_consumed < self.FPGA_SLOTS
+        assert self.fpga_slots_consumed < self.NUM_FPGA_SLOTS
         self.fpga_slots[self.fpga_slots_consumed] = firesimservernode
         firesimservernode.assign_host_instance(self)
         self.fpga_slots_consumed += 1
 
-class F1_16(F1_Instance):
-    instance_counter = 0
-    FPGA_SLOTS = 8
-
-    def __init__(self):
-        super(F1_16, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = F1_16.instance_counter
-        F1_16.instance_counter += 1
-
-class F1_4(F1_Instance):
-    instance_counter = 0
-    FPGA_SLOTS = 2
-
-    def __init__(self):
-        super(F1_4, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = F1_4.instance_counter
-        F1_4.instance_counter += 1
-
-class F1_2(F1_Instance):
-    instance_counter = 0
-    FPGA_SLOTS = 1
-
-    def __init__(self):
-        super(F1_2, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
-        self.instance_id = F1_2.instance_counter
-        F1_2.instance_counter += 1
-
-class M4_16(EC2Inst):
-    instance_counter = 0
-
-    def __init__(self):
-        super(M4_16, self).__init__()
-        self.instance_id = M4_16.instance_counter
-        M4_16.instance_counter += 1
 
 class RunFarm:
     """ This manages the set of AWS resources requested for the run farm. It
@@ -167,13 +126,48 @@ class RunFarm:
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
 
-    def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
+    supported_instance_type_names = [
+        'f1.16xlarge',
+        'f1.4xlarge',
+        'f1.2xlarge',
+        'm4.16xlarge',
+    ]
+
+    instance_type_name_to_max_fpga_slots = {
+        'f1.16xlarge': 8,
+        'f1.4xlarge': 4,
+        'f1.2xlarge': 2,
+        'm4.16xlarge': 0,
+    }
+
+    instance_type_name_to_max_metasim_slots = {
+        'f1.16xlarge': 0,
+        'f1.4xlarge': 0,
+        'f1.2xlarge': 0,
+        'm4.16xlarge': 8,
+    }
+
+    instance_type_name_for_switch_only_sim = 'm4.16xlarge'
+
+    def __init__(self, instances_requested_dict, runfarmtag,
                  run_instance_market, spot_interruption_behavior,
                  spot_max_price, launch_timeout, always_expand):
-        self.f1_16s = [F1_16() for x in range(num_f1_16)]
-        self.f1_4s = [F1_4() for x in range(num_f1_4)]
-        self.f1_2s = [F1_2() for x in range(num_f1_2)]
-        self.m4_16s = [M4_16() for x in range(num_m4_16)]
+
+        # make sure requested instance types are valid
+        requested_types_set = set(instances_requested_dict.keys())
+        allowed_types_set = set(self.supported_instance_type_names)
+        not_allowed_types = requested_types_set - allowed_types_set
+        if len(not_allowed_types) != 0:
+            rootLogger.critical("WARNING: You have requested the following invalid instance types. They will be ignored: " + str(not_allowed_types))
+
+        self.instance_objs = dict()
+        self.mapper_consumed = dict()
+        for instance_type_name in self.supported_instance_type_names:
+            num_instances_of_type = instances_requested_dict[instance_type_name]
+            num_fpga_slots_max = self.instance_type_name_to_max_fpga_slots[instance_type_name]
+            num_metasim_slots_max = self.instance_type_name_to_max_metasim_slots[instance_type_name]
+            self.instance_objs[instance_type_name] = [EC2HostInst(num_fpga_slots_max, num_metasim_slots_max) for x in range(num_instances_of_type)]
+            self.mapper_consumed[instance_type_name] = 0
 
         self.runfarmtag = runfarmtag
         self.run_instance_market = run_instance_market
@@ -183,64 +177,95 @@ class RunFarm:
         self.launch_timeout = launch_timeout
         self.always_expand = always_expand
 
+        def invert_filter_sort(input_dict):
+            """ take a dict, convert to list of pairs, flip key and value,
+            remove all keys equal to zero, then sort on the new key. """
+            out_list = [(y, x) for x, y in list(input_dict.items())]
+            out_list = list(filter(lambda x: x[0] != 0, out_list))
+            return sorted(out_list, key=lambda x: x[0])
+
+        # for later use during mapping
+        self.sorted_instance_type_name_to_max_fpga_slots = invert_filter_sort(self.instance_type_name_to_max_fpga_slots)
+        self.sorted_instance_type_name_to_max_metasim_slots = invert_filter_sort(self.instance_type_name_to_max_metasim_slots)
+
+
+
+    # a few calls to abstract the mapper API
+    def mapper_get_min_sim_host_inst_type_name(self, num_sims):
+        """ Return the smallest instance type that supports greater than or
+        equal to num_sims simulations AND has available instances of that type
+        (according to instance counts you've specified in config_runtime.ini).
+        """
+        # TODO:
+        metasim = False
+        searcharr = None
+        if not metasim:
+            searcharr = self.sorted_instance_type_name_to_max_fpga_slots
+        else:
+            searcharr = self.sorted_instance_type_name_to_max_metasim_slots
+
+        for max_simcount, instance_type_name in searcharr:
+            if max_simcount < num_sims:
+                # instance doesn't support enough sims
+                continue
+            num_consumed = self.mapper_consumed[instance_type_name]
+            num_allocated = len(self.instance_objs[instance_type_name])
+            if num_consumed >= num_allocated:
+                # instance supports enough sims but none are available
+                continue
+            return instance_type_name
+
+        rootLogger.critical("ERROR: No instances are available to satisfy the request for an instance with support for " + str(num_sims) + " simulation slots. Add more instances in your runtime configuration (e.g., config_runtime.ini).")
+        exit(1)
+
+
+    def mapper_alloc_instance(self, instance_type_name):
+        """ Let user allocate and use an instance (assign sims, etc.).
+
+        This deliberately exposes instance_type_names to users, so that if
+        they know exactly how to map to a particular platform, they always
+        have an escape hatch. """
+        inst_ret = self.instance_objs[instance_type_name][self.mapper_consumed[instance_type_name]]
+        self.mapper_consumed[instance_type_name] += 1
+        return inst_ret
+
+    def mapper_get_default_switch_host_inst_type_name(self):
+        """ Get the default host instance type name that can host switch
+        simulations. """
+        return self.instance_type_name_for_switch_only_sim
+
     def bind_mock_instances_to_objects(self):
         """ Only used for testing. Bind mock Boto3 instances to objects. """
-        for index in range(len(self.f1_16s)):
-            self.f1_16s[index].assign_boto3_instance_object(MockBoto3Instance())
 
-        for index in range(len(self.f1_4s)):
-            self.f1_4s[index].assign_boto3_instance_object(MockBoto3Instance())
-
-        for index in range(len(self.f1_2s)):
-            self.f1_2s[index].assign_boto3_instance_object(MockBoto3Instance())
-
-        for index in range(len(self.m4_16s)):
-            self.m4_16s[index].assign_boto3_instance_object(MockBoto3Instance())
+        for instance_type_name in self.supported_instance_type_names:
+            instance_arr = self.instance_objs[instance_type_name]
+            for inst_obj in instance_arr:
+                inst_obj.assign_boto3_instance_object(MockBoto3Instance())
 
     def bind_real_instances_to_objects(self):
         """ Attach running instances to the Run Farm. """
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
-        available_f1_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
-            self.runfarmtag, 'f1.16xlarge'))
-        available_f1_4_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
-            self.runfarmtag, 'f1.4xlarge'))
-        available_m4_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
-            self.runfarmtag, 'm4.16xlarge'))
-        available_f1_2_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
-            self.runfarmtag, 'f1.2xlarge'))
+        available_instances_per_type = dict()
+        for instance_type_name in self.supported_instance_type_names:
+            available_instances_per_type[instance_type_name] = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
+                                                                self.runfarmtag, instance_type_name))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
         # confirm that we have the correct number of instances
-        if not (len(available_f1_16_instances) >= len(self.f1_16s)):
-            rootLogger.warning(message.format("f1.16xlarges"))
-        if not (len(available_f1_4_instances) >= len(self.f1_4s)):
-            rootLogger.warning(message.format("f1.4xlarges"))
-        if not (len(available_f1_2_instances) >= len(self.f1_2s)):
-            rootLogger.warning(message.format("f1.2xlarges"))
-        if not (len(available_m4_16_instances) >= len(self.m4_16s)):
-            rootLogger.warning(message.format("m4.16xlarges"))
+        for instance_type_name in self.supported_instance_type_names:
+            if not (len(available_instances_per_type[instance_type_name]) >= len(self.instance_objs[instance_type_name])):
+                rootLogger.warning(message.format(instance_type_name))
 
         ipmessage = """Using {} instances with IPs:\n{}"""
-        rootLogger.debug(ipmessage.format("f1.16xlarge", str(get_private_ips_for_instances(available_f1_16_instances))))
-        rootLogger.debug(ipmessage.format("f1.4xlarge", str(get_private_ips_for_instances(available_f1_4_instances))))
-        rootLogger.debug(ipmessage.format("f1.2xlarge", str(get_private_ips_for_instances(available_f1_2_instances))))
-        rootLogger.debug(ipmessage.format("m4.16xlarge", str(get_private_ips_for_instances(available_m4_16_instances))))
+        for instance_type_name in self.supported_instance_type_names:
+            rootLogger.debug(ipmessage.format(instance_type_name, str(get_private_ips_for_instances(available_instances_per_type[instance_type_name]))))
 
         # assign boto3 instance objects to our instance objects
-        for index, instance in enumerate(available_f1_16_instances):
-            self.f1_16s[index].assign_boto3_instance_object(instance)
-
-        for index, instance in enumerate(available_f1_4_instances):
-            self.f1_4s[index].assign_boto3_instance_object(instance)
-
-        for index, instance in enumerate(available_m4_16_instances):
-            self.m4_16s[index].assign_boto3_instance_object(instance)
-
-        for index, instance in enumerate(available_f1_2_instances):
-            self.f1_2s[index].assign_boto3_instance_object(instance)
-
+        for instance_type_name in self.supported_instance_type_names:
+            for index, instance in enumerate(available_instances_per_type[instance_type_name]):
+                self.instance_objs[instance_type_name][index].assign_boto3_instance_object(instance)
 
     def launch_run_farm(self):
         """ Launch the run farm. """
@@ -249,97 +274,62 @@ class RunFarm:
         spotinterruptionbehavior = self.spot_interruption_behavior
         spotmaxprice = self.spot_max_price
 
-        num_f1_16xlarges = len(self.f1_16s)
-        num_f1_4xlarges = len(self.f1_4s)
-        num_f1_2xlarges = len(self.f1_2s)
-        num_m4_16xlarges = len(self.m4_16s)
-
         timeout = self.launch_timeout
         always_expand = self.always_expand
 
+        launched_instance_objs = dict()
         # actually launch the instances
-        f1_16s = launch_run_instances('f1.16xlarge', num_f1_16xlarges, runfarmtag,
+        for instance_type_name in self.supported_instance_type_names:
+            expected_number_of_instances_of_type = len(self.instance_objs[instance_type_name])
+            launched_instance_objs[instance_type_name] = launch_run_instances(instance_type_name, expected_number_of_instances_of_type, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice, timeout, always_expand)
-        f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, runfarmtag,
-                                     runinstancemarket, spotinterruptionbehavior,
-                                     spotmaxprice, timeout, always_expand)
-        m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, runfarmtag,
-                                      runinstancemarket, spotinterruptionbehavior,
-                                      spotmaxprice, timeout, always_expand)
-        f1_2s = launch_run_instances('f1.2xlarge', num_f1_2xlarges, runfarmtag,
-                                     runinstancemarket, spotinterruptionbehavior,
-                                     spotmaxprice, timeout, always_expand)
 
         # wait for instances to finish launching
         # TODO: maybe we shouldn't do this, but just let infrasetup block. That
         # way we get builds out of the way while waiting for instances to launch
-        wait_on_instance_launches(f1_16s, 'f1.16xlarges')
-        wait_on_instance_launches(f1_4s, 'f1.4xlarges')
-        wait_on_instance_launches(m4_16s, 'm4.16xlarges')
-        wait_on_instance_launches(f1_2s, 'f1.2xlarges')
+        for instance_type_name in self.supported_instance_type_names:
+            wait_on_instance_launches(launched_instance_objs[instance_type_name], instance_type_name)
 
-
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                           terminatesomem4_16, forceterminate):
+    def terminate_run_farm(self, terminate_some_dict, forceterminate):
         runfarmtag = self.runfarmtag
+
+
+        # make sure requested instance types are valid
+        terminate_some_requested_types_set = set(terminate_some_dict.keys())
+        allowed_types_set = set(self.supported_instance_type_names)
+        not_allowed_types = terminate_some_requested_types_set - allowed_types_set
+        if len(not_allowed_types) != 0:
+            # the terminatesome logic becomes messy if you have invalid instance
+            # types specified, so just exit and indicate error
+            rootLogger.critical("WARNING: You have requested --terminatesome for the following invalid instance types. Nothing has been terminated.\n" + str(not_allowed_types))
+            exit(1)
 
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
-        f1_16_instances = instances_sorted_by_avail_ip(
-            get_run_instances_by_tag_type(runfarmtag, 'f1.16xlarge'))
-        f1_4_instances = instances_sorted_by_avail_ip(
-            get_run_instances_by_tag_type(runfarmtag, 'f1.4xlarge'))
-        m4_16_instances = instances_sorted_by_avail_ip(
-            get_run_instances_by_tag_type(runfarmtag, 'm4.16xlarge'))
-        f1_2_instances = instances_sorted_by_avail_ip(
-            get_run_instances_by_tag_type(runfarmtag, 'f1.2xlarge'))
+        all_instances = dict()
+        for instance_type_name in self.supported_instance_type_names:
+            all_instances[instance_type_name] = instances_sorted_by_avail_ip(
+            get_run_instances_by_tag_type(runfarmtag, instance_type_name))
 
-        f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
-        f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)
-        m4_16_instance_ids = get_instance_ids_for_instances(m4_16_instances)
-        f1_2_instance_ids = get_instance_ids_for_instances(f1_2_instances)
+        all_instance_ids = dict()
+        for instance_type_name in self.supported_instance_type_names:
+            all_instance_ids[instance_type_name] = get_instance_ids_for_instances(all_instances[instance_type_name])
 
-        argsupplied_f116 = terminatesomef1_16 != -1
-        argsupplied_f14 = terminatesomef1_4 != -1
-        argsupplied_f12 = terminatesomef1_2 != -1
-        argsupplied_m416 = terminatesomem4_16 != -1
-
-        if argsupplied_f116 or argsupplied_f14 or argsupplied_f12 or argsupplied_m416:
+        if len(terminate_some_dict) != 0:
             # In this mode, only terminate instances that are specifically supplied.
-            if argsupplied_f116 and terminatesomef1_16 != 0:
-                # grab the last N instances to terminate
-                f1_16_instance_ids = f1_16_instance_ids[-terminatesomef1_16:]
-            else:
-                f1_16_instance_ids = []
-
-            if argsupplied_f14 and terminatesomef1_4 != 0:
-                # grab the last N instances to terminate
-                f1_4_instance_ids = f1_4_instance_ids[-terminatesomef1_4:]
-            else:
-                f1_4_instance_ids = []
-
-            if argsupplied_f12 and terminatesomef1_2 != 0:
-                # grab the last N instances to terminate
-                f1_2_instance_ids = f1_2_instance_ids[-terminatesomef1_2:]
-            else:
-                f1_2_instance_ids = []
-
-            if argsupplied_m416 and terminatesomem4_16 != 0:
-                # grab the last N instances to terminate
-                m4_16_instance_ids = m4_16_instance_ids[-terminatesomem4_16:]
-            else:
-                m4_16_instance_ids = []
+            for instance_type_name in self.supported_instance_type_names:
+                if instance_type_name in terminate_some_dict and terminate_some_dict[instance_type_name] > 0:
+                    termcount = terminate_some_dict[instance_type_name]
+                    # grab the last N instances to terminate
+                    all_instance_ids[instance_type_name] = all_instance_ids[instance_type_name][-termcount:]
+                else:
+                    all_instance_ids[instance_type_name] = []
 
         rootLogger.critical("IMPORTANT!: This will terminate the following instances:")
-        rootLogger.critical("f1.16xlarges")
-        rootLogger.critical(f1_16_instance_ids)
-        rootLogger.critical("f1.4xlarges")
-        rootLogger.critical(f1_4_instance_ids)
-        rootLogger.critical("m4.16xlarges")
-        rootLogger.critical(m4_16_instance_ids)
-        rootLogger.critical("f1.2xlarges")
-        rootLogger.critical(f1_2_instance_ids)
+        for instance_type_name in self.supported_instance_type_names:
+            rootLogger.critical(instance_type_name)
+            rootLogger.critical(all_instance_ids[instance_type_name])
 
         if not forceterminate:
             # --forceterminate was not supplied, so confirm with the user
@@ -348,14 +338,9 @@ class RunFarm:
             userconfirm = "yes"
 
         if userconfirm == "yes":
-            if len(f1_16_instance_ids) != 0:
-                terminate_instances(f1_16_instance_ids, False)
-            if len(f1_4_instance_ids) != 0:
-                terminate_instances(f1_4_instance_ids, False)
-            if len(m4_16_instance_ids) != 0:
-                terminate_instances(m4_16_instance_ids, False)
-            if len(f1_2_instance_ids) != 0:
-                terminate_instances(f1_2_instance_ids, False)
+            for instance_type_name in self.supported_instance_type_names:
+                if len(all_instance_ids[instance_type_name]) != 0:
+                    terminate_instances(all_instance_ids[instance_type_name], False)
             rootLogger.critical("Instances terminated. Please confirm in your AWS Management Console.")
         else:
             rootLogger.critical("Termination cancelled.")
@@ -363,7 +348,9 @@ class RunFarm:
     def get_all_host_nodes(self):
         """ Get objects for all host nodes in the run farm that are bound to
         a real instance. """
-        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
+        allinsts = []
+        for instance_type_name in self.supported_instance_type_names:
+            allinsts += self.instance_objs[instance_type_name]
         return [inst for inst in allinsts if inst.boto3_instance_object is not None]
 
     def lookup_by_ip_addr(self, ipaddr):

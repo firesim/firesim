@@ -173,21 +173,21 @@ def launchrunfarm(runtime_conf):
     runtime_conf.runfarm.launch_run_farm()
 
 
-def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                     terminatesomem4_16, forceterminate):
+def terminaterunfarm(runtime_conf, terminate_some_dict, forceterminate):
     """ Terminate instances in the runfarm.
 
     This works in 2 modes:
 
-    1) If you pass no --terminatesomeINSTANCETYPE flags, it will terminate all
+    1) If you pass no --terminatesomeINSTANCETYPE or
+       --terminatesome=INSTANCETYPE:count flags, it will terminate all
        instances with the specified runfarm tag.
 
-    2) If you pass ANY --terminatesomeINSTANCETYPE flag, it will terminate only
+    2) If you pass ANY --terminatesomeINSTANCETYPE or
+       --terminatesome=INSTANCETYPE:count flag, it will terminate only
        that many instances of the specified types and leave all others
        untouched.
     """
-    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                                    terminatesomem4_16, forceterminate)
+    runtime_conf.terminate_run_farm(terminate_some_dict, forceterminate)
 
 def shareagfi(buildconf):
     """ Share the agfis specified in the [agfistoshare] section with the users
@@ -235,17 +235,23 @@ def construct_firesim_argparser():
                         help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "targetconfig linklatency 6405".',
                         default="")
     parser.add_argument('-f', '--terminatesomef116', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.16xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.16xlarges.',
                         default=-1)
     parser.add_argument('-g', '--terminatesomef12', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.2xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.2xlarges.',
                         default=-1)
     parser.add_argument('-i', '--terminatesomef14', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.4xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.4xlarges.',
                         default=-1)
     parser.add_argument('-m', '--terminatesomem416', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
+                        help='DEPRECATED. Use --terminatesome=m4.16xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
+
+    def terminatesomesplitter(raw_arg):
+        split_arg = raw_arg.split(":")
+        return split_arg[0], int(split_arg[1])
+    parser.add_argument('--terminatesome', action='append', type=terminatesomesplitter,
+                        help='Only used by terminaterunfarm. Used to specify a restriction on how many instances to terminate. E.g., --terminatesome=f1.2xlarge:2 will terminate only 2 of the f1.2xlarge instances in the runfarm, regardless of what other instances are in the runfarm. This argument can be specified multiple times to terminate additional instance types/counts. Behavior when specifying the same instance type multiple times is undefined. This replaces the old --terminatesome{f116,f12,f14,m416} arguments. Behavior when specifying these old-style terminatesome flags and this new style flag at the same time is also undefined.')
     parser.add_argument('-q', '--forceterminate', action='store_true',
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
@@ -280,9 +286,23 @@ def main(args):
 
     if args.task == 'terminaterunfarm':
         runtime_conf = RuntimeConfig(args)
-        terminaterunfarm(runtime_conf, args.terminatesomef116,
-                         args.terminatesomef14,
-                         args.terminatesomef12, args.terminatesomem416,
+
+        terminate_some_dict = dict()
+        if args.terminatesome is not None:
+            for pair in args.terminatesome:
+                terminate_some_dict[pair[0]] = pair[1]
+
+        def old_style_terminate_args(instance_type, arg_val, arg_flag_str):
+            if arg_val != -1:
+                rootLogger.critical("WARNING: You are using the old-style " + arg_flag_str + " flag. See the new --terminatesome flag in help. The old-style flag will be removed in the next major FireSim release (1.15.X).")
+                terminate_some_dict[instance_type] = arg_val
+
+        old_style_terminate_args('f1.16xlarge', args.terminatesomef116, '--terminatesomef116')
+        old_style_terminate_args('f1.4xlarge', args.terminatesomef14, '--terminatesomef14')
+        old_style_terminate_args('f1.2xlarge', args.terminatesomef12, '--terminatesomef12')
+        old_style_terminate_args('m4.16xlarge', args.terminatesomem416, '--terminatesomem416')
+
+        terminaterunfarm(runtime_conf, terminate_some_dict,
                          args.forceterminate)
 
     if args.task in ['launchrunfarm', 'infrasetup', 'boot', 'kill', 'runworkload', 'runcheck']:
