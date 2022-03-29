@@ -259,6 +259,10 @@
                         <a href="GlobalResetConditionWiring$.html" title="">GlobalResetConditionWiring</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="object" href="HoistStopAndPrintfEnables$.html" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE."></a>
+                        <a href="HoistStopAndPrintfEnables$.html" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE.">HoistStopAndPrintfEnables</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="ModelFame1Transform.html" title=""></a>
                         <a href="ModelFame1Transform.html" title="">ModelFame1Transform</a>
                       </li><li class="current-entities indented2">
@@ -1065,6 +1069,26 @@ circuit.
       </span>
       
       
+    </li><li name="midas.passes.HoistStopAndPrintfEnables" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="HoistStopAndPrintfEnables"></a><a id="HoistStopAndPrintfEnables:HoistStopAndPrintfEnables"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE." href="HoistStopAndPrintfEnables$.html"><span class="name">HoistStopAndPrintfEnables</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Pushes enable expressions into seperate nodes that can be consistently
+optimized across by CSE.</p><div class="fullcomment"><div class="comment cmt"><p>Pushes enable expressions into seperate nodes that can be consistently
+optimized across by CSE. This ensures that associated pairs of stops and
+printfs will have references to a common enable node, which allows
+AssertionSynthesis to correctly group and synthesize them.</p></div></div>
     </li><li name="midas.passes.ModuleTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModuleTransformer"></a><a id="ModuleTransformer:ModuleTransformer"></a>
       <span class="permalink">

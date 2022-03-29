@@ -151,8 +151,8 @@
                         <a href="BridgeTopWiringAnnotation.html" title="Provides signals for the transform to wire to the top-level of hte module hierarchy.">BridgeTopWiringAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title="Provides reference targets to the newly generated top-level IO and a generated output-clock port that output is synchronous to."></a>
-                        <a href="" title="Provides reference targets to the newly generated top-level IO and a generated output-clock port that output is synchronous to.">BridgeTopWiringOutputAnnotation</a>
+                        <a class="class" href="BridgeTopWiringOutputAnnotation.html" title="Provides reference targets to the newly generated top-level IO and a generated output-clock port that output is synchronous to."></a>
+                        <a href="BridgeTopWiringOutputAnnotation.html" title="Provides reference targets to the newly generated top-level IO and a generated output-clock port that output is synchronous to.">BridgeTopWiringOutputAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="ChannelClockInfoAnalysis$.html" title="Returns a map from a channel's global name to a RationalClock case class which contains metadata about the target clock including its name and relative frequency to the base clock"></a>
@@ -227,8 +227,8 @@
                         <a href="GlobalResetConditionWiring$.html" title="">GlobalResetConditionWiring</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="HoistStopAndPrintfEnables$.html" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE."></a>
-                        <a href="HoistStopAndPrintfEnables$.html" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE.">HoistStopAndPrintfEnables</a>
+                        <a class="object" href="" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE."></a>
+                        <a href="" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE.">HoistStopAndPrintfEnables</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ModelFame1Transform.html" title=""></a>
@@ -302,12 +302,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="class type">
+            <body class="object value">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <div class="big-circle object">o</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.passes">passes</a></p>
-        <h1>BridgeTopWiringOutputAnnotation<span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html" title="Permalink">
+        <h1>HoistStopAndPrintfEnables<span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -317,23 +317,22 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">case class</span>
+        <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">BridgeTopWiringOutputAnnotation</span><span class="params">(<span name="pathlessSource">pathlessSource: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="absoluteSource">absoluteSource: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="topSink">topSink: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="srcClockPort">srcClockPort: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="sinkClockPort">sinkClockPort: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.Annotation">Annotation</span> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">HoistStopAndPrintfEnables</span><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Provides reference targets to the newly generated top-level IO and a
-generated output-clock port that output is synchronous to.
-</p></div><dl class="paramcmts block"><dt class="param">pathlessSource</dt><dd class="cmt"><p>The original target passed in a <a href="BridgeTopWiringAnnotation.html" class="extype" name="midas.passes.BridgeTopWiringAnnotation">BridgeTopWiringAnnotation</a></p></dd><dt class="param">absoluteSource</dt><dd class="cmt"><p>An absolute reference target to the particular
-       instance of that signal that drives the new output. NB: A single <a href="BridgeTopWiringAnnotation.html" class="extype" name="midas.passes.BridgeTopWiringAnnotation">BridgeTopWiringAnnotation</a>
-       will generate as many output annotations as there are instances of the pathless source.</p></dd><dt class="param">topSink</dt><dd class="cmt"><p>The new top-level port the source has been connected to</p></dd><dt class="param">srcClockPort</dt><dd class="cmt"><p>The input clock associated with the source</p></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Pushes enable expressions into seperate nodes that can be consistently
+optimized across by CSE. This ensures that associated pairs of stops and
+printfs will have references to a common enable node, which allows
+AssertionSynthesis to correctly group and synthesize them.</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a>, <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span>, <span class="extype" name="firrtl.Transform">Transform</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -359,7 +358,7 @@ generated output-clock port that output is synchronous to.
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.passes.BridgeTopWiringOutputAnnotation"><span>BridgeTopWiringOutputAnnotation</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="midas.targetutils.FAMEAnnotation"><span>FAMEAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.HoistStopAndPrintfEnables"><span>HoistStopAndPrintfEnables</span></li><li class="in" name="firrtl.DependencyAPIMigration"><span>DependencyAPIMigration</span></li><li class="in" name="firrtl.Transform"><span>Transform</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -377,28 +376,7 @@ generated output-clock port that output is synchronous to.
 
       <div id="template">
         <div id="allMembers">
-        <div id="constructors" class="members">
-              <h3>Instance Constructors</h3>
-              <ol><li name="midas.passes.BridgeTopWiringOutputAnnotation#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(pathlessSource:firrtl.annotations.ReferenceTarget,absoluteSource:firrtl.annotations.ReferenceTarget,topSink:firrtl.annotations.ReferenceTarget,srcClockPort:firrtl.annotations.ReferenceTarget,sinkClockPort:firrtl.annotations.ReferenceTarget):midas.passes.BridgeTopWiringOutputAnnotation"></a><a id="&lt;init&gt;:BridgeTopWiringOutputAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#&lt;init&gt;(pathlessSource:firrtl.annotations.ReferenceTarget,absoluteSource:firrtl.annotations.ReferenceTarget,topSink:firrtl.annotations.ReferenceTarget,srcClockPort:firrtl.annotations.ReferenceTarget,sinkClockPort:firrtl.annotations.ReferenceTarget):midas.passes.BridgeTopWiringOutputAnnotation" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">BridgeTopWiringOutputAnnotation</span><span class="params">(<span name="pathlessSource">pathlessSource: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="absoluteSource">absoluteSource: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="topSink">topSink: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="srcClockPort">srcClockPort: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="sinkClockPort">sinkClockPort: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span>
-      </span>
-      
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">pathlessSource</dt><dd class="cmt"><p>The original target passed in a <a href="BridgeTopWiringAnnotation.html" class="extype" name="midas.passes.BridgeTopWiringAnnotation">BridgeTopWiringAnnotation</a></p></dd><dt class="param">absoluteSource</dt><dd class="cmt"><p>An absolute reference target to the particular
-       instance of that signal that drives the new output. NB: A single <a href="BridgeTopWiringAnnotation.html" class="extype" name="midas.passes.BridgeTopWiringAnnotation">BridgeTopWiringAnnotation</a>
-       will generate as many output annotations as there are instances of the pathless source.</p></dd><dt class="param">topSink</dt><dd class="cmt"><p>The new top-level port the source has been connected to</p></dd><dt class="param">srcClockPort</dt><dd class="cmt"><p>The input clock associated with the source</p></dd></dl></div>
-    </li></ol>
-            </div>
+        
 
         
 
@@ -410,7 +388,7 @@ generated output-clock port that output is synchronous to.
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -426,7 +404,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html###():Int" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -442,7 +420,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -455,26 +433,10 @@ generated output-clock port that output is synchronous to.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.BridgeTopWiringOutputAnnotation#absoluteSource" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="absoluteSource:firrtl.annotations.ReferenceTarget"></a><a id="absoluteSource:ReferenceTarget"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#absoluteSource:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">absoluteSource</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -490,7 +452,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#clone():Object" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -514,7 +476,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -527,10 +489,42 @@ generated output-clock port that output is synchronous to.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.passes.HoistStopAndPrintfEnables#execute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="execute(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="execute(CircuitState):CircuitState"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#execute(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">execute</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.HoistStopAndPrintfEnables">HoistStopAndPrintfEnables</a> → Transform</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -552,7 +546,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -568,10 +562,10 @@ generated output-clock port that output is synchronous to.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="firrtl.annotations.Annotation#getTargets" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getTargets:Seq[firrtl.annotations.Target]"></a><a id="getTargets:Seq[Target]"></a>
+    </li><li name="logger.LazyLogging#getLogger" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getLogger:logger.Logger"></a><a id="getLogger:Logger"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#getTargets:Seq[firrtl.annotations.Target]" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#getLogger:logger.Logger" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -580,14 +574,49 @@ generated output-clock port that output is synchronous to.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getTargets</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Target">Target</span>]</span>
+        <span class="name">getLogger</span><span class="result">: <span class="extype" name="logger.Logger">Logger</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Annotation</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="midas.passes.HoistStopAndPrintfEnables#invalidates" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="invalidates(a:firrtl.Transform):Boolean"></a><a id="invalidates(Transform):Boolean"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#invalidates(a:firrtl.Transform):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">invalidates</span><span class="params">(<span name="a">a: <span class="extype" name="firrtl.Transform">Transform</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.HoistStopAndPrintfEnables">HoistStopAndPrintfEnables</a> → DependencyAPIMigration → Transform → DependencyAPI</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -600,10 +629,42 @@ generated output-clock port that output is synchronous to.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="logger.LazyLogging#logger" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logger:logger.Logger"></a><a id="logger:Logger"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#logger:logger.Logger" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logger</span><span class="result">: <span class="extype" name="logger.Logger">Logger</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
+    </li><li name="firrtl.Transform#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="name:String"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#name:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -619,7 +680,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#notify():Unit" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -638,7 +699,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -654,26 +715,10 @@ generated output-clock port that output is synchronous to.
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.passes.BridgeTopWiringOutputAnnotation#pathlessSource" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="pathlessSource:firrtl.annotations.ReferenceTarget"></a><a id="pathlessSource:ReferenceTarget"></a>
+    </li><li name="midas.passes.HoistStopAndPrintfEnables#onModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="onModule(m:firrtl.ir.DefModule):firrtl.ir.DefModule"></a><a id="onModule(DefModule):DefModule"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#pathlessSource:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pathlessSource</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      
-    </li><li name="firrtl.annotations.Annotation#serialize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="serialize:String"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#serialize:String" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#onModule(m:firrtl.ir.DefModule):firrtl.ir.DefModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -682,46 +727,78 @@ generated output-clock port that output is synchronous to.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">serialize</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">onModule</span><span class="params">(<span name="m">m: <span class="extype" name="firrtl.ir.DefModule">DefModule</span></span>)</span><span class="result">: <span class="extype" name="firrtl.ir.DefModule">DefModule</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Annotation</dd></dl></div>
-    </li><li name="midas.passes.BridgeTopWiringOutputAnnotation#sinkClockPort" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sinkClockPort:firrtl.annotations.ReferenceTarget"></a><a id="sinkClockPort:ReferenceTarget"></a>
+      
+    </li><li name="midas.passes.HoistStopAndPrintfEnables#optionalPrerequisiteOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="optionalPrerequisiteOf:Seq[firrtl.options.Dependency[firrtl.passes.CommonSubexpressionElimination.type]]"></a><a id="optionalPrerequisiteOf:Seq[Dependency[CommonSubexpressionElimination.type]]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#sinkClockPort:firrtl.annotations.ReferenceTarget" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#optionalPrerequisiteOf:Seq[firrtl.options.Dependency[firrtl.passes.CommonSubexpressionElimination.type]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sinkClockPort</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
+        <span class="name">optionalPrerequisiteOf</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.passes.CommonSubexpressionElimination">CommonSubexpressionElimination</span>.type]]</span>
       </span>
       
-      
-    </li><li name="midas.passes.BridgeTopWiringOutputAnnotation#srcClockPort" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="srcClockPort:firrtl.annotations.ReferenceTarget"></a><a id="srcClockPort:ReferenceTarget"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.HoistStopAndPrintfEnables">HoistStopAndPrintfEnables</a> → DependencyAPIMigration → Transform → DependencyAPI</dd></dl></div>
+    </li><li name="midas.passes.HoistStopAndPrintfEnables#optionalPrerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="optionalPrerequisites:Seq[firrtl.options.Dependency[firrtl.transforms.formal.ConvertAsserts.type]]"></a><a id="optionalPrerequisites:Seq[Dependency[ConvertAsserts.type]]"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#srcClockPort:firrtl.annotations.ReferenceTarget" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#optionalPrerequisites:Seq[firrtl.options.Dependency[firrtl.transforms.formal.ConvertAsserts.type]]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">srcClockPort</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
+        <span class="name">optionalPrerequisites</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.transforms.formal.ConvertAsserts">ConvertAsserts</span>.type]]</span>
       </span>
       
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.HoistStopAndPrintfEnables">HoistStopAndPrintfEnables</a> → DependencyAPIMigration → Transform → DependencyAPI</dd></dl></div>
+    </li><li name="midas.passes.HoistStopAndPrintfEnables#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="prerequisites:scala.collection.immutable.Nil.type"></a><a id="prerequisites:Nil.type"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#prerequisites:scala.collection.immutable.Nil.type" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">prerequisites</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/Nil$.html#scala.collection.immutable.Nil" class="extype" name="scala.collection.immutable.Nil">Nil</a>.type</span>
+      </span>
       
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.HoistStopAndPrintfEnables">HoistStopAndPrintfEnables</a> → DependencyAPIMigration → Transform → DependencyAPI</dd></dl></div>
+    </li><li name="firrtl.Transform#runTransform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="runTransform(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="runTransform(CircuitState):CircuitState"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#runTransform(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">runTransform</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -734,26 +811,10 @@ generated output-clock port that output is synchronous to.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="midas.passes.BridgeTopWiringOutputAnnotation#topSink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="topSink:firrtl.annotations.ReferenceTarget"></a><a id="topSink:ReferenceTarget"></a>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#topSink:firrtl.annotations.ReferenceTarget" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">topSink</span><span class="result">: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.BridgeTopWiringOutputAnnotation#update" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="update(renames:firrtl.RenameMap):Seq[midas.passes.BridgeTopWiringOutputAnnotation]"></a><a id="update(RenameMap):Seq[BridgeTopWiringOutputAnnotation]"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#update(renames:firrtl.RenameMap):Seq[midas.passes.BridgeTopWiringOutputAnnotation]" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#toString():String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -762,14 +823,30 @@ generated output-clock port that output is synchronous to.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">update</span><span class="params">(<span name="renames">renames: <span class="extype" name="firrtl.RenameMap">RenameMap</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="" class="extype" name="midas.passes.BridgeTopWiringOutputAnnotation">BridgeTopWiringOutputAnnotation</a>]</span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.BridgeTopWiringOutputAnnotation">BridgeTopWiringOutputAnnotation</a> → Annotation</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="firrtl.Transform#transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="transform(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="transform(CircuitState):CircuitState"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#transform(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">transform</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#wait():Unit" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -791,7 +868,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -813,7 +890,7 @@ generated output-clock port that output is synchronous to.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/passes/BridgeTopWiringOutputAnnotation.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -840,22 +917,80 @@ generated output-clock port that output is synchronous to.
 
         
 
-        
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="firrtl.options.DependencyAPI#dependents" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dependents:Seq[firrtl.options.Dependency[A]]"></a><a id="dependents:Seq[Dependency[Transform]]"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#dependents:Seq[firrtl.options.Dependency[A]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.">dependents</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.options.Dependency">Dependency</span>[<span class="extype" name="firrtl.Transform">Transform</span>]]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPI</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.</p></dd></dl></div>
+    </li><li name="firrtl.DependencyAPIMigration#inputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inputForm:firrtl.CircuitForm"></a><a id="inputForm:CircuitForm"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#inputForm:firrtl.CircuitForm" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">inputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre</p></dd></dl></div>
+    </li><li name="firrtl.DependencyAPIMigration#outputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="outputForm:firrtl.CircuitForm"></a><a id="outputForm:CircuitForm"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HoistStopAndPrintfEnables$.html#outputForm:firrtl.CircuitForm" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version FIRRTL 1.3) Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre">outputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>DependencyAPIMigration</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version FIRRTL 1.3)</i> Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.Serializable">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
-            </div><div class="parent" name="java.io.Serializable">
-              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="midas.targetutils.FAMEAnnotation">
-              <h3>Inherited from <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a></h3>
-            </div><div class="parent" name="firrtl.annotations.Annotation">
-              <h3>Inherited from <span class="extype" name="firrtl.annotations.Annotation">Annotation</span></h3>
-            </div><div class="parent" name="scala.Product">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
-            </div><div class="parent" name="scala.Equals">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
+        <div class="parent" name="firrtl.DependencyAPIMigration">
+              <h3>Inherited from <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></h3>
+            </div><div class="parent" name="firrtl.Transform">
+              <h3>Inherited from <span class="extype" name="firrtl.Transform">Transform</span></h3>
+            </div><div class="parent" name="firrtl.options.DependencyAPI">
+              <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</h3>
+            </div><div class="parent" name="firrtl.options.TransformLike">
+              <h3>Inherited from <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>]</h3>
+            </div><div class="parent" name="logger.LazyLogging">
+              <h3>Inherited from <span class="extype" name="logger.LazyLogging">LazyLogging</span></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
