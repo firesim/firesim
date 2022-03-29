@@ -207,19 +207,29 @@ cd $RDIR
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
-    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-    make
 
-    # Install firesim-software dependencies
-    # We always setup the symlink correctly above, so use sw/firesim-software
-    marshal_dir=$RDIR/sw/firesim-software
-    # the only ones missing are libguestfs-tools
-    sudo yum install -y libguestfs-tools bc
+    (
 
-    # Setup for using qcow2 images
-    # XXX skip this for now because it needs rpmbuild and other things from the Development Tools  group
-    #cd $RDIR
-    #./scripts/install-nbd-kmod.sh
+	# ensure that we're using the system toolchain to build the kernel modules
+	# newer gcc has --enable-default-pie and older kernels think the compiler
+	# is broken unless you pass -fno-pie but then I was encountering a weird
+	# error about string.h not being found
+	export PATH=/usr/bin:$PATH
+
+	cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+	make
+
+	# Install firesim-software dependencies
+	# We always setup the symlink correctly above, so use sw/firesim-software
+	marshal_dir=$RDIR/sw/firesim-software
+	# the only ones missing are libguestfs-tools
+	sudo yum install -y libguestfs-tools bc
+
+	# Setup for using qcow2 images
+	cd $RDIR
+	./scripts/install-nbd-kmod.sh
+
+    )
 
     (
 	if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
@@ -264,26 +274,12 @@ if [[ "$CPPFLAGS" == *"-DNDEBUG"* ]]; then
     export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
 fi
 
-# XXX generalize the /opt/conda path and/or possibly capture the conda environment in use here
-# set FLAGS to minimal set of ones that are needed to make things work with conda
-export LDFLAGS="-Wl,-rpath,/opt/conda/lib -Wl,-rpath-link,/opt/conda/lib -L/opt/conda/lib"
-export CXXFLAGS="-isystem /opt/conda/include"
-export CFLAGS="-isystem /opt/conda/include"
-unset CPPFLAGS
-
 # check for any other occurances and warn the user
-env | grep -- -DNDEBUG && echo "::WARNING:: you still seem to have -DNDEBUG in your environment. This is known to cause problems."
+env | grep -v 'CONDA_.*_BACKUP' | grep -- -DNDEBUG && echo "::WARNING:: you still seem to have -DNDEBUG in your environment. This is known to cause problems."
 true # ensure env.sh exits 0
 \0
 END_NDEBUG
 env_append "$NDEBUG_CHECK"
-
-# original conda flags that cause failures in midas tests
-#LDFLAGS=-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined -Wl,-rpath,/opt/conda/lib -Wl,-rpath-link,/opt/conda/lib -L/opt/conda/lib
-#CXXFLAGS=-fvisibility-inlines-hidden -std=c++17 -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /opt/conda/include
-#CFLAGS=-march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /opt/conda/include
-#CPPFLAGS= -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -isystem /opt/conda/include
-
 
 # Write out the generated env.sh indicating successful completion.
 echo "$env_string" > env.sh
