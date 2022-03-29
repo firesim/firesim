@@ -31,9 +31,14 @@ private[midas] class MidasTransforms extends Transform {
     else Seq()
 
     val xforms = Seq(
+      new ResolveAndCheck,
+      HoistStopAndPrintfEnables,
       firrtl.passes.RemoveValidIf,
       new firrtl.transforms.ConstantPropagation,
       firrtl.passes.SplitExpressions,
+      // SplitExpressions invalidates ResolveKinds which can lead to missed CSE opportunities since
+      // identical expressions may have different Kinds
+      firrtl.passes.ResolveKinds,
       firrtl.passes.CommonSubexpressionElimination,
       new firrtl.transforms.DeadCodeElimination,
       new firrtl.transforms.InferResets,
