@@ -31,7 +31,7 @@ def main():
     for inst in all_ci_instances:
         lifetime_secs = (current_time - inst["LaunchTime"]).total_seconds()
         if lifetime_secs > (INSTANCE_LIFETIME_LIMIT_HOURS * 3600):
-            deregister_runner_if_exists(ci_personal_api_token, ci_workflow_run_id):
+            deregister_runner_if_exists(ci_personal_api_token, ci_workflow_run_id)
             client.terminate_instances(InstanceIds=[inst["InstanceId"]])
             print("  " + inst["InstanceId"])
 

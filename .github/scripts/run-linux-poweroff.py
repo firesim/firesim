@@ -30,6 +30,15 @@ def run_linux_poweroff():
                     rc = run("timeout {} ./deploy/workloads/run-workload.sh {} --withlaunch &> {}.log".format(timeout, workload, workload), pty=False).return_code
                     print(" Printing last {} lines of log. See {}.log for full info.".format(log_tail_length, workload))
                     run("tail -n {} {}.log".format(log_tail_length, workload))
+
+                    # This is a janky solution to the fact the manager does not
+                    # return a non-zero exit code or some sort of result summary.
+                    # The expectation here is that the PR author will manually
+                    # check these output files for correctness until it can be
+                    # done programmatically..
+                    print(" Printing last {} lines of all output files. See results-workload for more info.".format(log_tail_length))
+                    run("cd deploy/results-workload/ && tail -n{} $(ls | tail -n1)/*/*".format(log_tail_length))
+
                 if rc != 0:
                     # need to confirm that instance is off
                     print("Workload {} failed. Terminating runfarm.".format(workload))
