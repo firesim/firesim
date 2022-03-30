@@ -64,10 +64,12 @@ class EC2HostInst(object):
     # Just make it arbitrarily large for now.
     SWITCH_SLOTS = 100000
 
-    def __init__(self, fpga_slots, metasim_slots):
-        self.NUM_FPGA_SLOTS = fpga_slots
-        self.fpga_slots = [None for x in range(self.NUM_FPGA_SLOTS)]
-        self.fpga_slots_consumed = 0
+    def __init__(self, sim_slots_max, metasimulation_enabled):
+        self.metasimulation_enabled = metasimulation_enabled
+
+        self.NUM_SIM_SLOTS = sim_slots_max
+        self.sim_slots = [None for x in range(self.NUM_SIM_SLOTS)]
+        self.sim_slots_consumed = 0
 
         self.boto3_instance_object = None
         self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
@@ -103,20 +105,20 @@ class EC2HostInst(object):
         self._next_port += 1
         return retport
 
-    def get_num_fpga_slots_max(self):
-        """ Get the number of fpga slots. """
-        return self.NUM_FPGA_SLOTS
+    def get_num_sim_slots_max(self):
+        """ Get the number of sim slots. """
+        return self.NUM_SIM_SLOTS
 
-    def get_num_fpga_slots_consumed(self):
-        """ Get the number of fpga slots. """
-        return self.fpga_slots_consumed
+    def get_num_sim_slots_consumed(self):
+        """ Get the number of sim slots. """
+        return self.sim_slots_consumed
 
     def add_simulation(self, firesimservernode):
         """ Add a simulation to the next available slot. """
-        assert self.fpga_slots_consumed < self.NUM_FPGA_SLOTS
-        self.fpga_slots[self.fpga_slots_consumed] = firesimservernode
+        assert self.sim_slots_consumed < self.NUM_SIM_SLOTS
+        self.sim_slots[self.sim_slots_consumed] = firesimservernode
         firesimservernode.assign_host_instance(self)
-        self.fpga_slots_consumed += 1
+        self.sim_slots_consumed += 1
 
 
 class RunFarm:
@@ -131,27 +133,39 @@ class RunFarm:
         'f1.4xlarge',
         'f1.2xlarge',
         'm4.16xlarge',
+        'z1d.3xlarge',
+        'z1d.6xlarge',
+        'z1d.12xlarge',
     ]
 
     instance_type_name_to_max_fpga_slots = {
         'f1.16xlarge': 8,
-        'f1.4xlarge': 4,
-        'f1.2xlarge': 2,
+        'f1.4xlarge': 2,
+        'f1.2xlarge': 1,
         'm4.16xlarge': 0,
+        'z1d.3xlarge': 0,
+        'z1d.6xlarge': 0,
+        'z1d.12xlarge': 0,
     }
 
     instance_type_name_to_max_metasim_slots = {
         'f1.16xlarge': 0,
         'f1.4xlarge': 0,
         'f1.2xlarge': 0,
-        'm4.16xlarge': 8,
+        'm4.16xlarge': 0,
+        'z1d.3xlarge': 1,
+        'z1d.6xlarge': 2,
+        'z1d.12xlarge': 8,
     }
 
     instance_type_name_for_switch_only_sim = 'm4.16xlarge'
 
     def __init__(self, instances_requested_dict, runfarmtag,
                  run_instance_market, spot_interruption_behavior,
-                 spot_max_price, launch_timeout, always_expand):
+                 spot_max_price, launch_timeout, always_expand,
+                 metasimulation_enabled):
+
+        self.metasimulation_enabled = metasimulation_enabled
 
         # make sure requested instance types are valid
         requested_types_set = set(instances_requested_dict.keys())
@@ -163,10 +177,15 @@ class RunFarm:
         self.instance_objs = dict()
         self.mapper_consumed = dict()
         for instance_type_name in self.supported_instance_type_names:
-            num_instances_of_type = instances_requested_dict[instance_type_name]
-            num_fpga_slots_max = self.instance_type_name_to_max_fpga_slots[instance_type_name]
-            num_metasim_slots_max = self.instance_type_name_to_max_metasim_slots[instance_type_name]
-            self.instance_objs[instance_type_name] = [EC2HostInst(num_fpga_slots_max, num_metasim_slots_max) for x in range(num_instances_of_type)]
+            if instance_type_name in instances_requested_dict:
+                num_instances_of_type = instances_requested_dict[instance_type_name]
+            else:
+                num_instances_of_type = 0
+            if not self.metasimulation_enabled:
+                num_sim_slots_max = self.instance_type_name_to_max_fpga_slots[instance_type_name]
+            else:
+                num_sim_slots_max = self.instance_type_name_to_max_metasim_slots[instance_type_name]
+            self.instance_objs[instance_type_name] = [EC2HostInst(num_sim_slots_max, self.metasimulation_enabled) for x in range(num_instances_of_type)]
             self.mapper_consumed[instance_type_name] = 0
 
         self.runfarmtag = runfarmtag
@@ -188,18 +207,14 @@ class RunFarm:
         self.sorted_instance_type_name_to_max_fpga_slots = invert_filter_sort(self.instance_type_name_to_max_fpga_slots)
         self.sorted_instance_type_name_to_max_metasim_slots = invert_filter_sort(self.instance_type_name_to_max_metasim_slots)
 
-
-
     # a few calls to abstract the mapper API
     def mapper_get_min_sim_host_inst_type_name(self, num_sims):
         """ Return the smallest instance type that supports greater than or
         equal to num_sims simulations AND has available instances of that type
         (according to instance counts you've specified in config_runtime.ini).
         """
-        # TODO:
-        metasim = False
         searcharr = None
-        if not metasim:
+        if not self.metasimulation_enabled:
             searcharr = self.sorted_instance_type_name_to_max_fpga_slots
         else:
             searcharr = self.sorted_instance_type_name_to_max_metasim_slots
@@ -370,6 +385,7 @@ class InstanceDeployManager:
 
     def __init__(self, parentnode):
         self.parentnode = parentnode
+        self.sim_type_message = 'FPGA' if not parentnode.metasimulation_enabled else 'Metasim'
 
     def instance_logger(self, logstr):
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)
@@ -473,14 +489,14 @@ class InstanceDeployManager:
 
     def clear_fpgas(self):
         # we always clear ALL fpga slots
-        for slotno in range(self.parentnode.get_num_fpga_slots_max()):
+        for slotno in range(self.parentnode.get_num_sim_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 remote_kmsg("""about_to_clear_fpga{}""".format(slotno))
                 run("""sudo fpga-clear-local-image -S {} -A""".format(slotno))
                 remote_kmsg("""done_clearing_fpga{}""".format(slotno))
 
-        for slotno in range(self.parentnode.get_num_fpga_slots_max()):
+        for slotno in range(self.parentnode.get_num_sim_slots_max()):
             self.instance_logger("""Checking for Cleared FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 remote_kmsg("""about_to_check_clear_fpga{}""".format(slotno))
@@ -490,7 +506,7 @@ class InstanceDeployManager:
 
     def flash_fpgas(self):
         dummyagfi = None
-        for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
+        for firesimservernode, slotno in zip(self.parentnode.sim_slots, range(self.parentnode.get_num_sim_slots_consumed())):
             if firesimservernode is not None:
                 agfi = firesimservernode.get_agfi()
                 dummyagfi = agfi
@@ -505,19 +521,19 @@ class InstanceDeployManager:
         # anyway. Since the only interaction we have with an FPGA right now
         # is over PCIe where the software component is mastering, this can't
         # break anything.
-        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+        for slotno in range(self.parentnode.get_num_sim_slots_consumed(), self.parentnode.get_num_sim_slots_max()):
             self.instance_logger("""Flashing FPGA Slot: {} with dummy agfi: {}.""".format(slotno, dummyagfi))
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
                     slotno, dummyagfi))
 
-        for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
+        for firesimservernode, slotno in zip(self.parentnode.sim_slots, range(self.parentnode.get_num_sim_slots_consumed())):
             if firesimservernode is not None:
                 self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
                 with StreamLogger('stdout'), StreamLogger('stderr'):
                     run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
-        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+        for slotno in range(self.parentnode.get_num_sim_slots_consumed(), self.parentnode.get_num_sim_slots_max()):
             self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, dummyagfi))
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
@@ -536,7 +552,7 @@ class InstanceDeployManager:
             run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self):
-        """ start the vivado hw_server and virtual jtag on simulation instance.) """
+        """ start the vivado hw_server and virtual jtag on simulation instance. """
         self.instance_logger("Starting Vivado hw_server.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S hw_server -d -m bash -c "script -f -c 'hw_server'"; sleep 1""")
@@ -553,12 +569,12 @@ class InstanceDeployManager:
 
     def copy_sim_slot_infrastructure(self, slotno):
         """ copy all the simulation infrastructure to the remote node. """
-        serv = self.parentnode.fpga_slots[slotno]
+        serv = self.parentnode.sim_slots[slotno]
         if serv is None:
             # slot unassigned
             return
 
-        self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
+        self.instance_logger("""Copying {sim_type_message} simulation infrastructure for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
 
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -600,9 +616,9 @@ class InstanceDeployManager:
             run(switch.get_switch_start_command())
 
     def start_sim_slot(self, slotno):
-        self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
+        self.instance_logger("""Starting {sim_type_message} simulation for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
-        server = self.parentnode.fpga_slots[slotno]
+        server = self.parentnode.sim_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
             server.run_sim_start_command(slotno)
 
@@ -614,59 +630,56 @@ class InstanceDeployManager:
             run(switch.get_switch_kill_command())
 
     def kill_sim_slot(self, slotno):
-        self.instance_logger("""Killing FPGA simulation for slot: {}.""".format(slotno))
-        server = self.parentnode.fpga_slots[slotno]
+        self.instance_logger("""Killing {sim_type_message} simulation for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
+        server = self.parentnode.sim_slots[slotno]
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run(server.get_sim_kill_command(slotno))
 
     def instance_assigned_simulations(self):
         """ return true if this instance has any assigned fpga simulations. """
-        if not isinstance(self.parentnode, M4_16):
-            if any(self.parentnode.fpga_slots):
-                return True
-        return False
+        return self.parentnode.get_num_sim_slots_consumed() != 0
 
     def instance_assigned_switches(self):
         """ return true if this instance has any assigned switch simulations. """
-        if any(self.parentnode.switch_slots):
-            return True
-        return False
+        return self.parentnode.get_num_switch_slots_consumed() != 0
 
     def infrasetup_instance(self):
         """ Handle infrastructure setup for this instance. """
-        # check if fpga node
-        if self.instance_assigned_simulations():
-            # This is an FPGA-host node.
+        metasim_enabled = self.parentnode.metasimulation_enabled
 
-            # copy fpga sim infrastructure
-            for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
+        # check if sim node
+        if self.instance_assigned_simulations():
+            # This is a sim-host node.
+
+            # copy sim infrastructure
+            for slotno in range(self.parentnode.get_num_sim_slots_consumed()):
                 self.copy_sim_slot_infrastructure(slotno)
 
-            self.get_and_install_aws_fpga_sdk()
-            # unload any existing edma/xdma/xocl
-            self.unload_xrt_and_xocl()
-            # copy xdma driver
-            self.fpga_node_xdma()
-            # load xdma
-            self.load_xdma()
+            if not metasim_enabled:
+                self.get_and_install_aws_fpga_sdk()
+                # unload any existing edma/xdma/xocl
+                self.unload_xrt_and_xocl()
+                # copy xdma driver
+                self.fpga_node_xdma()
+                # load xdma
+                self.load_xdma()
 
             # setup nbd/qcow infra
             self.fpga_node_qcow()
             # load nbd module
             self.load_nbd_module()
 
-            # clear/flash fpgas
-            print("TODO: fix this")
-            #self.clear_fpgas()
-            #self.flash_fpgas()
+            if not metasim_enabled:
+                # clear/flash fpgas
+                self.clear_fpgas()
+                self.flash_fpgas()
 
-            # re-load XDMA
-            self.load_xdma()
+                # re-load XDMA
+                self.load_xdma()
 
-            #restart (or start form scratch) ila server
-            print("TODO: fix this")
-            #self.kill_ila_server()
-            #self.start_ila_server()
+                #restart (or start form scratch) ila server
+                self.kill_ila_server()
+                self.start_ila_server()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
@@ -688,7 +701,7 @@ class InstanceDeployManager:
         """ Boot up all the sims in a screen. """
         if self.instance_assigned_simulations():
             # only on sim nodes
-            for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
+            for slotno in range(self.parentnode.get_num_sim_slots_consumed()):
                 self.start_sim_slot(slotno)
 
     def kill_switches_instance(self):
@@ -703,7 +716,7 @@ class InstanceDeployManager:
         """ Kill all simulations on this instance. """
         if self.instance_assigned_simulations():
             # only on sim nodes
-            for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
+            for slotno in range(self.parentnode.get_num_sim_slots_consumed()):
                 self.kill_sim_slot(slotno)
         if disconnect_all_nbds:
             # disconnect all NBDs
@@ -772,9 +785,9 @@ class InstanceDeployManager:
             # first, figure out which jobs belong to this instance.
             # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING
             # ON THE INSTNACE.
-            parentslots = self.parentnode.fpga_slots
+            parentslots = self.parentnode.sim_slots
             rootLogger.debug("parentslots " + str(parentslots))
-            num_parentslots_used = self.parentnode.fpga_slots_consumed
+            num_parentslots_used = self.parentnode.get_num_sim_slots_consumed()
             jobnames = [slot.get_job_name() for slot in parentslots[0:num_parentslots_used]]
             rootLogger.debug("jobnames " + str(jobnames))
             already_done = all([job in completed_jobs for job in jobnames])

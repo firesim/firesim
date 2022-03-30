@@ -159,9 +159,11 @@ class FireSimServerNode(FireSimNode):
 
     def __init__(self, server_hardware_config=None, server_link_latency=None,
                  server_bw_max=None, server_profile_interval=None,
-                 trace_enable=None, trace_select=None, trace_start=None, trace_end=None, trace_output_format=None, autocounter_readrate=None,
-                 zerooutdram=None, disable_asserts=None,
-                 print_start=None, print_end=None, print_cycle_prefix=None):
+                 trace_enable=None, trace_select=None, trace_start=None,
+                 trace_end=None, trace_output_format=None,
+                 autocounter_readrate=None, zerooutdram=None,
+                 disable_asserts=None, print_start=None, print_end=None,
+                 print_cycle_prefix=None, plusarg_passthrough=""):
         super(FireSimServerNode, self).__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
@@ -180,6 +182,7 @@ class FireSimServerNode(FireSimNode):
         self.print_cycle_prefix = print_cycle_prefix
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
+        self.plusarg_passthrough = plusarg_passthrough
         FireSimServerNode.SERVERS_CREATED += 1
 
     def set_server_hardware_config(self, server_hardware_config):
@@ -252,7 +255,8 @@ class FireSimServerNode(FireSimNode):
             self.server_profile_interval, all_bootbins, self.trace_enable,
             self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
             self.autocounter_readrate, all_shmemportnames, self.zerooutdram, self.disable_asserts,
-            self.print_start, self.print_end, self.print_cycle_prefix)
+            self.print_start, self.print_end, self.print_cycle_prefix,
+            self.plusarg_passthrough)
 
         run(runcommand)
 
@@ -497,7 +501,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
             self.server_profile_interval, all_bootbins, self.trace_enable,
             self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
-            self.autocounter_readrate, all_shmemportnames, self.zerooutdram)
+            self.autocounter_readrate, all_shmemportnames, self.zerooutdram,
+            self.disable_asserts, self.print_start, self.print_end,
+            self.print_cycle_prefix, self.plusarg_passthrough)
 
         run(runcommand)
 

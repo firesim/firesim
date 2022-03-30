@@ -28,8 +28,6 @@ def instance_liveness():
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
     on the topology to map it all the way to something usable to deploy a simulation.
-
-    >>> tconf = FireSimTargetConfiguration("example_16config")
     """
 
     def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
@@ -40,7 +38,7 @@ class FireSimTopologyWithPasses:
                  defaultautocounterreadrate, terminateoncompletion,
                  defaultzerooutdram, defaultdisableasserts,
                  defaultprintstart, defaultprintend, defaultprintcycleprefix,
-                 build_recipes, default_metasim_mode):
+                 build_recipes, default_metasim_mode, default_plusarg_passthrough):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -67,6 +65,7 @@ class FireSimTopologyWithPasses:
         self.defaultprintcycleprefix = defaultprintcycleprefix
         self.terminateoncompletion = terminateoncompletion
         self.default_metasim_mode = default_metasim_mode
+        self.default_plusarg_passthrough = default_plusarg_passthrough
 
         self.phase_one_passes()
 
@@ -168,7 +167,7 @@ class FireSimTopologyWithPasses:
             instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(1)
             allocd_instance = self.run_farm.mapper_alloc_instance(instance_type)
 
-            for x in range(allocd_instance.get_num_fpga_slots_max()):
+            for x in range(allocd_instance.get_num_sim_slots_max()):
                 allocd_instance.add_simulation(servers[serverind])
                 serverind += 1
                 if len(servers) == serverind:
@@ -280,9 +279,9 @@ class FireSimTopologyWithPasses:
                 server.set_server_hardware_config(servhwconfobj)
             server.get_server_hardware_config().get_deploytriplet_for_config()
 
-    def pass_apply_default_network_params(self):
-        """ If the user has not set per-node network parameters in the topology,
-        apply the defaults. """
+    def pass_apply_default_node_params(self):
+        """ If the user has not set per-node network/other parameters in the
+        topology, apply the defaults. """
         allnodes = self.firesimtopol.get_dfs_order()
 
         for node in allnodes:
@@ -299,7 +298,6 @@ class FireSimTopologyWithPasses:
                     node.server_link_latency = self.defaultlinklatency
                 if node.server_bw_max is None:
                     node.server_bw_max = self.defaultnetbandwidth
-                # TODO: some of this stuff seems misplaced...
                 if node.server_profile_interval is None:
                     node.server_profile_interval = self.defaultprofileinterval
                 if node.trace_enable is None:
@@ -324,7 +322,8 @@ class FireSimTopologyWithPasses:
                     node.print_end = self.defaultprintend
                 if node.print_cycle_prefix is None:
                     node.print_cycle_prefix = self.defaultprintcycleprefix
-
+                if node.plusarg_passthrough == "":
+                    node.plusarg_passthrough = self.default_plusarg_passthrough
 
     def pass_allocate_nbd_devices(self):
         """ allocate NBD devices. this must be done here to preserve the
@@ -348,7 +347,7 @@ class FireSimTopologyWithPasses:
         self.pass_compute_switching_tables()
         self.pass_perform_host_node_mapping() # TODO: we can know ports here?
         self.pass_apply_default_hwconfig()
-        self.pass_apply_default_network_params()
+        self.pass_apply_default_node_params()
         self.pass_assign_jobs()
         self.pass_allocate_nbd_devices()
 

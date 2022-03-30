@@ -185,8 +185,9 @@ class RuntimeHWConfig:
         return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
 
-    def build_fpga_driver(self):
-        """ Build FPGA driver for running simulation """
+    def build_fpga_driver(self, driver_type_message="FPGA software",
+                          build_target="f1"):
+        """ Build driver for running simulation """
         if self.driver_built:
             # we already built the driver at some point
             return
@@ -195,7 +196,7 @@ class RuntimeHWConfig:
         design = triplet_pieces[0]
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
-        rootLogger.info("Building FPGA software driver for " + str(self.get_deploytriplet_for_config()))
+        rootLogger.info("Building " + driver_type_message + " driver for " + str(self.get_deploytriplet_for_config()))
         with prefix('cd ../'), \
              prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
              prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
@@ -203,15 +204,18 @@ class RuntimeHWConfig:
              prefix('source ./sourceme-f1-manager.sh'), \
              prefix('cd sim/'), \
              StreamLogger('stdout'), \
-             StreamLogger('stderr'):
+             StreamLogger('stderr'), \
+             prefix('set -o pipefail'):
             localcap = None
             with settings(warn_only=True):
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)
-                localcap = local(driverbuildcommand, capture=True)
-            rootLogger.debug("[localhost] " + str(localcap))
-            rootLogger.debug("[localhost] " + str(localcap.stderr))
+                buildlogfile = """firesim-manager-make-{}-temp-output-log""".format(build_target)
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""" .format(design, target_config, platform_config, build_target)
+                driverbuildcommand_full = driverbuildcommand + """ 2>&1 | tee {}""".format(buildlogfile)
+                localcap = local(driverbuildcommand_full)
+                logcapture = local("""cat {}""".format(buildlogfile), capture=True)
+            rootLogger.debug("[localhost] " + str(logcapture))
             if localcap.failed:
-                rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
+                rootLogger.info(driver_type_message + " driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
                 exit(1)
 
@@ -321,34 +325,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
     def build_fpga_driver(self):
         """ Build metasim driver for running simulation """
-        if self.driver_built:
-            # we already built the driver at some point
-            return
-        triplet_pieces = self.get_deploytriplet_for_config().split("-")
-        design = triplet_pieces[0]
-        target_config = triplet_pieces[1]
-        platform_config = triplet_pieces[2]
-        rootLogger.info("Building Metasim driver for " + str(self.get_deploytriplet_for_config()))
-        with prefix('cd ../'), \
-             prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
-             prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
-             prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
-             prefix('source ./sourceme-f1-manager.sh'), \
-             prefix('cd sim/'), \
-             StreamLogger('stdout'), \
-             StreamLogger('stderr'):
-            localcap = None
-            with settings(warn_only=True):
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {host_sim}""".format(design, target_config, platform_config, host_sim=self.metasim_host_simulator)
-                localcap = local(driverbuildcommand, capture=True)
-            rootLogger.debug("[localhost] " + str(localcap))
-            rootLogger.debug("[localhost] " + str(localcap.stderr))
-            if localcap.failed:
-                rootLogger.info("Metasim driver build failed. Exiting. See log for details.")
-                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
-                exit(1)
-
-        self.driver_built = True
+        super(RuntimeBuildRecipeConfig, self).build_fpga_driver("Metasim", self.metasim_host_simulator)
 
 
 class RuntimeHWDB:
@@ -427,8 +404,9 @@ class InnerRuntimeConfiguration:
 
 
         self.instances_requested_dict = dict()
-        for instance_type in runtime_dict['runfarminstances'].keys():
-            self.instances_requested_dict[instance_type] = int(runtime_dict['runfarminstances'][instance_type])
+        if 'runfarminstances' in runtime_dict:
+            for instance_type in runtime_dict['runfarminstances'].keys():
+                self.instances_requested_dict[instance_type] = int(runtime_dict['runfarminstances'][instance_type])
 
         old_style_instance_count_params = ['f1_16xlarges', 'f1_4xlarges',
                                            'f1_2xlarges', 'm4_16xlarges']
@@ -471,6 +449,7 @@ class InnerRuntimeConfiguration:
         self.print_start = "0"
         self.print_end = "-1"
         self.print_cycle_prefix = True
+        self.default_plusarg_passthrough = ""
 
         if 'tracing' in runtime_dict:
             self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
@@ -481,6 +460,8 @@ class InnerRuntimeConfiguration:
         if 'autocounter' in runtime_dict:
             self.autocounter_readrate = int(runtime_dict['autocounter'].get('readrate', "0"))
         self.defaulthwconfig = runtime_dict['targetconfig']['defaulthwconfig']
+        if 'plusarg_passthrough' in runtime_dict['targetconfig']:
+            self.default_plusarg_passthrough = runtime_dict['targetconfig']['plusarg_passthrough']
         if 'hostdebug' in runtime_dict:
             self.zerooutdram = runtime_dict['hostdebug'].get('zerooutdram') == "yes"
             self.disable_asserts = runtime_dict['hostdebug'].get('disable_synth_asserts') == "yes"
@@ -529,7 +510,8 @@ class RuntimeConfig:
                                self.innerconf.spot_interruption_behavior,
                                self.innerconf.spot_max_price,
                                self.innerconf.launch_timeout,
-                               self.innerconf.always_expand)
+                               self.innerconf.always_expand,
+                               self.innerconf.metasimulation_enabled)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
@@ -544,7 +526,8 @@ class RuntimeConfig:
             self.innerconf.zerooutdram, self.innerconf.disable_asserts,
             self.innerconf.print_start, self.innerconf.print_end,
             self.innerconf.print_cycle_prefix, self.runtime_build_recipes,
-            self.innerconf.metasimulation_enabled)
+            self.innerconf.metasimulation_enabled,
+            self.innerconf.default_plusarg_passthrough)
 
     def launch_run_farm(self):
         """ directly called by top-level launchrunfarm command. """
