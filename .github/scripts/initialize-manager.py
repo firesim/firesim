@@ -39,6 +39,9 @@ def initialize_manager(max_runtime):
         # run concurrently with ./init-submodules.sh
         with cd(manager_marshal_dir):
             run("./init-submodules.sh")
+            # WIP: patch buildroot to build cleanly with make 4.3, otherwise, it will incorrectly
+            # error out in the first 'make defconfig'
+            run("git -C boards/default/distros/br/buildroot/ cherry-pick -x 9e2128bf5072e5f2fd69e2fc0239558782dfc677")
 
         with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh"):
             run(".github/scripts/firesim-managerinit.expect {} {} {}".format(
