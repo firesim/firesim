@@ -105,7 +105,7 @@ Multiple Environments
 ---------------------
 
 In the example above, we only wanted to update a single package and it was fairly straightforward -- it only updated
-that package and installed a new dependence.  However, what if we're making a larger change and we think we might
+that package and installed a new dependency.  However, what if we're making a larger change and we think we might
 need to have both sets of tools around for awhile?
 
 In this case, make use of the ``--env <name>`` option of ``machine-launch-script.sh``.  By giving a descriptive

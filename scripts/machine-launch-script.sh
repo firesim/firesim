@@ -156,7 +156,7 @@ set -o pipefail
 
     # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#using-the-compiler-packages
     #    for notes on using the conda compilers
-    # elfutils has trouble building with gcc 11 for somethign that looks like it needs to be fixed
+    # elfutils has trouble building with gcc 11 for something that looks like it needs to be fixed
     # upstream
     # ebl_syscall_abi.c:37:64: error: argument 5 of type 'int *' declared as a pointer [-Werror=array-parameter=]
     #    37 | ebl_syscall_abi (Ebl *ebl, int *sp, int *pc, int *callno, int *args)
@@ -251,7 +251,7 @@ set -o pipefail
         CONDA_ENV_BIN="${CONDA_INSTALL_PREFIX}/envs/${CONDA_ENV_NAME}/bin"
         if [[ -d "${CONDA_INSTALL_PREFIX}/envs/${CONDA_ENV_NAME}" ]]; then
             # 'create' clobbers the existing environment and doesn't leave a revision entry in
-            # `conda list --revivsions`, so use install instead
+            # `conda list --revisions`, so use install instead
             CONDA_SUBCOMMAND=install
         else
             CONDA_SUBCOMMAND=create
