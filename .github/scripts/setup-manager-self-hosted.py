@@ -12,8 +12,8 @@ from common import *
 from ci_variables import *
 
 # Reuse manager utilities
-sys.path.append(ci_workdir + "/deploy/runtools")
-from runtools import instance_liveness
+sys.path.append(ci_workdir + "/deploy")
+from runtools.firesim_topology_with_passes import instance_liveness
 
 def initialize_manager_hosted():
     """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
