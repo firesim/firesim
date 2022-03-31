@@ -156,7 +156,21 @@ set -o pipefail
 
     # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#using-the-compiler-packages
     #    for notes on using the conda compilers
-    CONDA_PACKAGE_SPECS+=( gcc gxx binutils )
+    # elfutils has trouble building with gcc 11 for somethign that looks like it needs to be fixed
+    # upstream
+    # ebl_syscall_abi.c:37:64: error: argument 5 of type 'int *' declared as a pointer [-Werror=array-parameter=]
+    #    37 | ebl_syscall_abi (Ebl *ebl, int *sp, int *pc, int *callno, int *args)
+    #       |                                                           ~~~~~^~~~
+    # In file included from ./../libasm/libasm.h:35,
+    #                  from ./libeblP.h:33,
+    #                  from ebl_syscall_abi.c:33:
+    # ./libebl.h:254:46: note: previously declared as an array 'int[6]'
+    #   254 |                             int *callno, int args[6]);
+    #       |                                          ~~~~^~~~~~~
+    #
+    # pin to gcc=10 until we get that fixed.
+
+    CONDA_PACKAGE_SPECS+=( gcc=10 gxx=10 binutils )
 
 
     # poky deps
