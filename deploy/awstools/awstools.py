@@ -429,19 +429,12 @@ def instance_privateip_lookup_table(instances):
     ips_to_instances = zip(ips, instances)
     return { ip: instance for (ip, instance) in ips_to_instances }
 
-def wait_on_instance_boot(instance_id):
-    """ Blocks on EC2 instance boot """
-    ec2_client = boto3.client('ec2')
-    waiter = ec2_client.get_waiter('instance_status_ok')
-    waiter.wait(InstanceIds=[instance_id])
-
 def wait_on_instance_launches(instances, message=""):
     """ Take a list of instances (as returned by create_instances), wait until
     instance is running. """
     rootLogger.info("Waiting for instance boots: " + str(len(instances)) + " " + message)
     for instance in instances:
         instance.wait_until_running()
-        wait_on_instance_boot(instance.id)
         rootLogger.info(str(instance.id) + " booted!")
 
 def terminate_instances(instanceids, dryrun=True):
