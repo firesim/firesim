@@ -42,7 +42,8 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    :maxdepth: 3
    :caption: Developer Docs:
 
-   Developer-Docs/Driver-and-Compiler
+   Developer-Docs/GoldenGate-and-Driver-Development
+   Developer-Docs/Host-Platform-Debugging
 
 Indices and tables
 ==================
