@@ -11,10 +11,6 @@ from common import *
 # This is expected to be launch from the ci container
 from ci_variables import *
 
-# Reuse manager utilities
-sys.path.append(ci_workdir + "/deploy")
-from runtools.firesim_topology_with_passes import instance_liveness
-
 def initialize_manager_hosted():
     """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
 
@@ -25,9 +21,6 @@ def initialize_manager_hosted():
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
-        # wait for machine to be reachable
-        instance_liveness()
-
         # wait until machine launch is complete
         with cd(manager_home_dir):
             with settings(warn_only=True):
