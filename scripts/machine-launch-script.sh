@@ -66,8 +66,7 @@ sudo python3 -m pip install matplotlib==3.3.4
 sudo python3 -m pip install pandas==1.1.5
 sudo python3 -m pip install awscli==1.22.21
 sudo python3 -m pip install pytest==6.2.5
-sudo python3 -m pip install pytest-dependency==0.5.1
-sudo python3 -m pip install moto==3.1.0
+sudo python3 -m pip install moto==2.2.17
 sudo python3 -m pip install sure==2.0.0
 # needed for the awstools cmdline parsing
 sudo python3 -m pip install pyyaml==5.4.1
