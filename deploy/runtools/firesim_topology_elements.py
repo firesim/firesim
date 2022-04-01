@@ -395,7 +395,8 @@ class FireSimServerNode(FireSimNode):
 class FireSimSuperNodeServerNode(FireSimServerNode):
     """ This is the main server node for supernode mode. This knows how to
     call out to dummy server nodes to get all the info to launch the one
-    command line to run the FPGA sim that has N > 1 sims on one fpga."""
+    command line to run the sim that has N > 1 copies of the design in one
+    simulation instance (e.g. on one FPGA)."""
 
     def copy_back_job_results_from_run(self, slotno):
         """ This override is to call copy back job results for all the dummy nodes too. """

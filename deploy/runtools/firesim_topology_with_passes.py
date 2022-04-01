@@ -199,8 +199,9 @@ class FireSimTopologyWithPasses:
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
-    def mapping_use_one_8_fpga_host(self):
-        """ Just put everything on one host that has at least 8 fpgas."""
+    def mapping_use_one_8_slot_host(self):
+        """ Just put everything on one host that has at least 8 simulation slots
+        (e.g. 8 fpgas)."""
 
         switches = self.firesimtopol.get_dfs_order_switches()
         instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(8)
@@ -354,12 +355,12 @@ class FireSimTopologyWithPasses:
         self.pass_create_topology_diagram()
 
     def pass_build_required_drivers(self):
-        """ Build all FPGA drivers. The method we're calling here won't actually
+        """ Build all simulation drivers. The method we're calling here won't actually
         repeat the build process more than once per run of the manager. """
         servers = self.firesimtopol.get_dfs_order_servers()
 
         for server in servers:
-            server.get_server_hardware_config().build_fpga_driver()
+            server.get_server_hardware_config().build_sim_driver()
 
     def pass_build_required_switches(self):
         """ Build all the switches required for this simulation. """

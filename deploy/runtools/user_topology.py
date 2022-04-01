@@ -104,7 +104,7 @@ class UserTopologies(object):
             useful for performing the mapping."""
 
             # map the fat tree onto one switch host instance (for core switches)
-            # and two 8-fpga instances
+            # and two 8-sim-slot (e.g. 8-fpga) instances
             # (e.g., two pods of aggr/edge/4sims per f1.16xlarge)
 
             switch_inst_type = fsim_topol_with_passes.run_farm.mapper_get_default_switch_host_inst_type_name()
@@ -113,8 +113,8 @@ class UserTopologies(object):
             for core in coreswitches:
                 switch_inst.add_switch(core)
 
-            eight_fpga_host_type = fsim_topol_with_passes.run_farm.mapper_get_min_sim_host_inst_type_name(8)
-            sim_hosts = [fsim_topol_with_passes.run_farm.mapper_alloc_instance(eight_fpga_host_type) for _ in range(2)]
+            eight_sim_host_type = fsim_topol_with_passes.run_farm.mapper_get_min_sim_host_inst_type_name(8)
+            sim_hosts = [fsim_topol_with_passes.run_farm.mapper_alloc_instance(eight_sim_host_type) for _ in range(2)]
 
             for aggrsw in aggrswitches[:4]:
                 sim_hosts[0].add_switch(aggrsw)
@@ -167,7 +167,7 @@ class UserTopologies(object):
         midswitches[1].add_downlinks([servers[1]])
 
     def small_hierarchy_8sims(self):
-        self.custom_mapper = 'mapping_use_one_8_fpga_host'
+        self.custom_mapper = 'mapping_use_one_8_slot_host'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(4)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(4)]
@@ -176,7 +176,7 @@ class UserTopologies(object):
             midlevel[swno].add_downlinks(servers[swno])
 
     def small_hierarchy_2sims(self):
-        self.custom_mapper = 'mapping_use_one_8_fpga_host'
+        self.custom_mapper = 'mapping_use_one_8_slot_host'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(1)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(1)]

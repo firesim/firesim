@@ -28,6 +28,14 @@ rootLogger = logging.getLogger()
 class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.ini """
 
+    # a list of shared library path tuples, (A, B), where:
+    # A is the local file path on the manager instance to the library
+    # B is the destination file path on the runfarm instance relative to the driver
+    FIRESIM_REQUIRED_SHARED_LIBRARIES = [
+        [LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
+        [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]
+    ]
+
     def __init__(self, name, hwconfig_dict):
         self.name = name
         self.agfi = hwconfig_dict['agfi']
@@ -39,6 +47,16 @@ class RuntimeHWConfig:
         self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
+
+        self.driver_name_prefix = ""
+        self.driver_name_suffix = "-f1"
+
+        self.local_driver_base_dir = LOCAL_DRIVERS_BASE
+
+        self.shared_libraries = self.FIRESIM_REQUIRED_SHARED_LIBRARIES
+        self.driver_build_target = "f1"
+        self.driver_type_message = "FPGA software"
+
 
     def get_deploytriplet_for_config(self):
         """ Get the deploytriplet for this configuration. This memoizes the request
@@ -56,34 +74,33 @@ class RuntimeHWConfig:
 
     def get_local_driver_binaryname(self):
         """ Get the name of the driver binary. """
-        return self.get_design_name() + "-f1"
+        return self.driver_name_prefix + self.get_design_name() + self.driver_name_suffix
+
+    def get_local_driver_dir(self):
+        """ Get the relative local directory that contains the driver used
+        to run this sim. """
+        return self.local_driver_base_dir + "/" + self.get_deploytriplet_for_config() + "/"
 
     def get_local_driver_path(self):
         """ return relative local path of the driver used to run this sim. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + my_deploytriplet + "/"
-        fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
-        return fpga_driver_local
+        return self.get_local_driver_dir() + self.get_local_driver_binaryname()
 
     def get_local_shared_libraries(self):
-        """ Returns a list of path tuples, (A, B), where:
-            A is the local file path on the manager instance to the library
-            B is the destination file path on the runfarm instance relative to the driver """
-
-        return [[LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
-                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]]
+        """ Returns list of pairs of shared library local path, shared library
+        destination path required by the driver."""
+        return self.shared_libraries
 
     def get_local_runtimeconf_binaryname(self):
         """ Get the name of the runtimeconf file. """
-        return "runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
+        return self.get_design_name() + "-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
 
     def get_local_runtime_conf_path(self):
         """ return relative local path of the runtime conf used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + my_deploytriplet + "/"
+        drivers_software_base = self.local_driver_base_dir + "/" + my_deploytriplet + "/"
         my_runtimeconfig = self.customruntimeconfig
         if my_runtimeconfig is None:
-            runtime_conf_local = drivers_software_base + "runtime.conf"
+            runtime_conf_local = drivers_software_base + self.get_local_runtimeconf_binaryname()
         else:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
@@ -185,8 +202,7 @@ class RuntimeHWConfig:
         return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
 
-    def build_fpga_driver(self, driver_type_message="FPGA software",
-                          build_target="f1"):
+    def build_sim_driver(self):
         """ Build driver for running simulation """
         if self.driver_built:
             # we already built the driver at some point
@@ -196,7 +212,7 @@ class RuntimeHWConfig:
         design = triplet_pieces[0]
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
-        rootLogger.info("Building " + driver_type_message + " driver for " + str(self.get_deploytriplet_for_config()))
+        rootLogger.info("Building " + self.driver_type_message + " driver for " + str(self.get_deploytriplet_for_config()))
         with prefix('cd ../'), \
              prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
              prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
@@ -208,14 +224,14 @@ class RuntimeHWConfig:
              prefix('set -o pipefail'):
             localcap = None
             with settings(warn_only=True):
-                buildlogfile = """firesim-manager-make-{}-temp-output-log""".format(build_target)
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""" .format(design, target_config, platform_config, build_target)
+                buildlogfile = """{}firesim-manager-make-{}-temp-output-log""".format(self.get_local_driver_dir(), self.driver_build_target)
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""" .format(design, target_config, platform_config, self.driver_build_target)
                 driverbuildcommand_full = driverbuildcommand + """ 2>&1 | tee {}""".format(buildlogfile)
                 localcap = local(driverbuildcommand_full)
                 logcapture = local("""cat {}""".format(buildlogfile), capture=True)
             rootLogger.debug("[localhost] " + str(logcapture))
             if localcap.failed:
-                rootLogger.info(driver_type_message + " driver build failed. Exiting. See log for details.")
+                rootLogger.info(self.driver_type_message + " driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
                 exit(1)
 
@@ -233,7 +249,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
     def __init__(self, name, build_recipe_dict, default_metasim_host_sim):
         self.name = name
         self.agfi = "Metasim" # for __str__ to work
-        self.deploytriplet = build_recipe_dict['design'] + "-" + build_recipe_dict['target_config'] + "-" + build_recipe_dict['platform_config'] 
+        self.deploytriplet = build_recipe_dict['design'] + "-" + build_recipe_dict['target_config'] + "-" + build_recipe_dict['platform_config']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
@@ -241,53 +257,20 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.driver_built = False
         self.metasim_host_simulator = default_metasim_host_sim
 
-    def get_local_driver_binaryname(self):
-        """ Get the name of the driver binary. """
-        prefix = ""
-        suffix = ""
+        self.driver_name_prefix = ""
+        self.driver_name_suffix = ""
         if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
-            prefix = "V"
+            self.driver_name_prefix = "V"
         if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
-            suffix = "-debug"
+            self.driver_name_suffix = "-debug"
 
-        return prefix + self.get_design_name() + suffix
+        self.local_driver_base_dir = LOCAL_DRIVERS_GENERATED_SRC
 
-    def get_local_driver_path(self):
-        """ return relative local path of the driver used to run this sim. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
-        metasim_driver_local = drivers_software_base + self.get_local_driver_binaryname()
-        return metasim_driver_local
+        dramsim_pair = [self.get_local_driver_dir() + "dramsim2_ini", ""]
+        self.shared_libraries = self.FIRESIM_REQUIRED_SHARED_LIBRARIES + [dramsim_pair]
 
-    def get_local_shared_libraries(self):
-        """ Returns a list of path tuples, (A, B), where:
-            A is the local file path on the manager instance to the library
-            B is the destination file path on the runfarm instance relative to the driver """
-
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
-
-        return [
-                [LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
-                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"],
-                # copy the whole dramsim2_ini directory
-                [drivers_software_base + "/dramsim2_ini", ""]
-        ]
-
-    def get_local_runtimeconf_binaryname(self):
-        """ Get the name of the runtimeconf file. """
-        return self.get_design_name() + "-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
-
-    def get_local_runtime_conf_path(self):
-        """ return relative local path of the runtime conf used to run this sim. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
-        my_runtimeconfig = self.customruntimeconfig
-        if my_runtimeconfig is None:
-            runtime_conf_local = drivers_software_base + self.get_local_runtimeconf_binaryname()
-        else:
-            runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
-        return runtime_conf_local
+        self.driver_build_target = self.metasim_host_simulator
+        self.driver_type_message = "Metasim"
 
     def get_boot_simulation_command(self, slotid, all_macs,
                                               all_rootfses, all_linklatencies,
@@ -321,11 +304,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
                                               print_start, print_end,
                                               enable_print_cycle_prefix,
                                               full_extra_plusargs, full_extra_args)
-
-
-    def build_fpga_driver(self):
-        """ Build metasim driver for running simulation """
-        super(RuntimeBuildRecipeConfig, self).build_fpga_driver("Metasim", self.metasim_host_simulator)
 
 
 class RuntimeHWDB:

@@ -59,10 +59,8 @@ class NBDTracker(object):
 
 
 class EC2HostInst(object):
-    # TODO: this is leftover from when we could only support switch slots.
-    # This can be removed once self.switch_slots is dynamically allocated.
-    # Just make it arbitrarily large for now.
-    SWITCH_SLOTS = 100000
+    # restricted by default security group network model port alloc (10000 to 11000)
+    MAX_SWITCH_SLOTS_ALLOWED = 1000
 
     def __init__(self, sim_slots_max, metasimulation_enabled):
         self.metasimulation_enabled = metasimulation_enabled
@@ -72,8 +70,7 @@ class EC2HostInst(object):
         self.sim_slots_consumed = 0
 
         self.boto3_instance_object = None
-        self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
-        self.switch_slots_consumed = 0
+        self.switch_slots = []
         self.instance_deploy_manager = InstanceDeployManager(self)
         self._next_port = 10000 # track ports to allocate for server switch model ports
         self.nbd_tracker = NBDTracker()
@@ -89,13 +86,12 @@ class EC2HostInst(object):
 
     def add_switch(self, firesimswitchnode):
         """ Add a switch to the next available switch slot. """
-        assert self.switch_slots_consumed < self.SWITCH_SLOTS
-        self.switch_slots[self.switch_slots_consumed] = firesimswitchnode
+        assert self.get_num_switch_slots_consumed() < self.MAX_SWITCH_SLOTS_ALLOWED
+        self.switch_slots.append(firesimswitchnode)
         firesimswitchnode.assign_host_instance(self)
-        self.switch_slots_consumed += 1
 
     def get_num_switch_slots_consumed(self):
-        return self.switch_slots_consumed
+        return len(self.switch_slots)
 
     def allocate_host_port(self):
         """ Allocate a port to use for something on the host. Successive calls
@@ -309,7 +305,6 @@ class RunFarm:
     def terminate_run_farm(self, terminate_some_dict, forceterminate):
         runfarmtag = self.runfarmtag
 
-
         # make sure requested instance types are valid
         terminate_some_requested_types_set = set(terminate_some_dict.keys())
         allowed_types_set = set(self.supported_instance_type_names)
@@ -420,7 +415,7 @@ class InstanceDeployManager:
                 run('make clean')
                 run('make')
 
-    def fpga_node_qcow(self):
+    def sim_node_qcow(self):
         """ Install qemu-img management tools and copy NBD infra to remote
         node. This assumes that the kernel module was already built and exists
         in the directory on this machine.
@@ -636,7 +631,7 @@ class InstanceDeployManager:
             run(server.get_sim_kill_command(slotno))
 
     def instance_assigned_simulations(self):
-        """ return true if this instance has any assigned fpga simulations. """
+        """ return true if this instance has any assigned simulations. """
         return self.parentnode.get_num_sim_slots_consumed() != 0
 
     def instance_assigned_switches(self):
@@ -665,7 +660,7 @@ class InstanceDeployManager:
                 self.load_xdma()
 
             # setup nbd/qcow infra
-            self.fpga_node_qcow()
+            self.sim_node_qcow()
             # load nbd module
             self.load_nbd_module()
 
@@ -749,7 +744,7 @@ class InstanceDeployManager:
         rootLogger.debug("completed jobs " + str(completed_jobs))
 
         if not self.instance_assigned_simulations() and self.instance_assigned_switches():
-            # this node hosts ONLY switches and not fpga sims
+            # this node hosts ONLY switches and not sims
             #
             # just confirm that our switches are still running
             # switches will never trigger shutdown in the cycle-accurate -
@@ -780,7 +775,7 @@ class InstanceDeployManager:
             return {'switches': switchescompleteddict, 'sims': dict()}
 
         if self.instance_assigned_simulations():
-            # this node has fpga sims attached
+            # this node has sims attached
 
             # first, figure out which jobs belong to this instance.
             # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING
