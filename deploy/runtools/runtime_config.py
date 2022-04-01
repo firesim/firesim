@@ -97,7 +97,7 @@ class RuntimeHWConfig:
     def get_local_runtime_conf_path(self):
         """ return relative local path of the runtime conf used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = self.local_driver_base_dir + "/" + my_deploytriplet + "/"
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + my_deploytriplet + "/"
         my_runtimeconfig = self.customruntimeconfig
         if my_runtimeconfig is None:
             runtime_conf_local = drivers_software_base + self.get_local_runtimeconf_binaryname()
