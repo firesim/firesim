@@ -173,8 +173,6 @@ $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
 $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(header) $(OUTPUT_DIR)/build/
-	# The manager expects to find the default conf in output/ by this name
-	cp -f $(GENERATED_DIR)/$(CONF_NAME) $(OUTPUT_DIR)/runtime.conf
 	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)

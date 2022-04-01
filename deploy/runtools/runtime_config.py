@@ -224,6 +224,9 @@ class RuntimeHWConfig:
              prefix('set -o pipefail'):
             localcap = None
             with settings(warn_only=True):
+                # the local driver dir must already exist for the tee to always
+                # work
+                local("""mkdir -p {}""".format(self.get_local_driver_dir()))
                 buildlogfile = """{}firesim-manager-make-{}-temp-output-log""".format(self.get_local_driver_dir(), self.driver_build_target)
                 driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""" .format(design, target_config, platform_config, self.driver_build_target)
                 driverbuildcommand_full = driverbuildcommand + """ 2>&1 | tee {}""".format(buildlogfile)
