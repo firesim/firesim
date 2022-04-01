@@ -248,6 +248,10 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 	bash -c "source ./sdk_setup.sh"
 	bash -c "source ./hdk_setup.sh"
     )
+
+    # system paths are no-longer included by default in the linker serarch path
+    # and on AWS fpga_mgmt.so is in /usr/local/lib64
+    env_append "export LIBRARY_PATH=/usr/local/lib64\${LD_LIBRARY_PATH:+\":\${LD_LIBRARY_PATH}\"}"
 fi
 
 # Per-repository dependencies are installed under this sysroot
