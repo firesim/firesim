@@ -351,11 +351,12 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append([self.get_job().bootbinary_path(), self.get_bootbin_name()])
 
-        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        driver_path = self.server_hardware_config.get_local_driver_path()
+        all_paths.append([driver_path, ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
 
         # shared libraries
-        all_paths += self.server_hardware_config.get_local_shared_libraries()
+        all_paths += self.server_hardware_config.get_local_shared_libraries(driver_path)
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
@@ -515,8 +516,11 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.get_job().rootfs_path(),
                               self.get_rootfs_name()])
 
+        driver_path = self.server_hardware_config.get_local_driver_path()
+        all_paths.append([driver_path, ''])
+
         # shared libraries
-        all_paths += self.server_hardware_config.get_local_shared_libraries()
+        all_paths += self.server_hardware_config.get_local_shared_libraries(driver_path)
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
@@ -533,7 +537,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.supernode_get_sibling_bootbinary_path(x),
                               self.supernode_get_sibling_bootbin(x)])
 
-        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         return all_paths
 

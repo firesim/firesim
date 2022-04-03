@@ -276,6 +276,7 @@ set -o pipefail
         fab-classic==1.19.1 \
         mypy-boto3-ec2==1.21.9 \
         sure==2.0.0 \
+	pylddwrap==1.2.1 \
     )
     if [[ -n "$PIP_PKGS[*]" ]]; then
         "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_PIP_EXE}" install "${PIP_PKGS[@]}"
