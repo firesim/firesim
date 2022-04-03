@@ -186,7 +186,8 @@ set -o pipefail
     # firemarshal deps
     CONDA_PACKAGE_SPECS+=( rsync psutil doit gitpython humanfriendly e2fsprogs ctags bison flex expat )
     # cross-compile glibc 2.28+ deps
-    CONDA_PACKAGE_SPECS+=( make )
+    # current version of buildroot won't build with make 4.3 https://github.com/firesim/FireMarshal/issues/236
+    CONDA_PACKAGE_SPECS+=( make!=4.3 )
     # build-libelf wants autoconf
     CONDA_PACKAGE_SPECS+=( autoconf automake libtool )
     # other misc deps
