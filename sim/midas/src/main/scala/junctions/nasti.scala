@@ -625,7 +625,6 @@ object AXI4NastiAssigner {
     nasti.aw.bits.prot   := axi4.aw.bits.prot
     nasti.aw.bits.qos    := axi4.aw.bits.qos
     nasti.aw.bits.user   := chisel3.DontCare
-    nasti.aw.bits.region := 0.U
     axi4.aw.ready := nasti.aw.ready
 
     nasti.ar.valid  := axi4.ar.valid
@@ -639,7 +638,6 @@ object AXI4NastiAssigner {
     nasti.ar.bits.prot   := axi4.ar.bits.prot
     nasti.ar.bits.qos    := axi4.ar.bits.qos
     nasti.ar.bits.user   := chisel3.DontCare
-    nasti.ar.bits.region := 0.U
     axi4.ar.ready := nasti.ar.ready
 
     nasti.w.valid  := axi4.w.valid
@@ -647,7 +645,6 @@ object AXI4NastiAssigner {
     nasti.w.bits.strb  := axi4.w.bits.strb
     nasti.w.bits.last  := axi4.w.bits.last
     nasti.w.bits.user  := chisel3.DontCare
-    nasti.w.bits.id    := chisel3.DontCare // We only use AXI4, not AXI3
     axi4.w.ready := nasti.w.ready
 
     axi4.r.valid     := nasti.r.valid

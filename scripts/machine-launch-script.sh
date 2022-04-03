@@ -35,14 +35,11 @@ sudo yum -y install https://repo.ius.io/ius-release-el7.rpm
 sudo yum -y install git224
 
 # install verilator
-if ! command -v verilator &> /dev/null
-then
-    git clone http://git.veripool.org/git/verilator
-    cd verilator/
-    git checkout v4.034
-    autoconf && ./configure && make -j4 && sudo make install
-    cd ..
-fi
+git clone http://git.veripool.org/git/verilator
+cd verilator/
+git checkout v4.034
+autoconf && ./configure && make -j4 && sudo make install
+cd ..
 
 # bash completion for manager
 sudo yum -y install bash-completion
@@ -71,7 +68,7 @@ sudo python3 -m pip install awscli==1.22.21
 sudo python3 -m pip install pytest==6.2.5
 sudo python3 -m pip install pytest-dependency==0.5.1
 sudo python3 -m pip install pytest-mock==3.6.1
-sudo python3 -m pip install moto==2.2.17
+sudo python3 -m pip install moto==3.1.0
 sudo python3 -m pip install sure==2.0.0
 # needed for the awstools cmdline parsing
 sudo python3 -m pip install pyyaml==5.4.1

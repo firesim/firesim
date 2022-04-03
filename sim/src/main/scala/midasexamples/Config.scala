@@ -7,6 +7,7 @@ import midas.widgets._
 import freechips.rocketchip.config._
 import junctions._
 
+import firesim.util.DesiredHostFrequency
 import firesim.configs.{WithDefaultMemModel, WithWiringTransform}
 
 class NoConfig extends Config(Parameters.empty)

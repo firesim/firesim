@@ -74,7 +74,8 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     case m: Module if m.name == targetBoxParent =>
       val body = initStmt(target, targetBoxInst)(m.body)
       Some(m.copy(info = info, body = body))
-    case o => Some(o)
+    case m: Module => Some(m)
+    case m: ExtModule => None
   }
 
   def execute(innerState: CircuitState) = {
