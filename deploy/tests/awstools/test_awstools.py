@@ -105,6 +105,23 @@ from moto import __version__ as moto_version
 class TestLaunchInstances(object):
     """Test functions in awstools that Launch EC2 Instances"""
 
+    @pytest.mark.xfail(strict=True, reason="moto doesn't validate instance types.")
+    @mock_ec2
+    def test_invalid_instance_type_fails(self):
+        # local imports of code-under-test ensure moto has mocks
+        # registered before any possible calls out to AWS
+        from awstools.awstools import launch_instances, run_block_device_dict
+
+        # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
+        from awstools.aws_setup import aws_setup
+        aws_setup()
+
+        with pytest.raises(Exception):
+            instances = launch_instances('INVALID_TYPE', 1,
+                                         instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
+                                         blockdevices=run_block_device_dict(),
+                                         tags={'fsimcluster': 'testcluster', 'secondtag': 'secondvalue'})
+
     @mock_ec2
     def test_can_create_multiple_instance_tags(self):
         """Can pass multiple tags to launch_instances"""

@@ -1,12 +1,11 @@
 name: firesim-ci-process
 
 on:
-  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
+  # run ci when pring to main/local-fpga (note: ci runs on the merge commit of the pr!)
   pull_request:
     branches:
       - main
       - '1.[0-9]*.x'
-
 
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
@@ -39,6 +38,7 @@ jobs:
     outputs:
       needs-docs:    ${{ steps.filter.outputs.docs }}
       needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+      needs-manager-python-only: ${{ steps.filter.outputs.python-manager }}
 
     steps:
       - uses: actions/checkout@v2
@@ -60,6 +60,14 @@ jobs:
               - '**/*.md'
               - '**/.gitignore'
               - '.github/ISSUE_TEMPLATE/**'
+
+            # Python-specific manager filter
+            python-manager:
+              - 'deploy/firesim'
+              - 'deploy/awstools/**'
+              - 'deploy/buildtools/**'
+              - 'deploy/runtools/**'
+              - 'deploy/util/**'
 
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
@@ -104,7 +112,8 @@ jobs:
 
   run-manager-pytests:
     name: run-manager-pytests
-    needs: [setup-manager]
+    needs: [setup-manager, change-filters]
+    if: needs.change-filters.outputs.needs-manager-python-only == 'true'
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color
@@ -112,6 +121,18 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run pytests
         run: .github/scripts/run-manager-pytests.py
+
+  run-python-typecheck:
+    name: run-python-typecheck
+    needs: [setup-manager, change-filters]
+    if: needs.change-filters.outputs.needs-manager-python-only == 'true'
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run mypy type checker
+        run: .github/scripts/run-mypy-typechecker.py
 
   run-test-groupA:
     name: run-test-groupA
@@ -165,17 +186,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run linux-poweroff test
         run: .github/scripts/run-linux-poweroff.py
-
-  run-ini-api-tests:
-    name: run-ini-api-tests
-    needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run .ini API verification tests
-        run: .github/scripts/run-ini-api-tests.py
 
   documentation-check:
     name: documentation-check

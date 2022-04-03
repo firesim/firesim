@@ -6,7 +6,7 @@ import random
 import string
 import logging
 
-from fabric.api import local
+from fabric.api import local # type: ignore
 from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()

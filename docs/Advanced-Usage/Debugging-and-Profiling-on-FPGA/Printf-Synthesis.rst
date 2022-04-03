@@ -36,7 +36,7 @@ Be judicious, as synthesizing many, frequently active printfs will slow down you
 
 Once your printfs have been annotated, enable printf synthesis by prepending
 the ``WithPrintfSynthesis`` configuration mixin to your ``PLATFORM_CONFIG`` in
-``config_build_recipes.ini``.
+``config_build_recipes.yaml``.
 For example, if your previous ``PLATFORM_CONFIG`` was
 ``PLATFORM_CONFIG=BaseF1Config_F120MHz``, then change it to
 ``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config_F120MHz``. Notice that you
@@ -77,7 +77,7 @@ Runtime Arguments
     this flag has no effect.
 
 You can set some of these options by changing the fields in the "synthprint"
-section of your config_runtime.ini.
+section of your config_runtime.yaml.
 
 ::
 

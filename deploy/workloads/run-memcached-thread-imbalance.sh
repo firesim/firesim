@@ -10,11 +10,11 @@ set -e
 set -o pipefail
 
 if [ "$1" == "withlaunch" ]; then
-    firesim launchrunfarm -c workloads/memcached-thread-imbalance-config.ini
+    firesim launchrunfarm -c workloads/memcached-thread-imbalance-config.yaml
 fi
 
 
-firesim infrasetup -c workloads/memcached-thread-imbalance-config.ini
-firesim runworkload -c workloads/memcached-thread-imbalance-config.ini
-firesim terminaterunfarm -c workloads/memcached-thread-imbalance-config.ini --forceterminate
+firesim infrasetup -c workloads/memcached-thread-imbalance-config.yaml
+firesim runworkload -c workloads/memcached-thread-imbalance-config.yaml
+firesim terminaterunfarm -c workloads/memcached-thread-imbalance-config.yaml --forceterminate
 

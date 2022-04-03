@@ -19,7 +19,7 @@ manager configuration by doing the following:
 ::
 
     cd firesim/deploy
-    cp sample-backup-configs/sample_config_runtime.ini config_runtime.ini
+    cp sample-backup-configs/sample_config_runtime.yaml config_runtime.yaml
 
 
 Building target software
@@ -55,47 +55,47 @@ Setting up the manager configuration
 -------------------------------------
 
 All runtime configuration options for the manager are set in a file called
-``firesim/deploy/config_runtime.ini``. In this guide, we will explain only the
+``firesim/deploy/config_runtime.yaml``. In this guide, we will explain only the
 parts of this file necessary for our purposes. You can find full descriptions of
 all of the parameters in the :ref:`manager-configuration-files` section.
 
 If you open up this file, you will see the following default config (assuming
 you have not modified it):
 
-.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+   :code: yaml
 
 For the 8-node cluster simulation, the defaults in this file are exactly what
 we want. Let's outline the important parameters:
 
-* ``f1_16xlarges=1``: This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
-* ``topology=example_8config``: This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
-* ``linklatency=6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
-* ``switchinglatency=10``: This models switches with a minimum port-to-port latency of 10 cycles.
-* ``netbandwidth=200``: This sets the bandwidth of the NICs to 200 Gbit/s. Currently you can set any integer value less than this without making hardware modifications.
-* ``defaulthwconfig=firesim-rocket-quadcore-nic-l2-llc4mb-ddr3``: This tells the manager to use a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC) and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
+* ``f1_16xlarges: 1``: This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
+* ``topology: example_8config``: This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
+* ``link-latency: 6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
+* ``switching-latency: 10``: This models switches with a minimum port-to-port latency of 10 cycles.
+* ``net-bandwidth: 200``: This sets the bandwidth of the NICs to 200 Gbit/s. Currently you can set any integer value less than this without making hardware modifications.
+* ``default-hw-config: firesim-rocket-quadcore-nic-l2-llc4mb-ddr3``: This tells the manager to use a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC) and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
 
-You'll see other parameters here, like ``runinstancemarket``,
-``spotinterruptionbehavior``, and ``spotmaxprice``. If you're an experienced
+You'll see other parameters here, like ``run-instance-market``,
+``spot-interruption-behavior``, and ``spot-max-price``. If you're an experienced
 AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
-As in the single-node tutorial, we will leave the last section (``[workload]``)
+As in the single-node tutorial, we will leave the last section (``workload:``)
 unchanged here, since we do want to run the buildroot-based Linux on our
-simulated system. The ``terminateoncompletion`` feature is an advanced feature
+simulated system. The ``terminate-on-completion`` feature is an advanced feature
 that you can learn more about in the :ref:`manager-configuration-files`
 section.
 
-As a final sanity check, your ``config_runtime.ini`` file should now look like this:
+As a final sanity check, your ``config_runtime.yaml`` file should now look like this:
 
 
-.. include:: /../deploy/sample-backup-configs/sample_config_runtime.ini
-   :code: ini
+.. include:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+   :code: yaml
 
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``defaulthwconfig`` to ``firesim-boom-singlecore-nic-l2-llc4mb-ddr3``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default-hw-config`` to ``firesim-boom-singlecore-nic-l2-llc4mb-ddr3``.
 
 
 Launching a Simulation!
@@ -139,7 +139,7 @@ and then take a minute or two while your ``f1.16xlarge`` instance launches.
 Once the launches complete, you should see the instance id printed and the instance
 will also be visible in your AWS EC2 Management console. The manager will tag
 the instances launched with this operation with the value you specified above
-as the ``runfarmtag`` parameter from the ``config_runtime.ini`` file, which we left
+as the ``run-farm-tag`` parameter from the ``config_runtime.yaml`` file, which we left
 set as ``mainrunfarm``. This value allows the manager to tell multiple Run Farms
 apart -- i.e., you can have multiple independent Run Farms running different
 workloads/hardware configurations in parallel. This is detailed in the
