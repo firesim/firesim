@@ -142,6 +142,15 @@ set -o pipefail
         # don't automatically activate the 'base' environment when intializing shells
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_activate_base false
 
+        # conda-build is a special case and must always be installed into the base environment
+        $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-build
+
+        # conda-libmamba-solver is a special case and must always be installed into the base environment
+        # see https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community
+        $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-libmamba-solver
+        # Use the fast solver by default
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set experimental_solver libmamba
+
         conda_init_extra_args=()
         if [[ "$INSTALL_TYPE" == system ]]; then
             # if we're installing into a root-owned directory using sudo, or we're already root
