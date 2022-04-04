@@ -18,10 +18,11 @@ is that you are able to write into the install location.  See ``machine-launch-s
 
 .. warning::
 
-    Without root access you can do many things, like :doc:`/Building-a-FireSim-AFI`,
-    :ref:`meta-simulation` of a FireSim system using Verilator or even developing new features in FireSim.
-    However, to :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently requires that
+    To :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently requires that
     you are able to act as root via ``sudo``.
+
+    However, you can do many things without having root, like :doc:`/Building-a-FireSim-AFI`,
+    :ref:`meta-simulation` of a FireSim system using Verilator or even developing new features in FireSim.
 
 Updating a Package Version
 --------------------------
@@ -29,9 +30,7 @@ Updating a Package Version
 If you need a newer version of package and you are brave, the most expedient method to see whether there
 is a newer version available on `conda-forge`_ is to run ``conda update <package-name>``.  If you are lucky,
 and the dependencies of the package you want to update are simple, you'll see output that looks something like
-this:
-
-::
+this ::
 
     bash-4.2$ conda update moto
     Collecting package metadata (current_repodata.json): done
@@ -74,9 +73,7 @@ it will do first, feel free to give it the ``--dry-run`` option, look at the out
 off.
 
 In this case, when you are finished, you can run ``conda list --revisions`` and you should see output
-like the following:
-
-::
+like the following ::
 
     bash-4.2$ conda list --revisions
     2022-03-15 19:21:10  (rev 0)
@@ -110,26 +107,31 @@ need to have both sets of tools around for awhile?
 
 In this case, make use of the ``--env <name>`` option of ``machine-launch-script.sh``.  By giving a descriptive
 name with that option, you will create another 'environment'.  You can see a listing of available environments
-by running ``conda env list`` to get output similar to:
-
-::
+by running ``conda env list`` to get output similar to::
 
     bash-4.2$   conda env list
     # conda environments:
     #
     base                     /opt/conda
+    firesim                  /opt/conda/envs/firesim
     doc_writing           *  /opt/conda/envs/doc_writing
-    firesim_oss_220203       /opt/conda/envs/firesim_oss_220203
 
-In the output above, you can see that I had the 'base' environment that is created when you install ``conda``.  I also
-created a 'doc_writing' environment to show some of the examples pasted earlier.  Finally, I created a datestamped
-firesim environment from a month or so ago.
+In the output above, you can see that I had the 'base' environment that is created when you install ``conda`` as well as
+the ``firesim`` environment that ``machine-launch-script.sh`` creates by default.  I also created a 'doc_writing' environment 
+to show some of the examples pasted earlier. 
 
 You can also see that 'doc_writing' has an asterisk next to it, indicating that it is the currently 'activated' environment.
-To switch to a different environment, I could ``conda activate <name>`` e.g. ``conda activate firesim_oss_220203``
+To switch to a different environment, I could ``conda activate <name>`` e.g. ``conda activate firesim``
 
-By default, ``machine-launch-script.sh`` installs the requirements into 'base' and runs ``conda init`` to ensure that the
-'base' environment is activated at login.
+By default, ``machine-launch-script.sh`` installs the requirements into 'firesim' and runs ``conda init`` to ensure that the
+'firesim' environment is activated at login.
+
+.. attention
+
+    When you create additional environments by rerunning ``machine-launch-script.sh`` and providing
+    ``--env <name>`` the environment activated at login does not get updated.  You can always check
+    the currently activated environment by looking at the output of ``conda env list`` (as above) or
+    ``conda info``.
 
 Adding a New Dependency
 -----------------------
@@ -141,17 +143,17 @@ Look for what you need in this order:
 #. `Adding a conda-forge recipe <https://conda-forge.org/#add_recipe>`_
 #. `PyPI <https://pypi.org/>`_ (for Python packages).  While it is possible to install packages with pip into a ``conda``
    environment, `there are caveats <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html?highlight=pip#using-pip-in-an-environment>`_.
-   In short, you're less likely to create a mess if you have one system calculating dependencies and manipulating packages
+   In short, you're less likely to create a mess if you use only conda to manage the requirements and dependencies
    in your environment.
 #. System packages as a last resort.  It's very difficult to have the same tools on different platforms when they are being
-   built and shipped by different systems and organizations.  That being said, in a pinch, you can find platform-specific
-   setup in ``machine-launch-script.sh``.
+   built and shipped by different systems and organizations.  That being said, in a pinch, you can find a section for
+   platform-specific setup in ``machine-launch-script.sh``.
 
 Building From Source
 --------------------
 
 If you find that a package is missing an optional feature, consider looking up it's 'feedstock' (aka recipe) repo in
-`The existing conda-forge packages list <feedstock-list>`_.  and submitting an issue or PR.
+`The existing conda-forge packages list <feedstock-list>`_.  and submitting an issue or PR to the 'feedstock' repo.
 
 If you instead need to enable debugging or possibly actively hack on the source of something we package:
 
@@ -159,18 +161,36 @@ If you instead need to enable debugging or possibly actively hack on the source 
 #. Clone the feedstock repo and modify ``recipe/build.sh`` (or ``recipe/meta.yaml`` if there isn't a build script)
 #. ``python build-locally.py`` to `build using the conda-forge docker container <https://conda-forge.org/docs/maintainer/updating_pkgs.html#testing-changes-locally>`_
    If the build is successful, you will have an installable ``conda`` package in ``build_artifacts/linux-64`` that can be
-   installed using ``conda install -c ./build_artifacts <packagename>``
+   installed using ``conda install -c ./build_artifacts <packagename>``.  If the build is not successful, you can
+   add the ``--debug`` switch to ``python build-locally.py`` and that will drop you into an interactive shell in the
+   container.  To find the build directory and activate the correct environment, just follow the instructions from
+   the message that looks like::
 
-If you are developing a Python package, it is usually easiest to install all dependencies using ``conda`` and then your package in 'development mode' using
-``pip install -e <path to clone>`` (and making sure that you are using ``pip`` from your environment).
+    ################################################################################
+    Build and/or host environments created for debugging.  To enter a debugging environment:
 
+    cd /Users/UserName/miniconda3/conda-bld/debug_1542385789430/work && source /Users/UserName/miniconda3/conda-bld/debug_1542385789430/work/build_env_setup.sh
+
+    To run your build, you might want to start with running the conda_build.sh file.
+    ################################################################################
+
+If you are developing a Python package, it is usually easiest to install all dependencies using ``conda`` and then install
+your package in 'development mode' using ``pip install -e <path to clone>`` (and making sure that you are using ``pip`` from your environment).
 
 Running conda with sudo
 -----------------------
 
+tl;dr; run conda like this when using ``sudo``::
+
+    sudo -E $CONDA_EXE <remaining options to conda>
+
 If you look closely at ``machine-launch-script.sh``, you will notice that it always uses the full path
 to ``$CONDA_EXE``.  This is because ``/etc/sudoers`` typically doesn't bless our custom install prefix of ``/opt/conda``
 in the ``secure_path``.
+
+You also probably want to include the ``-E`` option to ``sudo`` (or more specifically
+``--preserve-env=CONDA_DEFAULT_ENV``) so that the default choice for the environment to modify
+is preserved in the sudo environment.
 
 
 Additional Resources
