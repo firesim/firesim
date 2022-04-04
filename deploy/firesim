@@ -133,7 +133,8 @@ def buildafi(globalbuildconf):
     # remote items will map themselves
     globalbuildconf.launch_build_instances()
 
-    # confirm that build instances have finished booting
+    # confirm that build instances are in running state so that they have
+    # been assigned IP addresses
     globalbuildconf.wait_build_instances()
 
     # run builds, then terminate instances
