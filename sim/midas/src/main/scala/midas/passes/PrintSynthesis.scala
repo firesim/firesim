@@ -66,7 +66,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
     def portRT(p: Port): ReferenceTarget = ModuleTarget(c.main, c.main).ref(p.name)
     def portClockRT(p: Port): ReferenceTarget = portRT(p).field("clock")
 
-    val modToAnnos = printfAnnos.groupBy(_.mod)
+    val modToAnnos = printfAnnos.groupBy(_.target)
     val topWiringAnnos = mutable.ArrayBuffer[Annotation]()
 
     def onModule(m: DefModule): DefModule = m match {
@@ -88,9 +88,9 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
                   WSubField(WRef(wire), s"args_${idx}"),
                   arg)})
 
-        val printBundleTarget = associatedAnno.mod.ref(printName)
+        val printBundleTarget = associatedAnno.target.ref(printName)
         val clockTarget = clk match {
-          case WRef(name,_,_,_) => associatedAnno.mod.ref(name)
+          case WRef(name,_,_,_) => associatedAnno.target.ref(name)
           case o => ???
         }
         topWiringAnnos += BridgeTopWiringAnnotation(printBundleTarget, clockTarget)

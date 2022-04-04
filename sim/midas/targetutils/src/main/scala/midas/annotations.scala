@@ -45,16 +45,16 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
 
 private [midas] case class SynthPrintfAnnotation(
     args: Seq[Seq[ReferenceTarget]], // These aren't currently used; here for future proofing
-    mod: ModuleTarget,
+    target: ModuleTarget,
     format: String,
     name: Option[String]) extends firrtl.annotations.Annotation {
 
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedArgs = args.map(_.flatMap(renamer(_)))
-    val renamedMod = renames.get(mod).getOrElse(Seq(mod)).collect({ case mt: ModuleTarget => mt })
+    val renamedMod = renames.get(target).getOrElse(Seq(target)).collect({ case mt: ModuleTarget => mt })
     assert(renamedMod.size == 1) // To implement: handle module duplication or deletion
-    Seq(this.copy(args = renamedArgs, mod = renamedMod.head ))
+    Seq(this.copy(args = renamedArgs, target = renamedMod.head ))
   }
 }
 
@@ -62,7 +62,7 @@ private [midas] case class SynthPrintfAnnotation(
 private[midas] case class ChiselSynthPrintfAnnotation(
     format: String,
     args: Seq[Bits],
-    mod: BaseModule,
+    target: BaseModule,
     name: Option[String]) extends ChiselAnnotation {
   def getTargetsFromArg(arg: Bits): Seq[ReferenceTarget] = {
     // To named throughs an exception on literals right now, so dumbly catch everything
@@ -74,7 +74,7 @@ private[midas] case class ChiselSynthPrintfAnnotation(
   }
 
   def toFirrtl() = SynthPrintfAnnotation(args.map(getTargetsFromArg),
-                                         mod.toNamed.toTarget, format, name)
+                                         target.toNamed.toTarget, format, name)
 }
 
 // For now, this needs to be invoked on the arguments to printf, not on the printf itself
