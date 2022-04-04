@@ -20,7 +20,7 @@ rootLogger = logging.getLogger()
 
 @parallel
 def instance_liveness():
-    """ Confirm that all instances are running first so that we don't run any
+    """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
     actual firesim-related commands on only some of the run farm machines."""
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
     with StreamLogger('stdout'), StreamLogger('stderr'):
