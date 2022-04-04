@@ -1,22 +1,22 @@
-.. _meta-simulation:
+.. _metasimulation:
 
-Debugging & Testing with Meta-Simulation
+Debugging & Testing with Metasimulation
 =========================================
 
 When we speak of RTL simulation in FireSim, we are generally referring to
-`meta-simulation`: simulating the FireSim simulator's RTL, typically using VCS or
-verilator. In contrast, we we'll refer to simulation of the target's RTL
-as target-level simulation. Target-level simulation in Chipyard is described at length
+`metasimulation`: simulating the FireSim simulator's RTL, typically using VCS or
+Verilator. In contrast, we we'll refer to native simulation of the target's RTL
+as `target-level` simulation. Target-level simulation in Chipyard is described at length
 `here <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulation.html>`_.
 
 Meta-simulation is the most productive way to catch bugs
 before generating an AGFI, and a means for reproducing bugs seen on the FPGA.
-By default, meta-simulation uses an abstract but fast model of the host: the
+By default, metasimulation uses an abstract but fast model of the host: the
 FPGA's DRAM controllers are modeled with DRAMSim2, the PCI-E subsystem is not
 simulated, instead the driver presents DMA and MMIO traffic directly via
 verilog DPI. Since FireSim simulations are robust against timing differences
 across hosts, target behavior observed in an FPGA-hosted simulation should be
-exactly reproducible in a meta-simulation.
+exactly reproducible in a metasimulation.
 
 Generally, meta-simulators are only slightly slower than target-level
 ones. This illustrated in the chart below.
@@ -42,14 +42,14 @@ Meta   On    35s      49s       5m27s         6m33s
 
 Notes: Default configurations of a single-core, Rocket-based instance running
 rv64ui-v-add. Frequencies are given in target-Hz. Presently, the default
-compiler flags passed to Verilator and VCS differ between meta-simulation and target-level simulation. Hence,
+compiler flags passed to Verilator and VCS differ from level to level. Hence,
 these numbers are only intended to ball park simulation speeds, not provide a
 scientific comparison between simulators. VCS numbers collected on a local Berkeley machine,
-Verilator numbers collected on a c4.4xlarge. (meta-simulation verilator version: 4.002, target-level
-verilator version: 3.904)
+Verilator numbers collected on a c4.4xlarge. (metasimulation Verilator version: 4.002, target-level
+Verilator version: 3.904)
 
 
-Running Meta-Simulation
+Running Metasimulation
 ------------------------
 
 Meta-simulations are run out of the ``firesim/sim`` directory.
@@ -130,20 +130,20 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
     make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
 
 
-Understanding A Meta-Simulation Waveform
+Understanding A Metasimulation Waveform
 ----------------------------------------
 
 Module Hierarchy
 ++++++++++++++++
-To build out a simulator, Golden Gate adds multiple layers of module hierarchy to the target
-design and performs additional hierarchy mutations to implement bridges and
-resource optimizations. Meta-simulation uses the ``FPGATop`` module as the
-top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1).
+To build out a simulator, Golden Gate adds multiple layers of module hierarchy
+to the target design and performs additional hierarchy mutations to implement bridges and
+resource optimizations. Metasimulation uses the ``FPGATop`` module as the
+top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1). 
 The original top-level of the input design is nested three levels below FPGATop:
 
 .. figure:: /img/metasim-module-hierarchy.png
 
-    The module hierarchy visible in a typical meta-simulation.
+    The module hierarchy visible in a typical metasimulation.
 
 Note that many other bridges (under ``FPGATop``), channel implementations
 (under ``SimWrapper``), and optimized models (under ``FAMETop``) may be
@@ -162,46 +162,29 @@ Clock Edges and Event Timing
 ++++++++++++++++++++++++++++
 Since FireSim derives target clocks by clock gating a single host clock, and
 since bridges and optimized models may introduce stalls of their own, timing of
-target clock edges in a meta-simulation will appear contorted relative to a
-conventional target-simulation. This is expected.
+target clock edges in a metasimulation will appear contorted relative to a
+conventional target-simulation. Specifically, the host-time between clock edges
+will not be proportional to target-time elapsed over that interval, and
+will vary in the presence of simulator stalls.
 
 Finding The Source Of Simulation Stalls
 +++++++++++++++++++++++++++++++++++++++
 In the best case, FireSim simulators will be able to launch new target clock
 pulses on every host clock cycle. In other words, for single-clock targets the
-simulation can run at FMR = 1. In the single clock case, delays are introduced
-by bridges (like FASED memory timing models) and optimized models. You can
-identify which bridges are responsible for additional delays between target
-clocks by filtering for input valid and output ready to the hub model.  When
-input valid is deasserted, the corresponding bridge or model has not yet produced a token for the
-current timestep, effectively stalling the hub.
+simulation can run at FMR = 1. In the single clock case delays are introduced by
+bridges (like FASED memory timing models) and optimized models (like a
+multi-cycle Register File model). You can identify which bridges are responsible
+for additional delays between target clocks by filtering for ``*sink_valid`` and
+``*source_ready`` on the hub model.  When ``<channel>_sink_valid`` is
+deasserted, a bridge or model has not yet produced a token for the current
+timestep, stalling the hub. When ``<channel>_source_ready`` is deasserted, a
+bridge or model is back-pressuring the channel.
 
 Scala Tests
 -----------
 
-To make it easier to do RTL-simulation-based regression testing, the Scala
-tests wrap calls to Makefiles, and run a limited set of tests on a set of selected
-designs, including all of the MIDAS examples and FireSimNoNIC.
-
-The selected tests, target configurations, as well as the type of RTL simulator
-to compile can be modified by changing the scala tests that reside at
-``firesim/sim/src/test/scala/<target-project>/``.
-
-To run all tests for a given project, with the sbt console open, do the familiar:
-
-::
-
-    test
-
-To run only tests on Rocket-Chip based targets, in the ``firechip`` SBT project run:
-
-::
-
-    testOnly firesim.firesim.*
-
-To run only the MIDAS examples, in the ``firesim`` SBT project:
-
-::
-
-    testOnly firesim.midasexamples.*
-
+To make it easier to do metasimulation-based regression testing, the ScalaTests
+wrap calls to Makefiles, and run a limited set of tests on a set of selected
+designs, including all of the MIDAS examples and a handful of Chipyard-based
+designs. This is described in greater detail
+in the :ref:`Developer documentation <Scala Integration Tests>`.

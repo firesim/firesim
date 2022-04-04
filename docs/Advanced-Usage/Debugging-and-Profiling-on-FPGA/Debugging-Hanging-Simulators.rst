@@ -9,7 +9,7 @@ obvious if it's a bug in the target, or somewhere in the host. To make it easier
 identify the problem, the simulation driver includes a polling watchdog that
 tracks for simulation progress, and periodically updates an output file,
 ``heartbeat.csv``, with a target cycle count and a timestamp. When debugging
-these issues, we always encourage the use of meta-simulation to try
+these issues, we always encourage the use of metasimulation to try
 reproducing the failure if possible. We outline three common cases in the
 section below.
 
