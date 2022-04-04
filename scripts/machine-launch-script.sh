@@ -133,6 +133,7 @@ set -o pipefail
         echo "::INFO:: installing conda to '$CONDA_INSTALL_PREFIX'"
         # -b for non-interactive install
         $SUDO bash ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX"
+        rm ./install_conda.sh
 
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
         # for more information on strict channel_priority
