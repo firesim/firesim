@@ -3,7 +3,8 @@
 CONDA_INSTALL_PREFIX=/opt/conda
 CONDA_INSTALLER_VERSION=4.12.0-0
 CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
-CONDA_ENV_NAME="base"
+CONDA_CMD="conda" # some installers install mamba or micromamba
+CONDA_ENV_NAME="firesim"
 
 DRY_RUN_OPTION=""
 DRY_RUN_ECHO=()
@@ -15,8 +16,8 @@ usage()
     echo "Options:"
     echo "[--help]                  List this help"
     echo "[--prefix <prefix>]       Install prefix for conda. Defaults to /opt/conda."
-    echo "                          If <prefix>/bin/conda already exists, it will be used."
-    echo "[--env <name>]            Name of environment to create for conda. Defaults to installing in base env."
+    echo "                          If <prefix>/bin/conda already exists, it will be used and install is skipped."
+    echo "[--env <name>]            Name of environment to create for conda. Defaults to 'firesim'."
     echo "[--dry-run]               Pass-through to all conda commands and only print other commands."
     echo "                          NOTE: --dry-run will still install conda to --prefix"
     echo
@@ -27,8 +28,11 @@ usage()
     echo "     Install into $HOME/conda and add install to ~/.bashrc"
     echo "  % $0 --prefix \${CONDA_EXE%/bin/conda} --env my_custom_env"
     echo "     Create my_custom_env in existing conda install"
-    echo "     NOTE: CONDA_EXE is set in your environment when you activate a conda env"
+    echo "     NOTES:"
+    echo "       * CONDA_EXE is set in your environment when you activate a conda env"
+    echo "       * my_custom_env will not be activated by default at login see /etc/profile.d/conda.sh & ~/.bashrc"
 }
+
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -45,6 +49,10 @@ while [ $# -gt 0 ]; do
             shift
             CONDA_ENV_NAME="$1"
             shift
+            if [[ "$CONDA_ENV_NAME" == "base" ]]; then
+                echo "::ERROR:: best practice is to install into a named environment, not base. Aborting."
+                exit 1
+            fi
             ;;
         --dry-run)
             shift
@@ -116,7 +124,7 @@ set -o pipefail
     fi
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
-    CONDA_EXE="${CONDA_INSTALL_PREFIX}/bin/conda"
+    CONDA_EXE="${CONDA_INSTALL_PREFIX}/bin/$CONDA_CMD"
 
     if [[ -x "$CONDA_EXE" ]]; then
         echo "::INFO:: '$CONDA_EXE' already exists, skipping conda install"
@@ -128,9 +136,11 @@ set -o pipefail
 
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
         # for more information on strict channel_priority
-        $SUDO "$CONDA_EXE" config --system --set channel_priority strict
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set channel_priority strict
         # By default, don't mess with people's PS1, I personally find it annoying
-        $SUDO "$CONDA_EXE" config --system --set changeps1 false
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set changeps1 false
+        # don't automatically activate the 'base' environment when intializing shells
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_activate_base false
 
         conda_init_extra_args=()
         if [[ "$INSTALL_TYPE" == system ]]; then
@@ -138,7 +148,13 @@ set -o pipefail
             # initialize conda in the system-wide rcfiles
             conda_init_extra_args=(--no-user --system)
         fi
-        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash
+        # run conda-init and look at it's output to insert 'conda activate $CONDA_ENV_NAME' into the
+        # block that conda-init will update if ever conda is installed to a different prefix and
+        # this is rerun.
+        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash |& \
+            tee >(grep '^modified' | grep -v "$CONDA_INSTALL_PREFIX" | awk '{print $NF}' | \
+            "${DRY_RUN_ECHO[@]}" $SUDO xargs -r sed -i -e "/<<< conda initialize <<</iconda activate $CONDA_ENV_NAME")
+
     fi
 
     # https://conda-forge.org/feedstock-outputs/ 
@@ -146,7 +162,7 @@ set -o pipefail
     # https://conda-forge.org/#contribute 
     #   instructions on adding a recipe
     # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
-    #   documentation on package_spec syntax
+    #   documentation on package_spec syntax for constraining versions
     CONDA_PACKAGE_SPECS=()
 
 
@@ -154,10 +170,12 @@ set -o pipefail
     # see https://github.com/rvalieris/conda-tree
     CONDA_PACKAGE_SPECS=( conda-tree )
 
+    # bundle FireSim driver with deps into installer shell-script
+    CONDA_PACKAGE_SPECS=( constructor )
+
     # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#using-the-compiler-packages
     #    for notes on using the conda compilers
-    # elfutils has trouble building with gcc 11 for something that looks like it needs to be fixed
-    # upstream
+    # elfutils has trouble building with gcc 11 for something that looks like it needs to be fixed upstream
     # ebl_syscall_abi.c:37:64: error: argument 5 of type 'int *' declared as a pointer [-Werror=array-parameter=]
     #    37 | ebl_syscall_abi (Ebl *ebl, int *sp, int *pc, int *callno, int *args)
     #       |                                                           ~~~~~^~~~
@@ -243,9 +261,7 @@ set -o pipefail
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
-        # see also: https://github.com/firesim/firesim/pull/986#discussion_r830207675
-        # we default to installing into the base environment against best practice because it
-        # simplifies adding our environment as the default to the system-wide /etc/profile.d/conda.sh
+        # NOTE: arg parsing disallows installing to base but this logic is correct if we ever change
         CONDA_SUBCOMMAND=install
         CONDA_ENV_BIN="${CONDA_INSTALL_PREFIX}/bin"
     else
@@ -276,7 +292,7 @@ set -o pipefail
         fab-classic==1.19.1 \
         mypy-boto3-ec2==1.21.9 \
         sure==2.0.0 \
-	pylddwrap==1.2.1 \
+        pylddwrap==1.2.1 \
     )
     if [[ -n "$PIP_PKGS[*]" ]]; then
         "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_PIP_EXE}" install "${PIP_PKGS[@]}"
