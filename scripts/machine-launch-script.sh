@@ -8,6 +8,7 @@ CONDA_ENV_NAME="firesim"
 
 DRY_RUN_OPTION=""
 DRY_RUN_ECHO=()
+REINSTALL_CONDA=0
 
 usage()
 {
@@ -20,6 +21,8 @@ usage()
     echo "[--env <name>]            Name of environment to create for conda. Defaults to 'firesim'."
     echo "[--dry-run]               Pass-through to all conda commands and only print other commands."
     echo "                          NOTE: --dry-run will still install conda to --prefix"
+    echo "[--reinstall-conda]       Repairs a broken base environment by reinstalling."
+    echo "                          NOTE: will only reinstall conda and exit without modifying the --env"
     echo
     echo "Examples:"
     echo "  % $0"
@@ -59,6 +62,10 @@ while [ $# -gt 0 ]; do
             DRY_RUN_OPTION="--dry-run"
             DRY_RUN_ECHO=(echo "Would Run:")
             ;;
+        --reinstall-conda)
+            shift
+            REINSTALL_CONDA=1
+            ;;
         *)
             echo "Invalid Argument: $1"
             usage
@@ -66,6 +73,10 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+if [[ $REINSTALL_CONDA -eq 1 && -n "$DRY_RUN_OPTION" ]]; then
+    echo "::ERROR:: --dry-run and --reinstall-conda are mutually exclusive.  Pick one or the other."
+fi
 
 set -ex
 set -o pipefail
@@ -126,13 +137,19 @@ set -o pipefail
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
     CONDA_EXE="${CONDA_INSTALL_PREFIX}/bin/$CONDA_CMD"
 
-    if [[ -x "$CONDA_EXE" ]]; then
+    if [[ -x "$CONDA_EXE" && $REINSTALL_CONDA -eq 0 ]]; then
         echo "::INFO:: '$CONDA_EXE' already exists, skipping conda install"
     else
         wget -O install_conda.sh "$CONDA_INSTALLER"  || curl -fsSLo install_conda.sh "$CONDA_INSTALLER"
-        echo "::INFO:: installing conda to '$CONDA_INSTALL_PREFIX'"
+        if [[ $REINSTALL_CONDA -eq 1 ]]; then
+            conda_install_extra="-u"
+            echo "::INFO:: RE-installing conda to '$CONDA_INSTALL_PREFIX'"
+        else
+            conda_install_extra=""
+            echo "::INFO:: installing conda to '$CONDA_INSTALL_PREFIX'"
+        fi
         # -b for non-interactive install
-        $SUDO bash ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX"
+        $SUDO bash ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX" $conda_install_extra
         rm ./install_conda.sh
 
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
@@ -165,6 +182,10 @@ set -o pipefail
             tee >(grep '^modified' | grep -v "$CONDA_INSTALL_PREFIX" | awk '{print $NF}' | \
             "${DRY_RUN_ECHO[@]}" $SUDO xargs -r sed -i -e "/<<< conda initialize <<</iconda activate $CONDA_ENV_NAME")
 
+        if [[ $REINSTALL_CONDA -eq 1 ]]; then
+            echo "::INFO:: Done reinstalling conda. Exiting"
+            exit 0
+        fi
     fi
 
     # https://conda-forge.org/feedstock-outputs/ 
