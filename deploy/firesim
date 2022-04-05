@@ -172,7 +172,7 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+        userconfirm = input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
         if userconfirm == "yes":
             build_config_file.release_build_hosts()
             rootLogger.info("Build farm hosts released.")
@@ -190,10 +190,11 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
     # remote items will map themselves
     build_config_file.request_build_hosts()
 
-    # confirm that build farm hosts have finished booting
+    # confirm that build hosts are in running state so that they have
+    # been assigned IP addresses
     build_config_file.wait_on_build_host_initializations()
 
-    # run builds, then terminate instances
+    # run builds, then terminate build hosts
     execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set)
 
 

@@ -157,4 +157,4 @@ Here the main order of business is to add header and source files to
     :end-before: DOC include end: Bridge Build System Changes
 
 That's it! At this point you should be able to both test your bridge in software
-simulation using meta-simulation, or deploy it to an FPGA.
+simulation using metasimulation, or deploy it to an FPGA.

@@ -1,0 +1,156 @@
+Compiler & Driver Development
+=======================================================
+
+.. _Scala Integration Tests:
+
+Integration Tests
++++++++++++++++++
+
+These are ``ScalaTests`` that call out to FireSim's Makefiles. These
+constitute the bulk of FireSim's tests for Target, Compiler, and Driver side
+features. Each of these tests proceeds as follows:
+
+#. Elaborate a small Chisel target design that exercises a single feature (e.g., printf synthesis)
+#. Compile the design with GoldenGate
+#. Compile metasimulator using a target-specific driver and the Golden Gate-generated collateral
+#. Run metasimulation with provided arguments (possibly multiple times)
+#. Post-process metasimulation outputs in Scala
+
+Single tests may be run directly out of ``sim/`` as follows::
+
+   # Run all Chipyard-based tests (uses Rocket + BOOM)
+   make test
+
+   # Run all integration tests (very long running, not recommended)
+   make TARGET_PROJECT=midasexamples test
+
+   # Run a specific integration test (desired)
+   make TARGET_PROJECT=midasexamples testOnly=firesim.midasexamples.GCDF1Test
+
+These tests may be run from the SBT console continuously, and SBT will rerun
+them on Scala changes (but not driver changes). Out of ``sim/``::
+
+   # Launch the SBT console into the firesim subproject
+   # NB: omitting TARGET_PROJECT will put you in the FireChip subproject instead
+   make TARGET_PROJECT=midasexamples sbt
+
+   # Compile the Scala test sources (optional, to enable tab completion)
+   sbt:firesim> Test / compile
+
+   # Run a specific test once
+   sbt:firesim> testOnly firesim.midasexamples.GCDF1Test
+
+   # Continuously rerun the test on Scala changes
+   sbt:firesim> ~testOnly firesim.midasexamples.GCDF1Test
+
+
+Key Files & Locations
+---------------------
+- `sim/firesim-lib/src/test/scala/TestSuiteCommon.scala <https://github.com/firesim/firesim/blob/ |version| /sim/firesim-lib/src/test/scala/TestSuiteCommon.scala>`_
+   Base ScalaTest class for all tests that use FireSim's make build system
+- `sim/src/test/scala/midasexamples/TutorialSuite.scala <https://github.com/firesim/firesim/blob/ |version| /sim/src/test/scala/midasexamples/TutorialSuite.scala>`_
+   Extension of TestSuiteCommon for most integration tests + concrete subclasses
+- `sim/src/main/cc/midasexamples/ <https://github.com/firesim/firesim/blob/ |version| /sim/src/main/cc/midasexamples/>`_
+   C++ sources for target-specific drivers
+- `sim/src/main/cc/midasexamples/Driver.cc <https://github.com/firesim/firesim/blob/ |version| /sim/src/main/cc/midasexamples/Driver.cc>`_
+   driver main; where target-specific drivers are registered
+- `sim/src/main/cc/midasexamples/simif_peek_poke.h <https://github.com/firesim/firesim/blob/ |version| /sim/src/main/cc/midasexamples/simif_peek_poke.h>`_
+   A common driver to extend for simple tests
+- `sim/src/scala/midasexamples/ <https://github.com/firesim/firesim/tree/ |version| /sim/src/main/scala/midasexamples>`_
+   Where top-level Chisel modules (targets) are defined
+
+Defining a New Test
+--------------------
+
+#. Define a new target module (if applicable) under ``sim/src/main/scala/midasexamples``.
+#. Define a driver by extending ``simif_t`` or another child class under ``src/main/cc/midasexamples``. Tests
+   sequenced with the Peek Poke bridge may extend ``simif_peek_poke_t``.
+
+#. Register the driver's header in ``midasexamples/src/main/cc/Driver.cc``. The
+   CPP macro ``DESIGNNAME_<Module Name>`` will be set using the top-level module's name specified in your ScalaTest.
+
+#. Define a ScalaTest class for your design by extending ``TutorialSuite``. Parameters will
+   define define the tuple (``DESIGN``, ``TARGET_CONFIG``, ``PLATFORM_CONFIG``), and call
+   out additional plusArgs to pass to the metasimulator.  See the ScalaDoc for
+   more info. Post-processing of metasimulator outputs (e.g., checking output file contents) can be implemented in
+   the body of your test class.
+
+
+Synthesizable Unit Tests
+++++++++++++++++++++++++
+
+These are derived from Rocket-Chip's synthesizable unit test library and are
+used to test smaller, stand-alone Chisel modules.
+
+Synthesizable unit tests may be run out of ``sim/`` as follows::
+
+   # Run default tests without waves
+   $ make run-midas-unittests
+
+   # Run default suite with waves
+   $ make run-midas-unittests-debug
+
+   # Run default suite under Verilator
+   $ make run-midas-unittests  EMUL=verilator
+
+   # Run a different suite (registered under class name TimeOutCheck)
+   $ make run-midas-unittests  CONFIG=TimeOutCheck
+
+Setting the make variable ``CONFIG`` to different scala class names will select
+between different sets of unittests.  All synthesizable unittests registered
+under ``WithAllUnitTests`` class are run from ScalaTest and in CI.
+
+Key Files & Locations
+---------------------
+
+- `sim/midas/src/main/scala/midas/SynthUnitTests.scala <https://github.com/firesim/firesim/blob/ |version| /sim/midas/src/main/scala/midas/SynthUnitTests.scala>`_
+   Synthesizable unit test modules are registered here.
+- `sim/midas/src/main/cc/unittest/Makefrag: <https://github.com/firesim/firesim/blob/ |version| /sim/midas/src/main/cc/unittest/Makefrag>`_
+   Make recipes for building and running the tests.
+- `sim/firesim-lib/src/test/scala/TestSuiteCommon.scala <https://github.com/firesim/firesim/blob/ |version| /sim/firesim-lib/src/test/scala/TestSuiteCommon.scala>`_
+   ScalaTest wrappers for running synthesizable unittests
+
+Defining a New Test
+--------------------
+#. Define a new Chisel module that extends ``freechips.rocketchip.unittest.UnitTest``
+#. Register your modules in a ``Config`` using the ``UnitTests`` key. See ``SynthUnitTests.scala`` for examples.
+
+Scala Unit Testing
+++++++++++++++++++
+
+We also use ScalaTest to test individual transforms, classes, and target-side Chisel
+features (in ``targetutils`` package). These can be found in
+``<subproject>/src/test/scala`` as is customary of Scala projects.  ScalaTests in ``targetUtils``
+generally ensure that target-side annotators behave correctly when deployed in a
+generator (they elaborate correctly or they give the desired error message.)
+ScalaTests in ``midas`` are mostly tailored to testing FIRRTL transforms, and
+have copied FIRRTL testing utilities into the source tree to make that process easier.
+
+``targetUtils`` scala tests can be run out of ``sim/`` as follows::
+
+   # Pull open the SBT console in the firesim subproject
+   $ make TARGET_PROJECT=midasexamples sbt
+
+   # Switch to the targetutils package
+   sbt:firesim> project targetutils
+
+   # Run all scala tests under the ``targetutils`` subproject
+   sbt:midas-targetutils> test
+
+Golden Gate (formerly midas) scala tests can be run by setting the scala project
+to ``midas``, as in step 2 above.
+
+Key Files & Locations
+---------------------
+
+- `sim/midas/src/test/scala/midas <https://github.com/firesim/firesim/tree/ |version| /sim/midas/src/test/scala/midas>`_
+   Location of GoldenGate ScalaTests
+- `sim/midas/targetutils/src/test/scala <https://github.com/firesim/firesim/tree/ |version| /sim/midas/targetutils/src/test/scala>`_
+   Location of targetutils ScalaTests
+
+Defining A New Test
+---------------------
+
+Extend the appropriate ScalaTest spec or base class, and
+place the file under the correct ``src/test/scala`` directory. They will be
+automatically enumerated by ScalaTest and will run in CI by default.
