@@ -163,6 +163,9 @@ DRIVER_CXXOPTS ?= -O2
 $(PLATFORM) = $(OUTPUT_DIR)/$(DESIGN)-$(PLATFORM)
 $(PLATFORM): $($(PLATFORM))
 
+.PHONY: driver
+driver: $($(PLATFORM))
+
 fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
 
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
