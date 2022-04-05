@@ -296,9 +296,8 @@ class RunFarm:
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice, timeout, always_expand)
 
-        # wait for instances to finish launching
-        # TODO: maybe we shouldn't do this, but just let infrasetup block. That
-        # way we get builds out of the way while waiting for instances to launch
+        # wait for instances to get to running state, so that they have been
+        # assigned IP addresses
         for instance_type_name in self.supported_instance_type_names:
             wait_on_instance_launches(launched_instance_objs[instance_type_name], instance_type_name)
 

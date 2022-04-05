@@ -147,7 +147,7 @@ Specifying A Target Instance
 To generate a specific instance of a target, the build system leverages four Make variables:
 
 1. ``TARGET_PROJECT``: this points the Makefile (`sim/Makefile`) at the right
-   target-specific Makefrag, which defines the generation and meta-simulation
+   target-specific Makefrag, which defines the generation and metasimulation
    software recipes.  The makefrag for the default target project is
    defined at ``sim/src/main/makefrag/firesim``.
 

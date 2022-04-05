@@ -26,14 +26,21 @@ class GoldenGateCompilerPhase extends Phase {
 
     implicit val p = annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
 
-    val midasAnnos = Seq(InferReadWriteAnnotation)
+    val midasAnnos = Seq(
+      firrtl.passes.memlib.InferReadWriteAnnotation,
+      firrtl.passes.memlib.DefaultReadFirstAnnotation,
+      firrtl.passes.memlib.PassthroughSimpleSyncReadMemsAnnotation)
+
     val state = CircuitState(allCircuits.head, firrtl.ChirrtlForm, annotations ++ midasAnnos)
 
     // Lower the target design and run additional target transformations before Golden Gate xforms
     val targetLoweringCompiler = new Compiler(
       Seq(
         Dependency[midas.passes.RunConvertAssertsEarly],
-        Dependency(firrtl.transforms.formal.ConvertAsserts)) ++
+        Dependency(firrtl.transforms.formal.ConvertAsserts),
+        Dependency[firrtl.passes.memlib.InferReadWrite],
+        Dependency[firrtl.transforms.SimplifyMems],
+      ) ++
       Forms.LowForm ++
       p(TargetTransforms))
     logger.info("Pre-GG Target Transformation Ordering\n")
@@ -45,15 +52,27 @@ class GoldenGateCompilerPhase extends Phase {
       Forms.LowForm ++ Seq(Dependency[InferReadWrite], Dependency[MidasTransforms]),
       Forms.LowForm).execute(loweredTarget)
 
-    // Lower and emit simulator RTL and run user-requested host-transforms
+    // Lower simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      // We should probably ensure all provided Host Transforms run before
-      // these two.  Perhaps we should just use a fourth compiler, or make sure
-      // user provided passes specify the right prerequisites?
-      Seq(Dependency[firrtl.SystemVerilogEmitter], Dependency(midas.passes.WriteXDCFile)) ++:
-      p(HostTransforms),Forms.LowForm)
+      Seq(Dependency[firrtl.passes.memlib.SeparateWriteClocks],
+          Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
+          Dependency[firrtl.transforms.SimplifyMems],
+      ) ++
+      p(HostTransforms),Forms.VerilogOptimized)
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(hostLoweringCompiler.prettyPrint("  "))
-    hostLoweringCompiler.execute(simulator).annotations
+    val loweredSimulator = hostLoweringCompiler.execute(simulator)
+
+    // Workaround under-constrained transform dependencies by forcing the
+    // emitter to run last in a seperate compiler.
+    val emitter = new Compiler(
+        Seq(Dependency(midas.passes.WriteXDCFile), Dependency[firrtl.SystemVerilogEmitter]),
+        Forms.VerilogOptimized)
+    logger.info("Final Emission Transformation Ordering\n")
+    logger.info(emitter.prettyPrint("  "))
+
+    emitter
+      .execute(loweredSimulator)
+      .annotations
   }
 }
