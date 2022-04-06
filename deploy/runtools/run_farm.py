@@ -9,6 +9,8 @@ from fabric.contrib.project import rsync_project
 from util.streamlogger import StreamLogger
 import time
 
+from os.path import join as pjoin
+
 rootLogger = logging.getLogger()
 
 def remote_kmsg(message):
@@ -579,11 +581,10 @@ class InstanceDeployManager:
             run("""mkdir -p {}""".format(remote_sim_rsync_dir))
 
         files_to_copy = serv.get_required_files_local_paths()
-        for filename in files_to_copy:
-            # here, filename is a pair of (local path, remote path)
+        for local_path, remote_path in files_to_copy:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 # -z --inplace
-                rsync_cap = rsync_project(local_dir=filename[0], remote_dir=remote_sim_rsync_dir + '/' + filename[1],
+                rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
                               ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
@@ -601,9 +602,9 @@ class InstanceDeployManager:
 
         switch = self.parentnode.switch_slots[switchslot]
         files_to_copy = switch.get_required_files_local_paths()
-        for filename in files_to_copy:
+        for local_path, remote_path in files_to_copy:
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                put(filename, remote_switch_dir, mirror_local_mode=True)
+                put(local_path, pjoin(remote_switch_dir, remote_path), mirror_local_mode=True)
 
     def start_switch_slot(self, switchslot):
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))

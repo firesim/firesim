@@ -3,6 +3,7 @@
 import logging
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
+from runtools.utils import get_local_shared_libraries
 from util.streamlogger import StreamLogger
 from fabric.api import *
 from fabric.contrib.project import rsync_project
@@ -356,7 +357,7 @@ class FireSimServerNode(FireSimNode):
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
 
         # shared libraries
-        all_paths += self.server_hardware_config.get_local_shared_libraries(driver_path)
+        all_paths += get_local_shared_libraries(driver_path)
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
@@ -520,7 +521,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append([driver_path, ''])
 
         # shared libraries
-        all_paths += self.server_hardware_config.get_local_shared_libraries(driver_path)
+        all_paths += get_local_shared_libraries(driver_path)
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
@@ -587,7 +588,9 @@ class FireSimSwitchNode(FireSimNode):
         """ Return local paths of all stuff needed to run this simulation as
         array. """
         all_paths = []
-        all_paths.append(self.switch_builder.switch_binary_local_path())
+        bin = self.switch_builder.switch_binary_local_path()
+        all_paths.append((bin, ''))
+        all_paths += get_local_shared_libraries(bin)
         return all_paths
 
     def get_switch_start_command(self):

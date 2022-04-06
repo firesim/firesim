@@ -129,9 +129,7 @@ class AbstractSwitchToSwitchConfig:
         return "switch" + str(self.fsimswitchnode.switch_id_internal)
 
     def buildswitch(self):
-        """ Generate the config file, build the switch.
-
-        TODO: replace calls to subprocess.check_call here with fabric."""
+        """ Generate the config file, build the switch."""
 
         configfile = self.emit_switch_configfile()
         binaryname = self.switch_binary_name()
