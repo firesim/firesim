@@ -198,7 +198,9 @@ jobs:
           sudo yum install -y python3-pip make
           sudo pip3 install -r docs/requirements.txt
           make -C docs html
-      - name: Show error log from sphinx if failed
+      - name: Show error log and dump objects.inv from sphinx if failed
         if: ${{ steps.job-start.outputs.run_result != 'success' && failure() }}
-        run: cat /tmp/sphinx-err*.log
+        run: |
+          python3 -m sphinx.ext.intersphinx docs/_build/html/objects.inv
+          cat /tmp/sphinx-err*.log
       - uses: ./.github/actions/job-end
