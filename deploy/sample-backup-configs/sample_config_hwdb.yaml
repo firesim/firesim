@@ -10,7 +10,7 @@
 # own images.
 
 firesim-boom-singlecore-nic-l2-llc4mb-ddr3:
-    afgi: agfi-03a8b870f4b855eb5
+    agfi: agfi-03a8b870f4b855eb5
     deploy-triplet-override: null
     custom-runtime-config: null
 
@@ -20,17 +20,17 @@ firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3:
     custom-runtime-config: null
 
 firesim-rocket-quadcore-nic-l2-llc4mb-ddr3:
-    afgi: agfi-0c98cee39819753e5
+    agfi: agfi-0c98cee39819753e5
     deploy-triplet-override: null
     custom-runtime-config: null
 
 firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3:
-    afgi: agfi-0c7cd0bf5f0cb0264
+    agfi: agfi-0c7cd0bf5f0cb0264
     deploy-triplet-override: null
     custom-runtime-config: null
 
 firesim-supernode-rocket-singlecore-nic-l2-lbp:
-    afgi: agfi-0e9a315c33ca3e9e8
+    agfi: agfi-0e9a315c33ca3e9e8
     deploy-triplet-override: null
     custom-runtime-config: null
 
