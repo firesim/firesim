@@ -51,7 +51,7 @@ firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3:
     DESIGN: FireSim
     TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomConfig
     deploy-triplet: null
-    PLATFORM_CONFIG: WithAutoILA_F75MHz_BaseF1Config
+    PLATFORM_CONFIG: WithAutoILA_F65MHz_BaseF1Config
     post-build-hook: null
     s3-bucket-name: firesim-AWSUSERNAME
 
