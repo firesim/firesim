@@ -414,7 +414,10 @@ class InstanceDeployManager:
             run('mkdir -p /home/centos/xdma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
                 '/home/centos/xdma/', mirror_local_mode=True)
-            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
+            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'), \
+                 prefix("export PATH=/usr/bin:$PATH"):
+		 # prefix only needed if conda env is earlier in PATH
+		 # see build-setup-nolog.sh for explanation.
                 run('make clean')
                 run('make')
 
@@ -426,6 +429,7 @@ class InstanceDeployManager:
         self.instance_logger("""Setting up remote node for qcow2 disk images.""")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             # get qemu-nbd
+            ### XXX Centos Specific
             run('sudo yum -y install qemu-img')
             # copy over kernel module
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
