@@ -1,9 +1,23 @@
 import socket
 import logging
 import os
-import sys
 import subprocess as sp
 from . import wlutil
+
+jobProcs = []
+
+
+# Terminates jobs unless they have stopped running already
+def cleanUpSubProcesses():
+    log = logging.getLogger()
+    for proc in jobProcs:
+        if proc.poll() is None:
+            log.info(f'cleaning up launched workload process {proc.pid}')
+            proc.terminate()
+
+
+# Register clean up function with wlutil.py so it can be called by SIGINT handler
+wlutil.registerCleanUp(cleanUpSubProcesses)
 
 
 # Kinda hacky (technically not guaranteed to give a free port, just very likely)
@@ -75,7 +89,7 @@ def getQemuCmd(config, nodisk=False):
     return " ".join(cmd) + " " + config.get('qemu-args', '')
 
 
-def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
+def launchWorkload(baseConfig, jobs=None, spike=False, silent=False):
     """Launches the specified workload in functional simulation.
 
     cfgName: unique name of the workload in the cfgs
@@ -83,8 +97,8 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
     jobs: List of job names to launch. If jobs is None we use the parent of
     all the jobs (i.e.  the top-level workload in the config).
     spike: Use spike instead of the default qemu as the functional simulator
-    interactive: If true, the output from the simulator will be displayed to
-        stdout. If false, only the uartlog will be written (it is written live and
+    silent: If false, the output from the simulator will be displayed to
+        stdout. If true, only the uartlog will be written (it is written live and
         unbuffered so users can still 'tail' the output if they'd like).
 
     Returns: Path of output directory
@@ -103,31 +117,53 @@ def launchWorkload(baseConfig, jobs=None, spike=False, interactive=True):
         configs = [baseConfig['jobs'][j] for j in jobs]
 
     baseResDir = wlutil.getOpt('res-dir') / wlutil.getOpt('run-name')
+
+    screenIdentifiers = {}
+
+    try:
+        for config in configs:
+            if config['launch']:
+                runResDir = baseResDir / config['name']
+                uartLog = runResDir / "uartlog"
+                os.makedirs(runResDir)
+
+                if spike:
+                    cmd = getSpikeCmd(config, config['nodisk'])
+                else:
+                    cmd = getQemuCmd(config, config['nodisk'])
+
+                log.info(f"\nLaunching job {config['name']}")
+                log.info(f'Running: {cmd}')
+                if silent:
+                    log.info("For live output see: " + str(uartLog))
+
+                scriptCmd = f'script -f -c "{cmd}" {uartLog}'
+
+                if not silent and len(configs) == 1:
+                    jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+                else:
+                    jobProcs.append(sp.Popen(["screen", "-S", config['name'], "-D", "-m", "bash", "-c", scriptCmd], stderr=sp.STDOUT))
+
+                screenIdentifiers[config['name']] = config['name']
+                log.info('Opened screen session for {0} with identifier {1}'.format(config['name'], screenIdentifiers[config['name']]))
+
+        log.info("\nList of screen session identifers:")
+        for config in configs:
+            if config['launch']:
+                log.info(f"{config['name']}: {screenIdentifiers[config['name']]}")
+        log.info("\n")
+
+        for proc in jobProcs:
+            proc.wait()
+
+    except Exception:
+        cleanUpSubProcesses()
+        raise
+
     for config in configs:
-        if config['launch']:
-            runResDir = baseResDir / config['name']
-            uartLog = runResDir / "uartlog"
-            os.makedirs(runResDir)
-
-            if spike:
-                cmd = getSpikeCmd(config, config['nodisk'])
-            else:
-                cmd = getQemuCmd(config, config['nodisk'])
-
-            log.info("Running: " + "".join(cmd))
-            if not interactive:
-                log.info("For live output see: " + str(uartLog))
-            with open(uartLog, 'wb', buffering=0) as uartF:
-                with sp.Popen(cmd.split(), stderr=sp.STDOUT, stdout=sp.PIPE) as p:
-                    for c in iter(lambda: p.stdout.read(1), b''):
-                        if interactive:
-                            sys.stdout.buffer.write(c)
-                            sys.stdout.flush()
-                        uartF.write(c)
-
-            if 'outputs' in config:
-                outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
-                wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
+        if 'outputs' in config:
+            outputSpec = [wlutil.FileSpec(src=f, dst=runResDir) for f in config['outputs']]
+            wlutil.copyImgFiles(config['img'], outputSpec, direction='out')
 
     if 'post_run_hook' in baseConfig:
         prhCmd = [baseConfig['post_run_hook'].path] + baseConfig['post_run_hook'].args + [baseResDir]
