@@ -8,9 +8,10 @@ that script installed many dependencies that FireSim needs using
 manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_.
 
 In many situations, you may not need to know anything about ``conda``.  By default, the
-``machine-launch-script.sh`` installs ``conda`` and all of the FireSim dependencies into ``/opt/conda``
-and adds the required setup to the system-wide ``/etc/profile.d/conda.sh`` init script to add
-``/opt/conda`` to everyone's path.
+``machine-launch-script.sh`` installs ``conda`` into ``/opt/conda`` and all of the FireSim dependencies into
+a 'named environment' ``firesim`` at ``/opt/conda/envs/firesim``.
+``machine-launch-setup.sh`` also adds the required setup to the system-wide ``/etc/profile.d/conda.sh`` init script to add
+``/opt/conda/envs/firesim/bin`` to everyone's path.
 
 However, the script is also flexible.  For example, if you do not have root access, you can specify
 an alternate install location with the ``--prefix`` option to ``machine-launch-script.sh``.  The only requirement
@@ -22,12 +23,12 @@ is that you are able to write into the install location.  See ``machine-launch-s
     you are able to act as root via ``sudo``.
 
     However, you can do many things without having root, like :doc:`/Building-a-FireSim-AFI`,
-    :ref:`meta-simulation` of a FireSim system using Verilator or even developing new features in FireSim.
+    `<meta-simulation>`_ of a FireSim system using Verilator or even developing new features in FireSim.
 
 Updating a Package Version
 --------------------------
 
-If you need a newer version of package and you are brave, the most expedient method to see whether there
+If you need a newer version of package, the most expedient method to see whether there
 is a newer version available on `conda-forge`_ is to run ``conda update <package-name>``.  If you are lucky,
 and the dependencies of the package you want to update are simple, you'll see output that looks something like
 this ::
@@ -55,9 +56,9 @@ this ::
     Proceed ([y]/n)?
 
 
-The addition of ``graphql-core`` makes sense when looking at the `diff of moto's setup.py between
+The addition of ``graphql-core`` makes sense because the `diff of moto's setup.py between
 2.2.19 and 3.1.0 <https://github.com/spulec/moto/compare/2.2.19...3.1.0#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7>`_
-because it was clearly added as a new dependence.
+shows it was clearly added as a new dependence.
 
 And this output tells us that latest version of ``moto`` available is 3.1.0.  Now, you might be tempted to
 hit ``<<Enter>>`` and move forward with your life.
@@ -66,11 +67,12 @@ hit ``<<Enter>>`` and move forward with your life.
 
     However, it is always a better idea to modify the version in ``machine-launch-script.sh`` so that:
     #. you remember to commit and share the new version requirement.
-    #. you are providing a complete set of requirements for ``conda`` to solve
+    #. you are providing a complete set of requirements for ``conda`` to solve.  There is a subtle difference between
+
 
 So, modify ``machine-launch-script.sh`` with the updated version of ``moto``, and run it.  If you'd like to see what
-it will do first, feel free to give it the ``--dry-run`` option, look at the output and then run again leaving ``--dry-run``
-off.
+``machine-launch-script.sh`` will do before actually making changes to your environment, feel free to give it the ``--dry-run``
+option, look at the output and then run again without ``--dry-run``.
 
 In this case, when you are finished, you can run ``conda list --revisions`` and you should see output
 like the following ::
@@ -96,7 +98,9 @@ like the following ::
     2022-03-15 19:34:06  (rev 1)
          moto  {2.2.19 (conda-forge/noarch) -> 3.1.0 (conda-forge/noarch)}
 
-
+This shows you that the first time ``machine-launch-script.sh`` was run, it created 'revision' 0 of the environment with
+many packages.  After updating the version of ``moto`` and rerunning, 'revision' 1 was created by updating the version
+of ``moto``.  At any time, you can revert your conda environment back to an older 'revision' using ``conda install -revision <n>``
 
 Multiple Environments
 ---------------------
@@ -140,7 +144,8 @@ Look for what you need in this order:
 
 #. `The existing conda-forge packages list <feedstock-list>`_.  Keep in mind that since ``conda`` spans several domains, the
    package name may not be exactly the same as a name from PyPI or one of the system package managers.
-#. `Adding a conda-forge recipe <https://conda-forge.org/#add_recipe>`_
+#. `Adding a conda-forge recipe <https://conda-forge.org/#add_recipe>`_. If you do this, let the firesim@googlegroups.com
+   mailing list know so that we can help get the addition merged.
 #. `PyPI <https://pypi.org/>`_ (for Python packages).  While it is possible to install packages with pip into a ``conda``
    environment, `there are caveats <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html?highlight=pip#using-pip-in-an-environment>`_.
    In short, you're less likely to create a mess if you use only conda to manage the requirements and dependencies
@@ -148,6 +153,8 @@ Look for what you need in this order:
 #. System packages as a last resort.  It's very difficult to have the same tools on different platforms when they are being
    built and shipped by different systems and organizations.  That being said, in a pinch, you can find a section for
    platform-specific setup in ``machine-launch-script.sh``.
+#. As a *super* last resort, add code to ``machine-launch-script.sh`` or ``build-setup.sh`` that installs whatever you need
+   and during your PR, we'll help you migrate to one of the other options above.
 
 Building From Source
 --------------------
@@ -155,7 +162,7 @@ Building From Source
 If you find that a package is missing an optional feature, consider looking up it's 'feedstock' (aka recipe) repo in
 `The existing conda-forge packages list <feedstock-list>`_.  and submitting an issue or PR to the 'feedstock' repo.
 
-If you instead need to enable debugging or possibly actively hack on the source of something we package:
+If you instead need to enable debugging or possibly actively hack on the source of a package:
 
 #. Find the feedstock repo in the `feedstock-list`_
 #. Clone the feedstock repo and modify ``recipe/build.sh`` (or ``recipe/meta.yaml`` if there isn't a build script)
@@ -180,7 +187,7 @@ your package in 'development mode' using ``pip install -e <path to clone>`` (and
 Running conda with sudo
 -----------------------
 
-tl;dr; run conda like this when using ``sudo``::
+``tl;dr;`` run conda like this when using ``sudo``::
 
     sudo -E $CONDA_EXE <remaining options to conda>
 
@@ -191,6 +198,20 @@ in the ``secure_path``.
 You also probably want to include the ``-E`` option to ``sudo`` (or more specifically
 ``--preserve-env=CONDA_DEFAULT_ENV``) so that the default choice for the environment to modify
 is preserved in the sudo environment.
+
+Running things from your conda environment with sudo
+----------------------------------------------------
+
+If you are running other commands using sudo (perhaps to run something under gdb), remember, the ``secure_path``
+does not include the conda environment by default and you will need to specify the full path to what you want to run,
+or in some cases, it is easiest to wrap what you want to run in a full login shell invocation like::
+
+   sudo /bin/bash -l -c "<command to run as root>"
+
+The ``-l`` option to ``bash`` ensures that the **default** conda environment is fully activated.  In the rare case that
+you are using a non-default named environment, you will want to activate it before running your command::
+
+    sudo /bin/bash -l -c "conda activate <myenv> && <command to run as root>"
 
 
 Additional Resources
