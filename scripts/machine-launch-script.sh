@@ -219,7 +219,7 @@ set -o pipefail
     #
     # pin to gcc=10 until we get that fixed.
 
-    CONDA_PACKAGE_SPECS+=( gcc=10 gxx=10 binutils )
+    CONDA_PACKAGE_SPECS+=( gcc=10 gxx=10 binutils conda-gcc-specs )
 
 
     # poky deps
@@ -337,21 +337,6 @@ set -o pipefail
         argcomplete_extra_args=( --user )
     fi
     "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
-
-
-    # temporarily hack the gcc specfile until
-    # https://github.com/conda-forge/ctng-compilers-feedstock/pull/91 is resolved upstream
-    gcc_machine=$($CONDA_ENV_BIN/gcc -dumpmachine)
-    gcc_version=$($CONDA_ENV_BIN/gcc --version | head -n1 | awk '{print $NF}')
-    CONDA_ENV_PREFIX=$(readlink -e $CONDA_ENV_BIN/..)
-    specdir=$CONDA_ENV_PREFIX/lib/gcc/$gcc_machine/$gcc_version
-
-    "${DRY_RUN_ECHO[@]}" $SUDO sed -i -e "/\*link_command:/,+1 s+%.*+& %{\!static:-rpath ${CONDA_ENV_PREFIX}/lib -rpath-link ${CONDA_ENV_PREFIX}/lib -disable-new-dtags} -L ${CONDA_ENV_PREFIX}/lib+" $specdir/specs
-    # use -idirafter to put the conda "system" includes where /usr/local/include would typically go
-    # in a system-packaged non-cross compiler
-    "${DRY_RUN_ECHO[@]}" $SUDO sed -i -e "/\*cpp_options:/,+1 s+%.*+& -idirafter ${CONDA_ENV_PREFIX}/include+" $specdir/specs
-    # cc1_options also get used for cc1plus... at least in 11.2.0
-    "${DRY_RUN_ECHO[@]}" $SUDO sed -i -e "/\*cc1_options:/,+1 s+%.*+& -idirafter ${CONDA_ENV_PREFIX}/include+" $specdir/specs
 
 } 2>&1 | tee machine-launchstatus.log
 chmod ugo+r machine-launchstatus.log
