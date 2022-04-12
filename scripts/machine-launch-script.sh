@@ -67,10 +67,17 @@ sudo python3 -m pip install pandas==1.1.5
 sudo python3 -m pip install awscli==1.22.21
 sudo python3 -m pip install pytest==6.2.5
 sudo python3 -m pip install pytest-dependency==0.5.1
+sudo python3 -m pip install pytest-mock==3.6.1
 sudo python3 -m pip install moto==3.1.0
 sudo python3 -m pip install sure==2.0.0
 # needed for the awstools cmdline parsing
 sudo python3 -m pip install pyyaml==5.4.1
+sudo python3 -m pip install mypy==0.931
+sudo python3 -m pip install types-PyYAML==6.0.4
+sudo python3 -m pip install boto3-stubs==1.21.6
+sudo python3 -m pip install botocore-stubs==1.24.6
+sudo python3 -m pip install mypy-boto3-ec2==1.21.1
+sudo python3 -m pip install mypy-boto3-s3==1.21.0
 
 # setup argcomplete
 activate-global-python-argcomplete

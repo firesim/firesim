@@ -9,8 +9,8 @@ import datetime
 from runtools.switch_model_config import *
 from runtools.firesim_topology_core import *
 from runtools.utils import MacAddress
-from fabric.api import *
-from colorama import Fore, Style
+from fabric.api import * # type: ignore
+from colorama import Fore, Style # type: ignore
 import types
 from functools import reduce
 
@@ -18,7 +18,7 @@ from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
 
-@parallel
+@parallel # type: ignore
 def instance_liveness():
     """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
     actual firesim-related commands on only some of the run farm machines."""
@@ -131,7 +131,7 @@ class FireSimTopologyWithPasses:
         """ Produce a PDF that shows a diagram of the network.
         Useful for debugging passes to see what has been done to particular
         nodes. """
-        from graphviz import Digraph
+        from graphviz import Digraph # type: ignore
 
         gviz_graph = Digraph('gviz_graph', filename='generated-topology-diagrams/firesim_topology'
                              + self.user_topology_name + '.gv',

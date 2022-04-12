@@ -1,5 +1,7 @@
 #include "heartbeat.h"
 
+#include <inttypes.h>
+
 heartbeat_t::heartbeat_t(simif_t* sim, std::vector<std::string> &args):
         bridge_driver_t(sim),
         sim(sim) {
@@ -33,7 +35,7 @@ void heartbeat_t::tick(){
         last_cycle = current_cycle;
 
         if (has_timed_out) {
-            fprintf(stderr, "Simulator deadlock detected at target cycle %lld. Terminating.\n", current_cycle);
+            fprintf(stderr, "Simulator deadlock detected at target cycle %" PRId64 ". Terminating.\n", current_cycle);
         }
     } else {
         trip_count++;
