@@ -76,7 +76,13 @@ Be advised that FireMarshal will run initialization scripts provided by
 workloads. These scripts will have all the permissions your user has, be sure
 to read all workloads carefully before building them.
 
+# Releases
+The master branch of this project contains the latest unstable version of
+FireMarshal. It should generally work correctly, but it may contain bugs or
+other inconsistencies from time to time. For stable releases, see the release
+git tags or github releases page.
+
 # Getting Help / Discussion:
 * For general questions, help, and discussion: use the FireSim user forum: https://groups.google.com/forum/#!forum/firesim
 * For bugs and feature requests: use the github issue tracker: https://github.com/firesim/FireMarshal/issues
-* See CONTRIBUTING.md for more details
+* See CONTRIBUTING.md for information on how to contribute to the project 
