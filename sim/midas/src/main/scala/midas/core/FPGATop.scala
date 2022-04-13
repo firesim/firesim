@@ -12,6 +12,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.{DecoupledHelper, HeterogeneousBag}
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 /**
@@ -76,7 +77,8 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
     "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   lazy val config = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
-  val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
+  val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
+    ListMap((bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget))):_*)
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
   // according to their memoryRegionName. Requested addresses will be unified
