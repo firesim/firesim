@@ -71,6 +71,12 @@ class BuildConfig:
                 self.s3_bucketname = aws_resource_names_dict['s3bucketname']
         self.post_build_hook = recipe_config_dict['post-build-hook']
 
+        self.fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform', "F1BitBuilder")
+        # create run platform dispatcher object using class given and pass args to it
+        self.fpga_bit_builder_dispatcher = getattr(
+            import_module("buildtools.bitbuilder"),
+            self.fpga_bit_builder_dispatcher_class_name)(self)
+
     def get_chisel_triplet(self) -> str:
         """Get the unique build-specific '-' deliminated triplet.
 

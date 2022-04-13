@@ -5,6 +5,7 @@ import sys
 import yaml
 from collections import defaultdict
 from importlib import import_module
+from fabric.api import parallel # type: ignore
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
@@ -164,8 +165,18 @@ class BuildConfigFile:
                 return build
         return None
 
-    def __repr__(self) -> str:
-        return f"< {type(self)}(file={self.args.buildconfigfile!r}, recipes={self.args.buildrecipesconfigfile!r}, build_farm={self.build_farm!r}) @{id(self)} >"
+    # XXX Hoist this back into buildafi, fpgabuild or whatever it's going to be called
+    # and remove fabric import from above
+    @parallel
+    def build_bitstream(self, bypass: bool = False) -> None:
+        """Run bitstream builds in parallel.
+        Must run after `replace_rtl` and `build_driver` are run.
+
+        Args:
+            bypass: If true, immediately return and terminate build host. Used for testing purposes.
+        """
+        build_config = self.get_build_by_ip(env.host_string)
+        build_config.fpga_bit_builder_dispatcher.build_bitstream(bypass)
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)

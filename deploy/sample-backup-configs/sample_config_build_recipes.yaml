@@ -14,6 +14,8 @@
 #    deploy-triplet: null
 #    PLATFORM_CONFIG: Config
 #    post-build-hook: null
+#    # OPTIONAL: FPGA platform builder class needed to build bitstream. If unspecified, default to "F1BitBuilder"
+#    fpga-platform: F1BitBuilder
 #    # REQUIRED: TODO: Will move to "run platform" work
 #    s3-bucket-name: firesim-AWSUSERNAME
 
