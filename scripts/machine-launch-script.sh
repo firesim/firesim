@@ -178,7 +178,7 @@ set -o pipefail
         # run conda-init and look at it's output to insert 'conda activate $CONDA_ENV_NAME' into the
         # block that conda-init will update if ever conda is installed to a different prefix and
         # this is rerun.
-        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash |& \
+        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash 2>&1 | \
             tee >(grep '^modified' | grep -v "$CONDA_INSTALL_PREFIX" | awk '{print $NF}' | \
             "${DRY_RUN_ECHO[@]}" $SUDO xargs -r sed -i -e "/<<< conda initialize <<</iconda activate $CONDA_ENV_NAME")
 
