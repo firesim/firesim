@@ -21,9 +21,8 @@ class dromajo_t: public bridge_driver_t
             int tval_width,
             int num_traces,
             DROMAJOBRIDGEMODULE_struct * mmio_addrs,
-            long dma_addr,
-            const unsigned int stream_count_address,
-            const unsigned int stream_full_address
+            int stream_idx,
+            int stream_depth
             );
         ~dromajo_t();
 
@@ -39,7 +38,7 @@ class dromajo_t: public bridge_driver_t
 
         int invoke_dromajo(uint8_t* buf);
         int beats_available_stable();
-        void process_tokens(int num_beats);
+        size_t process_tokens(int num_beats, size_t minimum_batch_beats);
         void flush();
 
         // in bytes

@@ -17,9 +17,8 @@
         this, \
         args, \
         TRACERVBRIDGEMODULE_ ## IDX ## _substruct, \
-        TRACERVBRIDGEMODULE_ ## IDX ## _to_cpu_stream_dma_address, \
-        TRACERVBRIDGEMODULE_ ## IDX ## _to_cpu_stream_count_address, \
-        TRACERVBRIDGEMODULE_ ## IDX ## _to_cpu_stream_full_address, \
+        TRACERVBRIDGEMODULE_ ## IDX ## _to_cpu_stream_idx, \
+        TRACERVBRIDGEMODULE_ ## IDX ## _to_cpu_stream_depth, \
         TRACERVBRIDGEMODULE_ ## IDX ## _max_core_ipc, \
         TRACERVBRIDGEMODULE_ ## IDX ## _clock_domain_name, \
         TRACERVBRIDGEMODULE_ ## IDX ## _clock_multiplier, \
@@ -33,9 +32,8 @@ class tracerv_t: public bridge_driver_t
         tracerv_t(simif_t *sim,
                   std::vector<std::string> &args,
                   TRACERVBRIDGEMODULE_struct * mmio_addrs,
-                  const unsigned int dma_address,
-                  const unsigned int stream_count_address,
-                  const unsigned int stream_full_address,
+                  const int stream_idx,
+                  const int stream_depth,
                   const unsigned int max_core_ipc,
                   const char* const  clock_domain_name,
                   const unsigned int clock_multiplier,
@@ -51,9 +49,8 @@ class tracerv_t: public bridge_driver_t
 
     private:
         TRACERVBRIDGEMODULE_struct * mmio_addrs;
-        const unsigned int dma_address;
-        const unsigned int stream_count_address;
-        const unsigned int stream_full_address;
+        const int stream_idx;
+        const int stream_depth;
         const int max_core_ipc;
         ClockInfo clock_info;
 
@@ -83,7 +80,7 @@ class tracerv_t: public bridge_driver_t
         std::string dwarf_file_name;
         bool fireperf = false;
 
-        void process_tokens(int num_beats);
+        size_t process_tokens(int num_beats, int minium_batch_beats);
         int beats_available_stable();
         void flush();
 };

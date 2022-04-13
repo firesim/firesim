@@ -20,19 +20,10 @@ import midas.widgets.CppGenerationUtils._
   * currently somewhat redundant with the default header emission for widgets.
   */
 case class StreamDriverParameters(
-  channelName: String,
+  name: String,
   bufferBaseAddress: Int,
-  mmioRegisters: (String, Int)*) {
-
-  def headerFragment(mmioBaseAddress: BigInt): String = {
-    val registerMacros = for ((name, offset) <- mmioRegisters) yield {
-      genConstStatic(s"${channelName}_${name}_address", UInt32(mmioBaseAddress + offset))
-    }
-    val dmaAddressMacro = genConstStatic(s"${channelName}_dma_address", UInt32(bufferBaseAddress))
-
-    (dmaAddressMacro +: registerMacros.toSeq).mkString
-  }
-}
+  countMMIOAddress: Int,
+  bufferCapacity: Int)
 
 class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) extends StreamEngine(p) {
 
@@ -121,7 +112,9 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       StreamDriverParameters(
         chParams.name,
         idx * (1 << addressSpaceBits),
-        "count" -> countAddr)
+        countAddr,
+        chParams.fpgaBufferDepth
+        )
     }
 
     assert(!dma.ar.valid || dma.ar.bits.size === log2Ceil(dmaBytes).U)
@@ -149,8 +142,6 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       // check to see if pcis has valid output instead of waiting for timeouts
       val countAddr =
         attach(outgoingQueue.io.count, s"${chParams.name}_count", ReadOnly)
-      val fullAddr =
-        attach(outgoingQueue.io.deq.valid && !outgoingQueue.io.enq.ready, s"${chParams.name}_full", ReadOnly)
 
       val readHelper = DecoupledHelper(
         dma.ar.valid,
@@ -175,8 +166,8 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       StreamDriverParameters(
         chParams.name,
         idx * (1 << addressSpaceBits),
-        "count" -> countAddr,
-        "full"  -> fullAddr)
+        countAddr,
+        chParams.fpgaBufferDepth)
     }
 
     def implementStreams[A <: StreamParameters](
@@ -205,14 +196,39 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       }
     }
 
-    val sourceDriverParameters = implementStreams(sourceParams, streamsToHostCPU,   elaborateToHostCPUStream)
-    val sinkDriverParameters   = implementStreams(sinkParams,   streamsFromHostCPU, elaborateFromHostCPUStream)
+    val sourceDriverParameters = implementStreams(sourceParams, streamsToHostCPU,   elaborateToHostCPUStream).toSeq
+    val sinkDriverParameters   = implementStreams(sinkParams,   streamsFromHostCPU, elaborateFromHostCPUStream).toSeq
 
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
-      sourceDriverParameters.foreach { params => sb.append(params.headerFragment(base)) }
-      sinkDriverParameters.foreach { params => sb.append(params.headerFragment(base)) }
+      val headerWidgetName = getWName.toUpperCase
+      super.genHeader(base, sb)
+
+      def serializeStreamParameters(prefix: String, params: Seq[StreamDriverParameters]): Unit = {
+        val numStreams = params.size
+        sb.append(genConstStatic(s"${headerWidgetName}_${prefix}_stream_count", UInt32(numStreams)))
+
+        // Hack: avoid emitting a zero-sized array by providing a dummy set of
+        // parameters when no streams are generated. This is a limitation of the
+        // current C emission strategy. Note, the actual number of streams is still reported above.
+        val placeholder = StreamDriverParameters("UNUSED", 0, 0, 0)
+        val nonEmptyParams = if (numStreams == 0) Seq(placeholder) else params
+
+        val arraysToEmit = Seq(
+          "names"         -> nonEmptyParams.map { p => CStrLit(p.name) },
+          "dma_addrs"     -> nonEmptyParams.map { p => UInt64(p.bufferBaseAddress) },
+          "count_addrs"   -> nonEmptyParams.map { p => UInt64(base + p.countMMIOAddress) },
+          "buffer_sizes"  -> nonEmptyParams.map { p => UInt32(p.bufferCapacity) },
+        )
+
+        for ((name, values) <- arraysToEmit) {
+          sb.append(genArray(s"${headerWidgetName}_${prefix}_${name}", values))
+        }
+      }
+
+      serializeStreamParameters("to_cpu",   sourceDriverParameters)
+      serializeStreamParameters("from_cpu", sinkDriverParameters)
     }
   }
 }

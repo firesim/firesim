@@ -35,10 +35,11 @@ dromajo_t::dromajo_t(
     int tval_width,
     int num_traces,
     DROMAJOBRIDGEMODULE_struct * mmio_addrs,
-    long dma_addr) :
+    int stream_idx,
+    int stream_depth) :
         bridge_driver_t(sim),
-        stream_count_address(stream_count_address),
-        stream_full_address(stream_full_address)
+        stream_idx(stream_idx),
+        stream_depth(stream_depth)
 {
     // setup max constants given from the RTL
     this->_num_traces = num_traces;
@@ -216,15 +217,19 @@ int dromajo_t::invoke_dromajo(uint8_t* buf) {
 /**
  * Read queue and co-simulate
  */
-void dromajo_t::process_tokens(int num_beats) {
+size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
+    auto beat_bytes = DMA_DATA_BITS / 8;
+    size_t maximum_batch_bytes = num_beats * beat_bytes;
+    size_t minimum_batch_bytes = minimum_batch_beats * beat_bytes;
     // TODO: as opt can mmap file and just load directly into it.
-    alignas(4096) uint8_t OUTBUF[QUEUE_DEPTH * sizeof(uint64_t) * 8];
-    pull(this->_dma_addr, (char*)OUTBUF, num_beats * sizeof(uint64_t) * 8);
+    alignas(4096) char OUTBUF[maximum_batch_bytes];
+    auto bytes_received = pull(stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
 
     // skip if co-sim not enabled
-    if (!this->dromajo_cosim) return;
+    if (!this->dromajo_cosim)
+        return bytes_received;
 
-    for (uint32_t offset = 0; offset < num_beats*sizeof(uint64_t)*8; offset += PCIE_SZ_B/2) {
+    for (uint32_t offset = 0; offset < bytes_received; offset += PCIE_SZ_B/2) {
         // invoke dromajo (requires that buffer is aligned properly)
         int rval = this->invoke_dromajo(OUTBUF + offset);
         if (rval) {
@@ -251,7 +256,7 @@ void dromajo_t::process_tokens(int num_beats) {
             fprintf(stderr, ")\n");
 #endif
 
-            return;
+            return bytes_received;
         }
 
         // move to next inst. trace
@@ -270,28 +275,15 @@ void dromajo_t::process_tokens(int num_beats) {
             offset += PCIE_SZ_B/2;
         }
     }
+
+    return bytes_received;
 }
 
 /**
  * Move forward the simulation
  */
 void dromajo_t::tick() {
-    uint64_t trace_queue_full = read(stream_full_address);
-
-    if (trace_queue_full) this->process_tokens(QUEUE_DEPTH);
-}
-
-/**
- * Find out how many beats are left in the queue (waits for things to stablize)
- */
-int dromajo_t::beats_available_stable() {
-  size_t prev_beats_available = 0;
-  size_t beats_available = read(stream_count_address);
-  while (beats_available > prev_beats_available) {
-    prev_beats_available = beats_available;
-    beats_available = read(stream_count_address);
-  }
-  return beats_available;
+    this->process_tokens(this->stream_depth, this->stream_depth);
 }
 
 /**
@@ -299,10 +291,7 @@ int dromajo_t::beats_available_stable() {
  */
 void dromajo_t::flush() {
     // only flush if there wasn't a failure before
-    if (!dromajo_failed) {
-        size_t beats_available = beats_available_stable();
-        this->process_tokens(beats_available);
-    }
+    while(!dromajo_failed && (this->process_tokens(this->stream_depth, 0) > 0));
 }
 
 #endif // DROMAJOBRIDGEMODULE_struct_guard

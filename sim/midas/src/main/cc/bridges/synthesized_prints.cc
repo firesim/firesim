@@ -1,5 +1,6 @@
 #ifdef PRINTBRIDGEMODULE_struct_guard
 
+#include <iostream>
 #include <iomanip>
 
 #include "synthesized_prints.h"
@@ -15,8 +16,8 @@ synthesized_prints_t::synthesized_prints_t(
   const char* const*  format_strings,
   const unsigned int* argument_counts,
   const unsigned int* argument_widths,
-  unsigned int dma_address,
-  unsigned int stream_count_address,
+  unsigned int stream_idx,
+  unsigned int stream_depth,
   const char* const  clock_domain_name,
   const unsigned int clock_multiplier,
   const unsigned int clock_divisor,
@@ -30,8 +31,8 @@ synthesized_prints_t::synthesized_prints_t(
     format_strings(format_strings),
     argument_counts(argument_counts),
     argument_widths(argument_widths),
-    dma_address(dma_address),
-    stream_count_address(stream_count_address),
+    stream_idx(stream_idx),
+    stream_depth(stream_depth),
     clock_info(clock_domain_name, clock_multiplier, clock_divisor),
     printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
@@ -57,7 +58,9 @@ synthesized_prints_t::synthesized_prints_t(
 
   // Choose a multiple of token_bytes for the batch size
   if (((beat_bytes * desired_batch_beats) % token_bytes) != 0 ) {
-    this->batch_beats = token_bytes / beat_bytes;
+    assert(token_bytes % beat_bytes == 0);
+    auto beats_per_token = token_bytes / beat_bytes;
+    this->batch_beats = (desired_batch_beats / beats_per_token) * beats_per_token;
   } else {
     this->batch_beats = desired_batch_beats;
   }
@@ -199,27 +202,30 @@ uint32_t decode_idle_cycles(char * buf, uint32_t mask) {
   return (((*((uint32_t*)buf)) & mask) >> 1);
 }
 
-// Iterates through the DMA flits (each is one token); checking if their are enabled prints
-void synthesized_prints_t::process_tokens(size_t beats) {
-  size_t batch_bytes = beats * beat_bytes;
+/**
+ * @brief Processes tokens at the head of a print bridge stream.
+ *
+ * @param beats The desired number of beats.
+ * @param minimum_batch_beats The minimum number of beats to process on this
+ *  invocation. Better amortizes stream bandwidth, set to 0 to drain the stream.
+ *
+ * @return * size_t The number of bytes processed.
+ */
+size_t synthesized_prints_t::process_tokens(size_t beats, size_t minimum_batch_beats) {
+  size_t maximum_batch_bytes = beats * beat_bytes;
+  size_t minimum_batch_bytes = minimum_batch_beats * beat_bytes;
 
   // See FireSim issue #208
   // This needs to be page aligned, as a DMA request that spans a page is
   // fractured into a pair, and for reasons unknown, first beat of the second
   // request is lost. Once aligned, qequests larger than a page will be fractured into
   // page-size (64-beat) requests and these seem to behave correctly.
-  alignas(4096) char buf[batch_bytes];
+  alignas(4096) char buf[maximum_batch_bytes];
 
-  uint32_t bytes_received = pull(dma_address, (char*)buf, batch_bytes);
-  if (bytes_received != batch_bytes) {
-    printf("ERR MISMATCH! on reading print tokens. Read %d bytes, wanted %d bytes.\n",
-           bytes_received, batch_bytes);
-    printf("errno: %s\n", strerror(errno));
-    exit(1);
-  }
+  uint32_t bytes_received = pull(stream_idx, (char*)buf, maximum_batch_bytes, minimum_batch_bytes);
 
   if (human_readable) {
-    for (size_t idx = 0; idx < batch_bytes; idx += token_bytes ) {
+    for (size_t idx = 0; idx < bytes_received; idx += token_bytes ) {
       if (has_enabled_print(&buf[idx])) {
         show_prints(&buf[idx]);
         current_cycle++;
@@ -228,8 +234,10 @@ void synthesized_prints_t::process_tokens(size_t beats) {
       }
     }
   } else {
-    printstream->write(buf, batch_bytes);
+    printstream->write(buf, bytes_received);
   }
+
+  return bytes_received;
 }
 
 // Returns true if the print at the current offset is enabled in this cycle
@@ -269,39 +277,20 @@ void synthesized_prints_t::show_prints(char * buf) {
 void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
-  size_t beats_available = read(stream_count_address);
-  if (beats_available >= batch_beats) {
-      process_tokens(batch_beats);
-  }
+  process_tokens(batch_beats, batch_beats);
 }
 
-// This is a little hacky... however it'll probably work perfectly fine on the
-// FPGA as mmio read latency is 100+ ns.
-int synthesized_prints_t::beats_avaliable_stable() {
-  size_t prev_beats_available = 0;
-  size_t beats_avaliable = read(stream_count_address);
-  while (beats_avaliable > prev_beats_available) {
-    prev_beats_available = beats_avaliable;
-    beats_avaliable = read(stream_count_address);
-  }
-  return beats_avaliable;
-}
-
-// Pull in any remaining tokens and flush them to file
-// WARNING: may not function correctly if the simulator is actively running
+/**
+ * @brief Drains all available tokens on the print bridge stream
+ */
 void synthesized_prints_t::flush() {
-  // Wait for the system to settle
-  size_t beats_available = beats_avaliable_stable();
-
-  // If multiple tokens are being packed into a single DMA beat, force the widget
+  // If multiple tokens are being packed into a single stream beat, force the widget
   // to write out any incomplete beat
-  if  (token_bytes < beat_bytes) {
-    write(mmio_addrs->flushNarrowPacket, 1);
-    while (read(stream_count_address) != (beats_available + 1));
-    beats_available++;
-  }
-
-  if (beats_available) process_tokens(beats_available);
+  write(mmio_addrs->flushNarrowPacket, 1);
+  // This should not starve the rest of the simulator because eventually some
+  // other bridge in the system will need to be served and the stream will
+  // empty. It might be safer to put a bound on this though.
+  while(process_tokens(batch_beats, 0) != 0);
   this->printstream->flush();
 }
 
