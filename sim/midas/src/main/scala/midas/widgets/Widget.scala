@@ -262,6 +262,13 @@ trait HasWidgets {
     }
   }
 
+  def printMemoryMapSummary(): Unit = {
+    println("Simulator Memory Map:")
+    for (AddrMapEntry(name, MemRange(start, size, _)) <- addrMap.flatten) {
+      println(f"  [${start}%4h, ${start + size - 1}%4h]: ${name}")
+    }
+  }
+
   /**
     * Iterates through each bridge, generating the header fragment. Must be
     * called after bridge address assignment is complete.

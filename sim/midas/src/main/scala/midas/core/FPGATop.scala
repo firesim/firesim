@@ -187,7 +187,11 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
       }
     }
     println(s"Total Host-FPGA DRAM Allocated: ${toIECString(totalDRAMAllocated)} of ${toIECString(availableDRAM)} available.")
-    println("Host-FPGA DRAM Allocation Map:")
+
+    if (sortedRegionTuples.nonEmpty) {
+      println("Host-FPGA DRAM Allocation Map:")
+    }
+
     sortedRegionTuples.zip(dramOffsets).foreach({ case ((bridgeSeq, addresses), offset) =>
       val regionName = bridgeSeq.head.memoryRegionName
       val bridgeNames = bridgeSeq.map(_.getWName).mkString(", ")
@@ -276,6 +280,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   }
 
   outer.genCtrlIO(ctrl)
+  outer.printMemoryMapSummary()
   outer.printHostDRAMSummary()
   outer.emitDefaultPlusArgsFile()
 
