@@ -83,13 +83,25 @@ set -o pipefail
 
 {
 
-    if [[ ! -r /etc/os-release ]]; then
-        echo "::ERROR:: $0 depends on /etc/os-release for distro-specific setup and it doesn't exist here"
-        exit 1
+    # uname options are not portable so do what https://www.gnu.org/software/coreutils/faq/coreutils-faq.html#uname-is-system-specific
+    # suggests and iteratively probe the system type
+    if ! type uname >&/dev/null; then
+	echo "::ERROR:: need 'uname' command available to determine if we support this sytem"
+	exit 1
+    fi
+
+    if [[ "$(uname)" != "Linux" ]]; then
+        echo "::ERROR:: $0 only supports 'Linux' not '$(uname)'"
+	exit 1
     fi
 
     if [[ "$(uname -mo)" != "x86_64 GNU/Linux" ]]; then
         echo "::ERROR:: $0 only supports 'x86_64 GNU/Linux' not '$(uname -io)'"
+        exit 1
+    fi
+
+    if [[ ! -r /etc/os-release ]]; then
+        echo "::ERROR:: $0 depends on /etc/os-release for distro-specific setup and it doesn't exist here"
         exit 1
     fi
 
