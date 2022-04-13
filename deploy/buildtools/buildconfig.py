@@ -1,177 +1,107 @@
-""" This converts the build configuration files into something usable by the
-manager """
-
 from time import strftime, gmtime
-import configparser
 import pprint
+from importlib import import_module
 
-from runtools.runtime_config import RuntimeHWDB
 from awstools.awstools import *
 
+# imports needed for python type checking
+from typing import Set, Any, Optional, Dict, TYPE_CHECKING
+# needed to avoid type-hint circular dependencies
+# TODO: Solved in 3.7.+ by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
+#       and normal "import <module> as ..." syntax (see https://www.reddit.com/r/Python/comments/cug90e/how_to_not_create_circular_dependencies_when/)
+if TYPE_CHECKING:
+    from buildtools.buildconfigfile import BuildConfigFile
+else:
+    BuildConfigFile = object
+
 class BuildConfig:
-    """ This represents a SINGLE build configuration. """
-    def __init__(self, name, buildconfigdict, launch_time):
-        self.name = name
-        self.TARGET_PROJECT = buildconfigdict.get('TARGET_PROJECT')
-        self.DESIGN = buildconfigdict['DESIGN']
-        self.TARGET_CONFIG = buildconfigdict['TARGET_CONFIG']
-        self.PLATFORM_CONFIG = buildconfigdict['PLATFORM_CONFIG']
-        self.instancetype = buildconfigdict['instancetype']
-        self.deploytriplet = buildconfigdict['deploytriplet']
-        self.launch_time = launch_time
-        self.launched_instance_object = None
+    """Represents a single build configuration used to build RTL, drivers, and bitstreams.
 
-    def __repr__(self):
-        return "BuildConfig obj:\n" + pprint.pformat(vars(self), indent=10)
+    Attributes:
+        name: Name of config i.e. name of `config_build_recipe.yaml` section.
+        build_config_file: Pointer to global build config file.
+        TARGET_PROJECT: Target project to build.
+        DESIGN: Design to build.
+        TARGET_CONFIG: Target config to build.
+        deploytriplet: Deploy triplet override.
+        launch_time: Launch time of the manager.
+        PLATFORM_CONFIG: Platform config to build.
+        s3_bucketname: S3 bucketname for AFI builds.
+        post_build_hook: Post build hook script.
+    """
+    name: str
+    build_config_file: BuildConfigFile
+    TARGET_PROJECT: Optional[str]
+    DESIGN: str
+    TARGET_CONFIG: str
+    deploytriplet: Optional[str]
+    launch_time: str
+    PLATFORM_CONFIG: str
+    s3_bucketname: str
+    post_build_hook: str
 
-    def get_chisel_triplet(self):
-        return """{}-{}-{}""".format(self.DESIGN, self.TARGET_CONFIG, self.PLATFORM_CONFIG)
-
-    def launch_build_instance(self, build_instance_market,
-                          spot_interruption_behavior, spot_max_price,
-                              buildfarmprefix):
-        """ Launch an instance to run this build.
-        buildfarmprefix can be None.
+    def __init__(self,
+            name: str,
+            recipe_config_dict: Dict[str, Any],
+            build_config_file: BuildConfigFile,
+            launch_time: str) -> None:
         """
-        buildfarmprefix = '' if buildfarmprefix is None else buildfarmprefix
-        num_instances = 1
-        self.launched_instance_object = launch_instances(self.instancetype,
-                          num_instances, build_instance_market,
-                          spot_interruption_behavior,
-                          spot_max_price,
-                          blockdevices=[
-                              {
-                                  'DeviceName': '/dev/sda1',
-                                  'Ebs': {
-                                      'VolumeSize': 200,
-                                      'VolumeType': 'gp2',
-                                  },
-                              },
-                          ],
-                          tags={ 'fsimbuildcluster': buildfarmprefix },
-                          randomsubnet=True)[0]
+        Args:
+            name: Name of config i.e. name of `config_build_recipe.yaml` section.
+            recipe_config_dict: `config_build_recipe.yaml` options associated with name.
+            build_config_file: Global build config file.
+            launch_time: Time manager was launched.
+        """
+        self.name = name
+        self.build_config_file = build_config_file
 
-    def get_launched_instance_object(self):
-        """ Get the instance object returned by boto3 for this build. """
-        return self.launched_instance_object
+        self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT')
+        self.DESIGN = recipe_config_dict['DESIGN']
+        self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
+        self.deploytriplet = recipe_config_dict['deploy-triplet']
+        self.launch_time = launch_time
 
-    def get_build_instance_private_ip(self):
-        """ Get the private IP of the instance running this build. """
-        return self.launched_instance_object.private_ip_address
+        # run platform specific options
+        self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
+        self.s3_bucketname = recipe_config_dict['s3-bucket-name']
+        if valid_aws_configure_creds():
+            aws_resource_names_dict = aws_resource_names()
+            if aws_resource_names_dict['s3bucketname'] is not None:
+                # in tutorial mode, special s3 bucket name
+                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+        self.post_build_hook = recipe_config_dict['post-build-hook']
 
-    def terminate_build_instance(self):
-        """ Terminate the instance running this build. """
-        instance_ids = get_instance_ids_for_instances([self.launched_instance_object])
-        terminate_instances(instance_ids, dryrun=False)
+    def get_chisel_triplet(self) -> str:
+        """Get the unique build-specific '-' deliminated triplet.
 
-    def get_build_dir_name(self):
-        """" Get the name of the local build directory. """
-        return """{}-{}""".format(self.launch_time, self.name)
+        Returns:
+            Chisel triplet
+        """
+        return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
-    # Builds up a string for a make invocation using the tuple variables
-    def make_recipe(self, recipe):
-        return """make {} DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""".format(
-            "" if self.TARGET_PROJECT is None else "TARGET_PROJECT=" + self.TARGET_PROJECT,
-            self.DESIGN,
-            self.TARGET_CONFIG,
-            self.PLATFORM_CONFIG,
-            recipe)
+    def get_build_dir_name(self) -> str:
+        """Get the name of the local build directory.
 
-class GlobalBuildConfig:
-    """ Configuration class for builds. This is the "global" configfile, i.e.
-    sample_config_build.ini """
+        Returns:
+            Name of local build directory (based on time/name).
+        """
+        return f"{self.launch_time}-{self.name}"
 
-    def __init__(self, args):
-        if args.launchtime:
-            launch_time = args.launchtime
-        else:
-            launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
+    def make_recipe(self, recipe: str) -> str:
+        """Create make command for a given recipe using the tuple variables.
 
-        self.args = args
+        Args:
+            recipe: Make variables/target to run.
 
-        global_build_configfile = configparser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        global_build_configfile.optionxform = str
-        global_build_configfile.read(args.buildconfigfile)
+        Returns:
+            Fully specified make command.
+        """
+        return f"""make {"" if self.TARGET_PROJECT is None else "TARGET_PROJECT=" + self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
 
-        self.s3_bucketname = \
-            global_build_configfile.get('afibuild', 's3bucketname')
+    def __repr__(self) -> str:
+        return f"< {type(self)}(name={self.name!r}, build_config_file={self.build_config_file!r}) @{id(self)} >"
 
-        aws_resource_names_dict = aws_resource_names()
-        if aws_resource_names_dict['s3bucketname'] is not None:
-            # in tutorial mode, special s3 bucket name
-            self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+    def __str__(self) -> str:
+        return pprint.pformat(vars(self), width=1, indent=10)
 
-        self.build_instance_market = \
-                global_build_configfile.get('afibuild', 'buildinstancemarket')
-        self.spot_interruption_behavior = \
-            global_build_configfile.get('afibuild', 'spotinterruptionbehavior')
-        self.spot_max_price = \
-                     global_build_configfile.get('afibuild', 'spotmaxprice')
-        self.post_build_hook = global_build_configfile.get('afibuild', 'postbuildhook')
-
-        # this is a list of actual builds to run
-        builds_to_run_list = list(map(lambda x: x[0], global_build_configfile.items('builds')))
-
-        build_recipes_configfile = configparser.ConfigParser(allow_no_value=True)
-        # make option names case sensitive
-        build_recipes_configfile.optionxform = str
-        build_recipes_configfile.read(args.buildrecipesconfigfile)
-
-        build_recipes = dict()
-        for section in build_recipes_configfile.sections():
-            build_recipes[section] = BuildConfig(section,
-                                dict(build_recipes_configfile.items(section)),
-                                launch_time)
-
-        self.agfistoshare = [x[0] for x in global_build_configfile.items('agfistoshare')]
-        self.acctids_to_sharewith = [x[1] for x in global_build_configfile.items('sharewithaccounts')]
-        self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
-
-        self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
-
-
-    def launch_build_instances(self):
-        """ Launch an instance for the builds we want to do """
-
-        # get access to the runfarmprefix, which we will apply to build
-        # instances too now.
-        aws_resource_names_dict = aws_resource_names()
-        # just duplicate the runfarmprefix for now. This can be None,
-        # in which case we give an empty build farm prefix
-        build_farm_prefix = aws_resource_names_dict['runfarmprefix']
-
-        for build in self.builds_list:
-            build.launch_build_instance(self.build_instance_market,
-                                        self.spot_interruption_behavior,
-                                        self.spot_max_price,
-                                        build_farm_prefix)
-
-    def wait_build_instances(self):
-        """ block until all build instances are launched """
-        instances = [build.get_launched_instance_object() for build in self.builds_list]
-        wait_on_instance_launches(instances)
-
-    def terminate_all_build_instances(self):
-        for build in self.builds_list:
-            build.terminate_build_instance()
-
-    def get_build_by_ip(self, nodeip):
-        """ For a particular private IP (aka instance), return the BuildConfig
-        that it's supposed to be running. """
-        for build in self.builds_list:
-            if build.get_build_instance_private_ip() == nodeip:
-                return build
-        return None
-
-    def get_build_instance_ips(self):
-        """ Return a list of all the build instance IPs, i.e. hosts to pass to
-        fabric. """
-        return list(map(lambda x: x.get_build_instance_private_ip(), self.builds_list))
-
-    def get_builds_list(self):
-        return self.builds_list
-
-    def __str__(self):
-        return pprint.pformat(vars(self))
 

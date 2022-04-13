@@ -5,8 +5,8 @@ import logging
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
 from util.streamlogger import StreamLogger
-from fabric.api import *
-from fabric.contrib.project import rsync_project
+from fabric.api import * # type: ignore
+from fabric.contrib.project import rsync_project # type: ignore
 
 rootLogger = logging.getLogger()
 
@@ -275,7 +275,7 @@ class FireSimServerNode(FireSimNode):
             localcap = local("""mkdir -p {}""".format(job_dir), capture=True)
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
-            
+
             # add hw config summary per job
             localcap = local("""echo "{}" > {}/HW_CFG_SUMMARY""".format(str(self.server_hardware_config), job_dir), capture=True)
             rootLogger.debug("[localhost] " + str(localcap))

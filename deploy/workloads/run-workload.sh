@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # This is some sugar around:
-# ./firesim -c <ini> {launchrunfarm && infrasetup && runworkload && terminaterunfarm}
+# ./firesim -c <yaml> {launchrunfarm && infrasetup && runworkload && terminaterunfarm}
 # And thus will only work for workloads that do not need run other applications
 # between firesim calls
 
@@ -11,10 +11,10 @@ terminate=1
 
 function usage
 {
-    echo "usage: run-workload.sh <workload.ini> [-H | -h | --help] [--noterminate] [--withlaunch]"
-    echo "   workload.ini:  the firesim-relative path to the workload you'd like to run"
-    echo "                  e.g. workloads/gapbs.ini"
-    echo "   --withlaunch:  (Optional) will spin up a runfarm based on the ini"
+    echo "usage: run-workload.sh <workload.yaml> [-H | -h | --help] [--noterminate] [--withlaunch]"
+    echo "   workload.yaml:  the firesim-relative path to the workload you'd like to run"
+    echo "                  e.g. workloads/gapbs.yaml"
+    echo "   --withlaunch:  (Optional) will spin up a runfarm based on the yaml"
     echo "   --noterminate: (Optional) will not forcibly terminate runfarm instances after runworkload"
 }
 
@@ -23,7 +23,7 @@ if [ $# -eq 0 -o "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
     exit 3
 fi
 
-ini=$1
+yaml=$1
 shift
 
 while test $# -gt 0
@@ -56,12 +56,12 @@ set -e
 set -o pipefail
 
 if [ "$withlaunch" -ne "0" ]; then
-    firesim -c $ini launchrunfarm
+    firesim -c $yaml launchrunfarm
 fi
 
-firesim -c $ini infrasetup
-firesim -c $ini runworkload
+firesim -c $yaml infrasetup
+firesim -c $yaml runworkload
 
 if [ "$terminate" -eq "1" ]; then
-    firesim -c $ini terminaterunfarm --forceterminate
+    firesim -c $yaml terminaterunfarm --forceterminate
 fi
