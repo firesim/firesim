@@ -56,7 +56,7 @@ class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, 
     extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) with StreamToHostCPU {
 
   //  The fewest number of BRAMS that produces a memory that is 512b wide.(8 X 32Kb BRAM)
-  val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
+  override val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
 
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())

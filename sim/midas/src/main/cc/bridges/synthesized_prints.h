@@ -25,8 +25,8 @@
         PRINTBRIDGEMODULE_ ## IDX ## _format_strings, \
         PRINTBRIDGEMODULE_ ## IDX ## _argument_counts, \
         PRINTBRIDGEMODULE_ ## IDX ## _argument_widths, \
-        PRINTBRIDGEMODULE_ ## IDX ## _to_cpu_stream_dma_address, \
-        PRINTBRIDGEMODULE_ ## IDX ## _to_cpu_stream_count_address, \
+        PRINTBRIDGEMODULE_ ## IDX ## _to_cpu_stream_idx, \
+        PRINTBRIDGEMODULE_ ## IDX ## _to_cpu_stream_depth, \
         PRINTBRIDGEMODULE_ ## IDX ## _clock_domain_name, \
         PRINTBRIDGEMODULE_ ## IDX ## _clock_multiplier, \
         PRINTBRIDGEMODULE_ ## IDX ## _clock_divisor, \
@@ -56,8 +56,8 @@ class synthesized_prints_t: public bridge_driver_t
                              const char* const*  format_strings,
                              const unsigned int* argument_counts,
                              const unsigned int* argument_widths,
-                             unsigned int dma_address,
-                             unsigned int stream_count_address,
+                             unsigned int stream_idx,
+                             unsigned int stream_depth,
                              const char* const  clock_domain_name,
                              const unsigned int clock_multiplier,
                              const unsigned int clock_divisor,
@@ -78,8 +78,8 @@ class synthesized_prints_t: public bridge_driver_t
         const char* const*  format_strings;
         const unsigned int* argument_counts;
         const unsigned int* argument_widths;
-        const unsigned int dma_address;
-        const unsigned int stream_count_address;
+        const unsigned int stream_idx;
+        const unsigned int stream_depth;
         ClockInfo clock_info;
         const int printno;
 
@@ -89,7 +89,7 @@ class synthesized_prints_t: public bridge_driver_t
         // This will be set based on the ratio of token_size : desired_batch_beats
         size_t batch_beats;
         // This will be modified to be a multiple of the token size
-        const size_t desired_batch_beats = 3072;
+        const size_t desired_batch_beats = stream_depth / 2;
 
         // Used to define the boundaries in the batch buffer at which we'll
         // initalize GMP types
@@ -115,7 +115,7 @@ class synthesized_prints_t: public bridge_driver_t
         std::vector<size_t> bit_offset;
 
         bool current_print_enabled(gmp_align_t* buf, size_t offset);
-        void process_tokens(size_t beats);
+        size_t process_tokens(size_t beats, size_t minimum_batch_beats);
         void show_prints(char * buf);
         void print_format(const char* fmt, print_vars_t* vars, print_vars_t* masks);
         // Returns the number of beats available, once two successive reads return the same value
