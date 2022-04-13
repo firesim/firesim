@@ -83,13 +83,25 @@ set -o pipefail
 
 {
 
-    if [[ ! -r /etc/os-release ]]; then
-        echo "::ERROR:: $0 depends on /etc/os-release for distro-specific setup and it doesn't exist here"
-        exit 1
+    # uname options are not portable so do what https://www.gnu.org/software/coreutils/faq/coreutils-faq.html#uname-is-system-specific
+    # suggests and iteratively probe the system type
+    if ! type uname >&/dev/null; then
+	echo "::ERROR:: need 'uname' command available to determine if we support this sytem"
+	exit 1
+    fi
+
+    if [[ "$(uname)" != "Linux" ]]; then
+        echo "::ERROR:: $0 only supports 'Linux' not '$(uname)'"
+	exit 1
     fi
 
     if [[ "$(uname -mo)" != "x86_64 GNU/Linux" ]]; then
         echo "::ERROR:: $0 only supports 'x86_64 GNU/Linux' not '$(uname -io)'"
+        exit 1
+    fi
+
+    if [[ ! -r /etc/os-release ]]; then
+        echo "::ERROR:: $0 depends on /etc/os-release for distro-specific setup and it doesn't exist here"
         exit 1
     fi
 
@@ -178,7 +190,7 @@ set -o pipefail
         # run conda-init and look at it's output to insert 'conda activate $CONDA_ENV_NAME' into the
         # block that conda-init will update if ever conda is installed to a different prefix and
         # this is rerun.
-        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash |& \
+        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash 2>&1 | \
             tee >(grep '^modified' | grep -v "$CONDA_INSTALL_PREFIX" | awk '{print $NF}' | \
             "${DRY_RUN_ECHO[@]}" $SUDO xargs -r sed -i -e "/<<< conda initialize <<</iconda activate $CONDA_ENV_NAME")
 
