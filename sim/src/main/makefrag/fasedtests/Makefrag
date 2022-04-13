@@ -29,10 +29,10 @@ long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
-firesim_sbt_project := {file:${firesim_base_dir}/}firesim
+firesim_sbt_project := {file:$(firesim_base_dir)/}firesim
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
-		$(addprefix (chipyard_dir)/generators/, rocket-chip/src, rocket-chip/api-config-chipsalliance)
+		$(addprefix $(chipyard_dir)/generators/, rocket-chip/src, rocket-chip/api-config-chipsalliance)
 
 chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
 	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))

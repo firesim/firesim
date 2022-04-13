@@ -3,6 +3,7 @@
 import logging
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
+from runtools.utils import get_local_shared_libraries
 from util.streamlogger import StreamLogger
 from fabric.api import * # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
@@ -351,11 +352,12 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append([self.get_job().bootbinary_path(), self.get_bootbin_name()])
 
-        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
+        driver_path = self.server_hardware_config.get_local_driver_path()
+        all_paths.append([driver_path, ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
 
         # shared libraries
-        all_paths += self.server_hardware_config.get_local_shared_libraries()
+        all_paths += get_local_shared_libraries(driver_path)
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
@@ -515,8 +517,11 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.get_job().rootfs_path(),
                               self.get_rootfs_name()])
 
+        driver_path = self.server_hardware_config.get_local_driver_path()
+        all_paths.append([driver_path, ''])
+
         # shared libraries
-        all_paths += self.server_hardware_config.get_local_shared_libraries()
+        all_paths += get_local_shared_libraries(driver_path)
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
@@ -533,7 +538,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_paths.append([self.supernode_get_sibling_bootbinary_path(x),
                               self.supernode_get_sibling_bootbin(x)])
 
-        all_paths.append([self.server_hardware_config.get_local_driver_path(), ''])
         all_paths.append([self.server_hardware_config.get_local_runtime_conf_path(), ''])
         return all_paths
 
@@ -584,7 +588,9 @@ class FireSimSwitchNode(FireSimNode):
         """ Return local paths of all stuff needed to run this simulation as
         array. """
         all_paths = []
-        all_paths.append(self.switch_builder.switch_binary_local_path())
+        bin = self.switch_builder.switch_binary_local_path()
+        all_paths.append((bin, ''))
+        all_paths += get_local_shared_libraries(bin)
         return all_paths
 
     def get_switch_start_command(self):

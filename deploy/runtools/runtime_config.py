@@ -65,14 +65,6 @@ class RuntimeHWConfig:
         fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
         return fpga_driver_local
 
-    def get_local_shared_libraries(self):
-        """ Returns a list of path tuples, (A, B), where:
-            A is the local file path on the manager instance to the library
-            B is the destination file path on the runfarm instance relative to the driver """
-
-        return [[LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
-                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]]
-
     def get_local_runtimeconf_binaryname(self):
         """ Get the name of the runtimeconf file. """
         return "runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
@@ -144,7 +136,7 @@ class RuntimeHWConfig:
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
         # TODO: supernode support (tracefile, trace-select.. etc)
-        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
+        basecommand = """screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
             slotid=slotid,
             driver=driver,
             runtimeconf=runtimeconf,

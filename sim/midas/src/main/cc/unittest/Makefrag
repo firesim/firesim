@@ -65,7 +65,7 @@ else
 
 # Verilator Makefrag arguments
 top_module := TestHarness
-override CFLAGS  += -I$(csrc) -include $(csrc)/verilator.h -DTEST_HARNESS=V$(top_module) -std=c++11
+override CXXFLAGS  += -I$(csrc) -include $(csrc)/verilator.h -DTEST_HARNESS=V$(top_module) -std=c++11
 override emul_cc += $(sim_makefrag_dir)/generic_vharness.cc
 
 include $(sim_makefrag_dir)/Makefrag-verilator
