@@ -16,6 +16,7 @@ synthesized_prints_t::synthesized_prints_t(
   const unsigned int* argument_counts,
   const unsigned int* argument_widths,
   unsigned int dma_address,
+  unsigned int stream_count_address,
   const char* const  clock_domain_name,
   const unsigned int clock_multiplier,
   const unsigned int clock_divisor,
@@ -30,6 +31,7 @@ synthesized_prints_t::synthesized_prints_t(
     argument_counts(argument_counts),
     argument_widths(argument_widths),
     dma_address(dma_address),
+    stream_count_address(stream_count_address),
     clock_info(clock_domain_name, clock_multiplier, clock_divisor),
     printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
@@ -267,7 +269,7 @@ void synthesized_prints_t::show_prints(char * buf) {
 void synthesized_prints_t::tick() {
   // Pull batch_tokens from the FPGA if at least that many are avaiable
   // Assumes 1:1 token to dma-beat size
-  size_t beats_available = read(mmio_addrs->outgoing_count);
+  size_t beats_available = read(stream_count_address);
   if (beats_available >= batch_beats) {
       process_tokens(batch_beats);
   }
@@ -277,10 +279,10 @@ void synthesized_prints_t::tick() {
 // FPGA as mmio read latency is 100+ ns.
 int synthesized_prints_t::beats_avaliable_stable() {
   size_t prev_beats_available = 0;
-  size_t beats_avaliable = read(mmio_addrs->outgoing_count);
+  size_t beats_avaliable = read(stream_count_address);
   while (beats_avaliable > prev_beats_available) {
     prev_beats_available = beats_avaliable;
-    beats_avaliable = read(mmio_addrs->outgoing_count);
+    beats_avaliable = read(stream_count_address);
   }
   return beats_avaliable;
 }
@@ -295,7 +297,7 @@ void synthesized_prints_t::flush() {
   // to write out any incomplete beat
   if  (token_bytes < beat_bytes) {
     write(mmio_addrs->flushNarrowPacket, 1);
-    while (read(mmio_addrs->outgoing_count) != (beats_available + 1));
+    while (read(stream_count_address) != (beats_available + 1));
     beats_available++;
   }
 
