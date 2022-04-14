@@ -103,6 +103,8 @@ downloaded from AWS earlier (``firesim.pem``) to ``~/firesim.pem`` on
 your manager instance. This step is required to give the manager access
 to the instances it launches for you.
 
+.. _setting-up-firesim-repo:
+
 Setting up the FireSim Repo
 ---------------------------
 

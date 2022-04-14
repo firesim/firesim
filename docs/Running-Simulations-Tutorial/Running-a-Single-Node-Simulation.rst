@@ -54,106 +54,107 @@ you have not modified it):
 We'll need to modify a couple of these lines.
 
 First, let's tell the manager to use the correct numbers and types of instances.
-You'll notice that in the ``run-farm:`` section, the manager is configured to
-launch a Run Farm named ``mainrunfarm``, consisting of one ``f1.16xlarge`` and
-no ``m4.16xlarge``\ s, ``f1.4xlarge``\ s, or ``f1.2xlarge``\ s. The tag specified here allows the
+You'll notice that in the ``run_farm`` mapping, the manager is configured to
+launch a Run Farm named ``mainrunfarm`` (given by the ``run_farm_tag``. Notice that under ``run_farm_hosts_to_use`` no ``f1.16xlarge``\ s,
+``m4.16xlarge``\ s, ``f1.4xlarge``\ s, or ``f1.2xlarge``\ s are used. The tag specified here allows the
 manager to differentiate amongst many parallel run farms (each running
 a workload) that you may be operating -- but more on that later.
 
 Since we only want to simulate a single node, let's switch to using one
-``f1.2xlarge`` and no ``f1.16xlarge``\s. To do so, change this section to:
+``f1.2xlarge``. To do so, change the ``run_farm_hosts_to_use`` sequence to the following:
 
 ::
 
-    run-farm:
-    # per aws restrictions, this tag cannot be longer than 255 chars
-    run-farm-tag: mainrunfarm
-    f1_16xlarges: 0
-    f1_4xlarges: 0
-    m4_16xlarges: 0
-    f1_2xlarges: 1
+    run_farm_hosts_to_use:
+        - f1.16xlarge: 0
+        - f1.4xlarge: 0
+        - f1.2xlarge: 1
+        - m4.16xlarge: 0
+        - z1d.3xlarge: 0
+        - z1d.6xlarge: 0
+        - z1d.12xlarge: 0
 
-You'll see other parameters here, like ``run-instance-market``,
-``spot-interruption-behavior``, and ``spot-max-price``. If you're an experienced
+You'll see other parameters in the ``run_farm`` mapping, like ``run_instance_market``,
+``spot_interruption_behavior``, and ``spot_max_price``. If you're an experienced
 AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
-Now, let's change the ``target-config:`` section to model the correct target design.
+Now, let's change the ``target_config`` mapping to model the correct target design.
 By default, it is set to model an 8-node cluster with a cycle-accurate network.
 Instead, we want to model a single-node with no network. To do so, we will need
 to change a few items in this section:
 
 ::
 
-    target-config:
+    target_config:
         topology: no_net_config
-        no-net-num-nodes: 1
-        link-latency: 6405
-        switching-latency: 10
-        net-bandwidth: 200
-        profile-interval: -1
+        no_net_num_nodes: 1
+        link_latency: 6405
+        switching_latency: 10
+        net_bandwidth: 200
+        profile_interval: -1
 
         # This references a section from config_hwdb.yaml
         # In homogeneous configurations, use this to set the hardware config deployed
         # for all simulators
-        default-hw-config=firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
+        default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
 
 Note that we changed three of the parameters here: ``topology`` is now set to
 ``no_net_config``, indicating that we do not want a network. Then,
-``no-net-num-nodes`` is set to ``1``, indicating that we only want to simulate
-one node. Lastly, we changed ``default-hw-config`` from
-``firesim-rocket-quadcore-nic-l2-llc4mb-ddr3`` to
-``firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3``.  Notice the subtle difference in this
+``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
+one node. Lastly, we changed ``default_hw_config`` from
+``firesim_rocket_quadcore_nic_l2_llc4mb_ddr3`` to
+``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.  Notice the subtle difference in this
 last option? All we did is switch to a hardware configuration that does not
 have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 
-We will leave the last section (``workload:``) unchanged here, since we do
-want to run the buildroot-based Linux on our simulated system. The ``terminate-on-completion``
+We will leave the ``workload`` mapping unchanged here, since we do
+want to run the buildroot-based Linux on our simulated system. The ``terminate_on_completion``
 feature is an advanced feature that you can learn more about in the
 :ref:`manager-configuration-files` section.
 
-As a final sanity check, your ``config_runtime.yaml`` file should now look like this:
+As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this:
 
 ::
 
-	# RUNTIME configuration for the FireSim Simulation Manager
-	# See docs/Configuration-Details.rst for documentation of all of these params.
+	run_farm:
+	    base_recipe: run-farm-recipes/aws_ec2.yaml
+	    recipe_arg_overrides:
+	    	run_farm_tag: mainrunfarm
+	    	always_expand_run_farm: true
+	    	launch_instances_timeout_minutes: 60
+	    	run_instance_market: ondemand
+	    	spot_interruption_behavior: terminate
+	    	spot_max_price: ondemand
+	    	default_simulation_dir: /home/centos
+	    	run_farm_hosts_to_use:
+	    	    - f1.16xlarge: 0
+	    	    - f1.4xlarge: 0
+	    	    - f1.2xlarge: 1
+	    	    - m4.16xlarge: 0
+	    	    - z1d.3xlarge: 0
+	    	    - z1d.6xlarge: 0
 
-	run-farm:
-		run-farm-tag: mainrunfarm
-
-		f1_16xlarges: 0
-		f1_4xlarges: 0
-		m4_16xlarges: 0
-		f1_2xlarges: 1
-        
-		run-instance-market: ondemand
-		spot-interruption-behavior: terminate
-		spot-max-price: ondemand
-
-	target-config:
+	target_config:
 		topology: no_net_config
-		no-_net-_num-_nodes: 1
-		link-latency: 6405
-		switching-latency: 10
-		net-bandwidth: 200
-		profile-interval: -1
-		
-		# This references a section from config_hwdb.yaml
-		# In homogeneous configurations, use this to set the hardware config deployed
-		# for all simulators
-		default-hw-config: firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
-	
-	workload:
-		workload-name: linux-uniform.json
-		terminate-on-completion: no
+		no_net_num_nodes: 1
+		link_latency: 6405
+		switching_latency: 10
+		net_bandwidth: 200
+		profile_interval: -1
+		default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
+		plusarg_passthrough: ""
 
+	workload:
+		workload_name: linux-uniform.json
+		terminate_on_completion: no
+		suffix_tag: null
 
 .. attention::
 
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default-hw-config`` to ``firesim-boom-singlecore-no-nic-l2-llc4mb-ddr3``.
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default_hw_config`` to ``firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3``.
 
 
 Launching a Simulation!
@@ -199,11 +200,11 @@ and then take a minute or two while your ``f1.2xlarge`` instance launches.
 Once the launches complete, you should see the instance id printed and the instance
 will also be visible in your AWS EC2 Management console. The manager will tag
 the instances launched with this operation with the value you specified above
-as the ``run-farm-tag`` parameter from the ``config_runtime.yaml`` file, which we left
+as the ``run_farm_tag`` parameter from the ``config_runtime.yaml`` file, which we left
 set as ``mainrunfarm``. This value allows the manager to tell multiple Run Farms
 apart -- i.e., you can have multiple independent Run Farms running different
 workloads/hardware configurations in parallel. This is detailed in the
-:ref:`manager-configuration-files` and the :ref:`firesim-launchrunfarm` 
+:ref:`manager-configuration-files` and the :ref:`firesim-launchrunfarm`
 sections -- you do not need to be familiar with it here.
 
 Setting up the simulation infrastructure
@@ -249,7 +250,7 @@ output. If you want to see detailed progress as it happens, ``tail -f`` the
 latest logfile in ``firesim/deploy/logs/``.
 
 At this point, the ``f1.2xlarge`` instance in our Run Farm has all the infrastructure
-necessary to run a simulation. 
+necessary to run a simulation.
 
 So, let's launch our simulation!
 
@@ -295,14 +296,14 @@ live status page:
 	--------------------------------------------------------------------------------
 	Instances
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.174 | Terminated: False
+	Hostname/IP:   172.30.2.174 | Terminated: False
 	--------------------------------------------------------------------------------
 	Simulated Switches
 	--------------------------------------------------------------------------------
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: True
+	Hostname/IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: True
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -311,7 +312,7 @@ live status page:
 	--------------------------------------------------------------------------------
 
 
-This will only exit once all of the simulated nodes have shut down. So, let's let it 
+This will only exit once all of the simulated nodes have shut down. So, let's let it
 run and open another ssh connection to the manager instance. From there, ``cd`` into
 your firesim directory again and ``source sourceme-f1-manager.sh`` again to get
 our ssh key setup. To access our simulated system, ssh into the IP address being
@@ -420,14 +421,14 @@ from the manager:
 	--------------------------------------------------------------------------------
 	Instances
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.174 | Terminated: False
+	Hostname/IP:   172.30.2.174 | Terminated: False
 	--------------------------------------------------------------------------------
 	Simulated Switches
 	--------------------------------------------------------------------------------
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: False
+	Hostname/IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: False
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -450,7 +451,7 @@ If you take a look at the workload output directory given in the manager output 
 	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 linux-uniform0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
-(``firesim/deploy/workloads/linux-uniform.json``) as files that we want
+(:gh-file-ref:`deploy/workloads/linux-uniform.json`) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.

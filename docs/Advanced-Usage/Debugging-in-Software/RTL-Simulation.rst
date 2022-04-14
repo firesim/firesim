@@ -49,8 +49,8 @@ Verilator numbers collected on a c4.4xlarge. (metasimulation Verilator version: 
 Verilator version: 3.904)
 
 
-Running Metasimulation
-------------------------
+Running Metasimulations Through Make
+------------------------------------
 
 Meta-simulations are run out of the ``firesim/sim`` directory.
 
@@ -125,10 +125,72 @@ Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform du
 
 ::
 
-
     make vcs-debug
     make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
 
+Running Metasimulations Through The FireSim Manager
+----------------------------------------------------
+
+In addition to the default ``make`` API to run metasimulations,
+there is now support in the FireSim manager for distributed metasimulations.
+Assuming you have a pre-setup ``config_runtime.yaml`` that is setup for FPGA-accelerated simulations,
+a few modifications can convert it to distributed metasimulation.
+
+Modify the existing ``metasimulation`` mapping in ``config_runtime.yaml`` to the following:
+
+::
+
+    metasimulation:
+        metasimulation_enabled: true
+        # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
+        metasimulation_host_simulator: verilator
+        # plusargs passed to the simulator for all metasimulations
+        metasimulation_only_plusargs: "+fesvr-step-size=128 +dramsim +max-cycles=100000000"
+        # plusargs passed to the simulator ONLY FOR vcs metasimulations
+        metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
+
+This will enable you to run Verilator metasimulations for the given ``config_runtime.yaml``.
+This includes you being able to run NIC simulations, and use existing FireSim debugging tools (i.e. AutoCounter, TracerV, etc).
+
+The number of metasimulations that are run is determined by the Run Farm in conjunction with the ``topology`` in ``config_runtime.yaml``.
+When you are specifying a Run Farm host to use using the ``run_farm_hosts_to_use`` mapping, a specification must include a number of metasimulations
+to support (i.e. ``num_metasims``). For example, in the AWS EC2 ``aws_ec2.yaml`` run farm case:
+
+::
+
+    run_farm_hosts_to_use:
+        - z1d.3xlarge: 0
+        - z1d.6xlarge: 0
+        - z1d.12xlarge: 1
+
+    run_farm_host_specs:
+        - z1d.3xlarge:
+            num_fpgas: 0
+            num_metasims: 1
+            use_for_switch_only: false
+        - z1d.6xlarge:
+            num_fpgas: 0
+            num_metasims: 2
+            use_for_switch_only: false
+        - z1d.12xlarge:
+            num_fpgas: 0
+            num_metasims: 8
+            use_for_switch_only: false
+
+In this case, the Run Farm will use a ``z1d.12xlarge`` instance to host
+8 metasimulations (determined by the specification).
+
+Other than these changes, the rest of the manager is the same between FPGA simulations and
+metasimulations.
+In other words, outputs are stored in ``deploy/result-workload``, FireMarshal SW workloads are used,
+screen sessions are run, etc.
+
+If you are interested in getting a waveform back from the metasimulations
+when running with ``*-debug``, make sure to add ``waveform.vpd`` to the ``common_simulation_outputs`` area of the workload JSON file.
+Additionally, unlike the normal FPGA simulation case, there are two output logs.
+First, there is a ``metasim_stderr.out`` file that holds ``stderr`` coming out of the metasimulation.
+Second, there is a ``uartlog`` file that holds the ``stdout`` from the metasimulation (like normal FPGA simulations).
+If you want to copy them back, you must also add them to the ``common_simulation_outputs`` of the workload JSON.
 
 Understanding A Metasimulation Waveform
 ----------------------------------------
@@ -138,7 +200,7 @@ Module Hierarchy
 To build out a simulator, Golden Gate adds multiple layers of module hierarchy
 to the target design and performs additional hierarchy mutations to implement bridges and
 resource optimizations. Metasimulation uses the ``FPGATop`` module as the
-top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1). 
+top-level module, which excludes the platform shim layer (``F1Shim``, for EC2 F1).
 The original top-level of the input design is nested three levels below FPGATop:
 
 .. figure:: /img/metasim-module-hierarchy.png

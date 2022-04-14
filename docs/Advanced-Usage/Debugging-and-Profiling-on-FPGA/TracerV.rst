@@ -35,13 +35,13 @@ Enabling Tracing at Runtime
 
 To improve simulation preformance, FireSim does not collect and record data
 from the TracerV Bridge by default. To enable collection, modify the ``enable``
-flag in the ``[tracing]`` section in your ``config_runtime.yaml`` file to ``yes``
+flag in the ``tracing`` section in your ``config_runtime.yaml`` file to ``yes``
 instead of ``no``:
 
 .. code-block:: ini
 
-    [tracing]
-    enable=yes
+    tracing:
+        enable: yes
 
 Now when you run a workload, a trace output file will be placed in the
 ``sim_slot_<slot #>`` directory on the F1 instance under the name ``TRACEFILE-C0``.
@@ -60,17 +60,17 @@ Selecting a Trace Output Format
 
 FireSim supports three trace output formats, which can be set in your
 ``config_runtime.yaml`` file with the ``output_format`` option in the
-``[tracing]`` section:
+``tracing`` section:
 
 .. code-block:: ini
 
-   [tracing]
-   enable=yes
+   tracing:
+       enable: yes
 
-   # Trace output formats. Only enabled if "enable" is set to "yes" above
-   # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
-   # unwinding -> Flame Graph)
-   output_format=0
+       # Trace output formats. Only enabled if "enable" is set to "yes" above
+       # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
+       # unwinding -> Flame Graph)
+       output_format: 0
 
 See the "Interpreting the Trace Result" section below for a description of
 these formats.
@@ -88,27 +88,27 @@ stopping trace data collection.
 
 By default, TracerV does not use a trigger, so data collection starts at cycle
 0 and ends at the last cycle of the simulation. To change this, modify the
-following under the ``[tracing]`` section of your ``config_runtime.yaml``.
+following under the ``tracing`` section of your ``config_runtime.yaml``.
 Use the ``selector`` field to choose the type of trigger (options are described
 below). The ``start`` and ``end`` fields are used to supply the start and end
 values for the trigger.
 
 .. code-block:: ini
 
-   [tracing]
-   enable=yes
+   tracing
+       enable: yes
 
-   # Trace output formats. Only enabled if "enable" is set to "yes" above
-   # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
-   # unwinding -> Flame Graph)
-   output_format=0
+       # Trace output formats. Only enabled if "enable" is set to "yes" above
+       # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
+       # unwinding -> Flame Graph)
+       output_format: 0
 
-   # Trigger selector.
-   # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
-   # instruction trigger
-   selector=1
-   start=0
-   end=-1
+       # Trigger selector.
+       # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
+       # instruction trigger
+       selector: 1
+       start: 0
+       end: -1
 
 
 The four triggering methods available in FireSim are as follows:
@@ -172,7 +172,7 @@ start or stop condition will be satisfied when the following evaluates to true:
     ((inst value) & (upper 32 bits)) == (lower 32 bits)
 
 
-That is, setting ``start=ffffffff00008013`` will cause recording to start when
+That is, setting ``start: ffffffff00008013`` will cause recording to start when
 the instruction value is exactly ``00008013`` (the ``addi x0, x1, 0``
 instruction in RISC-V).
 
@@ -222,7 +222,7 @@ Interpreting the Trace Result
 Human readable output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is ``output-format: 0``.
+This is ``output_format: 0``.
 
 The human readable trace output format looks like so:
 

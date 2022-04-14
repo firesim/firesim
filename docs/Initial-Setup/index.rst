@@ -1,3 +1,5 @@
+.. _initial-setup:
+
 Initial Setup/Installation
 ================================
 

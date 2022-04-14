@@ -66,19 +66,18 @@ configurations.  For example:
 
 ::
 
-    DESIGN=FireSim
-    TARGET_CONFIG=SupernodeFireSimQuadRocketConfig
-    PLATFORM_CONFIG=BaseF1Config
-    instancetype=c5.4xlarge
-    deploytriplet=None
+    DESIGN: FireSim
+    TARGET_CONFIG: SupernodeFireSimQuadRocketConfig
+    PLATFORM_CONFIG: BaseF1Config
+    deploy_triplet: None
 
 
 We currently provide a single pre-built AGFI for supernode of 4 quad-core
 RocketChips with DDR3 memory models. You can build your own AGFI, using the supplied samples in
-``config_build_recipes.ini``.  Importantly, in order to meet FPGA timing
+``config_build_recipes.yaml``.  Importantly, in order to meet FPGA timing
 contraints, Supernode target may require lower host clock frequencies.
 host clock frequencies can be configured as parts of the PLATFORM_CONFIG in
-``config_build_recipes.ini``.
+``config_build_recipes.yaml``.
 
 Running Supernode Simulations
 -----------------------------
@@ -130,7 +129,7 @@ single ``f1.16xlarge`` is:
         self.roots[0].add_downlinks(servers)
 
 
-Supernode ``config_runtime.ini`` requires selecting a supernode agfi in conjunction with a defined supernode topology.
+Supernode ``config_runtime.yaml`` requires selecting a supernode agfi in conjunction with a defined supernode topology.
 
 
 Work in Progress!
