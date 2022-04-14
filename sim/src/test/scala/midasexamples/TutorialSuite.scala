@@ -368,6 +368,8 @@ class ResetPulseBridgeActiveLowTest extends TutorialSuite(
     shouldPass = false)
 }
 
+class TestFinisherF1Test extends TutorialSuite("TestFinisher")
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
@@ -378,7 +380,8 @@ class ChiselExampleDesigns extends Suites(
   new RiscF1Test,
   new RiscSRAMF1Test,
   new AccumulatorF1Test,
-  new VerilogAccumulatorF1Test
+  new VerilogAccumulatorF1Test,
+  new TestFinisherF1Test
 )
 
 class PrintfSynthesisCITests extends Suites(
