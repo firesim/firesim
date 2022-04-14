@@ -22,7 +22,7 @@ while [ $COUNTER -gt 0 ]; do
     firesim launchrunfarm -c workloads/unittest/flash-stress-config.yaml
     firesim infrasetup -c workloads/unittest/flash-stress-config.yaml
     firesim runworkload -c workloads/unittest/flash-stress-config.yaml
-    firesim terminaterunfarm -c workloads/unittest/flash-stress-config.yaml --forceterminate
+    firesim terminaterunfarm -c workloads/unittest/flash-stress-config.yaml --force_terminate
     echo "done $COUNTER"
     echo "done $COUNTER" >> STRESSRUNS
     date >> STRESSRUNS

@@ -76,11 +76,11 @@ class BuildConfigFile:
             global_build_config_file = yaml.safe_load(yaml_file)
 
         # aws specific options
-        self.agfistoshare = global_build_config_file['agfis-to-share']
-        self.acctids_to_sharewith = global_build_config_file['share-with-accounts'].values()
+        self.agfistoshare = global_build_config_file['agfis_to_share']
+        self.acctids_to_sharewith = global_build_config_file['share_with_accounts'].values()
 
         # this is a list of actual builds to run
-        builds_to_run_list = global_build_config_file['builds']
+        builds_to_run_list = global_build_config_file['builds_to_run']
         self.num_builds = len(builds_to_run_list)
 
         build_recipes_config_file = None
@@ -106,13 +106,13 @@ class BuildConfigFile:
         with open(args.buildfarmconfigfile, "r") as yaml_file:
             build_farm_config_file = yaml.safe_load(yaml_file)
 
-        build_farm_name = global_build_config_file["default-build-farm"]
+        build_farm_name = global_build_config_file["build_farm"]
         build_farm_conf_dict = build_farm_config_file[build_farm_name]
 
-        build_farm_type_name = build_farm_conf_dict["build-farm-type"]
+        build_farm_type_name = build_farm_conf_dict["build_farm_type"]
         build_farm_args = build_farm_conf_dict["args"]
 
-        build_farm_dispatch_dict = dict([(x.NAME(), x) for x in inheritors(BuildFarm)])
+        build_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(BuildFarm)])
 
         # create dispatcher object using class given and pass args to it
         self.build_farm = build_farm_dispatch_dict[build_farm_type_name](build_farm_args)

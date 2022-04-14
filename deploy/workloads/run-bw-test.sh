@@ -33,7 +33,7 @@ sleep 2
 for i in "${bandwidths[@]}"
 do
     firesim infrasetup -c workloads/bw-test-config.yaml
-    firesim runworkload -c workloads/bw-test-config.yaml --overrideconfigdata "target-config net-bandwidth $i"
+    firesim runworkload -c workloads/bw-test-config.yaml --overrideconfigdata "target_config net_bandwidth $i"
     # rename the output directory with the net bandwidth
     files=(*bw-test*)
     originalfilename=${files[-1]}

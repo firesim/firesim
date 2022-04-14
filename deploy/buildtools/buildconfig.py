@@ -58,18 +58,18 @@ class BuildConfig:
         self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT')
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
-        self.deploytriplet = recipe_config_dict['deploy-triplet']
+        self.deploytriplet = recipe_config_dict['deploy_triplet']
         self.launch_time = launch_time
 
         # run platform specific options
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
-        self.s3_bucketname = recipe_config_dict['s3-bucket-name']
+        self.s3_bucketname = recipe_config_dict['s3_bucket_name']
         if valid_aws_configure_creds():
             aws_resource_names_dict = aws_resource_names()
             if aws_resource_names_dict['s3bucketname'] is not None:
                 # in tutorial mode, special s3 bucket name
                 self.s3_bucketname = aws_resource_names_dict['s3bucketname']
-        self.post_build_hook = recipe_config_dict['post-build-hook']
+        self.post_build_hook = recipe_config_dict['post_build_hook']
 
     def get_chisel_triplet(self) -> str:
         """Get the unique build-specific '-' deliminated triplet.
