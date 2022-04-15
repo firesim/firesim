@@ -11,7 +11,7 @@ import random
 import argcomplete # type: ignore
 from fabric.api import local, hide, warn_only, env, execute # type: ignore
 import string
-from absl.flags import argparse_flags
+from absl.flags import argparse_flags # type: ignore
 
 from typing import Dict, Callable, Type, Optional
 try:

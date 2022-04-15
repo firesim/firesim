@@ -8,7 +8,7 @@ from fabric.api import * # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from util.streamlogger import StreamLogger
 import time
-from absl import flags
+from absl import flags # type: ignore
 
 from os.path import join as pjoin
 

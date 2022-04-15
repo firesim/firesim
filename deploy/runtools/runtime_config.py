@@ -19,7 +19,7 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 import os
 import sys
-from absl import flags
+from absl import flags # type: ignore
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"

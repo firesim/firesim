@@ -5,7 +5,7 @@ import sys
 import yaml
 from collections import defaultdict
 from importlib import import_module
-from absl import flags
+from absl import flags # type: ignore
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
@@ -164,7 +164,7 @@ class BuildConfigFile:
         return None
 
     def __repr__(self) -> str:
-        return f"< {type(self)}(file={self.args.buildconfigfile!r}, recipes={self.args.buildrecipesconfigfile!r}, build_farm={self.build_farm!r}) @{id(self)} >"
+        return f"< {type(self)}(file={FLAGS.buildconfigfile!r}, recipes={FLAGS.buildrecipesconfigfile!r}, build_farm={self.build_farm!r}) @{id(self)} >"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
