@@ -19,7 +19,7 @@ flags.DEFINE_integer(name='terminatesomef116', short_name='f', default=None, hel
 flags.DEFINE_integer(name='terminatesomef12', short_name='g', default=None, help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.')
 flags.DEFINE_integer(name='terminatesomef14', short_name='i', default=None, help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.')
 flags.DEFINE_integer(name='terminatesomem416', short_name='m', default=None, help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.')
-flags.DEFINE_bool(name='forceterminate', short_name='q', default=False, help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
+flags.DEFINE_bool(name='forceterminate', short_name='q', default=False, help='For terminaterunfarm, force termination without prompting user for confirmation.')
 
 def remote_kmsg(message):
     """ This will let you write whatever is passed as message into the kernel

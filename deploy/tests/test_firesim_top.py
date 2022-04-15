@@ -67,7 +67,7 @@ def test_main_dispatching(mocker: MockerFixture, task_mocker, tn: str):
     firesim.main(args)
     if firesim.TASKS[tn]['config']:
         firesim.TASKS[tn]['task'].assert_called_once()
-        firesim.TASKS[tn]['config'].assert_called_once_with(args)
+        firesim.TASKS[tn]['config'].assert_called_once_with()
     else:
         firesim.TASKS[tn]['task'].assert_called_once_with()
 

@@ -211,7 +211,7 @@ class TestConfigBuildAPI:
         args = firesim_parse_args(['buildafi'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError)
         m['task'].assert_not_called()
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
 
     def test_invalid_buildfarm_type(self, task_mocker, build_yamls, firesim_parse_args):
         m = task_mocker.patch('buildafi', wrap_config=True)
@@ -247,7 +247,7 @@ class TestConfigBuildAPI:
         args = firesim_parse_args(['buildafi'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(KeyError, re.compile(r'INVALID_BUILD_FARM_TYPE'))
         # the exception should happen while building the config, before the task is actually called
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
         m['task'].assert_not_called()
 
     @pytest.mark.parametrize('farm_name',
@@ -292,7 +292,7 @@ class TestConfigBuildAPI:
         args = firesim_parse_args([task_name] + build_yamls.args + [opt, fspath(non_existent_file)])
         firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'GHOST_FILE'))
         m['task'].assert_not_called()
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
 
 @pytest.mark.usefixtures("aws_test_credentials")
 class TestConfigRunAPI:
@@ -315,7 +315,7 @@ class TestConfigRunAPI:
         args = firesim_parse_args([task_name] + run_yamls.args)
         firesim.main.when.called_with(args).should.throw(KeyError, re.compile(r'INVALID_CONFIG'))
         m['task'].assert_not_called()
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
 
     def test_invalid_topology(self, task_mocker, run_yamls, firesim_parse_args, sample_backup_configs, monkeypatch):
         task_name = 'runcheck'
@@ -332,7 +332,7 @@ class TestConfigRunAPI:
         args = firesim_parse_args([task_name] + run_yamls.args)
         firesim.main.when.called_with(args).should.throw(AttributeError, re.compile(r'INVALID_TOPOLOGY'))
         m['task'].assert_not_called()
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
 
     def test_invalid_workloadname(self, task_mocker, run_yamls, firesim_parse_args, sample_backup_configs, monkeypatch):
         task_name = 'runcheck'
@@ -348,7 +348,7 @@ class TestConfigRunAPI:
         args = firesim_parse_args([task_name] + run_yamls.args)
         firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'INVALID_WORKLOAD'))
         m['task'].assert_not_called()
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
 
 
     @pytest.mark.parametrize('task_name', [tn for tn in firesim.TASKS if
@@ -364,4 +364,4 @@ class TestConfigRunAPI:
         args = firesim_parse_args([task_name] + run_yamls.args + [opt, fspath(non_existent_file)])
         firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'GHOST_FILE'))
         m['task'].assert_not_called()
-        m['config'].assert_called_once_with(args)
+        m['config'].assert_called_once_with()
