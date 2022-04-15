@@ -16,7 +16,7 @@ def run_sbt_command(target_project, command):
     """
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("make -C sim sbt SBT_COMMAND={} TARGET_PROJECT={}".format(command, target_project))
+        run(f"make -C sim sbt SBT_COMMAND={command} TARGET_PROJECT={target_project} ENABLE_SBT_THIN_CLIENT=1")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
