@@ -1,46 +1,57 @@
-usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
-               [-r BUILDRECIPESCONFIGFILE] [-a HWDBCONFIGFILE]
-               [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
-               [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
-               [-m TERMINATESOMEM416] [-q]
-               
-               {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+usage: firesim [-h] [--helpfull]
+               {managerinit,infrasetup,boot,kill,runworkload,buildafi,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
 
 FireSim Simulation Manager.
 
 positional arguments:
-  {managerinit,buildafi,launchrunfarm,infrasetup,boot,kill,terminaterunfarm,runworkload,shareagfi,runcheck}
+  {managerinit,infrasetup,boot,kill,runworkload,buildafi,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
                         Management task to run.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -c RUNTIMECONFIGFILE, --runtimeconfigfile RUNTIMECONFIGFILE
-                        Optional custom runtime/workload config file. Defaults
-                        to config_runtime.yaml.
-  -b BUILDCONFIGFILE, --buildconfigfile BUILDCONFIGFILE
-                        Optional custom build config file. Defaults to
-                        config_build.yaml.
-  -r BUILDRECIPESCONFIGFILE, --buildrecipesconfigfile BUILDRECIPESCONFIGFILE
-                        Optional custom build recipe config file. Defaults to
-                        config_build_recipes.yaml.
-  -a HWDBCONFIGFILE, --hwdbconfigfile HWDBCONFIGFILE
-                        Optional custom HW database config file. Defaults to
-                        config_hwdb.yaml.
-  -x OVERRIDECONFIGDATA, --overrideconfigdata OVERRIDECONFIGDATA
-                        Override a single value from one of the the RUNTIME
-                        e.g.: --overrideconfigdata "targetconfig linklatency
-                        6405".
-  -f TERMINATESOMEF116, --terminatesomef116 TERMINATESOMEF116
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched f1.16xlarges.
-  -g TERMINATESOMEF12, --terminatesomef12 TERMINATESOMEF12
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched f1.2xlarges.
-  -i TERMINATESOMEF14, --terminatesomef14 TERMINATESOMEF14
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched f1.4xlarges.
-  -m TERMINATESOMEM416, --terminatesomem416 TERMINATESOMEM416
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched m4.16xlarges.
-  -q, --forceterminate  For terminaterunfarm, force termination without
-                        prompting user for confirmation. Defaults to False
+  --helpfull            show full help message and exit
+
+buildtools.buildconfigfile:
+  -b,--buildconfigfile: Optional custom build config file.
+    (default: 'config_build.yaml')
+  -s,--buildfarmconfigfile: Optional custom build farm config file.
+    (default: 'config_build_farm.yaml')
+  -r,--buildrecipesconfigfile: Optional custom build recipe config file.
+    (default: 'config_build_recipes.yaml')
+  -t,--launchtime: Give the "Y-m-d--H-M-S" prefix of results-build directory.
+    Useful for tar2afi when finishing a partial buildafi
+
+runtools.run_farm:
+  -q,--[no]forceterminate: For terminaterunfarm, force termination without
+    prompting user for confirmation.
+    (default: 'false')
+  -f,--terminatesomef116: Only used by terminatesome. Terminates this many of
+    the previously launched f1.16xlarges.
+    (an integer)
+  -g,--terminatesomef12: Only used by terminatesome. Terminates this many of the
+    previously launched f1.2xlarges.
+    (an integer)
+  -i,--terminatesomef14: Only used by terminatesome. Terminates this many of the
+    previously launched f1.4xlarges.
+    (an integer)
+  -m,--terminatesomem416: Only used by terminatesome. Terminates this many of
+    the previously launched m4.16xlarges.
+    (an integer)
+
+runtools.runtime_config:
+  -a,--hwdbconfigfile: Optional custom HW database config file.
+    (default: 'config_hwdb.yaml')
+  -x,--overrideconfigdata: Override a single value from one of the the RUNTIME
+    e.g.: --overrideconfigdata "target-config link-latency 6405".
+    (a whitespace separated list)
+  -c,--runtimeconfigfile: Optional custom runtime/workload config file.
+    (default: 'config_runtime.yaml')
+
+absl.flags:
+  --flagfile: Insert flag definitions from the given file into the command line.
+    (default: '')
+  --undefok: comma-separated list of flag names that it is okay to specify on
+    the command line even if the program does not define a flag with that name.
+    IMPORTANT: flags in this list that have arguments MUST use the --flag=value
+    format.
+    (default: '')
