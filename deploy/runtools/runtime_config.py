@@ -224,7 +224,7 @@ class RuntimeHWDB:
     def __init__(self):
 
         agfidb_configfile = None
-        with open(FLAGS.hardwaredbconfigfile, "r") as yaml_file:
+        with open(FLAGS.hwdbconfigfile, "r") as yaml_file:
             agfidb_configfile = yaml.safe_load(yaml_file)
 
         agfidb_dict = agfidb_configfile

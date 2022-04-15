@@ -61,6 +61,15 @@ def register_task(task: Callable) -> Callable:
 
     config_class = None
 
+    # introspect the type of config that this task takes (it's first param)
+    sig = signature(task)
+    if sig.parameters:
+        first = next(iter(sig.parameters.values()))
+        if first.annotation is first.empty:
+            raise TypeError(f'{tn}, requires type annotation on first parameter, {first.name}')
+        else:
+            config_class = first.annotation
+
     TASKS[tn] = {'task': task, 'config': config_class}
 
     # we don't want this function to be callable any way other than via firesim.main()
@@ -276,7 +285,7 @@ def main(args: argparse.Namespace) -> None:
 
     t = TASKS[args.task]
     if t['config']:
-        t['task'](t['config'](args))
+        t['task'](t['config']())
     else:
         t['task']()
 

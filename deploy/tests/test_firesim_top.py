@@ -34,52 +34,6 @@ def test_task_with_annotated_parameter(mocker: MockerFixture):
     register_task(my_favorite_task)
     firesim.TASKS.should.contain('my_favorite_task')
 
-
-def task_missing_type_param(config):
-    pass
-
-
-class ParamlessXtor:
-    def __init__(self):
-        pass
-
-def task_param_xtor_takes_no_param(config: ParamlessXtor):
-    pass
-
-class UnannotatedXtor:
-    def __init__(self, config):
-        pass
-
-def task_param_xtor_unannotated(config: UnannotatedXtor):
-    pass
-
-class NotANamespace:
-    pass
-
-class XtorDoesNotTakeNamespace:
-    def __init__(self, param: NotANamespace):
-        pass
-
-def task_param_xtor_not_namespace(config: XtorDoesNotTakeNamespace):
-    pass
-
-
-@pytest.mark.parametrize(
-    'task,exception,regex',
-    [
-        (task_missing_type_param, TypeError, re.compile(r'requires type annotation on first parameter')),
-        (task_param_xtor_takes_no_param, TypeError, re.compile(r'constructor takes no param')),
-        (task_param_xtor_not_namespace, AssertionError, None),
-        (task_param_xtor_unannotated, TypeError, re.compile(r'needs type annotation on.*first parameter')),
-    ]
-)
-def test_task_with_annotated_parameter(mocker: MockerFixture, task, exception, regex):
-    mocker.patch.dict(firesim.TASKS, clear=True)
-
-    register_task.when.called_with(task).should.throw(exception, regex)
-    firesim.TASKS.should.be.empty
-
-
 class FirstReg:
     def duplicate_task(self, config: RuntimeConfig):
         pass
