@@ -19,6 +19,7 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 import os
 import sys
+from absl import flags
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/f1/"
@@ -26,6 +27,11 @@ LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string(name='runtimeconfigfile', short_name='c', default='config_runtime.yaml', help='Optional custom runtime/workload config file.')
+flags.DEFINE_string(name='hwdbconfigfile', short_name='a', default='config_hwdb.yaml', help='Optional custom HW database config file.')
+flags.DEFINE_spaceseplist(name='overrideconfigdata', short_name='x', default=None, help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "target-config link-latency 6405".')
 
 class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.yaml """
@@ -215,10 +221,10 @@ class RuntimeHWDB:
     """ This class manages the hardware configurations that are available
     as endpoints on the simulation. """
 
-    def __init__(self, hardwaredbconfigfile):
+    def __init__(self):
 
         agfidb_configfile = None
-        with open(hardwaredbconfigfile, "r") as yaml_file:
+        with open(FLAGS.hardwaredbconfigfile, "r") as yaml_file:
             agfidb_configfile = yaml.safe_load(yaml_file)
 
         agfidb_dict = agfidb_configfile
@@ -235,24 +241,24 @@ class RuntimeHWDB:
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.yaml """
 
-    def __init__(self, runtimeconfigfile, configoverridedata):
+    def __init__(self):
 
         runtime_dict = None
-        with open(runtimeconfigfile, "r") as yaml_file:
+        with open(FLAGS.runtimeconfigfile, "r") as yaml_file:
             runtime_dict = yaml.safe_load(yaml_file)
 
         # override parts of the runtime conf if specified
-        configoverrideval = configoverridedata
-        if configoverrideval != "":
-            ## handle overriding part of the runtime conf
-            configoverrideval = configoverrideval.split()
-            overridesection = configoverrideval[0]
-            overridefield = configoverrideval[1]
-            overridevalue = configoverrideval[2]
-            rootLogger.warning("Overriding part of the runtime config with: ")
-            rootLogger.warning("""[{}]""".format(overridesection))
-            rootLogger.warning(overridefield + "=" + overridevalue)
-            runtime_dict[overridesection][overridefield] = overridevalue
+        configoverrideval = FLAGS.overrideconfigdata
+        if configoverrideval is not None:
+            if not configoverrideval:
+                ## handle overriding part of the runtime conf
+                overridesection = configoverrideval[0]
+                overridefield = configoverrideval[1]
+                overridevalue = configoverrideval[2]
+                rootLogger.warning("Overriding part of the runtime config with: ")
+                rootLogger.warning("""[{}]""".format(overridesection))
+                rootLogger.warning(overridefield + "=" + overridevalue)
+                runtime_dict[overridesection][overridefield] = overridevalue
 
         runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
         if runfarmtagprefix != "":
@@ -330,20 +336,17 @@ class RuntimeConfig:
     """ This class manages the overall configuration of the manager for running
     simulation tasks. """
 
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self):
         """ This reads runtime configuration files, massages them into formats that
         the rest of the manager expects, and keeps track of other info. """
         self.launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
 
-        self.args = args
-
         # construct pythonic db of hardware configurations available to us at
         # runtime.
-        self.runtimehwdb = RuntimeHWDB(args.hwdbconfigfile)
+        self.runtimehwdb = RuntimeHWDB()
         rootLogger.debug(self.runtimehwdb)
 
-        self.innerconf = InnerRuntimeConfiguration(args.runtimeconfigfile,
-                                                   args.overrideconfigdata)
+        self.innerconf = InnerRuntimeConfiguration()
         rootLogger.debug(self.innerconf)
 
         # construct a privateip -> instance obj mapping for later use
@@ -386,9 +389,7 @@ class RuntimeConfig:
 
     def terminate_run_farm(self):
         """ directly called by top-level terminaterunfarm command. """
-        args = self.args
-        self.runfarm.terminate_run_farm(args.terminatesomef116, args.terminatesomef14, args.terminatesomef12,
-                                        args.terminatesomem416, args.forceterminate)
+        self.runfarm.terminate_run_farm()
 
     def infrasetup(self):
         """ directly called by top-level infrasetup command. """

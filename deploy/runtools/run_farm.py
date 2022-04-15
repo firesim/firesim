@@ -8,10 +8,18 @@ from fabric.api import * # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from util.streamlogger import StreamLogger
 import time
+from absl import flags
 
 from os.path import join as pjoin
 
 rootLogger = logging.getLogger()
+
+FLAGS = flags.FLAGS
+flags.DEFINE_integer(name='terminatesomef116', short_name='f', default=None, help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.')
+flags.DEFINE_integer(name='terminatesomef12', short_name='g', default=None, help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.')
+flags.DEFINE_integer(name='terminatesomef14', short_name='i', default=None, help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.')
+flags.DEFINE_integer(name='terminatesomem416', short_name='m', default=None, help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.')
+flags.DEFINE_bool(name='forceterminate', short_name='q', default=False, help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
 
 def remote_kmsg(message):
     """ This will let you write whatever is passed as message into the kernel
@@ -281,8 +289,7 @@ class RunFarm:
         wait_on_instance_launches(f1_2s, 'f1.2xlarges')
 
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                           terminatesomem4_16, forceterminate):
+    def terminate_run_farm(self):
         runfarmtag = self.runfarmtag
 
         # get instances that belong to the run farm. sort them in case we're only
@@ -301,34 +308,34 @@ class RunFarm:
         m4_16_instance_ids = get_instance_ids_for_instances(m4_16_instances)
         f1_2_instance_ids = get_instance_ids_for_instances(f1_2_instances)
 
-        argsupplied_f116 = terminatesomef1_16 != -1
-        argsupplied_f14 = terminatesomef1_4 != -1
-        argsupplied_f12 = terminatesomef1_2 != -1
-        argsupplied_m416 = terminatesomem4_16 != -1
+        argsupplied_f116 = FLAGS.terminatesomef116 is not None
+        argsupplied_f14 =  FLAGS.terminatesomef14  is not None
+        argsupplied_f12 =  FLAGS.terminatesomef12  is not None
+        argsupplied_m416 = FLAGS.terminatesomem416 is not None
 
         if argsupplied_f116 or argsupplied_f14 or argsupplied_f12 or argsupplied_m416:
             # In this mode, only terminate instances that are specifically supplied.
-            if argsupplied_f116 and terminatesomef1_16 != 0:
+            if argsupplied_f116 and FLAGS.terminatesomef116 != 0:
                 # grab the last N instances to terminate
-                f1_16_instance_ids = f1_16_instance_ids[-terminatesomef1_16:]
+                f1_16_instance_ids = f1_16_instance_ids[-FLAGS.terminatesomef116:]
             else:
                 f1_16_instance_ids = []
 
-            if argsupplied_f14 and terminatesomef1_4 != 0:
+            if argsupplied_f14 and FLAGS.terminatesomef14 != 0:
                 # grab the last N instances to terminate
-                f1_4_instance_ids = f1_4_instance_ids[-terminatesomef1_4:]
+                f1_4_instance_ids = f1_4_instance_ids[-FLAGS.terminatesomef14:]
             else:
                 f1_4_instance_ids = []
 
-            if argsupplied_f12 and terminatesomef1_2 != 0:
+            if argsupplied_f12 and FLAGS.terminatesomef12 != 0:
                 # grab the last N instances to terminate
-                f1_2_instance_ids = f1_2_instance_ids[-terminatesomef1_2:]
+                f1_2_instance_ids = f1_2_instance_ids[-FLAGS.terminatesomef12:]
             else:
                 f1_2_instance_ids = []
 
-            if argsupplied_m416 and terminatesomem4_16 != 0:
+            if argsupplied_m416 and FLAGS.terminatesomem416 != 0:
                 # grab the last N instances to terminate
-                m4_16_instance_ids = m4_16_instance_ids[-terminatesomem4_16:]
+                m4_16_instance_ids = m4_16_instance_ids[-FLAGS.terminatesomem416:]
             else:
                 m4_16_instance_ids = []
 
@@ -342,7 +349,7 @@ class RunFarm:
         rootLogger.critical("f1.2xlarges")
         rootLogger.critical(f1_2_instance_ids)
 
-        if not forceterminate:
+        if not FLAGS.forceterminate:
             # --forceterminate was not supplied, so confirm with the user
             userconfirm = input("Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n")
         else:

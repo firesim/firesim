@@ -5,6 +5,7 @@ import sys
 import yaml
 from collections import defaultdict
 from importlib import import_module
+from absl import flags
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
@@ -16,6 +17,12 @@ from typing import Dict, Optional, List, Set, Type, Any, TYPE_CHECKING
 from argparse import Namespace
 
 rootLogger = logging.getLogger()
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string(name='buildconfigfile', short_name='b', default='config_build.yaml', help='Optional custom build config file.')
+flags.DEFINE_string(name='buildrecipesconfigfile', short_name='r', default='config_build_recipes.yaml', help='Optional custom build recipe config file.')
+flags.DEFINE_string(name='buildfarmconfigfile', short_name='s', default='config_build_farm.yaml', help='Optional custom build farm config file.')
+flags.DEFINE_string(name='launchtime', short_name='t', default=None, help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
 
 def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
     """Determine the subclasses that inherit from the input class.
@@ -41,7 +48,6 @@ class BuildConfigFile:
     """Class representing the "global" build config file i.e. `config_build.yaml`.
 
     Attributes:
-        args: Args passed by the top-level manager argparse.
         agfistoshare: List of build recipe names (associated w/ AGFIs) to share.
         acctids_to_sharewith: List of AWS account names to share AGFIs with.
         hwdb: Object holding all HWDB entries.
@@ -50,7 +56,6 @@ class BuildConfigFile:
         num_builds: Number of builds to run.
         build_farm: Build farm used to host builds.
     """
-    args: Namespace
     agfistoshare: List[str]
     acctids_to_sharewith: List[str]
     hwdb: RuntimeHWDB
@@ -59,20 +64,14 @@ class BuildConfigFile:
     num_builds: int
     build_farm: BuildFarm
 
-    def __init__(self, args: Namespace) -> None:
-        """
-        Args:
-            args: Object holding arg attributes.
-        """
-        if args.launchtime:
-            launch_time = args.launchtime
+    def __init__(self) -> None:
+        if FLAGS.launchtime is not None:
+            launch_time = FLAGS.launchtime
         else:
             launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
 
-        self.args = args
-
         global_build_config_file = None
-        with open(args.buildconfigfile, "r") as yaml_file:
+        with open(FLAGS.buildconfigfile, "r") as yaml_file:
             global_build_config_file = yaml.safe_load(yaml_file)
 
         # aws specific options
@@ -84,7 +83,7 @@ class BuildConfigFile:
         self.num_builds = len(builds_to_run_list)
 
         build_recipes_config_file = None
-        with open(args.buildrecipesconfigfile, "r") as yaml_file:
+        with open(FLAGS.buildrecipesconfigfile, "r") as yaml_file:
             build_recipes_config_file = yaml.safe_load(yaml_file)
 
         build_recipes = dict()
@@ -96,14 +95,14 @@ class BuildConfigFile:
                     self,
                     launch_time)
 
-        self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
+        self.hwdb = RuntimeHWDB()
 
         self.builds_list = list(build_recipes.values())
         self.build_ip_set = set()
 
         # retrieve the build host section
         build_farm_config_file = None
-        with open(args.buildfarmconfigfile, "r") as yaml_file:
+        with open(FLAGS.buildfarmconfigfile, "r") as yaml_file:
             build_farm_config_file = yaml.safe_load(yaml_file)
 
         build_farm_name = global_build_config_file["build_farm"]

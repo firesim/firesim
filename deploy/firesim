@@ -11,6 +11,8 @@ import random
 import argcomplete # type: ignore
 from fabric.api import local, hide, warn_only, env, execute # type: ignore
 import string
+from absl.flags import argparse_flags
+
 from typing import Dict, Callable, Type, Optional
 try:
     # added in 3.8
@@ -58,27 +60,6 @@ def register_task(task: Callable) -> Callable:
         raise KeyError(f"Task '{tn}' already registered by {TASKS[tn]}")
 
     config_class = None
-
-    # introspect the type of config that this task takes (it's first param)
-    sig = signature(task)
-    if sig.parameters:
-        first = next(iter(sig.parameters.values()))
-        if first.annotation is first.empty:
-            raise TypeError(f'{tn}, requires type annotation on first parameter, {first.name}')
-        else:
-            config_class = first.annotation
-
-            # check that the first parameter takes a Namespace passed to its constructor
-            csig = signature(config_class)
-            if csig.parameters:
-                cfirst = next(iter(csig.parameters.values()))
-                if cfirst.annotation is cfirst.empty:
-                    raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
-                                    f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
-                else:
-                    assert cfirst.annotation is argparse.Namespace
-            else:
-                raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
 
     TASKS[tn] = {'task': task, 'config': config_class}
 
@@ -265,45 +246,9 @@ def shareagfi(build_config_file: BuildConfigFile) -> None:
 
 def construct_firesim_argparser() -> argparse.ArgumentParser:
     # parse command line args
-    parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
+    parser = argparse_flags.ArgumentParser(description='FireSim Simulation Manager.')
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=list(TASKS))
-    parser.add_argument('-c', '--runtimeconfigfile', type=str,
-                        help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
-                        default='config_runtime.yaml')
-    parser.add_argument('-b', '--buildconfigfile', type=str,
-                        help='Optional custom build config file. Defaults to config_build.yaml.',
-                        default='config_build.yaml')
-    parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
-                        help='Optional custom build recipe config file. Defaults to config_build_recipes.yaml.',
-                        default='config_build_recipes.yaml')
-    parser.add_argument('-s', '--buildfarmconfigfile', type=str,
-                        help='Optional custom build farm config file. Defaults to config_build_farm.yaml.',
-                        default='config_build_farm.yaml')
-    parser.add_argument('-a', '--hwdbconfigfile', type=str,
-                        help='Optional custom HW database config file. Defaults to config_hwdb.yaml.',
-                        default='config_hwdb.yaml')
-    parser.add_argument('-x', '--overrideconfigdata', type=str,
-                        help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "target-config link-latency 6405".',
-                        default="")
-    parser.add_argument('-f', '--terminatesomef116', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.',
-                        default=-1)
-    parser.add_argument('-g', '--terminatesomef12', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
-                        default=-1)
-    parser.add_argument('-i', '--terminatesomef14', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.',
-                        default=-1)
-    parser.add_argument('-m', '--terminatesomem416', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
-                        default=-1)
-    parser.add_argument('-q', '--forceterminate', action='store_true',
-                        help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
-    parser.add_argument('-t', '--launchtime', type=str,
-                        help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
-
-    argcomplete.autocomplete(parser)
     return parser
 
 def check_env() -> None:
