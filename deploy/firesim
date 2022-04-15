@@ -114,7 +114,7 @@ def managerinit() -> None:
             rootLogger.info("Invalid AWS credentials. Try again.")
 
     rootLogger.info("Backing up initial config files, if they exist.")
-    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
+    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime", "run_farm"]
     for conf_file in config_files:
         with warn_only(), hide('everything'):
             m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
@@ -231,7 +231,7 @@ def launchrunfarm(runtime_conf: RuntimeConfig) -> None:
     a consistent "first" instance (useful for debugging)
     """
     # short versions of config file vars
-    runtime_conf.runfarm.launch_run_farm()
+    runtime_conf.run_farm.launch_run_farm()
 
 
 @register_task
@@ -271,6 +271,9 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
                         help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
                         default='config_runtime.yaml')
+    parser.add_argument('-n', '--runfarmconfigfile', type=str,
+                        help='Optional custom run farm config file. Defaults to config_run_farm.yaml.',
+                        default='config_run_farm.yaml')
     parser.add_argument('-b', '--buildconfigfile', type=str,
                         help='Optional custom build config file. Defaults to config_build.yaml.',
                         default='config_build.yaml')

@@ -13,6 +13,7 @@ from fabric.api import * # type: ignore
 from colorama import Fore, Style # type: ignore
 import types
 from functools import reduce
+from run_farm import *
 
 from util.streamlogger import StreamLogger
 
@@ -161,21 +162,14 @@ class FireSimTopologyWithPasses:
         servers = self.firesimtopol.get_dfs_order_servers()
         serverind = 0
 
-        for f1_16x in self.run_farm.f1_16s:
-            for x in range(f1_16x.get_num_fpga_slots_max()):
-                f1_16x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        for f1_4x in self.run_farm.f1_4s:
-            for x in range(f1_4x.get_num_fpga_slots_max()):
-                f1_4x.add_simulation(servers[serverind])
-                serverind += 1
-                if len(servers) == serverind:
-                    return
-        for f1_2x in self.run_farm.f1_2s:
-            for x in range(f1_2x.get_num_fpga_slots_max()):
-                f1_2x.add_simulation(servers[serverind])
+        run_farm_nodes = self.run_farm.get_all_host_nodes()
+        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes.sort(reverse=True, key=lambda x: x.get_num_fpga_slots_max()) # largest fpga nodes 1st
+
+        # find unused fpga (starting from largest)
+        for node in fpga_nodes:
+            for slot in range(node.get_num_fpga_slots_max()):
+                node.add_simulation(servers[serverind])
                 serverind += 1
                 if len(servers) == serverind:
                     return
@@ -184,10 +178,11 @@ class FireSimTopologyWithPasses:
     def pass_simple_networked_host_node_mapping(self):
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
-        f1_2s_used = 0
-        f1_4s_used = 0
-        f1_16s_used = 0
-        m4_16s_used = 0
+
+        run_farm_nodes = self.run_farm.get_all_host_nodes()
+        switch_nodes = list(filter(lambda x: not x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes.sort(key=lambda x: x.get_num_fpga_slots_max()) # smallest fpga nodes 1st
 
         for switch in switches:
             # Filter out FireSimDummyServerNodes for actually deploying.
@@ -195,44 +190,37 @@ class FireSimTopologyWithPasses:
             # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
             downlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
-                # all downlinks are switches
-                self.run_farm.m4_16s[m4_16s_used].add_switch(switch)
-                m4_16s_used += 1
+                # all downlinks are switches (use new switch instance for each)
+				for node in switch_nodes:
+					if node.get_num_switch_slots_consumed() == 0:
+						node.add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
-                # all downlinks are simulations
-                if (len(downlinknodes) == 1) and (f1_2s_used < len(self.run_farm.f1_2s)):
-                    self.run_farm.f1_2s[f1_2s_used].add_switch(switch)
-                    self.run_farm.f1_2s[f1_2s_used].add_simulation(downlinknodes[0])
-                    f1_2s_used += 1
-                elif (len(downlinknodes) <= 2) and (f1_4s_used < len(self.run_farm.f1_4s)):
-                    self.run_farm.f1_4s[f1_4s_used].add_switch(switch)
-                    for server in downlinknodes:
-                        self.run_farm.f1_4s[f1_4s_used].add_simulation(server)
-                    f1_4s_used += 1
-                else:
-                    self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
-                    for server in downlinknodes:
-                        self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
-                    f1_16s_used += 1
+                # find unused fpga (starting from smallest) that has all the slots needed for adding downlinks (greedy choice)
+                for node in fpga_nodes:
+                    if node.get_num_fpga_slots_consumed() == 0 and node.get_num_fpga_slots_max() >= len(downlinknodes):
+                        node.add_switch(switch)
+                        for server in downlinknodes:
+                            node.add_simulation(server)
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
-    def mapping_use_one_f1_16xlarge(self):
-        """ Just put everything on one f1.16xlarge """
+    def mapping_use_one_fpga_node(self):
+        """ Just put everything on one fpga node """
         switches = self.firesimtopol.get_dfs_order_switches()
-        f1_2s_used = 0
-        f1_16s_used = 0
-        m4_16s_used = 0
+
+		fpga_nodes_used = 0
+		run_farm_nodes = self.run_farm.get_all_host_nodes()
+		fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
 
         for switch in switches:
-            self.run_farm.f1_16s[f1_16s_used].add_switch(switch)
+			fpga_nodes[fpga_nodes_used].add_switch(switch)
             downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 for server in downlinknodes:
-                    self.run_farm.f1_16s[f1_16s_used].add_simulation(server)
+					fpga_nodes[fpga_nodes_used].add_simulation(server)
             elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 assert False, "MIXED DOWNLINKS NOT SUPPORTED."
-        f1_16s_used += 1
+        fpga_nodes_used += 1
 
     def pass_perform_host_node_mapping(self):
         """ This pass assigns host nodes to nodes in the abstract FireSim
@@ -243,30 +231,40 @@ class FireSimTopologyWithPasses:
         top level elements are switches, it will assume you're simulating a
         networked config, """
 
-        if self.firesimtopol.custom_mapper is None:
-            """ Use default mapping strategy. The topol has not specified a
-            special one. """
+        # enforce that this is only no net in all other non-EC2 cases
+        if isinstance(self.run_farm, EC2RunFarm):
+            if self.firesimtopol.custom_mapper is None:
+                """ Use default mapping strategy. The topol has not specified a
+                special one. """
+                # if your roots are servers, just pack as tightly as possible, since
+                # you have no_net_config
+                if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
+                    # all roots are servers, so we're in no_net_config
+                    # if the user has specified any 16xlarges, we assign to them first
+                    self.pass_no_net_host_mapping()
+                else:
+                    # now, we're handling the cycle-accurate networked simulation case
+                    # currently, we only handle the case where
+                    self.pass_simple_networked_host_node_mapping()
+            elif type(self.firesimtopol.custom_mapper) == types.FunctionType:
+                """ call the mapper fn defined in the topology itself. """
+                self.firesimtopol.custom_mapper(self)
+            elif type(self.firesimtopol.custom_mapper) == str:
+                """ assume that the mapping strategy is a custom pre-defined strategy
+                given in this class, supplied as a string in the topology """
+                mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
+                mapperfunc()
+            else:
+                assert False, "IMPROPER MAPPING CONFIGURATION"
+        else:
             # if your roots are servers, just pack as tightly as possible, since
             # you have no_net_config
             if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
                 # all roots are servers, so we're in no_net_config
                 # if the user has specified any 16xlarges, we assign to them first
                 self.pass_no_net_host_mapping()
-                return
             else:
-                # now, we're handling the cycle-accurate networked simulation case
-                # currently, we only handle the case where
-                self.pass_simple_networked_host_node_mapping()
-        elif type(self.firesimtopol.custom_mapper) == types.FunctionType:
-            """ call the mapper fn defined in the topology itself. """
-            self.firesimtopol.custom_mapper(self)
-        elif type(self.firesimtopol.custom_mapper) == str:
-            """ assume that the mapping strategy is a custom pre-defined strategy
-            given in this class, supplied as a string in the topology """
-            mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
-            mapperfunc()
-        else:
-            assert False, "IMPROPER MAPPING CONFIGURATION"
+				assert False, "Only supports no net configs"
 
     def pass_apply_default_hwconfig(self):
         """ This is the default mapping pass for hardware configurations - it
@@ -385,10 +383,8 @@ class FireSimTopologyWithPasses:
 
     def infrasetup_passes(self, use_mock_instances_for_testing):
         """ extra passes needed to do infrasetup """
-        if use_mock_instances_for_testing:
-            self.run_farm.bind_mock_instances_to_objects()
-        else:
-            self.run_farm.bind_real_instances_to_objects()
+		self.run_farm.post_launch_binding(use_mock_instances_for_testing)
+
         self.pass_build_required_drivers()
         self.pass_build_required_switches()
 
@@ -397,7 +393,7 @@ class FireSimTopologyWithPasses:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
             my_node.instance_deploy_manager.infrasetup_instance()
 
-        all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -411,17 +407,14 @@ class FireSimTopologyWithPasses:
         (e.g.  incorrect private IPs)
         """
         if not skip_instance_binding:
-            if use_mock_instances_for_testing:
-                self.run_farm.bind_mock_instances_to_objects()
-            else:
-                self.run_farm.bind_real_instances_to_objects()
+			self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         @parallel
         def boot_switch_wrapper(runfarm):
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
             my_node.instance_deploy_manager.start_switches_instance()
 
-        all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -434,12 +427,9 @@ class FireSimTopologyWithPasses:
 
     def kill_simulation_passes(self, use_mock_instances_for_testing, disconnect_all_nbds=True):
         """ Passes that kill the simulator. """
-        if use_mock_instances_for_testing:
-            self.run_farm.bind_mock_instances_to_objects()
-        else:
-            self.run_farm.bind_real_instances_to_objects()
+		self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
 
         @parallel
         def kill_switch_wrapper(runfarm):

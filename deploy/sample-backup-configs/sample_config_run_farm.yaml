@@ -1,0 +1,64 @@
+# Run-time run farm design configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+###########
+# Schema:
+###########
+# # Unique name for run farm.
+# <NAME>:
+#     # Class name of the run farm type.
+#     # This can be determined from `deploy/runtools/runfarm.py`).
+#     run_farm_type: <TYPE NAME>
+#     args:
+#         # Run farm arguments that are passed to class given by `run_farm_type`
+#         # Determined by looking at `_parse_args` function of class.
+#         <K/V pairs of args>
+
+aws_ec2_f1_run_farm:
+    run_farm_type: AWSEC2F1
+    args:
+		# REQUIRED: tag to apply to run farm hosts
+        run_farm_tag: mainrunfarm
+		# REQUIRED: run farm hosts to spawn
+        f1_16xlarges: 0
+        m4_16xlarges: 0
+        f1_4xlarges: 0
+        f1_2xlarges: 1
+		# REQUIRED: TODO
+		always_expand_runfarm: yes
+		# REQUIRED: TODO
+		launch_instances_timeout_minutes: 60
+		# REQUIRED: run farm host market to use (ondemand or spot)
+        run_instance_market: ondemand
+		# REQUIRED: if using spot instances, determine the interrupt behavior
+        spot_interruption_behavior: terminate
+		# REQUIRED: if using spot instances, determine the max price
+        spot_max_price: ondemand
+        # REQUIRED: default location of the simulation directory on the run farm host
+        default_simulation_dir: /home/centos
+
+# Unmanaged list of run farm hosts. Assumed that they are pre-setup to run simulations.
+local_run_farm:
+    run_farm_type: ExternallyProvisioned
+    args:
+		# REQUIRED: defaults used for all run farm hosts
+        default_num_fpgas: 4
+        default_platform: vitis
+        default_simulation_dir: /scratch/abejgonza
+        # REQUIRED: List of IP addresses (or "localhost"). Each can have multiple OPTIONAL
+        # arguments, called "override_*", corresponding to the "default_*" arguments specified
+		# above. Each "override_*" argument overrides the corresponding "default_*" argument for
+		# that specific run host
+        #
+        # Ex:
+        # run_farm_hosts:
+        #     # use localhost and don't override the defaults
+        #     - localhost
+        #     # use other IP address (don't override the defaults)
+        #     - "111.111.1.111"
+        #     # use other IP address (override default sim dir and num fpgas for this build host)
+        #     - "222.222.2.222":
+        #         override_simulation_dir: /scratch/specific-build-host-build-dir
+        #         override_num_fpgas: 2
+        run_farm_hosts:
+            - localhost
