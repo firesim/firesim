@@ -3,7 +3,7 @@
 set -ex
 
 # deps
-sudo yum -y install xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils "perl(ExtUtils::Embed)"
+sudo yum -y install rpm-build xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils python-devel "perl(ExtUtils::Embed)" bison java-devel ncurses-devel
 
 # update this as FPGA Dev AMI updates
 KSRC='3.10.0-957.5.1.el7'

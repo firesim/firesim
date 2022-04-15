@@ -6,10 +6,25 @@ import requests
 import sys
 
 from fabric.api import *
+import fabric
 
 from common import *
 # This is expected to be launch from the ci container
 from ci_variables import *
+
+def wait_machine_launch_complete():
+    # Catch any exception that occurs so that we can gracefully teardown
+    try:
+        # wait until machine launch is complete
+        with settings(warn_only=True):
+            rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f /machine-launchstatus)").return_code
+            if rc != 0:
+                run("cat /machine-launchstatus.log")
+                raise Exception("machine-launch-script.sh failed to run")
+    except BaseException as e:
+        traceback.print_exc(file=sys.stdout)
+        terminate_workflow_instances(ci_personal_api_token, ci_workflow_run_id)
+        sys.exit(1)
 
 def initialize_manager_hosted():
     """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
@@ -21,14 +36,6 @@ def initialize_manager_hosted():
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
-        # wait until machine launch is complete
-        with cd(manager_home_dir):
-            with settings(warn_only=True):
-                rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f machine-launchstatus)").return_code
-                if rc != 0:
-                    run("cat machine-launchstatus.log")
-                    raise Exception("machine-launch-script.sh failed to run")
-
         # get the runner version based off the latest tag on the github runner repo
         RUNNER_VERSION = local("git ls-remote --refs --tags https://github.com/actions/runner.git | cut --delimiter='/' --fields=3 | tr '-' '~' | sort --version-sort | tail --lines=1", capture=True)
         RUNNER_VERSION = RUNNER_VERSION.replace("v", "")
@@ -79,4 +86,7 @@ def initialize_manager_hosted():
         sys.exit(1)
 
 if __name__ == "__main__":
+    execute(wait_machine_launch_complete, hosts=[manager_hostname(ci_workflow_run_id)])
+    # after we know machine-launch-script.sh is done, we need to logout and log back in
+    fabric.network.disconnect_all()
     execute(initialize_manager_hosted, hosts=[manager_hostname(ci_workflow_run_id)])

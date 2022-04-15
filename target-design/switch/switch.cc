@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <arpa/inet.h>
 
+//#define CAPTURE
 #define IGNORE_PRINTF
 
 #ifdef IGNORE_PRINTF
@@ -84,6 +85,8 @@ uint64_t this_iter_cycles_start = 0;
 // could be hardcoded
 
 BasePort * ports[NUMPORTS];
+
+static FILE *capture;
 
 /* switch from input ports to output ports */
 void do_fast_switching() {
@@ -159,6 +162,18 @@ for (int i = 0; i < NUMPORTS; i++) {
         switchpacket * sp = ports[i]->inputqueue.front();
         ports[i]->inputqueue.pop();
         pqueue.push( tspacket { sp->timestamp, sp });
+
+#ifdef CAPTURE
+	fputs("000", capture);
+	for (int k = 0; k < sp->amtwritten; k++) {
+		uint64_t flit = sp->dat[k];
+		for (int j = (k > 0 ? 0 : 16); j < 64; j += 8) {
+			fprintf(capture, " %02x", (flit >> j) & 0xff);
+		}
+	}
+	fputc('\n', capture);
+	fflush(capture);
+#endif
     }
 }
 
@@ -246,6 +261,14 @@ int main (int argc, char *argv[]) {
 #define PORTSETUPCONFIG
 #include "switchconfig.h"
 #undef PORTSETUPCONFIG
+
+#ifdef CAPTURE
+    capture = fopen("capture.txt", "w");
+    if (capture == NULL) {
+        fprintf(stderr, "failed to open capture file");
+        exit(1);
+    }
+#endif
 
     while (true) {
 

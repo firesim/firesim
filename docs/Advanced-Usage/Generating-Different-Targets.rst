@@ -118,8 +118,8 @@ resides in ``sim/``.  These projects are:
 1. **firesim** (Default): rocket chip-based targets. These include targets with
    either BOOM or rocket pipelines, and should be your starting point if you're
    building an SoC with the Rocket Chip generator.
-2. **midasexamples**: the `Golden Gate example designs
-   <https://github.com/firesim/firesim/tree/dev/sim/src/main/scala/midasexamples>`_, a set of simple chisel
+2. **midasexamples**: the Golden Gate example designs. Located at
+   :gh-file-ref:`sim/src/main/scala/midasexamples`, these are a set of simple chisel
    circuits like GCD, that demonstrate how to use Golden Gate.  These are useful test
    cases for bringing up new Golden Gate features.
 3. **fasedtests**: designs to do integration testing of FASED memory-system timing models.

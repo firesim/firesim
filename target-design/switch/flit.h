@@ -49,7 +49,7 @@ void write_valid_flit(uint8_t * send_buf, int tokenid) {
     *lrv |= (1L << bitoffset);
 }
 
-int write_last_flit(uint8_t * send_buf, int tokenid, int is_last) {
+void write_last_flit(uint8_t * send_buf, int tokenid, int is_last) {
     int base = tokenid / TOKENS_PER_BIGTOKEN;
     int offset = tokenid % TOKENS_PER_BIGTOKEN;
 

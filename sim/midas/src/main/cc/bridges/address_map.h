@@ -4,6 +4,7 @@
 #define __ADDRESS_MAP_H
 
 #include <map>
+#include <string>
 // Maps midas compiler emited arrays to a more useful object, that can be
 // used to read and write to a local set of registers by their names
 //

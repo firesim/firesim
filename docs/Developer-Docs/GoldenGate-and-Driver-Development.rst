@@ -46,17 +46,17 @@ them on Scala changes (but not driver changes). Out of ``sim/``::
 
 Key Files & Locations
 ---------------------
-- `sim/firesim-lib/src/test/scala/TestSuiteCommon.scala <https://github.com/firesim/firesim/blob/ |version| /sim/firesim-lib/src/test/scala/TestSuiteCommon.scala>`_
+- :gh-file-ref:`sim/firesim-lib/src/test/scala/TestSuiteCommon.scala`
    Base ScalaTest class for all tests that use FireSim's make build system
-- `sim/src/test/scala/midasexamples/TutorialSuite.scala <https://github.com/firesim/firesim/blob/ |version| /sim/src/test/scala/midasexamples/TutorialSuite.scala>`_
+- :gh-file-ref:`sim/src/test/scala/midasexamples/TutorialSuite.scala`
    Extension of TestSuiteCommon for most integration tests + concrete subclasses
-- `sim/src/main/cc/midasexamples/ <https://github.com/firesim/firesim/blob/ |version| /sim/src/main/cc/midasexamples/>`_
+- :gh-file-ref:`sim/src/main/cc/midasexamples/`
    C++ sources for target-specific drivers
-- `sim/src/main/cc/midasexamples/Driver.cc <https://github.com/firesim/firesim/blob/ |version| /sim/src/main/cc/midasexamples/Driver.cc>`_
+- :gh-file-ref:`sim/src/main/cc/midasexamples/Driver.cc`
    driver main; where target-specific drivers are registered
-- `sim/src/main/cc/midasexamples/simif_peek_poke.h <https://github.com/firesim/firesim/blob/ |version| /sim/src/main/cc/midasexamples/simif_peek_poke.h>`_
+- :gh-file-ref:`sim/src/main/cc/midasexamples/simif_peek_poke.h`
    A common driver to extend for simple tests
-- `sim/src/scala/midasexamples/ <https://github.com/firesim/firesim/tree/ |version| /sim/src/main/scala/midasexamples>`_
+- :gh-file-ref:`sim/src/main/scala/midasexamples/`
    Where top-level Chisel modules (targets) are defined
 
 Defining a New Test
@@ -103,11 +103,11 @@ under ``WithAllUnitTests`` class are run from ScalaTest and in CI.
 Key Files & Locations
 ---------------------
 
-- `sim/midas/src/main/scala/midas/SynthUnitTests.scala <https://github.com/firesim/firesim/blob/ |version| /sim/midas/src/main/scala/midas/SynthUnitTests.scala>`_
+- :gh-file-ref:`sim/midas/src/main/scala/midas/SynthUnitTests.scala`
    Synthesizable unit test modules are registered here.
-- `sim/midas/src/main/cc/unittest/Makefrag: <https://github.com/firesim/firesim/blob/ |version| /sim/midas/src/main/cc/unittest/Makefrag>`_
+- :gh-file-ref:`sim/midas/src/main/cc/unittest/Makefrag`
    Make recipes for building and running the tests.
-- `sim/firesim-lib/src/test/scala/TestSuiteCommon.scala <https://github.com/firesim/firesim/blob/ |version| /sim/firesim-lib/src/test/scala/TestSuiteCommon.scala>`_
+- :gh-file-ref:`sim/firesim-lib/src/test/scala/TestSuiteCommon.scala`
    ScalaTest wrappers for running synthesizable unittests
 
 Defining a New Test
@@ -143,9 +143,9 @@ to ``midas``, as in step 2 above.
 Key Files & Locations
 ---------------------
 
-- `sim/midas/src/test/scala/midas <https://github.com/firesim/firesim/tree/ |version| /sim/midas/src/test/scala/midas>`_
+- :gh-file-ref:`sim/midas/src/test/scala/midas`
    Location of GoldenGate ScalaTests
-- `sim/midas/targetutils/src/test/scala <https://github.com/firesim/firesim/tree/ |version| /sim/midas/targetutils/src/test/scala>`_
+- :gh-file-ref:`sim/midas/targetutils/src/test/scala`
    Location of targetutils ScalaTests
 
 Defining A New Test

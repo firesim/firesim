@@ -185,12 +185,16 @@ if [ "$SKIP_TOOLCHAIN" != true ]; then
             . "${devtoolset}/enable"
         fi
 
+	# chipyards build-toolchains.sh make defaults to gnumake or gmake but we 
+	# have latest make installed as make
+	export MAKE=make
+
         # Build the toolchain through chipyard (whether as top or as library)
         cd "$target_chipyard_dir"
         if [ "$FASTINSTALL" = "true" ] ; then
-            ./scripts/build-toolchains.sh ec2fast
+            MAKE=make ./scripts/build-toolchains.sh ec2fast
         else
-            ./scripts/build-toolchains.sh
+            MAKE=make ./scripts/build-toolchains.sh
         fi
     )
     source "$target_chipyard_dir/env.sh"
@@ -203,36 +207,48 @@ cd $RDIR
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
-    cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-    make
 
-    # Install firesim-software dependencies
-    # We always setup the symlink correctly above, so use sw/firesim-software
-    marshal_dir=$RDIR/sw/firesim-software
-    cd $RDIR
-    sudo pip3 install -r $marshal_dir/python-requirements.txt
-    cat $marshal_dir/centos-requirements.txt | sudo xargs yum install -y
-    wget https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git/snapshot/e2fsprogs-1.45.4.tar.gz
-    tar xvzf e2fsprogs-1.45.4.tar.gz
-    cd e2fsprogs-1.45.4/
-    mkdir build && cd build
-    ../configure
-    make
-    sudo make install
-    cd ../..
-    rm -rf e2fsprogs*
+    (
 
-    # Setup for using qcow2 images
-    cd $RDIR
-    ./scripts/install-nbd-kmod.sh
+	# ensure that we're using the system toolchain to build the kernel modules
+	# newer gcc has --enable-default-pie and older kernels think the compiler
+	# is broken unless you pass -fno-pie but then I was encountering a weird
+	# error about string.h not being found
+	export PATH=/usr/bin:$PATH
 
-    # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
-    # pull down some IP, so we don't have to waste time doing it each time on
-    # worker instances
-    AWSFPGA=$RDIR/platforms/f1/aws-fpga
-    cd $AWSFPGA
-    bash -c "source ./sdk_setup.sh"
-    bash -c "source ./hdk_setup.sh"
+	cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+	make
+
+	# Install firesim-software dependencies
+	# We always setup the symlink correctly above, so use sw/firesim-software
+	marshal_dir=$RDIR/sw/firesim-software
+	# the only ones missing are libguestfs-tools
+	sudo yum install -y libguestfs-tools bc
+
+	# Setup for using qcow2 images
+	cd $RDIR
+	./scripts/install-nbd-kmod.sh
+
+    )
+
+    (
+	if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
+	    # don't set it if it isn't already set but strip out -DNDEBUG because
+	    # the sdk software has assertion-only variable usage that will end up erroring
+	    # under NDEBUG with -Wall and -Werror
+	    export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+	fi
+
+
+	# Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
+	# pull down some IP, so we don't have to waste time doing it each time on
+	# worker instances
+	AWSFPGA=$RDIR/platforms/f1/aws-fpga
+	cd $AWSFPGA
+	bash -c "source ./sdk_setup.sh"
+	bash -c "source ./hdk_setup.sh"
+    )
+
 fi
 
 # Per-repository dependencies are installed under this sysroot
@@ -247,6 +263,24 @@ cd $RDIR
 set +e
 ./gen-tags.sh
 set -e
+
+
+
+read -r -d '\0' NDEBUG_CHECK <<'END_NDEBUG'
+# Ensure that we don't have -DNDEBUG anywhere in our environment
+
+# check and fixup the known place where conda will put it
+if [[ "$CPPFLAGS" == *"-DNDEBUG"* ]]; then
+    echo "::INFO:: removing '-DNDEBUG' from CPPFLAGS as we prefer to leave assertions in place"
+    export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+fi
+
+# check for any other occurances and warn the user
+env | grep -v 'CONDA_.*_BACKUP' | grep -- -DNDEBUG && echo "::WARNING:: you still seem to have -DNDEBUG in your environment. This is known to cause problems."
+true # ensure env.sh exits 0
+\0
+END_NDEBUG
+env_append "$NDEBUG_CHECK"
 
 # Write out the generated env.sh indicating successful completion.
 echo "$env_string" > env.sh
