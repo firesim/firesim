@@ -1,11 +1,17 @@
 name: firesim-publish-scala-doc
 
 on:
+  # On pushes to these branches / tags publish the scala doc to GH pages.
   push:
     branches:
       - main
     tags:
       - '[0-9]*.[0-9]*.[0-9]*'
+  # On PRs to stable or main, check that the docs build correctly without publishing
+  pull_request:
+    branches:
+      - main
+      - '1.[0-9]*.x'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -19,8 +25,27 @@ env:
   LC_ALL: "en_US.UTF-8"
 
 jobs:
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-18.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-scala-doc: ${{ steps.filter.outputs.scala-docs }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            scala-docs:
+              - '**/build.sbt'
+              - '**/*.scala'
+
   publish-scala-doc:
     name: publish-scala-doc
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-scala-doc == 'true'
     runs-on: ubuntu-18.04
     container:
       image: firesim/firesim-ci:v1.3
@@ -31,4 +56,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup
       - uses: ./.github/actions/build-scala-doc
-      - uses: ./.github/actions/push-scaladoc-to-ghpages
+      - name: "Push ScalaDoc to remote"
+        if: ${{ github.event_name == 'push' }}
+        uses: ./.github/actions/push-scaladoc-to-ghpages
