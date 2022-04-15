@@ -18,6 +18,7 @@ try:
 except ImportError:
     TypedDict = dict
 from inspect import signature
+from warnings import warn
 
 from runtools.runtime_config import RuntimeConfig
 
@@ -170,6 +171,11 @@ def runworkload(runtime_conf: RuntimeConfig) -> None:
 
 @register_task
 def buildafi(build_config_file: BuildConfigFile) -> None:
+    warn("buildafi is deprecated. buildbitstream is the new name from version=1.14.0", DeprecationWarning, stacklevel=1)
+    buildbitstream(build_config_file)
+
+@register_task
+def buildbitstream(build_config_file: BuildConfigFile) -> None:
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
