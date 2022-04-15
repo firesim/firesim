@@ -111,7 +111,7 @@ set -o pipefail
     echo "machine launch script started" > machine-launchstatus
     chmod ugo+r machine-launchstatus
 
-    # platform-specific setup 
+    # platform-specific setup
     case "$OS_FLAVOR" in
         ubuntu)
             ;;
@@ -200,9 +200,9 @@ set -o pipefail
         fi
     fi
 
-    # https://conda-forge.org/feedstock-outputs/ 
+    # https://conda-forge.org/feedstock-outputs/
     #   filterable list of all conda-forge packages
-    # https://conda-forge.org/#contribute 
+    # https://conda-forge.org/#contribute
     #   instructions on adding a recipe
     # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
     #   documentation on package_spec syntax for constraining versions
@@ -304,6 +304,7 @@ set -o pipefail
         boto3-stubs==1.21.6 \
         botocore-stubs==1.24.7 \
         mypy-boto3-s3==1.21.0 \
+        absl-py==1.0.0 \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
