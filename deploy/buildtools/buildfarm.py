@@ -66,16 +66,6 @@ class BuildFarm(metaclass=abc.ABCMeta):
         self.args = args
         self.build_hosts = []
 
-    @staticmethod
-    @abc.abstractmethod
-    def NAME() -> str:
-        """Human-readable name (used as the "build-farm-type" in the YAML).
-
-        Returns:
-            Human-readable name.
-        """
-        return ""
-
     @abc.abstractmethod
     def request_build_host(self, build_config: BuildConfig) -> None:
         """Request build host to use for build config.
@@ -133,7 +123,7 @@ class BuildFarm(metaclass=abc.ABCMeta):
         return
 
 
-class IPAddrBuildFarm(BuildFarm):
+class ExternallyProvisioned(BuildFarm):
     """Build farm that selects from a set of user-determined IPs to allocate a new build host.
 
     Attributes:
@@ -150,23 +140,14 @@ class IPAddrBuildFarm(BuildFarm):
 
         self._parse_args()
 
-    @staticmethod
-    def NAME() -> str:
-        """Human-readable name (used as the "build-farm-type" in the YAML).
-
-        Returns:
-            Human-readable name.
-        """
-        return "unmanaged"
-
     def _parse_args(self) -> None:
         """Parse build host arguments."""
         self.build_hosts_allocated = 0
 
-        build_farm_hosts_key = "build-farm-hosts"
+        build_farm_hosts_key = "build_farm_hosts"
         build_farm_hosts_list = self.args[build_farm_hosts_key]
 
-        default_build_dir = self.args["default-build-dir"]
+        default_build_dir = self.args["default_build_dir"]
 
         # allocate N build hosts
         for build_farm_host in build_farm_hosts_list:
@@ -179,7 +160,7 @@ class IPAddrBuildFarm(BuildFarm):
 
                 ip_addr, ip_args = next(iter(items))
 
-                dest_build_dir = ip_args.get('override-build-dir', default_build_dir)
+                dest_build_dir = ip_args.get('override_build_dir', default_build_dir)
             elif type(build_farm_host) is str:
                 # add element w/ defaults
 
@@ -206,7 +187,7 @@ class IPAddrBuildFarm(BuildFarm):
             self.build_hosts_allocated += 1
         else:
             bcf = build_config.build_config_file
-            error_msg = f"ERROR: {bcf.num_builds} builds requested in `config_build.yaml` but {self.NAME()} build farm only provides {len(self.build_hosts)} build hosts (i.e. IPs)."
+            error_msg = f"ERROR: {bcf.num_builds} builds requested in `config_build.yaml` but {self.__class__.__name__} build farm only provides {len(self.build_hosts)} build hosts (i.e. IPs)."
             rootLogger.critical(error_msg)
             raise Exception(error_msg)
 
@@ -229,7 +210,7 @@ class IPAddrBuildFarm(BuildFarm):
         return
 
     def __repr__(self) -> str:
-        return f"< {type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} build_hosts_allocated={self.build_hosts_allocated}) >"
+        return f"< {type(self)}(build_hosts={self.build_hosts!r} build_hosts_allocated={self.build_hosts_allocated}) >"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
@@ -260,7 +241,7 @@ class EC2BuildHost(BuildHost):
         return pprint.pformat(vars(self), width=1, indent=10)
 
 
-class EC2BuildFarm(BuildFarm):
+class AWSEC2(BuildFarm):
     """Build farm to manage AWS EC2 instances as the build hosts.
 
     Attributes:
@@ -283,24 +264,15 @@ class EC2BuildFarm(BuildFarm):
 
         self._parse_args()
 
-    @staticmethod
-    def NAME() -> str:
-        """Human-readable name (used as the "build-farm-type" in the YAML).
-
-        Returns:
-            Human-readable name.
-        """
-        return "aws-ec2"
-
     def _parse_args(self) -> None:
         """Parse build host arguments."""
         # get aws specific args
-        self.instance_type = self.args['instance-type']
-        self.build_instance_market = self.args['build-instance-market']
-        self.spot_interruption_behavior = self.args['spot-interruption-behavior']
-        self.spot_max_price = self.args['spot-max-price']
+        self.instance_type = self.args['instance_type']
+        self.build_instance_market = self.args['build_instance_market']
+        self.spot_interruption_behavior = self.args['spot_interruption_behavior']
+        self.spot_max_price = self.args['spot_max_price']
 
-        self.dest_build_dir = self.args["build-dir"]
+        self.dest_build_dir = self.args["default_build_dir"]
         if not self.dest_build_dir:
             raise Exception("ERROR: Invalid null build dir")
 
@@ -362,7 +334,7 @@ class EC2BuildFarm(BuildFarm):
         terminate_instances(instance_ids, dryrun=False)
 
     def __repr__(self) -> str:
-        return f"< {type(self)}(NAME={self.NAME()}, build_hosts={self.build_hosts!r} instance_type={self.instance_type} build_instance_market={self.build_instance_market} spot_interruption_behavior={self.spot_interruption_behavior} spot_max_price={self.spot_max_price}) >"
+        return f"< {type(self)}(build_hosts={self.build_hosts!r} instance_type={self.instance_type} build_instance_market={self.build_instance_market} spot_interruption_behavior={self.spot_interruption_behavior} spot_max_price={self.spot_max_price}) >"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)

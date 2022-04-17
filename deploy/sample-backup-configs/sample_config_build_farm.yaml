@@ -6,10 +6,9 @@
 ###########
 # # Unique name for build farm.
 # <NAME>:
-#     # Human readable name of the build farm type.
-#     # This can be determined from the `NAME` field in `BuildFarmHostDispatcher`
-#     # child class (located in `deploy/buildfarmhostdispatcher.py`).
-#     build-farm-type: <TYPE NAME>
+#     # Class name of the build farm type.
+#     # This can be determined from `deploy/buildtools/buildfarm.py`).
+#     build_farm_type: <TYPE NAME>
 #     args:
 #         # Build farm arguments that are passed to the `BuildFarmHostDispatcher`
 #         # object. Determined by looking at `parse_args` function of class.
@@ -18,38 +17,38 @@
 # Note: For large designs (ones that would fill a EC2.2xlarge/Xilinx VU9P)
 # Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
 # non-default instance type.
-ec2-build-farm:
-    build-farm-type: aws-ec2
+ec2_build_farm:
+    build_farm_type: AWSEC2
     args:
         # REQUIRED: instance type to use per build
-        instance-type: z1d.2xlarge
+        instance_type: z1d.2xlarge
         # REQUIRED: instance market to use per build
-        build-instance-market: ondemand
+        build_instance_market: ondemand
         # REQUIRED: if using spot instances, determine the interrupt behavior
-        spot-interruption-behavior: terminate
+        spot_interruption_behavior: terminate
         # REQUIRED: if using spot instances, determine the max price
-        spot-max-price: ondemand
+        spot_max_price: ondemand
         # REQUIRED: default location of build directory on build host
-        build-dir: /home/centos/firesim-build
+        default_build_dir: /home/centos/firesim-build
 
 # Unmanaged list of build hosts. Assumed that they are pre-setup to run builds.
-local-build-farm:
-    build-farm-type: unmanaged
+local_build_farm:
+    build_farm_type: ExternallyProvisioned
     args:
         # REQUIRED: default location of build directory on build host
-        default-build-dir: /home/centos/firesim-build
+        default_build_dir: /home/centos/firesim-build
         # REQUIRED: List of IP addresses (or "localhost"). Each can have an OPTIONAL
-        # argument, called "override-build-dir", specifying to override the default
+        # argument, called "override_build_dir", specifying to override the default
         # build directory.
         #
         # Ex:
-        # build-farm-hosts:
+        # build_farm_hosts:
         #     # use localhost and don't override the default build dir
         #     - localhost
         #     # use other IP address (don't override default build dir)
         #     - "111.111.1.111"
         #     # use other IP address (override default build dir for this build host)
         #     - "222.222.2.222":
-        #         override-build-dir: /scratch/specific-build-host-build-dir
-        build-farm-hosts:
+        #         override_build_dir: /scratch/specific-build-host-build-dir
+        build_farm_hosts:
             - localhost

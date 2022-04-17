@@ -196,14 +196,14 @@ class TestConfigBuildAPI:
         # at the beginning of the test build_yamls contains the backup-sample-configs
         # but we can show exactly what we're doing different from the default by
         build_yamls.build.load(dedent("""
-            default-build-farm: ec2-build-farm
+            build_farm: ec2_build_farm
 
-            builds:
+            builds_to_run:
 
-            agfis-to-share:
-                - testing-recipe-name
+            agfis_to_share:
+                - testing_recipe_name
 
-            share-with-accounts:
+            share_with_accounts:
                 INVALID_NAME: 123456789012
             """))
 
@@ -217,32 +217,31 @@ class TestConfigBuildAPI:
         m = task_mocker.patch('buildafi', wrap_config=True)
 
         build_yamls.build.load(dedent("""
-            default-build-farm: testing-build-farm
+            build_farm: testing_build_farm
 
-            builds:
-                - testing-recipe-name
+            builds_to_run:
+                - testing_recipe_name
 
-            agfis-to-share:
-                - testing-recipe-name
+            agfis_to_share:
+                - testing_recipe_name
 
-            share-with-accounts:
+            share_with_accounts:
                 INVALID_NAME: 123456789012
             """))
         build_yamls.farm.load(dedent("""
-            testing-build-farm:
-                build-farm-type: INVALID_BUILD_FARM_TYPE
+            testing_build_farm:
+                build_farm_type: INVALID_BUILD_FARM_TYPE
                 args:
-                    DUMMY-ARG: null
+                    DUMMY_ARG: null
             """))
         build_yamls.recipes.load(dedent("""
-            testing-recipe-name:
+            testing_recipe_name:
                 DESIGN: TopModule
                 TARGET_CONFIG: Config
-                deploy-triplet: null
+                deploy_triplet: null
                 PLATFORM_CONFIG: Config
-                post-build-hook: null
-                s3-bucket-name: TESTING_BUCKET_NAME
-                build-farm: testing-build-farm
+                post_build_hook: null
+                s3_bucket_name: TESTING_BUCKET_NAME
             """))
         build_yamls.write()
         args = firesim_parse_args(['buildafi'] + build_yamls.args)
@@ -252,14 +251,14 @@ class TestConfigBuildAPI:
         m['task'].assert_not_called()
 
     @pytest.mark.parametrize('farm_name',
-                             ['ec2-build-farm',
-                              'local-build-farm',
+                             ['ec2_build_farm',
+                              'local_build_farm',
                               ])
     def test_invalid_farm_missing_args(self, task_mocker, build_yamls, firesim_parse_args, farm_name):
         m = task_mocker.patch('buildafi', wrap_config=True)
 
-        build_yamls.build.data.should.contain('default-build-farm')
-        build_yamls.build.data['default-build-farm'] = farm_name
+        build_yamls.build.data.should.contain('build_farm')
+        build_yamls.build.data['build_farm'] = farm_name
         build_yamls.farm.data[farm_name].should.contain('args')
         build_yamls.farm.data[farm_name]['args'] = None
 
@@ -272,8 +271,8 @@ class TestConfigBuildAPI:
     def test_invalid_unmanaged_missing_args(self, task_mocker, build_yamls, firesim_parse_args):
         m = task_mocker.patch('buildafi', wrap_config=True)
 
-        build_yamls.build.data['default-build-farm'] = 'local-build-farm'
-        build_yamls.farm.data['local-build-farm']['args']['build-farm-hosts'] = None
+        build_yamls.build.data['build_farm'] = 'local_build_farm'
+        build_yamls.farm.data['local_build_farm']['args']['build_farm_hosts'] = None
 
         build_yamls.write()
         args = firesim_parse_args(['buildafi'] + build_yamls.args)
@@ -307,8 +306,8 @@ class TestConfigRunAPI:
         monkeypatch.chdir(sample_backup_configs.parent)
 
 
-        run_yamls.run.data['target-config'].should.contain('default-hw-config')
-        run_yamls.run.data['target-config']['default-hw-config'] = 'INVALID_CONFIG'
+        run_yamls.run.data['target_config'].should.contain('default_hw_config')
+        run_yamls.run.data['target_config']['default_hw_config'] = 'INVALID_CONFIG'
 
         run_yamls.hwdb.data.should_not.contain('INVALID_CONFIG')
 
@@ -326,8 +325,8 @@ class TestConfigRunAPI:
         monkeypatch.chdir(sample_backup_configs.parent)
 
 
-        run_yamls.run.data['target-config'].should.contain('topology')
-        run_yamls.run.data['target-config']['topology'] = 'INVALID_TOPOLOGY'
+        run_yamls.run.data['target_config'].should.contain('topology')
+        run_yamls.run.data['target_config']['topology'] = 'INVALID_TOPOLOGY'
 
         run_yamls.write()
         args = firesim_parse_args([task_name] + run_yamls.args)
@@ -342,8 +341,8 @@ class TestConfigRunAPI:
         #to give each unit test it's own sandbox.  Need to think about this more.
         monkeypatch.chdir(sample_backup_configs.parent)
 
-        run_yamls.run.data['workload'].should.contain('workload-name')
-        run_yamls.run.data['workload']['workload-name'] = 'INVALID_WORKLOAD'
+        run_yamls.run.data['workload'].should.contain('workload_name')
+        run_yamls.run.data['workload']['workload_name'] = 'INVALID_WORKLOAD'
 
         run_yamls.write()
         args = firesim_parse_args([task_name] + run_yamls.args)
