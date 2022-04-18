@@ -33,10 +33,10 @@ class RuntimeHWConfig:
     def __init__(self, name, hwconfig_dict):
         self.name = name
         self.agfi = hwconfig_dict['agfi']
-        self.deploytriplet = hwconfig_dict['deploy-triplet-override']
+        self.deploytriplet = hwconfig_dict['deploy_triplet_override']
         if self.deploytriplet is not None:
             rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file.  Make sure you understand why!".format(name))
-        self.customruntimeconfig = hwconfig_dict['custom-runtime-config']
+        self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
 
@@ -258,35 +258,35 @@ class InnerRuntimeConfiguration:
         if runfarmtagprefix != "":
             runfarmtagprefix += "-"
 
-        self.runfarmtag = runfarmtagprefix + runtime_dict['run-farm']['run-farm-tag']
+        self.runfarmtag = runfarmtagprefix + runtime_dict['run_farm']['run_farm_tag']
 
         aws_resource_names_dict = aws_resource_names()
         if aws_resource_names_dict['runfarmprefix'] is not None:
             # if specified, further prefix runfarmtag
             self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
 
-        self.f1_16xlarges_requested = int(runtime_dict['run-farm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['run-farm'] else 0
-        self.f1_4xlarges_requested = int(runtime_dict['run-farm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['run-farm'] else 0
-        self.m4_16xlarges_requested = int(runtime_dict['run-farm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['run-farm'] else 0
-        self.f1_2xlarges_requested = int(runtime_dict['run-farm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['run-farm'] else 0
+        self.f1_16xlarges_requested = int(runtime_dict['run_farm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['run_farm'] else 0
+        self.f1_4xlarges_requested = int(runtime_dict['run_farm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['run_farm'] else 0
+        self.m4_16xlarges_requested = int(runtime_dict['run_farm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['run_farm'] else 0
+        self.f1_2xlarges_requested = int(runtime_dict['run_farm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['run_farm'] else 0
 
-        self.run_instance_market = runtime_dict['run-farm']['run-instance-market']
-        self.spot_interruption_behavior = runtime_dict['run-farm']['spot-interruption-behavior']
-        self.spot_max_price = runtime_dict['run-farm']['spot-max-price']
+        self.run_instance_market = runtime_dict['run_farm']['run_instance_market']
+        self.spot_interruption_behavior = runtime_dict['run_farm']['spot_interruption_behavior']
+        self.spot_max_price = runtime_dict['run_farm']['spot_max_price']
 
-        self.topology = runtime_dict['target-config']['topology']
-        self.no_net_num_nodes = int(runtime_dict['target-config']['no-net-num-nodes'])
-        self.linklatency = int(runtime_dict['target-config']['link-latency'])
-        self.switchinglatency = int(runtime_dict['target-config']['switching-latency'])
-        self.netbandwidth = int(runtime_dict['target-config']['net-bandwidth'])
-        self.profileinterval = int(runtime_dict['target-config']['profile-interval'])
+        self.topology = runtime_dict['target_config']['topology']
+        self.no_net_num_nodes = int(runtime_dict['target_config']['no_net_num_nodes'])
+        self.linklatency = int(runtime_dict['target_config']['link_latency'])
+        self.switchinglatency = int(runtime_dict['target_config']['switching_latency'])
+        self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
+        self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
 
-        if 'launch-instances-timeout-minutes' in runtime_dict['run-farm']:
-            self.launch_timeout = timedelta(minutes=int(runtime_dict['run-farm']['launch-instances-timeout-minutes']))
+        if 'launch_instances_timeout_minutes' in runtime_dict['run_farm']:
+            self.launch_timeout = timedelta(minutes=int(runtime_dict['run_farm']['launch_instances_timeout_minutes']))
         else:
             self.launch_timeout = timedelta() # default to legacy behavior of not waiting
 
-        self.always_expand = runtime_dict['run-farm'].get('always-expand-runfarm', "yes") == "yes"
+        self.always_expand = runtime_dict['run_farm'].get('always_expand_runfarm', "yes") == "yes"
 
         # Default values
         self.trace_enable = False
@@ -306,22 +306,22 @@ class InnerRuntimeConfiguration:
             self.trace_select = runtime_dict['tracing'].get('selector', "0")
             self.trace_start = runtime_dict['tracing'].get('start', "0")
             self.trace_end = runtime_dict['tracing'].get('end', "-1")
-            self.trace_output_format = runtime_dict['tracing'].get('output-format', "0")
+            self.trace_output_format = runtime_dict['tracing'].get('output_format', "0")
         if 'autocounter' in runtime_dict:
-            self.autocounter_readrate = int(runtime_dict['autocounter'].get('read-rate', "0"))
-        self.defaulthwconfig = runtime_dict['target-config']['default-hw-config']
-        if 'host-debug' in runtime_dict:
-            self.zerooutdram = runtime_dict['host-debug'].get('zero-out-dram') == "yes"
-            self.disable_asserts = runtime_dict['host-debug'].get('disable-synth-asserts') == "yes"
-        if 'synth-print' in runtime_dict:
-            self.print_start = runtime_dict['synth-print'].get("start", "0")
-            self.print_end = runtime_dict['synth-print'].get("end", "-1")
-            self.print_cycle_prefix = runtime_dict['synth-print'].get("cycle-prefix", "yes") == "yes"
+            self.autocounter_readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
+        self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
+        if 'host_debug' in runtime_dict:
+            self.zerooutdram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
+            self.disable_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+        if 'synth_print' in runtime_dict:
+            self.print_start = runtime_dict['synth_print'].get("start", "0")
+            self.print_end = runtime_dict['synth_print'].get("end", "-1")
+            self.print_cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
 
-        self.workload_name = runtime_dict['workload']['workload-name']
+        self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
-        self.suffixtag = runtime_dict['workload']['suffix-tag'] if 'suffix-tag' in runtime_dict['workload'] else None
-        self.terminateoncompletion = runtime_dict['workload']['terminate-on-completion'] == "yes"
+        self.suffixtag = runtime_dict['workload']['suffix_tag'] if 'suffix_tag' in runtime_dict['workload'] else None
+        self.terminateoncompletion = runtime_dict['workload']['terminate_on_completion'] == "yes"
 
     def __str__(self):
         return pprint.pformat(vars(self))

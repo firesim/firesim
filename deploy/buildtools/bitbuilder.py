@@ -298,8 +298,8 @@ class F1BitBuilder(BitBuilder):
 	    message_title = "FireSim FPGA Build Completed"
 	    agfi_entry = afiname + ":\n"
 	    agfi_entry += "    agfi: " + agfi + "\n"
-	    agfi_entry += "    deploy-triplet-override: null\n"
-	    agfi_entry += "    custom-runtime-config: null\n"
+	    agfi_entry += "    deploy_triplet_override: null\n"
+	    agfi_entry += "    custom_runtime_config: null\n"
 	    message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
 
 	    send_firesim_notification(message_title, message_body)
