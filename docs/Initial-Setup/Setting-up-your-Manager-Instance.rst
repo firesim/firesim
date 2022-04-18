@@ -129,13 +129,12 @@ your firesim directory and source this file again.**
 Completing Setup Using the Manager
 ----------------------------------
 
-The FireSim manager contains two commands that will interactively guide you
-through the rest of the FireSim setup process. To run them, do the following:
+The FireSim manager contains a command that will interactively guide you
+through the rest of the FireSim setup process. To run it, do the following:
 
 ::
 
-    firesim awsinit
-    firesim managerinit
+    firesim managerinit --platform f1
 
 This will first prompt you to setup AWS credentials on the instance, which allows
 the manager to automatically manage build/simulation nodes. See

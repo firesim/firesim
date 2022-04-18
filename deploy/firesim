@@ -5,7 +5,7 @@ import sys
 import os
 import signal
 import argparse
-from time import sleep, strftime, gmtime
+from time import strftime, gmtime
 import logging
 import random
 import argcomplete # type: ignore
@@ -19,16 +19,19 @@ except ImportError:
     TypedDict = dict
 from inspect import signature
 from warnings import warn
+from pathlib import Path
 
 from runtools.runtime_config import RuntimeConfig
 
-from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscribe_to_firesim_topic
+from awstools.awstools import awsinit, get_aws_userid
 from awstools.afitools import *
 
 from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.buildconfig import BuildConfig
 
 from util.streamlogger import StreamLogger
+
+PLATFORM_LIST = [_.name for _ in Path(__file__).parent.parent.joinpath('platforms').iterdir()]
 
 class Task(TypedDict):
     task: Callable
@@ -69,16 +72,18 @@ def register_task(task: Callable) -> Callable:
             config_class = first.annotation
 
             # check that the first parameter takes a Namespace passed to its constructor
-            csig = signature(config_class)
-            if csig.parameters:
-                cfirst = next(iter(csig.parameters.values()))
-                if cfirst.annotation is cfirst.empty:
-                    raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
-                                    f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
+            # or that it is a Namespace
+            if config_class is not argparse.Namespace:
+                csig = signature(config_class)
+                if csig.parameters:
+                    cfirst = next(iter(csig.parameters.values()))
+                    if cfirst.annotation is cfirst.empty:
+                        raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
+                                        f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
+                    else:
+                        assert cfirst.annotation is argparse.Namespace
                 else:
-                    assert cfirst.annotation is argparse.Namespace
-            else:
-                raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
+                    raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
 
     TASKS[tn] = {'task': task, 'config': config_class}
 
@@ -95,32 +100,13 @@ def register_task(task: Callable) -> Callable:
 ## to add a task, add it here, using the @register_task decorator in it's definition
 
 
-def awsinit():
-    """Setup AWS FireSim manager components."""
-
-    valid_creds = valid_aws_configure_creds()
-    while not valid_creds:
-        # only run aws configure if we cannot already find valid creds
-        # this loops calling valid_aws_configure_creds until
-        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-        # stored in the log
-        local("aws configure")
-
-        # check again
-        valid_creds = valid_aws_configure_creds()
-        if not valid_creds:
-            rootLogger.info("Invalid AWS credentials. Try again.")
-
-    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
-    if useremail != "":
-        subscribe_to_firesim_topic(useremail)
-    else:
-        rootLogger.info("You did not supply an email address. No notifications will be sent.")
-
 @register_task
-def managerinit():
+def managerinit(args: argparse.Namespace):
     """ Setup local FireSim manager components. """
+
+    if not args.platform:
+        rootLogger.error('::ERROR:: managerinit requires that you provide --platform <platformname>')
+        sys.exit(1)
 
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
@@ -140,14 +126,8 @@ def managerinit():
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-    # warn about AWS init
-    rootLogger.warning("If running the manager on AWS F1, run \"awsinit\" at least once.")
-    # XXX abstract registration of backend init methods and run them all.  
-    # perhaps buildconfigfile and runtimeconfigfile should have a method that reterns a set of init
-    # methods that then think need to be called and this iterates them
-    # except that the managerinit is responsible for initializing the configs and in reality these
-    # init things need to be done by fpgabuild or launchrunfarm?
-    awsinit()
+    if args.platform == 'f1':
+        awsinit()
 
 @register_task
 def infrasetup(runtime_conf: RuntimeConfig) -> None:
@@ -330,6 +310,8 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
+    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',
+                        help='Required argument for "managerinit" to specify which platform you will be using')
 
     argcomplete.autocomplete(parser)
     return parser
@@ -359,7 +341,10 @@ def main(args: argparse.Namespace) -> None:
 
     t = TASKS[args.task]
     if t['config']:
-        t['task'](t['config'](args))
+        if t['config'] is argparse.Namespace:
+            t['task'](args)
+        else:
+            t['task'](t['config'](args))
     else:
         t['task']()
 

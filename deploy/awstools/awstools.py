@@ -139,6 +139,31 @@ def aws_resource_names():
 
     return base_dict
 
+
+def awsinit():
+    """Setup AWS FireSim manager components."""
+
+    valid_creds = valid_aws_configure_creds()
+    while not valid_creds:
+        # only run aws configure if we cannot already find valid creds
+        # this loops calling valid_aws_configure_creds until
+        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
+        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
+        # stored in the log
+        local("aws configure")
+
+        # check again
+        valid_creds = valid_aws_configure_creds()
+        if not valid_creds:
+            rootLogger.info("Invalid AWS credentials. Try again.")
+
+    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    if useremail != "":
+        subscribe_to_firesim_topic(useremail)
+    else:
+        rootLogger.info("You did not supply an email address. No notifications will be sent.")
+
+
 # AMIs are region specific
 def get_f1_ami_id():
     """ Get the AWS F1 Developer AMI by looking up the image name -- should be region independent.
