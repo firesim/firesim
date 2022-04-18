@@ -48,18 +48,36 @@ class ILAWiringTransform extends Transform with DependencyAPIMigration {
     val enableTransform = p(EnableAutoILA)
     val dataDepth = p(ILADepthKey)
     
-    val ilaannos = state.annotations.collect {
+    val ilaAnnos = state.annotations.collect {
       case a @ (_: FirrtlFpgaDebugAnnotation) if enableTransform => a
     }
 
     // Map debug annotations to top wiring annotations
-    val targetannos = ilaannos match {
+    val targetAnnos = ilaAnnos match {
       case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_")  }
     }
 
+    // Sneak out mapping, which has information about port widths needed for the ILA Tcl file, from a "dummy" TopWiringOutputFilesAnnotation
+    // Code for this taken from  https://github.com/firesim/firesim/blob/master/sim/midas/src/main/scala/midas/passes/BridgeTopWiring.scala#L133
+
+    //var topLevelOutputs = Seq[TopWiringMapping]()
+    // Think this can be the same type as mapping, rather than TopWiringMapping case class
+    var extractedMappings = Seq[((ComponentName, Type, Boolean, InstPath, String), Int)]
+    def wiringAnnoOutputFunc(td: String,
+                             mappings:  Seq[((ComponentName, Type, Boolean, Seq[String], String), Int)],
+                             state: CircuitState): CircuitState = {
+      //topLevelOutputs = mappings.unzip._1.map(inscrutable5Tuple => TopWiringMapping(inscrutable5Tuple._1, inscrutable5Tuple._4.dropRight(1)))
+      // Don't think we need to do the above manipulation
+      extractedMappings = mappings
+      state
+    }
+
+    val topWiringOFileAnno = TopWiringOutputFilesAnnotation("unused", wiringAnnoOutputFunc)
+
     // Create a new top with the old wired port list
     val oldTop = state.circuit.modules.collectFirst({ case m: Module if m.name == state.circuit.main => m }).get
-    val wiredState = (new TopWiringTransform).execute(state.copy(annotations = state.annotations ++ targetannos))
+    // Include the "dummy" TopWiringOutputFilesAnnotation in the TopWiringTransform execution
+    val wiredState = (new TopWiringTransform).execute(state.copy(annotations = state.annotations ++ targetAnnos ++ topWiringOFileAnno))
     val newTop = wiredState.circuit.modules.collectFirst({ case m: Module if m.name == wiredState.circuit.main => m }).get
     val newPorts = newTop.ports - oldTop.ports
     val newTopWithOldPorts = newTop.copy(ports = oldTop.ports)
@@ -71,27 +89,20 @@ class ILAWiringTransform extends Transform with DependencyAPIMigration {
     }
     val flippedPorts = newPorts.map(flipPort)
  
-    // Get mapping from TopWiring, which has information about port widths needed for the ILA Tcl file
-    // Still a bit unclear about David's example of extracting mapping from TopWiring.
-    // See https://github.com/firesim/firesim/blob/master/sim/midas/src/main/scala/midas/passes/BridgeTopWiring.scala#L131
-    // Notice that ILAWiringOutputFiles has access to mapping, which is passed as argument to TopWiringOutputFilesAnnotation, which is passed as an annotation to TopWiring.
-    // Seems David is doing something similar with wiringAnnoOutputFunc.
-    // Where is the mapping snuck out? 
-
-    // Extract probe information from mapping 5-tuple and create string list of probes to be injected in the output tcl string literal. How to create string list with this map onto mapping?
-    mapping map { case ((cname, tpe, _, path, prefix), index) =>
-      //val probewidth = tpe.asInstanceOf[GroundType].width.asInstanceOf[IntWidth].width
-      val probewidth = tpe match { case GroundType(IntWidth(w)) => w }
-      val probewidth1 = probewidth - 1
-      val probenum = index
-      val probeportname = prefix + path.mkString("_")
+    // Extract probe information from mapping 5-tuple and create string list of probes to be injected in the output tcl string literal.
+    extractedMappings.map { case ((cname, tpe, _, path, prefix), index) =>
+      val probeWidth = tpe match { case GroundType(IntWidth(w)) => w }
+      val probeWidth1 = probewidth - 1
+      val probeNum = index
+      val probePortName = prefix + path.mkString("_")
 
       // This is how it was done using the append method.
       //tclOutputFile.append(s"CONFIG.C_PROBE$probenum" ++ s"_WIDTH {$probewidth} ")
       //tclOutputFile.append(s"CONFIG.C_PROBE$probenum" ++ s"_MU_CNT {$probetriggers} ")
   
 
-    if (mapping.isEmpty) {
+    if (extractedMappings.isEmpty) {
+      // If the mappings are empty, we append a single, 1-width probe. Why? Doesn't an empty mapping mean nothing was broken out?
       // This is how it was done using the append method.
       //tclOutputFile.append(s"CONFIG.C_PROBE0" ++ s"_WIDTH {1} ")
       //tclOutputFile.append(s"CONFIG.C_PROBE0" ++ s"_MU_CNT {$probetriggers} ")
@@ -116,7 +127,7 @@ class ILAWiringTransform extends Transform with DependencyAPIMigration {
       s".ila_insert_vivado.tcl"
     )
 
-    // Generate ILA blackbox submodule and append to new circuit
+    // Generate ILA blackbox submodule.
     val ilaBlackbox = ExtModule(
         info = NoInfo,
         name = "ila_firesim_0" // Taken from ilaInstOutputFile in old pass.
@@ -129,19 +140,23 @@ class ILAWiringTransform extends Transform with DependencyAPIMigration {
     def rewireConnects(s: Statement) : Statement = s.map(rewireConnects) match { // Not sure if need the recursive mapping
       // Connect(info, loc, expr)
       // WRef(name, type, kind, flow)
-      case Connect (info, WRef(portName, _, PortKind, _), rhs) if newPorts(portName) => Connect(_, WRef(<reference to the ILA submodule>), rhs) // How do I reference the ILA submodule in WRef?
+      // case c@ ...
+      // grep for WSubfield and will see syntax. WSubfield is the thing to use to refer to the name of the submodule, give it a port name.
+      case Connect (info, WRef(portName, _, PortKind, _), rhs) if newPorts(portName) => //c.copy(loc=WRef(WSubfield(submodule instance name)) //Connect(_, WRef(<reference to the ILA submodule>), rhs) // How do I reference the ILA submodule in WRef?
       case o => o
     }
     
     // Top-level module with rewired connect statements
-    // val rewiredTop = newTopWithOldPorts.copy(connects = connects.map(rewireConnects)) // This won't work; connects is not a val in DefModule like ports
-    val rewiredTop = newTopWithOldPorts.mapStmt(rewireConnects) // Think this might work if mapStmt does what I think
+    val rewiredTop = newTopWithOldPorts.copy(body = newTopWithOldPorts.body.map(rewireConnects)) // Try this first.
+    //val rewiredTop = newTopWithOldPorts.mapStmt(rewireConnects) // Think this might work if mapStmt does what I think
 
     // Replace top-level module in circuit with rewired connections. How to do this?
+    //map over modules and pattern match
     val newModules
 
     // Create new new state and circuit with rewired top-level module and blackbox added 
-    val newCircuit = state.circuit.copy(modules = newModules ++ blackbox)
+    // We should only append the blackbox module if mapping was empty. 
+    val newCircuit = state.circuit.copy(modules = newModules ++ ilaBlackbox)
     val newState = state.copy(circuit = newCircuit)
 
     val cleanedAnnos = wiredState.annotations.filter {
