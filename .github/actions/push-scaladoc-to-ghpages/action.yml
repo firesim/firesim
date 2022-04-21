@@ -10,6 +10,8 @@ runs:
         ssh-private-key: ${{ env.FIRESIM-REPO-DEP-KEY }}
 
     - run: |
+        # Activates the conda environment which provides git.
+        source env.sh
         git config --global user.email "abe.gonzalez@berkeley.edu"
         git config --global user.name "github-actions"
       shell: bash
