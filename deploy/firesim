@@ -23,7 +23,6 @@ from awstools.awstools import awsinit, get_aws_userid
 from awstools.afitools import *
 
 from buildtools.buildconfigfile import BuildConfigFile
-from buildtools.buildconfig import BuildConfig
 
 from util.streamlogger import StreamLogger
 
@@ -86,7 +85,7 @@ def register_task(task: Callable) -> Callable:
     # we don't want this function to be callable any way other than via firesim.main()
     # so that we know programmatic changes to TASKS are followed (currently for testing purposes)
     # so we don't return the original callable task, we return a lambda that raises
-    def inner():
+    def inner(*args, **kwargs):
         raise FiresimTaskAccessViolation(f"Called '{tn}' without going through TASKS")
     # or actually, we define a closure with def and return that because lambdas that raise
     # are convoluted
@@ -147,8 +146,8 @@ def runworkload(runtime_conf: RuntimeConfig) -> None:
 
 @register_task
 def buildafi(build_config_file: BuildConfigFile) -> None:
-    warn("buildafi is deprecated. buildbitstream is the new name from version=1.14.0", DeprecationWarning, stacklevel=1)
-    buildbitstream(build_config_file)
+    # shouldn't ever be able to get here because main() implements logging and redirecting to builtbitstream
+    raise NotImplementedError
 
 @register_task
 def buildbitstream(build_config_file: BuildConfigFile) -> None:
@@ -333,6 +332,10 @@ def main(args: argparse.Namespace) -> None:
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
 
+    if args.task == 'buildafi':
+        rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitream' and will be removed in a future version")
+        args.task = 'buildbitstream'
+
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
     t = TASKS[args.task]
@@ -363,6 +366,9 @@ if __name__ == '__main__':
         timeline = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
         randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         return timeline + "-" + args.task + "-" + randname + ".log"
+
+    # treat python warnings as WARNING level messages from py.warn
+    logging.captureWarnings(True)
 
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
