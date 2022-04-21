@@ -1,3 +1,4 @@
+import abc
 import yaml
 import json
 import time
@@ -32,7 +33,7 @@ def get_deploy_dir() -> str:
         deploydir = local("pwd", capture=True)
     return deploydir
 
-class BitBuilder:
+class BitBuilder(metaclass=abc.ABCMeta):
     """Abstract class to manage how to build a bitstream for a build config.
 
     Attributes:
@@ -47,14 +48,17 @@ class BitBuilder:
         """
         self.build_config = build_config
 
+    @abc.abstractmethod
     def replace_rtl(self) -> None:
         """Generate Verilog from build config."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def build_driver(self) -> None:
         """Build FireSim FPGA driver from build config."""
         raise NotImplementedError
 
+    @abc.abstractmethod
     def build_bitstream(self, bypass: bool = False) -> None:
         """Run bitstream build and terminate the build host at the end.
         Must run after `replace_rtl` and `build_driver` are run.
@@ -94,7 +98,7 @@ class F1BitBuilder(BitBuilder):
             InfoStreamLogger('stderr'):
             run(self.build_config.make_recipe("PLATFORM=f1 driver"))
 
-    def cl_dir_setup(chisel_triplet: str, dest_build_dir: str) -> str:
+    def cl_dir_setup(self, chisel_triplet: str, dest_build_dir: str) -> str:
         """Setup CL_DIR on build host.
 
         Args:
@@ -144,7 +148,7 @@ class F1BitBuilder(BitBuilder):
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
         """
         if bypass:
-            self.build_config.build_farm_host_dispatcher.release_build_farm_host()
+            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
             return
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -160,48 +164,37 @@ class F1BitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_host_dispatcher.release_build_host()
+            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
 
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
-        fpga_build_postfix = "hdk/cl/developer_designs/cl_{}".format(self.build_config.get_chisel_triplet())
-        local_results_dir = "{}/results-build/{}".format(local_deploy_dir, self.build_config.get_build_dir_name())
+        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_triplet()}"
+        local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
 
-        # cl_dir is the cl_dir that is either local or remote
-        # if locally no need to copy things around (the makefile should have already created a CL_DIR w. the tuple)
-        # if remote (aka not locally) then you need to copy things
-        cl_dir = ""
-        local_cl_dir = "{}/../platforms/f1/aws-fpga/{}".format(local_deploy_dir, fpga_build_postfix)
+        build_farm = self.build_config.build_config_file.build_farm
 
-        # copy over generated RTL into local CL_DIR before remote
-        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            run("""mkdir -p {}""".format(local_results_dir))
-            run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(local_cl_dir, local_results_dir))
-
-        if self.build_config.build_farm_host_dispatcher.is_local:
-            cl_dir = local_cl_dir
-        else:
-            cl_dir = self.remote_setup()
+        # 'cl_dir' holds the eventual directory in which vivado will run.
+        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
         vivado_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # copy script to the cl_dir and execute
             rsync_cap = rsync_project(
-                local_dir="{}/../platforms/f1/build-bitstream.sh".format(local_deploy_dir),
-                remote_dir="{}/".format(cl_dir),
+                local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
+                remote_dir=f"{cl_dir}/",
                 ssh_opts="-o StrictHostKeyChecking=no",
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
-            vivado_result = run("{}/build-bitstream.sh {}".format(cl_dir, cl_dir)).return_code
+            vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
 
         # put build results in the result-build area
         with StreamLogger('stdout'), StreamLogger('stderr'):
             rsync_cap = rsync_project(
-                local_dir="{}/".format(local_results_dir),
-                remote_dir="{}".format(cl_dir),
+                local_dir=f"{local_results_dir}/",
+                remote_dir=cl_dir,
                 ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
                 capture=True)
             rootLogger.debug(rsync_cap)
@@ -215,9 +208,9 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return
 
-        self.build_config.build_farm_host_dispatcher.release_build_farm_host()
+        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
 
-    def aws_create_afi(build_config: BuildConfig) -> Optional[bool]:
+    def aws_create_afi(self) -> Optional[bool]:
         """Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI).
 
         Args:
@@ -227,18 +220,18 @@ class F1BitBuilder(BitBuilder):
             `True` on success, `None` on error.
         """
         local_deploy_dir = get_deploy_dir()
-        local_results_dir = f"{local_deploy_dir}/results-build/{build_config.get_build_dir_name()}"
+        local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
 
         afi = None
         agfi = None
-        s3bucket = build_config.s3_bucketname
-        afiname = build_config.name
+        s3bucket = self.build_config.s3_bucketname
+        afiname = self.build_config.name
 
         # construct the "tags" we store in the AGFI description
-        tag_buildtriplet = build_config.get_chisel_triplet()
+        tag_buildtriplet = self.build_config.get_chisel_triplet()
         tag_deploytriplet = tag_buildtriplet
-        if build_config.deploytriplet:
-            tag_deploytriplet = build_config.deploytriplet
+        if self.build_config.deploytriplet:
+            tag_deploytriplet = self.build_config.deploytriplet
 
         # the asserts are left over from when we tried to do this with tags
         # - technically I don't know how long these descriptions are allowed to be,
@@ -284,11 +277,11 @@ class F1BitBuilder(BitBuilder):
         checkstate = "pending"
         with lcd(local_results_dir), StreamLogger('stdout'), StreamLogger('stderr'):
             while checkstate == "pending":
-            imagestate = local(f"aws ec2 describe-fpga-images --fpga-image-id {afi} | tee AGFI_INFO", capture=True)
-            state_as_dict = json.loads(imagestate)
-            checkstate = state_as_dict["FpgaImages"][0]["State"]["Code"]
-            rootLogger.info("Current state: " + str(checkstate))
-            time.sleep(10)
+                imagestate = local(f"aws ec2 describe-fpga-images --fpga-image-id {afi} | tee AGFI_INFO", capture=True)
+                state_as_dict = json.loads(imagestate)
+                checkstate = state_as_dict["FpgaImages"][0]["State"]["Code"]
+                rootLogger.info("Current state: " + str(checkstate))
+                time.sleep(10)
 
 
         if checkstate == "available":
@@ -313,13 +306,13 @@ class F1BitBuilder(BitBuilder):
             hwdb_entry_file_location = f"{local_deploy_dir}/built-hwdb-entries/"
             local("mkdir -p " + hwdb_entry_file_location)
             with open(hwdb_entry_file_location + "/" + afiname, "w") as outputfile:
-            outputfile.write(agfi_entry)
+                outputfile.write(agfi_entry)
 
-            if build_config.post_build_hook:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local(f"{build_config.post_build_hook} {local_results_dir}", capture=True)
-                rootLogger.debug("[localhost] " + str(localcap))
-                rootLogger.debug("[localhost] " + str(localcap.stderr))
+            if self.build_config.post_build_hook:
+                with StreamLogger('stdout'), StreamLogger('stderr'):
+                    localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+                    rootLogger.debug("[localhost] " + str(localcap))
+                    rootLogger.debug("[localhost] " + str(localcap.stderr))
 
             rootLogger.info(f"Build complete! AFI ready. See {os.path.join(hwdb_entry_file_location,afiname)}.")
             return True
