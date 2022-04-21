@@ -11,12 +11,8 @@ import random
 import argcomplete # type: ignore
 from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
 import string
-from typing import Dict, Callable, Type, Optional
-try:
-    # added in 3.8
-    from typing import TypedDict
-except ImportError:
-    TypedDict = dict
+from typing import Dict, Callable, Optional
+from typing import TypedDict
 from inspect import signature
 from warnings import warn
 from pathlib import Path
