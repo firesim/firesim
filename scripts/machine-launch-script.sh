@@ -233,6 +233,9 @@ set -o pipefail
 
     CONDA_PACKAGE_SPECS+=( gcc=10 gxx=10 binutils conda-gcc-specs )
 
+    # if building riscv-toolchain from source, we need to use bison=3.4 until we have
+    # https://github.com/riscv-collab/riscv-binutils-gdb/commit/314ec7aeeb1b2e68f0d8fb9990f2335f475a6e33
+    CONDA_PACKAGE_SPECS+=( bison=3.4 )
 
     # poky deps
     CONDA_PACKAGE_SPECS+=( python=3.8 patch texinfo subversion chrpath git wget )
