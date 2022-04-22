@@ -31,7 +31,7 @@ def main():
     manager_instance = get_manager_instance(ci_workflow_run_id)
 
     print("Instance ready.")
-    print(instance_metadata_str(get_manager_instance(ci_workflow_run_id)))
+    print(instance_metadata_str(manager_instance))
     sys.stdout.flush()
 
 if __name__ == "__main__":

@@ -86,12 +86,32 @@ object SynthesizePrintf {
     chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, thisModule, name))
     Printable.pack(format, args:_*)
   }
-  def apply(name: String, format: String, args: Bits*): Printable =
-    generateAnnotations(format, args, Some(name))
+  /**
+    * Annotates* a printf by intercepting the parameters to a chisel printf, and returning
+    * a printable. As a side effect, this function generates a ChiselSynthPrintfAnnotation with the
+    * format string and references to each of the args.
+    *
+    * *Note: this isn't actually annotating the statement but instead the
+    * arguments. This is a vestige from earlier versions of chisel / firrtl in
+    * which print statements were unnamed, and thus not referenceable from
+    * annotations.
+    *
+    * @param format The format string for the printf
+    * @param args Hardware references to populate the format string.
+    */
 
   def apply(format: String, args: Bits*): Printable = generateAnnotations(format, args, None)
 
-  // TODO: Accept a printable -> need to somehow get the format string from 
+  /**
+    * Like the other apply method, but provides an optional name which can be
+    * used by synthesized hardware / bridge. Generally, users deploy the nameless form.
+    *
+    * @param name A descriptive name for this printf instance.
+    * @param format The format string for the printf
+    * @param args Hardware references to populate the format string.
+    */
+  def apply(name: String, format: String, args: Bits*): Printable =
+    generateAnnotations(format, args, Some(name))
 }
 
 

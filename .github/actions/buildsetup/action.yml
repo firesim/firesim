@@ -1,8 +1,14 @@
 name: buildsetup
-description: "Run firesim's build-setup.sh"
+description: "Run firesim's build-setup.sh. Used only for GH-hosted CI containers."
 
 runs:
   using: "composite"
   steps:
-    - run: ./build-setup.sh fast --skip-validate
+    - run: |
+        source /etc/profile.d/conda.sh
+        ./build-setup.sh fast --skip-validate
+        # All actions that run in a GH-hosted container source env.sh before
+        # running their jobs. This just ensures these actions bring in the conda
+        # environment too, which is a prereq for doing any meaningful work.
+        echo "source /etc/profile.d/conda.sh" >> env.sh
       shell: bash
