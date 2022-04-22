@@ -4,6 +4,11 @@ Setting up your Manager Instance
 Launching a "Manager Instance"
 ------------------------------
 
+.. warning::
+    These instructions refer to fields in EC2's new launch instance
+    wizard. Refer to version 1.13 of the documentation for references to the old
+    wizard.
+
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
 Since we will deploy the heavy lifting to separate ``c5.4xlarge`` and
@@ -24,39 +29,46 @@ To launch a manager instance, follow these steps:
    ``Launch Instance``. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
-#. In the "Application and OS Images" drop down, search for
-   ``FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and select the AMI that appears under the Community AMI tab(there
+#. In the *Application and OS Images* drop-down, search for
+   ``FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
+   select the AMI that appears under the Community AMI tab (there
    should be only one). **DO NOT USE ANY OTHER VERSION.**
-#. In the "Intance Type" drop down, select the instance type of
+#. In the *Instance Type* drop-down, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
-#. In the "Key pair (login)" drop down, select the firesim key pair we setup earlier.
-#. In the "Network settings" drop down:
-   #. Under "VPC - required", select the "firesim" vpc. The dialog will select a subnet for you. 
-   #. Under "Firewall (security groups)", click "Select existing security group" and the ``firesim``
-   security group that was automatically created for you earlier.
-#. In the "Configure storage" drop down, increase the size of the root
+#. In the *Key pair (login)* drop-down, select the ``firesim`` key pair we setup earlier.
+#. In the *Network settings* drop-down click *edit* and modify the following settings:
+
+   #. Under *VPC - required*, select the ``firesim`` vpc. The dialog will select a subnet for you.
+   #. Under *Firewall (security groups)*, click *Select existing security
+      group* and the ``firesim`` security group that was automatically
+      created for you earlier.
+
+#. In the *Configure storage* drop-down, increase the size of the root
    volume to at least 300GB. The default of 85GB can quickly become too small as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
    and large root filesystems for simulations. You should get rid of the
    small (5-8GB) secondary volume that is added by default.
-   
-#. In the "Advanced details" drop down, we'll leave most settings unchanged. The exceptions being:
-   #. Under "Termination protection", select Enable. This adds a layer of protection to prevent your
-      manager instance from being terminated by accident. You will need
-      to disable this setting before being able to terminate the
-      instance using usual methods.
-   #. Under "User data", paste the following into the provided textbox: 
+#. In the *Advanced details* drop-down, we'll leave most settings unchanged. The exceptions being:
+
+   #. Under *Termination protection*, select Enable. This adds a layer of
+      protection to prevent your manager instance from being terminated by
+      accident. You will need to disable this setting before being able to
+      terminate the instance using usual methods.
+   #. Under *User data*, paste the following into the provided textbox:
 
       .. include:: /../scripts/machine-launch-script.sh
          :code: bash
 
-      When your instance boots, this will install a compatible set of all the dependencies needed to run FireSim on your instance using conda.
+   When your instance boots, this will install a compatible set of all the dependencies needed to run FireSim on your instance using conda.
+
 #. Double check your configuration. The most common misconfigurations that may require repeating this process include:
-   #. Not selecting the "firesim" vpc.
-   #. Not selecting the "firesim" security group.
-   #. Not selecting the "firesim" key pair.
+
+   #. Not selecting the ``firesim`` vpc.
+   #. Not selecting the ``firesim`` security group.
+   #. Not selecting the ``firesim`` key pair.
    #. Selecting the wrong AMI.
-#. Smash the orange "Launch Instance" button.  
+
+#. Click the orange "Launch Instance" button.
 
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
