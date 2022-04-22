@@ -24,9 +24,11 @@ POLLING_INTERVAL_SECONDS = 60
 # Number of failed requests before stopping the instances
 QUERY_FAILURE_THRESHOLD = 10
 
-# We should never get to 'not_run' or 'unauthorized' but terminate for good measure
-TERMINATE_STATES = ["cancelled", "success", "skipped", "stale"]
-STOP_STATES = ["failure", "timed_out"]
+TERMINATE_STATES = ["cancelled", "success", "skipped", "stale", "failure", "timed_out"]
+# In the past we'd stop instances on failure or time-out conditions so that
+# they could be restarted and debugged in-situ. This was mostly useful for CI dev.
+# See discussion in: https://github.com/firesim/firesim/pull/1037
+STOP_STATES = []
 NOP_STATES = ["action_required"] # TODO: unsure when this happens
 
 def main(workflow_id, gha_ci_personal_token):
