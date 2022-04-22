@@ -20,44 +20,43 @@ right corner, ensure that the correct region is selected.
 
 To launch a manager instance, follow these steps:
 
-1. From the main page of the EC2 Management Console, click
+#. From the main page of the EC2 Management Console, click
    ``Launch Instance``. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
-2. When prompted to select an AMI, search in the ``Community AMIs`` tab for
-   ``FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and select the AMI that appears (there
+#. In the "Application and OS Images" drop down, search for
+   ``FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and select the AMI that appears under the Community AMI tab(there
    should be only one). **DO NOT USE ANY OTHER VERSION.**
-3. When prompted to choose an instance type, select the instance type of
-   your choosing. A good choice is a ``c5.4xlarge``.
-4. On the "Configure Instance Details" page:
-
-   1. First make sure that the ``firesim`` VPC is selected in the
-      drop-down box next to "Network". Any subnet within the ``firesim``
-      VPC is fine.
-   2. Additionally, check the box for "Protect against accidental
-      termination." This adds a layer of protection to prevent your
+#. In the "Intance Type" drop down, select the instance type of
+   your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
+#. In the "Key pair (login)" drop down, select the firesim key pair we setup earlier.
+#. In the "Network settings" drop down:
+   #. Under "VPC - required", select the "firesim" vpc. The dialog will select a subnet for you. 
+   #. Under "Firewall (security groups)", click "Select existing security group" and the ``firesim``
+   security group that was automatically created for you earlier.
+#. In the "Configure storage" drop down, increase the size of the root
+   volume to at least 300GB. The default of 85GB can quickly become too small as
+   you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
+   and large root filesystems for simulations. You should get rid of the
+   small (5-8GB) secondary volume that is added by default.
+   
+#. In the "Advanced details" drop down, we'll leave most settings unchanged. The exceptions being:
+   #. Under "Termination protection", select Enable. This adds a layer of protection to prevent your
       manager instance from being terminated by accident. You will need
       to disable this setting before being able to terminate the
       instance using usual methods.
-   3. Also on this page, expand "Advanced Details" and in the resulting
-      text box, paste the following:
+   #. Under "User data", paste the following into the provided textbox: 
 
       .. include:: /../scripts/machine-launch-script.sh
          :code: bash
 
-      This will pre-install all of the dependencies needed to run FireSim on your instance.
-
-5. On the next page ("Add Storage"), increase the size of the root EBS
-   volume to ~300GB. The default of 65GB can quickly become too small as
-   you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
-   and large root filesystems for simulations. You should get rid of the
-   small (5GB) secondary volume that is added by default.
-6. You can skip the "Add Tags" page, unless you want tags.
-7. On the "Configure Security Group" page, select the ``firesim``
-   security group that was automatically created for you earlier.
-8. On the review page, click the button to launch your instance.
-
-Make sure you select the ``firesim`` key pair that we setup earlier.
+      When your instance boots, this will install a compatible set of all the dependencies needed to run FireSim on your instance using conda.
+#. Double check your configuration. The most common misconfigurations that may require repeating this process include:
+   #. Not selecting the "firesim" vpc.
+   #. Not selecting the "firesim" security group.
+   #. Not selecting the "firesim" key pair.
+   #. Selecting the wrong AMI.
+#. Smash the orange "Launch Instance" button.  
 
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
