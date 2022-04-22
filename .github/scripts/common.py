@@ -53,16 +53,6 @@ def get_manager_instance(tag_value):
     else:
         return None
 
-def get_manager_instance_id(tag_value):
-    """ Looks up the manager instance ID using the CI workflow run's unique tag"""
-
-    manager = get_manager_instance(tag_value)
-    if manager is None:
-        print("No manager instance running with tag matching the assigned workflow id\n")
-        sys.exit(1)
-    else:
-        return manager['InstanceId']
-
 def get_manager_ip(tag_value):
     """ Looks up the manager IP using the CI workflow run's unique tag"""
 
