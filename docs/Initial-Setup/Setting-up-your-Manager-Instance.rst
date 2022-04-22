@@ -68,7 +68,7 @@ To launch a manager instance, follow these steps:
    #. Not selecting the ``firesim`` key pair.
    #. Selecting the wrong AMI.
 
-#. Click the orange "Launch Instance" button.
+#. Click the orange *Launch Instance* button.
 
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
