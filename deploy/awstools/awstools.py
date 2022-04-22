@@ -96,7 +96,7 @@ def get_localhost_instance_id() -> Optional[str]:
 
     return get_localhost_instance_info("latest/meta-data/instance-id")
 
-def get_localhost_tags() -> Dict[str, Any]:
+def get_localhost_instance_tags() -> Dict[str, Any]:
     """Get current manager tags.
 
     Returns:
@@ -161,7 +161,7 @@ def aws_resource_names() -> Dict[str, Any]:
         'runfarmprefix':     None,
     }
 
-    resptags = get_localhost_tags()
+    resptags = get_localhost_instance_tags()
     if resptags:
         in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
         if not in_tutorial_mode:
