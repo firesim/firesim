@@ -99,8 +99,7 @@ jobs:
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
       - name: Catch potentially orphaned manager
-        # Only catch cancelled jobs since the workflow monitor and try / catch in initialize manager
-        # will managed on-failure behavior
+        # Only catch cancelled jobs since the workflow monitor and try / catch in initialize manager should capture on-failure behavior
         if: ${{ cancelled() }}
         run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} terminate ${{ github.token }}
 
