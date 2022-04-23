@@ -9,23 +9,18 @@ from time import strftime, gmtime
 import pprint
 import logging
 import yaml
+import os
+import sys
 
-from fabric.api import * # type: ignore
 from awstools.awstools import *
 from awstools.afitools import *
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
-from runtools.runtime_hw_config import *
 from util.streamlogger import StreamLogger
-import os
-import sys
-from importlib import import_module
-from utils import inheritors
+from util.inheritors import inheritors
 
 LOCAL_DRIVERS_BASE = "../sim/output/"
-LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
-CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
@@ -37,18 +32,21 @@ class RuntimeHWConfig:
     def __init__(self, name, hwconfig_dict):
         self.name = name
 
-        self.agfi = None
-        self.xclbin = None
-        self.platform = hwconfig_dict['platform']
-        if self.platform == 'vitis':
-            self.xclbin = hwconfig_dict['xclbin']
-        elif self.platform == 'f1':
-            self.agfi = hwconfig_dict['agfi']
+        # TODO: this will change based on the "what-to-build" PR
+        #self.agfi = None
+        #self.xclbin = None
+        #self.platform = hwconfig_dict['platform']
+        #if self.platform == 'vitis':
+        #    self.xclbin = hwconfig_dict['xclbin']
+        #elif self.platform == 'f1':
+        #    self.agfi = hwconfig_dict['agfi']
+        self.platform = "f1"
+        self.agfi = hwconfig_dict['agfi']
 
-        self.deploytriplet = hwconfig_dict['deploy-triplet-override']
+        self.deploytriplet = hwconfig_dict['deploy_triplet_override']
         if self.deploytriplet is not None:
-            rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.ini file. Make sure you understand why!".format(name))
-        self.customruntimeconfig = hwconfig_dict['custom-runtime-config']
+            rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
+        self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
 
@@ -77,14 +75,6 @@ class RuntimeHWConfig:
         fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
         return fpga_driver_local
 
-    def get_local_shared_libraries(self):
-        """ Returns a list of path tuples, (A, B), where:
-            A is the local file path on the manager instance to the library
-            B is the destination file path on the run farm instance relative to the driver """
-
-        return [[LOCAL_SYSROOT_LIB + "/libdwarf.so", "libdwarf.so.1"],
-                [LOCAL_SYSROOT_LIB + "/libelf.so", "libelf.so.1"]]
-
     def get_local_runtimeconf_binaryname(self):
         """ Get the name of the runtimeconf file. """
         return "runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
@@ -107,7 +97,7 @@ class RuntimeHWConfig:
                                               trace_select, trace_start, trace_end,
                                               trace_output_format,
                                               autocounter_readrate, all_shmemportnames,
-                                              enable_zerooutdram, disable_asserts,
+                                              enable_zerooutdram, disable_asserts_arg,
                                               print_start, print_end,
                                               enable_print_cycle_prefix):
         """ return the command used to boot the simulation. this has to have
@@ -118,7 +108,7 @@ class RuntimeHWConfig:
 
         # TODO: supernode support
         tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
-        autocounterfile = "+autocounter-filename=AUTOCOUNTERFILE"
+        autocounterfile = "+autocounter-filename-base=AUTOCOUNTERFILE"
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
@@ -149,7 +139,7 @@ class RuntimeHWConfig:
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
         zero_out_dram = "+zero-out-dram" if (enable_zerooutdram) else ""
-        disable_asserts_arg = "+disable-asserts" if (disable_asserts) else ""
+        disable_asserts = "+disable-asserts" if (disable_asserts_arg) else ""
         print_cycle_prefix = "+print-no-cycle-prefix" if not enable_print_cycle_prefix else ""
 
         # TODO supernode support
@@ -157,40 +147,15 @@ class RuntimeHWConfig:
 
         screen_name = "fsim{}".format(slotid)
         run_device_placement = "+slotid={}".format(slotid) if self.platform == "f1" else "+device_index={}".format(slotid)
-        other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
+        # TODO: re-enable for vitis
+        #other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
 
         # TODO: supernode support (tracefile, trace-select.. etc)
-        basecommand = """screen -S {screen_name} -d -m bash -c "script -f -c 'stty intr ^] && LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) {run_device_placement} {other} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1""".format(
-            screen_name=screen_name,
-            run_device_placement=run_device_placement,
-            other=other,
-            driver=driver,
-            runtimeconf=runtimeconf,
-            command_macs=command_macs,
-            command_rootfses=command_rootfses,
-            command_niclogs=command_niclogs,
-            command_blkdev_logs=command_blkdev_logs,
-            command_linklatencies=command_linklatencies,
-            command_netbws=command_netbws,
-            profile_interval=profile_interval,
-            zero_out_dram=zero_out_dram,
-            disable_asserts=disable_asserts_arg,
-            command_shmemportnames=command_shmemportnames,
-            command_bootbinaries=command_bootbinaries,
-            trace_select=trace_select,
-            trace_start=trace_start,
-            trace_end=trace_end,
-            tracefile=tracefile,
-            trace_output_format=trace_output_format,
-            dwarf_file_name=dwarf_file_name,
-            autocounterfile=autocounterfile,
-            autocounter_readrate=autocounter_readrate,
-            command_dromajo=command_dromajo,
-            print_cycle_prefix=print_cycle_prefix,
-            print_start=print_start,
-            print_end=print_end)
+        basecommand = f"""screen -S {screen_name} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) {run_device_placement} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1"""
 
         return basecommand
+
+
 
     def get_kill_simulation_command(self):
         driver = self.get_local_driver_binaryname()
@@ -225,7 +190,7 @@ class RuntimeHWConfig:
             if localcap.failed:
                 rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
-                exit(1)
+                sys.exit(1)
 
         self.driver_built = True
 
@@ -253,6 +218,7 @@ class RuntimeHWDB:
 
     def __str__(self):
         return pprint.pformat(vars(self))
+
 
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.yaml """
@@ -282,27 +248,29 @@ class InnerRuntimeConfiguration:
         run_farm_configfile = None
         with open(runfarmconfigfile, "r") as yaml_file:
             run_farm_configfile = yaml.safe_load(yaml_file)
-        self.run_farm_requested_name = runtime_dict['run-farm']
+        self.run_farm_requested_name = runtime_dict['run_farm']
         run_farm_conf_dict = run_farm_configfile[self.run_farm_requested_name]
-        run_farm_type = run_farm_conf_dict["run-farm-type"]
+        run_farm_type = run_farm_conf_dict["run_farm_type"]
         run_farm_args = run_farm_conf_dict["args"]
 
-        run_farm_dispatch_dict = dict([(x.NAME, x.__name__) for x in inheritors(RunFarm)])
-        run_farm_class_name = run_farm_dispatch_dict[run_farm_type]
+        run_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(RunFarm)])
 
         # create dispatcher object using class given and pass args to it
-        self.run_farm_dispatcher = getattr(
-            import_module("runtools.run_farm"),
-            run_farm_class_name)(run_farm_args)
+        self.run_farm_dispatcher = run_farm_dispatch_dict[run_farm_type](run_farm_args)
 
-        self.run_farm_dispatcher.parse_args()
+        self.topology = runtime_dict['target_config']['topology']
+        self.no_net_num_nodes = int(runtime_dict['target_config']['no_net_num_nodes'])
+        self.linklatency = int(runtime_dict['target_config']['link_latency'])
+        self.switchinglatency = int(runtime_dict['target_config']['switching_latency'])
+        self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
+        self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
 
-        self.topology = runtime_dict['target-config']['topology']
-        self.no_net_num_nodes = int(runtime_dict['target-config']['no-net-num-nodes'])
-        self.linklatency = int(runtime_dict['target-config']['link-latency'])
-        self.switchinglatency = int(runtime_dict['target-config']['switching-latency'])
-        self.netbandwidth = int(runtime_dict['target-config']['net-bandwidth'])
-        self.profileinterval = int(runtime_dict['target-config']['profile-interval'])
+        if 'launch_instances_timeout_minutes' in runtime_dict['run_farm']:
+            self.launch_timeout = timedelta(minutes=int(runtime_dict['run_farm']['launch_instances_timeout_minutes']))
+        else:
+            self.launch_timeout = timedelta() # default to legacy behavior of not waiting
+
+        self.always_expand = runtime_dict['run_farm'].get('always_expand_runfarm', "yes") == "yes"
 
         # Default values
         self.trace_enable = False

@@ -10,7 +10,7 @@ from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
 from awstools.awstools import auto_create_bucket, get_snsname_arn
 from buildtools.buildfarm import BuildFarm
-from utils.inheritors import inheritors
+from util.inheritors import inheritors
 
 # imports needed for python type checking
 from typing import Dict, Optional, List, Set

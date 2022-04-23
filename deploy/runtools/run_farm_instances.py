@@ -3,9 +3,7 @@
 import re
 import logging
 
-from awstools.awstools import *
-from fabric.api import *
-from fabric.contrib.project import rsync_project
+from fabric.contrib.project import rsync_project # type: ignore
 from util.streamlogger import StreamLogger
 import time
 
@@ -44,6 +42,17 @@ class NBDTracker(object):
             self.allocated_dict[imagename] = self.unallocd.pop(0)
 
         return self.allocated_dict[imagename]
+
+class MockBoto3Instance:
+    """ This is used for testing without actually launching instances. """
+
+    # don't use 0 unless you want stuff copied to your own instance.
+    base_ip = 1
+
+    def __init__(self):
+        self.ip_addr_int = MockBoto3Instance.base_ip
+        MockBoto3Instance.base_ip += 1
+        self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
 class Inst(object):
     # TODO: this is leftover from when we could only support switch slots.
@@ -212,29 +221,24 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     def instance_logger(self, logstr):
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)
 
-    def get_simulation_dir(self):
-        remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
-        else:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
-
-        return remote_home_dir
-
     def get_and_install_aws_fpga_sdk(self):
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
-        # TODO: we checkout a specific version of aws-fpga here, in case upstream
-        # master is bumped. But now we have to remember to change AWS_FPGA_FIRESIM_UPSTREAM_VERSION
-        # when we bump our stuff. Need a better way to do this.
-        AWS_FPGA_FIRESIM_UPSTREAM_VERSION = "6c707ab4a26c2766b916dad9d40727266fa0e4ef"
-        self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(AWS_FPGA_FIRESIM_UPSTREAM_VERSION))
+        with prefix('cd ../'), \
+             StreamLogger('stdout'), \
+             StreamLogger('stderr'):
+            # use local version of aws_fpga on runfarm nodes
+            aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
+            if "-dirty" in aws_fpga_upstream_version:
+                rootLogger.critical("Unable to use local changes to aws-fpga. Continuing without them.")
+        self.instance_logger("""Installing AWS FPGA SDK on remote nodes. Upstream hash: {}""".format(aws_fpga_upstream_version))
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('git clone https://github.com/aws/aws-fpga')
-            run('cd aws-fpga && git checkout ' + AWS_FPGA_FIRESIM_UPSTREAM_VERSION)
+            run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
+
+
 
     def fpga_node_xdma(self):
         """ Copy XDMA infra to remote node. This assumes that the driver was
@@ -246,7 +250,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             run('mkdir -p /home/centos/xdma/')
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
                 '/home/centos/xdma/', mirror_local_mode=True)
-            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'):
+            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'), \
+                 prefix("export PATH=/usr/bin:$PATH"):
+		 # prefix only needed if conda env is earlier in PATH
+		 # see build-setup-nolog.sh for explanation.
                 run('make clean')
                 run('make')
 
@@ -258,6 +265,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
         self.instance_logger("""Setting up remote node for qcow2 disk images.""")
         with StreamLogger('stdout'), StreamLogger('stderr'):
             # get qemu-nbd
+            ### XXX Centos Specific
             run('sudo yum -y install qemu-img')
             # copy over kernel module
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
@@ -406,7 +414,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
         self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -414,11 +422,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             run("""mkdir -p {}""".format(remote_sim_rsync_dir))
 
         files_to_copy = serv.get_required_files_local_paths()
-        for filename in files_to_copy:
-            # here, filename is a pair of (local path, remote path)
+        for local_path, remote_path in files_to_copy:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 # -z --inplace
-                rsync_cap = rsync_project(local_dir=filename[0], remote_dir=remote_sim_rsync_dir + '/' + filename[1],
+                rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
                               ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
@@ -430,7 +437,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     def copy_switch_slot_infrastructure(self, switchslot):
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -438,14 +445,15 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
         switch = self.parentnode.switch_slots[switchslot]
         files_to_copy = switch.get_required_files_local_paths()
-        for filename in files_to_copy:
+        for local_path, remote_path in files_to_copy:
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                put(filename, remote_switch_dir, mirror_local_mode=True)
+                put(local_path, pjoin(remote_switch_dir, remote_path), mirror_local_mode=True)
+
 
     def start_switch_slot(self, switchslot):
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         switch = self.parentnode.switch_slots[switchslot]
@@ -455,7 +463,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     def start_sim_slot(self, slotno):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         server = self.parentnode.fpga_slots[slotno]
@@ -725,16 +733,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("xbutil validate --device {} --run quick".format(card_bdf))
 
-    def get_simulation_dir(self):
-        remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
-        else:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                remote_home_dir = run('echo $HOME')
-
-        return remote_home_dir
-
     def copy_sim_slot_infrastructure(self, slotno):
         """ copy all the simulation infrastructure to the remote node. """
         serv = self.parentnode.fpga_slots[slotno]
@@ -744,7 +742,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
         self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
@@ -768,7 +766,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def copy_switch_slot_infrastructure(self, switchslot):
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -783,7 +781,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def start_switch_slot(self, switchslot):
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_switch_dir = """{}/switch_slot_{}/""".format(remote_home_dir, switchslot)
         switch = self.parentnode.switch_slots[switchslot]
@@ -793,7 +791,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def start_sim_slot(self, slotno):
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
 
-        remote_home_dir = self.get_simulation_dir()
+        remote_home_dir = self.parentnode.override_simulation_dir
 
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         server = self.parentnode.fpga_slots[slotno]

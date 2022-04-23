@@ -4,17 +4,15 @@ import time
 import os
 import pprint
 import logging
-import datetime
+from datetime import datetime
+from functools import reduce
+import types
+from colorama import Fore, Style # type: ignore
 
 from runtools.switch_model_config import *
 from runtools.firesim_topology_core import *
 from runtools.utils import MacAddress
-from fabric.api import * # type: ignore
-from colorama import Fore, Style # type: ignore
-import types
-from functools import reduce
-from run_farm import *
-
+from runtools.run_farm import *
 from util.streamlogger import StreamLogger
 
 rootLogger = logging.getLogger()
@@ -191,9 +189,9 @@ class FireSimTopologyWithPasses:
             downlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
                 # all downlinks are switches (use new switch instance for each)
-				for node in switch_nodes:
-					if node.get_num_switch_slots_consumed() == 0:
-						node.add_switch(switch)
+                for node in switch_nodes:
+                    if node.get_num_switch_slots_consumed() == 0:
+                        node.add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 # find unused fpga (starting from smallest) that has all the slots needed for adding downlinks (greedy choice)
                 for node in fpga_nodes:
@@ -208,16 +206,16 @@ class FireSimTopologyWithPasses:
         """ Just put everything on one fpga node """
         switches = self.firesimtopol.get_dfs_order_switches()
 
-		fpga_nodes_used = 0
-		run_farm_nodes = self.run_farm.get_all_host_nodes()
-		fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes_used = 0
+        run_farm_nodes = self.run_farm.get_all_host_nodes()
+        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
 
         for switch in switches:
-			fpga_nodes[fpga_nodes_used].add_switch(switch)
+            fpga_nodes[fpga_nodes_used].add_switch(switch)
             downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 for server in downlinknodes:
-					fpga_nodes[fpga_nodes_used].add_simulation(server)
+                    fpga_nodes[fpga_nodes_used].add_simulation(server)
             elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 assert False, "MIXED DOWNLINKS NOT SUPPORTED."
         fpga_nodes_used += 1
@@ -264,7 +262,7 @@ class FireSimTopologyWithPasses:
                 # if the user has specified any 16xlarges, we assign to them first
                 self.pass_no_net_host_mapping()
             else:
-				assert False, "Only supports no net configs"
+                assert False, "Only supports no net configs"
 
     def pass_apply_default_hwconfig(self):
         """ This is the default mapping pass for hardware configurations - it
@@ -383,7 +381,7 @@ class FireSimTopologyWithPasses:
 
     def infrasetup_passes(self, use_mock_instances_for_testing):
         """ extra passes needed to do infrasetup """
-		self.run_farm.post_launch_binding(use_mock_instances_for_testing)
+        self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         self.pass_build_required_drivers()
         self.pass_build_required_switches()
@@ -407,7 +405,7 @@ class FireSimTopologyWithPasses:
         (e.g.  incorrect private IPs)
         """
         if not skip_instance_binding:
-			self.run_farm.post_launch_binding(use_mock_instances_for_testing)
+            self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         @parallel
         def boot_switch_wrapper(runfarm):
@@ -427,7 +425,7 @@ class FireSimTopologyWithPasses:
 
     def kill_simulation_passes(self, use_mock_instances_for_testing, disconnect_all_nbds=True):
         """ Passes that kill the simulator. """
-		self.run_farm.post_launch_binding(use_mock_instances_for_testing)
+        self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
 

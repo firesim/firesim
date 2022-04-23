@@ -25,7 +25,7 @@ aws_ec2_f1_run_farm:
         f1_4xlarges: 0
         f1_2xlarges: 1
 		# REQUIRED: TODO
-		always_expand_runfarm: yes
+		always_expand_runfarm: true
 		# REQUIRED: TODO
 		launch_instances_timeout_minutes: 60
 		# REQUIRED: run farm host market to use (ondemand or spot)
