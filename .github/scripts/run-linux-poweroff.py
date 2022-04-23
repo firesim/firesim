@@ -37,7 +37,7 @@ def run_linux_poweroff():
                     # check these output files for correctness until it can be
                     # done programmatically..
                     print(f"Printing last {log_tail_length} lines of all output files. See results-workload for more info.")
-                    run(f"cd deploy/results-workload/ && tail -n{log_tail_length} $(ls | tail -n1)/*/*")
+                    run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then tail -n{log_tail_length} $LAST_DIR/*/*; fi""")
 
                 if rc != 0:
                     # need to confirm that instance is off
