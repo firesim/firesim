@@ -253,6 +253,7 @@ set -o pipefail
     CONDA_PACKAGE_SPECS+=( autoconf automake libtool )
     # other misc deps
     CONDA_PACKAGE_SPECS+=(
+        bash-completion \
         sbt \
         ca-certificates \
         mosh \
@@ -343,7 +344,9 @@ set -o pipefail
 
 
     argcomplete_extra_args=()
-    if [[ "$INSTALL_TYPE" != system ]]; then
+    if [[ "$INSTALL_TYPE" == system ]]; then
+	argcomplete_extra_args=( --dest "${CONDA_ENV_BIN}/../share/bash-completion/completions" )
+    else
         # if we're aren't installing into a system directory, then initialize argcomplete
         # with --user so that it goes into the home directory
         argcomplete_extra_args=( --user )
