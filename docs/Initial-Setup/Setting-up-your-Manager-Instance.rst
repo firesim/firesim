@@ -5,9 +5,10 @@ Launching a "Manager Instance"
 ------------------------------
 
 .. warning::
-    These instructions refer to fields in EC2's new launch instance
-    wizard. Refer to version 1.13 of the documentation for references to the old
-    wizard.
+    These instructions refer to fields in EC2's new launch instance wizard.
+    Refer to `version 1.13.4 <https://docs.fires.im/en/1.13.4/>`__ of the
+    documentation for references to the old wizard, being wary that specifics,
+    such as the AMI ID selection, may be out of date.
 
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
@@ -26,7 +27,7 @@ right corner, ensure that the correct region is selected.
 To launch a manager instance, follow these steps:
 
 #. From the main page of the EC2 Management Console, click
-   ``Launch Instance``. We use an on-demand instance here, so that your
+   *Launch Instance*. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
 #. In the *Application and OS Images* drop-down, search for
