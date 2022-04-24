@@ -25,7 +25,8 @@
         PRINTBRIDGEMODULE_ ## IDX ## _format_strings, \
         PRINTBRIDGEMODULE_ ## IDX ## _argument_counts, \
         PRINTBRIDGEMODULE_ ## IDX ## _argument_widths, \
-        PRINTBRIDGEMODULE_ ## IDX ## _DMA_ADDR, \
+        PRINTBRIDGEMODULE_ ## IDX ## _to_cpu_stream_dma_address, \
+        PRINTBRIDGEMODULE_ ## IDX ## _to_cpu_stream_count_address, \
         PRINTBRIDGEMODULE_ ## IDX ## _clock_domain_name, \
         PRINTBRIDGEMODULE_ ## IDX ## _clock_multiplier, \
         PRINTBRIDGEMODULE_ ## IDX ## _clock_divisor, \
@@ -56,6 +57,7 @@ class synthesized_prints_t: public bridge_driver_t
                              const unsigned int* argument_counts,
                              const unsigned int* argument_widths,
                              unsigned int dma_address,
+                             unsigned int stream_count_address,
                              const char* const  clock_domain_name,
                              const unsigned int clock_multiplier,
                              const unsigned int clock_divisor,
@@ -77,6 +79,7 @@ class synthesized_prints_t: public bridge_driver_t
         const unsigned int* argument_counts;
         const unsigned int* argument_widths;
         const unsigned int dma_address;
+        const unsigned int stream_count_address;
         ClockInfo clock_info;
         const int printno;
 

@@ -32,7 +32,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     }
 
     top.module.ctrl <> io.master
-    top.module.dma  <> io.dma
+    AXI4NastiAssigner.toAXI4(top.module.dma, io.dma)
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...
