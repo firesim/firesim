@@ -143,10 +143,6 @@
                         <a href="BRAMQueue.html" title="">BRAMQueue</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="trait" href="BidirectionalDMA.html" title=""></a>
-                        <a href="BidirectionalDMA.html" title="">BidirectionalDMA</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="trait" href="Bridge.html" title=""></a>
                         <a href="Bridge.html" title="">Bridge</a>
                       </li><li class="current-entities indented2">
@@ -161,6 +157,10 @@
                         <span class="separator"></span>
                         <a class="class" href="BridgeModuleImp.html" title=""></a>
                         <a href="BridgeModuleImp.html" title="">BridgeModuleImp</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="" title="Constants defined here apply to interfaces exposed directly to the bridges and thus users and bridge designers."></a>
+                        <a href="" title="Constants defined here apply to interfaces exposed directly to the bridges and thus users and bridge designers.">BridgeStreamConstants</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="trait" href="CPPLiteral.html" title=""></a>
@@ -210,14 +210,6 @@
                         <a class="object" href="D2V$.html" title=""></a>
                         <a href="D2V$.html" title="">D2V</a>
                       </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="DMAFromHostCPU.html" title=""></a>
-                        <a href="DMAFromHostCPU.html" title="">DMAFromHostCPU</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="DMAToHostCPU.html" title=""></a>
-                        <a href="DMAToHostCPU.html" title="">DMAToHostCPU</a>
-                      </li><li class="current-entities indented2">
                         <a class="object" href="DecoupledCRIO$.html" title=""></a>
                         <a class="class" href="DecoupledCRIO.html" title=""></a>
                         <a href="DecoupledCRIO.html" title="">DecoupledCRIO</a>
@@ -265,10 +257,6 @@
                         <span class="separator"></span>
                         <a class="trait" href="HasChannels.html" title=""></a>
                         <a href="HasChannels.html" title="">HasChannels</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="HasDMA.html" title=""></a>
-                        <a href="HasDMA.html" title="">HasDMA</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="trait" href="HasWidgets.html" title=""></a>
@@ -463,16 +451,16 @@
                         <a href="SimulationMasterIO.html" title="">SimulationMasterIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="trait" href="StreamFromHostCPU.html" title="Adds a stream interface that will be dequeued from by the BridgeModule."></a>
+                        <a href="StreamFromHostCPU.html" title="Adds a stream interface that will be dequeued from by the BridgeModule.">StreamFromHostCPU</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="trait" href="StreamToHostCPU.html" title="Adds a stream interface that will be enqueued to by the BridgeModule."></a>
+                        <a href="StreamToHostCPU.html" title="Adds a stream interface that will be enqueued to by the BridgeModule.">StreamToHostCPU</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="TargetClockInfo$.html" title=""></a>
                         <a href="TargetClockInfo$.html" title="">TargetClockInfo</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="TieOffDMAFromHostCPU.html" title=""></a>
-                        <a href="TieOffDMAFromHostCPU.html" title="">TieOffDMAFromHostCPU</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="TieOffDMAToHostCPU.html" title=""></a>
-                        <a href="TieOffDMAToHostCPU.html" title="">TieOffDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
@@ -481,14 +469,6 @@
                         <span class="separator"></span>
                         <a class="class" href="UInt64.html" title=""></a>
                         <a href="UInt64.html" title="">UInt64</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="UnidirecitonalDMAFromHostCPU.html" title=""></a>
-                        <a href="UnidirecitonalDMAFromHostCPU.html" title="">UnidirecitonalDMAFromHostCPU</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="trait" href="" title=""></a>
-                        <a href="" title="">UnidirectionalDMAToHostCPU</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="trait" href="UsesHostDRAM.html" title="A BridgeModule mixin indicating it wishes to be allocated FPGA DRAM."></a>
@@ -526,12 +506,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="trait type">
+            <body class="object value">
       <div id="definition">
-        <div class="big-circle trait">t</div>
+        <div class="big-circle object">o</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.widgets">widgets</a></p>
-        <h1>UnidirectionalDMAToHostCPU<span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html" title="Permalink">
+        <h1>BridgeStreamConstants<span class="permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -541,19 +521,21 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">UnidirectionalDMAToHostCPU</span><span class="result"> extends <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a> with <a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a> with <a href="TieOffDMAFromHostCPU.html" class="extype" name="midas.widgets.TieOffDMAFromHostCPU">TieOffDMAFromHostCPU</a></span>
+        <span class="name">BridgeStreamConstants</span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="midas.widgets.UnidirectionalDMAToHostCPU">UnidirectionalDMAToHostCPU</a> with <a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Constants defined here apply to interfaces exposed directly to the bridges
+and thus users and bridge designers.
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="TieOffDMAFromHostCPU.html" class="extype" name="midas.widgets.TieOffDMAFromHostCPU">TieOffDMAFromHostCPU</a>, <a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a>, <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -579,7 +561,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.UnidirectionalDMAToHostCPU"><span>UnidirectionalDMAToHostCPU</span></li><li class="in" name="midas.widgets.TieOffDMAFromHostCPU"><span>TieOffDMAFromHostCPU</span></li><li class="in" name="midas.widgets.DMAToHostCPU"><span>DMAToHostCPU</span></li><li class="in" name="midas.widgets.HasDMA"><span>HasDMA</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.BridgeStreamConstants"><span>BridgeStreamConstants</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -601,50 +583,15 @@
 
         
 
-        <div class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="midas.widgets.HasDMA#dmaSize" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="dmaSize:BigInt"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#dmaSize:BigInt" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">dmaSize</span><span class="result">: <span class="extype" name="scala.BigInt">BigInt</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#toHostCPUQueueDepth" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="toHostCPUQueueDepth:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#toHostCPUQueueDepth:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toHostCPUQueueDepth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li></ol>
-            </div>
+        
 
         <div class="values members">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol>
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -660,7 +607,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html###():Int" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -676,7 +623,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -689,26 +636,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#ar_queue" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ar_queue:chisel3.util.DecoupledIO[junctions.NastiReadAddressChannel]"></a><a id="ar_queue:DecoupledIO[NastiReadAddressChannel]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#ar_queue:chisel3.util.DecoupledIO[junctions.NastiReadAddressChannel]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">ar_queue</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<a href="../../junctions/NastiReadAddressChannel.html" class="extype" name="junctions.NastiReadAddressChannel">NastiReadAddressChannel</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -724,7 +655,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#clone():Object" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -744,43 +675,13 @@
               
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
-    </li><li name="midas.widgets.HasDMA#dma" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dma:junctions.NastiIO"></a><a id="dma:NastiIO"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#dma:junctions.NastiIO" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">dma</span><span class="result">: <a href="../../junctions/NastiIO.html" class="extype" name="junctions.NastiIO">NastiIO</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></dd></dl></div>
-    </li><li name="midas.widgets.HasDMA#dmaBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dmaBytes:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#dmaBytes:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">dmaBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -796,7 +697,7 @@
     </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#equals(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#equals(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -809,32 +710,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="finalize():Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#finalize():Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="symbol">classOf[java.lang.Throwable]</span>
-    </span>)</span>
-              
-        </dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -849,11 +728,13 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#hashCode():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -868,11 +749,13 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -885,26 +768,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#lastReadBeat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lastReadBeat:chisel3.Bool"></a><a id="lastReadBeat:Bool"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#lastReadBeat:chisel3.Bool" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">lastReadBeat</span><span class="result">: <span class="extype" name="chisel3.Bool">Bool</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -920,7 +787,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#notify():Unit" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -935,11 +802,13 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -954,11 +823,29 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#outgoingCount" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outgoingCount:chisel3.UInt"></a><a id="outgoingCount:UInt"></a>
+    </li><li name="midas.widgets.BridgeStreamConstants#streamChiselType" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="streamChiselType:chisel3.util.DecoupledIO[chisel3.UInt]"></a><a id="streamChiselType:DecoupledIO[UInt]"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#outgoingCount:chisel3.UInt" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#streamChiselType:chisel3.util.DecoupledIO[chisel3.UInt]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">streamChiselType</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.UInt">UInt</span>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Sugar for generating a chisel type of a stream</p>
+    </li><li name="midas.widgets.BridgeStreamConstants#streamWidthBits" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="streamWidthBits:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#streamWidthBits:Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -967,62 +854,14 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">outgoingCount</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
+        <span class="name">streamWidthBits</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#outgoingPCISdat" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outgoingPCISdat:midas.widgets.BRAMQueue[chisel3.UInt]"></a><a id="outgoingPCISdat:BRAMQueue[UInt]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#outgoingPCISdat:midas.widgets.BRAMQueue[chisel3.UInt]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">outgoingPCISdat</span><span class="result">: <a href="BRAMQueue.html" class="extype" name="midas.widgets.BRAMQueue">BRAMQueue</a>[<span class="extype" name="chisel3.UInt">UInt</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#readBeatCounter" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="readBeatCounter:chisel3.UInt"></a><a id="readBeatCounter:UInt"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#readBeatCounter:chisel3.UInt" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">readBeatCounter</span><span class="result">: <span class="extype" name="chisel3.UInt">UInt</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
-    </li><li name="midas.widgets.DMAToHostCPU#readHelper" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="readHelper:freechips.rocketchip.util.DecoupledHelper"></a><a id="readHelper:DecoupledHelper"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#readHelper:freechips.rocketchip.util.DecoupledHelper" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">readHelper</span><span class="result">: <span class="extype" name="freechips.rocketchip.util.DecoupledHelper">DecoupledHelper</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></dd></dl></div>
+      <p class="shortcomment cmt">The width, in bits, of the decoupled UInt payload presented to the bridge.</p>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1038,7 +877,7 @@
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#toString():String" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#toString():String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1052,31 +891,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="wait():Unit"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#wait():Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">wait</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
-    </span>)</span>
-              
-        </dd></dl></div>
-    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1098,7 +915,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1119,23 +936,68 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li>
               </ol>
             </div>
 
         
 
-        
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeStreamConstants$.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.widgets.TieOffDMAFromHostCPU">
-              <h3>Inherited from <a href="TieOffDMAFromHostCPU.html" class="extype" name="midas.widgets.TieOffDMAFromHostCPU">TieOffDMAFromHostCPU</a></h3>
-            </div><div class="parent" name="midas.widgets.DMAToHostCPU">
-              <h3>Inherited from <a href="DMAToHostCPU.html" class="extype" name="midas.widgets.DMAToHostCPU">DMAToHostCPU</a></h3>
-            </div><div class="parent" name="midas.widgets.HasDMA">
-              <h3>Inherited from <a href="HasDMA.html" class="extype" name="midas.widgets.HasDMA">HasDMA</a></h3>
-            </div><div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>

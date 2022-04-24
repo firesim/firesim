@@ -260,7 +260,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">DromajoBridgeModule</span><span class="result"> extends <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]]</span>
+        <span class="name">DromajoBridgeModule</span><span class="result"> extends <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]] with <a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></span>
       </span>
       </h4>
 
@@ -269,7 +269,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]], <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a>, <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a>, <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]], <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a>, <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -295,7 +295,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="firesim.bridges.DromajoBridgeModule"><span>DromajoBridgeModule</span></li><li class="in" name="midas.widgets.BridgeModule"><span>BridgeModule</span></li><li class="in" name="midas.widgets.Widget"><span>Widget</span></li><li class="in" name="freechips.rocketchip.diplomacy.LazyModule"><span>LazyModule</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="firesim.bridges.DromajoBridgeModule"><span>DromajoBridgeModule</span></li><li class="in" name="midas.widgets.StreamToHostCPU"><span>StreamToHostCPU</span></li><li class="in" name="midas.widgets.BridgeModule"><span>BridgeModule</span></li><li class="in" name="midas.widgets.Widget"><span>Widget</span></li><li class="in" name="freechips.rocketchip.diplomacy.LazyModule"><span>LazyModule</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -389,6 +389,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.widgets.Widget#appendHeaderFragment" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="appendHeaderFragment(f:BigInt=&gt;Seq[String]):Unit"></a><a id="appendHeaderFragment((BigInt)⇒Seq[String]):Unit"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#appendHeaderFragment(f:BigInt=&gt;Seq[String]):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">appendHeaderFragment</span><span class="params">(<span name="f">f: (<span class="extype" name="scala.BigInt">BigInt</span>) ⇒ <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -476,6 +492,8 @@
               
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li><li name="midas.widgets.Widget#customSize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="customSize:Option[BigInt]"></a>
@@ -557,28 +575,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="finalize():Unit"></a>
-      <span class="permalink">
-      <a href="../../firesim/bridges/DromajoBridgeModule.html#finalize():Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="symbol">classOf[java.lang.Throwable]</span>
-    </span>)</span>
-              
-        </dd></dl></div>
     </li><li name="midas.widgets.Widget#getCRAddr" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getCRAddr(name:String):Int"></a><a id="getCRAddr(String):Int"></a>
       <span class="permalink">
@@ -629,7 +625,25 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
+    </li><li name="midas.widgets.Widget#getHeaderFragments" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getHeaderFragments(base:BigInt):Seq[String]"></a><a id="getHeaderFragments(BigInt):Seq[String]"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#getHeaderFragments(base:BigInt):Seq[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHeaderFragments</span><span class="params">(<span name="base">base: <span class="extype" name="scala.BigInt">BigInt</span></span>)</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#getNodes" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getNodes:List[freechips.rocketchip.diplomacy.BaseNode]"></a><a id="getNodes:List[BaseNode]"></a>
       <span class="permalink">
@@ -695,6 +709,8 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
+              
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="midas.widgets.Widget#headerComment" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -810,9 +826,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="firesim.bridges.DromajoBridgeModule#module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO]]withmidas.widgets.UnidirectionalDMAToHostCPU{lazyvalQUEUE_DEPTH:Int;lazyvalTOKEN_WIDTH:Int;valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO];defroundUp(num:Int,mult:Int):Int;valtraces:IndexedSeq[testchipip.DeclockedTracedInstruction];defboolPad(in:chisel3.Bool,size:Int):chisel3.UInt;valpaddedTraces:IndexedSeq[chisel3.UInt];valmaxTraceSize:Int;valoutDataSzBits:Int;valtotalTracesPerToken:Int;valnumTraces:Int;valnumTokenForAll:Int;valtraceQueueFull:chisel3.Bool;valcounterFire:chisel3.Bool;valcnt:chisel3.UInt;valwrap:chisel3.Bool;valpaddedTracesAligned:IndexedSeq[chisel3.UInt];valpaddedTracesTruncated:chisel3.UInt}"></a><a id="module:BridgeModuleImp[HostPortIO[DromajoTargetIO]]withUnidirectionalDMAToHostCPU{.../*19definitionsintyperefinement*/}"></a>
+      <a id="module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO];defroundUp(num:Int,mult:Int):Int;valtraces:IndexedSeq[testchipip.DeclockedTracedInstruction];defboolPad(in:chisel3.Bool,size:Int):chisel3.UInt;valpaddedTraces:IndexedSeq[chisel3.UInt];valmaxTraceSize:Int;valoutDataSzBits:Int;valtotalTracesPerToken:Int;valnumTraces:Int;valnumTokenForAll:Int;valcounterFire:chisel3.Bool;valcnt:chisel3.UInt;valwrap:chisel3.Bool;valpaddedTracesAligned:IndexedSeq[chisel3.UInt];valpaddedTracesTruncated:chisel3.UInt}"></a><a id="module:BridgeModuleImp[HostPortIO[DromajoTargetIO]]{.../*16definitionsintyperefinement*/}"></a>
       <span class="permalink">
-      <a href="../../firesim/bridges/DromajoBridgeModule.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO]]withmidas.widgets.UnidirectionalDMAToHostCPU{lazyvalQUEUE_DEPTH:Int;lazyvalTOKEN_WIDTH:Int;valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO];defroundUp(num:Int,mult:Int):Int;valtraces:IndexedSeq[testchipip.DeclockedTracedInstruction];defboolPad(in:chisel3.Bool,size:Int):chisel3.UInt;valpaddedTraces:IndexedSeq[chisel3.UInt];valmaxTraceSize:Int;valoutDataSzBits:Int;valtotalTracesPerToken:Int;valnumTraces:Int;valnumTokenForAll:Int;valtraceQueueFull:chisel3.Bool;valcounterFire:chisel3.Bool;valcnt:chisel3.UInt;valwrap:chisel3.Bool;valpaddedTracesAligned:IndexedSeq[chisel3.UInt];valpaddedTracesTruncated:chisel3.UInt}" title="Permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#module:midas.widgets.BridgeModuleImp[midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO]]{valio:midas.widgets.WidgetIO;valhPort:midas.widgets.HostPortIO[firesim.bridges.DromajoTargetIO];defroundUp(num:Int,mult:Int):Int;valtraces:IndexedSeq[testchipip.DeclockedTracedInstruction];defboolPad(in:chisel3.Bool,size:Int):chisel3.UInt;valpaddedTraces:IndexedSeq[chisel3.UInt];valmaxTraceSize:Int;valoutDataSzBits:Int;valtotalTracesPerToken:Int;valnumTraces:Int;valnumTokenForAll:Int;valcounterFire:chisel3.Bool;valcnt:chisel3.UInt;valwrap:chisel3.Bool;valpaddedTracesAligned:IndexedSeq[chisel3.UInt];valpaddedTracesTruncated:chisel3.UInt}" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -821,7 +837,7 @@
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">module</span><span class="result">: <a href="../../midas/widgets/BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]] with <a href="../../midas/widgets/UnidirectionalDMAToHostCPU.html" class="extype" name="midas.widgets.UnidirectionalDMAToHostCPU">UnidirectionalDMAToHostCPU</a> { ... /* 19 definitions in type refinement */ }</span>
+        <span class="name">module</span><span class="result">: <a href="../../midas/widgets/BridgeModuleImp.html" class="extype" name="midas.widgets.BridgeModuleImp">BridgeModuleImp</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]] { ... /* 16 definitions in type refinement */ }</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="firesim.bridges.DromajoBridgeModule">DromajoBridgeModule</a> → <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a> → <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a> → LazyModule</dd></dl></div>
@@ -923,6 +939,8 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
               
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
+              
         </dd></dl></div>
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
@@ -941,6 +959,8 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@native</span><span class="args">()</span>
+              
+                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#omitGraphML" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -1055,6 +1075,38 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyModule</dd></dl></div>
+    </li><li name="midas.widgets.StreamToHostCPU#streamEnq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="streamEnq:chisel3.util.DecoupledIO[chisel3.UInt]"></a><a id="streamEnq:DecoupledIO[UInt]"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#streamEnq:chisel3.util.DecoupledIO[chisel3.UInt]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">streamEnq</span><span class="result">: <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.UInt">UInt</span>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></dd></dl></div>
+    </li><li name="midas.widgets.StreamToHostCPU#streamSourceParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="streamSourceParams:midas.core.StreamSourceParameters"></a><a id="streamSourceParams:StreamSourceParameters"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#streamSourceParams:midas.core.StreamSourceParameters" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">streamSourceParams</span><span class="result">: <a href="../../midas/core/StreamSourceParameters.html" class="extype" name="midas.core.StreamSourceParameters">StreamSourceParameters</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></dd></dl></div>
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#suggestName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="suggestName(x:Option[String]):LazyModule.this.type"></a><a id="suggestName(Option[String]):DromajoBridgeModule.this.type"></a>
       <span class="permalink">
@@ -1119,6 +1171,54 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="firesim.bridges.DromajoBridgeModule#toHostCPUQueueDepth" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toHostCPUQueueDepth:Int"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#toHostCPUQueueDepth:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toHostCPUQueueDepth</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="firesim.bridges.DromajoBridgeModule">DromajoBridgeModule</a> → <a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></dd></dl></div>
+    </li><li name="midas.widgets.StreamToHostCPU#toHostStreamIdx" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toHostStreamIdx:Int"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#toHostStreamIdx:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toHostStreamIdx</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></dd></dl></div>
+    </li><li name="midas.widgets.StreamToHostCPU#toHostStreamName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toHostStreamName:String"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#toHostStreamName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toHostStreamName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
@@ -1168,28 +1268,6 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="wait():Unit"></a>
-      <span class="permalink">
-      <a href="../../firesim/bridges/DromajoBridgeModule.html#wait():Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">wait</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
-    </span>)</span>
-              
-        </dd></dl></div>
-    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
       <a href="../../firesim/bridges/DromajoBridgeModule.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
@@ -1235,17 +1313,70 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#wait():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li>
               </ol>
             </div>
 
         
 
-        
+        <div class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <span class="permalink">
+      <a href="../../firesim/bridges/DromajoBridgeModule.html#finalize():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">finalize</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<span class="extype" name="java.lang">lang</span>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.widgets.BridgeModule">
+        <div class="parent" name="midas.widgets.StreamToHostCPU">
+              <h3>Inherited from <a href="../../midas/widgets/StreamToHostCPU.html" class="extype" name="midas.widgets.StreamToHostCPU">StreamToHostCPU</a></h3>
+            </div><div class="parent" name="midas.widgets.BridgeModule">
               <h3>Inherited from <a href="../../midas/widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="../../midas/widgets/HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>[<a href="DromajoTargetIO.html" class="extype" name="firesim.bridges.DromajoTargetIO">DromajoTargetIO</a>]]</h3>
             </div><div class="parent" name="midas.widgets.Widget">
               <h3>Inherited from <a href="../../midas/widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></h3>
