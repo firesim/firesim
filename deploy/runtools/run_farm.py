@@ -5,12 +5,11 @@ from datetime import timedelta
 import abc
 import pprint
 
-from util.streamlogger import StreamLogger
 from awstools.awstools import *
 from runtools.run_farm_instances import *
 from util.inheritors import inheritors
 
-from typing import Dict, List, Any, Optional, Sequence
+from typing import Dict, List, Any, Optional
 
 rootLogger = logging.getLogger()
 
@@ -97,8 +96,7 @@ class AWSEC2F1(RunFarm):
         self.f1_2s = [F1Inst(1) for x in range(num_f1_2)]
         self.m4_16s = [M4_16() for x in range(num_m4_16)]
 
-        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
-        for node in allinsts:
+        for node in [*self.f1_16s, *self.f1_2s, *self.f1_4s, *self.m4_16s]:
             node.set_sim_dir(self.default_simulation_dir)
 
     def bind_mock_instances_to_objects(self) -> None:
@@ -115,13 +113,8 @@ class AWSEC2F1(RunFarm):
         for index in range(len(self.m4_16s)):
             self.m4_16s[index].assign_boto3_instance_object(MockBoto3Instance())
 
-    def post_launch_binding(self, mock: bool = False) -> None:
+    def bind_real_instances_to_objects(self) -> None:
         """ Attach running instances to the Run Farm. """
-
-        if mock:
-            self.bind_mock_instances_to_objects()
-            return
-
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
@@ -286,7 +279,7 @@ class AWSEC2F1(RunFarm):
     def get_all_host_nodes(self) -> List[Inst]:
         """ Get inst objects for all host nodes in the run farm that are bound to
         a real instance. """
-        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
+        allinsts = [*self.f1_16s, *self.f1_2s, *self.f1_4s, *self.m4_16s]
         return [inst for inst in allinsts if inst.boto3_instance_object is not None]
 
     def lookup_by_ip_addr(self, ipaddr) -> Optional[Inst]:

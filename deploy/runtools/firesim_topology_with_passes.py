@@ -8,17 +8,23 @@ from datetime import datetime
 from functools import reduce
 import types
 from colorama import Fore, Style # type: ignore
+from fabric.api import parallel, execute # type: ignore
 
 from runtools.switch_model_config import *
 from runtools.firesim_topology_core import *
 from runtools.utils import MacAddress
 from runtools.run_farm import *
+from runtools.runtime_config import RuntimeHWDB
+from runtools.workload import WorkloadConfig
+
 from util.streamlogger import StreamLogger
+
+from typing import cast
 
 rootLogger = logging.getLogger()
 
 @parallel # type: ignore
-def instance_liveness():
+def instance_liveness() -> None:
     """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
     actual firesim-related commands on only some of the run farm machines."""
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
@@ -31,15 +37,39 @@ class FireSimTopologyWithPasses:
 
     >>> tconf = FireSimTargetConfiguration("example_16config")
     """
+    passes_used: List[str]
+    user_topology_name: str
+    no_net_num_nodes: int
+    run_farm: RunFarm
+    hwdb: RuntimeHWDB
+    workload: WorkloadConfig
+    firesimtopol: FireSimTopology
+    defaulthwconfig: str
+    defaultlinklatency: int
+    defaultswitchinglatency: int
+    defaultnetbandwidth: int
+    defaultprofileinterval: int
+    defaulttraceenable: bool
+    defaulttraceselect: str
+    defaulttracestart: str
+    defaulttraceend: str
+    defaulttraceoutputformat: str
+    defaultautocounterreadrate: int
+    defaultzerooutdram: bool
+    defaultdisableasserts: bool
+    defaultprintstart: str
+    defaultprintend: str
+    defaultprintcycleprefix: int
+    terminateoncompletion: bool
 
-    def __init__(self, user_topology_name, no_net_num_nodes, run_farm, hwdb,
-                 defaulthwconfig, workload, defaultlinklatency, defaultswitchinglatency,
-                 defaultnetbandwidth, defaultprofileinterval,
-                 defaulttraceenable, defaulttraceselect, defaulttracestart, defaulttraceend,
-                 defaulttraceoutputformat,
-                 defaultautocounterreadrate, terminateoncompletion,
-                 defaultzerooutdram, defaultdisableasserts,
-                 defaultprintstart, defaultprintend, defaultprintcycleprefix):
+    def __init__(self, user_topology_name: str, no_net_num_nodes: int, run_farm: RunFarm, hwdb: RuntimeHWDB,
+            defaulthwconfig: str, workload: WorkloadConfig, defaultlinklatency: int, defaultswitchinglatency: int,
+            defaultnetbandwidth: int, defaultprofileinterval: int,
+            defaulttraceenable: bool, defaulttraceselect: str, defaulttracestart: str, defaulttraceend: str,
+            defaulttraceoutputformat: str,
+            defaultautocounterreadrate: int, terminateoncompletion: bool,
+            defaultzerooutdram: bool, defaultdisableasserts: bool,
+            defaultprintstart: str, defaultprintend: str, defaultprintcycleprefix: int):
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -67,12 +97,11 @@ class FireSimTopologyWithPasses:
 
         self.phase_one_passes()
 
-    def pass_return_dfs(self):
+    def pass_return_dfs(self) -> List[FireSimNode]:
         """ Just return the nodes in DFS order """
         return self.firesimtopol.get_dfs_order()
 
-
-    def pass_assign_mac_addresses(self):
+    def pass_assign_mac_addresses(self) -> None:
         """ DFS through the topology to assign mac addresses """
         self.passes_used.append("pass_assign_mac_addresses")
 
@@ -82,8 +111,7 @@ class FireSimTopologyWithPasses:
             if isinstance(node, FireSimServerNode):
                 node.assign_mac_address(MacAddress())
 
-
-    def pass_compute_switching_tables(self):
+    def pass_compute_switching_tables(self) -> None:
         """ This creates the MAC addr -> port lists for switch nodes.
 
         a) First, a pass that computes "downlinkmacs" for each node, which
@@ -126,7 +154,7 @@ class FireSimTopologyWithPasses:
 
             switch.switch_table = switchtab
 
-    def pass_create_topology_diagram(self):
+    def pass_create_topology_diagram(self) -> None:
         """ Produce a PDF that shows a diagram of the network.
         Useful for debugging passes to see what has been done to particular
         nodes. """
@@ -154,14 +182,14 @@ class FireSimTopologyWithPasses:
 
         gviz_graph.render(view=False)
 
-    def pass_no_net_host_mapping(self):
+    def pass_no_net_host_mapping(self) -> None:
         # only if we have no networks - pack simulations
         # assumes the user has provided enough or more slots
         servers = self.firesimtopol.get_dfs_order_servers()
         serverind = 0
 
         run_farm_nodes = self.run_farm.get_all_host_nodes()
-        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
         fpga_nodes.sort(reverse=True, key=lambda x: x.get_num_fpga_slots_max()) # largest fpga nodes 1st
 
         # find unused fpga (starting from largest)
@@ -173,13 +201,13 @@ class FireSimTopologyWithPasses:
                     return
         assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
-    def pass_simple_networked_host_node_mapping(self):
+    def pass_simple_networked_host_node_mapping(self) -> None:
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
 
         run_farm_nodes = self.run_farm.get_all_host_nodes()
         switch_nodes = list(filter(lambda x: not x.is_fpga_node(), run_farm_nodes))
-        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
         fpga_nodes.sort(key=lambda x: x.get_num_fpga_slots_max()) # smallest fpga nodes 1st
 
         for switch in switches:
@@ -198,29 +226,31 @@ class FireSimTopologyWithPasses:
                     if node.get_num_fpga_slots_consumed() == 0 and node.get_num_fpga_slots_max() >= len(downlinknodes):
                         node.add_switch(switch)
                         for server in downlinknodes:
+                            assert isinstance(server, FireSimServerNode)
                             node.add_simulation(server)
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
-    def mapping_use_one_fpga_node(self):
+    def mapping_use_one_fpga_node(self) -> None:
         """ Just put everything on one fpga node """
         switches = self.firesimtopol.get_dfs_order_switches()
 
         fpga_nodes_used = 0
         run_farm_nodes = self.run_farm.get_all_host_nodes()
-        fpga_nodes = list(filter(lambda x: x.is_fpga_node(), run_farm_nodes))
+        fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
 
         for switch in switches:
             fpga_nodes[fpga_nodes_used].add_switch(switch)
             downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 for server in downlinknodes:
+                    assert isinstance(server, FireSimServerNode)
                     fpga_nodes[fpga_nodes_used].add_simulation(server)
             elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 assert False, "MIXED DOWNLINKS NOT SUPPORTED."
         fpga_nodes_used += 1
 
-    def pass_perform_host_node_mapping(self):
+    def pass_perform_host_node_mapping(self) -> None:
         """ This pass assigns host nodes to nodes in the abstract FireSim
         configuration tree.
 
@@ -230,7 +260,8 @@ class FireSimTopologyWithPasses:
         networked config, """
 
         # enforce that this is only no net in all other non-EC2 cases
-        if isinstance(self.run_farm, EC2RunFarm):
+        assert isinstance(self.run_farm, AWSEC2F1)
+        if isinstance(self.run_farm, AWSEC2F1):
             if self.firesimtopol.custom_mapper is None:
                 """ Use default mapping strategy. The topol has not specified a
                 special one. """
@@ -244,27 +275,18 @@ class FireSimTopologyWithPasses:
                     # now, we're handling the cycle-accurate networked simulation case
                     # currently, we only handle the case where
                     self.pass_simple_networked_host_node_mapping()
-            elif type(self.firesimtopol.custom_mapper) == types.FunctionType:
+            elif isinstance(self.firesimtopol.custom_mapper, types.FunctionType):
                 """ call the mapper fn defined in the topology itself. """
                 self.firesimtopol.custom_mapper(self)
-            elif type(self.firesimtopol.custom_mapper) == str:
+            elif isinstance(self.firesimtopol.custom_mapper, str):
                 """ assume that the mapping strategy is a custom pre-defined strategy
                 given in this class, supplied as a string in the topology """
                 mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
                 mapperfunc()
             else:
                 assert False, "IMPROPER MAPPING CONFIGURATION"
-        else:
-            # if your roots are servers, just pack as tightly as possible, since
-            # you have no_net_config
-            if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
-                # all roots are servers, so we're in no_net_config
-                # if the user has specified any 16xlarges, we assign to them first
-                self.pass_no_net_host_mapping()
-            else:
-                assert False, "Only supports no net configs"
 
-    def pass_apply_default_hwconfig(self):
+    def pass_apply_default_hwconfig(self) -> None:
         """ This is the default mapping pass for hardware configurations - it
         does 3 things:
             1) If a node has a hardware config assigned (as a string), replace
@@ -288,7 +310,7 @@ class FireSimTopologyWithPasses:
             # 3)
             server.get_server_hardware_config().get_deploytriplet_for_config()
 
-    def pass_apply_default_network_params(self):
+    def pass_apply_default_network_params(self) -> None:
         """ If the user has not set per-node network parameters in the topology,
         apply the defaults. """
         allnodes = self.firesimtopol.get_dfs_order()
@@ -334,7 +356,7 @@ class FireSimTopologyWithPasses:
                     node.print_cycle_prefix = self.defaultprintcycleprefix
 
 
-    def pass_allocate_nbd_devices(self):
+    def pass_allocate_nbd_devices(self) -> None:
         """ allocate NBD devices. this must be done here to preserve the
         data structure for use in runworkload teardown. """
         servers = self.firesimtopol.get_dfs_order_servers()
@@ -342,13 +364,14 @@ class FireSimTopologyWithPasses:
             server.allocate_nbds()
 
 
-    def pass_assign_jobs(self):
+    def pass_assign_jobs(self) -> None:
         """ assign jobs to simulations. """
         servers = self.firesimtopol.get_dfs_order_servers()
-        [servers[i].assign_job(self.workload.get_job(i)) for i in range(len(servers))]
+        for i in range(len(servers)):
+            servers[i].assign_job(self.workload.get_job(i))
 
 
-    def phase_one_passes(self):
+    def phase_one_passes(self) -> None:
         """ These are passes that can run without requiring host-node binding.
         i.e. can be run before you have run launchrunfarm. They're run
         automatically when creating this object. """
@@ -362,7 +385,7 @@ class FireSimTopologyWithPasses:
 
         self.pass_create_topology_diagram()
 
-    def pass_build_required_drivers(self):
+    def pass_build_required_drivers(self) -> None:
         """ Build all FPGA drivers. The method we're calling here won't actually
         repeat the build process more than once per run of the manager. """
         servers = self.firesimtopol.get_dfs_order_servers()
@@ -370,7 +393,7 @@ class FireSimTopologyWithPasses:
         for server in servers:
             server.get_server_hardware_config().build_fpga_driver()
 
-    def pass_build_required_switches(self):
+    def pass_build_required_switches(self) -> None:
         """ Build all the switches required for this simulation. """
         # the way the switch models are designed, this requires hosts to be
         # bound to instances.
@@ -379,7 +402,7 @@ class FireSimTopologyWithPasses:
             switch.build_switch_sim_binary()
 
 
-    def infrasetup_passes(self, use_mock_instances_for_testing):
+    def infrasetup_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do infrasetup """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
@@ -387,15 +410,17 @@ class FireSimTopologyWithPasses:
         self.pass_build_required_switches()
 
         @parallel
-        def infrasetup_node_wrapper(runfarm):
+        def infrasetup_node_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.infrasetup_instance()
 
         all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
-    def boot_simulation_passes(self, use_mock_instances_for_testing, skip_instance_binding=False):
+    def boot_simulation_passes(self, use_mock_instances_for_testing: bool, skip_instance_binding: bool = False) -> None:
         """ Passes that setup for boot and boot the simulation.
         skip instance binding lets users not call the binding pass on the run_farm
         again, e.g. if this was called by runworkload (because runworkload calls
@@ -408,8 +433,10 @@ class FireSimTopologyWithPasses:
             self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         @parallel
-        def boot_switch_wrapper(runfarm):
+        def boot_switch_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_switches_instance()
 
         all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
@@ -417,32 +444,38 @@ class FireSimTopologyWithPasses:
         execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
         @parallel
-        def boot_simulation_wrapper(runfarm):
+        def boot_simulation_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_simulations_instance()
 
         execute(boot_simulation_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
-    def kill_simulation_passes(self, use_mock_instances_for_testing, disconnect_all_nbds=True):
+    def kill_simulation_passes(self, use_mock_instances_for_testing: bool, disconnect_all_nbds: bool = True) -> None:
         """ Passes that kill the simulator. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
 
         @parallel
-        def kill_switch_wrapper(runfarm):
+        def kill_switch_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_switches_instance()
 
         @parallel
-        def kill_simulation_wrapper(runfarm):
+        def kill_simulation_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_simulations_instance(disconnect_all_nbds=disconnect_all_nbds)
 
         execute(kill_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
         execute(kill_simulation_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
-        def screens():
+        def screens() -> None:
             """ poll on screens to make sure kill succeeded. """
             with warn_only():
                 rootLogger.info("Confirming exit...")
@@ -460,14 +493,16 @@ class FireSimTopologyWithPasses:
 
         execute(screens, hosts=all_runfarm_ips)
 
-    def run_workload_passes(self, use_mock_instances_for_testing):
+    def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
-        if use_mock_instances_for_testing:
-            self.run_farm.bind_mock_instances_to_objects()
-        else:
-            self.run_farm.bind_real_instances_to_objects()
 
-        all_runfarm_ips = [x.get_private_ip() for x in self.run_farm.get_all_host_nodes()]
+        if isinstance(self.run_farm, AWSEC2F1):
+            if use_mock_instances_for_testing:
+                self.run_farm.bind_mock_instances_to_objects()
+            else:
+                self.run_farm.bind_real_instances_to_objects()
+
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -479,14 +514,15 @@ class FireSimTopologyWithPasses:
         self.boot_simulation_passes(False, skip_instance_binding=True)
 
         @parallel
-        def monitor_jobs_wrapper(runfarm, completed_jobs, teardown, terminateoncompletion, job_results_dir):
+        def monitor_jobs_wrapper(runfarm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
             """ on each instance, check over its switches and simulations
             to copy results off. """
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
+            assert my_node.instance_deploy_manager is not None
             return my_node.instance_deploy_manager.monitor_jobs_instance(completed_jobs, teardown, terminateoncompletion, job_results_dir)
 
 
-        def loop_logger(instancestates, terminateoncompletion):
+        def loop_logger(instancestates: Dict[str, Any], terminateoncompletion: bool) -> None:
             """ Print the simulation status nicely. """
 
             instancestate_map = dict()
@@ -526,10 +562,10 @@ class FireSimTopologyWithPasses:
 
             # clear the screen
             rootLogger.info('\033[2J')
-            rootLogger.info("""FireSim Simulation Status @ {}""".format(str(datetime.datetime.utcnow())))
+            rootLogger.info("""FireSim Simulation Status @ {}""".format(str(datetime.utcnow())))
             rootLogger.info("-"*80)
             rootLogger.info("""This workload's output is located in:\n{}""".format(self.workload.job_results_dir))
-            rootLogger.info("""This run's log is located in:\n{}""".format(rootLogger.handlers[0].baseFilename))
+            rootLogger.info("""This run's log is located in:\n{}""".format(rootLogger.handlers[0].filename))
             rootLogger.info("""This status will update every 10s.""")
             rootLogger.info("-"*80)
             rootLogger.info("Instances")

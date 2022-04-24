@@ -3,6 +3,8 @@
 import json
 import os
 
+from typing import List, Optional, Dict, Any, Tuple
+
 class JobConfig:
     """ A single job that runs on a simulation.
     E.g. one spec benchmark, one of the risc-v tests, etc.
@@ -13,24 +15,31 @@ class JobConfig:
     This essentially describes the local pieces that need to be fed to
     simulations and the remote outputs that need to be copied back. """
 
-    filesystemsuffix = ".ext2"
+    filesystemsuffix: str = ".ext2"
+    parent_workload: WorkloadConfig
+    jobname: str
+    outputs: List[str]
+    simoutputs: List[str]
+    siminputs: List[str]
+    bootbinary: str
+    rootfs: Optional[str]
 
-    def __init__(self, singlejob_dict, parent_workload, index=0):
+    def __init__(self, singlejob_dict: Dict[str, Any], parent_workload: WorkloadConfig, index: int = 0) -> None:
         self.parent_workload = parent_workload
         self.jobname = singlejob_dict.get("name", self.parent_workload.workload_name + str(index))
         # ignore files, command, we assume they are used only to build rootfses
         # eventually this functionality will be merged into the manager too
         joboutputs = singlejob_dict.get("outputs", [])
-        self.outputs = joboutputs + parent_workload.common_outputs
+        self.outputs = joboutputs + self.parent_workload.common_outputs
         simoutputs = singlejob_dict.get("simulation_outputs", [])
-        self.simoutputs = simoutputs + parent_workload.common_simulation_outputs
+        self.simoutputs = simoutputs + self.parent_workload.common_simulation_outputs
         siminputs = singlejob_dict.get("simulation_inputs", [])
-        self.siminputs = siminputs + parent_workload.common_simulation_inputs
+        self.siminputs = siminputs + self.parent_workload.common_simulation_inputs
 
         if singlejob_dict.get("bootbinary") is not None:
-            self.bootbinary = singlejob_dict.get("bootbinary")
+            self.bootbinary = singlejob_dict["bootbinary"]
         else:
-            self.bootbinary = parent_workload.common_bootbinary
+            self.bootbinary = self.parent_workload.common_bootbinary
 
         if 'rootfs' in singlejob_dict:
             if singlejob_dict['rootfs'] is None:
@@ -38,30 +47,30 @@ class JobConfig:
                 self.rootfs = None
             else:
                 # Explicit per-job rootfs
-                self.rootfs = parent_workload.workload_input_base_dir + singlejob_dict['rootfs']
+                self.rootfs = self.parent_workload.workload_input_base_dir + singlejob_dict['rootfs']
         else:
             # No explicit per-job rootfs, inherit from workload
-            if parent_workload.derive_rootfs:
+            if self.parent_workload.derive_rootfs:
                 # No explicit workload rootfs, derive path from job name
                 self.rootfs = self.parent_workload.workload_input_base_dir + self.jobname + self.filesystemsuffix
-            elif parent_workload.common_rootfs is None:
+            elif self.parent_workload.common_rootfs is None:
                 # Don't include a rootfs
                 self.rootfs = None
             else:
                 # Explicit rootfs path from workload
                 self.rootfs = self.parent_workload.workload_input_base_dir + self.parent_workload.common_rootfs
 
-    def bootbinary_path(self):
+    def bootbinary_path(self) -> str:
         return self.parent_workload.workload_input_base_dir + self.bootbinary
 
-    def get_siminputs(self):
+    def get_siminputs(self) -> List[Tuple[str, str]]:
         # remote filename for a siminput gets prefixed with the job's name
         return list(map(lambda x: (self.parent_workload.workload_input_base_dir + "/" + x, self.jobname + "-" + x), self.siminputs))
 
-    def rootfs_path(self):
+    def rootfs_path(self) -> Optional[str]:
         return self.rootfs
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.jobname
 
 class WorkloadConfig:
@@ -72,10 +81,23 @@ class WorkloadConfig:
         2) there is one "job" - a binary/rootfs combo to be run on all sims
     """
 
-    workloadinputs = 'workloads/'
-    workloadoutputs = 'results-workloads/'
+    workloadinputs: str = 'workloads/'
+    workloadoutputs: str = 'results-workloads/'
+    workloadfilename: str
+    common_rootfs: Optional[str]
+    derive_rootfs: bool
+    common_bootbinary: str
+    workload_name: str
+    common_outputs: str
+    common_simulation_outputs: List[str]
+    common_simulation_inputs: List[str]
+    workload_input_base_dir: str
+    uniform_mode: bool
+    jobs: List[JobConfig]
+    post_run_hook: str
+    job_results_dir: str
 
-    def __init__(self, workloadfilename, launch_time, suffixtag):
+    def __init__(self, workloadfilename: str, launch_time: str, suffixtag: str) -> None:
         self.workloadfilename = self.workloadinputs + workloadfilename
         workloadjson = None
         with open(self.workloadfilename) as json_data:
@@ -120,13 +142,13 @@ class WorkloadConfig:
         #import code
         #code.interact(local=locals())
 
-    def get_job(self, index):
+    def get_job(self, index: int) -> JobConfig:
         if not self.uniform_mode:
             return self.jobs[index]
         else:
             return JobConfig(dict(), self, index)
 
-    def are_all_jobs_assigned(self, numjobsassigned):
+    def are_all_jobs_assigned(self, numjobsassigned: int) -> bool:
         """ Return True if each job is assigned to at least one simulation.
         In the uniform case, always return True """
         if not self.uniform_mode:

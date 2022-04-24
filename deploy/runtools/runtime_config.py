@@ -3,7 +3,6 @@ simulation tasks. """
 
 from __future__ import print_function
 
-import argparse
 from datetime import timedelta
 from time import strftime, gmtime
 import pprint
@@ -11,6 +10,7 @@ import logging
 import yaml
 import os
 import sys
+from fabric.api import prefix, local # type: ignore
 
 from awstools.awstools import *
 from awstools.afitools import *
@@ -20,6 +20,9 @@ from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 
+from typing import Dict, List, Any, Optional
+import argparse
+
 LOCAL_DRIVERS_BASE = "../sim/output/"
 LOCAL_SYSROOT_LIB = "../sim/lib-install/lib/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
@@ -28,8 +31,14 @@ rootLogger = logging.getLogger()
 
 class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.ini """
+    name: str
+    platform: str
+    agfi: str
+    deploytriplet: Optional[str]
+    customruntimeconfig: str
+    driver_built: bool
 
-    def __init__(self, name, hwconfig_dict):
+    def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
         # TODO: this will change based on the "what-to-build" PR
@@ -50,7 +59,7 @@ class RuntimeHWConfig:
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
 
-    def get_deploytriplet_for_config(self):
+    def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
         to the AWS AGFI API."""
         if self.deploytriplet is not None:
@@ -58,28 +67,30 @@ class RuntimeHWConfig:
         rootLogger.debug("Setting deploytriplet by querying the AGFI's description.")
         self.deploytriplet = get_firesim_tagval_for_agfi(self.agfi,
                                                          'firesim-deploytriplet')
-    def get_design_name(self):
+        return self.deploytriplet
+
+    def get_design_name(self) -> str:
         """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
         my_deploytriplet = self.get_deploytriplet_for_config()
         my_design = my_deploytriplet.split("-")[0]
         return my_design
 
-    def get_local_driver_binaryname(self):
+    def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
         return self.get_design_name() + "-" + self.platform
 
-    def get_local_driver_path(self):
+    def get_local_driver_path(self) -> str:
         """ return relative local path of the driver used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
         drivers_software_base = LOCAL_DRIVERS_BASE + "/" + self.platform + "/" + my_deploytriplet + "/"
         fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
         return fpga_driver_local
 
-    def get_local_runtimeconf_binaryname(self):
+    def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
         return "runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
 
-    def get_local_runtime_conf_path(self):
+    def get_local_runtime_conf_path(self) -> str:
         """ return relative local path of the runtime conf used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
         drivers_software_base = LOCAL_DRIVERS_BASE + "/" + self.platform + "/" + my_deploytriplet + "/"
@@ -90,16 +101,16 @@ class RuntimeHWConfig:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
 
-    def get_boot_simulation_command(self, slotid, all_macs,
-                                              all_rootfses, all_linklatencies,
-                                              all_netbws, profile_interval,
-                                              all_bootbinaries, trace_enable,
-                                              trace_select, trace_start, trace_end,
-                                              trace_output_format,
-                                              autocounter_readrate, all_shmemportnames,
-                                              enable_zerooutdram, disable_asserts_arg,
-                                              print_start, print_end,
-                                              enable_print_cycle_prefix):
+    def get_boot_simulation_command(self, slotid: int, all_macs: List[Optional[MacAddress]],
+            all_rootfses: List[Optional[str]], all_linklatencies: List[Optional[str]],
+            all_netbws: List[Optional[str]], profile_interval: str,
+            all_bootbinaries: List[str], trace_enable: str,
+            trace_select: str, trace_start: str, trace_end: str,
+            trace_output_format: str,
+            autocounter_readrate: str, all_shmemportnames: str,
+            enable_zerooutdram: bool, disable_asserts_arg: bool,
+            print_start: str, print_end: str,
+            enable_print_cycle_prefix: bool) -> str:
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -155,14 +166,12 @@ class RuntimeHWConfig:
 
         return basecommand
 
-
-
-    def get_kill_simulation_command(self):
+    def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
         # Note that pkill only works for names <=15 characters
         return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
-    def build_fpga_driver(self):
+    def build_fpga_driver(self) -> None:
         """ Build FPGA driver for running simulation """
         if self.driver_built:
             # we already built the driver at some point
@@ -195,15 +204,16 @@ class RuntimeHWConfig:
         self.driver_built = True
 
 
-    def __str__(self):
+    def __str__(self) -> str:
         return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, str(self.customruntimeconfig))
 
 
 class RuntimeHWDB:
     """ This class manages the hardware configurations that are available
     as endpoints on the simulation. """
+    hwconf_dict: Dict[str, RuntimeHWConfig]
 
-    def __init__(self, hardwaredbconfigfile):
+    def __init__(self, hardwaredbconfigfile: str) -> None:
 
         agfidb_configfile = None
         with open(hardwaredbconfigfile, "r") as yaml_file:
@@ -213,17 +223,41 @@ class RuntimeHWDB:
 
         self.hwconf_dict = {s: RuntimeHWConfig(s, v) for s, v in agfidb_dict.items()}
 
-    def get_runtimehwconfig_from_name(self, name):
+    def get_runtimehwconfig_from_name(self, name: str) -> RuntimeHWConfig:
         return self.hwconf_dict[name]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return pprint.pformat(vars(self))
 
 
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.yaml """
+    run_farm_requested_name: str
+    run_farm_dispatcher: RunFarm
+    topology: str
+    no_net_num_nodes: int
+    linklatency: int
+    switchinglatency: int
+    netbandwidth: int
+    profileinterval: int
+    launch_timeout: timedelta
+    always_expand: bool
+    trace_enable: bool
+    trace_select: str
+    trace_start: str
+    trace_end: str
+    trace_output_format: str
+    autocounter_readrate: int
+    zerooutdram: bool
+    disable_asserts: bool
+    print_start: str
+    print_end: str
+    print_cycle_prefix: int
+    workload_name: str
+    suffixtag: str
+    terminateoncompletion: bool
 
-    def __init__(self, runtimeconfigfile, runfarmconfigfile, configoverridedata):
+    def __init__(self, runtimeconfigfile: str, runfarmconfigfile: str, configoverridedata: str) -> None:
 
         runtime_configfile = None
         with open(runtimeconfigfile, "r") as yaml_file:
@@ -232,10 +266,9 @@ class InnerRuntimeConfiguration:
         runtime_dict = runtime_configfile
 
         # override parts of the runtime conf if specified
-        configoverrideval = configoverridedata
-        if configoverrideval != "":
+        if configoverridedata != "":
             ## handle overriding part of the runtime conf
-            configoverrideval = configoverrideval.split()
+            configoverrideval = configoverridedata.split()
             overridesection = configoverrideval[0]
             overridefield = configoverrideval[1]
             overridevalue = configoverrideval[2]
@@ -307,14 +340,21 @@ class InnerRuntimeConfiguration:
         self.suffixtag = runtime_dict['workload']['suffix_tag'] if 'suffix_tag' in runtime_dict['workload'] else None
         self.terminateoncompletion = runtime_dict['workload']['terminate_on_completion'] == "yes"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return pprint.pformat(vars(self))
 
 class RuntimeConfig:
     """ This class manages the overall configuration of the manager for running
     simulation tasks. """
+    launch_time: str
+    args: argparse.Namespace
+    runtimehwdb: RuntimeHWDB
+    innerconf: InnerRuntimeConfiguration
+    run_farm: RunFarm
+    workload: WorkloadConfig
+    firesim_topology_with_passes: FireSimTopologyWithPasses
 
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: argparse.Namespace) -> None:
         """ This reads runtime configuration files, massages them into formats that
         the rest of the manager expects, and keeps track of other info. """
         self.launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
@@ -356,35 +396,32 @@ class RuntimeConfig:
             self.innerconf.print_start, self.innerconf.print_end,
             self.innerconf.print_cycle_prefix)
 
-    def launch_run_farm(self):
+    def launch_run_farm(self) -> None:
         """ directly called by top-level launchrunfarm command. """
         self.run_farm.launch_run_farm()
 
-    def terminate_run_farm(self):
+    def terminate_run_farm(self) -> None:
         """ directly called by top-level terminaterunfarm command. """
         args = self.args
         self.run_farm.terminate_run_farm(args.terminatesomef116, args.terminatesomef14, args.terminatesomef12,
                                         args.terminatesomem416, args.forceterminate)
 
-    def infrasetup(self):
+    def infrasetup(self) -> None:
         """ directly called by top-level infrasetup command. """
         # set this to True if you want to use mock boto3 instances for testing
         # the manager.
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.infrasetup_passes(use_mock_instances_for_testing)
 
-    def boot(self):
+    def boot(self) -> None:
         """ directly called by top-level boot command. """
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.boot_simulation_passes(use_mock_instances_for_testing)
 
-    def kill(self):
+    def kill(self) -> None:
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.kill_simulation_passes(use_mock_instances_for_testing)
 
-    def run_workload(self):
+    def run_workload(self) -> None:
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.run_workload_passes(use_mock_instances_for_testing)
-
-
-
