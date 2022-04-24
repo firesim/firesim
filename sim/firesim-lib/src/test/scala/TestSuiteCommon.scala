@@ -39,10 +39,16 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
   }
 
   var ciSkipElaboration: Boolean = false
+  // Set by passing -Denable-thing-client=true. Causes secondary SBT
+  // invocations launched by the test suite to be issued to a running SBT
+  // server. For this to work correctly ScalaTest needs to run in a separate
+  // JVM, and not dispatched to the server with the thin client.
+  var enableThinClient:  Boolean = false
   var transitiveFailure: Boolean = false
 
-	override def withFixture(test: NoArgTest) = {
-		// Perform setup
+  override def withFixture(test: NoArgTest) = {
+    // Perform setup
+    enableThinClient  = test.configMap.getOptional[String]("enable-thin-client")
     ciSkipElaboration = test.configMap.getOptional[String]("ci-skip-elaboration")
       .map { _.toBoolean }
       .getOrElse(false)
@@ -51,7 +57,7 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
     } else {
       super.withFixture(test)
     }
-	}
+  }
 
   // These mirror those in the make files; invocation of the MIDAS compiler
   // is the one stage of the tests we don't invoke the Makefile for
@@ -96,7 +102,15 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
     it should behaviorDescription in {
       // Under CI, if make failed during elaboration we catch it here without
       // attempting to rebuild
-      val target = (if (ciSkipElaboration) Seq("-q") else Seq()) ++ elaborateMakeTarget
+      val fixturePrependedFlags =
+        if (ciSkipElaboration)
+          Seq("-q")
+        else if (enableThinClient)
+          Seq("ENABLE_SBT_THIN_CLIENT=1")
+        else
+          Seq()
+
+      val target = fixturePrependedFlags ++ elaborateMakeTarget
       assert(makeCriticalDependency(target:_*) == 0)
     }
   }
