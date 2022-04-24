@@ -1,20 +1,16 @@
+from __future__ import annotations
+
 import logging
-import sys
 import abc
 import pprint
 
-from awstools.awstools import *
+from awstools.awstools import aws_resource_names, launch_instances, wait_on_instance_launches, get_instance_ids_for_instances, terminate_instances
 
 # imports needed for python type checking
 from typing import cast, Any, Dict, Optional, Sequence, List, TYPE_CHECKING
-from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
-# needed to avoid type-hint circular dependencies
-# TODO: Solved in 3.7.+ by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
-#       and normal "import <module> as ..." syntax (see https://www.reddit.com/r/Python/comments/cug90e/how_to_not_create_circular_dependencies_when/)
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
-else:
-    BuildConfig = object
+    from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 
 rootLogger = logging.getLogger()
 

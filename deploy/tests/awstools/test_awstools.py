@@ -1,4 +1,3 @@
-from __future__ import print_function
 from pprint import pprint
 
 # Do NOT import any firesim code being tested that might open connections to AWS here.

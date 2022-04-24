@@ -1,14 +1,18 @@
 """ Miscellaneous utils used by other buildtools pieces. """
 
+from __future__ import annotations
+
 import lddwrap
 import logging
 from os import fspath
 from os.path import realpath
 from pathlib import Path
 
+from typing import List, Tuple, Type
+
 rootLogger = logging.getLogger()
 
-def get_local_shared_libraries(elf):
+def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
     """ Given path to executable `exe`, returns a list of path tuples, (A, B), where:
         A is the local file path on the manager instance to the library
         B is the destination file path on the runfarm instance relative to the driver
@@ -360,10 +364,10 @@ def get_local_shared_libraries(elf):
     ]
 
     libs = list()
-    rootLogger.debug(f"Identifying ldd dependencies for:{elf}")
+    rootLogger.debug(f"Identifying ldd dependencies for: {elf}")
     for dso in lddwrap.list_dependencies(Path(elf)):
         if dso.soname is None:
-            assert '/ld-linux' in fspath(dso.path), f"dynamic linker is only allowed no soname, not: {dso}"
+            assert dso.path is not None and '/ld-linux' in fspath(dso.path), f"dynamic linker is only allowed no soname, not: {dso}"
             continue
         if 'linux-vdso.so' in dso.soname:
             continue
@@ -399,10 +403,12 @@ class MacAddress():
     >>> mac.as_int_no_prefix()
     3
     """
-    next_mac_alloc = 2
-    eecs_mac_prefix = 0x00126d000000
+    next_mac_alloc: int = 2
+    eecs_mac_prefix: int = 0x00126d000000
+    mac_without_prefix_as_int: int
+    mac_as_int: int
 
-    def __init__(self):
+    def __init__(self) -> None:
         """ Allocate a new mac address, store it, then increment nextmacalloc."""
         assert MacAddress.next_mac_alloc < 2**24, "Too many MAC addresses allocated"
         self.mac_without_prefix_as_int = MacAddress.next_mac_alloc
@@ -411,12 +417,12 @@ class MacAddress():
         # increment for next call
         MacAddress.next_mac_alloc += 1
 
-    def as_int_no_prefix(self):
+    def as_int_no_prefix(self) -> int:
         """ Return the MAC address as an int. WITHOUT THE PREFIX!
         Used by the MAC tables in switch models."""
         return self.mac_without_prefix_as_int
 
-    def __str__(self):
+    def __str__(self) -> str:
         """ Return the MAC address in the "regular format": colon separated,
         show all leading zeroes."""
         # format as 12 char hex with leading zeroes
@@ -428,12 +434,12 @@ class MacAddress():
         return ":".join(split_str_ver)
 
     @classmethod
-    def reset_allocator(cls):
+    def reset_allocator(cls: Type[MacAddress]) -> None:
         """ Reset allocator back to default value. """
         cls.next_mac_alloc = 2
 
     @classmethod
-    def next_mac_to_allocate(cls):
+    def next_mac_to_allocate(cls: Type[MacAddress]) -> int:
         """ Return the next mac that will be allocated. This basically tells you
         how many entries you need in your switching tables. """
         return cls.next_mac_alloc
