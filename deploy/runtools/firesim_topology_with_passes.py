@@ -1,23 +1,27 @@
 """ This constructs a topology and performs a series of passes on it. """
 
+from __future__ import  annotations
+
 import time
 import os
 import pprint
 import logging
 import datetime
-from fabric.api import env, parallel, execute # type: ignore
+from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 import types
 from functools import reduce
 
-from runtools.switch_model_config import *
-from runtools.firesim_topology_core import *
+from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
+from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
-from runtools.run_farm import RunFarm
-from runtools.runtime_config import RuntimeHWDB
 from util.streamlogger import StreamLogger
 
-from typing import Dict, Any, cast
+from typing import Dict, Any, cast, List, TYPE_CHECKING
+if TYPE_CHECKING:
+    from runtools.run_farm import RunFarm
+    from runtools.runtime_config import RuntimeHWDB
+    from runtools.workload import WorkloadConfig
 
 rootLogger = logging.getLogger()
 
@@ -135,9 +139,7 @@ class FireSimTopologyWithPasses:
             else:
                 childdownlinkmacs: List[List[MacAddress]] = []
                 for x in node.downlinks:
-                    downlink_side = x.get_downlink_side()
-                    if downlink_side is not None:
-                        childdownlinkmacs.append(downlink_side.downlinkmacs)
+                    childdownlinkmacs.append(x.get_downlink_side().downlinkmacs)
 
                 # flatten
                 node.downlinkmacs = reduce(lambda x, y: x + y, childdownlinkmacs)
@@ -150,9 +152,7 @@ class FireSimTopologyWithPasses:
             # prepopulate the table with the last port, which will be
             switchtab = [uplinkportno for x in range(MacAddress.next_mac_to_allocate())]
             for port_no in range(len(switch.downlinks)):
-                downlink_side = switch.downlinks[port_no].get_downlink_side()
-                assert downlink_side is not None
-                portmacs = downlink_side.downlinkmacs
+                portmacs = switch.downlinks[port_no].get_downlink_side().downlinkmacs
                 for mac in portmacs:
                     switchtab[mac.as_int_no_prefix()] = port_no
 
@@ -320,9 +320,10 @@ class FireSimTopologyWithPasses:
                 defaulthwconfig_obj = self.hwdb.get_runtimehwconfig_from_name(self.defaulthwconfig)
                 hw_cfg = defaulthwconfig_obj
             else:
-                if not isinstance(hw_cfg, RuntimeHWConfig):
-                    # 1)
+                if isinstance(hw_cfg, str):
+                    # 1) str
                     hw_cfg = self.hwdb.get_runtimehwconfig_from_name(hw_cfg)
+                # 1) hwcfg
             # 3)
             hw_cfg.get_deploytriplet_for_config()
             server.set_server_hardware_config(hw_cfg)
@@ -408,9 +409,7 @@ class FireSimTopologyWithPasses:
         servers = self.firesimtopol.get_dfs_order_servers()
 
         for server in servers:
-            hw_cfg = server.get_server_hardware_config()
-            assert hw_cfg is not None and isinstance(hw_cfg, RuntimeHWConfig)
-            hw_cfg.build_fpga_driver()
+            server.get_resolved_server_hardware_config().build_fpga_driver()
 
     def pass_build_required_switches(self) -> None:
         """ Build all the switches required for this simulation. """

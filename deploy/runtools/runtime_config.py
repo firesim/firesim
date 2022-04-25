@@ -1,9 +1,8 @@
 """ This file manages the overall configuration of the system for running
 simulation tasks. """
 
-from __future__ import print_function
+from __future__ import print_function, annotations
 
-import argparse
 from datetime import timedelta
 from time import strftime, gmtime
 import pprint
@@ -11,17 +10,19 @@ import logging
 import yaml
 import os
 import sys
-from fabric.api import prefix # type: ignore
+from fabric.api import prefix, settings, local # type: ignore
 
-from awstools.awstools import *
-from awstools.afitools import *
+from awstools.awstools import aws_resource_names
+from awstools.afitools import get_firesim_tagval_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from util.streamlogger import StreamLogger
-from runtools.utils import MacAddress
 
-from typing import Optional, Dict, Any, List, Sequence
+from typing import Optional, Dict, Any, List, Sequence, TYPE_CHECKING
+import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
+if TYPE_CHECKING:
+    from runtools.utils import MacAddress
 
 LOCAL_DRIVERS_BASE = "../sim/output/f1/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"

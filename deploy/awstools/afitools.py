@@ -1,5 +1,7 @@
 """ Tools to help manage afis. """
 
+from __future__ import  annotations
+
 import logging
 import boto3
 from awstools.awstools import depaginated_boto_query
