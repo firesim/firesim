@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 from time import strftime, gmtime
 import pprint
 import logging
 import sys
 import yaml
-from collections import defaultdict
-from importlib import import_module
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
@@ -13,8 +13,8 @@ from buildtools.buildfarm import BuildFarm
 from util.inheritors import inheritors
 
 # imports needed for python type checking
-from typing import Dict, Optional, List, Set
-from argparse import Namespace
+from typing import Dict, Optional, List, Set, Type, Any, TYPE_CHECKING
+import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
 
 rootLogger = logging.getLogger()
 
@@ -31,7 +31,7 @@ class BuildConfigFile:
         num_builds: Number of builds to run.
         build_farm: Build farm used to host builds.
     """
-    args: Namespace
+    args: argparse.Namespace
     agfistoshare: List[str]
     acctids_to_sharewith: List[str]
     hwdb: RuntimeHWDB
@@ -40,7 +40,7 @@ class BuildConfigFile:
     num_builds: int
     build_farm: BuildFarm
 
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, args: argparse.Namespace) -> None:
         """
         Args:
             args: Object holding arg attributes.

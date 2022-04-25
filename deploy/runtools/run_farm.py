@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import logging
 import time
 import sys
 from datetime import timedelta
 import abc
 import pprint
+import os
 
-from awstools.awstools import *
-from runtools.run_farm_instances import *
+from awstools.awstools import instances_sorted_by_avail_ip, instances_sorted_by_avail_ip, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, get_instance_ids_for_instances, terminate_instances, aws_resource_names, get_run_instances_by_tag_type
+from runtools.run_farm_instances import F1Inst, M4_16, MockBoto3Instance, FPGAInst
 from util.inheritors import inheritors
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from runtools.run_farm_instances import Inst
 
 rootLogger = logging.getLogger()
 
@@ -118,13 +123,13 @@ class AWSEC2F1(RunFarm):
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
-        available_f1_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.run_farm_tag, 'f1.16xlarge'))
-        available_f1_4_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_4_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.run_farm_tag, 'f1.4xlarge'))
-        available_m4_16_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_m4_16_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.run_farm_tag, 'm4.16xlarge'))
-        available_f1_2_instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(
+        available_f1_2_instances = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(
             self.run_farm_tag, 'f1.2xlarge'))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
@@ -198,18 +203,16 @@ class AWSEC2F1(RunFarm):
 
     def terminate_run_farm(self, terminatesomef1_16: int, terminatesomef1_4: int, terminatesomef1_2: int,
             terminatesomem4_16: int, forceterminate: bool) -> None:
-        run_farm_tag = self.run_farm_tag
-
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
         f1_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(run_farm_tag, 'f1.16xlarge'))
+            get_run_instances_by_tag_type(self.run_farm_tag, 'f1.16xlarge'))
         f1_4_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(run_farm_tag, 'f1.4xlarge'))
+            get_run_instances_by_tag_type(self.run_farm_tag, 'f1.4xlarge'))
         m4_16_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(run_farm_tag, 'm4.16xlarge'))
+            get_run_instances_by_tag_type(self.run_farm_tag, 'm4.16xlarge'))
         f1_2_instances = instances_sorted_by_avail_ip(
-            get_instances_by_tag_type(run_farm_tag, 'f1.2xlarge'))
+            get_run_instances_by_tag_type(self.run_farm_tag, 'f1.2xlarge'))
 
         f1_16_instance_ids = get_instance_ids_for_instances(f1_16_instances)
         f1_4_instance_ids = get_instance_ids_for_instances(f1_4_instances)
@@ -361,9 +364,10 @@ class ExternallyProvisioned(RunFarm):
         a real instance. """
         return self.fpga_nodes
 
-    def lookup_by_ip_addr(self, ipaddr: str) -> Optional[Inst]:
+    def lookup_by_ip_addr(self, ipaddr: str) -> Inst:
         """ Get an instance object from its IP address. """
         for host_node in self.get_all_host_nodes():
             if host_node.get_ip() == ipaddr:
                 return host_node
+        assert False, f"Unable to find host node by {ipaddr} host name"
         return None

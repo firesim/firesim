@@ -1,24 +1,26 @@
 """ Define your additional topologies here. The FireSimTopology class inherits
 from UserToplogies and thus can instantiate your topology. """
 
-import types
+from __future__ import annotations
 
-from runtools.firesim_topology_elements import *
-from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
-from runtools.run_farm_instances import FPGAInst
+from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode, FireSimSuperNodeServerNode, FireSimDummyServerNode, FireSimNode
 
-from typing import Callable, List, Any, Union, Sequence, cast
+from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any
+if TYPE_CHECKING:
+    from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
+    from runtools.run_farm_instances import FPGAInst
 
 class UserTopologies:
     """ A class that just separates out user-defined/configurable topologies
     from the rest of the boilerplate in FireSimTopology() """
-    custom_mapper: Optional[Union[types.FunctionType, str]]
-
-    roots: Sequence[Union[FireSimSwitchNode, FireSimServerNode]]
     no_net_num_nodes: int
+    custom_mapper: Optional[Union[Callable, str]]
+    roots: Sequence[FireSimNode]
 
     def __init__(self, no_net_num_nodes: int) -> None:
         self.no_net_num_nodes = no_net_num_nodes
+        self.custom_mapper = None
+        self.roots = []
 
     def clos_m_n_r(self, m: int, n: int, r: int) -> None:
         """ DO NOT USE THIS DIRECTLY, USE ONE OF THE INSTANTIATIONS BELOW. """
@@ -173,7 +175,7 @@ class UserTopologies:
         midswitches[1].add_downlinks([servers[1]])
 
     def small_hierarchy_8sims(self) -> None:
-        self.custom_mapper = 'mapping_use_one_fpga_node' # type: ignore
+        self.custom_mapper = 'mapping_use_one_fpga_node'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(4)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(4)]
@@ -182,7 +184,7 @@ class UserTopologies:
             midlevel[swno].add_downlinks(servers[swno])
 
     def small_hierarchy_2sims(self) -> None:
-        self.custom_mapper = 'mapping_use_one_fpga_node' # type: ignore
+        self.custom_mapper = 'mapping_use_one_fpga_node'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(1)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(1)]
@@ -282,13 +284,13 @@ class UserTopologies:
 
     def supernode_example_6config(self) -> None:
         self.roots = [FireSimSwitchNode()]
-        servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(5)]
-        self.roots[0].add_downlinks(servers)
+        self.roots[0].add_downlinks([FireSimSuperNodeServerNode()])
+        self.roots[0].add_downlinks([FireSimDummyServerNode() for x in range(5)])
 
     def supernode_example_4config(self) -> None:
         self.roots = [FireSimSwitchNode()]
-        servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
-        self.roots[0].add_downlinks(servers)
+        self.roots[0].add_downlinks([FireSimSuperNodeServerNode()])
+        self.roots[0].add_downlinks([FireSimDummyServerNode() for x in range(3)])
 
     def supernode_example_8config(self) -> None:
         self.roots = [FireSimSwitchNode()]
@@ -389,15 +391,14 @@ class UserTopologies:
     def no_net_config(self) -> None:
         self.roots = [FireSimServerNode() for x in range(self.no_net_num_nodes)]
 
-    # TODO: busted since FireSimServerNode needs a RuntimeHWConfig to work (not a str)
-    ## Spins up all of the precompiled, unnetworked targets
-    #def all_no_net_targets_config(self) -> None:
-    #    hwdb_entries = [
-    #        "firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3",
-    #        "firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3",
-    #    ]
-    #    assert len(hwdb_entries) == self.no_net_num_nodes
-    #    self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
+    # Spins up all of the precompiled, unnetworked targets
+    def all_no_net_targets_config(self) -> None:
+        hwdb_entries = [
+            "firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3",
+            "firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3",
+        ]
+        assert len(hwdb_entries) == self.no_net_num_nodes
+        self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
 
 
 #    ######Used only for tutorial purposes####################

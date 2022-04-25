@@ -1,29 +1,31 @@
 """ This constructs a topology and performs a series of passes on it. """
 
+from __future__ import annotations
+
 import time
 import os
 import pprint
 import logging
-from datetime import datetime
-from functools import reduce
-import types
+import datetime
+from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
-from fabric.api import parallel, execute # type: ignore
+from functools import reduce
 
-from runtools.switch_model_config import *
-from runtools.firesim_topology_core import *
+from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
+from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
-from runtools.run_farm import *
-from runtools.runtime_config import RuntimeHWDB
-from runtools.workload import WorkloadConfig
-
 from util.streamlogger import StreamLogger
 
-from typing import cast
+from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
+if TYPE_CHECKING:
+    from runtools.run_farm import RunFarm, AWSEC2F1
+    from runtools.runtime_config import RuntimeHWDB
+    from runtools.workload import WorkloadConfig
+    from runtools.run_farm_instances import FPGAInst
 
 rootLogger = logging.getLogger()
 
-@parallel # type: ignore
+@parallel
 def instance_liveness() -> None:
     """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
     actual firesim-related commands on only some of the run farm machines."""
@@ -59,7 +61,7 @@ class FireSimTopologyWithPasses:
     defaultdisableasserts: bool
     defaultprintstart: str
     defaultprintend: str
-    defaultprintcycleprefix: int
+    defaultprintcycleprefix: bool
     terminateoncompletion: bool
 
     def __init__(self, user_topology_name: str, no_net_num_nodes: int, run_farm: RunFarm, hwdb: RuntimeHWDB,
@@ -69,7 +71,7 @@ class FireSimTopologyWithPasses:
             defaulttraceoutputformat: str,
             defaultautocounterreadrate: int, terminateoncompletion: bool,
             defaultzerooutdram: bool, defaultdisableasserts: bool,
-            defaultprintstart: str, defaultprintend: str, defaultprintcycleprefix: int):
+            defaultprintstart: str, defaultprintend: str, defaultprintcycleprefix: bool) -> None:
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -97,9 +99,6 @@ class FireSimTopologyWithPasses:
 
         self.phase_one_passes()
 
-    def pass_return_dfs(self) -> List[FireSimNode]:
-        """ Just return the nodes in DFS order """
-        return self.firesimtopol.get_dfs_order()
 
     def pass_assign_mac_addresses(self) -> None:
         """ DFS through the topology to assign mac addresses """
@@ -137,7 +136,11 @@ class FireSimTopologyWithPasses:
             if isinstance(node, FireSimServerNode):
                 node.downlinkmacs = [node.get_mac_address()]
             else:
-                childdownlinkmacs = [x.get_downlink_side().downlinkmacs for x in node.downlinks]
+                childdownlinkmacs: List[List[MacAddress]] = []
+                for x in node.downlinks:
+                    childdownlinkmacs.append(x.get_downlink_side().downlinkmacs)
+
+                # flatten
                 node.downlinkmacs = reduce(lambda x, y: x + y, childdownlinkmacs)
 
         switches_dfs_order = self.firesimtopol.get_dfs_order_switches()
@@ -177,8 +180,8 @@ class FireSimTopologyWithPasses:
         switches_dfs_order = self.firesimtopol.get_dfs_order_switches()
         for node in switches_dfs_order:
             for downlink in node.downlinks:
-                downlink = downlink.get_downlink_side()
-                gviz_graph.edge(str(node), str(downlink))
+                downlink_side = downlink.get_downlink_side()
+                gviz_graph.edge(str(node), str(downlink_side))
 
         gviz_graph.render(view=False)
 
@@ -214,16 +217,17 @@ class FireSimTopologyWithPasses:
             # Filter out FireSimDummyServerNodes for actually deploying.
             # Infrastructure after this point will automatically look at the
             # FireSimDummyServerNodes if a FireSimSuperNodeServerNode is used
-            downlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
-            if all([isinstance(x, FireSimSwitchNode) for x in downlinknodes]):
-                # all downlinks are switches (use new switch instance for each)
+            alldownlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
+            if all([isinstance(x, FireSimSwitchNode) for x in alldownlinknodes]):
+                # all downlinks are switches
                 for node in switch_nodes:
-                    if node.get_num_switch_slots_consumed() == 0:
+                    if len(node.switch_slots) == 0:
                         node.add_switch(switch)
-            elif all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
-                # find unused fpga (starting from smallest) that has all the slots needed for adding downlinks (greedy choice)
+            elif all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
+                downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
+                # all downlinks are simulations
                 for node in fpga_nodes:
-                    if node.get_num_fpga_slots_consumed() == 0 and node.get_num_fpga_slots_max() >= len(downlinknodes):
+                    if len(node.fpga_slots) == 0 and node.get_num_fpga_slots_max() >= len(downlinknodes):
                         node.add_switch(switch)
                         for server in downlinknodes:
                             assert isinstance(server, FireSimServerNode)
@@ -241,8 +245,9 @@ class FireSimTopologyWithPasses:
 
         for switch in switches:
             fpga_nodes[fpga_nodes_used].add_switch(switch)
-            downlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
-            if all([isinstance(x, FireSimServerNode) for x in downlinknodes]):
+            alldownlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
+            if all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
+                downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
                 for server in downlinknodes:
                     assert isinstance(server, FireSimServerNode)
                     fpga_nodes[fpga_nodes_used].add_simulation(server)
@@ -275,7 +280,7 @@ class FireSimTopologyWithPasses:
                     # now, we're handling the cycle-accurate networked simulation case
                     # currently, we only handle the case where
                     self.pass_simple_networked_host_node_mapping()
-            elif isinstance(self.firesimtopol.custom_mapper, types.FunctionType):
+            elif callable(self.firesimtopol.custom_mapper):
                 """ call the mapper fn defined in the topology itself. """
                 self.firesimtopol.custom_mapper(self)
             elif isinstance(self.firesimtopol.custom_mapper, str):
@@ -290,25 +295,29 @@ class FireSimTopologyWithPasses:
         """ This is the default mapping pass for hardware configurations - it
         does 3 things:
             1) If a node has a hardware config assigned (as a string), replace
-            it with the appropriate RuntimeHWConfig object.
+            it with the appropriate RuntimeHWConfig object. If it already a
+            RuntimeHWConfig object then keep it the same.
             2) If a node's hardware config is none, give it the default
             hardware config.
             3) In either case, call get_deploytriplet_for_config() once to
             make the API call and cache the result for the deploytriplet.
         """
         servers = self.firesimtopol.get_dfs_order_servers()
-        defaulthwconfig_obj = self.hwdb.get_runtimehwconfig_from_name(self.defaulthwconfig)
 
         for server in servers:
-            servhwconf = server.get_server_hardware_config()
-            if servhwconf is None:
+            hw_cfg = server.get_server_hardware_config()
+            if hw_cfg is None:
                 # 2)
-                server.set_server_hardware_config(defaulthwconfig_obj)
+                defaulthwconfig_obj = self.hwdb.get_runtimehwconfig_from_name(self.defaulthwconfig)
+                hw_cfg = defaulthwconfig_obj
             else:
-                # 1)
-                server.set_server_hardware_config(self.hwdb.get_runtimehwconfig_from_name(servhwconf))
+                if isinstance(hw_cfg, str):
+                    # 1) str
+                    hw_cfg = self.hwdb.get_runtimehwconfig_from_name(hw_cfg)
+                # 1) hwcfg
             # 3)
-            server.get_server_hardware_config().get_deploytriplet_for_config()
+            hw_cfg.get_deploytriplet_for_config()
+            server.set_server_hardware_config(hw_cfg)
 
     def pass_apply_default_network_params(self) -> None:
         """ If the user has not set per-node network parameters in the topology,
@@ -391,7 +400,7 @@ class FireSimTopologyWithPasses:
         servers = self.firesimtopol.get_dfs_order_servers()
 
         for server in servers:
-            server.get_server_hardware_config().build_fpga_driver()
+            server.get_resolved_server_hardware_config().build_fpga_driver()
 
     def pass_build_required_switches(self) -> None:
         """ Build all the switches required for this simulation. """
@@ -562,10 +571,11 @@ class FireSimTopologyWithPasses:
 
             # clear the screen
             rootLogger.info('\033[2J')
-            rootLogger.info("""FireSim Simulation Status @ {}""".format(str(datetime.utcnow())))
+            rootLogger.info("""FireSim Simulation Status @ {}""".format(str(datetime.datetime.utcnow())))
             rootLogger.info("-"*80)
             rootLogger.info("""This workload's output is located in:\n{}""".format(self.workload.job_results_dir))
-            rootLogger.info("""This run's log is located in:\n{}""".format(rootLogger.handlers[0].filename))
+            assert isinstance(rootLogger.handlers[0], logging.FileHandler)
+            rootLogger.info("""This run's log is located in:\n{}""".format(rootLogger.handlers[0].baseFilename))
             rootLogger.info("""This status will update every 10s.""")
             rootLogger.info("-"*80)
             rootLogger.info("Instances")
@@ -627,7 +637,8 @@ class FireSimTopologyWithPasses:
 
             jobs_complete_dict = dict()
             simstates = [x['sims'] for x in instancestates.values()]
-            global_status = [jobs_complete_dict.update(x) for x in simstates]
+            for x in simstates:
+                jobs_complete_dict.update(x)
             global_status = jobs_complete_dict.values()
             rootLogger.debug("jobs complete dict " + str(jobs_complete_dict))
             rootLogger.debug("global status: " + str(global_status))

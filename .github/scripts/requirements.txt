@@ -3,3 +3,5 @@ boto3==1.20.21
 pytz
 pyyaml
 requests
+mypy_boto3_ec2==1.21.9
+mypy_boto3_s3==1.21.0

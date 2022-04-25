@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # imports needed for python type checking
 from typing import Set, Type, Any
 

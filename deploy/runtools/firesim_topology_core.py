@@ -1,34 +1,35 @@
 """ These are the base components that make up a FireSim simulation target
 topology. """
 
-from runtools.firesim_topology_elements import *
+from __future__ import annotations
+
 from runtools.user_topology import UserTopologies
 
-from typing import List, Callable
+from typing import List, Callable, Optional, Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode, FireSimNode
 
 class FireSimTopology(UserTopologies):
     """ A FireSim Topology consists of a list of root FireSimNodes, which
     connect to other FireSimNodes.
 
     This is designed to model tree-like topologies."""
-    custom_mapper: Callable
 
     def __init__(self, user_topology_name: str, no_net_num_nodes: int) -> None:
         # This just constructs the user topology. an upper level pass manager
         # will apply passes to it.
 
-        super().__init__(no_net_num_nodes)
-
         # a topology can specify a custom target -> host mapping. if left as None,
         # the default mapper is used, which handles no network and simple networked cases.
-        self.custom_mapper = None
+        super().__init__(no_net_num_nodes)
+
         config_func = getattr(self, user_topology_name)
         config_func()
 
     def get_dfs_order(self) -> List[FireSimNode]:
         """ Return all nodes in the topology in dfs order, as a list. """
         stack = list(self.roots)
-        retlist = []
+        retlist: List[FireSimNode] = []
         visitedonce = set()
         while stack:
             nextup = stack[0]
