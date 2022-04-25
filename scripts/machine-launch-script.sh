@@ -345,7 +345,10 @@ set -o pipefail
 
     argcomplete_extra_args=()
     if [[ "$INSTALL_TYPE" == system ]]; then
-	argcomplete_extra_args=( --dest "${CONDA_ENV_BIN}/../share/bash-completion/completions" )
+        BASH_COMPLETION_COMPAT_DIR="${CONDA_ENV_BIN}/../etc/bash_completion.d"
+        "${DRY_RUN_ECHO[@]}" $SUDO mkdir -p "${BASH_COMPLETION_COMPAT_DIR}"
+        argcomplete_extra_args=( --dest "${BASH_COMPLETION_COMPAT_DIR}" )
+
     else
         # if we're aren't installing into a system directory, then initialize argcomplete
         # with --user so that it goes into the home directory
