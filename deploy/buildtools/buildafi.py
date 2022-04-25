@@ -1,4 +1,5 @@
-from __future__ import with_statement
+from __future__ import with_statement, annotations
+
 import json
 import time
 import random
@@ -9,14 +10,15 @@ from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
-from awstools.afitools import *
+from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
 from awstools.awstools import send_firesim_notification
 from util.streamlogger import StreamLogger, InfoStreamLogger
 
 # imports needed for python type checking
-from typing import Optional
-from buildtools.buildconfig import BuildConfig
-from buildtools.buildconfigfile import BuildConfigFile
+from typing import Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from buildtools.buildconfig import BuildConfig
+    from buildtools.buildconfigfile import BuildConfigFile
 
 rootLogger = logging.getLogger()
 

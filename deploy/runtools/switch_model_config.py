@@ -1,6 +1,8 @@
 """ This file contains components that tie closely with the FireSim switch
 models that live in target-design/switch/ """
 
+from __future__ import  annotations
+
 import subprocess
 import random
 import string
@@ -8,7 +10,9 @@ import logging
 from fabric.api import local # type: ignore
 from util.streamlogger import StreamLogger
 
-from runtools.firesim_topology_elements import FireSimSwitchNode
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from runtools.firesim_topology_elements import FireSimSwitchNode
 
 rootLogger = logging.getLogger()
 
