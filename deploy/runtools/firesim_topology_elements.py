@@ -1,6 +1,6 @@
 """ Node types necessary to construct a FireSimTopology. """
 
-from __future__ import annotations
+from __future__ import  annotations
 
 import logging
 import abc

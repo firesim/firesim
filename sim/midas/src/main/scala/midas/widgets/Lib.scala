@@ -487,7 +487,12 @@ class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
 class BRAMQueue[T <: Data](val entries: Int)(data: => T) extends Module {
   val io = IO(new QueueIO(data, entries))
 
-  io.count := 0.U
+  val count = RegInit(0.U(log2Ceil(entries + 1).W))
+
+  when (io.enq.fire ^ io.deq.fire) {
+    count := Mux(io.enq.fire, count + 1.U, count - 1.U)
+  }
+  io.count := count
 
   val fq = Module(new BRAMFlowQueue(entries)(data))
   fq.io.enq <> io.enq

@@ -17,7 +17,6 @@ import midas.targetutils.TriggerSource
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import junctions.{NastiIO, NastiKey}
-import TokenQueueConsts._
 
 case class TracerVKey(
   insnWidths: TracedInstructionWidths, // Widths of variable length fields in each TI
@@ -78,8 +77,15 @@ object TracerVBridge {
   }
 }
 
-class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[TracerVTargetIO]]()(p) {
-  lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
+class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
+    extends BridgeModule[HostPortIO[TracerVTargetIO]]()(p)
+    with StreamToHostCPU {
+
+  // StreamToHostCPU  mixin parameters
+  // Use the legacy NIC depth
+  val toHostCPUQueueDepth  = TokenQueueConsts.TOKEN_QUEUE_DEPTH
+
+  lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new TracerVTargetIO(key.insnWidths, key.vecSize)))
 
@@ -193,29 +199,24 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters) extends Bridg
       2.U -> triggerPCValVec.reduce(_ || _),
       3.U -> triggerInstValVec.reduce(_ || _)))
 
-    val tFireHelper = DecoupledHelper(outgoingPCISdat.io.enq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
+    val tFireHelper = DecoupledHelper(streamEnq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
 
     val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire)
     hPort.hBits.triggerDebit := !trigger && triggerReg
     hPort.hBits.triggerCredit := trigger && !triggerReg
 
-    // DMA mixin parameters
-    lazy val toHostCPUQueueDepth  = TOKEN_QUEUE_DEPTH
-    lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
-
     val uint_traces = (traces map (trace => Cat(trace.valid, trace.iaddr).pad(64))).reverse
-    outgoingPCISdat.io.enq.bits := Cat(uint_traces :+ trace_cycle_counter.pad(64)).pad(BIG_TOKEN_WIDTH)
+    streamEnq.bits := Cat(uint_traces :+ trace_cycle_counter.pad(64)).pad(BridgeStreamConstants.streamWidthBits)
 
     hPort.toHost.hReady := tFireHelper.fire(hPort.toHost.hValid)
     hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
 
-    outgoingPCISdat.io.enq.valid := tFireHelper.fire(outgoingPCISdat.io.enq.ready, trigger) && traceEnable
+    streamEnq.valid := tFireHelper.fire(streamEnq.ready, trigger) && traceEnable
 
     when (tFireHelper.fire) {
       trace_cycle_counter := trace_cycle_counter + 1.U
     }
 
-    attach(outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready, "tracequeuefull", ReadOnly)
     genCRFile()
     override def genHeader(base: BigInt, sb: StringBuilder) {
       import CppGenerationUtils._

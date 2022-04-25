@@ -61,6 +61,18 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   def printCRs = module.crRegistry.printCRs
 
   def defaultPlusArgs: Option[String] = None
+
+  /**
+    * Provides a mechanism for mixins to register additional collateral
+    */
+  private val _headerFragmentFuncs = new mutable.ArrayBuffer[(BigInt) => Seq[String]]()
+  def appendHeaderFragment(f: (BigInt) => Seq[String]): Unit = {
+    _headerFragmentFuncs += f
+  }
+  def getHeaderFragments(base: BigInt): Seq[String] =
+    _headerFragmentFuncs.map { f => f(base) }
+    .flatten
+    .toSeq
 }
 
 abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
@@ -179,9 +191,8 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     wrapper.headerComment(sb)
     crRegistry.genHeader(wrapper.getWName.toUpperCase, base, sb)
     crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
+    wrapper.getHeaderFragments(base).foreach { sb.append }
   }
-
-
 }
 
 object Widget {
@@ -251,6 +262,17 @@ trait HasWidgets {
     }
   }
 
+  def printMemoryMapSummary(): Unit = {
+    println("Simulator Memory Map:")
+    for (AddrMapEntry(name, MemRange(start, size, _)) <- addrMap.flatten) {
+      println(f"  [${start}%4h, ${start + size - 1}%4h]: ${name}")
+    }
+  }
+
+  /**
+    * Iterates through each bridge, generating the header fragment. Must be
+    * called after bridge address assignment is complete.
+    */
   def genHeader(sb: StringBuilder) {
     widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, sb))
   }

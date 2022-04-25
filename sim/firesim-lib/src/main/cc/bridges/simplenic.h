@@ -15,7 +15,10 @@ class simplenic_t: public bridge_driver_t
     public:
         simplenic_t(simif_t* sim, std::vector<std::string> &args,
             SIMPLENICBRIDGEMODULE_struct *addrs, int simplenicno,
-            long dma_addr);
+            const unsigned int stream_to_cpu_count_address,
+            long               stream_to_cpu_dma_address,
+            const unsigned int stream_from_cpu_count_address,
+            long               stream_from_cpu_dma_address);
         ~simplenic_t();
 
         virtual void init();
@@ -52,7 +55,10 @@ class simplenic_t: public bridge_driver_t
         // only for TOKENVERIFY
         uint64_t timeelapsed_cycles = 0;
 
-        long dma_addr;
+        const unsigned int stream_to_cpu_count_address;
+        long               stream_to_cpu_dma_address;
+        const unsigned int stream_from_cpu_count_address;
+        long               stream_from_cpu_dma_address;
 };
 #endif // SIMPLENICBRIDGEMODULE_struct_guard
 

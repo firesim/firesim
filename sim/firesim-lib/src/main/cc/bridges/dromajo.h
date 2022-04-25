@@ -21,7 +21,10 @@ class dromajo_t: public bridge_driver_t
             int tval_width,
             int num_traces,
             DROMAJOBRIDGEMODULE_struct * mmio_addrs,
-            long dma_addr);
+            long dma_addr,
+            const unsigned int stream_count_address,
+            const unsigned int stream_full_address
+            );
         ~dromajo_t();
 
         virtual void init();
@@ -64,6 +67,8 @@ class dromajo_t: public bridge_driver_t
         // other misc members
         uint32_t _num_traces;
         long _dma_addr;
+        const unsigned int stream_count_address;
+        const unsigned int stream_full_address;
         uint8_t _trace_idx;
         bool dromajo_failed;
         int dromajo_exit_code;

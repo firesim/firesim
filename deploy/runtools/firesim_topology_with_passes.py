@@ -1,6 +1,6 @@
 """ This constructs a topology and performs a series of passes on it. """
 
-from __future__ import annotations
+from __future__ import  annotations
 
 import time
 import os

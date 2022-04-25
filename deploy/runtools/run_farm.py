@@ -1,20 +1,27 @@
 from __future__ import annotations
 
+from __future__ import  annotations
+
+import re
 import logging
 import time
-import sys
-from datetime import timedelta
 import abc
-import pprint
 import os
+from datetime import timedelta
+from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide # type: ignore
+from fabric.contrib.project import rsync_project # type: ignore
+from os.path import join as pjoin
+import pprint
 
-from awstools.awstools import instances_sorted_by_avail_ip, instances_sorted_by_avail_ip, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, get_instance_ids_for_instances, terminate_instances, aws_resource_names, get_run_instances_by_tag_type
-from runtools.run_farm_instances import F1Inst, M4_16, MockBoto3Instance, FPGAInst
+from awstools.awstools import instances_sorted_by_avail_ip, get_run_instances_by_tag_type, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, terminate_instances, get_instance_ids_for_instances, aws_resource_names
+from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 
-from typing import Dict, List, Any, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, List, Union, TYPE_CHECKING
 if TYPE_CHECKING:
-    from runtools.run_farm_instances import Inst
+    from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
+    from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
+    from runtools.run_farm_instances import MockBoto3Instance, M4_16, F1Inst, Inst, FPGAInst
 
 rootLogger = logging.getLogger()
 
@@ -290,7 +297,7 @@ class AWSEC2F1(RunFarm):
         for host_node in self.get_all_host_nodes():
             if host_node.get_ip() == ipaddr:
                 return host_node
-        return None
+        assert False, f"Unable to find host node by {ipaddr} host name"
 
 class ExternallyProvisioned(RunFarm):
     """ This manages the set of AWS resources requested for the run farm. It
@@ -370,4 +377,4 @@ class ExternallyProvisioned(RunFarm):
             if host_node.get_ip() == ipaddr:
                 return host_node
         assert False, f"Unable to find host node by {ipaddr} host name"
-        return None
+

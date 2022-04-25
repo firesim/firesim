@@ -4,7 +4,7 @@ This is taken from https://gist.github.com/pmuller/2376336
 which has no license associated with it.
 """
 
-from __future__ import annotations
+from __future__ import  annotations
 
 import sys
 import logging

@@ -82,6 +82,9 @@ jobs:
         run: ./.github/scripts/launch-manager-instance.py
       - name: Setup N Github Actions Runners on AWS instance
         run: ./.github/scripts/setup-manager-self-hosted.py
+      - name: Catch potentially orphaned manager
+        if: ${{ failure() || cancelled() }}
+        run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} terminate ${{ github.token }}
 
   setup-manager:
     name: setup-manager
@@ -95,6 +98,11 @@ jobs:
           max-runtime-hours: 10
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
+      - name: Catch potentially orphaned manager
+        # Only catch cancelled jobs since the workflow monitor and try / catch
+        # in initialize manager should capture on-failure behavior
+        if: ${{ cancelled() }}
+        run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} terminate ${{ github.token }}
 
   build-default-workloads:
     # Conditionally build rootfs images only if deploying to FPGA to save CI resources

@@ -1,6 +1,6 @@
 """ Miscellaneous utils used by other buildtools pieces. """
 
-from __future__ import annotations
+from __future__ import  annotations
 
 import lddwrap
 import logging
