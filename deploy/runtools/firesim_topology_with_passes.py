@@ -468,7 +468,6 @@ class FireSimTopologyWithPasses:
         @parallel
         def boot_simulation_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
-            assert my_node is not None
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_simulations_instance()
 
@@ -483,7 +482,6 @@ class FireSimTopologyWithPasses:
         @parallel
         def kill_switch_wrapper(runfarm: RunFarm) -> None:
             my_node = runfarm.lookup_by_ip_addr(env.host_string)
-            assert my_node is not None
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_switches_instance()
 
@@ -519,10 +517,7 @@ class FireSimTopologyWithPasses:
         """ extra passes needed to do runworkload. """
 
         if isinstance(self.run_farm, AWSEC2F1):
-            if use_mock_instances_for_testing:
-                self.run_farm.bind_mock_instances_to_objects()
-            else:
-                self.run_farm.bind_real_instances_to_objects()
+            self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
 

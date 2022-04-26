@@ -195,8 +195,8 @@ class AWSEC2F1(RunFarm):
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice, timeout, always_expand)
         f1_4s = launch_run_instances('f1.4xlarge', num_f1_4xlarges, runfarmtag,
-                                      runinstancemarket, spotinterruptionbehavior,
-                                      spotmaxprice, timeout, always_expand)
+                                     runinstancemarket, spotinterruptionbehavior,
+                                     spotmaxprice, timeout, always_expand)
         m4_16s = launch_run_instances('m4.16xlarge', num_m4_16xlarges, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice, timeout, always_expand)
@@ -204,9 +204,8 @@ class AWSEC2F1(RunFarm):
                                      runinstancemarket, spotinterruptionbehavior,
                                      spotmaxprice, timeout, always_expand)
 
-        # wait for instances to finish launching
-        # TODO: maybe we shouldn't do this, but just let infrasetup block. That
-        # way we get builds out of the way while waiting for instances to launch
+        # wait for instances to get to running state, so that they have been
+        # assigned IP addresses
         wait_on_instance_launches(f1_16s, 'f1.16xlarges')
         wait_on_instance_launches(f1_4s, 'f1.4xlarges')
         wait_on_instance_launches(m4_16s, 'm4.16xlarges')
