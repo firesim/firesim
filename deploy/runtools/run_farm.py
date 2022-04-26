@@ -13,6 +13,7 @@ from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
 import pprint
 
+from runtools.run_farm_instances import MockBoto3Instance, M4_16, F1Inst, Inst, FPGAInst
 from awstools.awstools import instances_sorted_by_avail_ip, get_run_instances_by_tag_type, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, terminate_instances, get_instance_ids_for_instances, aws_resource_names
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
@@ -21,7 +22,6 @@ from typing import Any, Dict, Optional, List, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
     from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
-    from runtools.run_farm_instances import MockBoto3Instance, M4_16, F1Inst, Inst, FPGAInst
 
 rootLogger = logging.getLogger()
 
@@ -169,6 +169,11 @@ class AWSEC2F1(RunFarm):
         for index, instance in enumerate(available_f1_2_instances):
             self.f1_2s[index].assign_boto3_instance_object(instance)
 
+    def post_launch_binding(self, mock: bool = False) -> None:
+        if mock:
+            self.bind_mock_instances_to_objects()
+        else:
+            self.bind_real_instances_to_objects()
 
     def launch_run_farm(self) -> None:
         """ Launch the run farm. """
@@ -287,14 +292,14 @@ class AWSEC2F1(RunFarm):
             rootLogger.critical("Termination cancelled.")
 
     def get_all_host_nodes(self) -> List[Inst]:
-        """ Get inst objects for all host nodes in the run farm that are bound to
-        a real instance. """
-        allinsts = [*self.f1_16s, *self.f1_2s, *self.f1_4s, *self.m4_16s]
-        return [inst for inst in allinsts if inst.boto3_instance_object is not None]
+        return [*self.f1_16s, *self.f1_2s, *self.f1_4s, *self.m4_16s]
+
+    def get_all_bound_host_nodes(self) -> List[Inst]:
+        return [inst for inst in self.get_all_host_nodes() if inst.is_bound_to_real_instance()]
 
     def lookup_by_ip_addr(self, ipaddr) -> Optional[Inst]:
         """ Get an instance object from its IP address. """
-        for host_node in self.get_all_host_nodes():
+        for host_node in self.get_all_bound_host_nodes():
             if host_node.get_ip() == ipaddr:
                 return host_node
         assert False, f"Unable to find host node by {ipaddr} host name"
@@ -367,13 +372,14 @@ class ExternallyProvisioned(RunFarm):
         return
 
     def get_all_host_nodes(self) -> List[Inst]:
-        """ Get inst objects for all host nodes in the run farm that are bound to
-        a real instance. """
         return self.fpga_nodes
+
+    def get_all_bound_host_nodes(self) -> List[Inst]:
+        return self.get_all_host_nodes()
 
     def lookup_by_ip_addr(self, ipaddr: str) -> Inst:
         """ Get an instance object from its IP address. """
-        for host_node in self.get_all_host_nodes():
+        for host_node in self.get_all_bound_host_nodes():
             if host_node.get_ip() == ipaddr:
                 return host_node
         assert False, f"Unable to find host node by {ipaddr} host name"

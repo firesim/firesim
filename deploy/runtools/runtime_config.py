@@ -299,13 +299,6 @@ class InnerRuntimeConfiguration:
         self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
         self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
 
-        if 'launch_instances_timeout_minutes' in runtime_dict['run_farm']:
-            self.launch_timeout = timedelta(minutes=int(runtime_dict['run_farm']['launch_instances_timeout_minutes']))
-        else:
-            self.launch_timeout = timedelta() # default to legacy behavior of not waiting
-
-        self.always_expand = runtime_dict['run_farm'].get('always_expand_runfarm', "yes") == "yes"
-
         # Default values
         self.trace_enable = False
         self.trace_select = "0"

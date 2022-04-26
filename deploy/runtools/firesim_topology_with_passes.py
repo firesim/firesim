@@ -15,13 +15,14 @@ from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummySe
 from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from util.streamlogger import StreamLogger
+from runtools.run_farm import AWSEC2F1
+from runtools.run_farm_instances import FPGAInst
 
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
-    from runtools.run_farm import RunFarm, AWSEC2F1
+    from runtools.run_farm import RunFarm
     from runtools.runtime_config import RuntimeHWDB
     from runtools.workload import WorkloadConfig
-    from runtools.run_farm_instances import FPGAInst
 
 rootLogger = logging.getLogger()
 
@@ -202,6 +203,7 @@ class FireSimTopologyWithPasses:
                 serverind += 1
                 if len(servers) == serverind:
                     return
+
         assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
     def pass_simple_networked_host_node_mapping(self) -> None:
@@ -425,7 +427,7 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.infrasetup_instance()
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -448,7 +450,7 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_switches_instance()
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -465,7 +467,7 @@ class FireSimTopologyWithPasses:
         """ Passes that kill the simulator. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
 
         @parallel
         def kill_switch_wrapper(runfarm: RunFarm) -> None:
@@ -511,7 +513,7 @@ class FireSimTopologyWithPasses:
             else:
                 self.run_farm.bind_real_instances_to_objects()
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_host_nodes()]
+        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
         with StreamLogger('stdout'), StreamLogger('stderr'):

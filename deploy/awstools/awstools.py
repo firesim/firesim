@@ -78,7 +78,7 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     # practise it should resolve nearly instantly on an initialized EC2 instance.
     curl_connection_timeout = 10
     with settings(ok_ret_codes=[0,28]), hide('everything'):
-        res = local(f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/{url_ext}", capture=True)
+        res = local(f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}", capture=True)
         rootLogger.debug(res.stdout)
         rootLogger.debug(res.stderr)
 

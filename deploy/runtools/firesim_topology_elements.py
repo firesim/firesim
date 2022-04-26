@@ -224,7 +224,7 @@ class FireSimServerNode(FireSimNode):
         return self.server_hardware_config
 
     def get_resolved_server_hardware_config(self) -> RuntimeHWConfig:
-        assert self.server_hardware_config is not None and isinstance(self.server_hardware_config, RuntimeHWConfig)
+        assert self.server_hardware_config is not None and not isinstance(self.server_hardware_config, str)
         return self.server_hardware_config
 
     def assign_mac_address(self, macaddr: MacAddress) -> None:

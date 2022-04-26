@@ -17,22 +17,22 @@
 aws_ec2_f1_run_farm:
     run_farm_type: AWSEC2F1
     args:
-		# REQUIRED: tag to apply to run farm hosts
+        # REQUIRED: tag to apply to run farm hosts
         run_farm_tag: mainrunfarm
-		# REQUIRED: run farm hosts to spawn
+        # REQUIRED: run farm hosts to spawn
         f1_16xlarges: 0
         m4_16xlarges: 0
         f1_4xlarges: 0
         f1_2xlarges: 1
-		# REQUIRED: TODO
-		always_expand_runfarm: true
-		# REQUIRED: TODO
-		launch_instances_timeout_minutes: 60
-		# REQUIRED: run farm host market to use (ondemand or spot)
+        # REQUIRED: TODO
+        always_expand_runfarm: true
+        # REQUIRED: TODO
+        launch_instances_timeout_minutes: 60
+        # REQUIRED: run farm host market to use (ondemand or spot)
         run_instance_market: ondemand
-		# REQUIRED: if using spot instances, determine the interrupt behavior
+        # REQUIRED: if using spot instances, determine the interrupt behavior
         spot_interruption_behavior: terminate
-		# REQUIRED: if using spot instances, determine the max price
+        # REQUIRED: if using spot instances, determine the max price
         spot_max_price: ondemand
         # REQUIRED: default location of the simulation directory on the run farm host
         default_simulation_dir: /home/centos
@@ -41,14 +41,14 @@ aws_ec2_f1_run_farm:
 local_run_farm:
     run_farm_type: ExternallyProvisioned
     args:
-		# REQUIRED: defaults used for all run farm hosts
+        # REQUIRED: defaults used for all run farm hosts
         default_num_fpgas: 4
         default_platform: vitis
         default_simulation_dir: /scratch/abejgonza
         # REQUIRED: List of IP addresses (or "localhost"). Each can have multiple OPTIONAL
         # arguments, called "override_*", corresponding to the "default_*" arguments specified
-		# above. Each "override_*" argument overrides the corresponding "default_*" argument for
-		# that specific run host
+        # above. Each "override_*" argument overrides the corresponding "default_*" argument for
+        # that specific run host
         #
         # Ex:
         # run_farm_hosts:

@@ -4,10 +4,11 @@ topology. """
 from __future__ import  annotations
 
 from runtools.user_topology import UserTopologies
+from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode, FireSimNode
 
 from typing import List, Callable, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
-    from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode, FireSimNode
+    from runtools.firesim_topology_elements import FireSimNode
 
 class FireSimTopology(UserTopologies):
     """ A FireSim Topology consists of a list of root FireSimNodes, which
