@@ -43,8 +43,8 @@ local_run_farm:
     args:
         # REQUIRED: defaults used for all run farm hosts
         default_num_fpgas: 4
-        default_platform: vitis
-        default_simulation_dir: /scratch/abejgonza
+        default_platform: VitisInst
+        default_simulation_dir: /scratch/username
         # REQUIRED: List of IP addresses (or "localhost"). Each can have multiple OPTIONAL
         # arguments, called "override_*", corresponding to the "default_*" arguments specified
         # above. Each "override_*" argument overrides the corresponding "default_*" argument for

@@ -318,13 +318,13 @@ class ExternallyProvisioned(RunFarm):
         self._parse_args()
 
     def _parse_args(self) -> None:
-        dispatch_dict = dict([(x.NAME, x) for x in inheritors(FPGAInst)])
+        dispatch_dict = dict([(x.__name__, x) for x in inheritors(FPGAInst)])
 
         default_num_fpgas = self.args.get("default_num_fpgas")
         default_platform = self.args.get("default_platform")
         default_simulation_dir = self.args.get("default_simulation_dir")
 
-        runhosts_list = self.args["run_hosts"]
+        runhosts_list = self.args["run_farm_hosts"]
 
         self.fpga_nodes = []
 

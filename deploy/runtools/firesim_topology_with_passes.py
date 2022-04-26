@@ -267,7 +267,6 @@ class FireSimTopologyWithPasses:
         networked config, """
 
         # enforce that this is only no net in all other non-EC2 cases
-        assert isinstance(self.run_farm, AWSEC2F1)
         if isinstance(self.run_farm, AWSEC2F1):
             if self.firesimtopol.custom_mapper is None:
                 """ Use default mapping strategy. The topol has not specified a
@@ -292,6 +291,18 @@ class FireSimTopologyWithPasses:
                 mapperfunc()
             else:
                 assert False, "IMPROPER MAPPING CONFIGURATION"
+        else:
+            # default to no_net for everything
+            assert self.firesimtopol.custom_mapper is None
+            # if your roots are servers, just pack as tightly as possible, since
+            # you have no_net_config
+            if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
+                # all roots are servers, so we're in no_net_config
+                # if the user has specified any 16xlarges, we assign to them first
+                self.pass_no_net_host_mapping()
+            else:
+                assert False, "Only supporting no_net_config's for non-AWS use cases"
+
 
     def pass_apply_default_hwconfig(self) -> None:
         """ This is the default mapping pass for hardware configurations - it
