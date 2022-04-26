@@ -94,7 +94,7 @@ def get_localhost_instance_id() -> Optional[str]:
         A ``str`` of the instance id or ``None``
     """
 
-    return get_localhost_instance_info("latest/meta-data/instance-id")
+    return get_localhost_instance_info("meta-data/instance-id")
 
 def get_localhost_instance_tags() -> Dict[str, Any]:
     """Get current manager tags.
