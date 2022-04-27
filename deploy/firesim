@@ -293,17 +293,22 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "target-config link-latency 6405".',
                         default="")
     parser.add_argument('-f', '--terminatesomef116', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.16xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.16xlarges.',
                         default=-1)
     parser.add_argument('-g', '--terminatesomef12', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.2xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.2xlarges.',
                         default=-1)
     parser.add_argument('-i', '--terminatesomef14', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.4xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.4xlarges.',
                         default=-1)
     parser.add_argument('-m', '--terminatesomem416', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
+                        help='DEPRECATED. Use --terminatesome=m4.16xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
+    def terminatesomesplitter(raw_arg):
+        split_arg = raw_arg.split(":")
+        return split_arg[0], int(split_arg[1])
+    parser.add_argument('--terminatesome', action='append', type=terminatesomesplitter,
+                        help='Only used by terminaterunfarm. Used to specify a restriction on how many instances to terminate. E.g., --terminatesome=f1.2xlarge:2 will terminate only 2 of the f1.2xlarge instances in the runfarm, regardless of what other instances are in the runfarm. This argument can be specified multiple times to terminate additional instance types/counts. Behavior when specifying the same instance type multiple times is undefined. This replaces the old --terminatesome{f116,f12,f14,m416} arguments. Behavior when specifying these old-style terminatesome flags and this new style flag at the same time is also undefined.')
     parser.add_argument('-q', '--forceterminate', action='store_true',
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,

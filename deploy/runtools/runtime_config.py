@@ -396,9 +396,22 @@ class RuntimeConfig:
 
     def terminate_run_farm(self) -> None:
         """ directly called by top-level terminaterunfarm command. """
-        args = self.args
-        self.run_farm.terminate_run_farm(args.terminatesomef116, args.terminatesomef14, args.terminatesomef12,
-                                        args.terminatesomem416, args.forceterminate)
+        terminate_some_dict = {}
+        if self.args.terminatesome is not None:
+            for pair in self.args.terminatesome:
+                terminate_some_dict[pair[0]] = pair[1]
+
+        def old_style_terminate_args(instance_type, arg_val, arg_flag_str):
+            if arg_val != -1:
+                rootLogger.critical("WARNING: You are using the old-style " + arg_flag_str + " flag. See the new --terminatesome flag in help. The old-style flag will be removed in the next major FireSim release (1.15.X).")
+                terminate_some_dict[instance_type] = arg_val
+
+        old_style_terminate_args('f1.16xlarge', self.args.terminatesomef116, '--terminatesomef116')
+        old_style_terminate_args('f1.4xlarge', self.args.terminatesomef14, '--terminatesomef14')
+        old_style_terminate_args('f1.2xlarge', self.args.terminatesomef12, '--terminatesomef12')
+        old_style_terminate_args('m4.16xlarge', self.args.terminatesomem416, '--terminatesomem416')
+
+        self.run_farm.terminate_run_farm(terminate_some_dict, self.args.forceterminate)
 
     def infrasetup(self) -> None:
         """ directly called by top-level infrasetup command. """

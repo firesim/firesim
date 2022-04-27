@@ -35,6 +35,19 @@ rootLogger = logging.getLogger()
 # by running scripts/update_test_amis.py
 f1_ami_name = "FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
+class MockBoto3Instance:
+    """ This is used for testing without actually launching instances. """
+
+    # don't use 0 unless you want stuff copied to your own instance.
+    base_ip: int = 1
+    ip_addr_int: int
+    private_ip_address: str
+
+    def __init__(self) -> None:
+        self.ip_addr_int = MockBoto3Instance.base_ip
+        MockBoto3Instance.base_ip += 1
+        self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
+
 def depaginated_boto_query(client, operation, operation_params, return_key):
     paginator = client.get_paginator(operation)
     page_iterator = paginator.paginate(**operation_params)

@@ -8,7 +8,6 @@ from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerN
 from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any
 if TYPE_CHECKING:
     from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
-    from runtools.run_farm_instances import FPGAInst
 
 class UserTopologies:
     """ A class that just separates out user-defined/configurable topologies
@@ -50,19 +49,20 @@ class UserTopologies:
             leafswitch.add_downlinks(servergroup)
 
         def custom_mapper(fsim_topol_with_passes: FireSimTopologyWithPasses) -> None:
-            run_farm_nodes = fsim_topol_with_passes.run_farm.get_all_host_nodes()
-            switch_nodes = list(filter(lambda x: not x.is_fpga_node(), run_farm_nodes))
-            fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
-
             for i, rswitch in enumerate(rootswitches):
-                switch_nodes[i].add_switch(rswitch)
+                switch_inst_type = fsim_topol_with_passes.run_farm.mapper_get_default_switch_host_inst_type_name()
+                switch_inst = fsim_topol_with_passes.run_farm.mapper_alloc_instance(switch_inst_type)
+                switch_inst.add_switch(rswitch)
 
             for j, lswitch in enumerate(leafswitches):
-                fpga_nodes[j].add_switch(lswitch)
+                numsims = len(servers[j])
+                inst_type = fsim_topol_with_passes.run_farm.mapper_get_min_sim_host_inst_type_name(numsims)
+                sim_inst = fsim_topol_with_passes.run_farm.mapper_alloc_instance(inst_type)
+                sim_inst.add_switch(lswitch)
                 for sim in servers[j]:
-                    fpga_nodes[j].add_simulation(sim)
+                    sim_inst.add_simulation(sim)
 
-        self.custom_mapper = custom_mapper # type: ignore
+        self.custom_mapper = custom_mapper
 
     def clos_2_8_2(self) -> None:
         """ clos topol with:
@@ -115,31 +115,34 @@ class UserTopologies:
             stuff you created in the topology itself, which we expect will be
             useful for performing the mapping."""
 
-            run_farm_nodes = fsim_topol_with_passes.run_farm.get_all_host_nodes()
-            switch_nodes = list(filter(lambda x: not x.is_fpga_node(), run_farm_nodes))
-            fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
+            # map the fat tree onto one switch host instance (for core switches)
+            # and two 8-sim-slot (e.g. 8-fpga) instances
+            # (e.g., two pods of aggr/edge/4sims per f1.16xlarge)
 
-            # map the fat tree onto one switch node (i.e m4.16xlarge) (for core switches)
-            # and two fpga nodes with 8 fpgas (i.e. f1.16xlarges) (two pods of aggr/edge/4sims per fpga node)
+            switch_inst_type = fsim_topol_with_passes.run_farm.mapper_get_default_switch_host_inst_type_name()
+            switch_inst = fsim_topol_with_passes.run_farm.mapper_alloc_instance(switch_inst_type)
             for core in coreswitches:
-                switch_nodes[0].add_switch(core)
+                switch_inst.add_switch(core)
+
+            eight_sim_host_type = fsim_topol_with_passes.run_farm.mapper_get_min_sim_host_inst_type_name(8)
+            sim_hosts = [fsim_topol_with_passes.run_farm.mapper_alloc_instance(eight_sim_host_type) for _ in range(2)]
 
             for aggrsw in aggrswitches[:4]:
-                fpga_nodes[0].add_switch(aggrsw)
+                sim_hosts[0].add_switch(aggrsw)
             for aggrsw in aggrswitches[4:]:
-                fpga_nodes[1].add_switch(aggrsw)
+                sim_hosts[1].add_switch(aggrsw)
 
             for edgesw in edgeswitches[:4]:
-                fpga_nodes[0].add_switch(edgesw)
+                sim_hosts[0].add_switch(edgesw)
             for edgesw in edgeswitches[4:]:
-                fpga_nodes[1].add_switch(edgesw)
+                sim_hosts[1].add_switch(edgesw)
 
             for sim in servers[:8]:
-                fpga_nodes[0].add_simulation(sim)
+                sim_hosts[0].add_simulation(sim)
             for sim in servers[8:]:
-                fpga_nodes[1].add_simulation(sim)
+                sim_hosts[1].add_simulation(sim)
 
-        self.custom_mapper = custom_mapper # type: ignore
+        self.custom_mapper = custom_mapper
 
     def example_multilink(self) -> None:
         self.roots = [FireSimSwitchNode()]
@@ -175,7 +178,7 @@ class UserTopologies:
         midswitches[1].add_downlinks([servers[1]])
 
     def small_hierarchy_8sims(self) -> None:
-        self.custom_mapper = 'mapping_use_one_fpga_node'
+        self.custom_mapper = 'mapping_use_one_8_slot_node'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(4)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(4)]
@@ -184,7 +187,7 @@ class UserTopologies:
             midlevel[swno].add_downlinks(servers[swno])
 
     def small_hierarchy_2sims(self) -> None:
-        self.custom_mapper = 'mapping_use_one_fpga_node'
+        self.custom_mapper = 'mapping_use_one_8_slot_node'
         self.roots = [FireSimSwitchNode()]
         midlevel = [FireSimSwitchNode() for x in range(1)]
         servers = [[FireSimServerNode() for x in range(2)] for x in range(1)]

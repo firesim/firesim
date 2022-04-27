@@ -16,7 +16,6 @@ from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from util.streamlogger import StreamLogger
 from runtools.run_farm import AWSEC2F1
-from runtools.run_farm_instances import FPGAInst
 
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
@@ -192,28 +191,22 @@ class FireSimTopologyWithPasses:
         servers = self.firesimtopol.get_dfs_order_servers()
         serverind = 0
 
-        run_farm_nodes = self.run_farm.get_all_host_nodes()
-        fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
-        fpga_nodes.sort(reverse=True, key=lambda x: x.get_num_fpga_slots_max()) # largest fpga nodes 1st
+        while len(servers) > serverind:
+            # this call will exit(1) if no such instances are available.
+            instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(1)
+            allocd_instance = self.run_farm.mapper_alloc_instance(instance_type)
 
-        # find unused fpga (starting from largest)
-        for node in fpga_nodes:
-            for slot in range(node.get_num_fpga_slots_max()):
-                node.add_simulation(servers[serverind])
+            for x in range(allocd_instance.MAX_SIM_SLOTS_ALLOWED):
+                allocd_instance.add_simulation(servers[serverind])
                 serverind += 1
                 if len(servers) == serverind:
                     return
-
-        assert serverind == len(servers), "ERR: all servers were not assigned to a host."
 
     def pass_simple_networked_host_node_mapping(self) -> None:
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
 
-        run_farm_nodes = self.run_farm.get_all_host_nodes()
-        switch_nodes = list(filter(lambda x: not x.is_fpga_node(), run_farm_nodes))
-        fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
-        fpga_nodes.sort(key=lambda x: x.get_num_fpga_slots_max()) # smallest fpga nodes 1st
+        switch_host_inst_type = self.run_farm.mapper_get_default_switch_host_inst_type_name()
 
         for switch in switches:
             # Filter out FireSimDummyServerNodes for actually deploying.
@@ -222,40 +215,36 @@ class FireSimTopologyWithPasses:
             alldownlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in alldownlinknodes]):
                 # all downlinks are switches
-                for node in switch_nodes:
-                    if len(node.switch_slots) == 0:
-                        node.add_switch(switch)
+                self.run_farm.mapper_alloc_instance(switch_host_inst_type).add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
                 downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
                 # all downlinks are simulations
-                for node in fpga_nodes:
-                    if len(node.fpga_slots) == 0 and node.get_num_fpga_slots_max() >= len(downlinknodes):
-                        node.add_switch(switch)
-                        for server in downlinknodes:
-                            assert isinstance(server, FireSimServerNode)
-                            node.add_simulation(server)
+                num_downlinks = len(downlinknodes)
+
+                inst_type_for_downlinks = self.run_farm.mapper_get_min_sim_host_inst_type_name(num_downlinks)
+                inst = self.run_farm.mapper_alloc_instance(inst_type_for_downlinks)
+
+                inst.add_switch(switch)
+                for server in downlinknodes:
+                    inst.add_simulation(server)
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
-    def mapping_use_one_fpga_node(self) -> None:
-        """ Just put everything on one fpga node """
+    def mapping_use_one_8_slot_node(self) -> None:
+        """ Just put everything on one 8 slot node """
         switches = self.firesimtopol.get_dfs_order_switches()
-
-        fpga_nodes_used = 0
-        run_farm_nodes = self.run_farm.get_all_host_nodes()
-        fpga_nodes = cast(List[FPGAInst], list(filter(lambda x: x.is_fpga_node(), run_farm_nodes)))
+        instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(8)
 
         for switch in switches:
-            fpga_nodes[fpga_nodes_used].add_switch(switch)
+            inst = self.run_farm.mapper_alloc_instance(instance_type)
+            inst.add_switch(switch)
             alldownlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
                 downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
                 for server in downlinknodes:
-                    assert isinstance(server, FireSimServerNode)
-                    fpga_nodes[fpga_nodes_used].add_simulation(server)
+                    inst.add_simulation(server)
             elif any([isinstance(x, FireSimServerNode) for x in downlinknodes]):
                 assert False, "MIXED DOWNLINKS NOT SUPPORTED."
-        fpga_nodes_used += 1
 
     def pass_perform_host_node_mapping(self) -> None:
         """ This pass assigns host nodes to nodes in the abstract FireSim
@@ -438,7 +427,7 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.infrasetup_instance()
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -461,7 +450,7 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_switches_instance()
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -477,7 +466,7 @@ class FireSimTopologyWithPasses:
         """ Passes that kill the simulator. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
 
         @parallel
         def kill_switch_wrapper(runfarm: RunFarm) -> None:
@@ -519,7 +508,7 @@ class FireSimTopologyWithPasses:
         if isinstance(self.run_farm, AWSEC2F1):
             self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.get_ip() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
         with StreamLogger('stdout'), StreamLogger('stderr'):

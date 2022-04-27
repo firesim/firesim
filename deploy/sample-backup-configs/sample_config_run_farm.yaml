@@ -19,11 +19,6 @@ aws_ec2_f1_run_farm:
     args:
         # REQUIRED: tag to apply to run farm hosts
         run_farm_tag: mainrunfarm
-        # REQUIRED: run farm hosts to spawn
-        f1_16xlarges: 0
-        m4_16xlarges: 0
-        f1_4xlarges: 0
-        f1_2xlarges: 1
         # REQUIRED: TODO
         always_expand_runfarm: true
         # REQUIRED: TODO
@@ -36,6 +31,15 @@ aws_ec2_f1_run_farm:
         spot_max_price: ondemand
         # REQUIRED: default location of the simulation directory on the run farm host
         default_simulation_dir: /home/centos
+        # REQUIRED: run farm hosts to spawn
+        run_farm_hosts:
+          # fpga instances
+          - f1.16xlarges: 0
+          - f1.4xlarges: 0
+          - f1.2xlarges: 1
+          # switch-only instances
+          - m4.16xlarges: 0
+
 
 # Unmanaged list of run farm hosts. Assumed that they are pre-setup to run simulations.
 local_run_farm:

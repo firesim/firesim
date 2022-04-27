@@ -14,9 +14,10 @@ from util.streamlogger import StreamLogger
 from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.workload import JobConfig
-    from runtools.run_farm_instances import Inst, EC2Inst
+    from runtools.run_farm import Inst
     from runtools.runtime_config import RuntimeHWConfig
     from runtools.utils import MacAddress
+    from runtools.run_farm_deploy_managers import EC2InstanceDeployManager
 
 rootLogger = logging.getLogger()
 
@@ -82,7 +83,7 @@ class FireSimLink:
     def link_hostserver_ip(self) -> str:
         """ Get the IP address used for this Link. This should only be called for
         links implemented with SocketPorts. """
-        return self.get_uplink_side().get_host_instance().get_ip()
+        return self.get_uplink_side().get_host_instance().instance_deploy_manager.get_hostname()
 
     def link_crosses_hosts(self) -> bool:
         """ Return True if the user has mapped the two endpoints of this link to
@@ -248,8 +249,8 @@ class FireSimServerNode(FireSimNode):
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
-                assert isinstance(host_inst, EC2Inst)
-                allocd_device = host_inst.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
                 # connect the /dev/nbdX device to the rootfs
                 run("""sudo qemu-nbd -c {devname} {rootfs}""".format(devname=allocd_device, rootfs=rootfsname))
@@ -264,8 +265,8 @@ class FireSimServerNode(FireSimNode):
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
-                assert isinstance(host_inst, EC2Inst)
-                allocd_device = host_inst.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
 
     def diagramstr(self) -> str:
@@ -341,8 +342,8 @@ class FireSimServerNode(FireSimNode):
 
                 if is_qcow2:
                     host_inst = self.get_host_instance()
-                    assert isinstance(host_inst, EC2Inst)
-                    rfsname = host_inst.nbd_tracker.get_nbd_for_imagename(rfsname)
+                    assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                    rfsname = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rfsname)
                 else:
                     rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
 
@@ -485,8 +486,8 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
-                assert isinstance(host_inst, EC2Inst)
-                allocd_device = host_inst.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
 
 
