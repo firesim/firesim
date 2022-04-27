@@ -10,6 +10,7 @@ from fabric.api import run, local, warn_only, get # type: ignore
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
 from util.streamlogger import StreamLogger
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -173,46 +174,33 @@ class FireSimNode(metaclass=abc.ABCMeta):
 class FireSimServerNode(FireSimNode):
     """ This is a simulated server instance in FireSim. """
     SERVERS_CREATED: int = 0
+    job: Optional[JobConfig]
+    server_id_internal: int
+    mac_address: Optional[MacAddress]
     server_hardware_config: Optional[Union[RuntimeHWConfig, str]]
     server_link_latency: Optional[int]
     server_bw_max: Optional[int]
     server_profile_interval: Optional[int]
-    trace_enable: Optional[bool]
-    trace_select: Optional[str]
-    trace_start: Optional[str]
-    trace_end: Optional[str]
-    trace_output_format: Optional[str]
-    autocounter_readrate: Optional[int]
-    zerooutdram: Optional[bool]
-    disable_asserts: Optional[bool]
-    print_start: Optional[str]
-    print_end: Optional[str]
-    print_cycle_prefix: Optional[bool]
-    job: Optional[JobConfig]
-    server_id_internal: int
-    mac_address: Optional[MacAddress]
+    tracerv_config: Optional[TracerVConfig]
+    autocounter_config: Optional[AutoCounterConfig]
+    hostdebug_config: Optional[HostDebugConfig]
+    synthprint_config: Optional[SynthPrintConfig]
 
     def __init__(self, server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None, server_link_latency: Optional[int] = None,
                  server_bw_max: Optional[int] = None, server_profile_interval: Optional[int] = None,
-                 trace_enable: Optional[bool] = None, trace_select: Optional[str] = None, trace_start: Optional[str] = None, trace_end: Optional[str] = None, trace_output_format: Optional[str] = None, autocounter_readrate: Optional[int] = None,
-                 zerooutdram: Optional[bool] = None, disable_asserts: Optional[bool] = None,
-                 print_start: Optional[str] = None, print_end: Optional[str] = None, print_cycle_prefix: Optional[bool] = None):
+                 tracerv_config: Optional[TracerVConfig] = None,
+                 autocounter_config: Optional[AutoCounterConfig] = None,
+                 hostdebug_config: Optional[HostDebugConfig] = None,
+                 synthprint_config: Optional[SynthPrintConfig] = None):
         super().__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
         self.server_bw_max = server_bw_max
         self.server_profile_interval = server_profile_interval
-        self.trace_enable = trace_enable
-        self.trace_select = trace_select
-        self.trace_start = trace_start
-        self.trace_end = trace_end
-        self.trace_output_format = trace_output_format
-        self.autocounter_readrate = autocounter_readrate
-        self.zerooutdram = zerooutdram
-        self.disable_asserts = disable_asserts
-        self.print_start = print_start
-        self.print_end = print_end
-        self.print_cycle_prefix = print_cycle_prefix
+        self.tracerv_config = tracerv_config
+        self.autocounter_config = autocounter_config
+        self.hostdebug_config = hostdebug_config
+        self.synthprint_config = synthprint_config
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         self.mac_address = None
@@ -285,6 +273,14 @@ class FireSimServerNode(FireSimNode):
         if self.uplinks:
             shmemportname = self.uplinks[0].get_global_link_id()
 
+        assert self.server_link_latency is not None
+        assert self.server_bw_max is not None
+        assert self.server_profile_interval is not None
+        assert self.tracerv_config is not None
+        assert self.autocounter_config is not None
+        assert self.hostdebug_config is not None
+        assert self.synthprint_config is not None
+
         all_macs = [self.get_mac_address()]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()])
         all_linklatencies = [self.server_link_latency]
@@ -292,17 +288,14 @@ class FireSimServerNode(FireSimNode):
         all_bootbins = [self.get_bootbin_name()]
         all_shmemportnames = [shmemportname]
 
-        assert (self.server_profile_interval is not None and all_bootbins is not None and self.trace_enable is not None and
-            self.trace_select is not None and self.trace_start is not None and self.trace_end is not None and self.trace_output_format is not None and
-            self.autocounter_readrate is not None and all_shmemportnames is not None and self.zerooutdram is not None and self.disable_asserts is not None and
-            self.print_start is not None and self.print_end is not None and self.print_cycle_prefix is not None)
-
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
-            self.server_profile_interval, all_bootbins, self.trace_enable,
-            self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
-            self.autocounter_readrate, all_shmemportnames, self.zerooutdram, self.disable_asserts,
-            self.print_start, self.print_end, self.print_cycle_prefix)
+            self.server_profile_interval, all_bootbins,
+            all_shmemportnames,
+            self.tracerv_config,
+            self.autocounter_config,
+            self.hostdebug_config,
+            self.synthprint_config)
 
         run(runcommand)
 
@@ -523,27 +516,40 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
+        assert self.server_link_latency is not None
+        assert self.server_bw_max is not None
+        assert self.server_profile_interval is not None
+        assert self.tracerv_config is not None
+        assert self.autocounter_config is not None
+        assert self.hostdebug_config is not None
+        assert self.synthprint_config is not None
+
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling(x).get_mac_address() for x in range(1, num_siblings)]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)])
         all_bootbins = [self.get_bootbin_name()] + [self.supernode_get_sibling(x).get_bootbin_name() for x in range(1, num_siblings)]
-        all_linklatencies = [self.server_link_latency] + [self.supernode_get_sibling(x).server_link_latency for x in range(1, num_siblings)]
-        all_maxbws = [self.server_bw_max] + [self.supernode_get_sibling(x).server_bw_max for x in range(1, num_siblings)]
+        all_linklatencies = [self.server_link_latency]
+        for x in range(1, num_siblings):
+            sibling = self.supernode_get_sibling(x)
+            assert sibling.server_link_latency is not None
+            all_linklatencies.append(sibling.server_link_latency)
+        all_maxbws = [self.server_bw_max]
+        for x in range(1, num_siblings):
+            sibling = self.supernode_get_sibling(x)
+            assert sibling.server_bw_max is not None
+            all_maxbws.append(sibling.server_bw_max)
 
         all_shmemportnames = ["default" for x in range(num_siblings)]
         if self.uplinks:
             all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [self.supernode_get_sibling(x).uplinks[0].get_global_link_id() for x in range(1, num_siblings)]
 
-        assert (self.server_profile_interval is not None and all_bootbins is not None and self.trace_enable is not None and
-            self.trace_select is not None and self.trace_start is not None and self.trace_end is not None and self.trace_output_format is not None and
-            self.autocounter_readrate is not None and all_shmemportnames is not None and self.zerooutdram is not None and self.disable_asserts is not None and
-            self.print_start is not None and self.print_end is not None and self.print_cycle_prefix is not None)
-
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
             slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
-            self.server_profile_interval, all_bootbins, self.trace_enable,
-            self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
-            self.autocounter_readrate, all_shmemportnames, self.zerooutdram, self.disable_asserts,
-            self.print_start, self.print_end, self.print_cycle_prefix)
+            self.server_profile_interval, all_bootbins,
+            all_shmemportnames,
+            self.tracerv_config,
+            self.autocounter_config,
+            self.hostdebug_config,
+            self.synthprint_config)
 
         run(runcommand)
 

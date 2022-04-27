@@ -14,6 +14,7 @@ from functools import reduce
 from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
 from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
 from runtools.run_farm import AWSEC2F1
 
@@ -51,27 +52,20 @@ class FireSimTopologyWithPasses:
     defaultswitchinglatency: int
     defaultnetbandwidth: int
     defaultprofileinterval: int
-    defaulttraceenable: bool
-    defaulttraceselect: str
-    defaulttracestart: str
-    defaulttraceend: str
-    defaulttraceoutputformat: str
-    defaultautocounterreadrate: int
-    defaultzerooutdram: bool
-    defaultdisableasserts: bool
-    defaultprintstart: str
-    defaultprintend: str
-    defaultprintcycleprefix: bool
+    defaulttracervconfig: TracerVConfig
+    defaultautocounterconfig: AutoCounterConfig
+    defaulthostdebugconfig: HostDebugConfig
+    defaultsynthprintconfig: SynthPrintConfig
     terminateoncompletion: bool
 
     def __init__(self, user_topology_name: str, no_net_num_nodes: int, run_farm: RunFarm, hwdb: RuntimeHWDB,
             defaulthwconfig: str, workload: WorkloadConfig, defaultlinklatency: int, defaultswitchinglatency: int,
             defaultnetbandwidth: int, defaultprofileinterval: int,
-            defaulttraceenable: bool, defaulttraceselect: str, defaulttracestart: str, defaulttraceend: str,
-            defaulttraceoutputformat: str,
-            defaultautocounterreadrate: int, terminateoncompletion: bool,
-            defaultzerooutdram: bool, defaultdisableasserts: bool,
-            defaultprintstart: str, defaultprintend: str, defaultprintcycleprefix: bool) -> None:
+            defaulttracervconfig: TracerVConfig,
+            defaultautocounterconfig: AutoCounterConfig,
+            defaulthostdebugconfig: HostDebugConfig,
+            defaultsynthprintconfig: SynthPrintConfig,
+            terminateoncompletion: bool) -> None:
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
@@ -84,18 +78,11 @@ class FireSimTopologyWithPasses:
         self.defaultswitchinglatency = defaultswitchinglatency
         self.defaultnetbandwidth = defaultnetbandwidth
         self.defaultprofileinterval = defaultprofileinterval
-        self.defaulttraceenable = defaulttraceenable
-        self.defaulttraceselect = defaulttraceselect
-        self.defaulttracestart = defaulttracestart
-        self.defaulttraceend = defaulttraceend
-        self.defaulttraceoutputformat = defaulttraceoutputformat
-        self.defaultautocounterreadrate = defaultautocounterreadrate
-        self.defaultzerooutdram = defaultzerooutdram
-        self.defaultdisableasserts = defaultdisableasserts
-        self.defaultprintstart = defaultprintstart
-        self.defaultprintend = defaultprintend
-        self.defaultprintcycleprefix = defaultprintcycleprefix
         self.terminateoncompletion = terminateoncompletion
+        self.defaulttracervconfig = defaulttracervconfig
+        self.defaultautocounterconfig = defaultautocounterconfig
+        self.defaulthostdebugconfig = defaulthostdebugconfig
+        self.defaultsynthprintconfig = defaultsynthprintconfig
 
         self.phase_one_passes()
 
@@ -321,8 +308,8 @@ class FireSimTopologyWithPasses:
             hw_cfg.get_deploytriplet_for_config()
             server.set_server_hardware_config(hw_cfg)
 
-    def pass_apply_default_network_params(self) -> None:
-        """ If the user has not set per-node network parameters in the topology,
+    def pass_apply_default_params(self) -> None:
+        """ If the user has not set per-node parameters in the topology,
         apply the defaults. """
         allnodes = self.firesimtopol.get_dfs_order()
 
@@ -343,29 +330,14 @@ class FireSimTopologyWithPasses:
                 # TODO: some of this stuff seems misplaced...
                 if node.server_profile_interval is None:
                     node.server_profile_interval = self.defaultprofileinterval
-                if node.trace_enable is None:
-                    node.trace_enable = self.defaulttraceenable
-                if node.trace_select is None:
-                    node.trace_select = self.defaulttraceselect
-                if node.trace_start is None:
-                    node.trace_start = self.defaulttracestart
-                if node.trace_end is None:
-                    node.trace_end = self.defaulttraceend
-                if node.trace_output_format is None:
-                    node.trace_output_format = self.defaulttraceoutputformat
-                if node.autocounter_readrate is None:
-                    node.autocounter_readrate = self.defaultautocounterreadrate
-                if node.zerooutdram is None:
-                    node.zerooutdram = self.defaultzerooutdram
-                if node.disable_asserts is None:
-                    node.disable_asserts = self.defaultdisableasserts
-                if node.print_start is None:
-                    node.print_start = self.defaultprintstart
-                if node.print_end is None:
-                    node.print_end = self.defaultprintend
-                if node.print_cycle_prefix is None:
-                    node.print_cycle_prefix = self.defaultprintcycleprefix
-
+                if node.tracerv_config is None:
+                    node.tracerv_config = self.defaulttracervconfig
+                if node.autocounter_config is None:
+                    node.autocounter_config = self.defaultautocounterconfig
+                if node.hostdebug_config is None:
+                    node.hostdebug_config = self.defaulthostdebugconfig
+                if node.synthprint_config is None:
+                    node.synthprint_config = self.defaultsynthprintconfig
 
     def pass_allocate_nbd_devices(self) -> None:
         """ allocate NBD devices. this must be done here to preserve the
@@ -390,7 +362,7 @@ class FireSimTopologyWithPasses:
         self.pass_compute_switching_tables()
         self.pass_perform_host_node_mapping() # TODO: we can know ports here?
         self.pass_apply_default_hwconfig()
-        self.pass_apply_default_network_params()
+        self.pass_apply_default_params()
         self.pass_assign_jobs()
         self.pass_allocate_nbd_devices()
 

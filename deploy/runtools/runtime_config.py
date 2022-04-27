@@ -17,6 +17,7 @@ from awstools.afitools import get_firesim_tagval_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 
@@ -102,16 +103,19 @@ class RuntimeHWConfig:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
 
-    def get_boot_simulation_command(self, slotid: int, all_macs: Sequence[Optional[MacAddress]],
-            all_rootfses: Sequence[Optional[str]], all_linklatencies: Sequence[Optional[int]],
-            all_netbws: Sequence[Optional[int]], profile_interval: int,
-            all_bootbinaries: List[str], trace_enable: bool,
-            trace_select: str, trace_start: str, trace_end: str,
-            trace_output_format: str,
-            autocounter_readrate: int, all_shmemportnames: List[str],
-            enable_zerooutdram: bool, disable_asserts_arg: bool,
-            print_start: str, print_end: str,
-            enable_print_cycle_prefix: bool) -> str:
+    def get_boot_simulation_command(self,
+            slotid: int,
+            all_macs: Sequence[MacAddress],
+            all_rootfses: Sequence[Optional[str]],
+            all_linklatencies: Sequence[int],
+            all_netbws: Sequence[int],
+            profile_interval: int,
+            all_bootbinaries: List[str],
+            all_shmemportnames: List[str],
+            tracerv_config: TracerVConfig,
+            autocounter_config: AutoCounterConfig,
+            hostdebug_config: HostDebugConfig,
+            synthprint_config: SynthPrintConfig) -> str:
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -119,7 +123,7 @@ class RuntimeHWConfig:
         runtime parameters currently. """
 
         # TODO: supernode support
-        tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
+        tracefile = "+tracefile=TRACEFILE" if tracerv_config.enable else ""
         autocounterfile = "+autocounter-filename-base=AUTOCOUNTERFILE"
 
         # this monstrosity boots the simulator, inside screen, inside script
@@ -127,14 +131,14 @@ class RuntimeHWConfig:
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
 
-        def array_to_plusargs(valuesarr, plusarg):
+        def array_to_plusargs(valuesarr: Sequence[Optional[Any]], plusarg: str) -> List[str]:
             args = []
             for index, arg in enumerate(valuesarr):
                 if arg is not None:
                     args.append("""{}{}={}""".format(plusarg, index, arg))
-            return " ".join(args) + " "
+            return args
 
-        def array_to_lognames(values, prefix):
+        def array_to_lognames(values: Sequence[Optional[Any]], prefix: str) -> List[str]:
             names = ["{}{}".format(prefix, i) if val is not None else None
                      for (i, val) in enumerate(values)]
             return array_to_plusargs(names, "+" + prefix)
@@ -150,9 +154,9 @@ class RuntimeHWConfig:
         command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
-        zero_out_dram = "+zero-out-dram" if (enable_zerooutdram) else ""
-        disable_asserts = "+disable-asserts" if (disable_asserts_arg) else ""
-        print_cycle_prefix = "+print-no-cycle-prefix" if not enable_print_cycle_prefix else ""
+        zero_out_dram = "+zero-out-dram" if (hostdebug_config.zero_out_dram) else ""
+        disable_asserts = "+disable-asserts" if (hostdebug_config.disable_synth_asserts) else ""
+        print_cycle_prefix = "+print-no-cycle-prefix" if not synthprint_config.cycle_prefix else ""
 
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
@@ -163,9 +167,28 @@ class RuntimeHWConfig:
         #other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
 
         # TODO: supernode support (tracefile, trace-select.. etc)
-        basecommand = f"""screen -S {screen_name} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) {run_device_placement} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1"""
+        permissive_driver_args = []
+        permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"]
+        permissive_driver_args += [run_device_placement]
+        permissive_driver_args += [f"+profile-interval={profile_interval}"]
+        permissive_driver_args += [zero_out_dram]
+        permissive_driver_args += [disable_asserts]
+        permissive_driver_args += command_macs
+        permissive_driver_args += command_rootfses
+        permissive_driver_args += command_niclogs
+        permissive_driver_args += command_blkdev_logs
+        permissive_driver_args += [f"{tracefile}", f"+trace-select={tracerv_config.select}", f"+trace-start={tracerv_config.start}", f"+trace-end={tracerv_config.end}", f"+trace-output-format={tracerv_config.output_format}", dwarf_file_name]
+        permissive_driver_args += [f"+autocounter-readrate={autocounter_config.readrate}", autocounterfile]
+        permissive_driver_args += [command_dromajo]
+        permissive_driver_args += [print_cycle_prefix, f"+print-start={synthprint_config.start}", f"+print-end={synthprint_config.end}"]
+        permissive_driver_args += command_linklatencies
+        permissive_driver_args += command_netbws
+        permissive_driver_args += command_shmemportnames
+        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {command_bootbinaries}"""
+        base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
+        screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
-        return basecommand
+        return screen_wrapped
 
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
@@ -243,17 +266,10 @@ class InnerRuntimeConfiguration:
     profileinterval: int
     launch_timeout: timedelta
     always_expand: bool
-    trace_enable: bool
-    trace_select: str
-    trace_start: str
-    trace_end: str
-    trace_output_format: str
-    autocounter_readrate: int
-    zerooutdram: bool
-    disable_asserts: bool
-    print_start: str
-    print_end: str
-    print_cycle_prefix: bool
+    tracerv_config: TracerVConfig
+    autocounter_config: AutoCounterConfig
+    hostdebug_config: HostDebugConfig
+    synthprint_config: SynthPrintConfig
     workload_name: str
     suffixtag: str
     terminateoncompletion: bool
@@ -299,35 +315,22 @@ class InnerRuntimeConfiguration:
         self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
         self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
 
-        # Default values
-        self.trace_enable = False
-        self.trace_select = "0"
-        self.trace_start = "0"
-        self.trace_end = "-1"
-        self.trace_output_format = "0"
-        self.autocounter_readrate = 0
-        self.zerooutdram = False
-        self.disable_asserts = False
-        self.print_start = "0"
-        self.print_end = "-1"
-        self.print_cycle_prefix = True
-
         if 'tracing' in runtime_dict:
-            self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
-            self.trace_select = runtime_dict['tracing'].get('selector', "0")
-            self.trace_start = runtime_dict['tracing'].get('start', "0")
-            self.trace_end = runtime_dict['tracing'].get('end', "-1")
-            self.trace_output_format = runtime_dict['tracing'].get('output_format', "0")
+            self.tracerv_config.enable = runtime_dict['tracing'].get('enable') == "yes"
+            self.tracerv_config.select = runtime_dict['tracing'].get('selector', "0")
+            self.tracerv_config.start = runtime_dict['tracing'].get('start', "0")
+            self.tracerv_config.end = runtime_dict['tracing'].get('end', "-1")
+            self.tracerv_config.output_format = runtime_dict['tracing'].get('output_format', "0")
         if 'autocounter' in runtime_dict:
-            self.autocounter_readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
+            self.autocounter_config.readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
         self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
         if 'host_debug' in runtime_dict:
-            self.zerooutdram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
-            self.disable_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
+            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
         if 'synth_print' in runtime_dict:
-            self.print_start = runtime_dict['synth_print'].get("start", "0")
-            self.print_end = runtime_dict['synth_print'].get("end", "-1")
-            self.print_cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
+            self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
+            self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
+            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
 
         self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
@@ -382,13 +385,12 @@ class RuntimeConfig:
             self.run_farm, self.runtimehwdb, self.innerconf.defaulthwconfig,
             self.workload, self.innerconf.linklatency,
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
-            self.innerconf.profileinterval, self.innerconf.trace_enable,
-            self.innerconf.trace_select, self.innerconf.trace_start, self.innerconf.trace_end,
-            self.innerconf.trace_output_format,
-            self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion,
-            self.innerconf.zerooutdram, self.innerconf.disable_asserts,
-            self.innerconf.print_start, self.innerconf.print_end,
-            self.innerconf.print_cycle_prefix)
+            self.innerconf.profileinterval,
+            self.innerconf.tracerv_config,
+            self.innerconf.autocounter_config,
+            self.innerconf.hostdebug_config,
+            self.innerconf.synthprint_config,
+            self.innerconf.terminateoncompletion)
 
     def launch_run_farm(self) -> None:
         """ directly called by top-level launchrunfarm command. """
