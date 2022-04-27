@@ -185,16 +185,15 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     build_config_file.wait_on_build_host_initializations()
 
     @parallel
-    def parallel_build_helper(config_file, bypass: bool = False) -> None:
-        """wrap parallel portion of build_bitstream
+    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> None:
+        """Wrap parallel portion of ``build_bitstream``
 
         Args:
-            config_file: BuildConfigFile given to firesim
+            config_file: BuildConfigFile
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
         """
         build_config_file = config_file.get_build_by_ip(env.host_string)
         build_config_file.fpga_bit_builder_dispatcher.build_bitstream(bypass)
-
 
     # run builds, then terminate instances
     execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
@@ -333,7 +332,7 @@ def main(args: argparse.Namespace) -> None:
     env.disable_known_hosts = True
 
     if args.task == 'buildafi':
-        rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitream' and will be removed in a future version")
+        rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitstream' and will be removed in a future version")
         args.task = 'buildbitstream'
 
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))

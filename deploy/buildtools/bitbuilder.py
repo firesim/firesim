@@ -50,7 +50,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def replace_rtl(self) -> None:
-        """Generate Verilog from build config."""
+        """Generate Verilog from build config. Should run on the manager host."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -72,7 +72,7 @@ class F1BitBuilder(BitBuilder):
     """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config."""
     def replace_rtl(self) -> None:
         """Generate Verilog from build config."""
-        rootLogger.info("Building Verilog for {}".format(str(self.build_config.get_chisel_triplet())))
+        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
 
         with prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
@@ -86,7 +86,7 @@ class F1BitBuilder(BitBuilder):
 
     def build_driver(self) -> None:
         """Build FireSim FPGA driver from build config."""
-        rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
+        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_triplet()}")
 
         with prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
@@ -123,19 +123,19 @@ class F1BitBuilder(BitBuilder):
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run(f'mkdir -p {dest_f1_platform_dir}')
             rsync_cap = rsync_project(
-            local_dir=local_awsfpga_dir,
-            remote_dir=dest_f1_platform_dir,
-            ssh_opts="-o StrictHostKeyChecking=no",
-            exclude=["hdk/cl/developer_designs/cl_*"],
-            extra_opts="-l", capture=True)
+                local_dir=local_awsfpga_dir,
+                remote_dir=dest_f1_platform_dir,
+                ssh_opts="-o StrictHostKeyChecking=no",
+                exclude=["hdk/cl/developer_designs/cl_*"],
+                extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
             rsync_cap = rsync_project(
-            local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
-            remote_dir=f'{dest_awsfpga_dir}/{fpga_build_postfix}',
-            exclude=["build/checkpoints"],
-            ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+                local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
+                remote_dir=f'{dest_awsfpga_dir}/{fpga_build_postfix}',
+                exclude=["build/checkpoints"],
+                ssh_opts="-o StrictHostKeyChecking=no",
+                extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
