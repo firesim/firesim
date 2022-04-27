@@ -34,11 +34,11 @@ aws_ec2_f1_run_farm:
         # REQUIRED: run farm hosts to spawn
         run_farm_hosts:
           # fpga instances
-          - f1.16xlarges: 0
-          - f1.4xlarges: 0
-          - f1.2xlarges: 1
+          - f1.16xlarge: 0
+          - f1.4xlarge: 0
+          - f1.2xlarge: 1
           # switch-only instances
-          - m4.16xlarges: 0
+          - m4.16xlarge: 0
 
 
 # Unmanaged list of run farm hosts. Assumed that they are pre-setup to run simulations.

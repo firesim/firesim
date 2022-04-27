@@ -184,7 +184,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {command_bootbinaries}"""
+        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {" ".join(command_bootbinaries)}"""
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -315,18 +315,22 @@ class InnerRuntimeConfiguration:
         self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
         self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
 
+        self.tracerv_config = TracerVConfig()
         if 'tracing' in runtime_dict:
             self.tracerv_config.enable = runtime_dict['tracing'].get('enable') == "yes"
             self.tracerv_config.select = runtime_dict['tracing'].get('selector', "0")
             self.tracerv_config.start = runtime_dict['tracing'].get('start', "0")
             self.tracerv_config.end = runtime_dict['tracing'].get('end', "-1")
             self.tracerv_config.output_format = runtime_dict['tracing'].get('output_format', "0")
+        self.autocounter_config = AutoCounterConfig()
         if 'autocounter' in runtime_dict:
             self.autocounter_config.readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
         self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
+        self.hostdebug_config = HostDebugConfig()
         if 'host_debug' in runtime_dict:
             self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
             self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+        self.synthprint_config = SynthPrintConfig()
         if 'synth_print' in runtime_dict:
             self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
             self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")

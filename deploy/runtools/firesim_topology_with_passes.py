@@ -179,7 +179,7 @@ class FireSimTopologyWithPasses:
         serverind = 0
 
         while len(servers) > serverind:
-            # this call will exit(1) if no such instances are available.
+            # this call will error if no such instances are available.
             instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(1)
             allocd_instance = self.run_farm.mapper_alloc_instance(instance_type)
 
@@ -550,17 +550,17 @@ class FireSimTopologyWithPasses:
             rootLogger.info("Instances")
             rootLogger.info("-"*80)
             for instance in instancestate_map.keys():
-                rootLogger.info("""Instance IP:{:>15} | Terminated: {}""".format(instance, truefalsecolor[instancestate_map[instance]]))
+                rootLogger.info("""Inst. hostname:{:>15} | Terminated: {}""".format(instance, truefalsecolor[instancestate_map[instance]]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Switches")
             rootLogger.info("-"*80)
             for switchinfo in switchstates:
-                rootLogger.info("""Instance IP:{:>15} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
+                rootLogger.info("""Inst. hostname:{:>15} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Nodes/Jobs")
             rootLogger.info("-"*80)
             for siminfo in simstates:
-                rootLogger.info("""Instance IP:{:>15} | Job: {} | Sim running: {}""".format(siminfo['hostip'], siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
+                rootLogger.info("""Inst. hostname:{:>15} | Job: {} | Sim running: {}""".format(siminfo['hostip'], siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Summary")
             rootLogger.info("-"*80)

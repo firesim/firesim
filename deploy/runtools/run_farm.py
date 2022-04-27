@@ -212,6 +212,7 @@ class AWSEC2F1(RunFarm):
         runhosts_list = self.args["run_farm_hosts"]
 
         self.run_farm_hosts_dict = defaultdict(list)
+        self.mapper_consumed = defaultdict(int)
 
         for runhost in runhosts_list:
             if isinstance(runhost, dict):
@@ -225,8 +226,8 @@ class AWSEC2F1(RunFarm):
 
                 if inst_type in self.SUPPORTED_INSTANCE_TYPE_NAMES:
                     num_sim_slots = self.INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS[inst_type]
-                    inst = Inst(num_sim_slots, EC2InstanceDeployManager, self.default_simulation_dir)
-                    self.run_farm_hosts_dict[inst_type].append(inst)
+                    insts = [Inst(num_sim_slots, EC2InstanceDeployManager, self.default_simulation_dir) for n in range(num_insts)]
+                    self.run_farm_hosts_dict[inst_type] = insts
                     self.mapper_consumed[inst_type] = 0
                 else:
                     rootLogger.critical(f"WARNING: Skipping {inst_type} since it is not supported. Use {self.SUPPORTED_INSTANCE_TYPE_NAMES}.")
