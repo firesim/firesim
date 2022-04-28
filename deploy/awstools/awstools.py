@@ -174,7 +174,7 @@ def get_f1_ami_id():
     return response['Images'][0]['ImageId']
 
 def get_aws_userid():
-    """ Get the user's IAM ID to intelligently create a bucket name when doing managerinit.
+    """ Get the user's IAM ID to intelligently create a bucket name when doing awsinit().
     The previous method to do this was:
 
     client = boto3.client('iam')
