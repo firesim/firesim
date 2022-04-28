@@ -164,5 +164,8 @@ class BuildConfigFile:
                 return build
         return None
 
+    def __repr__(self) -> str:
+        return f"< {type(self)}(file={self.args.buildconfigfile!r}, recipes={self.args.buildrecipesconfigfile!r}, build_farm={self.build_farm!r}) @{id(self)} >"
+
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
