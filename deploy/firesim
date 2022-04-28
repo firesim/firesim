@@ -258,6 +258,7 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
     parser = argparse_flags.ArgumentParser(description='FireSim Simulation Manager.')
     parser.add_argument('task', type=str,
                         help='Management task to run.', choices=list(TASKS))
+    argcomplete.autocomplete(parser)
     return parser
 
 def check_env() -> None:
