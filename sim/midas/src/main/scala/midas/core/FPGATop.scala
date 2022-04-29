@@ -12,6 +12,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.{DecoupledHelper, HeterogeneousBag}
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 /**
@@ -76,7 +77,8 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
     "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   lazy val config = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
-  val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
+  val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = 
+    ListMap((bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget))):_*)
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
   // according to their memoryRegionName. Requested addresses will be unified
@@ -187,13 +189,62 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
       }
     }
     println(s"Total Host-FPGA DRAM Allocated: ${toIECString(totalDRAMAllocated)} of ${toIECString(availableDRAM)} available.")
-    println("Host-FPGA DRAM Allocation Map:")
+
+    if (sortedRegionTuples.nonEmpty) {
+      println("Host-FPGA DRAM Allocation Map:")
+    }
+
     sortedRegionTuples.zip(dramOffsets).foreach({ case ((bridgeSeq, addresses), offset) =>
       val regionName = bridgeSeq.head.memoryRegionName
       val bridgeNames = bridgeSeq.map(_.getWName).mkString(", ")
       println(f"  ${regionName} -> [0x${offset}%X, 0x${offset + BytesOfDRAMRequired(addresses) - 1}%X]")
       println(f"    Associated bridges: ${bridgeNames}")
     })
+  }
+
+  val bridgesWithToHostCPUStreams = bridgeModuleMap.values
+    .collect { case b: StreamToHostCPU => b }
+  val hasToHostStreams = bridgesWithToHostCPUStreams.nonEmpty
+
+  val bridgesWithFromHostCPUStreams = bridgeModuleMap.values
+    .collect { case b: StreamFromHostCPU => b }
+  val hasFromHostCPUStreams = bridgesWithFromHostCPUStreams.nonEmpty
+
+  def printStreamSummary(streams: Iterable[StreamParameters], header: String): Unit = {
+    val summaries = streams.toList match {
+      case Nil => "None" :: Nil
+      case o => o.map { _.summaryString }
+    }
+
+    println((header +: summaries).mkString("\n  "))
+  }
+
+  val toCPUStreamParams = bridgesWithToHostCPUStreams.map { _.streamSourceParams }
+  val fromCPUStreamParams = bridgesWithFromHostCPUStreams.map { _.streamSinkParams }
+
+  val pcisAXI4BundleParams = AXI4BundleParameters(
+    addrBits = p(DMANastiKey).addrBits,
+    dataBits = p(DMANastiKey).dataBits,
+    idBits   = p(DMANastiKey).idBits)  // Dubious...
+
+  val pcisNode = AXI4MasterNode(
+    Seq(AXI4MasterPortParameters(
+      masters = Seq(AXI4MasterParameters(
+          name       = "cpu-mastered-axi4",
+          id         = IdRange(0, 1 << p(DMANastiKey).idBits),
+          aligned    = false,
+          maxFlight  = None, // None = infinite, else is a per-ID cap
+        ))
+      )
+    )
+  )
+
+  val streamingEngine = addWidget(p(StreamEngineInstantiatorKey)(
+    StreamEngineParameters(toCPUStreamParams.toSeq, fromCPUStreamParams.toSeq), p)
+  )
+
+  streamingEngine.pcisNodeOpt.foreach {
+    _ := AXI4Buffer() := pcisNode
   }
 
   override def genHeader(sb: StringBuilder) {
@@ -210,8 +261,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
   val ctrl = IO(Flipped(WidgetMMIO()))
   val mem = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
-  val dma = IO(Flipped(new NastiIO()(p alterPartial ({ case NastiKey => p(DMANastiKey) }))))
-
+  val dma  = IO(Flipped(AXI4Bundle(outer.pcisAXI4BundleParams)))
   // Hack: Don't touch the ports so that we can use FPGATop as top-level in ML simulation
   dontTouch(ctrl)
   dontTouch(mem)
@@ -224,11 +274,10 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     io <> bundle
   }
 
+  outer.pcisNode.out.head._1 <> dma
+
   val sim = Module(new SimWrapper(p(SimWrapperKey)))
   val simIo = sim.channelPorts
-
-  case class DmaInfo(name: String, port: NastiIO, size: BigInt)
-  val dmaInfoBuffer = new mutable.ListBuffer[DmaInfo]
 
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
@@ -240,51 +289,31 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       case _ =>
     }
     bridgeMod.module.hPort.connectChannels2Port(bridgeAnno, simIo)
-
-    bridgeMod.module match {
-      case widget: HasDMA => dmaInfoBuffer += DmaInfo(bridgeMod.getWName, widget.dma, widget.dmaSize)
-      case _ => Nil
-    }
   })
 
-  // Sort the list of DMA ports by address region size, largest to smallest
-  val dmaInfoSorted = dmaInfoBuffer.sortBy(_.size).reverse.toSeq
-  // Build up the address map using the sorted list,
-  // auto-assigning base addresses as we go.
-  val dmaAddrMap = dmaInfoSorted.foldLeft((BigInt(0), List.empty[AddrMapEntry])) {
-    case ((startAddr, addrMap), DmaInfo(widgetName, _, reqSize)) =>
-      // Round up the size to the nearest power of 2
-      val regionSize = 1 << log2Ceil(reqSize)
-      val region = MemRange(startAddr, regionSize, MemAttr(AddrMapProt.RW))
+  outer.printStreamSummary(outer.toCPUStreamParams,   "Bridge Streams To CPU:")
+  outer.printStreamSummary(outer.fromCPUStreamParams, "Bridge Streams From CPU:")
 
-      (startAddr + regionSize, AddrMapEntry(widgetName, region) :: addrMap)
-  }._2.reverse
-  val dmaPorts = dmaInfoSorted.map(_.port)
+  for (((sink, src), idx) <- outer.streamingEngine.streamsToHostCPU.zip(outer.bridgesWithToHostCPUStreams).zipWithIndex) {
+    val allocatedIdx = src.toHostStreamIdx
+    require(allocatedIdx == idx,
+      s"Allocated to-host stream index ${allocatedIdx} does not match stream vector index ${idx}.")
+    sink <> src.streamEnq
+  }
 
-  if (dmaPorts.isEmpty) {
-    val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
-    val error = Module(new NastiErrorSlave()(dmaParams))
-    error.io <> dma
-  } else if (dmaPorts.size == 1) {
-    dmaPorts(0) <> dma
-  } else {
-    val dmaParams = p.alterPartial({ case NastiKey => p(DMANastiKey) })
-    val router = Module(new NastiRecursiveInterconnect(
-      1, new AddrMap(dmaAddrMap))(dmaParams))
-    router.io.masters.head <> NastiQueue(dma)(dmaParams)
-    dmaPorts.zip(router.io.slaves).foreach { case (dma, slave) => dma <> NastiQueue(slave)(dmaParams) }
+  for (((sink, src), idx) <- outer.bridgesWithFromHostCPUStreams.zip(outer.streamingEngine.streamsFromHostCPU).zipWithIndex) {
+    val allocatedIdx = sink.fromHostStreamIdx
+    require(allocatedIdx == idx,
+      s"Allocated from-host stream index ${allocatedIdx} does not match stream vector index ${idx}.")
+    sink.streamDeq <> src
   }
 
   outer.genCtrlIO(ctrl)
+  outer.printMemoryMapSummary()
   outer.printHostDRAMSummary()
   outer.emitDefaultPlusArgsFile()
 
-  val addrConsts = dmaAddrMap.map {
-    case AddrMapEntry(name, MemRange(addr, _, _)) =>
-      (s"${name.toUpperCase}_DMA_ADDR" -> addr.longValue)
-  }
-
-  val headerConsts = addrConsts ++ List[(String, Long)](
+  val headerConsts = List[(String, Long)](
     "CTRL_ID_BITS"   -> ctrl.nastiXIdBits,
     "CTRL_ADDR_BITS" -> ctrl.nastiXAddrBits,
     "CTRL_DATA_BITS" -> ctrl.nastiXDataBits,
@@ -303,12 +332,12 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "MEM_LEN_BITS"   -> AXI4Parameters.lenBits,
     "MEM_RESP_BITS"  -> AXI4Parameters.respBits,
     // Address width of the aggregated host-DRAM space
-    "DMA_ID_BITS"    -> dma.nastiXIdBits,
-    "DMA_ADDR_BITS"  -> dma.nastiXAddrBits,
-    "DMA_DATA_BITS"  -> dma.nastiXDataBits,
-    "DMA_STRB_BITS"  -> dma.nastiWStrobeBits,
+    "DMA_ID_BITS"    -> dma.params.idBits,
+    "DMA_ADDR_BITS"  -> dma.params.addrBits,
+    "DMA_DATA_BITS"  -> dma.params.dataBits,
+    "DMA_STRB_BITS"  -> dma.params.dataBits / 8,
     "DMA_BEAT_BYTES" -> p(DMANastiKey).dataBits / 8,
-    "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
+    "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8),
   ) ++ Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
   def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)
 }

@@ -16,7 +16,6 @@ import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWid
 import midas.widgets._
 import testchipip.{StreamIO, StreamChannel}
 import junctions.{NastiIO, NastiKey}
-import TokenQueueConsts._
 
 //******
 //* MISC
@@ -68,14 +67,12 @@ object DromajoBridge {
 //*************************************************
 
 class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[DromajoTargetIO]]()(p)
+    with StreamToHostCPU
 {
-  lazy val module = new BridgeModuleImp(this) with UnidirectionalDMAToHostCPU {
-    // CONSTANTS: DMA Parameters
-    lazy val QUEUE_DEPTH = TOKEN_QUEUE_DEPTH
-    lazy val TOKEN_WIDTH = 512 // in b
-    lazy val toHostCPUQueueDepth = QUEUE_DEPTH
-    lazy val dmaSize = BigInt((TOKEN_WIDTH / 8) * QUEUE_DEPTH)
-    // CONSTANTS
+  // CONSTANTS: DMA Parameters
+  val toHostCPUQueueDepth = TokenQueueConsts.TOKEN_QUEUE_DEPTH
+
+  lazy val module = new BridgeModuleImp(this) {
 
     // setup io
     val io = IO(new WidgetIO)
@@ -118,7 +115,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     }
 
     val maxTraceSize = paddedTraces.map(t => t.getWidth).max
-    val outDataSzBits = outgoingPCISdat.io.enq.bits.getWidth
+    val outDataSzBits = streamEnq.bits.getWidth
 
     // constant
     val totalTracesPerToken = 2 // minTraceSz==190b so round up to nearest is 256b
@@ -131,11 +128,8 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     // num tokens needed to display full set of instructions from one cycle
     val numTokenForAll = ((numTraces - 1) / totalTracesPerToken) + 1
 
-    // tracequeue is full
-    val traceQueueFull = outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready
-
     // only inc the counter when the something is sent (this implies that the input is valid and output is avail on the other side)
-    val counterFire = outgoingPCISdat.io.enq.fire()
+    val counterFire = streamEnq.fire()
     val (cnt, wrap) = Counter(counterFire, numTokenForAll)
 
     val paddedTracesAligned = paddedTraces.map(t => t.asUInt.pad(outDataSzBits/totalTracesPerToken))
@@ -145,17 +139,14 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
       (paddedTracesAligned.asUInt >> (outDataSzBits.U * cnt))(outDataSzBits-1, 0)
     }
 
-    outgoingPCISdat.io.enq.valid := hPort.toHost.hValid
-    outgoingPCISdat.io.enq.bits := paddedTracesTruncated
+    streamEnq.valid := hPort.toHost.hValid
+    streamEnq.bits := paddedTracesTruncated
 
     // tell the host that you are ready to get more
-    hPort.toHost.hReady := outgoingPCISdat.io.enq.ready && wrap
+    hPort.toHost.hReady := streamEnq.ready && wrap
 
     // This is uni-directional. We don't drive tokens back to the target.
     hPort.fromHost.hValid := true.B
-
-    // tell c driver that queue is full using MMIO
-    attach(traceQueueFull, "trace_queue_full", ReadOnly)
 
     genCRFile()
 

@@ -233,6 +233,9 @@ set -o pipefail
 
     CONDA_PACKAGE_SPECS+=( gcc=10 gxx=10 binutils conda-gcc-specs )
 
+    # if building riscv-toolchain from source, we need to use bison=3.4 until we have
+    # https://github.com/riscv-collab/riscv-binutils-gdb/commit/314ec7aeeb1b2e68f0d8fb9990f2335f475a6e33
+    CONDA_PACKAGE_SPECS+=( bison=3.4 )
 
     # poky deps
     CONDA_PACKAGE_SPECS+=( python=3.8 patch texinfo subversion chrpath git wget )
@@ -253,6 +256,7 @@ set -o pipefail
     CONDA_PACKAGE_SPECS+=( autoconf automake libtool )
     # other misc deps
     CONDA_PACKAGE_SPECS+=(
+        bash-completion \
         sbt \
         ca-certificates \
         mosh \
@@ -343,7 +347,12 @@ set -o pipefail
 
 
     argcomplete_extra_args=()
-    if [[ "$INSTALL_TYPE" != system ]]; then
+    if [[ "$INSTALL_TYPE" == system ]]; then
+        BASH_COMPLETION_COMPAT_DIR="${CONDA_ENV_BIN}/../etc/bash_completion.d"
+        "${DRY_RUN_ECHO[@]}" $SUDO mkdir -p "${BASH_COMPLETION_COMPAT_DIR}"
+        argcomplete_extra_args=( --dest "${BASH_COMPLETION_COMPAT_DIR}" )
+
+    else
         # if we're aren't installing into a system directory, then initialize argcomplete
         # with --user so that it goes into the home directory
         argcomplete_extra_args=( --user )

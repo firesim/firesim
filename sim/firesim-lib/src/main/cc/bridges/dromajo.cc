@@ -35,7 +35,10 @@ dromajo_t::dromajo_t(
     int tval_width,
     int num_traces,
     DROMAJOBRIDGEMODULE_struct * mmio_addrs,
-    long dma_addr) : bridge_driver_t(sim)
+    long dma_addr) :
+        bridge_driver_t(sim),
+        stream_count_address(stream_count_address),
+        stream_full_address(stream_full_address)
 {
     // setup max constants given from the RTL
     this->_num_traces = num_traces;
@@ -273,7 +276,7 @@ void dromajo_t::process_tokens(int num_beats) {
  * Move forward the simulation
  */
 void dromajo_t::tick() {
-    uint64_t trace_queue_full = read(this->_mmio_addrs->trace_queue_full);
+    uint64_t trace_queue_full = read(stream_full_address);
 
     if (trace_queue_full) this->process_tokens(QUEUE_DEPTH);
 }
@@ -283,10 +286,10 @@ void dromajo_t::tick() {
  */
 int dromajo_t::beats_available_stable() {
   size_t prev_beats_available = 0;
-  size_t beats_available = read(this->_mmio_addrs->outgoing_count);
+  size_t beats_available = read(stream_count_address);
   while (beats_available > prev_beats_available) {
     prev_beats_available = beats_available;
-    beats_available = read(this->_mmio_addrs->outgoing_count);
+    beats_available = read(stream_count_address);
   }
   return beats_available;
 }

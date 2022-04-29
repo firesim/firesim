@@ -28,7 +28,9 @@ tracerv_t::tracerv_t(
     simif_t *sim,
     std::vector<std::string> &args,
     TRACERVBRIDGEMODULE_struct * mmio_addrs,
-    long dma_addr,
+    const unsigned int dma_address,
+    const unsigned int stream_count_address,
+    const unsigned int stream_full_address,
     const unsigned int max_core_ipc,
     const char* const  clock_domain_name,
     const unsigned int clock_multiplier,
@@ -36,9 +38,11 @@ tracerv_t::tracerv_t(
     int tracerno) :
         bridge_driver_t(sim),
         mmio_addrs(mmio_addrs),
+        dma_address(dma_address),
+        stream_count_address(stream_count_address),
+        stream_full_address(stream_full_address),
         max_core_ipc(max_core_ipc),
-        clock_info(clock_domain_name, clock_multiplier, clock_divisor),
-        dma_addr(dma_addr) {
+        clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
     //Biancolin: move into elaboration
     assert(this->max_core_ipc <= 7 && "TracerV only supports cores with a maximum IPC <= 7");
     const char *tracefilename = NULL;
@@ -203,7 +207,7 @@ void tracerv_t::init() {
 void tracerv_t::process_tokens(int num_beats) {
     // TODO. as opt can mmap file and just load directly into it.
     alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
-    pull(dma_addr, (char*)OUTBUF, num_beats * 64);
+    pull(dma_address, (char*)OUTBUF, num_beats * 64);
     //check that a tracefile exists (one is enough) since the manager
     //does not create a tracefile when trace_enable is disabled, but the
     //TracerV bridge still exists, and no tracefile is created by default.
@@ -261,17 +265,17 @@ void tracerv_t::process_tokens(int num_beats) {
 
 void tracerv_t::tick() {
   if (this->trace_enabled) {
-    uint64_t outfull = read(this->mmio_addrs->tracequeuefull);
+    uint64_t outfull = read(stream_full_address);
     if (outfull) process_tokens(QUEUE_DEPTH);
   }
 }
 
 int tracerv_t::beats_available_stable() {
   size_t prev_beats_available = 0;
-  size_t beats_available = read(mmio_addrs->outgoing_count);
+  size_t beats_available = read(stream_count_address);
   while (beats_available > prev_beats_available) {
     prev_beats_available = beats_available;
-    beats_available = read(mmio_addrs->outgoing_count);
+    beats_available = read(stream_count_address);
   }
   return beats_available;
 }

@@ -16,7 +16,7 @@ sys.path.append(ci_workdir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
 # The number of hours an instance may exist since its initial launch time
-INSTANCE_LIFETIME_LIMIT_HOURS = 24
+INSTANCE_LIFETIME_LIMIT_HOURS = 8
 
 def main():
     # Get a timezone-aware datetime instance
