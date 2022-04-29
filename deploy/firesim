@@ -127,11 +127,6 @@ def managerinit(args: argparse.Namespace):
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-            if args.platform == 'f1':
-                m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
-                rootLogger.debug(m)
-                rootLogger.debug(m.stderr)
-
     rootLogger.info("Adding default overrides to config files")
     if args.platform == 'f1':
         keyword = "managerinit arg start"
@@ -215,8 +210,8 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
 
     # forced to build locally
     for build_config in build_config_file.builds_list:
-        execute(build_config.fpga_bit_builder_dispatcher.replace_rtl, hosts=['localhost'])
-        execute(build_config.fpga_bit_builder_dispatcher.build_driver, hosts=['localhost'])
+        execute(build_config.bitbuilder.replace_rtl, hosts=['localhost'])
+        execute(build_config.bitbuilder.build_driver, hosts=['localhost'])
 
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
@@ -230,10 +225,6 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
         sys.exit(0)
 
     signal.signal(signal.SIGINT, release_build_hosts_handler)
-
-    # pre-setup stuff (things that need to be done before build farm hosts are spawned/killed)
-    # specific to the build farm host
-    build_config_file.setup()
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
@@ -252,7 +243,7 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
         """
         build_config_file = config_file.get_build_by_ip(env.host_string)
-        build_config_file.fpga_bit_builder_dispatcher.build_bitstream(bypass)
+        build_config_file.bitbuilder.build_bitstream(bypass)
 
     # run builds, then terminate instances
     execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
@@ -273,8 +264,8 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
 
     for build_config in build_config_file.builds_list:
-        assert isinstance(build_config.fpga_bit_builder_dispatcher, F1BitBuilder)
-        execute(build_config.fpga_bit_builder_dispatcher.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
+        assert isinstance(build_config.bitbuilder, F1BitBuilder)
+        execute(build_config.bitbuilder.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
 @register_task
