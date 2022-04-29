@@ -6,7 +6,7 @@ This page outlines all of the tasks that the FireSim manager supports.
 .. _firesim-managerinit:
 
 ``firesim managerinit --platform {f1}``
-----------------------------
+---------------------------------------
 
 This is a setup command that does the following:
 
@@ -23,8 +23,6 @@ address, and both will keep your previously specified values.
 If you run this command by accident and didn't mean to overwrite your
 configuration files, you'll find backed-up versions in
 ``firesim/deploy/sample-backup-configs/backup*``.
-
-.. _firesim-managerinit:
 
 .. _firesim-buildafi:
 
