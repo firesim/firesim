@@ -23,6 +23,7 @@ from awstools.awstools import awsinit, get_aws_userid
 from awstools.afitools import *
 
 from buildtools.buildconfigfile import BuildConfigFile
+from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
 
@@ -214,6 +215,7 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
 
     for build_config in build_config_file.builds_list:
+        assert isinstance(build_config.fpga_bit_builder_dispatcher, F1BitBuilder)
         execute(build_config.fpga_bit_builder_dispatcher.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
