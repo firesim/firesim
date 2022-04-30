@@ -150,7 +150,7 @@ class BuildConfigFile:
         for build in self.builds_list:
             self.build_farm.release_build_host(build)
 
-    def get_build_by_ip(self, nodeip: str) -> Optional[BuildConfig]:
+    def get_build_by_ip(self, nodeip: str) -> BuildConfig:
         """Obtain the build config for a particular IP address.
 
         Args:
@@ -162,7 +162,7 @@ class BuildConfigFile:
         for build in self.builds_list:
             if self.build_farm.get_build_host_ip(build) == nodeip:
                 return build
-        return None
+        assert False, "Unable to find build config associated with {nodeip}"
 
     def __repr__(self) -> str:
         return f"< {type(self)}(file={self.args.buildconfigfile!r}, recipes={self.args.buildrecipesconfigfile!r}, build_farm={self.build_farm!r}) @{id(self)} >"

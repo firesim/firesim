@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from time import strftime, gmtime
 import pprint
+from importlib import import_module
 
 from awstools.awstools import valid_aws_configure_creds, aws_resource_names
+from buildtools.bitbuilder import BitBuilder
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
@@ -35,6 +37,7 @@ class BuildConfig:
     PLATFORM_CONFIG: str
     s3_bucketname: str
     post_build_hook: str
+    fpga_bit_builder_dispatcher: BitBuilder
 
     def __init__(self,
             name: str,
@@ -66,6 +69,12 @@ class BuildConfig:
                 # in tutorial mode, special s3 bucket name
                 self.s3_bucketname = aws_resource_names_dict['s3bucketname']
         self.post_build_hook = recipe_config_dict['post_build_hook']
+
+        fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform', "F1BitBuilder")
+        # create run platform dispatcher object using class given and pass args to it
+        self.fpga_bit_builder_dispatcher = getattr(
+            import_module("buildtools.bitbuilder"),
+            fpga_bit_builder_dispatcher_class_name)(self)
 
     def get_chisel_triplet(self) -> str:
         """Get the unique build-specific '-' deliminated triplet.

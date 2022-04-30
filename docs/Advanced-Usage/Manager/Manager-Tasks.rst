@@ -5,13 +5,15 @@ This page outlines all of the tasks that the FireSim manager supports.
 
 .. _firesim-managerinit:
 
-``firesim managerinit``
-----------------------------
+``firesim managerinit --platform {f1}``
+---------------------------------------
 
 This is a setup command that does the following:
 
-* Run ``aws configure``, prompt for credentials
 * Replace the default config files (``config_runtime.yaml``, ``config_build.yaml``, ``config_build_recipes.yaml``, and ``config_hwdb.yaml``) with clean example versions.
+
+Then, do platform-specific init steps for the given ``--platform``.  For ``f1`` this includes:
+* Run ``aws configure``, prompt for credentials
 * Prompt the user for email address and subscribe them to notifications for their own builds.
 
 You can re-run this whenever you want to get clean configuration files -- you
@@ -22,13 +24,19 @@ If you run this command by accident and didn't mean to overwrite your
 configuration files, you'll find backed-up versions in
 ``firesim/deploy/sample-backup-configs/backup*``.
 
-
 .. _firesim-buildafi:
 
 ``firesim buildafi``
 ----------------------
 
-This command builds a FireSim AGFI (FPGA Image) from the Chisel RTL for the
+.. Warning:: DEPRECATION: ``buildafi`` has been renamed to ``buildbitstream`` and will be removed in a future version
+
+.. _firesim-buildbitstream:
+
+``firesim buildbitstream``
+--------------------------
+
+This command builds a FireSim bitstream from the Chisel RTL for the
 configurations that you specify. The process of defining configurations to
 build is explained in the documentation for :ref:`config-build` and
 :ref:`config-build-recipes`.
@@ -41,7 +49,7 @@ For each config, the build process entails:
 
 3. [Locally] Attach simulation models (I/O widgets, memory model, etc.)
 
-4. [Locally] Emit Verilog to run through the AWS FPGA Flow
+4. [Locally] Emit Verilog to run through the FPGA Flow
 
 5. Launch an FPGA Dev AMI build instance for each configuration you want built.
 

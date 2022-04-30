@@ -6,26 +6,29 @@ import sys
 import os
 import signal
 import argparse
-from time import sleep, strftime, gmtime
+from time import strftime, gmtime
 import logging
 import random
 import argcomplete # type: ignore
-from fabric.api import local, hide, warn_only, env, execute # type: ignore
+from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
 import string
 from inspect import signature
+from warnings import warn
+from pathlib import Path
 
 from runtools.runtime_config import RuntimeConfig
 
-from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscribe_to_firesim_topic
+from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscribe_to_firesim_topic, awsinit
 from awstools.afitools import share_agfi_in_all_regions
 
-from buildtools.buildafi import replace_rtl, build_driver, aws_build, aws_create_afi
 from buildtools.buildconfigfile import BuildConfigFile
-from buildtools.buildconfig import BuildConfig
+from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
 
 from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints
+
+PLATFORM_LIST = [_.name for _ in Path(__file__).parent.parent.joinpath('platforms').iterdir()]
 
 class Task(TypedDict):
     task: Callable
@@ -72,23 +75,25 @@ def register_task(task: Callable) -> Callable:
             config_class.__init__.__annotations__ = get_type_hints(config_class.__init__)
 
             # check that the first parameter takes a Namespace passed to its constructor
-            csig = signature(config_class)
-            if csig.parameters:
-                cfirst = next(iter(csig.parameters.values()))
-                if cfirst.annotation is cfirst.empty:
-                    raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
-                                    f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
+            # or that it is a Namespace
+            if config_class is not argparse.Namespace:
+                csig = signature(config_class)
+                if csig.parameters:
+                    cfirst = next(iter(csig.parameters.values()))
+                    if cfirst.annotation is cfirst.empty:
+                        raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
+                                        f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
+                    else:
+                        assert cfirst.annotation is argparse.Namespace
                 else:
-                    assert cfirst.annotation is argparse.Namespace
-            else:
-                raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
+                    raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
 
     TASKS[tn] = {'task': task, 'config': config_class}
 
     # we don't want this function to be callable any way other than via firesim.main()
     # so that we know programmatic changes to TASKS are followed (currently for testing purposes)
     # so we don't return the original callable task, we return a lambda that raises
-    def inner():
+    def inner(*args, **kwargs):
         raise FiresimTaskAccessViolation(f"Called '{tn}' without going through TASKS")
     # or actually, we define a closure with def and return that because lambdas that raise
     # are convoluted
@@ -99,22 +104,12 @@ def register_task(task: Callable) -> Callable:
 
 
 @register_task
-def managerinit() -> None:
-    """ Setup FireSim manager components. """
+def managerinit(args: argparse.Namespace):
+    """ Setup local FireSim manager components. """
 
-    valid_creds = valid_aws_configure_creds()
-    while not valid_creds:
-        # only run aws configure if we cannot already find valid creds
-        # this loops calling valid_aws_configure_creds until
-        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-        # stored in the log
-        local("aws configure")
-
-        # check again
-        valid_creds = valid_aws_configure_creds()
-        if not valid_creds:
-            rootLogger.info("Invalid AWS credentials. Try again.")
+    if not args.platform:
+        rootLogger.error('::ERROR:: managerinit requires that you provide --platform <platformname>')
+        sys.exit(1)
 
     rootLogger.info("Backing up initial config files, if they exist.")
     config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
@@ -134,13 +129,8 @@ def managerinit() -> None:
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for AWS email notifications (leave blank if you do not want email notifications): ")
-    if useremail != "":
-        subscribe_to_firesim_topic(useremail)
-    else:
-        rootLogger.info("You did not supply an email address. No notifications will be sent.")
-
-    rootLogger.info("FireSim Manager setup completed.")
+    if args.platform == 'f1':
+        awsinit()
 
 @register_task
 def infrasetup(runtime_conf: RuntimeConfig) -> None:
@@ -164,13 +154,18 @@ def runworkload(runtime_conf: RuntimeConfig) -> None:
 
 @register_task
 def buildafi(build_config_file: BuildConfigFile) -> None:
+    # shouldn't ever be able to get here because main() implements logging and redirecting to builtbitstream
+    raise NotImplementedError
+
+@register_task
+def buildbitstream(build_config_file: BuildConfigFile) -> None:
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
     # forced to build locally
     for build_config in build_config_file.builds_list:
-        execute(replace_rtl, build_config, hosts=['localhost'])
-        execute(build_driver, build_config, hosts=['localhost'])
+        execute(build_config.fpga_bit_builder_dispatcher.replace_rtl, hosts=['localhost'])
+        execute(build_config.fpga_bit_builder_dispatcher.build_driver, hosts=['localhost'])
 
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
@@ -197,11 +192,23 @@ def buildafi(build_config_file: BuildConfigFile) -> None:
     # been assigned IP addresses
     build_config_file.wait_on_build_host_initializations()
 
-    # run builds, then terminate build hosts
-    execute(aws_build, build_config_file, hosts=build_config_file.build_ip_set)
+    @parallel
+    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> None:
+        """Wrap parallel portion of ``build_bitstream``
+
+        Args:
+            config_file: BuildConfigFile
+            bypass: If true, immediately return and terminate build host. Used for testing purposes.
+        """
+        build_config_file = config_file.get_build_by_ip(env.host_string)
+        build_config_file.fpga_bit_builder_dispatcher.build_bitstream(bypass)
+
+    # run builds, then terminate instances
+    execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
 
 
 @register_task
+# XXX this needs to be renamed or rethought, perhaps this is a backend-specific task?
 def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
     Starting from the tarball generated by Vivado generate an AFI
@@ -215,7 +222,8 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
 
     for build_config in build_config_file.builds_list:
-        execute(aws_create_afi, build_config_file, build_config, hosts=['localhost'])
+        assert isinstance(build_config.fpga_bit_builder_dispatcher, F1BitBuilder)
+        execute(build_config.fpga_bit_builder_dispatcher.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
 @register_task
@@ -305,6 +313,8 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
+    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',
+                        help='Required argument for "managerinit" to specify which platform you will be using')
 
     argcomplete.autocomplete(parser)
     return parser
@@ -330,11 +340,18 @@ def main(args: argparse.Namespace) -> None:
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
 
+    if args.task == 'buildafi':
+        rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitstream' and will be removed in a future version")
+        args.task = 'buildbitstream'
+
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
     t = TASKS[args.task]
     if t['config']:
-        t['task'](t['config'](args))
+        if t['config'] is argparse.Namespace:
+            t['task'](args)
+        else:
+            t['task'](t['config'](args))
     else:
         t['task']()
 
@@ -357,6 +374,9 @@ if __name__ == '__main__':
         timeline = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
         randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         return timeline + "-" + args.task + "-" + randname + ".log"
+
+    # treat python warnings as WARNING level messages from py.warn
+    logging.captureWarnings(True)
 
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
