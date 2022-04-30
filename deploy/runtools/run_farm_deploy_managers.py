@@ -29,14 +29,6 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         self.parent_node = parent_node
 
     @abc.abstractmethod
-    def get_hostname(self) -> str:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def set_hostname(self, hostname: str) -> None:
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def infrasetup_instance(self) -> None:
         raise NotImplementedError
 
@@ -110,13 +102,6 @@ class EC2InstanceDeployManager(InstanceDeployManager):
         super().__init__(parent_node)
         self.boto3_instance_object = None
         self.nbd_tracker = NBDTracker()
-
-    def get_hostname(self) -> str:
-        assert self.boto3_instance_object is not None # has to be duplicated to satisfy mypy
-        return "centos@" + self.boto3_instance_object.private_ip_address
-
-    def set_hostname(self, hostname: str) -> None:
-        return
 
     def instance_logger(self, logstr: str) -> None:
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)

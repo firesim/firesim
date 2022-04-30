@@ -41,6 +41,8 @@ class Inst(metaclass=abc.ABCMeta):
     # instances parameterized by this
     instance_deploy_manager: InstanceDeployManager
 
+    host_name: Optional[str]
+
     def __init__(self, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None) -> None:
         super().__init__()
         self.switch_slots = []
@@ -53,12 +55,21 @@ class Inst(metaclass=abc.ABCMeta):
 
         self.instance_deploy_manager = instance_deploy_manager(self)
 
+        self.host_name = None
+
     def set_sim_dir(self, drctry: str) -> None:
         self.sim_dir = drctry
 
     def get_sim_dir(self) -> str:
         assert self.sim_dir is not None
         return self.sim_dir
+
+    def get_host_name(self) -> str:
+        assert self.host_name is not None
+        return self.host_name
+
+    def set_host_name(self, host_name: str) -> None:
+        self.host_name = host_name
 
     def add_switch(self, firesimswitchnode: FireSimSwitchNode) -> None:
         """ Add a switch to the next available switch slot. """
@@ -162,8 +173,7 @@ class AWSEC2F1(RunFarm):
 
     SORTED_INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS: List[Tuple[int, str]]
 
-
-    run_farm_hosts_dict: Dict[str, List[Inst]]
+    run_farm_hosts_dict: Dict[str, List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]]]
     mapper_consumed: Dict[str, int]
 
     def __init__(self, args: Dict[str, Any]) -> None:
@@ -226,7 +236,9 @@ class AWSEC2F1(RunFarm):
 
                 if inst_type in self.SUPPORTED_INSTANCE_TYPE_NAMES:
                     num_sim_slots = self.INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS[inst_type]
-                    insts = [Inst(num_sim_slots, EC2InstanceDeployManager, self.default_simulation_dir) for n in range(num_insts)]
+                    insts: List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]] = []
+                    for n in range(num_insts):
+                        insts.append((Inst(num_sim_slots, EC2InstanceDeployManager, self.default_simulation_dir), None))
                     self.run_farm_hosts_dict[inst_type] = insts
                     self.mapper_consumed[inst_type] = 0
                 else:
@@ -259,7 +271,8 @@ class AWSEC2F1(RunFarm):
         This deliberately exposes instance_type_names to users, so that if
         they know exactly how to map to a particular platform, they always
         have an escape hatch. """
-        inst_ret = self.run_farm_hosts_dict[instance_type_name][self.mapper_consumed[instance_type_name]]
+        inst_tup = self.run_farm_hosts_dict[instance_type_name][self.mapper_consumed[instance_type_name]]
+        inst_ret = inst_tup[0]
         self.mapper_consumed[instance_type_name] += 1
         return inst_ret
 
@@ -271,9 +284,12 @@ class AWSEC2F1(RunFarm):
     def bind_mock_instances_to_objects(self) -> None:
         """ Only used for testing. Bind mock Boto3 instances to objects. """
         for inst_type, inst_list in self.run_farm_hosts_dict.items():
-            for run_farm_host in inst_list:
-                assert isinstance(run_farm_host.instance_deploy_manager, EC2InstanceDeployManager)
-                run_farm_host.instance_deploy_manager.boto3_instance_object = MockBoto3Instance()
+            for idx, run_farm_host_tup in enumerate(inst_list):
+                boto_obj = MockBoto3Instance()
+                inst = run_farm_host_tup[0]
+                inst.set_host_name("centos@" + boto_obj.private_ip_address)
+                inst_list[idx] = (inst, boto_obj)
+            self.run_farm_hosts_dict[inst_type] = inst_list
 
     def bind_real_instances_to_objects(self) -> None:
         """ Attach running instances to the Run Farm. """
@@ -290,7 +306,6 @@ class AWSEC2F1(RunFarm):
             if not (len(available_instances_per_type[instance_type_name]) >= len(self.run_farm_hosts_dict[instance_type_name])):
                 rootLogger.warning(message.format(instance_type_name))
 
-
         ipmessage = """Using {} instances with IPs:\n{}"""
         for instance_type_name in self.SUPPORTED_INSTANCE_TYPE_NAMES:
             rootLogger.debug(ipmessage.format(instance_type_name, str(get_private_ips_for_instances(available_instances_per_type[instance_type_name]))))
@@ -298,9 +313,11 @@ class AWSEC2F1(RunFarm):
         # assign boto3 instance objects to our instance objects
         for instance_type_name in self.SUPPORTED_INSTANCE_TYPE_NAMES:
             for index, instance in enumerate(available_instances_per_type[instance_type_name]):
-                inst = self.run_farm_hosts_dict[instance_type_name][index]
-                assert isinstance(inst.instance_deploy_manager, EC2InstanceDeployManager)
-                inst.instance_deploy_manager.boto3_instance_object = instance
+                inst_tup = self.run_farm_hosts_dict[instance_type_name][index]
+                inst = inst_tup[0]
+                inst.set_host_name("centos@" + instance.private_ip_address)
+                new_tup = (inst, instance)
+                self.run_farm_hosts_dict[instance_type_name][index] = new_tup
 
     def post_launch_binding(self, mock: bool = False) -> None:
         if mock:
@@ -388,23 +405,23 @@ class AWSEC2F1(RunFarm):
         all_insts = []
         for instance_type_name in self.SUPPORTED_INSTANCE_TYPE_NAMES:
             inst_list = self.run_farm_hosts_dict[instance_type_name]
-            for inst in inst_list:
-                assert isinstance(inst.instance_deploy_manager, EC2InstanceDeployManager)
+            for inst, boto in inst_list:
                 all_insts.append(inst)
         return all_insts
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for inst in self.get_all_host_nodes():
-            assert isinstance(inst.instance_deploy_manager, EC2InstanceDeployManager)
-            if inst.instance_deploy_manager.boto3_instance_object is not None:
-                all_insts.append(inst)
+        for instance_type_name in self.SUPPORTED_INSTANCE_TYPE_NAMES:
+            inst_list = self.run_farm_hosts_dict[instance_type_name]
+            for inst, boto in inst_list:
+                if boto is not None:
+                    all_insts.append(inst)
         return all_insts
 
     def lookup_by_ip_addr(self, ipaddr) -> Inst:
         """ Get an instance object from its IP address. """
         for host_node in self.get_all_bound_host_nodes():
-            if host_node.instance_deploy_manager.get_hostname() == ipaddr:
+            if host_node.get_host_name() == ipaddr:
                 return host_node
         assert False, f"Unable to find host node by {ipaddr} host name"
 
@@ -414,7 +431,8 @@ class ExternallyProvisioned(RunFarm):
 
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
-    fpga_nodes: List[Inst]
+    run_farm_hosts_dict: Dict[str, List[Inst]]
+    mapper_consumed: Dict[str, int]
 
     def __init__(self, args: Dict[str, Any]) -> None:
         super().__init__(args)
@@ -432,9 +450,6 @@ class ExternallyProvisioned(RunFarm):
 
         self.fpga_nodes = []
 
-        # TODO: currently, only supports 1 ip address
-        assert(len(runhosts_list) == 1)
-
         for runhost in runhosts_list:
             if isinstance(runhost, dict):
                 # add element { ip-addr: { arg1: val1, arg2: val2, ... } }
@@ -450,16 +465,16 @@ class ExternallyProvisioned(RunFarm):
                 simulation_dir = ip_args.get("override_simulation_dir", default_simulation_dir)
 
                 inst = Inst(num_fpgas, dispatch_dict[platform], simulation_dir)
-                inst.instance_deploy_manager.set_hostname(ip_addr)
-                self.fpga_nodes.append(inst)
+                inst.set_host_name(ip_addr)
+                self.run_farm_hosts_dict[ip_addr] = [inst]
             elif isinstance(runhost, str):
                 # add element w/ defaults
                 assert default_num_fpgas is not None and isinstance(default_num_fpgas, int)
                 assert default_platform is not None and isinstance(default_platform, str)
                 assert default_simulation_dir is not None and isinstance(default_simulation_dir, str)
                 inst = Inst(default_num_fpgas, dispatch_dict[default_platform], default_simulation_dir)
-                inst.instance_deploy_manager.set_hostname(runhost)
-                self.fpga_nodes.append(inst)
+                inst.set_host_name(runhost)
+                self.run_farm_hosts_dict[runhost] = [inst]
             else:
                 raise Exception("Unknown runhost type")
 
@@ -480,6 +495,7 @@ class ExternallyProvisioned(RunFarm):
     def mapper_get_default_switch_host_inst_type_name(self) -> str:
         """ Get the default host instance type name that can host switch
         simulations. """
+        # get the first inst that doesn't have fpga slots
         raise NotImplementedError
 
     def post_launch_binding(self, mock: bool = False) -> None:
@@ -492,7 +508,11 @@ class ExternallyProvisioned(RunFarm):
         return
 
     def get_all_host_nodes(self) -> List[Inst]:
-        return self.fpga_nodes
+        all_insts = []
+        for name, inst_list in self.run_farm_hosts_dict.items():
+            for inst in inst_list:
+                all_insts.append(inst)
+        return all_insts
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
         return self.get_all_host_nodes()
@@ -500,7 +520,7 @@ class ExternallyProvisioned(RunFarm):
     def lookup_by_ip_addr(self, ipaddr: str) -> Inst:
         """ Get an instance object from its IP address. """
         for host_node in self.get_all_bound_host_nodes():
-            if host_node.instance_deploy_manager.get_hostname() == ipaddr:
+            if host_node.get_host_name() == ipaddr:
                 return host_node
         assert False, f"Unable to find host node by {ipaddr} host name"
 

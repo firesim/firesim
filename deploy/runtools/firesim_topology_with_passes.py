@@ -399,7 +399,7 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.infrasetup_instance()
 
-        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.get_host_name() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -422,7 +422,7 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_switches_instance()
 
-        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.get_host_name() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_runfarm_ips)
         execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
 
@@ -438,7 +438,7 @@ class FireSimTopologyWithPasses:
         """ Passes that kill the simulator. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.get_host_name() for x in self.run_farm.get_all_bound_host_nodes()]
 
         @parallel
         def kill_switch_wrapper(runfarm: RunFarm) -> None:
@@ -476,11 +476,9 @@ class FireSimTopologyWithPasses:
 
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
+        self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        if isinstance(self.run_farm, AWSEC2F1):
-            self.run_farm.post_launch_binding(use_mock_instances_for_testing)
-
-        all_runfarm_ips = [x.instance_deploy_manager.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_runfarm_ips = [x.get_host_name() for x in self.run_farm.get_all_bound_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
         with StreamLogger('stdout'), StreamLogger('stderr'):

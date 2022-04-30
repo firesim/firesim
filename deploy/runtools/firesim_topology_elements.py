@@ -84,7 +84,7 @@ class FireSimLink:
     def link_hostserver_ip(self) -> str:
         """ Get the IP address used for this Link. This should only be called for
         links implemented with SocketPorts. """
-        return self.get_uplink_side().get_host_instance().instance_deploy_manager.get_hostname()
+        return self.get_uplink_side().get_host_instance().get_host_name()
 
     def link_crosses_hosts(self) -> bool:
         """ Return True if the user has mapped the two endpoints of this link to
