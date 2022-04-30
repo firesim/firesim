@@ -615,7 +615,6 @@ class InstanceDeployManager:
 
 
     def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
-        assert isinstance(self.parentnode, M4_16)
         assert switchslot < len(self.parentnode.switch_slots)
 
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
@@ -631,7 +630,6 @@ class InstanceDeployManager:
                 put(local_path, pjoin(remote_switch_dir, remote_path), mirror_local_mode=True)
 
     def start_switch_slot(self, switchslot: int) -> None:
-        assert isinstance(self.parentnode, M4_16)
         assert switchslot < len(self.parentnode.switch_slots)
 
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
@@ -652,7 +650,6 @@ class InstanceDeployManager:
 
     def kill_switch_slot(self, switchslot: int) -> None:
         """ kill the switch in slot switchslot. """
-        assert isinstance(self.parentnode, M4_16)
         assert switchslot < len(self.parentnode.switch_slots)
 
         self.instance_logger("""Killing switch simulation for switchslot: {}.""".format(switchslot))
