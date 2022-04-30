@@ -49,10 +49,10 @@ local_run_farm:
         default_num_fpgas: 4
         default_platform: EC2InstanceDeployManager
         default_simulation_dir: /home/centos
-        # REQUIRED: List of IP addresses (or "localhost"). Each can have multiple OPTIONAL
+        # REQUIRED: List of unique hostnames. Each can have multiple OPTIONAL
         # arguments, called "override_*", corresponding to the "default_*" arguments specified
         # above. Each "override_*" argument overrides the corresponding "default_*" argument for
-        # that specific run host
+        # that specific run host.
         #
         # Ex:
         # run_farm_hosts:

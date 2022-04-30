@@ -97,18 +97,18 @@ class RunFarm(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def mapper_get_min_sim_host_inst_type_name(self, num_sims: int) -> str:
-        """ Return the smallest instance type that supports greater than or
-        equal to num_sims simulations AND has available instances of that type
-        (according to instance counts you've specified in config_runtime.ini).
+        """Return the smallest run host type that supports greater than or
+        equal to num_sims simulations AND has available run hosts of that type
+        (according to run host counts you've specified in config_run_farm.ini).
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def mapper_alloc_instance(self, instance_type_name: str) -> Inst:
-        """ Let user allocate and use an instance (assign sims, etc.).
+        """Let user allocate and use an run host (assign sims, etc.).
         This deliberately exposes instance_type_names to users, so that if
         they know exactly how to map to a particular platform, they always
-        have an escape hatch. """
+        have an escape hatch."""
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -140,6 +140,13 @@ class RunFarm(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def lookup_by_ip_addr(self, ipaddr: str) -> Inst:
         raise NotImplementedError
+
+def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
+    """Take a dict, convert to list of pairs, flip key and value,
+    remove all keys equal to zero, then sort on the new key."""
+    out_list = [(y, x) for x, y in list(input_dict.items())]
+    out_list = list(filter(lambda x: x[0] != 0, out_list))
+    return sorted(out_list, key=lambda x: x[0])
 
 class AWSEC2F1(RunFarm):
     """ This manages the set of AWS resources requested for the run farm. It
@@ -181,13 +188,6 @@ class AWSEC2F1(RunFarm):
 
         for inst_type in self.SUPPORTED_INSTANCE_TYPE_NAMES:
             assert inst_type in self.INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS.keys()
-
-        def invert_filter_sort(input_dict):
-            """ take a dict, convert to list of pairs, flip key and value,
-            remove all keys equal to zero, then sort on the new key. """
-            out_list = [(y, x) for x, y in list(input_dict.items())]
-            out_list = list(filter(lambda x: x[0] != 0, out_list))
-            return sorted(out_list, key=lambda x: x[0])
 
         # for later use during mapping
         self.SORTED_INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS = invert_filter_sort(self.INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS)
@@ -263,7 +263,7 @@ class AWSEC2F1(RunFarm):
                 continue
             return instance_type_name
 
-        rootLogger.critical("ERROR: No instances are available to satisfy the request for an instance with support for " + str(num_sims) + " simulation slots. Add more instances in your runtime configuration (e.g., config_runtime.ini).")
+        rootLogger.critical(f"ERROR: No instances are available to satisfy the request for an instance with support for {num_sims} simulation slots. Add more instances in your runfarm configuration (e.g., config_run_farm.ini).")
         raise Exception
 
     def mapper_alloc_instance(self, instance_type_name: str) -> Inst:
@@ -431,8 +431,9 @@ class ExternallyProvisioned(RunFarm):
 
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
-    run_farm_hosts_dict: Dict[str, List[Inst]]
-    mapper_consumed: Dict[str, int]
+    run_farm_hosts_dict: Dict[str, Inst]
+    mapper_consumed: Dict[str, bool]
+    SORTED_INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS: List[Tuple[int, str]]
 
     def __init__(self, args: Dict[str, Any]) -> None:
         super().__init__(args)
@@ -448,7 +449,8 @@ class ExternallyProvisioned(RunFarm):
 
         runhosts_list = self.args["run_farm_hosts"]
 
-        self.fpga_nodes = []
+        self.run_farm_hosts_dict = {}
+        self.mapper_consumed = {}
 
         for runhost in runhosts_list:
             if isinstance(runhost, dict):
@@ -466,7 +468,9 @@ class ExternallyProvisioned(RunFarm):
 
                 inst = Inst(num_fpgas, dispatch_dict[platform], simulation_dir)
                 inst.set_host_name(ip_addr)
-                self.run_farm_hosts_dict[ip_addr] = [inst]
+                assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
+                self.run_farm_hosts_dict[ip_addr] = inst
+                self.mapper_consumed[ip_addr] = False
             elif isinstance(runhost, str):
                 # add element w/ defaults
                 assert default_num_fpgas is not None and isinstance(default_num_fpgas, int)
@@ -474,29 +478,57 @@ class ExternallyProvisioned(RunFarm):
                 assert default_simulation_dir is not None and isinstance(default_simulation_dir, str)
                 inst = Inst(default_num_fpgas, dispatch_dict[default_platform], default_simulation_dir)
                 inst.set_host_name(runhost)
-                self.run_farm_hosts_dict[runhost] = [inst]
+                assert not runhost in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {runhost}"
+                self.run_farm_hosts_dict[runhost] = inst
+                self.mapper_consumed[runhost] = False
             else:
                 raise Exception("Unknown runhost type")
+
+        # sort the instances
+        host_sim_slot_dict = {}
+        for host_name, inst in self.run_farm_hosts_dict.items():
+            host_sim_slot_dict[host_name] = inst.MAX_SIM_SLOTS_ALLOWED
+
+        self.SORTED_INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS = invert_filter_sort(host_sim_slot_dict)
 
     def mapper_get_min_sim_host_inst_type_name(self, num_sims: int) -> str:
         """ Return the smallest instance type that supports greater than or
         equal to num_sims simulations AND has available instances of that type
         (according to instance counts you've specified in config_runtime.ini).
         """
-        raise NotImplementedError
+        # then iterate through them
+        for max_simcount, instance_type_name in self.SORTED_INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS:
+            if max_simcount < num_sims:
+                # instance doesn't support enough sims
+                continue
+            consumed = self.mapper_consumed[instance_type_name]
+            if consumed:
+                # instance supports enough sims but none are available
+                continue
+            return instance_type_name
+
+        rootLogger.critical(f"ERROR: No run hosts are available to satisfy the request for an instance with support for {num_sims} simulation slots. Add more instances in your runfarm configuration (e.g., config_run_farm.ini).")
+        raise Exception
 
     def mapper_alloc_instance(self, instance_type_name: str) -> Inst:
         """ Let user allocate and use an instance (assign sims, etc.).
         This deliberately exposes instance_type_names to users, so that if
         they know exactly how to map to a particular platform, they always
         have an escape hatch. """
-        raise NotImplementedError
+        inst_ret = self.run_farm_hosts_dict[instance_type_name]
+        assert self.mapper_consumed[instance_type_name] == False, "{instance_type_name} is already allocated."
+        self.mapper_consumed[instance_type_name] = True
+        return inst_ret
 
     def mapper_get_default_switch_host_inst_type_name(self) -> str:
         """ Get the default host instance type name that can host switch
         simulations. """
         # get the first inst that doesn't have fpga slots
-        raise NotImplementedError
+        for host_name, inst in self.run_farm_hosts_dict.items():
+            if len(inst.sim_slots) == 0:
+                return host_name
+
+        assert False, "Unable to return run host to host switches. Make sure at least one run host is available with no FPGAs in use."
 
     def post_launch_binding(self, mock: bool = False) -> None:
         return
@@ -509,9 +541,8 @@ class ExternallyProvisioned(RunFarm):
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for name, inst_list in self.run_farm_hosts_dict.items():
-            for inst in inst_list:
-                all_insts.append(inst)
+        for name, inst in self.run_farm_hosts_dict.items():
+            all_insts.append(inst)
         return all_insts
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
