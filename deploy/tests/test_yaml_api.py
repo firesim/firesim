@@ -191,7 +191,7 @@ class TestConfigBuildAPI:
     """ Test config_{build, build_recipes}.yaml APIs """
 
     def test_invalid_build_section(self, task_mocker, build_yamls, firesim_parse_args):
-        m = task_mocker.patch('buildafi', wrap_config=True)
+        m = task_mocker.patch('buildbitstream', wrap_config=True)
 
         # at the beginning of the test build_yamls contains the backup-sample-configs
         # but we can show exactly what we're doing different from the default by
@@ -208,13 +208,13 @@ class TestConfigBuildAPI:
             """))
 
         build_yamls.write()
-        args = firesim_parse_args(['buildafi'] + build_yamls.args)
+        args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError)
         m['task'].assert_not_called()
         m['config'].assert_called_once_with(args)
 
     def test_invalid_buildfarm_type(self, task_mocker, build_yamls, firesim_parse_args):
-        m = task_mocker.patch('buildafi', wrap_config=True)
+        m = task_mocker.patch('buildbitstream', wrap_config=True)
 
         build_yamls.build.load(dedent("""
             build_farm: testing_build_farm
@@ -244,7 +244,7 @@ class TestConfigBuildAPI:
                 s3_bucket_name: TESTING_BUCKET_NAME
             """))
         build_yamls.write()
-        args = firesim_parse_args(['buildafi'] + build_yamls.args)
+        args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(KeyError, re.compile(r'INVALID_BUILD_FARM_TYPE'))
         # the exception should happen while building the config, before the task is actually called
         m['config'].assert_called_once_with(args)
@@ -255,7 +255,7 @@ class TestConfigBuildAPI:
                               'local_build_farm',
                               ])
     def test_invalid_farm_missing_args(self, task_mocker, build_yamls, firesim_parse_args, farm_name):
-        m = task_mocker.patch('buildafi', wrap_config=True)
+        m = task_mocker.patch('buildbitstream', wrap_config=True)
 
         build_yamls.build.data.should.contain('build_farm')
         build_yamls.build.data['build_farm'] = farm_name
@@ -263,19 +263,19 @@ class TestConfigBuildAPI:
         build_yamls.farm.data[farm_name]['args'] = None
 
         build_yamls.write()
-        args = firesim_parse_args(['buildafi'] + build_yamls.args)
+        args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError, re.compile(r'object is not subscriptable'))
         m['task'].assert_not_called()
 
 
     def test_invalid_unmanaged_missing_args(self, task_mocker, build_yamls, firesim_parse_args):
-        m = task_mocker.patch('buildafi', wrap_config=True)
+        m = task_mocker.patch('buildbitstream', wrap_config=True)
 
         build_yamls.build.data['build_farm'] = 'local_build_farm'
         build_yamls.farm.data['local_build_farm']['args']['build_farm_hosts'] = None
 
         build_yamls.write()
-        args = firesim_parse_args(['buildafi'] + build_yamls.args)
+        args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
         firesim.main.when.called_with(args).should.throw(TypeError)
         m['task'].assert_not_called()
 
@@ -286,6 +286,10 @@ class TestConfigBuildAPI:
                                      '-s',
                                     ])
     def test_config_existence(self, task_mocker, build_yamls, firesim_parse_args, task_name, opt, non_existent_file):
+        # TODO: Remove after deprecation
+        if task_name == "buildafi":
+            task_name = "buildbitstream"
+
         m = task_mocker.patch(task_name, wrap_config=True)
 
         build_yamls.write()

@@ -134,7 +134,7 @@ through the rest of the FireSim setup process. To run it, do the following:
 
 ::
 
-    firesim managerinit
+    firesim managerinit --platform f1
 
 This will first prompt you to setup AWS credentials on the instance, which allows
 the manager to automatically manage build/simulation nodes. See
@@ -142,10 +142,11 @@ https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#config
 for more about these credentials. When prompted, you should specify the same
 region that you chose above and set the default output format to ``json``.
 
-Next, it will create initial configuration files, which we will edit in later
-sections. Finally, it will prompt you for an email address, which is used to
+Next, it will prompt you for an email address, which is used to
 send email notifications upon FPGA build completion and optionally for
 workload completion. You can leave this blank if you do not wish to receive any
 notifications, but this is not recommended.
+Next, it will create initial configuration files, which we will edit in later
+sections.
 
 Now you're ready to launch FireSim simulations! Hit Next to learn how to run single-node simulations.

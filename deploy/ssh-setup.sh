@@ -33,6 +33,6 @@ else
     if ssh-add ~/firesim.pem; then
         echo "success: firesim.pem added to ssh-agent"
     else
-        echo "FAIL: ERROR adding ~/firesim.pem to ssh-agent. does it exist?"
+        echo "FAIL: ERROR adding ~/firesim.pem to ssh-agent. If on AWS F1, does it exist?"
     fi
 fi
