@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
+from __future__ import annotations
 
 import sys
 import os
@@ -11,21 +12,21 @@ import random
 import argcomplete # type: ignore
 from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
 import string
-from typing import Dict, Callable, Optional
-from typing import TypedDict
 from inspect import signature
 from warnings import warn
 from pathlib import Path
 
 from runtools.runtime_config import RuntimeConfig
 
-from awstools.awstools import awsinit, get_aws_userid
-from awstools.afitools import *
+from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscribe_to_firesim_topic, awsinit
+from awstools.afitools import share_agfi_in_all_regions
 
 from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
+
+from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints
 
 PLATFORM_LIST = [_.name for _ in Path(__file__).parent.parent.joinpath('platforms').iterdir()]
 
@@ -58,6 +59,9 @@ def register_task(task: Callable) -> Callable:
 
     config_class = None
 
+    # resolve str type hints
+    task.__annotations__ = get_type_hints(task)
+
     # introspect the type of config that this task takes (it's first param)
     sig = signature(task)
     if sig.parameters:
@@ -66,6 +70,9 @@ def register_task(task: Callable) -> Callable:
             raise TypeError(f'{tn}, requires type annotation on first parameter, {first.name}')
         else:
             config_class = first.annotation
+
+            # resolve str type hints
+            config_class.__init__.__annotations__ = get_type_hints(config_class.__init__)
 
             # check that the first parameter takes a Namespace passed to its constructor
             # or that it is a Namespace

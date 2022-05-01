@@ -1,19 +1,27 @@
 """ Run Farm management. """
 
+from __future__ import annotations
+
 import re
 import logging
-
-from awstools.awstools import *
-from fabric.api import * # type: ignore
-from fabric.contrib.project import rsync_project # type: ignore
-from util.streamlogger import StreamLogger
 import time
-
+import os
+from datetime import timedelta
+from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide # type: ignore
+from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
+
+from awstools.awstools import instances_sorted_by_avail_ip, get_run_instances_by_tag_type, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, terminate_instances, get_instance_ids_for_instances
+from util.streamlogger import StreamLogger
+
+from typing import Dict, Optional, List, Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
+    from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
 
 rootLogger = logging.getLogger()
 
-def remote_kmsg(message):
+def remote_kmsg(message: str) -> None:
     """ This will let you write whatever is passed as message into the kernel
     log of the remote machine.  Useful for figuring what the manager is doing
     w.r.t output from kernel stuff on the remote node. """
@@ -24,28 +32,32 @@ class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
 
     # don't use 0 unless you want stuff copied to your own instance.
-    base_ip = 1
+    base_ip: int = 1
+    ip_addr_int: int
+    private_ip_address: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.ip_addr_int = MockBoto3Instance.base_ip
         MockBoto3Instance.base_ip += 1
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
 
-class NBDTracker(object):
+class NBDTracker:
     """ Track allocation of NBD devices on an instance. Used for mounting
     qcow2 images."""
 
     # max number of NBDs allowed by the nbd.ko kernel module
-    NBDS_MAX = 128
+    NBDS_MAX: int = 128
+    unallocd: List[str]
+    allocated_dict: Dict[str, str]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.unallocd = ["""/dev/nbd{}""".format(x) for x in range(self.NBDS_MAX)]
 
         # this is a mapping from .qcow2 image name to nbd device.
         self.allocated_dict = {}
 
-    def get_nbd_for_imagename(self, imagename):
+    def get_nbd_for_imagename(self, imagename: str) -> str:
         """ Call this when you need to allocate an nbd for a particular image,
         or when you need to know what nbd device is for that image.
 
@@ -60,40 +72,41 @@ class NBDTracker(object):
         return self.allocated_dict[imagename]
 
 
-class EC2Inst(object):
+class EC2Inst:
     # TODO: this is leftover from when we could only support switch slots.
     # This can be removed once self.switch_slots is dynamically allocated.
     # Just make it arbitrarily large for now.
-    SWITCH_SLOTS = 100000
+    SWITCH_SLOTS: int = 100000
+    boto3_instance_object: Optional[Union[EC2InstanceResource, MockBoto3Instance]]
+    switch_slots: List[FireSimSwitchNode]
+    instance_deploy_manager: InstanceDeployManager
+    _next_port: int
+    nbd_tracker: NBDTracker
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.boto3_instance_object = None
-        self.switch_slots = [None for x in range(self.SWITCH_SLOTS)]
-        self.switch_slots_consumed = 0
+        self.switch_slots = []
         self.instance_deploy_manager = InstanceDeployManager(self)
         self._next_port = 10000 # track ports to allocate for server switch model ports
         self.nbd_tracker = NBDTracker()
 
-    def assign_boto3_instance_object(self, boto3obj):
+    def assign_boto3_instance_object(self, boto3obj: Union[EC2InstanceResource, MockBoto3Instance]) -> None:
         self.boto3_instance_object = boto3obj
 
-    def is_bound_to_real_instance(self):
+    def is_bound_to_real_instance(self) -> bool:
         return self.boto3_instance_object is not None
 
-    def get_private_ip(self):
+    def get_private_ip(self) -> str:
+        assert self.boto3_instance_object is not None
         return self.boto3_instance_object.private_ip_address
 
-    def add_switch(self, firesimswitchnode):
+    def add_switch(self, firesimswitchnode: FireSimSwitchNode) -> None:
         """ Add a switch to the next available switch slot. """
-        assert self.switch_slots_consumed < self.SWITCH_SLOTS
-        self.switch_slots[self.switch_slots_consumed] = firesimswitchnode
+        assert len(self.switch_slots) < self.SWITCH_SLOTS
+        self.switch_slots.append(firesimswitchnode)
         firesimswitchnode.assign_host_instance(self)
-        self.switch_slots_consumed += 1
 
-    def get_num_switch_slots_consumed(self):
-        return self.switch_slots_consumed
-
-    def allocate_host_port(self):
+    def allocate_host_port(self) -> int:
         """ Allocate a port to use for something on the host. Successive calls
         will return a new port. """
         retport = self._next_port
@@ -102,63 +115,55 @@ class EC2Inst(object):
         return retport
 
 class F1_Instance(EC2Inst):
-    FPGA_SLOTS = 0
+    FPGA_SLOTS: int = 0
+    fpga_slots: List[FireSimServerNode]
 
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.fpga_slots = []
-        self.fpga_slots_consumed = 0
-        super(F1_Instance, self).__init__()
 
-    def get_num_fpga_slots_max(self):
+    def get_num_fpga_slots_max(self) -> int:
         """ Get the number of fpga slots. """
         return self.FPGA_SLOTS
 
-    def get_num_fpga_slots_consumed(self):
-        """ Get the number of fpga slots. """
-        return self.fpga_slots_consumed
-
-    def add_simulation(self, firesimservernode):
+    def add_simulation(self, firesimservernode: FireSimServerNode) -> None:
         """ Add a simulation to the next available slot. """
-        assert self.fpga_slots_consumed < self.FPGA_SLOTS
-        self.fpga_slots[self.fpga_slots_consumed] = firesimservernode
+        assert len(self.fpga_slots) < self.FPGA_SLOTS
+        self.fpga_slots.append(firesimservernode)
         firesimservernode.assign_host_instance(self)
-        self.fpga_slots_consumed += 1
 
 class F1_16(F1_Instance):
-    instance_counter = 0
-    FPGA_SLOTS = 8
+    instance_counter: int = 0
+    FPGA_SLOTS: int = 8
 
-    def __init__(self):
-        super(F1_16, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
+    def __init__(self) -> None:
+        super().__init__()
         self.instance_id = F1_16.instance_counter
         F1_16.instance_counter += 1
 
 class F1_4(F1_Instance):
-    instance_counter = 0
-    FPGA_SLOTS = 2
+    instance_counter: int = 0
+    FPGA_SLOTS: int = 2
 
-    def __init__(self):
-        super(F1_4, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
+    def __init__(self) -> None:
+        super().__init__()
         self.instance_id = F1_4.instance_counter
         F1_4.instance_counter += 1
 
 class F1_2(F1_Instance):
-    instance_counter = 0
-    FPGA_SLOTS = 1
+    instance_counter: int = 0
+    FPGA_SLOTS: int = 1
 
-    def __init__(self):
-        super(F1_2, self).__init__()
-        self.fpga_slots = [None for x in range(self.FPGA_SLOTS)]
+    def __init__(self) -> None:
+        super().__init__()
         self.instance_id = F1_2.instance_counter
         F1_2.instance_counter += 1
 
 class M4_16(EC2Inst):
-    instance_counter = 0
+    instance_counter: int = 0
 
-    def __init__(self):
-        super(M4_16, self).__init__()
+    def __init__(self) -> None:
+        super().__init__()
         self.instance_id = M4_16.instance_counter
         M4_16.instance_counter += 1
 
@@ -168,10 +173,20 @@ class RunFarm:
 
     This way, you can assign "instances" to simulations first, and then assign
     the real instance ids to the instance objects managed here."""
+    f1_16s: List[F1_16]
+    f1_4s: List[F1_4]
+    f1_2s: List[F1_2]
+    m4_16s: List[M4_16]
+    runfarmtag: str
+    run_instance_market: str
+    spot_interruption_behavior: str
+    spot_max_price: str
+    launch_timeout: timedelta
+    always_expand: bool
 
-    def __init__(self, num_f1_16, num_f1_4, num_f1_2, num_m4_16, runfarmtag,
-                 run_instance_market, spot_interruption_behavior,
-                 spot_max_price, launch_timeout, always_expand):
+    def __init__(self, num_f1_16: int, num_f1_4: int, num_f1_2: int, num_m4_16: int, runfarmtag: str,
+            run_instance_market: str, spot_interruption_behavior: str,
+            spot_max_price: str, launch_timeout: timedelta, always_expand: bool):
         self.f1_16s = [F1_16() for x in range(num_f1_16)]
         self.f1_4s = [F1_4() for x in range(num_f1_4)]
         self.f1_2s = [F1_2() for x in range(num_f1_2)]
@@ -185,7 +200,7 @@ class RunFarm:
         self.launch_timeout = launch_timeout
         self.always_expand = always_expand
 
-    def bind_mock_instances_to_objects(self):
+    def bind_mock_instances_to_objects(self) -> None:
         """ Only used for testing. Bind mock Boto3 instances to objects. """
         for index in range(len(self.f1_16s)):
             self.f1_16s[index].assign_boto3_instance_object(MockBoto3Instance())
@@ -199,7 +214,7 @@ class RunFarm:
         for index in range(len(self.m4_16s)):
             self.m4_16s[index].assign_boto3_instance_object(MockBoto3Instance())
 
-    def bind_real_instances_to_objects(self):
+    def bind_real_instances_to_objects(self) -> None:
         """ Attach running instances to the Run Farm. """
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
@@ -244,7 +259,7 @@ class RunFarm:
             self.f1_2s[index].assign_boto3_instance_object(instance)
 
 
-    def launch_run_farm(self):
+    def launch_run_farm(self) -> None:
         """ Launch the run farm. """
         runfarmtag = self.runfarmtag
         runinstancemarket = self.run_instance_market
@@ -281,8 +296,8 @@ class RunFarm:
         wait_on_instance_launches(f1_2s, 'f1.2xlarges')
 
 
-    def terminate_run_farm(self, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                           terminatesomem4_16, forceterminate):
+    def terminate_run_farm(self, terminatesomef1_16: int, terminatesomef1_4: int, terminatesomef1_2: int,
+            terminatesomem4_16: int, forceterminate: bool):
         runfarmtag = self.runfarmtag
 
         # get instances that belong to the run farm. sort them in case we're only
@@ -361,19 +376,18 @@ class RunFarm:
         else:
             rootLogger.critical("Termination cancelled.")
 
-    def get_all_host_nodes(self):
+    def get_all_host_nodes(self) -> List[EC2Inst]:
         """ Get objects for all host nodes in the run farm that are bound to
         a real instance. """
-        allinsts = self.f1_16s + self.f1_2s + self.f1_4s + self.m4_16s
-        return [inst for inst in allinsts if inst.boto3_instance_object is not None]
+        allinsts: List[EC2Inst] = [*self.f1_16s, *self.f1_2s, *self.f1_4s, *self.m4_16s]
+        return [inst for inst in allinsts if inst.is_bound_to_real_instance()]
 
-    def lookup_by_ip_addr(self, ipaddr):
+    def lookup_by_ip_addr(self, ipaddr: str) -> EC2Inst:
         """ Get an instance object from its IP address. """
         for host_node in self.get_all_host_nodes():
             if host_node.get_private_ip() == ipaddr:
                 return host_node
-        return None
-
+        assert False, f"Unable to find host node by {ipaddr} host name"
 
 class InstanceDeployManager:
     """  This class manages actually deploying/running stuff based on the
@@ -381,14 +395,15 @@ class InstanceDeployManager:
 
     This is in charge of managing the locations of stuff on remote nodes.
     """
+    parentnode: EC2Inst
 
-    def __init__(self, parentnode):
+    def __init__(self, parentnode: EC2Inst) -> None:
         self.parentnode = parentnode
 
-    def instance_logger(self, logstr):
+    def instance_logger(self, logstr: str) -> None:
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)
 
-    def get_and_install_aws_fpga_sdk(self):
+    def get_and_install_aws_fpga_sdk(self) -> None:
         """ Installs the aws-sdk. This gets us access to tools to flash the fpga. """
 
         with prefix('cd ../'), \
@@ -405,7 +420,7 @@ class InstanceDeployManager:
         with cd('/home/centos/aws-fpga'), StreamLogger('stdout'), StreamLogger('stderr'):
             run('source sdk_setup.sh')
 
-    def fpga_node_xdma(self):
+    def fpga_node_xdma(self) -> None:
         """ Copy XDMA infra to remote node. This assumes that the driver was
         already built and that a binary exists in the directory on this machine
         """
@@ -421,7 +436,7 @@ class InstanceDeployManager:
                 run('make clean')
                 run('make')
 
-    def fpga_node_qcow(self):
+    def fpga_node_qcow(self) -> None:
         """ Install qemu-img management tools and copy NBD infra to remote
         node. This assumes that the kernel module was already built and exists
         in the directory on this machine.
@@ -434,7 +449,7 @@ class InstanceDeployManager:
             # copy over kernel module
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
 
-    def load_nbd_module(self):
+    def load_nbd_module(self) -> None:
         """ load the nbd module. always unload the module first to ensure it
         is in a clean state. """
         self.unload_nbd_module()
@@ -443,7 +458,7 @@ class InstanceDeployManager:
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.parentnode.nbd_tracker.NBDS_MAX))
 
-    def unload_nbd_module(self):
+    def unload_nbd_module(self) -> None:
         """ unload the nbd module. """
         self.instance_logger("Unloading NBD Kernel Module.")
 
@@ -452,7 +467,7 @@ class InstanceDeployManager:
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run('sudo rmmod nbd')
 
-    def disconnect_all_nbds_instance(self):
+    def disconnect_all_nbds_instance(self) -> None:
         """ Disconnect all nbds on the instance. """
         self.instance_logger("Disconnecting all NBDs.")
 
@@ -465,7 +480,7 @@ class InstanceDeployManager:
 
             run("; ".join(fullcmd))
 
-    def unload_xrt_and_xocl(self):
+    def unload_xrt_and_xocl(self) -> None:
         self.instance_logger("Unloading XRT-related Kernel Modules.")
 
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -476,7 +491,7 @@ class InstanceDeployManager:
             run('sudo yum remove -y xrt xrt-aws')
             remote_kmsg("removing_xrt_end")
 
-    def unload_xdma(self):
+    def unload_xdma(self) -> None:
         self.instance_logger("Unloading XDMA Driver Kernel Module.")
 
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -489,8 +504,10 @@ class InstanceDeployManager:
         #self.instance_logger("Waiting 10 seconds after removing kernel modules (esp. xocl).")
         #time.sleep(10)
 
-    def clear_fpgas(self):
+    def clear_fpgas(self) -> None:
         # we always clear ALL fpga slots
+        assert isinstance(self.parentnode, F1_Instance)
+
         for slotno in range(self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Clearing FPGA Slot {}.""".format(slotno))
             with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -506,16 +523,18 @@ class InstanceDeployManager:
                 remote_kmsg("""done_checking_clear_fpga{}""".format(slotno))
 
 
-    def flash_fpgas(self):
+    def flash_fpgas(self) -> None:
+        assert isinstance(self.parentnode, F1_Instance)
+
         dummyagfi = None
-        for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
-            if firesimservernode is not None:
-                agfi = firesimservernode.get_agfi()
-                dummyagfi = agfi
-                self.instance_logger("""Flashing FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
-                with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
-                        slotno, agfi))
+
+        for slotno, firesimservernode in enumerate(self.parentnode.fpga_slots):
+            agfi = firesimservernode.get_agfi()
+            dummyagfi = agfi
+            self.instance_logger("""Flashing FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
+                    slotno, agfi))
 
         # We only do this because XDMA hangs if some of the FPGAs on the instance
         # are left in the cleared state. So, if you're only using some of the
@@ -523,25 +542,24 @@ class InstanceDeployManager:
         # anyway. Since the only interaction we have with an FPGA right now
         # is over PCIe where the software component is mastering, this can't
         # break anything.
-        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+        for slotno in range(len(self.parentnode.fpga_slots), self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Flashing FPGA Slot: {} with dummy agfi: {}.""".format(slotno, dummyagfi))
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""sudo fpga-load-local-image -S {} -I {} -A""".format(
                     slotno, dummyagfi))
 
-        for firesimservernode, slotno in zip(self.parentnode.fpga_slots, range(self.parentnode.get_num_fpga_slots_consumed())):
-            if firesimservernode is not None:
-                self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
-                with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
+        for slotno, firesimservernode in enumerate(self.parentnode.fpga_slots):
+            self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, agfi))
+            with StreamLogger('stdout'), StreamLogger('stderr'):
+                run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
-        for slotno in range(self.parentnode.get_num_fpga_slots_consumed(), self.parentnode.get_num_fpga_slots_max()):
+        for slotno in range(len(self.parentnode.fpga_slots), self.parentnode.get_num_fpga_slots_max()):
             self.instance_logger("""Checking for Flashed FPGA Slot: {} with agfi: {}.""".format(slotno, dummyagfi))
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""until sudo fpga-describe-local-image -S {} -R -H | grep -q "loaded"; do  sleep 1;  done""".format(slotno))
 
 
-    def load_xdma(self):
+    def load_xdma(self) -> None:
         """ load the xdma kernel module. """
         # fpga mgmt tools seem to force load xocl after a flash now...
         # xocl conflicts with the xdma driver, which we actually want to use
@@ -553,7 +571,7 @@ class InstanceDeployManager:
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
-    def start_ila_server(self):
+    def start_ila_server(self) -> None:
         """ start the vivado hw_server and virtual jtag on simulation instance.) """
         self.instance_logger("Starting Vivado hw_server.")
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -562,19 +580,19 @@ class InstanceDeployManager:
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run("""screen -S virtual_jtag -d -m bash -c "script -f -c 'sudo fpga-start-virtual-jtag -P 10201 -S 0'"; sleep 1""")
 
-    def kill_ila_server(self):
+    def kill_ila_server(self) -> None:
         """ Kill the vivado hw_server and virtual jtag """
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run("sudo pkill -SIGKILL hw_server")
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run("sudo pkill -SIGKILL fpga-local-cmd")
 
-    def copy_sim_slot_infrastructure(self, slotno):
+    def copy_sim_slot_infrastructure(self, slotno: int) -> None:
         """ copy all the simulation infrastructure to the remote node. """
+        assert isinstance(self.parentnode, F1_Instance)
+        assert slotno < len(self.parentnode.fpga_slots)
+
         serv = self.parentnode.fpga_slots[slotno]
-        if serv is None:
-            # slot unassigned
-            return
 
         self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
 
@@ -588,7 +606,7 @@ class InstanceDeployManager:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 # -z --inplace
                 rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
-                              ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
+                            ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
 
@@ -596,7 +614,9 @@ class InstanceDeployManager:
             run("""cp -r {}/* {}/""".format(remote_sim_rsync_dir, remote_sim_dir), shell=True)
 
 
-    def copy_switch_slot_infrastructure(self, switchslot):
+    def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
+        assert switchslot < len(self.parentnode.switch_slots)
+
         self.instance_logger("""Copying switch simulation infrastructure for switch slot: {}.""".format(switchslot))
 
         remote_switch_dir = """/home/centos/switch_slot_{}/""".format(switchslot)
@@ -609,54 +629,65 @@ class InstanceDeployManager:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 put(local_path, pjoin(remote_switch_dir, remote_path), mirror_local_mode=True)
 
-    def start_switch_slot(self, switchslot):
+    def start_switch_slot(self, switchslot: int) -> None:
+        assert switchslot < len(self.parentnode.switch_slots)
+
         self.instance_logger("""Starting switch simulation for switch slot: {}.""".format(switchslot))
         remote_switch_dir = """/home/centos/switch_slot_{}/""".format(switchslot)
         switch = self.parentnode.switch_slots[switchslot]
         with cd(remote_switch_dir), StreamLogger('stdout'), StreamLogger('stderr'):
             run(switch.get_switch_start_command())
 
-    def start_sim_slot(self, slotno):
+    def start_sim_slot(self, slotno: int) -> None:
+        assert isinstance(self.parentnode, F1_Instance)
+        assert slotno < len(self.parentnode.fpga_slots)
+
         self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
         remote_sim_dir = """/home/centos/sim_slot_{}/""".format(slotno)
         server = self.parentnode.fpga_slots[slotno]
         with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
             server.run_sim_start_command(slotno)
 
-    def kill_switch_slot(self, switchslot):
+    def kill_switch_slot(self, switchslot: int) -> None:
         """ kill the switch in slot switchslot. """
+        assert switchslot < len(self.parentnode.switch_slots)
+
         self.instance_logger("""Killing switch simulation for switchslot: {}.""".format(switchslot))
         switch = self.parentnode.switch_slots[switchslot]
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run(switch.get_switch_kill_command())
 
-    def kill_sim_slot(self, slotno):
+    def kill_sim_slot(self, slotno: int) -> None:
+        assert isinstance(self.parentnode, F1_Instance)
+        assert slotno < len(self.parentnode.fpga_slots)
+
         self.instance_logger("""Killing FPGA simulation for slot: {}.""".format(slotno))
         server = self.parentnode.fpga_slots[slotno]
         with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
             run(server.get_sim_kill_command(slotno))
 
-    def instance_assigned_simulations(self):
+    def instance_assigned_simulations(self) -> bool:
         """ return true if this instance has any assigned fpga simulations. """
-        if not isinstance(self.parentnode, M4_16):
-            if any(self.parentnode.fpga_slots):
+        if isinstance(self.parentnode, F1_Instance):
+            if len(self.parentnode.fpga_slots) > 0:
                 return True
         return False
 
-    def instance_assigned_switches(self):
+    def instance_assigned_switches(self) -> bool:
         """ return true if this instance has any assigned switch simulations. """
-        if any(self.parentnode.switch_slots):
+        if len(self.parentnode.switch_slots) > 0:
             return True
         return False
 
-    def infrasetup_instance(self):
+    def infrasetup_instance(self) -> None:
         """ Handle infrastructure setup for this instance. """
         # check if fpga node
         if self.instance_assigned_simulations():
             # This is an FPGA-host node.
+            assert isinstance(self.parentnode, F1_Instance)
 
             # copy fpga sim infrastructure
-            for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
+            for slotno in range(len(self.parentnode.fpga_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
 
             self.get_and_install_aws_fpga_sdk()
@@ -685,46 +716,49 @@ class InstanceDeployManager:
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
-            for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
+            for slotno in range(len(self.parentnode.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
 
-    def start_switches_instance(self):
+    def start_switches_instance(self) -> None:
         """ Boot up all the switches in a screen. """
         # remove shared mem pages used by switches
         if self.instance_assigned_switches():
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
 
-            for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
+            for slotno in range(len(self.parentnode.switch_slots)):
                 self.start_switch_slot(slotno)
 
-    def start_simulations_instance(self):
+    def start_simulations_instance(self) -> None:
         """ Boot up all the sims in a screen. """
         if self.instance_assigned_simulations():
+            assert isinstance(self.parentnode, F1_Instance)
+
             # only on sim nodes
-            for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
+            for slotno in range(len(self.parentnode.fpga_slots)):
                 self.start_sim_slot(slotno)
 
-    def kill_switches_instance(self):
+    def kill_switches_instance(self) -> None:
         """ Kill all the switches on this instance. """
         if self.instance_assigned_switches():
-            for slotno in range(self.parentnode.get_num_switch_slots_consumed()):
+            for slotno in range(len(self.parentnode.switch_slots)):
                 self.kill_switch_slot(slotno)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("sudo rm -rf /dev/shm/*")
 
-    def kill_simulations_instance(self, disconnect_all_nbds=True):
+    def kill_simulations_instance(self, disconnect_all_nbds: bool = True) -> None:
         """ Kill all simulations on this instance. """
         if self.instance_assigned_simulations():
+            assert isinstance(self.parentnode, F1_Instance)
             # only on sim nodes
-            for slotno in range(self.parentnode.get_num_fpga_slots_consumed()):
+            for slotno in range(len(self.parentnode.fpga_slots)):
                 self.kill_sim_slot(slotno)
         if disconnect_all_nbds:
             # disconnect all NBDs
             self.disconnect_all_nbds_instance()
 
-    def running_simulations(self):
+    def running_simulations(self) -> Dict[str, List[str]]:
         """ collect screen results from node to see what's running on it. """
         simdrivers = []
         switches = []
@@ -734,16 +768,20 @@ class InstanceDeployManager:
                 if "(Detached)" in line or "(Attached)" in line:
                     line_stripped = line.strip()
                     if "fsim" in line:
-                        line_stripped = re.search('fsim([0-9][0-9]*)', line_stripped).group(0)
+                        search = re.search('fsim([0-9][0-9]*)', line_stripped)
+                        assert search is not None
+                        line_stripped = search.group(0)
                         line_stripped = line_stripped.replace('fsim', '')
                         simdrivers.append(line_stripped)
                     elif "switch" in line:
-                        line_stripped = re.search('switch([0-9][0-9]*)', line_stripped).group(0)
+                        search = re.search('switch([0-9][0-9]*)', line_stripped)
+                        assert search is not None
+                        line_stripped = search.group(0)
                         switches.append(line_stripped)
         return {'switches': switches, 'simdrivers': simdrivers}
 
-    def monitor_jobs_instance(self, completed_jobs, teardown, terminateoncompletion,
-                              job_results_dir):
+    def monitor_jobs_instance(self, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool,
+            job_results_dir: str) -> Dict[str, Dict[str, bool]]:
         """ Job monitoring for this instance. """
         # make a local copy of completed_jobs, so that we can update it
         completed_jobs = list(completed_jobs)
@@ -759,14 +797,14 @@ class InstanceDeployManager:
             if teardown:
                 # handle the case where we're just tearing down nodes that have
                 # ONLY switches
-                numswitchesused = self.parentnode.get_num_switch_slots_consumed()
-                for counter in range(numswitchesused):
+                for counter in range(len(self.parentnode.switch_slots)):
                     switchsim = self.parentnode.switch_slots[counter]
                     switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
 
                 if terminateoncompletion:
                     # terminate the instance since teardown is called and instance
                     # termination is enabled
+                    assert isinstance(self.parentnode.boto3_instance_object, EC2InstanceResource)
                     instanceids = get_instance_ids_for_instances([self.parentnode.boto3_instance_object])
                     terminate_instances(instanceids, dryrun=False)
 
@@ -775,7 +813,7 @@ class InstanceDeployManager:
 
             # not teardown - just get the status of the switch sims
             switchescompleteddict = {k: False for k in self.running_simulations()['switches']}
-            for switchsim in self.parentnode.switch_slots[:self.parentnode.get_num_switch_slots_consumed()]:
+            for switchsim in self.parentnode.switch_slots:
                 swname = switchsim.switch_builder.switch_binary_name()
                 if swname not in switchescompleteddict.keys():
                     switchescompleteddict[swname] = True
@@ -783,14 +821,14 @@ class InstanceDeployManager:
 
         if self.instance_assigned_simulations():
             # this node has fpga sims attached
+            assert isinstance(self.parentnode, F1_Instance)
 
             # first, figure out which jobs belong to this instance.
             # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING
-            # ON THE INSTNACE.
+            # ON THE INSTANCE.
             parentslots = self.parentnode.fpga_slots
             rootLogger.debug("parentslots " + str(parentslots))
-            num_parentslots_used = self.parentnode.fpga_slots_consumed
-            jobnames = [slot.get_job_name() for slot in parentslots[0:num_parentslots_used]]
+            jobnames = [slot.get_job_name() for slot in parentslots]
             rootLogger.debug("jobnames " + str(jobnames))
             already_done = all([job in completed_jobs for job in jobnames])
             rootLogger.debug("already done? " + str(already_done))
@@ -807,7 +845,7 @@ class InstanceDeployManager:
 
             if self.instance_assigned_switches():
                 # fill in whether switches have terminated for some reason
-                for switchsim in self.parentnode.switch_slots[:self.parentnode.get_num_switch_slots_consumed()]:
+                for switchsim in self.parentnode.switch_slots:
                     swname = switchsim.switch_builder.switch_binary_name()
                     if swname not in switchescompleteddict.keys():
                         switchescompleteddict[swname] = True
@@ -818,6 +856,7 @@ class InstanceDeployManager:
             rootLogger.debug(slotsrunning)
             for slotno, jobname in enumerate(jobnames):
                 if str(slotno) not in slotsrunning and jobname not in completed_jobs:
+                    assert slotno < len(parentslots)
                     self.instance_logger("Slot " + str(slotno) + " completed! copying results.")
                     # NOW, we must copy off the results of this sim, since it just exited
                     parentslots[slotno].copy_back_job_results_from_run(slotno)
@@ -846,15 +885,16 @@ class InstanceDeployManager:
 
                 self.kill_switches_instance()
 
-                for counter, switchsim in enumerate(self.parentnode.switch_slots[:self.parentnode.get_num_switch_slots_consumed()]):
+                for counter, switchsim in enumerate(self.parentnode.switch_slots):
                     switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
 
             if now_done and terminateoncompletion:
                 # terminate the instance since everything is done and instance
                 # termination is enabled
+                assert isinstance(self.parentnode.boto3_instance_object, EC2InstanceResource)
                 instanceids = get_instance_ids_for_instances([self.parentnode.boto3_instance_object])
                 terminate_instances(instanceids, dryrun=False)
 
             return {'switches': switchescompleteddict, 'sims': jobs_done_q}
 
-
+        assert False, "Instance must host switch slots and/or FPGA slots"

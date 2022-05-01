@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import logging
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
     from _yaml import _ReadStream
 
 
-rootLogger = logging.getLogger()
+firesim.rootLogger = logging.getLogger()
 
 # In case you put any package-level tests, make sure they use the test credentials too
 pytestmark = pytest.mark.usefixtures("aws_test_credentials")

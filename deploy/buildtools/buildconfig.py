@@ -1,19 +1,16 @@
+from __future__ import annotations
+
 from time import strftime, gmtime
 import pprint
 from importlib import import_module
 
-from awstools.awstools import *
+from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
-# needed to avoid type-hint circular dependencies
-# TODO: Solved in 3.7.+ by "from __future__ import annotations" (see https://stackoverflow.com/questions/33837918/type-hints-solve-circular-dependency)
-#       and normal "import <module> as ..." syntax (see https://www.reddit.com/r/Python/comments/cug90e/how_to_not_create_circular_dependencies_when/)
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
-else:
-    BuildConfigFile = object
 
 class BuildConfig:
     """Represents a single build configuration used to build RTL, drivers, and bitstreams.
