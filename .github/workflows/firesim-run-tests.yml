@@ -21,7 +21,7 @@ env:
 jobs:
   cancel-prior-workflows:
     name: cancel-prior-workflows
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Cancel previous workflow runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -33,7 +33,7 @@ jobs:
   # example here: https://github.com/dorny/paths-filter#examples
   change-filters:
     name: filter-jobs-on-changes
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     # Queried by downstream jobs to determine if they should run.
     outputs:
       needs-docs:    ${{ steps.filter.outputs.docs }}
@@ -73,7 +73,7 @@ jobs:
     name: setup-self-hosted-manager
     needs: change-filters
     if: needs.change-filters.outputs.needs-manager == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Install Python CI requirements
@@ -199,7 +199,7 @@ jobs:
     name: documentation-check
     needs: change-filters
     if: needs.change-filters.outputs.needs-docs == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     container:
       image: firesim/firesim-ci:v1.3
       options: --entrypoint /bin/bash

@@ -1,7 +1,7 @@
 """ This file contains components that tie closely with the FireSim switch
 models that live in target-design/switch/ """
 
-from __future__ import  annotations
+from __future__ import annotations
 
 import subprocess
 import random

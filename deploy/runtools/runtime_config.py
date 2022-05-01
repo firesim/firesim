@@ -1,7 +1,7 @@
 """ This file manages the overall configuration of the system for running
 simulation tasks. """
 
-from __future__ import print_function, annotations
+from __future__ import annotations
 
 from datetime import timedelta
 from time import strftime, gmtime

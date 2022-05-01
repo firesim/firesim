@@ -1,6 +1,6 @@
 """ Node types necessary to construct a FireSimTopology. """
 
-from __future__ import  annotations
+from __future__ import annotations
 
 import logging
 import abc
@@ -174,9 +174,6 @@ class FireSimNode(metaclass=abc.ABCMeta):
 class FireSimServerNode(FireSimNode):
     """ This is a simulated server instance in FireSim. """
     SERVERS_CREATED: int = 0
-    job: Optional[JobConfig]
-    server_id_internal: int
-    mac_address: Optional[MacAddress]
     server_hardware_config: Optional[Union[RuntimeHWConfig, str]]
     server_link_latency: Optional[int]
     server_bw_max: Optional[int]
@@ -185,6 +182,9 @@ class FireSimServerNode(FireSimNode):
     autocounter_config: Optional[AutoCounterConfig]
     hostdebug_config: Optional[HostDebugConfig]
     synthprint_config: Optional[SynthPrintConfig]
+    job: Optional[JobConfig]
+    server_id_internal: int
+    mac_address: Optional[MacAddress]
 
     def __init__(self, server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None, server_link_latency: Optional[int] = None,
                  server_bw_max: Optional[int] = None, server_profile_interval: Optional[int] = None,
@@ -482,8 +482,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
                 allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
-
-
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
         plus one (because in most places, we use siblings + 1, not just siblings)
@@ -683,7 +681,7 @@ class FireSimSwitchNode(FireSimNode):
 
 
     def diagramstr(self) -> str:
-        msg =  f"FireSimSwitchNode: {self.switch_id_internal}\n"
+        msg =  f"FireSimSwitchNode:{self.switch_id_internal}\n"
         msg += f"---------\n"
         msg += f"""downlinks: {", ".join(map(str, self.downlinkmacs))}\n"""
         msg += f"""switchingtable: {", ".join(map(str, self.switch_table))}"""

@@ -1,6 +1,6 @@
 """ Miscellaneous utils used by other buildtools pieces. """
 
-from __future__ import  annotations
+from __future__ import annotations
 
 import lddwrap
 import logging
@@ -367,8 +367,7 @@ def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
     rootLogger.debug(f"Identifying ldd dependencies for: {elf}")
     for dso in lddwrap.list_dependencies(Path(elf)):
         if dso.soname is None:
-            if dso.path is not None:
-                assert '/ld-linux' in fspath(dso.path), f"dynamic linker is only allowed no soname, not: {dso}"
+            assert dso.path is not None and '/ld-linux' in fspath(dso.path), f"dynamic linker is only allowed no soname, not: {dso}"
             continue
         if 'linux-vdso.so' in dso.soname:
             continue

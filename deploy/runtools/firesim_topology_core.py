@@ -1,10 +1,10 @@
 """ These are the base components that make up a FireSim simulation target
 topology. """
 
-from __future__ import  annotations
+from __future__ import annotations
 
 from runtools.user_topology import UserTopologies
-from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode, FireSimNode
+from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
 
 from typing import List, Callable, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:

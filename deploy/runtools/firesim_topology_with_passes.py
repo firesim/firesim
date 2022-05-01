@@ -1,6 +1,6 @@
 """ This constructs a topology and performs a series of passes on it. """
 
-from __future__ import  annotations
+from __future__ import annotations
 
 import time
 import os
@@ -17,6 +17,12 @@ from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
 from runtools.run_farm import AWSEC2F1
+
+from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
+if TYPE_CHECKING:
+    from runtools.run_farm import RunFarm
+    from runtools.runtime_config import RuntimeHWDB
+    from runtools.workload import WorkloadConfig
 
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
@@ -96,6 +102,7 @@ class FireSimTopologyWithPasses:
         for node in nodes_dfs_order:
             if isinstance(node, FireSimServerNode):
                 node.assign_mac_address(MacAddress())
+
 
     def pass_compute_switching_tables(self) -> None:
         """ This creates the MAC addr -> port lists for switch nodes.
@@ -284,7 +291,7 @@ class FireSimTopologyWithPasses:
         """ This is the default mapping pass for hardware configurations - it
         does 3 things:
             1) If a node has a hardware config assigned (as a string), replace
-            it with the appropriate RuntimeHWConfig object. If it already a
+            it with the appropriate RuntimeHWConfig object. If it is already a
             RuntimeHWConfig object then keep it the same.
             2) If a node's hardware config is none, give it the default
             hardware config.

@@ -111,7 +111,7 @@ set -o pipefail
     echo "machine launch script started" > machine-launchstatus
     chmod ugo+r machine-launchstatus
 
-    # platform-specific setup 
+    # platform-specific setup
     case "$OS_FLAVOR" in
         ubuntu)
             ;;
@@ -200,9 +200,9 @@ set -o pipefail
         fi
     fi
 
-    # https://conda-forge.org/feedstock-outputs/ 
+    # https://conda-forge.org/feedstock-outputs/
     #   filterable list of all conda-forge packages
-    # https://conda-forge.org/#contribute 
+    # https://conda-forge.org/#contribute
     #   instructions on adding a recipe
     # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
     #   documentation on package_spec syntax for constraining versions
@@ -248,7 +248,7 @@ set -o pipefail
     # obvi this would need to be made linux-specific if we supported other MacOS or Windows
     CONDA_PACKAGE_SPECS+=( "kernel-headers_linux-64>=2.6.38" )
     # firemarshal deps
-    CONDA_PACKAGE_SPECS+=( rsync psutil doit gitpython humanfriendly e2fsprogs ctags bison flex expat )
+    CONDA_PACKAGE_SPECS+=( rsync psutil doit=0.35.0 gitpython humanfriendly e2fsprogs ctags bison flex expat )
     # cross-compile glibc 2.28+ deps
     # current version of buildroot won't build with make 4.3 https://github.com/firesim/FireMarshal/issues/236
     CONDA_PACKAGE_SPECS+=( make!=4.3 )
@@ -256,6 +256,7 @@ set -o pipefail
     CONDA_PACKAGE_SPECS+=( autoconf automake libtool )
     # other misc deps
     CONDA_PACKAGE_SPECS+=(
+        bash-completion \
         sbt \
         ca-certificates \
         mosh \
@@ -346,7 +347,12 @@ set -o pipefail
 
 
     argcomplete_extra_args=()
-    if [[ "$INSTALL_TYPE" != system ]]; then
+    if [[ "$INSTALL_TYPE" == system ]]; then
+        BASH_COMPLETION_COMPAT_DIR="${CONDA_ENV_BIN}/../etc/bash_completion.d"
+        "${DRY_RUN_ECHO[@]}" $SUDO mkdir -p "${BASH_COMPLETION_COMPAT_DIR}"
+        argcomplete_extra_args=( --dest "${BASH_COMPLETION_COMPAT_DIR}" )
+
+    else
         # if we're aren't installing into a system directory, then initialize argcomplete
         # with --user so that it goes into the home directory
         argcomplete_extra_args=( --user )
