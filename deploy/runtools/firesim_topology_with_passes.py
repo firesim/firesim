@@ -24,12 +24,6 @@ if TYPE_CHECKING:
     from runtools.runtime_config import RuntimeHWDB
     from runtools.workload import WorkloadConfig
 
-from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
-if TYPE_CHECKING:
-    from runtools.run_farm import RunFarm
-    from runtools.runtime_config import RuntimeHWDB
-    from runtools.workload import WorkloadConfig
-
 rootLogger = logging.getLogger()
 
 @parallel
