@@ -27,27 +27,27 @@ right corner, ensure that the correct region is selected.
 To launch a manager instance, follow these steps:
 
 #. From the main page of the EC2 Management Console, click
-   *Launch Instance*. We use an on-demand instance here, so that your
+   *Launch Instance ▼* button and click *Launch Instance* in the dropdown that appears. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
-#. In the *Application and OS Images* drop-down, search for
+#. In the *Application and OS Images* search box, search for
    ``FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
-   select the AMI that appears under the Community AMI tab (there
+   select the AMI that appears under the ***Community AMIs*** tab (there
    should be only one). **DO NOT USE ANY OTHER VERSION.**
 #. In the *Instance Type* drop-down, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
 #. In the *Key pair (login)* drop-down, select the ``firesim`` key pair we setup earlier.
 #. In the *Network settings* drop-down click *edit* and modify the following settings:
 
-   #. Under *VPC - required*, select the ``firesim`` vpc. The dialog will select a subnet for you.
+   #. Under *VPC - required*, select the ``firesim`` VPC. Any subnet within the ``firesim`` VPC is fine.
    #. Under *Firewall (security groups)*, click *Select existing security
-      group* and the ``firesim`` security group that was automatically
+      group* and in the *Common security groups* dropdown that appears, select the ``firesim`` security group that was automatically
       created for you earlier.
 
-#. In the *Configure storage* drop-down, increase the size of the root
+#. In the *Configure storage* section, increase the size of the root
    volume to at least 300GB. The default of 85GB can quickly become too small as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
-   and large root filesystems for simulations. You should get rid of the
+   and large root filesystems for simulations. You should remove the
    small (5-8GB) secondary volume that is added by default.
 #. In the *Advanced details* drop-down, we'll leave most settings unchanged. The exceptions being:
 
