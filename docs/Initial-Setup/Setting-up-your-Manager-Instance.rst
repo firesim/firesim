@@ -30,6 +30,7 @@ To launch a manager instance, follow these steps:
    *Launch Instance ▼* button and click *Launch Instance* in the dropdown that appears. We use an on-demand instance here, so that your
    data is preserved when you stop/start the instance, and your data is
    not lost when pricing spikes on the spot market.
+#. In the *Name* field, give the instance a recognizable name, for example ``firesim-manager-1``. This is purely for your own convenience and can also be left blank.
 #. In the *Application and OS Images* search box, search for
    ``FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
    select the AMI that appears under the ***Community AMIs*** tab (there
