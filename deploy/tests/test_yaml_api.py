@@ -173,7 +173,11 @@ def scy_runtime(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_runtime.yaml')
 
 @pytest.fixture()
-def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml) -> RunTmpYamlSet:
+def scy_runfarm(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
+    return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_run_farm.yaml')
+
+@pytest.fixture()
+def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml, scy_runfarm: TmpYaml) -> RunTmpYamlSet:
     return RunTmpYamlSet(scy_hwdb, scy_runtime)
 
 @pytest.fixture()

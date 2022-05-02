@@ -34,9 +34,9 @@ aws_ec2_f1_run_farm:
         # REQUIRED: run farm hosts to spawn
         run_farm_hosts:
           # fpga instances
-          - f1.16xlarge: 0
+          - f1.16xlarge: 1
           - f1.4xlarge: 0
-          - f1.2xlarge: 1
+          - f1.2xlarge: 0
           # switch-only instances
           - m4.16xlarge: 0
 
