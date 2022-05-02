@@ -84,7 +84,9 @@ jobs:
         run: ./.github/scripts/setup-manager-self-hosted.py
       - name: Catch potentially orphaned manager
         if: ${{ failure() || cancelled() }}
-        run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} terminate ${{ github.token }}
+        uses: ./.github/actions/change-workflow-instance-states
+        with:
+          new-state: terminate
 
   setup-manager:
     name: setup-manager
@@ -102,7 +104,9 @@ jobs:
         # Only catch cancelled jobs since the workflow monitor and try / catch
         # in initialize manager should capture on-failure behavior
         if: ${{ cancelled() }}
-        run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} terminate ${{ github.token }}
+        uses: ./.github/actions/change-workflow-instance-states
+        with:
+          new-state: terminate
 
   build-default-workloads:
     # Conditionally build rootfs images only if deploying to FPGA to save CI resources
