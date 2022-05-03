@@ -35,7 +35,6 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
     sb.append("#include <stdint.h>\n")
     sb.append("#include <stdbool.h>\n")
     sb.append(genStatic("TARGET_NAME", CStrLit(target)))
-    sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
     sb.append(genMacro("data_t", "uint32_t"))
     top.module.genHeader(sb)
     sb.append("\n// Simulation Constants\n")
