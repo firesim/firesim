@@ -11,6 +11,7 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.DecoupledHelper
 
+import midas.targetutils.xdc
 import midas.widgets._
 import midas.widgets.CppGenerationUtils._
 
@@ -85,18 +86,20 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       val streamName = chParams.name
       val grant = (dma.aw.bits.addr >> addressSpaceBits) === idx.U
 
-      val incomingPCISdat = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
-      channel <> incomingPCISdat.io.deq
+      val incomingQueue = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
+      xdc.RAMStyleHint(incomingQueue.fq.ram, xdc.RAMStyles.ULTRA)
+
+      channel <> incomingQueue.io.deq
 
       // check to see if pcis is ready to accept data instead of forcing writes
       val countAddr =
-        attach(incomingPCISdat.io.count, s"${chParams.name}_count", ReadOnly)
+        attach(incomingQueue.io.count, s"${chParams.name}_count", ReadOnly)
 
       val writeHelper = DecoupledHelper(
         dma.aw.valid,
         dma.w.valid,
         dma.b.ready,
-        incomingPCISdat.io.enq.ready
+        incomingQueue.io.enq.ready
       )
 
       // TODO: Get rid of this magic number.
@@ -112,8 +115,8 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         dma.b.valid  := writeHelper.fire(dma.b.ready, lastWriteBeat)
       }
 
-      incomingPCISdat.io.enq.valid := grant && writeHelper.fire(incomingPCISdat.io.enq.ready)
-      incomingPCISdat.io.enq.bits := dma.w.bits.data
+      incomingQueue.io.enq.valid := grant && writeHelper.fire(incomingQueue.io.enq.ready)
+      incomingQueue.io.enq.bits := dma.w.bits.data
 
       StreamDriverParameters(
         chParams.name,
@@ -138,19 +141,21 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
 
       val grant = (dma.ar.bits.addr >> addressSpaceBits) === idx.U
 
-      val outgoingPCISdat = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
-      outgoingPCISdat.io.enq <> channel
+      val outgoingQueue = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
+      xdc.RAMStyleHint(outgoingQueue.fq.ram, xdc.RAMStyles.ULTRA)
+
+      outgoingQueue.io.enq <> channel
 
       // check to see if pcis has valid output instead of waiting for timeouts
       val countAddr =
-        attach(outgoingPCISdat.io.count, s"${chParams.name}_count", ReadOnly)
+        attach(outgoingQueue.io.count, s"${chParams.name}_count", ReadOnly)
       val fullAddr =
-        attach(outgoingPCISdat.io.deq.valid && !outgoingPCISdat.io.enq.ready, s"${chParams.name}_full", ReadOnly)
+        attach(outgoingQueue.io.deq.valid && !outgoingQueue.io.enq.ready, s"${chParams.name}_full", ReadOnly)
 
       val readHelper = DecoupledHelper(
         dma.ar.valid,
         dma.r.ready,
-        outgoingPCISdat.io.deq.valid
+        outgoingQueue.io.deq.valid
       )
 
       val readBeatCounter = RegInit(0.U(9.W))
@@ -159,11 +164,11 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
       }
 
-      outgoingPCISdat.io.deq.ready := grant && readHelper.fire(outgoingPCISdat.io.deq.valid)
+      outgoingQueue.io.deq.ready := grant && readHelper.fire(outgoingQueue.io.deq.valid)
 
       when (grant) {
         dma.r.valid := readHelper.fire(dma.r.ready)
-        dma.r.bits.data := outgoingPCISdat.io.deq.bits
+        dma.r.bits.data := outgoingQueue.io.deq.bits
         dma.r.bits.last := lastReadBeat
         dma.ar.ready := readHelper.fire(dma.ar.valid, lastReadBeat)
       }
