@@ -33,24 +33,23 @@ public:
 protected:
   AddressMap addr_map;
 
-  void write(size_t addr, data_t data) {
+  void write(size_t addr, uint32_t data) {
     sim->write(addr, data);
   }
 
-  data_t read(size_t addr) {
+  uint32_t read(size_t addr) {
     return sim->read(addr);
   }
 
-  void write(std::string reg, data_t data){
+  void write(std::string reg, uint32_t data){
     sim->write(addr_map.w_addr(reg), data);
   }
 
-  data_t read(std::string reg){
+  uint32_t read(std::string reg){
     return sim->read(addr_map.r_addr(reg));
   }
 
-  uint64_t read64(std::string msw, std::string lsw, data_t upper_word_mask) {
-    assert(sizeof(data_t) == 4);
+  uint64_t read64(std::string msw, std::string lsw, uint32_t upper_word_mask) {
     uint64_t data = ((uint64_t) (read(msw) & upper_word_mask)) << 32;
     return data | read(lsw);
   }

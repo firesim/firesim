@@ -30,15 +30,15 @@ class simif_peek_poke_t: public virtual simif_t
     // If using blocking steps, this will be ~equivalent to actual_tcycle()
     uint64_t cycles(){ return t; };
 
-    void poke(size_t id, data_t value, bool blocking = true);
+    void poke(size_t id, uint32_t value, bool blocking = true);
     void poke(size_t id, mpz_t& value);
     void target_reset(int pulse_length = 5);
 
-    data_t peek(size_t id, bool blocking = true);
+    uint32_t peek(size_t id, bool blocking = true);
     void peek(size_t id, mpz_t& value);
-    data_t sample_value(size_t id);
+    uint32_t sample_value(size_t id);
 
-    bool expect(size_t id, data_t expected);
+    bool expect(size_t id, uint32_t expected);
     bool expect(size_t id, mpz_t& expected);
     bool expect(bool pass, const char *s);
 
