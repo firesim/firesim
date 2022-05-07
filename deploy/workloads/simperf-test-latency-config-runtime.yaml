@@ -1,12 +1,4 @@
-run_farm:
-    run_farm_tag: linuxpoweroffnic
-    f1_16xlarges: 1
-    m4_16xlarges: 0
-    f1_4xlarges: 0
-    f1_2xlarges: 0
-    run_instance_market: ondemand
-    spot_interruption_behavior: terminate
-    spot_max_price: ondemand
+run_farm: aws_ec2_f1_run_farm
 
 target_config:
     topology: example_8config
@@ -28,7 +20,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: linux-poweroff-uniform.json
+    workload_name: simperf-test-latency.json
     terminate_on_completion: no
     suffix_tag: null
 

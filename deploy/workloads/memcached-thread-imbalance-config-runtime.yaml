@@ -1,15 +1,7 @@
-run_farm:
-    run_farm_tag: linuxpoweroffallnonictargets
-    f1_16xlarges: 0
-    m4_16xlarges: 0
-    f1_4xlarges: 0
-    f1_2xlarges: 2
-    run_instance_market: ondemand
-    spot_interruption_behavior: terminate
-    spot_max_price: ondemand
+run_farm: aws_ec2_f1_run_farm
 
 target_config:
-    topology: all_no_net_targets_config
+    topology: triple_example_8config
     no_net_num_nodes: 2
     link_latency: 6405
     switching_latency: 10
@@ -28,7 +20,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: linux-poweroff-uniform.json
+    workload_name: memcached-thread-imbalance.json
     terminate_on_completion: no
     suffix_tag: null
 

@@ -11,9 +11,11 @@ terminate=1
 
 function usage
 {
-    echo "usage: run-workload.sh <workload.yaml> [-H | -h | --help] [--noterminate] [--withlaunch]"
-    echo "   workload.yaml:  the firesim-relative path to the workload you'd like to run"
-    echo "                  e.g. workloads/gapbs.yaml"
+    echo "usage: run-workload.sh <workload> [-H | -h | --help] [--noterminate] [--withlaunch]"
+    echo "   workload:  the firesim-relative path to the basename of yaml files you'd like to run."
+    echo "              in this case, the path will be appended with -runtime.yaml for the runtime.yaml and -runfarm.yaml for the runfarm.yaml files"
+    echo "              e.x. workloads/gapbs gives"
+    echo "                   workloads/gapbs-runtime.yaml and workloads/gapbs-runfarm.yaml"
     echo "   --withlaunch:  (Optional) will spin up a runfarm based on the yaml"
     echo "   --noterminate: (Optional) will not forcibly terminate runfarm instances after runworkload"
 }
@@ -23,7 +25,7 @@ if [ $# -eq 0 -o "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
     exit 3
 fi
 
-yaml=$1
+yamlbasename=$1
 shift
 
 while test $# -gt 0
@@ -51,17 +53,22 @@ do
     shift
 done
 
+runtimeyaml=${yamlbasename}-runtime.yaml
+runfarmyaml=${yamlbasename}-runfarm.yaml
+
 trap "exit" INT
 set -e
 set -o pipefail
 
+managerargs="-c $runtimeyaml -n $runfarmyaml"
+
 if [ "$withlaunch" -ne "0" ]; then
-    firesim -c $yaml launchrunfarm
+    firesim $managerargs launchrunfarm
 fi
 
-firesim -c $yaml infrasetup
-firesim -c $yaml runworkload
+firesim $managerargs infrasetup
+firesim $managerargs runworkload
 
 if [ "$terminate" -eq "1" ]; then
-    firesim -c $yaml terminaterunfarm --forceterminate
+    firesim $managerargs terminaterunfarm --forceterminate
 fi

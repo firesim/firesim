@@ -1,12 +1,4 @@
-run_farm:
-    run_farm_tag: intspeed-runfarm
-    f1_16xlarges: 0
-    m4_16xlarges: 0
-    f1_4xlarges: 0
-    f1_2xlarges: 11
-    run_instance_market: ondemand
-    spot_interruption_behavior: terminate
-    spot_max_price: ondemand
+run_farm: aws_ec2_f1_run_farm
 
 target_config:
     topology: no_net_config

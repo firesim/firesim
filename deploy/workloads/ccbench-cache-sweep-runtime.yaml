@@ -1,17 +1,8 @@
-run_farm:
-    run_farm_tag: intrate-runfarm
-    f1_16xlarges: 0
-    m4_16xlarges: 0
-    f1_4xlarges: 0
-    f1_2xlarges: 10
-    run_instance_market: ondemand
-    spot_interruption_behavior: terminate
-    spot_max_price: ondemand
+run_farm: aws_ec2_f1_run_farm
 
 target_config:
     topology: no_net_config
-    no_net_num_nodes: 10
-    # These are unused
+    no_net_num_nodes: 1
     link_latency: 6405
     switching_latency: 10
     net_bandwidth: 200
@@ -29,8 +20,8 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: spec17-intrate.json
-    terminate_on_completion: yes
+    workload_name: ccbench-cache-sweep.json
+    terminate_on_completion: no
     suffix_tag: null
 
 host_debug:

@@ -42,13 +42,13 @@ def run_linux_poweroff():
                 if rc != 0:
                     # need to confirm that instance is off
                     print(f"Workload {workload} failed. Terminating runfarm.")
-                    run(f"firesim terminaterunfarm -q -c {workload}")
+                    run(f"firesim terminaterunfarm -q -c {workload}-runtime.yaml -n {workload}-runfarm.yaml")
                     sys.exit(rc)
                 else:
                     print(f"Workload {workload} successful.")
 
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-all-no-nic.yaml", "30m")
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-nic.yaml", "30m")
+        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-all-no-nic", "30m")
+        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-nic", "30m")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
