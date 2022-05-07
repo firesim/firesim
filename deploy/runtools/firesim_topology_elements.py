@@ -81,10 +81,10 @@ class FireSimLink:
             self.port = self.get_uplink_side().get_host_instance().allocate_host_port()
         return self.port
 
-    def link_hostserver_ip(self) -> str:
-        """ Get the IP address used for this Link. This should only be called for
+    def link_hostserver_hostname(self) -> str:
+        """ Get the hostname used for this Link. This should only be called for
         links implemented with SocketPorts. """
-        return self.get_uplink_side().get_host_instance().get_host_name()
+        return self.get_uplink_side().get_host_instance().get_hostname()
 
     def link_crosses_hosts(self) -> bool:
         """ Return True if the user has mapped the two endpoints of this link to
@@ -124,8 +124,6 @@ class FireSimNode(metaclass=abc.ABCMeta):
     def __init__(self) -> None:
         self.downlinks = []
         self.downlinkmacs = []
-        # used when there are multiple links between switches to disambiguate
-        #self.downlinks_consumed = []
         self.uplinks = []
         self.host_instance = None
 
@@ -136,7 +134,6 @@ class FireSimNode(metaclass=abc.ABCMeta):
         linkobj = FireSimLink(self, firesimnode)
         firesimnode.add_uplink(linkobj)
         self.downlinks.append(linkobj)
-        #self.downlinks_consumed.append(False)
 
     def add_downlinks(self, firesimnodes: Sequence[FireSimNode]) -> None:
         """ Just a convenience function to add multiple downlinks at once.
@@ -186,12 +183,15 @@ class FireSimServerNode(FireSimNode):
     server_id_internal: int
     mac_address: Optional[MacAddress]
 
-    def __init__(self, server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None, server_link_latency: Optional[int] = None,
-                 server_bw_max: Optional[int] = None, server_profile_interval: Optional[int] = None,
-                 tracerv_config: Optional[TracerVConfig] = None,
-                 autocounter_config: Optional[AutoCounterConfig] = None,
-                 hostdebug_config: Optional[HostDebugConfig] = None,
-                 synthprint_config: Optional[SynthPrintConfig] = None):
+    def __init__(self,
+            server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None,
+            server_link_latency: Optional[int] = None,
+            server_bw_max: Optional[int] = None,
+            server_profile_interval: Optional[int] = None,
+            tracerv_config: Optional[TracerVConfig] = None,
+            autocounter_config: Optional[AutoCounterConfig] = None,
+            hostdebug_config: Optional[HostDebugConfig] = None,
+            synthprint_config: Optional[SynthPrintConfig] = None):
         super().__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
@@ -247,15 +247,13 @@ class FireSimServerNode(FireSimNode):
         return result_list
 
     def allocate_nbds(self) -> None:
-        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
-        """
+        """ called by the allocate nbds pass to assign an nbd to a qcow2 image. """
         rootfses_list = [self.get_rootfs_name()]
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
                 allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
-
 
     def diagramstr(self) -> str:
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
@@ -289,8 +287,13 @@ class FireSimServerNode(FireSimNode):
         all_shmemportnames = [shmemportname]
 
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
-            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
-            self.server_profile_interval, all_bootbins,
+            slotno,
+            all_macs,
+            all_rootfses,
+            all_linklatencies,
+            all_maxbws,
+            self.server_profile_interval,
+            all_bootbins,
             all_shmemportnames,
             self.tracerv_config,
             self.autocounter_config,
@@ -468,7 +471,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             sib.assign_host_instance(super_server_host)
             sib.copy_back_job_results_from_run(slotno)
 
-
     def allocate_nbds(self) -> None:
         """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
         """
@@ -541,8 +543,13 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [self.supernode_get_sibling(x).uplinks[0].get_global_link_id() for x in range(1, num_siblings)]
 
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
-            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
-            self.server_profile_interval, all_bootbins,
+            slotno,
+            all_macs,
+            all_rootfses,
+            all_linklatencies,
+            all_maxbws,
+            self.server_profile_interval,
+            all_bootbins,
             all_shmemportnames,
             self.tracerv_config,
             self.autocounter_config,
@@ -595,8 +602,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append((hw_cfg.get_local_runtime_conf_path(), ''))
         return all_paths
 
+
 class FireSimDummyServerNode(FireSimServerNode):
     """ This is a dummy server node for supernode mode. """
+
     def __init__(self, server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None, server_link_latency: Optional[int] = None,
             server_bw_max: Optional[int] = None):
         super().__init__(server_hardware_config, server_link_latency, server_bw_max)
@@ -678,7 +687,6 @@ class FireSimSwitchNode(FireSimNode):
         for simoutputfile in ["switchlog"]:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 get(remote_path=remote_sim_run_dir + simoutputfile, local_path=job_dir)
-
 
     def diagramstr(self) -> str:
         msg =  f"FireSimSwitchNode:{self.switch_id_internal}\n"

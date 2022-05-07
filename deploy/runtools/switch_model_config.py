@@ -40,7 +40,7 @@ class AbstractSwitchToSwitchConfig:
 
         target_local_portno = len(self.fsimswitchnode.downlinks) + uplinkno
         if linkobj.link_crosses_hosts():
-            uplinkhostip = linkobj.link_hostserver_ip() #upperswitch.host_instance.get_private_ip()
+            uplinkhostip = linkobj.link_hostserver_hostname() #upperswitch.host_instance.get_private_ip()
             uplinkhostport = linkobj.link_hostserver_port()
 
             return "new SocketClientPort(" + str(target_local_portno) +  \

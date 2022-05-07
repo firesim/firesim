@@ -23,35 +23,51 @@ if TYPE_CHECKING:
 rootLogger = logging.getLogger()
 
 class InstanceDeployManager(metaclass=abc.ABCMeta):
+    """Class used to represent different "run platforms" and how to start/stop and setup simulations.
+
+    Attributes:
+        parent_node: Run farm host associated with this platform implementation.
+    """
     parent_node: Inst
 
     def __init__(self, parent_node: Inst) -> None:
+        """
+        Args:
+            parent_node: Run farm host to associate with this platform implementation
+        """
         self.parent_node = parent_node
 
     @abc.abstractmethod
     def infrasetup_instance(self) -> None:
+        """Run platform specific implementation of how to setup simulations."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def start_switches_instance(self) -> None:
+        """Boot up all the switches for this platform."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def start_simulations_instance(self) -> None:
+        """Boot up all the sims for this platform."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def kill_switches_instance(self) -> None:
+        """Terminate all the switches for this platform."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def kill_simulations_instance(self, disconnect_all_nbds: bool = True) -> None:
+        """Terminate all the sims for this platform."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def monitor_jobs_instance(self, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool,
             job_results_dir: str) -> Dict[str, Dict[str, bool]]:
+        """Job monitoring for this instance."""
         raise NotImplementedError
+
 
 def remote_kmsg(message: str) -> None:
     """ This will let you write whatever is passed as message into the kernel
@@ -60,8 +76,9 @@ def remote_kmsg(message: str) -> None:
     commd = """echo '{}' | sudo tee /dev/kmsg""".format(message)
     run(commd, shell=True)
 
+
 class NBDTracker:
-    """ Track allocation of NBD devices on an instance. Used for mounting
+    """Track allocation of NBD devices on an instance. Used for mounting
     qcow2 images."""
 
     # max number of NBDs allowed by the nbd.ko kernel module

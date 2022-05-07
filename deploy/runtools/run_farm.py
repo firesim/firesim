@@ -26,6 +26,19 @@ if TYPE_CHECKING:
 rootLogger = logging.getLogger()
 
 class Inst(metaclass=abc.ABCMeta):
+    """Run farm hosts that can hold simulations or switches.
+
+    Attributes:
+        MAX_SWITCH_SLOTS_ALLOWED: max switch slots allowed (hardcoded)
+        switch_slots: switch node slots
+        _next_switch_port: next switch port to assign
+        MAX_SIM_SLOTS_ALLOWED: max simulations allowed. given by `config_runfarm.yaml`
+        sim_slots: simulation node slots
+        sim_dir: name of simulation directory on the run host
+        instance_deploy_manager: platform specific implementation
+        hostname: hostname of the instance (normally set by the `RunFarm` type)
+    """
+
     # switch variables
     # restricted by default security group network model port alloc (10000 to 11000)
     MAX_SWITCH_SLOTS_ALLOWED: int = 100000
@@ -41,7 +54,7 @@ class Inst(metaclass=abc.ABCMeta):
     # instances parameterized by this
     instance_deploy_manager: InstanceDeployManager
 
-    host_name: Optional[str]
+    hostname: Optional[str]
 
     def __init__(self, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None) -> None:
         super().__init__()
@@ -55,7 +68,7 @@ class Inst(metaclass=abc.ABCMeta):
 
         self.instance_deploy_manager = instance_deploy_manager(self)
 
-        self.host_name = None
+        self.hostname = None
 
     def set_sim_dir(self, drctry: str) -> None:
         self.sim_dir = drctry
@@ -64,12 +77,12 @@ class Inst(metaclass=abc.ABCMeta):
         assert self.sim_dir is not None
         return self.sim_dir
 
-    def get_host_name(self) -> str:
-        assert self.host_name is not None
-        return self.host_name
+    def get_hostname(self) -> str:
+        assert self.hostname is not None
+        return self.hostname
 
-    def set_host_name(self, host_name: str) -> None:
-        self.host_name = host_name
+    def set_hostname(self, hostname: str) -> None:
+        self.hostname = hostname
 
     def add_switch(self, firesimswitchnode: FireSimSwitchNode) -> None:
         """ Add a switch to the next available switch slot. """
@@ -92,6 +105,11 @@ class Inst(metaclass=abc.ABCMeta):
         firesimservernode.assign_host_instance(self)
 
 class RunFarm(metaclass=abc.ABCMeta):
+    """Abstract class to represent how to manage run farm hosts (similar to `BuildFarm`).
+    In addition to having to implement how to spawn/terminate nodes, the child classes must
+    implement `mapper_*` functions to help topologies map run farm hosts (`Inst`s) to `FireSimNodes`.
+    """
+
     def __init__(self, args: Dict[str, Any]) -> None:
         self.args = args
 
@@ -113,32 +131,47 @@ class RunFarm(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def mapper_get_default_switch_host_inst_type_name(self) -> str:
-        """ Get the default host instance type name that can host switch
+        """Get the default host instance type name that can host switch
         simulations. """
         raise NotImplementedError
 
     @abc.abstractmethod
     def post_launch_binding(self, mock: bool = False) -> None:
+        """Functionality to bind potentially launched objects to run hosts (mainly used in AWS case).
+
+        Args:
+            mock: In AWS case, for testing, assign mock boto objects.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def launch_run_farm(self) -> None:
+        """Launch run hosts for simulations."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def terminate_run_farm(self, terminate_some_dict: Dict[str, int], forceterminate: bool) -> None:
+        """Terminate run hosts for simulations.
+
+        Args:
+            terminate_some_dict: Dict of run host names to amount of that type to terminate.
+            forceterminate: Don't prompt user to terminate.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_all_host_nodes(self) -> List[Inst]:
+        """Return all run host nodes."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_all_bound_host_nodes(self) -> List[Inst]:
+        """Return all run host nodes that are ready to use (bound to relevant objects)."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def lookup_by_ip_addr(self, ipaddr: str) -> Inst:
+    def lookup_by_hostname(self, hostname: str) -> Inst:
+        """Return run farm host based on hostname."""
         raise NotImplementedError
 
 def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
@@ -287,7 +320,7 @@ class AWSEC2F1(RunFarm):
             for idx, run_farm_host_tup in enumerate(inst_list):
                 boto_obj = MockBoto3Instance()
                 inst = run_farm_host_tup[0]
-                inst.set_host_name("centos@" + boto_obj.private_ip_address)
+                inst.set_hostname("centos@" + boto_obj.private_ip_address)
                 inst_list[idx] = (inst, boto_obj)
             self.run_farm_hosts_dict[inst_type] = inst_list
 
@@ -315,7 +348,7 @@ class AWSEC2F1(RunFarm):
             for index, instance in enumerate(available_instances_per_type[instance_type_name]):
                 inst_tup = self.run_farm_hosts_dict[instance_type_name][index]
                 inst = inst_tup[0]
-                inst.set_host_name("centos@" + instance.private_ip_address)
+                inst.set_hostname("centos@" + instance.private_ip_address)
                 new_tup = (inst, instance)
                 self.run_farm_hosts_dict[instance_type_name][index] = new_tup
 
@@ -418,12 +451,12 @@ class AWSEC2F1(RunFarm):
                     all_insts.append(inst)
         return all_insts
 
-    def lookup_by_ip_addr(self, ipaddr) -> Inst:
+    def lookup_by_hostname(self, hostname) -> Inst:
         """ Get an instance object from its IP address. """
         for host_node in self.get_all_bound_host_nodes():
-            if host_node.get_host_name() == ipaddr:
+            if host_node.get_hostname() == hostname:
                 return host_node
-        assert False, f"Unable to find host node by {ipaddr} host name"
+        assert False, f"Unable to find host node by {hostname} host name"
 
 class ExternallyProvisioned(RunFarm):
     """ This manages the set of AWS resources requested for the run farm. It
@@ -467,7 +500,7 @@ class ExternallyProvisioned(RunFarm):
                 simulation_dir = ip_args.get("override_simulation_dir", default_simulation_dir)
 
                 inst = Inst(num_fpgas, dispatch_dict[platform], simulation_dir)
-                inst.set_host_name(ip_addr)
+                inst.set_hostname(ip_addr)
                 assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
                 self.run_farm_hosts_dict[ip_addr] = inst
                 self.mapper_consumed[ip_addr] = False
@@ -477,7 +510,7 @@ class ExternallyProvisioned(RunFarm):
                 assert default_platform is not None and isinstance(default_platform, str)
                 assert default_simulation_dir is not None and isinstance(default_simulation_dir, str)
                 inst = Inst(default_num_fpgas, dispatch_dict[default_platform], default_simulation_dir)
-                inst.set_host_name(runhost)
+                inst.set_hostname(runhost)
                 assert not runhost in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {runhost}"
                 self.run_farm_hosts_dict[runhost] = inst
                 self.mapper_consumed[runhost] = False
@@ -486,8 +519,8 @@ class ExternallyProvisioned(RunFarm):
 
         # sort the instances
         host_sim_slot_dict = {}
-        for host_name, inst in self.run_farm_hosts_dict.items():
-            host_sim_slot_dict[host_name] = inst.MAX_SIM_SLOTS_ALLOWED
+        for hostname, inst in self.run_farm_hosts_dict.items():
+            host_sim_slot_dict[hostname] = inst.MAX_SIM_SLOTS_ALLOWED
 
         self.SORTED_INSTANCE_TYPE_NAME_TO_MAX_FPGA_SLOTS = invert_filter_sort(host_sim_slot_dict)
 
@@ -524,9 +557,9 @@ class ExternallyProvisioned(RunFarm):
         """ Get the default host instance type name that can host switch
         simulations. """
         # get the first inst that doesn't have fpga slots
-        for host_name, inst in self.run_farm_hosts_dict.items():
+        for hostname, inst in self.run_farm_hosts_dict.items():
             if len(inst.sim_slots) == 0:
-                return host_name
+                return hostname
 
         assert False, "Unable to return run host to host switches. Make sure at least one run host is available with no FPGAs in use."
 
@@ -548,9 +581,9 @@ class ExternallyProvisioned(RunFarm):
     def get_all_bound_host_nodes(self) -> List[Inst]:
         return self.get_all_host_nodes()
 
-    def lookup_by_ip_addr(self, ipaddr: str) -> Inst:
+    def lookup_by_hostname(self, hostname: str) -> Inst:
         """ Get an instance object from its IP address. """
         for host_node in self.get_all_bound_host_nodes():
-            if host_node.get_host_name() == ipaddr:
+            if host_node.get_hostname() == hostname:
                 return host_node
-        assert False, f"Unable to find host node by {ipaddr} host name"
+        assert False, f"Unable to find host node by {hostname} host name"
