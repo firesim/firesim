@@ -84,13 +84,14 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     val a = IO(new MemoryModuleIO(64, 16))
     val b = IO(new MemoryModuleIO(64, 16))
 
+//DOC include start: RAM Hint From Parent
     val modA = Module(new SyncReadMemModule(None))
     val modB = Module(new SyncReadMemModule(None))
-    modA.io <> a
-    modB.io <> b
-
     RAMStyleHint(modA.mem, RAMStyles.ULTRA)
     RAMStyleHint(modB.mem, RAMStyles.BRAM)
+//DOC include end: RAM Hint From Parent
+    modA.io <> a
+    modB.io <> b
 
     private def expectedAnnotation(mod: SyncReadMemModule, style: RAMStyle) = XDCAnnotation(
         XDCFiles.Synthesis,
@@ -115,5 +116,27 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     mod.expectedAnnos.foreach {
       anno => assert(xdcAnnos.contains(anno))
     }
+  }
+
+  behavior of "Simple RAMStyleHint Demo Module"
+
+  it should "elaborate" in {
+    class MemoryModule extends Module {
+    val dataBits = 64
+    val addrBits = 16
+    val io = IO(new MemoryModuleIO(addrBits, dataBits))
+
+//DOC include start: Basic RAM Hint
+    import midas.targetutils.xdc._
+    val mem = SyncReadMem(1 << addrBits, UInt(dataBits.W))
+    RAMStyleHint(mem, RAMStyles.ULTRA)
+    // Alternatively: RAMStyleHint(mem, RAMStyles.BRAM)
+//DOC include end: Basic RAM Hint
+
+    io.readData := mem.read(io.readAddress, io.readEnable)
+    when(io.writeEnable) { mem(io.writeAddress) := io.writeData }
+  }
+  val annos = elaborateAndLower(new MemoryModule)
+  assert(xdc.annos.size == 1)
   }
 }
