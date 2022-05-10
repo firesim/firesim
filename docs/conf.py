@@ -30,11 +30,18 @@ copyright = u'2018, Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, 
 author = u'Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
 
 on_rtd = os.environ.get("READTHEDOCS") == "True"
+on_gha = os.environ.get("GITHUB_ACTIONS") == "true"
+
 if on_rtd:
     for item, value in os.environ.items():
         print("[READTHEDOCS] {} = {}".format(item, value))
 
+# Come up with a short version string for the build. This is doing a bunch of lifting:
+# - format doc text that self-references its version (see title page). This may be used in an ad-hoc
+#   way to produce references to things like ScalaDoc, etc...
+# - procedurally generate github URL references using via `gh-file-ref`
 if on_rtd:
+    logger.info("Running in a RTD Container")
     rtd_version = os.environ.get("READTHEDOCS_VERSION")
     if rtd_version == "latest":
         version = "main" # TODO: default to what "latest" points to
@@ -49,6 +56,12 @@ if on_rtd:
             version = "v?.?.?" # this should not occur as "stable" is always pointing to tagged version
     else:
         version = rtd_version # name of a branch
+elif on_gha:
+    # GitHub actions does a build of the docs to ensure they are free of warnings.
+    logger.info("Running under GitHub Actions Pipeline")
+    # Looking up a branch name or tag requires switching on the event type that triggered the workflow
+    # so just use the SHA of the commit instead.
+    version = os.environ.get("GITHUB_SHA")
 else:
     # When running locally, try to set version to a branch name that could be
     # used to reference files on GH that could be added or moved. This should match rtd_version when running
