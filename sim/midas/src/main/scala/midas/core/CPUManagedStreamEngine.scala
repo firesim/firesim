@@ -5,7 +5,7 @@ package midas.core
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.IO
+import chisel3.experimental.{IO, prefix}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
@@ -81,7 +81,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         channel: DecoupledIO[UInt],
         chParams: StreamSinkParameters,
         idx: Int,
-        addressSpaceBits: Int): StreamDriverParameters = {
+        addressSpaceBits: Int): StreamDriverParameters = prefix(chParams.name) {
 
       val streamName = chParams.name
       val grant = (dma.aw.bits.addr >> addressSpaceBits) === idx.U
@@ -137,7 +137,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         channel: DecoupledIO[UInt],
         chParams: StreamSourceParameters,
         idx: Int,
-        addressSpaceBits: Int): StreamDriverParameters = {
+        addressSpaceBits: Int): StreamDriverParameters = prefix(chParams.name) {
 
       val grant = (dma.ar.bits.addr >> addressSpaceBits) === idx.U
 
