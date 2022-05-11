@@ -40,7 +40,14 @@ object ChannelClockInfoAnalysis extends Transform {
 
     val finder = new ClockSourceFinder(state)
     val clockSourceMap = channelClocks.map({ case (k, v) => v -> finder.findRootDriver(v) }).toMap
-    channelClocks.mapValues(sinkClock => sourceInfoMap(clockSourceMap(sinkClock).get))
+    channelClocks.map { case (channelName, sinkClock) =>
+      val source = clockSourceMap(sinkClock).getOrElse(throw new Exception(
+        s"""|Could not find source clock for channel ${channelName}.
+            |It is either unconnected or there is an intermediate operation (e.g., a clock gate
+            |or clock mux) between the channel's clock and the clock bridge generated clock.""".stripMargin))
+
+      (channelName, sourceInfoMap(source))
+    }.toMap
   }
   def execute(state: CircuitState): CircuitState = {
     val infoAnno = ChannelClockInfoAnnotation(analyze(state))
