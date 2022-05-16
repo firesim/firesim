@@ -103,6 +103,55 @@ Limitations:
 
 .. _generating-different-targets:
 
+Target-Side FPGA Constraints
+----------------------------
+
+FireSim provides utilities to generate Xilinx Design Constraints (XDC) from
+string snippets in target's Chisel. Golden Gate collects these annotations and
+emits separate xdc files for synthesis and implementation.  See
+:ref:`fpga-build-files` for a complete listing of output files used in FPGA
+compilation.
+
+-----------------------------
+RAM Inference Hints
+-----------------------------
+
+Vivado generally does a reasonable job inferring embedded memories from
+FireSim-generated RTL, though there are some cases in which it must be coaxed. For example:
+
+* Due to insufficient BRAM resources, you may wish to use URAM for a memory that'd infer as BRAM.
+* If Vivado can't find pipeline registers to absorb into a URAM or none exist in the target, you may get an warning like::
+
+    [Synth 8-6057] Memory: "<memory>" defined in module: "<module>" implemented as Ultra-Ram
+    has no pipeline registers. It is recommended to use pipeline registers to achieve high
+    performance. 
+
+Since Golden Gate modifies the module hierarchy extensively, it's highly
+desirable to annotate these memories in the Chisel source so that their hints
+may move with the memory instance. This is a more robust alternative to
+relying on wildcard / glob matches from a static XDC specification.
+
+Chisel memories can be annotated *in situ* like so:
+
+.. literalinclude:: ../../sim/midas/targetutils/src/test/scala/RAMStyleHintSpec.scala
+    :language: scala
+    :start-after: DOC include start: Basic RAM Hint
+    :end-before: DOC include end: Basic RAM Hint
+
+Alternatively, you can "dot-in" (traverse public members of a Scala class
+hierarchy) to annotate a memory in a submodule. Here's an example:
+
+.. literalinclude:: ../../sim/midas/targetutils/src/test/scala/RAMStyleHintSpec.scala
+    :language: scala
+    :start-after: DOC include start: RAM Hint From Parent
+    :end-before: DOC include end: RAM Hint From Parent
+
+These annotations can be deployed anywhere: in the target, in bridge modules,
+and in internal FireSim RTL. The resulting constraints should appear the
+synthesis xdc file emitted by Golden Gate. For more information see the ScalaDoc
+for ``RAMStyleHint`` or read the source located at:
+:gh-file-ref:`sim/midas/targetutils/src/main/scala/midas/xdc/RAMStyleHint.scala`.
+
 Provided Target Designs
 -----------------------
 

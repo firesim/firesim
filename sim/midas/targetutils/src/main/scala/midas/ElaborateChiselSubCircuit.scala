@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package midas.passes
+package midas.targetutils
 
 import firrtl.{AnnotationSeq, Transform}
 import firrtl.ir.Circuit

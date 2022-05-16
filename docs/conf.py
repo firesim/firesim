@@ -30,11 +30,18 @@ copyright = u'2018, Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, 
 author = u'Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
 
 on_rtd = os.environ.get("READTHEDOCS") == "True"
+on_gha = os.environ.get("GITHUB_ACTIONS") == "true"
+
 if on_rtd:
     for item, value in os.environ.items():
         print("[READTHEDOCS] {} = {}".format(item, value))
 
+# Come up with a short version string for the build. This is doing a bunch of lifting:
+# - format doc text that self-references its version (see title page). This may be used in an ad-hoc
+#   way to produce references to things like ScalaDoc, etc...
+# - procedurally generate github URL references using via `gh-file-ref`
 if on_rtd:
+    logger.info("Running in a RTD Container")
     rtd_version = os.environ.get("READTHEDOCS_VERSION")
     if rtd_version == "latest":
         version = "main" # TODO: default to what "latest" points to
@@ -49,10 +56,22 @@ if on_rtd:
             version = "v?.?.?" # this should not occur as "stable" is always pointing to tagged version
     else:
         version = rtd_version # name of a branch
+elif on_gha:
+    # GitHub actions does a build of the docs to ensure they are free of warnings.
+    logger.info("Running under GitHub Actions Pipeline")
+    # Looking up a branch name or tag requires switching on the event type that triggered the workflow
+    # so just use the SHA of the commit instead.
+    version = os.environ.get("GITHUB_SHA")
 else:
-    # TODO: Note for local builds, this may produce github URLs that do not
-    # correctly resolve, if the local branch has added or renamed files
-    version = "main"
+    # When running locally, try to set version to a branch name that could be
+    # used to reference files on GH that could be added or moved. This should match rtd_version when running
+    # in a RTD build container
+    process = subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"], stdout=subprocess.PIPE)
+    output = process.communicate()[0].decode("utf-8").strip()
+    if process.returncode == 0:
+        version = output
+    else:
+        raise Exception("git rev-parse --abbrev-ref HEAD returned non-zero")
 
 logger.info(f"Setting |version| to {version}.")
 
@@ -246,7 +265,9 @@ def gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, content=[
     logger.info(f"Testing GitHub URL {url} exists...")
     status_code = requests.get(url).status_code
     if status_code != 200:
-        logger.error(f"[Line {lineno}] :{name}:`{text}` produces URL {url} returning status code {status_code}.")
+        message = f"[Line {lineno}] :{name}:`{text}` produces URL {url} returning status code {status_code}. " \
+                  "Ensure your path is correct and all commits that may have moved or renamed files have been pushed to github.com."
+        logger.error(message)
         sys.exit(1)
 
     docutils.parsers.rst.roles.set_classes(options)

@@ -5,10 +5,32 @@ package midas.targetutils
 import chisel3._
 import chisel3.stage.ChiselStage
 
+import firrtl.stage.{FirrtlPhase,  FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
+
 import org.scalatest.flatspec.AnyFlatSpec
 
 trait ElaborationUtils { self: AnyFlatSpec =>
-  def elaborate(mod: =>Module): Unit = ChiselStage.emitFirrtl(mod)
+  /**
+    * Elaborates the module returning the CHIRRTL for the circuit, and strictly
+    * the annotations produced as a side effect of elaboration.
+    */
+  def elaborate(mod: =>Module): (firrtl.ir.Circuit, firrtl.AnnotationSeq) = ElaborateChiselSubCircuit(mod)
+
+  /**
+    * Our utitilies primarily generate new annotations. This method differs from
+    * upstream ChiselStage support in that this returns all annotations so that
+    * we may introspect on them and ensure the correctness of targetutils annotations
+    * after lowering and deduplication.
+    */
+  def elaborateAndLower(mod: =>Module): Seq[firrtl.annotations.Annotation] = {
+    val (circuit, annos) = elaborate(mod)
+    val inputAnnos =
+      FirrtlCircuitAnnotation(circuit) ::
+      RunFirrtlTransformAnnotation(new firrtl.VerilogEmitter) ::
+      annos.toList
+
+    (new FirrtlPhase).transform(inputAnnos)
+  }
 
   class AnnotateChiselTypeModule[T <: Data](gen: =>T, annotator: T => Unit) extends Module {
     val io = IO(new Bundle {
