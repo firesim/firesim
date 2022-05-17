@@ -148,7 +148,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     // Now that we've bound registers, snoop the poke register addresses for writes
     // Yay Chisel!
     channelPokes.foreach({ case (addrs: Seq[Int], poked: Bool) =>
-      poked := addrs.map(i => crFile.io.mcr.write(i).valid).reduce(_ || _)
+      poked := addrs.map(i => crFile.io.mcr.activeWriteToAddress(i)).reduce(_ || _)
     })
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
@@ -192,7 +192,7 @@ object PeekPokeTokenizedIO {
   // serialiable port information
   def apply(key: PeekPokeKey): PeekPokeTokenizedIO = {
     // Instantiate a useless module from which we can get a hardware type with parsePorts
-    val dummyModule = Module(new MultiIOModule {
+    val dummyModule = Module(new Module {
       // This spoofs the sources that were passed to the companion object ioList
       // pokes and peeks are reversed because PeekPokeTargetIO is going to flip them
       val io = IO(new RegeneratedTargetIO(key.pokes, key.peeks))

@@ -10,7 +10,7 @@ import firrtl.Utils.{throwInternalError, BoolType, one, zero}
 import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import firrtl.transforms.TopWiring._
-import freechips.rocketchip.util.property._
+import freechips.rocketchip.util.property
 import freechips.rocketchip.util.WideCounter
 import freechips.rocketchip.config.{Parameters, Field}
 import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
@@ -22,12 +22,12 @@ import java.io._
 import scala.io.Source
 import collection.mutable
 
-class FireSimPropertyLibrary extends BasePropertyLibrary {
+class FireSimPropertyLibrary extends property.BasePropertyLibrary {
   import chisel3._
   import chisel3.experimental.DataMirror.internal.isSynthesizable
   import chisel3.internal.sourceinfo.{SourceInfo}
   import chisel3.experimental.{annotate,ChiselAnnotation}
-  def generateProperty(prop_param: BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
+  def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
       annotate(new ChiselAnnotation {
@@ -86,13 +86,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       val countType = UIntType(IntWidth(64))
       val zeroLit = UIntLiteral(0, IntWidth(64))
 
-      addedStmts ++= coverAnnos.flatMap({ case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, _) =>
-        val countName = moduleNS.newName(label + "_counter")
-        val count = DefRegister(NoInfo, countName, countType, WRef(clock.ref), WRef(reset.ref), zeroLit)
-        val nextName = moduleNS.newName(label + "_next")
-        val next = DefNode(NoInfo, nextName, DoPrim(PrimOps.Add, Seq(WRef(count), WRef(target.ref)), Seq.empty, countType))
-        val countUpdate = Connect(NoInfo, WRef(count), WRef(next))
-
+      def generatePrintf(label: String, clock: ReferenceTarget, valueToPrint: WRef, printEnable: Expression, suggestedPrintName: String): Unit = {
         // Generate a trigger sink and annotate it
         val triggerName = moduleNS.newName("trigger")
         val trigger = DefWire(NoInfo, triggerName, BoolType)
@@ -101,11 +95,35 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
         // Now emit a printf using all the generated hardware
         val printFormat = StringLit(s"""[AutoCounter] $label: %d\n""")
-        val printStmt = Print(NoInfo, printFormat, Seq(WRef(count)),
-                              WRef(clock.ref), And(WRef(trigger), Neq(WRef(target.ref), zero)))
-        addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(countName))), mT, printFormat.string, Some(target.ref + "_print"))
-        Seq(count, next, printStmt, countUpdate)
-      })
+        val printName = moduleNS.newName(suggestedPrintName)
+        val printStmt = Print(NoInfo, printFormat, Seq(valueToPrint),
+                              WRef(clock.ref), And(WRef(trigger), printEnable), printName)
+        addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(valueToPrint.name))), mT, printFormat.string, Some(printName))
+        addedStmts += printStmt
+      }
+
+      coverAnnos.foreach {
+        case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, PerfCounterOps.Accumulate, _) =>
+          val countName = moduleNS.newName(label + "_counter")
+          val count = DefRegister(NoInfo, countName, countType, WRef(clock.ref), WRef(reset.ref), zeroLit)
+          val nextName = moduleNS.newName(label + "_next")
+          val next = DefNode(NoInfo, nextName, DoPrim(PrimOps.Add, Seq(WRef(count), WRef(target.ref)), Seq.empty, countType))
+          val countUpdate = Connect(NoInfo, WRef(count), WRef(next))
+          addedStmts ++= Seq(count, next, countUpdate)
+
+          def printEnable = Neq(WRef(target.ref), zero)
+          generatePrintf(label, clock, WRef(count), printEnable, target.ref + "_print")
+
+        // Under the Identity mode, print whenever the value changes.
+        case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, PerfCounterOps.Identity, _) =>
+          val regName = moduleNS.newName(label + "_reg")
+          val reg = DefRegister(NoInfo, regName, UIntType(UnknownWidth), WRef(clock.ref), WRef(reset.ref), zeroLit)
+          val regUpdate = Connect(NoInfo, WRef(reg), WRef(target.ref))
+          addedStmts ++= Seq(reg, regUpdate)
+
+          def printEnable = Neq(WRef(target.ref), WRef(reg))
+          generatePrintf(label, clock, WRef(target.ref), printEnable, target.ref + "_identity_print")
+      }
       m.copy(body = Block(m.body, addedStmts:_*))
     case o => o
   }
@@ -125,7 +143,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       state: CircuitState,
       eventModuleMap: Map[String, Seq[AutoCounterFirrtlAnnotation]]): CircuitState = {
 
-    val labelMap = eventModuleMap.values.flatten.map(anno => anno.target -> anno.label).toMap
+    val sourceToAutoCounterAnnoMap = eventModuleMap.values.flatten.map(anno => anno.target -> anno).toMap
     val bridgeTopWiringAnnos = eventModuleMap.values.flatten.map(
       anno => BridgeTopWiringAnnotation(anno.target, anno.clock))
 
@@ -159,10 +177,16 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       })
 
       val eventMetadata = oAnnos.map({ anno =>
-        val pathlessLabel = labelMap(anno.pathlessSource)
+        val autoCounterAnno = sourceToAutoCounterAnnoMap(anno.pathlessSource)
+        val pathlessLabel = autoCounterAnno.label
         val instPath = anno.absoluteSource.circuit +: anno.absoluteSource.asPath.map(_._1.value)
         val eventWidth = portWidthMap(anno.topSink.ref)
-        EventMetadata(anno.topSink.ref, (pathlessLabel +: instPath).mkString("_"), eventWidth)
+        EventMetadata(
+          anno.topSink.ref,
+          (pathlessLabel +: instPath).mkString("_"),
+          autoCounterAnno.description,
+          eventWidth,
+          autoCounterAnno.opType)
       })
 
       // Step 2b. Manually add boolean channels, to carry the trigger and
@@ -253,7 +277,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       println(s"[AutoCounter] signals are:")
       selectedsignals.foreach({ case (modName, localEvents) =>
         println(s"  Module ${modName}")
-        localEvents.foreach({ anno => println(s"   ${anno.label}: ${anno.message}") })
+        localEvents.foreach({ anno => println(s"   ${anno.label}: ${anno.description}") })
       })
 
       // Common preprocessing: gate all annotated events with their associated reset
@@ -283,7 +307,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     updatedState.copy(
       annotations = updatedState.annotations.filter {
         case AutoCounterCoverModuleFirrtlAnnotation(_) => false
-        case AutoCounterFirrtlAnnotation(_,_,_,_,_,_) => false
+        case AutoCounterFirrtlAnnotation(_,_,_,_,_,_,_) => false
         case o => true
       })
   }

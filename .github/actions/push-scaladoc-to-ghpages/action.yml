@@ -1,0 +1,29 @@
+name: push-scaladoc-to-ghpages
+description: "Pushes scaladoc to ghphage branch"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install SSH key for Github.com
+      uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ env.FIRESIM-REPO-DEP-KEY }}
+
+    - run: |
+        # Activates the conda environment which provides git.
+        source env.sh
+        git config --global user.email "abe.gonzalez@berkeley.edu"
+        git config --global user.name "github-actions"
+      shell: bash
+
+    - run: |
+        if [[ "${{ github.ref_type }}" != 'tag' ]]; then
+          source env.sh
+          export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for ${{ github.ref_type }} release"
+          make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND='set apiDirectory := \"${{ github.ref_type }}\"; ghpagesPushSite'
+        else
+          source env.sh
+          export SBT_GHPAGES_COMMIT_MESSAGE="[ci skip] Update scaladoc for main:${{ github.sha }}"
+          make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND="ghpagesPushSite"
+        fi
+      shell: bash

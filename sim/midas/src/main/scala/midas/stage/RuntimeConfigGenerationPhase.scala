@@ -17,9 +17,11 @@ import firrtl.options.{Phase, TargetDirAnnotation, Dependency, CustomFileEmissio
 import java.io.{File, FileWriter, Writer}
 import logger._
 
-private [stage] case class RuntimeConfigurationFile(name: String, body: String) extends NoTargetAnnotation with CustomFileEmission {
+// When the runtime config generation phase is being used, the
+// BaseOutputFilenameAnnotation carries the complete name of the output file.
+// This lets us reuse the Checks stage without custom handling,
+private [stage] case class RuntimeConfigurationFile(body: String) extends NoTargetAnnotation with GoldenGateFileEmission {
   override def suffix = None
-  def baseFileName(annos: AnnotationSeq) = name
   def getBytes = body.getBytes
 }
 
@@ -28,7 +30,6 @@ class RuntimeConfigGenerationPhase extends Phase {
   override val prerequisites = Seq(Dependency[CreateParametersInstancePhase])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val runtimeConfigName  = annotations.collectFirst({ case RuntimeConfigNameAnnotation(s) => s }).get
     implicit val p = annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
 
     val bridgeIOAnnotations = annotations.collect { case b: BridgeIOAnnotation if b.widgetClass.nonEmpty => b }
@@ -44,6 +45,6 @@ class RuntimeConfigGenerationPhase extends Phase {
       fasedBridge.getSettings
     })
 
-    RuntimeConfigurationFile(runtimeConfigName, settings.getOrElse("\n")) +: annotations
+    RuntimeConfigurationFile(settings.getOrElse("\n")) +: annotations
   }
 }

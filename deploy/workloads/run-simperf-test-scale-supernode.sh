@@ -23,7 +23,7 @@ set -e
 set -o pipefail
 
 if [ "$1" == "withlaunch" ]; then
-    firesim launchrunfarm -c workloads/simperf-test-scale-supernode-config.ini
+    firesim launchrunfarm -c workloads/simperf-test-scale-supernode-config.yaml
 fi
 
 ORIGDIR=$(pwd)
@@ -43,14 +43,14 @@ loopfunc () {
     # arg 1 is num nodes
     # arg 2 is num f116xlarges to kill AFTERWARDS
     # arg 3 is num m416xlarges to kill AFTERWARDS
-    firesim infrasetup -c workloads/simperf-test-scale-supernode-config.ini --overrideconfigdata "targetconfig topology supernode_example_$1config"
-    firesim runworkload -c workloads/simperf-test-scale-supernode-config.ini --overrideconfigdata "targetconfig topology supernode_example_$1config"
+    firesim infrasetup -c workloads/simperf-test-scale-supernode-config.yaml --overrideconfigdata "target_config topology supernode_example_$1config"
+    firesim runworkload -c workloads/simperf-test-scale-supernode-config.yaml --overrideconfigdata "target_config topology supernode_example_$1config"
     # rename the output directory with the ping latency
     files=(*simperf-test-scale*)
     originalfilename=${files[-1]}
     mv $originalfilename $resultsdir/$1
 
-    firesim terminaterunfarm -c workloads/simperf-test-scale-supernode-config.ini --terminatesomef116 $2 --terminatesomem416 $3 --forceterminate
+    firesim terminaterunfarm -c workloads/simperf-test-scale-supernode-config.yaml --terminatesomef116 $2 --terminatesomem416 $3 --forceterminate
 
 }
 
@@ -72,4 +72,4 @@ loopfunc 8 0 0
 
 loopfunc 4 1 0
 
-python $ORIGDIR/simperf-test-scale/simperf-test-scale-results.py $(pwd)/$resultsdir
+python3 $ORIGDIR/simperf-test-scale/simperf-test-scale-results.py $(pwd)/$resultsdir

@@ -1,0 +1,10 @@
+name: scala-build
+description: "Compile all relevant Scala sources for CI"
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        source env.sh
+        make -C sim TARGET_PROJECT=midasexamples sbt SBT_COMMAND=test:compile
+      shell: bash

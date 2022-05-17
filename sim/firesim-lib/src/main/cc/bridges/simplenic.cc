@@ -46,7 +46,15 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 
 simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
         SIMPLENICBRIDGEMODULE_struct *mmio_addrs, int simplenicno,
-        long dma_addr): bridge_driver_t(sim)
+        const unsigned int stream_to_cpu_count_address,
+        long               stream_to_cpu_dma_address,
+        const unsigned int stream_from_cpu_count_address,
+        long               stream_from_cpu_dma_address):
+    bridge_driver_t(sim),
+    stream_to_cpu_count_address(stream_to_cpu_count_address),
+    stream_to_cpu_dma_address(stream_to_cpu_dma_address),
+    stream_from_cpu_count_address(stream_from_cpu_count_address),
+    stream_from_cpu_dma_address(stream_from_cpu_dma_address)
 {
     this->mmio_addrs = mmio_addrs;
 
@@ -58,7 +66,6 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
     this->niclog = NULL;
     this->mac_lendian = 0;
     this->LINKLATENCY = 0;
-    this->dma_addr = dma_addr;
 
 
     // construct arg parsing strings here. We basically append the bridge_driver
@@ -194,8 +201,8 @@ void simplenic_t::init() {
     write(mmio_addrs->pause_times,
             (pause_refresh << 16) | (pause_quanta & 0xffff));
 
-    uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
-    uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
+    uint32_t output_tokens_available = read(stream_to_cpu_count_address);
+    uint32_t input_token_capacity = SIMLATENCY_BT - read(stream_from_cpu_count_address);
     if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
         printf("FAIL. INCORRECT TOKENS ON BOOT. produced tokens available %d, input slots available %d\n", output_tokens_available, input_token_capacity);
         exit(1);
@@ -204,7 +211,7 @@ void simplenic_t::init() {
     printf("On init, %d token slots available on input.\n", input_token_capacity);
     uint32_t token_bytes_produced = 0;
     token_bytes_produced = push(
-            dma_addr,
+            stream_from_cpu_dma_address,
             pcis_write_bufs[1],
             BUFWIDTH*input_token_capacity);
     if (token_bytes_produced != input_token_capacity*BUFWIDTH) {
@@ -224,8 +231,8 @@ void simplenic_t::tick() {
     while (true) { // break when we don't have 5k tokens
         uint32_t tokens_this_round = 0;
 
-        uint32_t output_tokens_available = read(mmio_addrs->outgoing_count);
-        uint32_t input_token_capacity = SIMLATENCY_BT - read(mmio_addrs->incoming_count);
+        uint32_t output_tokens_available = read(stream_to_cpu_count_address);
+        uint32_t input_token_capacity = SIMLATENCY_BT - read(stream_from_cpu_count_address);
 
         // we will read/write the min of tokens available / token input capacity
         tokens_this_round = std::min(output_tokens_available, input_token_capacity);
@@ -247,7 +254,7 @@ void simplenic_t::tick() {
 #endif
         uint32_t token_bytes_obtained_from_fpga = 0;
         token_bytes_obtained_from_fpga = pull(
-                dma_addr,
+                stream_to_cpu_dma_address,
                 pcis_read_bufs[currentround],
                 BUFWIDTH * tokens_this_round);
 #ifdef DEBUG_NIC_PRINT
@@ -323,7 +330,7 @@ void simplenic_t::tick() {
 #endif
         uint32_t token_bytes_sent_to_fpga = 0;
         token_bytes_sent_to_fpga = push(
-                dma_addr,
+                stream_from_cpu_dma_address,
                 pcis_write_bufs[currentround],
                 BUFWIDTH * tokens_this_round);
         pcis_write_bufs[currentround][BUFBYTES] = 0;

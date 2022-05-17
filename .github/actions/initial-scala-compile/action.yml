@@ -1,0 +1,8 @@
+name: initial-scala-compile
+description: "Initial Scala Compilation"
+
+runs:
+  using: "composite"
+  steps:
+    - run: .github/scripts/run-sbt-command.py firesim test:compile
+      shell: bash

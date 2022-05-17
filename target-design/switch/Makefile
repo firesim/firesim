@@ -1,18 +1,14 @@
 
+LDLIBS += -lrt
+CPPFLAGS += -fopenmp
+CXXFLAGS += -g3 -O3 -std=gnu++11
+# we will copy shared libs to same directory on runner. put $ORIGIN in rpath
+LDFLAGS += -Wl,-rpath='$$ORIGIN'
+
 all: switch
 
 switch: switch.cc baseport.h shmemport.h flit.h socketport.h switchconfig.h
-	g++ -g3 -O3 -std=gnu++11 -o switch switch.cc -fopenmp -lrt
-
-
-sim:
-	python emitconfig.py
-
-#switchtor: switch.cc baseport.h shmemport.h flit.h socketport.h switchconfig.h
-#	g++ -DSWITCHTOR -g3 -O3 -std=gnu++11 -o switchtor switch.cc -fopenmp -lrt
-#
-#switchroot: switch.cc baseport.h shmemport.h flit.h socketport.h switchconfig.h
-#	g++ -DSWITCHROOT -g3 -O3 -std=gnu++11 -o switchroot switch.cc -fopenmp -lrt
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o switch switch.cc $(LDLIBS)
 
 runswitch:
 	echo "removing old /dev/shm/*"

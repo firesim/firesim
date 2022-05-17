@@ -8,6 +8,10 @@
 
 import shutil
 import os
+import subprocess
+
+from sphinx.util import logging
+logger = logging.getLogger(__name__)
 
 # -- Path setup --------------------------------------------------------------
 
@@ -19,18 +23,60 @@ import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = u'FireSim'
 copyright = u'2018, Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
 author = u'Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
 
-# The short X.Y version
-version = u''
-# The full version, including alpha/beta/rc tags
-release = u''
+on_rtd = os.environ.get("READTHEDOCS") == "True"
+on_gha = os.environ.get("GITHUB_ACTIONS") == "true"
 
+if on_rtd:
+    for item, value in os.environ.items():
+        print("[READTHEDOCS] {} = {}".format(item, value))
+
+# Come up with a short version string for the build. This is doing a bunch of lifting:
+# - format doc text that self-references its version (see title page). This may be used in an ad-hoc
+#   way to produce references to things like ScalaDoc, etc...
+# - procedurally generate github URL references using via `gh-file-ref`
+if on_rtd:
+    logger.info("Running in a RTD Container")
+    rtd_version = os.environ.get("READTHEDOCS_VERSION")
+    if rtd_version == "latest":
+        version = "main" # TODO: default to what "latest" points to
+    elif rtd_version == "stable":
+        # get the latest git tag (which is what rtd normally builds under "stable")
+        # this works since rtd builds things within the repo
+        process = subprocess.Popen(["git", "describe", "--exact-match", "--tags"], stdout=subprocess.PIPE)
+        output = process.communicate()[0].decode("utf-8").strip()
+        if process.returncode == 0:
+            version = output
+        else:
+            version = "v?.?.?" # this should not occur as "stable" is always pointing to tagged version
+    else:
+        version = rtd_version # name of a branch
+elif on_gha:
+    # GitHub actions does a build of the docs to ensure they are free of warnings.
+    logger.info("Running under GitHub Actions Pipeline")
+    # Looking up a branch name or tag requires switching on the event type that triggered the workflow
+    # so just use the SHA of the commit instead.
+    version = os.environ.get("GITHUB_SHA")
+else:
+    # When running locally, try to set version to a branch name that could be
+    # used to reference files on GH that could be added or moved. This should match rtd_version when running
+    # in a RTD build container
+    process = subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"], stdout=subprocess.PIPE)
+    output = process.communicate()[0].decode("utf-8").strip()
+    if process.returncode == 0:
+        version = output
+    else:
+        raise Exception("git rev-parse --abbrev-ref HEAD returned non-zero")
+
+logger.info(f"Setting |version| to {version}.")
+
+# for now make these match
+release = version
 
 # -- General configuration ---------------------------------------------------
 
@@ -108,13 +154,22 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
-html_logo = '_static/images/firesim_logo_small.png'
+html_logo = '_static/firesim_logo_small.png'
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'FireSimdoc'
 
+html_context = {
+    "version": version
+}
+
+# add rst to end of each rst source file
+# can put custom strings here that are generated from this file
+rst_epilog = f"""
+.. |overall_version| replace:: {version}
+"""
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -180,5 +235,46 @@ def copy_legacy_redirects(app, docname): # Sphinx expects two arguments
             if os.path.isfile(src_path):
                 shutil.copyfile(src_path, target_path)
 
+def gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    """
+    Produces a github.com reference to a blob or tree at path {text}.
+
+    Example:
+
+    :gh-file-ref:`my/path`
+
+    Produces a hyperlink with the text "my/path" that refers the url:
+    https://www.github.com/firesim/firesim/blob/<version>/my/path.
+
+    Where version is the same as would be substituted by using |version| in
+    html text, and is resolved in conf.py.
+
+    This is based off custom role sphinx plugins like
+    https://github.com/tdi/sphinxcontrib-manpage. I've inlined this here for
+    now, but we could just as well make it a module and register it under
+    `extensions` in conf.py
+    """
+
+    import docutils
+    import requests
+
+    # Note GitHub permits referring to a tree as a 'blob' in these URLs without returning a 404.
+    # So I've unconditionally chosen to use blob.
+    url = f"https://www.github.com/firesim/firesim/blob/{version}/{text}"
+
+    logger.info(f"Testing GitHub URL {url} exists...")
+    status_code = requests.get(url).status_code
+    if status_code != 200:
+        message = f"[Line {lineno}] :{name}:`{text}` produces URL {url} returning status code {status_code}. " \
+                  "Ensure your path is correct and all commits that may have moved or renamed files have been pushed to github.com."
+        logger.error(message)
+        sys.exit(1)
+
+    docutils.parsers.rst.roles.set_classes(options)
+    node = docutils.nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
 def setup(app):
+    # Add roles to simplify github reference generation
+    app.add_role('gh-file-ref', gh_file_ref_role)
     app.connect('build-finished', copy_legacy_redirects)

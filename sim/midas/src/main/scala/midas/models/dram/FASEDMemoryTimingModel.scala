@@ -234,7 +234,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Since there is no diplomatic AXI4 width converter, use the TL one
     val xbar = LazyModule(new TLXbar)
     val error = LazyModule(new TLError(DevNullParams(
-        Seq(AddressSet(BigInt(1) << p(MemNastiKey).addrBits, 0xff)),
+        Seq(AddressSet(BigInt(1) << p(NastiKey).addrBits, 0xff)),
         maxAtomic = 1,
         maxTransfer = p(HostMemChannelKey).maxXferBytes),
       beatBytes = hostWidthBytes))
@@ -295,12 +295,12 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     // Track outstanding requests to the host memory system
     val hOutstandingReads = SatUpDownCounter(cfg.maxReads)
-    hOutstandingReads.inc := toHostDRAM.ar.fire()
-    hOutstandingReads.dec := toHostDRAM.r.fire() && toHostDRAM.r.bits.last
+    hOutstandingReads.inc := toHostDRAM.ar.fire
+    hOutstandingReads.dec := toHostDRAM.r.fire && toHostDRAM.r.bits.last
     hOutstandingReads.max := cfg.maxReads.U
     val hOutstandingWrites = SatUpDownCounter(cfg.maxWrites)
-    hOutstandingWrites.inc := toHostDRAM.aw.fire()
-    hOutstandingWrites.dec := toHostDRAM.b.fire()
+    hOutstandingWrites.inc := toHostDRAM.aw.fire
+    hOutstandingWrites.dec := toHostDRAM.b.fire
     hOutstandingWrites.max := cfg.maxWrites.U
 
     val host_mem_idle = hOutstandingReads.empty && hOutstandingWrites.empty
@@ -509,7 +509,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
       // Ingress latencies
       val iReadLatencyHist = HostLatencyHistogram(
-        ingress.io.nastiInputs.hBits.ar.fire() && targetFire,
+        ingress.io.nastiInputs.hBits.ar.fire && targetFire,
         ingress.io.nastiInputs.hBits.ar.bits.id,
         ingress.io.nastiOutputs.ar.fire,
         ingress.io.nastiOutputs.ar.bits.id,
@@ -518,7 +518,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       attachIO(iReadLatencyHist, "ingressReadLatencyHist_")
 
       val iWriteLatencyHist = HostLatencyHistogram(
-        ingress.io.nastiInputs.hBits.aw.fire() && targetFire,
+        ingress.io.nastiInputs.hBits.aw.fire && targetFire,
         ingress.io.nastiInputs.hBits.aw.bits.id,
         ingress.io.nastiOutputs.aw.fire,
         ingress.io.nastiOutputs.aw.bits.id,

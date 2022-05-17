@@ -86,13 +86,13 @@ $(simulator_verilog) $(header) $(fame_annos): $(simulator_verilog).intermediate 
 # pass --no-legacy-dedup as well
 $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
 	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
-		-o $(simulator_verilog) -i $(FIRRTL_FILE) -td $(GENERATED_DIR) \
+		-i $(FIRRTL_FILE) \
+		-td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		--output-filename-base $(BASE_FILE_NAME) \
 		--no-dedup \
-		-E sverilog \
 	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
@@ -177,7 +177,8 @@ driver: $(PLATFORM)
 
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
-$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -lfpga_mgmt
+# We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath
+$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt
 
 # Compile Driver
 $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
@@ -220,7 +221,8 @@ fpga_driver_dir:= $(fpga_work_dir)/driver
 
 # Enumerates the subset of generated files that must be copied over for FPGA compilation
 fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
-	.sv .defines.vh .env.tcl)
+	.sv .defines.vh .env.tcl \
+	.synthesis.xdc .implementation.xdc)
 	#.ila_insert_inst.v .ila_insert_ports.v .ila_insert_wires.v .ila_insert_vivado.tcl)
 
 # Files used to run FPGA-level metasimulation

@@ -13,7 +13,7 @@ are bi-directional, adding a downlink from node A to node B implicitly adds
 an uplink from B to A.
 
 You can add additional topology generation methods here, then use them in
-``config_runtime.ini``.
+``config_runtime.yaml``.
 
 ``user_topology.py`` contents:
 --------------------------------

@@ -11,6 +11,7 @@ import freechips.rocketchip.util.HeterogeneousBag
 import midas.core.{DMANastiKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
+import midas.targetutils.xdc._
 
 case object AXIDebugPrint extends Field[Boolean]
 
@@ -31,14 +32,14 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     }
 
     top.module.ctrl <> io.master
-    top.module.dma  <> io.dma
+    AXI4NastiAssigner.toAXI4(top.module.dma, io.dma)
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...
-    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire(), 1 << p(CtrlNastiKey).idBits)
+    val (wCounterValue, wCounterWrap) = Counter(io.master.aw.fire, 1 << p(CtrlNastiKey).idBits)
     top.module.ctrl.aw.bits.id := wCounterValue
 
-    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire(), 1 << p(CtrlNastiKey).idBits)
+    val (rCounterValue, rCounterWrap) = Counter(io.master.ar.fire, 1 << p(CtrlNastiKey).idBits)
     top.module.ctrl.ar.bits.id := rCounterValue
 
     // Capture FPGA-toolflow related verilog defines
@@ -52,5 +53,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
           |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
           |""".stripMargin,
       fileSuffix = ".defines.vh")
+
+    SpecifyXDCCircuitPaths(Some("firesim_top"), Some("WRAPPER_INST/CL/firesim_top"))
   }
 }

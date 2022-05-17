@@ -51,10 +51,10 @@ Figure 5: Ping Latency vs. Configured Link Latency
 
 Resource requirements:
 
-.. include:: /../deploy/workloads/ping-latency-config.ini
+.. include:: /../deploy/workloads/ping-latency-config.yaml
    :start-line: 3
    :end-line: 6
-   :code: ini
+   :code: yaml
 
 
 To Run:
@@ -71,10 +71,10 @@ Figure 6: Network Bandwidth Saturation
 
 Resource requirements:
 
-.. include:: /../deploy/workloads/bw-test-config.ini
+.. include:: /../deploy/workloads/bw-test-config.yaml
    :start-line: 3
    :end-line: 6
-   :code: ini
+   :code: yaml
 
 
 To Run:
@@ -90,10 +90,10 @@ Figure 7: Memcached QoS / Thread Imbalance
 
 Resource requirements:
 
-.. include:: /../deploy/workloads/memcached-thread-imbalance-config.ini
+.. include:: /../deploy/workloads/memcached-thread-imbalance-config.yaml
    :start-line: 3
    :end-line: 6
-   :code: ini
+   :code: yaml
 
 To Run:
 
@@ -108,10 +108,10 @@ Figure 8: Simulation Rate vs. Scale
 
 Resource requirements:
 
-.. include:: /../deploy/workloads/simperf-test-scale-config.ini
+.. include:: /../deploy/workloads/simperf-test-scale-config.yaml
    :start-line: 3
    :end-line: 6
-   :code: ini
+   :code: yaml
 
 
 To Run:
@@ -130,10 +130,10 @@ Figure 9: Simulation Rate vs. Link Latency
 
 Resource requirements:
 
-.. include:: /../deploy/workloads/simperf-test-latency-config.ini
+.. include:: /../deploy/workloads/simperf-test-latency-config.yaml
    :start-line: 3
    :end-line: 6
-   :code: ini
+   :code: yaml
 
 
 To Run:

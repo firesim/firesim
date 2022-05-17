@@ -23,7 +23,7 @@ import collection.mutable
 // - All mem port annotations on different instances point at the same model ports
 //
 
-//class DummyRAMModel extends MultiIOModule
+//class DummyRAMModel extends Module
 
 trait IsMemoryPort {
   def anno: MemPortAnnotation

@@ -18,7 +18,7 @@ module BUFGCE(
      if (CE)
        O = I;
      else
-       O = '0;
+       O = 1'h0;
    end
 `endif
 endmodule

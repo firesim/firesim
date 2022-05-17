@@ -2,7 +2,6 @@
 package midas.unittest
 
 import chisel3._
-import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import midas.widgets.ScanRegister

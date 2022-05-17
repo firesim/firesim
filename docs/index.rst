@@ -1,10 +1,5 @@
-.. FireSim documentation master file, created by
-   sphinx-quickstart on Thu Apr 26 23:51:51 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to FireSim's documentation!
-===================================
+Welcome to FireSim's documentation (version "|version|")!
+===========================================================
 
 New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
@@ -27,6 +22,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Generating-Different-Targets.rst
    Advanced-Usage/Debugging-in-Software/index
    Advanced-Usage/Debugging-and-Profiling-on-FPGA/index
+   Advanced-Usage/Conda.rst
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
@@ -42,6 +38,13 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Golden-Gate/Triggers
    Golden-Gate/Resource-Optimizations
    Golden-Gate/Output-Files
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Developer Docs:
+
+   Developer-Docs/GoldenGate-and-Driver-Development
+   Developer-Docs/Host-Platform-Debugging
 
 Indices and tables
 ==================

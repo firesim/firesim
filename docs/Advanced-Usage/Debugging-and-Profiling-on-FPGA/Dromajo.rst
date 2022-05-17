@@ -84,11 +84,11 @@ The commit log trace will by default print to the ``uartlog``.
 However, you can avoid printing it out by changing ``verbose == false`` in the ``dromajo_cosim.cpp`` file
 located in ``$CHIPYARD/tools/dromajo/dromajo-src/src/`` folder.
 
-Troubleshooting Dromajo Simulations with MIDAS Simulations
+Troubleshooting Dromajo Simulations with Meta-Simulations
 ----------------------------------------------------------
 
-If FPGA simulation fails with Dromajo, you can use MIDAS-level simulation to determine if your Dromajo setup is correct.
-First refer to :ref:`Debugging & Testing with RTL Simulation` for more information on MIDAS-level simulation.
+If FPGA simulation fails with Dromajo, you can use metasimulation to determine if your Dromajo setup is correct.
+First refer to :ref:`metasimulation` for more information on metasimulation.
 The main difference between those instructions and simulations with Dromajo is that you need to manually point to the ``dtb``, ``rom``, and binary files when invoking the simulator.
 Here is an example of a ``make`` command that can be run to check for a correct setup.
 

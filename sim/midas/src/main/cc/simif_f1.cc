@@ -64,8 +64,8 @@ void simif_f1_t::fpga_setup(int slot_id) {
     uint16_t pci_vendor_id = 0x1D0F; /* Amazon PCI Vendor ID */
     uint16_t pci_device_id = 0xF000; /* PCI Device ID preassigned by Amazon for F1 applications */
 
-    int rc = fpga_pci_init();
-    check_rc(rc, "fpga_pci_init FAILED");
+    int rc = fpga_mgmt_init();
+    check_rc(rc, "fpga_mgmt_init FAILED");
 
     /* check AFI status */
     struct fpga_mgmt_image_info info = {0};
@@ -146,8 +146,6 @@ simif_f1_t::~simif_f1_t() {
 }
 
 void simif_f1_t::write(size_t addr, uint32_t data) {
-    // addr is really a (32-byte) word address because of zynq implementation
-    addr <<= CTRL_AXI4_SIZE;
 #ifdef SIMULATION_XSIM
     uint64_t cmd = (((uint64_t)(0x80000000 | addr)) << 32) | (uint64_t)data;
     char * buf = (char*)&cmd;
@@ -159,8 +157,6 @@ void simif_f1_t::write(size_t addr, uint32_t data) {
 }
 
 uint32_t simif_f1_t::read(size_t addr) {
-    // Convert the word address into a byte-address
-    addr <<= CTRL_AXI4_SIZE;
 #ifdef SIMULATION_XSIM
     uint64_t cmd = addr;
     char * buf = (char*)&cmd;

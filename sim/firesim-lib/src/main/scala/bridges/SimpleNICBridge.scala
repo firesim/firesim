@@ -181,15 +181,17 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   when (seedDone) { state := s_forward }
 }
 
-class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPortIO[NICTargetIO]]()(p) {
-  lazy val module = new BridgeModuleImp(this) with BidirectionalDMA {
+class SimpleNICBridgeModule(implicit p: Parameters)
+    extends BridgeModule[HostPortIO[NICTargetIO]]()(p)
+    with StreamToHostCPU
+    with StreamFromHostCPU {
+  // Stream mixin parameters
+  val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
+  val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
+
+  lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new NICTargetIO))
-    // DMA mixin parameters
-    lazy val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH
-    lazy val toHostCPUQueueDepth   = TOKEN_QUEUE_DEPTH
-    // Biancolin: Need to look into this
-    lazy val dmaSize = BigInt((BIG_TOKEN_WIDTH / 8) * TOKEN_QUEUE_DEPTH)
 
     val htnt_queue = Module(new Queue(new HostToNICToken, 10))
     val ntht_queue = Module(new Queue(new NICToHostToken, 10))
@@ -226,8 +228,8 @@ class SimpleNICBridgeModule(implicit p: Parameters) extends BridgeModule[HostPor
     target.in.valid := htnt_queue.io.deq.bits.data_in_valid
     //target.out.ready := htnt_queue.io.deq.bits.data_out_ready
 
-    bigtokenToNIC.io.pcie_in <> incomingPCISdat.io.deq
-    outgoingPCISdat.io.enq <> NICtokenToBig.io.pcie_out
+    bigtokenToNIC.io.pcie_in <> streamDeq
+    streamEnq <> NICtokenToBig.io.pcie_out
 
 
     if (p(LoopbackNIC)) {

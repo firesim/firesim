@@ -1,9 +1,9 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/synthesized_assertions.h"
 
-class AssertModule_t: virtual simif_t
+class AssertModule_t: public simif_peek_poke_t
 {
 public:
     synthesized_assertions_t * assert_endpoint;

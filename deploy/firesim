@@ -1,162 +1,219 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
+from __future__ import annotations
 
-# REQUIRES PYTHON2, because fabric requires python2
-
-from __future__ import with_statement, print_function
 import sys
 import os
 import signal
 import argparse
-from time import sleep, strftime, gmtime
+from time import strftime, gmtime
 import logging
 import random
+import argcomplete # type: ignore
+from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
+import string
+from inspect import signature
+from warnings import warn
+from pathlib import Path
 
-import argcomplete
-from fabric.api import *
-# firesim runtools
 from runtools.runtime_config import RuntimeConfig
 
-from awstools.awstools import *
-from awstools.afitools import *
+from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscribe_to_firesim_topic, awsinit
+from awstools.afitools import share_agfi_in_all_regions
 
-# firesim buildtools
-from buildtools.buildafi import *
-from buildtools.buildconfig import GlobalBuildConfig
+from buildtools.buildconfigfile import BuildConfigFile
+from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
 
-## below are tasks that users can call
-## to add a task, add it here and to the choices array
+from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints
 
-def managerinit():
+PLATFORM_LIST = [_.name for _ in Path(__file__).parent.parent.joinpath('platforms').iterdir()]
+
+class Task(TypedDict):
+    task: Callable
+    config: Optional[Callable]
+
+"""Registry of tasks """
+TASKS: Dict[str, Task] = {}
+
+class FiresimTaskAccessViolation(RuntimeError):
+    pass
+
+def register_task(task: Callable) -> Callable:
+    """Decorator to Map `task.__name__` to `task` in `TASKS`
+
+    Args:
+        task: callable task that either has no parameters or
+              the first parameter must be typed with a class
+              that accepts `argparse.Namespace` as the only parameter
+              in it's constructor
+
+    Returns:
+        a stub that raises `FiresimTaskAccessViolation` to ensure that the
+        task is only callable via `TASKS`
+    """
+    tn = task.__name__
+    if tn in TASKS:
+        raise KeyError(f"Task '{tn}' already registered by {TASKS[tn]}")
+
+    config_class = None
+
+    # resolve str type hints
+    task.__annotations__ = get_type_hints(task)
+
+    # introspect the type of config that this task takes (it's first param)
+    sig = signature(task)
+    if sig.parameters:
+        first = next(iter(sig.parameters.values()))
+        if first.annotation is first.empty:
+            raise TypeError(f'{tn}, requires type annotation on first parameter, {first.name}')
+        else:
+            config_class = first.annotation
+
+            # resolve str type hints
+            config_class.__init__.__annotations__ = get_type_hints(config_class.__init__)
+
+            # check that the first parameter takes a Namespace passed to its constructor
+            # or that it is a Namespace
+            if config_class is not argparse.Namespace:
+                csig = signature(config_class)
+                if csig.parameters:
+                    cfirst = next(iter(csig.parameters.values()))
+                    if cfirst.annotation is cfirst.empty:
+                        raise TypeError(f'{tn}, first parameter, {first.name}, needs type annotation on '+
+                                        f'{config_class.__name__}.__init__ first parameter, {cfirst.name}')
+                    else:
+                        assert cfirst.annotation is argparse.Namespace
+                else:
+                    raise TypeError(f'{tn}, first parameter {first.name} constructor takes no parameters? Expected argparse.Namespace.')
+
+    TASKS[tn] = {'task': task, 'config': config_class}
+
+    # we don't want this function to be callable any way other than via firesim.main()
+    # so that we know programmatic changes to TASKS are followed (currently for testing purposes)
+    # so we don't return the original callable task, we return a lambda that raises
+    def inner(*args, **kwargs):
+        raise FiresimTaskAccessViolation(f"Called '{tn}' without going through TASKS")
+    # or actually, we define a closure with def and return that because lambdas that raise
+    # are convoluted
+    return inner
+
+## below are tasks that users can call
+## to add a task, add it here, using the @register_task decorator in it's definition
+
+
+@register_task
+def managerinit(args: argparse.Namespace):
     """ Setup local FireSim manager components. """
 
-    def valid_aws_configure_creds():
-        """ See if aws configure has been run. Returns False if aws configure
-        needs to be run, else True.
-
-        This DOES NOT perform any deeper validation.
-        """
-        import botocore.session
-        session = botocore.session.get_session()
-        creds = session.get_credentials()
-        if creds is None:
-            return False
-        if session.get_credentials().access_key == '':
-            return False
-        if session.get_credentials().secret_key == '':
-            return False
-        if session.get_config_variable('region') == '':
-            return False
-        return True
-
-    valid_creds = valid_aws_configure_creds()
-    while not valid_creds:
-        # only run aws configure if we cannot already find valid creds
-        # this loops calling valid_aws_configure_creds until
-        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-        # stored in the log
-        local("aws configure")
-
-        # check again
-        valid_creds = valid_aws_configure_creds()
-        if not valid_creds:
-            rootLogger.info("Invalid AWS credentials. Try again.")
+    if not args.platform:
+        rootLogger.error('::ERROR:: managerinit requires that you provide --platform <platformname>')
+        sys.exit(1)
 
     rootLogger.info("Backing up initial config files, if they exist.")
-    config_files = ["build", "build_recipes", "hwdb", "runtime"]
+    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
     for conf_file in config_files:
         with warn_only(), hide('everything'):
-            m = local("""cp config_{}.ini sample-backup-configs/backup_config_{}.ini""".format(conf_file, conf_file), capture=True)
+            m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
     rootLogger.info("Creating initial config files from examples.")
     with hide('everything'):
         for conf_file in config_files:
-            m = local("""cp sample-backup-configs/sample_config_{}.ini config_{}.ini""".format(conf_file, conf_file), capture=True)
+            m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.ini""".format(get_aws_userid(), conf_file), capture=True)
+            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
-    useremail = raw_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
-    if useremail != "":
-        subscribe_to_firesim_topic(useremail)
-    else:
-        rootLogger.info("You did not supply an email address. No notifications will be sent.")
-    rootLogger.info("FireSim Manager setup completed.")
+    if args.platform == 'f1':
+        awsinit()
 
-def infrasetup(runtime_conf):
+@register_task
+def infrasetup(runtime_conf: RuntimeConfig) -> None:
     """ do infrasetup. """
     runtime_conf.infrasetup()
 
-def boot(runtime_conf):
+@register_task
+def boot(runtime_conf: RuntimeConfig) -> None:
     """ do boot. """
     runtime_conf.boot()
 
-def kill(runtime_conf):
+@register_task
+def kill(runtime_conf: RuntimeConfig) -> None:
     """ do kill. """
     runtime_conf.kill()
 
-def runworkload(runtime_conf):
+@register_task
+def runworkload(runtime_conf: RuntimeConfig) -> None:
     """ do runworkload. """
     runtime_conf.run_workload()
 
-def buildafi(globalbuildconf):
+@register_task
+def buildafi(build_config_file: BuildConfigFile) -> None:
+    # shouldn't ever be able to get here because main() implements logging and redirecting to builtbitstream
+    raise NotImplementedError
+
+@register_task
+def buildbitstream(build_config_file: BuildConfigFile) -> None:
     """ Starting from local Chisel, build an AFI for all of the specified
     hardware configs. """
 
-    @parallel
-    def instance_liveness():
-        """ confirm that all instances are running first. """
-        rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run("uname -a")
+    # forced to build locally
+    for build_config in build_config_file.builds_list:
+        execute(build_config.fpga_bit_builder_dispatcher.replace_rtl, hosts=['localhost'])
+        execute(build_config.fpga_bit_builder_dispatcher.build_driver, hosts=['localhost'])
 
-    auto_create_bucket(globalbuildconf.s3_bucketname)
-
-    #check to see email notifications can be subscribed
-    get_snsname_arn()
-
-    def terminate_instances_handler(sig, frame):
-        """ Handler that prompts to terminate build instances if you press ctrl-c. """
+    def release_build_hosts_handler(sig, frame) -> None:
+        """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = raw_input("Do you also want to terminate your build instances? Type 'yes' to do so.\n")
+        userconfirm = input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
         if userconfirm == "yes":
-            globalbuildconf.terminate_all_build_instances()
-            rootLogger.info("Instances terminated. Please confirm in your AWS Management Console.")
+            build_config_file.release_build_hosts()
+            rootLogger.info("Build farm hosts released.")
         else:
-            rootLogger.info("Termination skipped. There may still be build instances running.")
+            rootLogger.info("Build farm release skipped. There may still be build farm hosts running.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, terminate_instances_handler)
+    signal.signal(signal.SIGINT, release_build_hosts_handler)
 
-    for buildconf in globalbuildconf.get_builds_list():
-        execute(replace_rtl, globalbuildconf, buildconf, hosts=['localhost'])
+    # pre-setup stuff (things that need to be done before build farm hosts are spawned/killed)
+    # specific to the build farm host
+    build_config_file.setup()
 
     # local items (replace_rtl) need to be called in a loop, for each config
     # remote items will map themselves
-    globalbuildconf.launch_build_instances()
+    build_config_file.request_build_hosts()
 
-    # confirm that build instances have finished booting
-    globalbuildconf.wait_build_instances()
+    # confirm that build hosts are in running state so that they have
+    # been assigned IP addresses
+    build_config_file.wait_on_build_host_initializations()
 
-    # confirm that we can connect to the launched instances
-    execute(instance_liveness, hosts=globalbuildconf.get_build_instance_ips())
+    @parallel
+    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> None:
+        """Wrap parallel portion of ``build_bitstream``
+
+        Args:
+            config_file: BuildConfigFile
+            bypass: If true, immediately return and terminate build host. Used for testing purposes.
+        """
+        build_config_file = config_file.get_build_by_ip(env.host_string)
+        build_config_file.fpga_bit_builder_dispatcher.build_bitstream(bypass)
 
     # run builds, then terminate instances
-    execute(aws_build, globalbuildconf, hosts=globalbuildconf.get_build_instance_ips())
+    execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
 
 
-def tar2afi(globalbuildconf):
+@register_task
+# XXX this needs to be renamed or rethought, perhaps this is a backend-specific task?
+def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
     Starting from the tarball generated by Vivado generate an AFI
 
-    Iterate the globalbuildconf.get_builds_list() using a multiprocessing.Pool
+    Iterate the build_config_file.builds_list using a multiprocessing.Pool
     running the logic for submitting the tarball to `aws ec2 create-fpga-image`,
     wait for afi to be available and copy to all known regions
 
@@ -164,16 +221,19 @@ def tar2afi(globalbuildconf):
     and specify an already existing launchtime for a previous, tarball generation
     """
 
-    for buildconf in globalbuildconf.get_builds_list():
-        execute(aws_create_afi, globalbuildconf, buildconf, hosts=['localhost'])
+    for build_config in build_config_file.builds_list:
+        assert isinstance(build_config.fpga_bit_builder_dispatcher, F1BitBuilder)
+        execute(build_config.fpga_bit_builder_dispatcher.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
-def runcheck(runtime_conf):
+@register_task
+def runcheck(runtime_conf: RuntimeConfig) -> None:
     """ Do nothing, just let the config process run. """
     pass
 
 
-def launchrunfarm(runtime_conf):
+@register_task
+def launchrunfarm(runtime_conf: RuntimeConfig) -> None:
     """ This starts an FPGA run farm, based on the parameters listed in the
     [runfarm] section of the config file. Instances are
     a) tagged with "runfarmtag" so that the manager can find them in the future
@@ -185,66 +245,57 @@ def launchrunfarm(runtime_conf):
     runtime_conf.runfarm.launch_run_farm()
 
 
-def terminaterunfarm(runtime_conf, terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                     terminatesomem4_16, forceterminate):
-    """ Terminate instances in the runfarm.
+@register_task
+def terminaterunfarm(runtime_conf: RuntimeConfig) -> None:
+    """ Terminate instances in the run farm.
 
     This works in 2 modes:
 
     1) If you pass no --terminatesomeINSTANCETYPE flags, it will terminate all
-       instances with the specified runfarm tag.
+       instances with the specified run farm tag.
 
     2) If you pass ANY --terminatesomeINSTANCETYPE flag, it will terminate only
        that many instances of the specified types and leave all others
        untouched.
     """
-    runtime_conf.terminate_run_farm(terminatesomef1_16, terminatesomef1_4, terminatesomef1_2,
-                                    terminatesomem4_16, forceterminate)
+    runtime_conf.terminate_run_farm()
 
-def shareagfi(buildconf):
-    """ Share the agfis specified in the [agfistoshare] section with the users
-    specified in the [agfisharing] section """
+@register_task
+def shareagfi(build_config_file: BuildConfigFile) -> None:
+    """ Share the agfis specified in the agfis-to-share section with the users
+    specified in the share-with-accounts section """
     # share the image with all users
-    for agfiname in buildconf.agfistoshare:
-        agfi = buildconf.hwdb.get_runtimehwconfig_from_name(agfiname).agfi
+    for agfiname in build_config_file.agfistoshare:
+        agfi = build_config_file.hwdb.get_runtimehwconfig_from_name(agfiname).agfi
 
-        userlist = buildconf.acctids_to_sharewith
+        userlist = build_config_file.acctids_to_sharewith
         share_agfi_in_all_regions(agfi, userlist)
-        rootLogger.info("AGFI '%s': %s has been shared with the users specified in [sharewithaccounts]",
+        rootLogger.info("AGFI '%s': %s has been shared with the users specified in share-with-accounts",
                         agfiname, agfi)
 
 
-def construct_firesim_argparser():
+def construct_firesim_argparser() -> argparse.ArgumentParser:
     # parse command line args
     parser = argparse.ArgumentParser(description='FireSim Simulation Manager.')
     parser.add_argument('task', type=str,
-                        help='Management task to run.', choices=[
-                            'managerinit',
-                            'buildafi',
-                            'launchrunfarm',
-                            'infrasetup',
-                            'boot',
-                            'kill',
-                            'terminaterunfarm',
-                            'runworkload',
-                            'shareagfi',
-                            'runcheck',
-                            'tar2afi'
-                            ])
+                        help='Management task to run.', choices=list(TASKS))
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
-                        help='Optional custom runtime/workload config file. Defaults to config_runtime.ini.',
-                        default='config_runtime.ini')
+                        help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
+                        default='config_runtime.yaml')
     parser.add_argument('-b', '--buildconfigfile', type=str,
-                        help='Optional custom build config file. Defaults to config_build.ini.',
-                        default='config_build.ini')
+                        help='Optional custom build config file. Defaults to config_build.yaml.',
+                        default='config_build.yaml')
     parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
-                        help='Optional custom build recipe config file. Defaults to config_build_recipes.ini.',
-                        default='config_build_recipes.ini')
+                        help='Optional custom build recipe config file. Defaults to config_build_recipes.yaml.',
+                        default='config_build_recipes.yaml')
+    parser.add_argument('-s', '--buildfarmconfigfile', type=str,
+                        help='Optional custom build farm config file. Defaults to config_build_farm.yaml.',
+                        default='config_build_farm.yaml')
     parser.add_argument('-a', '--hwdbconfigfile', type=str,
-                        help='Optional custom HW database config file. Defaults to config_hwdb.ini.',
-                        default='config_hwdb.ini')
+                        help='Optional custom HW database config file. Defaults to config_hwdb.yaml.',
+                        default='config_hwdb.yaml')
     parser.add_argument('-x', '--overrideconfigdata', type=str,
-                        help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "targetconfig linklatency 6405".',
+                        help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "target-config link-latency 6405".',
                         default="")
     parser.add_argument('-f', '--terminatesomef116', type=int,
                         help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.',
@@ -262,11 +313,25 @@ def construct_firesim_argparser():
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
+    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',
+                        help='Required argument for "managerinit" to specify which platform you will be using')
 
     argcomplete.autocomplete(parser)
-    return parser.parse_args()
+    return parser
 
-def main(args):
+def check_env() -> None:
+    """Check assumptions about environment setup
+
+    Raises:
+        `SystemExit` if any assumption is violated
+    """
+    # make sure that sourceme-f1 was sourced
+    if os.environ.get('FIRESIM_SOURCED') is None:
+        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
+        sys.exit(1)
+
+
+def main(args: argparse.Namespace) -> None:
     """ Main function for FireSim manager. """
     # large timeouts, retry connections
     env.timeout = 100
@@ -275,33 +340,21 @@ def main(args):
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
 
-    # make sure that sourceme-f1 was sourced
-    if os.environ.get('FIRESIM_SOURCED') is None:
-        rootLogger.critical("ERROR: You must source firesim/sourceme-f1-manager.sh!")
-        exit(1)
+    if args.task == 'buildafi':
+        rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitstream' and will be removed in a future version")
+        args.task = 'buildbitstream'
 
     rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
 
-    # tasks that have a special config/dispatch setup
-    if args.task == 'managerinit':
-        managerinit()
+    t = TASKS[args.task]
+    if t['config']:
+        if t['config'] is argparse.Namespace:
+            t['task'](args)
+        else:
+            t['task'](t['config'](args))
+    else:
+        t['task']()
 
-    if args.task in ['buildafi', 'shareagfi', 'tar2afi']:
-        buildconfig = GlobalBuildConfig(args)
-        globals()[args.task](buildconfig)
-
-    if args.task == 'terminaterunfarm':
-        runtime_conf = RuntimeConfig(args)
-        terminaterunfarm(runtime_conf, args.terminatesomef116,
-                         args.terminatesomef14,
-                         args.terminatesomef12, args.terminatesomem416,
-                         args.forceterminate)
-
-    if args.task in ['launchrunfarm', 'infrasetup', 'boot', 'kill', 'runworkload', 'runcheck']:
-        # construct simulation config
-        simconf = RuntimeConfig(args)
-        # run task
-        globals()[args.task](simconf)
 
 if __name__ == '__main__':
     # set the program working dir to wherever firesim is located
@@ -313,14 +366,17 @@ if __name__ == '__main__':
     # parse args BEFORE setting up logs, otherwise argcomplete will cause
     # junk log files to be created. also lets us use args.task in the logfile
     # name
-    args = construct_firesim_argparser()
+    args = construct_firesim_argparser().parse_args()
 
     # logging setup
-    def logfilename():
+    def logfilename() -> str:
         """ Construct a unique log file name from: date + 16 char random. """
         timeline = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
         randname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(16))
         return timeline + "-" + args.task + "-" + randname + ".log"
+
+    # treat python warnings as WARNING level messages from py.warn
+    logging.captureWarnings(True)
 
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.NOTSET) # capture everything
@@ -347,6 +403,8 @@ if __name__ == '__main__':
     logging.getLogger('nose').setLevel(logging.WARNING)
     logging.getLogger("paramiko").setLevel(logging.WARNING)
 
+    check_env()
+
     # lastly - whenever you use run/local/put/etc from fabric, you need to wrap
     # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
     # unfortunately there's no proper way to do it with fabric
@@ -360,4 +418,4 @@ if __name__ == '__main__':
         exitcode = 1
     finally:
         rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
-        exit(exitcode)
+        sys.exit(exitcode)

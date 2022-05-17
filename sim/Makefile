@@ -47,9 +47,6 @@ SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
 SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/target/active.json
 
-# by default build chisel3/firrtl and other subprojects from source
-override SBT_OPTS += -Dsbt.sourcemode=true -Dsbt.workspace=$(chipyard_dir)/tools
-
 ifdef ENABLE_SBT_THIN_CLIENT
 override SCALA_BUILDTOOL_DEPS += $(SBT_THIN_CLIENT_TIMESTAMP)
 # enabling speeds up sbt loading

@@ -5,13 +5,15 @@ This page outlines all of the tasks that the FireSim manager supports.
 
 .. _firesim-managerinit:
 
-``firesim managerinit``
-----------------------------
+``firesim managerinit --platform {f1}``
+---------------------------------------
 
 This is a setup command that does the following:
 
+* Replace the default config files (``config_runtime.yaml``, ``config_build.yaml``, ``config_build_recipes.yaml``, and ``config_hwdb.yaml``) with clean example versions.
+
+Then, do platform-specific init steps for the given ``--platform``.  For ``f1`` this includes:
 * Run ``aws configure``, prompt for credentials
-* Replace the default config files (``config_runtime.ini``, ``config_build.ini``, ``config_build_recipes.ini``, and ``config_hwdb.ini``) with clean example versions.
 * Prompt the user for email address and subscribe them to notifications for their own builds.
 
 You can re-run this whenever you want to get clean configuration files -- you
@@ -22,13 +24,19 @@ If you run this command by accident and didn't mean to overwrite your
 configuration files, you'll find backed-up versions in
 ``firesim/deploy/sample-backup-configs/backup*``.
 
-
 .. _firesim-buildafi:
 
 ``firesim buildafi``
 ----------------------
 
-This command builds a FireSim AGFI (FPGA Image) from the Chisel RTL for the
+.. Warning:: DEPRECATION: ``buildafi`` has been renamed to ``buildbitstream`` and will be removed in a future version
+
+.. _firesim-buildbitstream:
+
+``firesim buildbitstream``
+--------------------------
+
+This command builds a FireSim bitstream from the Chisel RTL for the
 configurations that you specify. The process of defining configurations to
 build is explained in the documentation for :ref:`config-build` and
 :ref:`config-build-recipes`.
@@ -41,7 +49,7 @@ For each config, the build process entails:
 
 3. [Locally] Attach simulation models (I/O widgets, memory model, etc.)
 
-4. [Locally] Emit Verilog to run through the AWS FPGA Flow
+4. [Locally] Emit Verilog to run through the FPGA Flow
 
 5. Launch an FPGA Dev AMI build instance for each configuration you want built.
 
@@ -69,10 +77,7 @@ This directory will contain:
 
 - ``AGFI_INFO``: Describes the state of the AFI being built, while the manager is running. Upon build completion, this contains the AGFI/AFI that was produced, along with its metadata.
 
-- ``cl_firesim:``: This directory is essentially the Vivado project that built the FPGA image, in the state it was in when the Vivado build process completed. This contains reports, stdout from the build, and the final tar file produced by Vivado.
-
-- ``cl_firesim_generated.sv``: This is a copy of the generated verilog used to produce this build. You can also find a copy inside ``cl_firesim``.
-
+- ``cl_firesim:``: This directory is essentially the Vivado project that built the FPGA image, in the state it was in when the Vivado build process completed. This contains reports, stdout from the build, and the final tar file produced by Vivado. This also contains a copy of the generated verilog (``FireSim-generated.sv``) used to produce this build.
 
 .. _firesim-tar2afi:
 
@@ -80,16 +85,16 @@ This directory will contain:
 ----------------------
 
 This command can be used to run only steps 9 & 10 from an aborted ``firesim buildafi`` that has been
-manually corrected. ``firesim tar2afi`` assumes that you have a 
+manually corrected. ``firesim tar2afi`` assumes that you have a
 ``firesim/deploy/results-build/LAUNCHTIME-CONFIG_TRIPLET-BUILD_NAME/cl_firesim``
 directory tree that can be submitted to the AWS backend for conversion to an AFI.
 
 When using this command, you need to also provide the ``--launchtime LAUNCHTIME`` cmdline argument,
-specifying an already existing LAUNCHTIME.  
+specifying an already existing LAUNCHTIME.
 
-This command will run for the configurations specified in :ref:`config-build` and 
+This command will run for the configurations specified in :ref:`config-build` and
 :ref:`config-build-recipes` as with :ref:`firesim-buildafi`.  It is likely that you may want
-to comment out ``BUILD_NAME`` that successfully completed :ref:`firesim-builafi` before
+to comment out ``BUILD_NAME`` that successfully completed :ref:`firesim-buildafi` before
 running this command.
 
 
@@ -101,9 +106,9 @@ running this command.
 This command allows you to share AGFIs that you have already built (that are
 listed in :ref:`config-hwdb`) with other users. It will take the
 named hardware configurations that you list in the ``[agfistoshare]`` section of
-``config_build.ini``, grab the respective AGFIs for each from
-``config_hwdb.ini``, and share them across all F1 regions with the users listed
-in the ``[sharewithaccounts]`` section of ``config_build.ini``. You can also specify ``public=public`` in ``[sharewithaccounts]`` to make the AGFIs public.
+``config_build.yaml``, grab the respective AGFIs for each from
+``config_hwdb.yaml``, and share them across all F1 regions with the users listed
+in the ``[sharewithaccounts]`` section of ``config_build.yaml``. You can also specify ``public=public`` in ``[sharewithaccounts]`` to make the AGFIs public.
 
 You must own the AGFIs in order to do this -- this will NOT let you share AGFIs
 that someone else owns and gave you access to.
@@ -117,10 +122,10 @@ that someone else owns and gave you access to.
 This command launches a Run Farm on which you run simulations. Run Farms
 consist of ``f1.16xlarge``, ``f1.4xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
 Before you run the command, you define the number of each that you want in
-``config_runtime.ini``.
+``config_runtime.yaml``.
 
 A launched Run Farm is tagged with a ``runfarmtag`` from
-``config_runtime.ini``, which is used to disambiguate multiple parallel Run
+``config_runtime.yaml``, which is used to disambiguate multiple parallel Run
 Farms; that is, you can have many Run Farms running, each running a different
 experiment at the same time, each with its own unique ``runfarmtag``. One
 convenient feature to add to your AWS management panel is the column for
@@ -129,11 +134,11 @@ that in the :ref:`fsimcluster-aws-panel` section.
 
 The other options in the ``[runfarm]`` section, ``runinstancemarket``,
 ``spotinterruptionbehavior``, and ``spotmaxprice`` define *how* instances in
-the Run Farm are launched. See the documentation for ``config_runtime.ini`` for
+the Run Farm are launched. See the documentation for ``config_runtime.yaml`` for
 more details.
 
 **ERRATA**: One current requirement is that you must define a target config in
-the ``[targetconfig]`` section of ``config_runtime.ini`` that does not require
+the ``[targetconfig]`` section of ``config_runtime.yaml`` that does not require
 more resources than the Run Farm you are trying to launch. Thus, you should
 also setup your ``[targetconfig]`` parameters before trying to launch the
 corresponding Run Farm. This requirement will be removed in the future.
@@ -156,7 +161,7 @@ be by checking the AWS EC2 Management Panel.**
 -----------------------------
 
 This command terminates some or all of the instances in the Run Farm defined
-in your ``config_runtime.ini`` file, depending on the command line arguments
+in your ``config_runtime.yaml`` file, depending on the command line arguments
 you supply. By default, running ``firesim terminaterunfarm`` will terminate
 ALL instances with the specified ``runfarmtag``. When you run this command,
 it will prompt for confirmation that you want to terminate the listed instances.
@@ -282,7 +287,7 @@ workload configuration (see the :ref:`defining-custom-workloads` section).
 
 For
 non-networked simulations, it will wait for ALL simulations to complete (copying
-back results as each workload completes), then exit. 
+back results as each workload completes), then exit.
 
 For
 globally-cycle-accurate networked simulations, the global simulation will stop

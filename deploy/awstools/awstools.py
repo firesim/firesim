@@ -1,20 +1,137 @@
-from __future__ import print_function
+#!/usr/bin/env python3
+
+from __future__ import annotations
 
 import random
 import logging
 import os
 
+from datetime import datetime, timedelta
+import time
+import sys
+import json
+
 import boto3
 import botocore
 from botocore import exceptions
-from fabric.api import local, hide, settings
+from fabric.api import local, hide, settings # type: ignore
+
+# imports needed for python type checking
+from typing import Any, Dict, Optional, List, Sequence, cast
+from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
+from mypy_boto3_ec2.type_defs import FilterTypeDef
+from mypy_boto3_s3.literals import BucketLocationConstraintType
+
+# setup basic config for logging
+if __name__ == '__main__':
+    logging.basicConfig()
 
 rootLogger = logging.getLogger()
 
 # this needs to be updated whenever the FPGA Dev AMI changes
-f1_ami_name = "FPGA Developer AMI - 1.10.0-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+# You can find this by going to the AMI tab under EC2 and searching for public images:
+# https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
+# And whenever this changes, you also need to update deploy/tests/test_amis.json
+# by running scripts/update_test_amis.py
+f1_ami_name = "FPGA Developer AMI - 1.11.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
-def aws_resource_names():
+def depaginated_boto_query(client, operation, operation_params, return_key):
+    paginator = client.get_paginator(operation)
+    page_iterator = paginator.paginate(**operation_params)
+    return_values_all = []
+    for page in page_iterator:
+        return_values_all += page[return_key]
+    return return_values_all
+
+def valid_aws_configure_creds() -> bool:
+    """ See if aws configure has been run. Returns False if aws configure
+    needs to be run, else True.
+
+    This DOES NOT perform any deeper validation.
+    """
+    import botocore.session
+    session = botocore.session.get_session()
+    creds = session.get_credentials()
+    if creds is None:
+        return False
+    if session.get_credentials().access_key == '':
+        return False
+    if session.get_credentials().secret_key == '':
+        return False
+    if session.get_config_variable('region') == '':
+        return False
+    return True
+
+def get_localhost_instance_info(url_ext: str) -> Optional[str]:
+    """ Obtain latest instance info from instance metadata service. See
+    https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
+    for more info on what can be accessed.
+
+    Args:
+        url_ext: Part of URL after 169.254.169.254/latest/
+
+    Returns:
+        Data obtained in string form or None
+    """
+    res = None
+    # This takes multiple minutes without a timeout from the CI container. In
+    # practice it should resolve nearly instantly on an initialized EC2 instance.
+    curl_connection_timeout = 10
+    with settings(ok_ret_codes=[0,28]), hide('everything'):
+        res = local(f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}", capture=True)
+        rootLogger.debug(res.stdout)
+        rootLogger.debug(res.stderr)
+
+    if res.return_code == 28:
+        return None
+    else:
+        return res.stdout
+
+def get_localhost_instance_id() -> Optional[str]:
+    """Get current manager instance id, if applicable.
+
+    Returns:
+        A ``str`` of the instance id or ``None``
+    """
+
+    return get_localhost_instance_info("meta-data/instance-id")
+
+def get_localhost_instance_tags() -> Dict[str, Any]:
+    """Get current manager tags.
+
+    Returns:
+        A ``dict`` of tags (name -> value). Empty if no tags found or can't access the inst id.
+    """
+    instanceid = get_localhost_instance_id()
+    rootLogger.debug(instanceid)
+
+    resptags: Dict[str, Any] = {}
+
+    if instanceid:
+        # Look up this instance's ID, if we do not have permission to describe tags, use the default dictionary
+        client = boto3.client('ec2')
+        try:
+            operation_params = {
+                'Filters': [
+                    {
+                        'Name': 'resource-id',
+                        'Values': [
+                            instanceid,
+                        ]
+                    },
+                ]
+            }
+            resp_pairs = depaginated_boto_query(client, 'describe_tags', operation_params, 'Tags')
+        except client.exceptions.ClientError:
+            return resptags
+
+        for pair in resp_pairs:
+            resptags[pair['Key']] = pair['Value']
+        rootLogger.debug(resptags)
+
+    return resptags
+
+def aws_resource_names() -> Dict[str, Any]:
     """ Get names for various aws resources the manager relies on. For example:
     vpcname, securitygroupname, keyname, etc.
 
@@ -44,63 +161,50 @@ def aws_resource_names():
         'runfarmprefix':     None,
     }
 
-    resp = None
-    res = None
-    # This takes multiple minutes without a timeout from the CI container. In
-    # practise it should resolve nearly instantly on an initialized EC2 instance.
-    curl_connection_timeout = 10
-    with settings(warn_only=True), hide('everything'):
-        res = local("""curl -s --connect-timeout {} http://169.254.169.254/latest/meta-data/instance-id""".format(curl_connection_timeout), capture=True)
+    resptags = get_localhost_instance_tags()
+    if resptags:
+        in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
+        if not in_tutorial_mode:
+            return base_dict
 
-    # Use the default dictionary if we're not on an EC2 instance (e.g., when a
-    # manager is launched from CI; during demos)
-    if res.return_code != 0:
-        return base_dict
-
-
-    # Look up this instance's ID, if we do not have permission to describe tags, use the default dictionary
-    client = boto3.client('ec2')
-    try:
-        instanceid = res.stdout
-        rootLogger.debug(instanceid)
-
-        resp = client.describe_tags(
-            Filters=[
-                {
-                    'Name': 'resource-id',
-                    'Values': [
-                        instanceid,
-                    ]
-                },
-            ]
-        )
-    except client.exceptions.ClientError:
-        return base_dict
-
-    resptags = {}
-    for pair in resp['Tags']:
-        resptags[pair['Key']] = pair['Value']
-    rootLogger.debug(resptags)
-
-    in_tutorial_mode = 'firesim-tutorial-username' in resptags.keys()
-    if not in_tutorial_mode:
-        return base_dict
-
-    # at this point, assume we are in tutorial mode and get all tags we need
-    base_dict['tutorial_mode']     = True
-    base_dict['vpcname']           = resptags['firesim-tutorial-username']
-    base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
-    base_dict['keyname']           = resptags['firesim-tutorial-username']
-    base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
-    base_dict['snsname']           = resptags['firesim-tutorial-username']
-    base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
+        # at this point, assume we are in tutorial mode and get all tags we need
+        base_dict['tutorial_mode']     = True
+        base_dict['vpcname']           = resptags['firesim-tutorial-username']
+        base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
+        base_dict['keyname']           = resptags['firesim-tutorial-username']
+        base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
+        base_dict['snsname']           = resptags['firesim-tutorial-username']
+        base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
 
     return base_dict
 
 
+def awsinit() -> None:
+    """Setup AWS FireSim manager components."""
+
+    valid_creds = valid_aws_configure_creds()
+    while not valid_creds:
+        # only run aws configure if we cannot already find valid creds
+        # this loops calling valid_aws_configure_creds until
+        rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
+        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
+        # stored in the log
+        local("aws configure")
+
+        # check again
+        valid_creds = valid_aws_configure_creds()
+        if not valid_creds:
+            rootLogger.info("Invalid AWS credentials. Try again.")
+
+    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    if useremail != "":
+        subscribe_to_firesim_topic(useremail)
+    else:
+        rootLogger.info("You did not supply an email address. No notifications will be sent.")
+
 
 # AMIs are region specific
-def get_f1_ami_id():
+def get_f1_ami_id() -> str:
     """ Get the AWS F1 Developer AMI by looking up the image name -- should be region independent.
     """
     client = boto3.client('ec2')
@@ -108,8 +212,8 @@ def get_f1_ami_id():
     assert len(response['Images']) == 1
     return response['Images'][0]['ImageId']
 
-def get_aws_userid():
-    """ Get the user's IAM ID to intelligently create a bucket name when doing managerinit.
+def get_aws_userid() -> str:
+    """ Get the user's IAM ID to intelligently create a bucket name when doing awsinit().
     The previous method to do this was:
 
     client = boto3.client('iam')
@@ -118,10 +222,13 @@ def get_aws_userid():
     But it seems that by default many accounts do not have permission to run this,
     so instead we get it from instance metadata.
     """
-    res = local("""curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep -oP '(?<="accountId" : ")[^"]*(?=")'""", capture=True)
-    return res.stdout.lower()
+    info = get_localhost_instance_info("dynamic/instance-identity/document")
+    if info is not None:
+        return json.loads(info)['accountId'].lower()
+    else:
+        assert False, "Unable to obtain accountId from instance metadata"
 
-def construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice):
+def construct_instance_market_options(instancemarket: str, spotinterruptionbehavior: str, spotmaxprice: str) -> Dict[str, Any]:
     """ construct the dictionary necessary to configure instance market selection
     (on-demand vs spot)
     See:
@@ -129,7 +236,7 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
     and
     https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstanceMarketOptionsRequest.html
     """
-    instmarkoptions = dict()
+    instmarkoptions: Dict[str, Any] = dict()
     if instancemarket == "spot":
         instmarkoptions['MarketType'] = "spot"
         instmarkoptions['SpotOptions'] = dict()
@@ -147,12 +254,40 @@ def construct_instance_market_options(instancemarket, spotinterruptionbehavior, 
     else:
         assert False, "INVALID INSTANCE MARKET TYPE."
 
-def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, blockdevices=None, tags=None, randomsubnet=False):
-    """ Launch count instances of type instancetype, optionally with additional
-    block devices mappings and instance tags
+def launch_instances(instancetype: str, count: int, instancemarket: str, spotinterruptionbehavior: str, spotmaxprice: str, blockdevices: Optional[List[Dict[str, Any]]] = None,
+        tags: Optional[Dict[str, Any]] = None, randomsubnet: bool = False, user_data_file: Optional[str] = None, timeout: timedelta = timedelta(), always_expand: bool = True, ami_id: Optional[str] = None) -> List[EC2InstanceResource]:
+    """Launch `count` instances of type `instancetype`
 
-         This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
+    Using `instancemarket`, `spotinterruptionbehavior` and `spotmaxprice` to define instance market conditions
+    (see also: construct_market_conditions)
+
+    This will launch instances in avail zone 0, then once capacity runs out, zone 1, then zone 2, etc.
+    The ordering of availablility zones can be randomized by passing`randomsubnet=True`
+
+    Args:
+        instancetype: String acceptable by `boto3.ec2.create_instances()` `InstanceType` parameter
+        count: The number of instances to launch
+        instancemarket
+        spotinterruptionbehavior
+        spotmaxprice
+        blockdevices
+        tags: dict of tag names to string values
+        randomsubnet: If true, subnets will be chosen randomly instead of starting from 0 and proceeding incrementally.
+        user_data_file: Path to readable file.  Contents of file are passed as `UserData` to AWS
+        timeout: `timedelta` object representing how long we should continue to try asking for instances
+        always_expand: When true, create `count` instances, regardless of whether any already exist. When False, only
+            create instances until there are `count` total instances that match `tags` and `instancetype`
+            If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
+        ami_id: Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
+            `awstools.get_f1_ami_id()`.
+
+    Returns:
+        List of instance resources.  If `always_expand` is True, this list contains only the instances created in this
+        call. When `always_expand` is False, it contains all instances matching `tags` whether created in this call or not
     """
+
+    if tags is None and not always_expand:
+        raise ValueError("always_expand=False requires tags to be given")
 
     aws_resource_names_dict = aws_resource_names()
     keyname = aws_resource_names_dict['keyname']
@@ -162,83 +297,160 @@ def launch_instances(instancetype, count, instancemarket, spotinterruptionbehavi
     ec2 = boto3.resource('ec2')
     client = boto3.client('ec2')
 
-    vpcfilter = [{'Name':'tag:Name', 'Values': [vpcname]}]
+    vpcfilter: Sequence[FilterTypeDef] = [{'Name':'tag:Name', 'Values': [vpcname]}]
+    # docs show 'NextToken' / 'MaxResults' which suggests pagination, but
+    # the boto3 source says collections handle pagination automatically,
+    # so assume this is fine
+    # https://github.com/boto/boto3/blob/1.20.21/boto3/resources/collection.py#L32
     firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))
     subnets = list(firesimvpc[0].subnets.filter())
     if randomsubnet:
         random.shuffle(subnets)
-    firesimsecuritygroup = client.describe_security_groups(
-        Filters=[{'Name':'group-name', 'Values': [securitygroupname]}])['SecurityGroups'][0]['GroupId']
+
+    operation_params = {
+        'Filters': [{'Name':'group-name', 'Values': [securitygroupname]}]
+    }
+    firesimsecuritygroup = depaginated_boto_query(client, 'describe_security_groups', operation_params, 'SecurityGroups')[0]['GroupId']
 
     marketconfig = construct_instance_market_options(instancemarket, spotinterruptionbehavior, spotmaxprice)
-    f1_image_id = get_f1_ami_id()
 
-    if blockdevices is None:
+    f1_image_id = ami_id if ami_id else get_f1_ami_id()
+
+    if not blockdevices:
         blockdevices = []
 
     # starting with the first subnet, keep trying until you get the instances you need
     startsubnet = 0
-    instances = []
-    while len(instances) < count:
-        if not (startsubnet < len(subnets)):
-            rootLogger.critical("we tried all subnets, but there was insufficient capacity to launch your instances")
-            rootLogger.critical("""only the following {} instances were launched""".format(len(instances)))
-            rootLogger.critical(instances)
-            return
 
+    if tags and not always_expand:
+        instances = instances_sorted_by_avail_ip(get_instances_by_tag_type(tags, instancetype))
+    else:
+        instances = []
+
+    if len(instances):
+        rootLogger.info("Already have {} of {} {} instances.".format(len(instances), count, instancetype))
+        if len(instances) < count:
+            rootLogger.info("Launching remaining {} {} instances".format(count - len(instances), instancetype))
+
+    first_subnet_wraparound = None
+
+    while len(instances) < count:
         chosensubnet = subnets[startsubnet].subnet_id
         try:
-            instance = ec2.create_instances(ImageId=f1_image_id,
-                            EbsOptimized=True,
-                            BlockDeviceMappings=(blockdevices + [
-                                {
-                                    'DeviceName': '/dev/sdb',
-                                    'NoDevice': '',
-                                },
-                            ]),
-                            InstanceType=instancetype, MinCount=1, MaxCount=1,
-                            NetworkInterfaces=[
-                                {'SubnetId': chosensubnet,
-                                 'DeviceIndex':0,
-                                 'AssociatePublicIpAddress':True,
-                                 'Groups':[firesimsecuritygroup]}
-                            ],
-                            KeyName=keyname,
-                            TagSpecifications=([] if tags is None else [
-                                {
-                                    'ResourceType': 'instance',
-                                    'Tags': [{ 'Key': k, 'Value': v} for k, v in tags.items()],
-                                },
-                            ]),
-                            InstanceMarketOptions=marketconfig
-                        )
+            instance_args = {"ImageId":f1_image_id,
+                "EbsOptimized":True,
+                "BlockDeviceMappings":(blockdevices + [
+                    {
+                        'DeviceName': '/dev/sdb',
+                        'NoDevice': '',
+                    },
+                ]),
+                "InstanceType":instancetype,
+                "MinCount":1,
+                "MaxCount":1,
+                "NetworkInterfaces":[
+                    {'SubnetId': chosensubnet,
+                     'DeviceIndex':0,
+                     'AssociatePublicIpAddress':True,
+                     'Groups':[firesimsecuritygroup]}
+                ],
+                "KeyName":keyname,
+                "TagSpecifications":([] if tags is None else [
+                    {
+                        'ResourceType': 'instance',
+                        'Tags': [{ 'Key': k, 'Value': v} for k, v in tags.items()],
+                    },
+                ]),
+                "InstanceMarketOptions":marketconfig,
+            }
+            if user_data_file:
+                with open(user_data_file, "r") as f:
+                    instance_args["UserData"] = ''.join(f.readlines())
+
+            instance = ec2.create_instances(**instance_args)
             instances += instance
 
         except client.exceptions.ClientError as e:
-            rootLogger.info(e)
-            rootLogger.info("This probably means there was no more capacity in this availability zone. Try the next one.")
+            rootLogger.debug(e)
             startsubnet += 1
+            if (startsubnet < len(subnets)):
+                rootLogger.debug("This probably means there was no more capacity in this availability zone. Trying the next one.")
+            else:
+                rootLogger.info("Tried all subnets, but there was insufficient capacity to launch your instances")
+                startsubnet = 0
+                if first_subnet_wraparound is None:
+                    # so that we are guaranteed that the default timeout of `timedelta()` aka timedelta(0)
+                    # will cause timeout the very first time, we make the first_subnet_wraparound happen a bit in the
+                    # past
+                    first_subnet_wraparound = datetime.now() - timedelta(microseconds=1)
+
+                time_elapsed = datetime.now() - first_subnet_wraparound
+                rootLogger.info("have been trying for {} using timeout of {}".format(time_elapsed, timeout))
+                rootLogger.info("""only {} of {} {} instances have been launched""".format(len(instances), count, instancetype))
+                if time_elapsed > timeout:
+                    rootLogger.critical("""Aborting! only the following {} instances were launched""".format(len(instances)))
+                    rootLogger.critical(instances)
+                    rootLogger.critical("To continue trying to allocate instances, you can rerun launchrunfarm")
+                    sys.exit(1)
+                else:
+                    rootLogger.info("Will keep trying after sleeping for a bit...")
+                    time.sleep(30)
+                    rootLogger.info("Continuing to request remaining {}, {} instances".format(count - len(instances), instancetype))
     return instances
 
-def launch_run_instances(instancetype, count, fsimclustertag, instancemarket, spotinterruptionbehavior, spotmaxprice):
-    return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice,
+def run_block_device_dict() -> List[Dict[str, Any]]:
+    return [ { 'DeviceName': '/dev/sda1', 'Ebs': { 'VolumeSize': 300, 'VolumeType': 'gp2' } } ]
+
+def run_tag_dict() -> Dict[str, Any]:
+    return { 'fsimcluster': "defaultcluster" }
+
+def run_filters_list_dict() -> List[Dict[str, Any]]:
+    return [ { 'Name': 'tag:fsimcluster', 'Values': [ "defaultcluster" ] } ]
+
+
+def launch_run_instances(instancetype: str, count: int, fsimclustertag: str, instancemarket: str, spotinterruptionbehavior: str, spotmaxprice: str, timeout: timedelta, always_expand: bool) -> List[EC2InstanceResource]:
+    return launch_instances(instancetype, count, instancemarket, spotinterruptionbehavior, spotmaxprice, timeout=timeout, always_expand=always_expand,
         blockdevices=[
             {
                 'DeviceName': '/dev/sda1',
                 'Ebs': {
-                    'VolumeSize': 300,  # TODO: make this configurable from .ini?
+                    'VolumeSize': 300,  # TODO: make this configurable from .yaml?
                     'VolumeType': 'gp2',
                 },
             },
         ],
         tags={ 'fsimcluster': fsimclustertag })
 
-def get_instances_by_tag_type(fsimclustertag, instancetype):
-    """ return list of instances that match a tag and instance type """
+def get_instances_with_filter(filters: List[Dict[str, Any]], allowed_states: List[str] = ['pending', 'running', 'shutting-down', 'stopping', 'stopped']) -> List[EC2InstanceResource]:
+    """ Produces a list of instances based on a set of provided filters """
+    ec2_client = boto3.client('ec2')
+    operation_params = {
+        'Filters': filters +
+            [{'Name': 'instance-state-name', 'Values' : allowed_states}]
+    }
+    instance_res = depaginated_boto_query(ec2_client, 'describe_instances', operation_params, 'Reservations')
+
+    instances = []
+    # Collect all instances across all reservations
+    if instance_res:
+        for res in instance_res:
+            if res['Instances']:
+                instances.extend(res['Instances'])
+    return instances
+
+def get_run_instances_by_tag_type(fsimclustertag: str, instancetype: str) -> List[EC2InstanceResource]:
+    """ return list of instances that match fsimclustertag and instance type """
+    return get_instances_by_tag_type(
+        tags={'fsimcluster': fsimclustertag},
+        instancetype=instancetype
+    )
+
+def get_instances_by_tag_type(tags: Dict[str, Any], instancetype: str) -> List[EC2InstanceResource]:
+    """ return list of instances that match all tags and instance type """
     res = boto3.resource('ec2')
 
-    instances = res.instances.filter(
-        Filters = [
+    # see note above. collections automatically handle pagination
+    filters = [
             {
                 'Name': 'instance-type',
                 'Values': [
@@ -251,41 +463,42 @@ def get_instances_by_tag_type(fsimclustertag, instancetype):
                     'running',
                 ]
             },
+        ] + [
             {
-                'Name': 'tag:fsimcluster',
+                'Name': f'tag:{k}',
                 'Values': [
-                    fsimclustertag,
+                    v,
                 ]
-            },
-        ]
-    )
-    return instances
+            } for k, v in tags.items()
+            ]
+    instances = res.instances.filter(Filters = filters) # type: ignore
+    return list(instances)
 
-def get_private_ips_for_instances(instances):
+def get_private_ips_for_instances(instances: List[EC2InstanceResource]) -> List[str]:
     """" Take list of instances (as returned by create_instances), return private IPs. """
     return [instance.private_ip_address for instance in instances]
 
-def get_instance_ids_for_instances(instances):
+def get_instance_ids_for_instances(instances: List[EC2InstanceResource]) -> List[str]:
     """" Take list of instances (as returned by create_instances), return instance ids. """
     return [instance.id for instance in instances]
 
-def instances_sorted_by_avail_ip(instances):
+def instances_sorted_by_avail_ip(instances: List[EC2InstanceResource]) -> List[EC2InstanceResource]:
     """ This returns a list of instance objects, first sorted by their private ip,
     then sorted by availability zone. """
     ips = get_private_ips_for_instances(instances)
     ips_to_instances = zip(ips, instances)
     insts = sorted(ips_to_instances, key=lambda x: x[0])
-    insts = [x[1] for x in insts]
-    return sorted(insts, key=lambda x: x.placement['AvailabilityZone'])
+    ip_sorted_insts = [x[1] for x in insts]
+    return sorted(ip_sorted_insts, key=lambda x: x.placement['AvailabilityZone'])
 
-def instance_privateip_lookup_table(instances):
+def instance_privateip_lookup_table(instances: List[EC2InstanceResource]) -> Dict[str, EC2InstanceResource]:
     """ Given a list of instances, construct a lookup table that goes from
     privateip -> instance obj """
     ips = get_private_ips_for_instances(instances)
     ips_to_instances = zip(ips, instances)
     return { ip: instance for (ip, instance) in ips_to_instances }
 
-def wait_on_instance_launches(instances, message=""):
+def wait_on_instance_launches(instances: List[EC2InstanceResource], message: str = "") -> None:
     """ Take a list of instances (as returned by create_instances), wait until
     instance is running. """
     rootLogger.info("Waiting for instance boots: " + str(len(instances)) + " " + message)
@@ -293,13 +506,13 @@ def wait_on_instance_launches(instances, message=""):
         instance.wait_until_running()
         rootLogger.info(str(instance.id) + " booted!")
 
-def terminate_instances(instanceids, dryrun=True):
+def terminate_instances(instanceids: List[str], dryrun: bool = True) -> None:
     """ Terminate instances when given a list of instance ids.  for safety,
     this supplies dryrun=True by default. """
     client = boto3.client('ec2')
     client.terminate_instances(InstanceIds=instanceids, DryRun=dryrun)
 
-def auto_create_bucket(userbucketname):
+def auto_create_bucket(userbucketname: str) -> None:
     """ Check if the user-specified s3 bucket is available.
     If we get a NoSuchBucket exception, create the bucket for the user.
     If we get any other exception, exit.
@@ -321,7 +534,8 @@ def auto_create_bucket(userbucketname):
             # create the bucket for the user and setup directory structure
             rootLogger.info("Creating s3 bucket for you named: " + userbucketname)
             my_session = boto3.session.Session()
-            my_region = my_session.region_name
+            my_region: BucketLocationConstraintType
+            my_region = my_session.region_name # type: ignore
 
             # yes, this is unfortunately the correct way of handling this.
             # you cannot pass 'us-east-1' as a location constraint because
@@ -337,12 +551,12 @@ def auto_create_bucket(userbucketname):
             # now, setup directory structure
             resp = s3cli.put_object(
                 Bucket = userbucketname,
-                Body = '',
+                Body = b'',
                 Key = 'dcp/'
             )
             resp2 = s3cli.put_object(
                 Bucket = userbucketname,
-                Body = '',
+                Body = b'',
                 Key = 'logs/'
             )
 
@@ -353,7 +567,7 @@ def auto_create_bucket(userbucketname):
             rootLogger.critical(repr(exc))
             assert False
 
-def get_snsname_arn():
+def get_snsname_arn() -> Optional[str]:
     """ If the Topic doesn't exist create it, send catch exceptions while creating. Or if it exists get arn """
     client = boto3.client('sns')
 
@@ -366,21 +580,21 @@ def get_snsname_arn():
             Name=snsname
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to perform \"Topic Creation \". Required to send you email notifications. Please contact your IT administrator")
         else:
             rootLogger.warning("Unknown exception is encountered while trying to perform \"Topic Creation\"")
         rootLogger.warning(err)
         return None
-        
+
     return response['TopicArn']
 
-def subscribe_to_firesim_topic(email):
+def subscribe_to_firesim_topic(email: str) -> None:
     """ Subscribe a user to their FireSim SNS topic for notifications. """
 
     client = boto3.client('sns')
     arn = get_snsname_arn()
-    if not arn: 
+    if not arn:
         return None
     try:
         response = client.subscribe(
@@ -394,19 +608,19 @@ receive any notifications until you click the confirmation link.""".format(email
 
         rootLogger.info(message)
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to subscribe to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying subscribe notifications")
         rootLogger.warning(err)
 
 
-def send_firesim_notification(subject, body):
+def send_firesim_notification(subject: str, body: str) -> None:
 
     client = boto3.client('sns')
     arn = get_snsname_arn()
 
-    if not arn: 
+    if not arn:
         return None
 
     try:
@@ -416,26 +630,53 @@ def send_firesim_notification(subject, body):
             Subject=subject
         )
     except client.exceptions.ClientError as err:
-        if 'AuthorizationError' in repr(err): 
+        if 'AuthorizationError' in repr(err):
             rootLogger.warning("You don't have permissions to publish to firesim notifications")
         else:
             rootLogger.warning("Unknown exception is encountered while trying publish notifications")
         rootLogger.warning(err)
 
+def main(args: List[str]) -> int:
+    import argparse
+    import yaml
+    parser = argparse.ArgumentParser(description="Launch/terminate instances", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("command", choices=["launch", "terminate"], help="Choose to launch or terminate instances")
+    parser.add_argument("--inst_type", default="m5.large", help="Instance type. Used by \'launch\'.")
+    parser.add_argument("--inst_amt", type=int, default=1, help="Number of instances to launch. Used by \'launch\'.")
+    parser.add_argument("--market", choices=["ondemand", "spot"], default="ondemand", help="Type of market to get instances. Used by \'launch\'.")
+    parser.add_argument("--int_behavior", choices=["hibernate", "stop", "terminate"], default="terminate", help="Interrupt behavior. Used by \'launch\'.")
+    parser.add_argument("--spot_max_price", default="ondemand", help="Spot Max Price. Used by \'launch\'.")
+    parser.add_argument("--random_subnet", action="store_true", help="Randomize subnets. Used by \'launch\'.")
+    parser.add_argument("--block_devices", type=yaml.safe_load, default=run_block_device_dict(), help="List of dicts with block device information. Used by \'launch\'.")
+    parser.add_argument("--tags", type=yaml.safe_load, default=run_tag_dict(), help="Dict of tags to add to instances. Used by \'launch\'.")
+    parser.add_argument("--filters", type=yaml.safe_load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
+    parser.add_argument("--user_data_file", default=None, help="File path to use as user data (run on initialization). Used by \'launch\'.")
+    parser.add_argument("--ami_id", default=get_f1_ami_id(), help="Override AMI ID used for launch. Defaults to \'awstools.get_f1_ami_id()\'. Used by \'launch\'.")
+    parsed_args = parser.parse_args(args)
+
+    if parsed_args.command == "launch":
+        insts = launch_instances(
+            parsed_args.inst_type,
+            parsed_args.inst_amt,
+            parsed_args.market,
+            parsed_args.int_behavior,
+            parsed_args.spot_max_price,
+            parsed_args.block_devices,
+            parsed_args.tags,
+            parsed_args.random_subnet,
+            parsed_args.user_data_file,
+            parsed_args.ami_id)
+        instids = get_instance_ids_for_instances(insts)
+        print("Instance IDs: {}".format(instids))
+        wait_on_instance_launches(insts)
+        print("Launched instance IPs: {}".format(get_private_ips_for_instances(insts)))
+    else: # "terminate"
+        insts = get_instances_with_filter(parsed_args.filters)
+        instids = [ inst.instance_id for inst in insts ]
+        terminate_instances(instids, False)
+        print("Terminated instance IDs: {}".format(instids))
+    return 0
 
 if __name__ == '__main__':
-    #""" Example usage """
-    #instanceobjs = launch_instances('c5.4xlarge', 2)
-    #instance_ips = get_private_ips_for_instances(instanceobjs)
-    #instance_ids = get_instance_ids_for_instances(instanceobjs)
-    #wait_on_instance_launches(instanceobjs)
-
-    #print("now terminating!")
-    #terminate_instances(instance_ids, False)
-
-    """ Test SNS """
-    #subscribe_to_firesim_topic("sagark@eecs.berkeley.edu")
-
-    #send_firesim_notification("test subject", "test message")
-
-    print(aws_resource_names())
+    import sys
+    sys.exit(main(sys.argv[1:]))

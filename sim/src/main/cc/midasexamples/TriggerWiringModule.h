@@ -1,9 +1,9 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/synthesized_assertions.h"
 
-class TriggerWiringModule_t: virtual simif_t
+class TriggerWiringModule_t: public simif_peek_poke_t
 {
 public:
   std::vector<synthesized_assertions_t *> assert_endpoints;

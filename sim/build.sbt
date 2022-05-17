@@ -1,7 +1,6 @@
 import Tests._
 
-// This needs to stay in sync with the chisel3 and firrtl git submodules
-val chiselVersion = "3.4.1"
+val chiselVersion = "3.5.1"
 
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
@@ -16,6 +15,8 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+  libraryDependencies += "edu.berkeley.cs" %% "chisel3" % chiselVersion,
+  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full),
   // ScalaDoc
   autoAPIMappings  := true,
   exportJars := true,
@@ -41,22 +42,14 @@ lazy val chipyardDir = if(firesimAsLibrary) {
 }
 
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
-lazy val chisel        = ProjectRef(workspaceDirectory / "chisel3", "chisel")
-lazy val firrtl        = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
 lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
 lazy val sifive_blocks = ProjectRef(chipyardDir, "sifive_blocks")
 lazy val firechip      = ProjectRef(chipyardDir, "firechip")
 
-// While not built from source, *must* be in sync with the chisel3 git submodule
-// Building from source requires extending sbt-sriracha or a similar plugin and
-//   keeping scalaVersion in sync with chisel3 to the minor version
-lazy val chiselPluginLib = "edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full
-
 lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
-  .dependsOn(chisel)
 
 // We cannot forward reference firesim from midas (this creates a circular
 // dependency on the project definitions), so declare a reference to it
@@ -64,39 +57,35 @@ lazy val targetutils   = (project in file("midas/targetutils"))
 lazy val firesimRef = ProjectRef(file("."), "firesim")
 
 lazy val midas = (project in file("midas"))
-  .dependsOn(rocketchip, firrtl % "test->test")
-  .settings(
-    commonSettings,
-    addCompilerPlugin(chiselPluginLib)
-  )
+  .dependsOn(rocketchip)
+  .settings(libraryDependencies ++= Seq(
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test"))
+  .settings(commonSettings)
+
 
 lazy val firesimLib = (project in file("firesim-lib"))
   .dependsOn(midas, icenet, testchipip, sifive_blocks)
-  .settings(
-    commonSettings,
-    addCompilerPlugin(chiselPluginLib)
-  )
+  .settings(commonSettings)
 
 // Contains example targets, like the MIDAS examples, and FASED tests
 lazy val firesim    = (project in file("."))
   .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, SiteScaladocPlugin)
   .settings(commonSettings,
-    addCompilerPlugin(chiselPluginLib),
     git.remoteRepo := "git@github.com:firesim/firesim.git",
     // Publish scala doc only for the library projects -- classes under this
     // project are all integration test-related
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(targetutils, midas, firesimLib),
-    siteSubdirName in ScalaUnidoc := apiDirectory.value + "/api",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(targetutils, midas, firesimLib),
+    ScalaUnidoc / siteSubdirName := apiDirectory.value + "/api",
     // Only delete the files in the docs branch that are in the directory were
-    // trying to publish to.  This prevents dev-versions from blowing away
+    // trying to publish to.  This prevents main-versions from blowing away
     // tagged versions and vice versa
-    includeFilter in ghpagesCleanSite := new sbt.io.PrefixFilter(apiDirectory.value),
-    excludeFilter in ghpagesCleanSite := NothingFilter,
+    ghpagesCleanSite / includeFilter := new sbt.io.PrefixFilter(apiDirectory.value),
+    ghpagesCleanSite / excludeFilter := NothingFilter,
 
     // Clobber the existing doc task to instead have it use the unified one
-    Compile / doc := (doc in ScalaUnidoc).value,
+    Compile / doc := (ScalaUnidoc / doc).value,
     // Registers the unidoc-generated html with sbt-site
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc),
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
-  .dependsOn(chisel, rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)

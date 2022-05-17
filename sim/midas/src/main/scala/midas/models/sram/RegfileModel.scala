@@ -33,7 +33,7 @@ class RegfileRTLIO(val depth: Int, val dataWidth: Int, val nReads: Int, val nWri
   val write_cmds = Input(Vec(nWrites, new WriteCmd(depth, dataWidth)))
 }
 
-class RegfileChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int, val nWrites: Int) extends MultiIOModule {
+class RegfileChiselRTL(val depth: Int, val dataWidth: Int, val nReads: Int, val nWrites: Int) extends Module {
   val channels = IO(new RegfileRTLIO(depth, dataWidth, nReads, nWrites))
   val data = Reg(Vec(depth, UInt(dataWidth.W)))
 
@@ -57,7 +57,7 @@ class RegfileModelIO(val depth: Int, val dataWidth: Int, val nReads: Int, val nW
   val write_cmds = Vec(nWrites, Flipped(Decoupled(new WriteCmd(depth, dataWidth))))
 }
 
-class RegfileChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int, val nWrites: Int) extends MultiIOModule {
+class RegfileChiselModel(val depth: Int, val dataWidth: Int, val nReads: Int, val nWrites: Int) extends Module {
   val channels = IO(new RegfileModelIO(depth, dataWidth, nReads, nWrites))
 
   val data = Reg(Vec(depth, UInt(dataWidth.W)))

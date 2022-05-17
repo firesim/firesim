@@ -1,7 +1,7 @@
 # FireSim: Easy-to-use, Scalable, FPGA-accelerated Cycle-accurate Hardware Simulation
 
 ![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
-[![firesim](https://circleci.com/gh/firesim/firesim.svg?style=shield)](https://app.circleci.com/pipelines/github/firesim/firesim)
+![Github Actions Status](https://github.com/firesim/firesim/actions/workflows/firesim-run-tests.yml/badge.svg)
 
 ## Contents
 
@@ -15,7 +15,7 @@
 ## Using FireSim
 
 To get started with using FireSim, see the tutorials on the FireSim documentation
-site: https://docs.fires.im/. 
+site: https://docs.fires.im/.
 
 Another good overview (in video format) is our tutorial from the Chisel Community Conference on [YouTube](https://www.youtube.com/watch?v=S3OriQnJXYQ).
 
@@ -31,6 +31,7 @@ You can learn more about FireSim in the following places:
 * **FireSim website**: https://fires.im
 * **FireSim ISCA 2018 Paper**: [Paper PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf) | [IEEE Xplore](https://ieeexplore.ieee.org/document/8416816) | [ACM DL](https://dl.acm.org/citation.cfm?id=3276543) | [BibTeX](https://sagark.org/assets/pubs/firesim-isca2018.bib.txt) | Selected as one of IEEE Micro’s “Top Picks from Computer Architecture Conferences, 2018”.
 * **FireSim documentation**: https://docs.fires.im
+* **Scala API Documentation**: https://fires.im/firesim/latest/api/
 * **Two-minute lightning talk from ISCA 2018** (FireSim simulating a datacenter): [YouTube](https://www.youtube.com/watch?v=4XwoSe5c8lY)
 * **Chisel Community Conference Tutorial**: [YouTube](https://www.youtube.com/watch?v=S3OriQnJXYQ)
 * **Updates/News**: [Changelog](/CHANGELOG.md) | [FireSim Blog](https://fires.im/blog/) | [Twitter](https://twitter.com/firesimproject)
@@ -123,10 +124,17 @@ Our paper describing FireSim's Compiler, _Golden Gate_:
 
 Our paper to appear in ASPLOS 2020 discusses system-level profiling features in FireSim:
 
-> Sagar Karandikar, Albert Ou, Alon Amid, Howard Mao, Randy Katz, Borivoje Nikolić, and Krste Asanović, **FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design**, *To appear, In Proceedings of the Twenty-Fifth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS 2020)*, Lausanne, Switzerland, March 2020.
+> Sagar Karandikar, Albert Ou, Alon Amid, Howard Mao, Randy Katz, Borivoje Nikolić, and Krste Asanović, **FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design**, *In Proceedings of the Twenty-Fifth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS 2020)*, Lausanne, Switzerland, March 2020.
 
 [Paper PDF](https://sagark.org/assets/pubs/fireperf-asplos2020.pdf)
 
+### **IEEE MICRO 2021**: Accessible, FPGA Resource-Optimized Simulation of Multi-Clock Systems in FireSim
+
+In this special issue, we describe the automated instance-multithreading optimization and support for multiple clock domains in the simulated target.
+
+> David Biancolin, Albert Magyar, Sagar Karandikar, Alon Amid, Borivoje Nikolić, Jonathan  Bachrach, Krste Asanović. **Accessible, FPGA Resource-Optimized Simulation of Multi-Clock Systems in FireSim**. *In IEEE Micro Volume: 41, Issue: 4, July-Aug. 1 2021*
+
+[Article PDF](https://davidbiancolin.github.io/papers/firesim-micro21.pdf)
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
 

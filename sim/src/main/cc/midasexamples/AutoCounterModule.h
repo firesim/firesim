@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/autocounter.h"
 
-class autocounter_module_t: virtual simif_t
+class autocounter_module_t: public simif_peek_poke_t
 {
     public:
         std::vector<autocounter_t *> autocounter_endpoints;
@@ -30,7 +30,7 @@ class autocounter_module_t: virtual simif_t
 };
 
 #ifdef DESIGNNAME_AutoCounterModule
-class AutoCounterModule_t: public autocounter_module_t, virtual simif_t
+class AutoCounterModule_t: public autocounter_module_t
 {
 public:
     AutoCounterModule_t(int argc, char** argv): autocounter_module_t(argc, argv) {};
@@ -49,8 +49,28 @@ public:
 };
 #endif //DESIGNNAME_AutoCounterModule
 
+#ifdef DESIGNNAME_AutoCounter32bRollover
+class AutoCounter32bRollover_t: public autocounter_module_t
+{
+public:
+    AutoCounter32bRollover_t(int argc, char** argv): autocounter_module_t(argc, argv) {};
+    virtual void run() {
+        for (auto &autocounter_endpoint: autocounter_endpoints) {
+            autocounter_endpoint->init();
+        }
+        poke(reset, 1);
+        poke(io_a, 0);
+        step(1);
+        poke(reset, 0);
+        step(1);
+        poke(io_a, 1);
+        run_and_collect(3000);
+    };
+};
+#endif //DESIGNNAME_AutoCounter32bRollover
+
 #ifdef DESIGNNAME_AutoCounterGlobalResetCondition
-class AutoCounterGlobalResetCondition_t: public autocounter_module_t, virtual simif_t
+class AutoCounterGlobalResetCondition_t: public autocounter_module_t
 {
 public:
     AutoCounterGlobalResetCondition_t(int argc, char** argv): autocounter_module_t(argc, argv) {};

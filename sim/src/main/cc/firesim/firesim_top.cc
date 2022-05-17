@@ -225,35 +225,68 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
 #ifdef SIMPLENICBRIDGEMODULE_struct_guard
     #ifdef SIMPLENICBRIDGEMODULE_0_PRESENT
     SIMPLENICBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_0_substruct, 0, SIMPLENICBRIDGEMODULE_0_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_0_substruct, 0,
+        SIMPLENICBRIDGEMODULE_0_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_0_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_0_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_0_from_cpu_stream_dma_address));
+
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_1_PRESENT
     SIMPLENICBRIDGEMODULE_1_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_1_substruct, 1, SIMPLENICBRIDGEMODULE_1_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_1_substruct, 1,
+        SIMPLENICBRIDGEMODULE_1_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_1_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_1_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_1_from_cpu_stream_dma_address));
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_2_PRESENT
     SIMPLENICBRIDGEMODULE_2_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_2_substruct, 2, SIMPLENICBRIDGEMODULE_2_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_2_substruct, 2,
+        SIMPLENICBRIDGEMODULE_2_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_2_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_2_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_2_from_cpu_stream_dma_address));
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_3_PRESENT
     SIMPLENICBRIDGEMODULE_3_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_3_substruct, 3, SIMPLENICBRIDGEMODULE_3_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_3_substruct, 3,
+        SIMPLENICBRIDGEMODULE_3_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_3_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_3_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_3_from_cpu_stream_dma_address));
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_4_PRESENT
     SIMPLENICBRIDGEMODULE_4_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_4_substruct, 4, SIMPLENICBRIDGEMODULE_4_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_4_substruct, 4,
+        SIMPLENICBRIDGEMODULE_4_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_4_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_4_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_4_from_cpu_stream_dma_address));
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_5_PRESENT
     SIMPLENICBRIDGEMODULE_5_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_5_substruct, 5, SIMPLENICBRIDGEMODULE_5_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_5_substruct, 5,
+        SIMPLENICBRIDGEMODULE_5_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_5_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_5_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_5_from_cpu_stream_dma_address));
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_6_PRESENT
     SIMPLENICBRIDGEMODULE_6_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_6_substruct, 6, SIMPLENICBRIDGEMODULE_6_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_6_substruct, 6,
+        SIMPLENICBRIDGEMODULE_6_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_6_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_6_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_6_from_cpu_stream_dma_address));
     #endif
     #ifdef SIMPLENICBRIDGEMODULE_7_PRESENT
     SIMPLENICBRIDGEMODULE_7_substruct_create;
-    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_7_substruct, 7, SIMPLENICBRIDGEMODULE_7_DMA_ADDR));
+    add_bridge_driver(new simplenic_t(this, args, SIMPLENICBRIDGEMODULE_7_substruct, 7,
+        SIMPLENICBRIDGEMODULE_7_to_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_7_to_cpu_stream_dma_address,
+        SIMPLENICBRIDGEMODULE_7_from_cpu_stream_count_address,
+        SIMPLENICBRIDGEMODULE_7_from_cpu_stream_dma_address));
     #endif
 #endif
 
@@ -368,7 +401,9 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
             DROMAJOBRIDGEMODULE_0_tval_width,
             DROMAJOBRIDGEMODULE_0_num_traces,
             DROMAJOBRIDGEMODULE_0_substruct,
-            DROMAJOBRIDGEMODULE_0_DMA_ADDR));
+            DROMAJOBRIDGEMODULE_0_to_cpu_stream_dma_address,
+            DROMAJOBRIDGEMODULE_0_to_cpu_stream_count_address,
+            DROMAJOBRIDGEMODULE_0_to_cpu_stream_full_address)
     #endif
 #endif
 
@@ -568,9 +603,9 @@ void firesim_top_t::run() {
     fprintf(stderr, "Commencing simulation.\n");
     record_start_times();
 
-    while (!simulation_complete() && !has_timed_out()) {
+    while (!simulation_complete() && !finished_scheduled_tasks()) {
         run_scheduled_tasks();
-        step(get_largest_stepsize(), false);
+        take_steps(get_largest_stepsize(), false);
         while(!done() && !simulation_complete()){
             for (auto &e: bridges) e->tick();
         }
@@ -582,10 +617,15 @@ void firesim_top_t::run() {
 
 int firesim_top_t::teardown() {
     int exitcode = exit_code();
-    if (exitcode) {
+
+    // If the simulator is idle and we've gotten here without any bridge
+    // indicating doneness, we've advanced to the +max_cycles limit in the fastest target clock domain.
+    bool max_cycles_timeout = !simulation_complete() && done() && finished_scheduled_tasks();
+
+    if (exitcode != 0) {
         fprintf(stderr, "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n", exitcode, get_end_tcycle());
-    } else if (!simulation_complete() && has_timed_out()) {
-        fprintf(stderr, "*** FAILED *** (timeout) after %" PRIu64 " cycles\n", get_end_tcycle());
+    } else if (max_cycles_timeout) {
+        fprintf(stderr, "*** FAILED *** +max_cycles specified timeout after %" PRIu64 " cycles\n", get_end_tcycle());
     } else {
         fprintf(stderr, "*** PASSED *** after %" PRIu64 " cycles\n", get_end_tcycle());
     }
@@ -599,5 +639,7 @@ int firesim_top_t::teardown() {
     for (auto &e: bridges) {
         e->finish();
     }
-    return (exitcode || has_timed_out()) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+    this->host_finish();
+    return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
 }

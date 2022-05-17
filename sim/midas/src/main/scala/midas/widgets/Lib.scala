@@ -187,14 +187,26 @@ case class DecoupledSourceEntry(node: DecoupledIO[UInt], name: String) extends M
 }
 case class RegisterEntry(node: Data, name: String, permissions: Permissions) extends MCRMapEntry
 
-
-class MCRFileMap() {
+/**
+  * Manages the metadata associated with a widget's configuration registers
+  * (exposed via the control bus). Registers are incrementally allocated, which
+  * each register consuming a fixed number of bytes of the address space.
+  *
+  * This derives from a very early form of CSR handling in Rocket Chip which
+  * has since been replaced with diplomacy and its regmapper utilities.
+  *
+  * @param bytesPerAddress The number of bytes of address space consumed by each bound register.
+  *
+  * Historical: MCR -> Midas Configuration Register
+  *
+  */
+class MCRFileMap(bytesPerAddress: Int) {
   private val name2addr = LinkedHashMap[String, Int]()
   private val regList = ArrayBuffer[MCRMapEntry]()
 
   def allocate(entry: MCRMapEntry): Int = {
     Predef.assert(!name2addr.contains(entry.name), s"name already allocated '${entry.name}'")
-    val address = name2addr.size
+    val address = bytesPerAddress * name2addr.size
     name2addr += (entry.name -> address)
     regList.append(entry)
     address
@@ -204,24 +216,28 @@ class MCRFileMap() {
 
   def numRegs: Int = regList.size
 
-  def bindRegs(mcrIO: MCRIO): Unit = regList.zipWithIndex foreach {
-    case (e: DecoupledSinkEntry, addr) => mcrIO.bindDecoupledSink(e, addr)
-    case (e: DecoupledSourceEntry, addr) => mcrIO.bindDecoupledSource(e, addr)
-    case (e: RegisterEntry, addr) => mcrIO.bindReg(e, addr)
+  def bindRegs(mcrIO: MCRIO): Unit = {
+    // Distinct configuration registers are assigned to new word addresses.
+    // The assumption that is an AXI4 lite bus implies they are 32b apart
+    require((mcrIO.nastiXDataBits / 8) == bytesPerAddress)
+    regList.zipWithIndex foreach {
+      case (e: DecoupledSinkEntry, index) => mcrIO.bindDecoupledSink(e, index)
+      case (e: DecoupledSourceEntry, index) => mcrIO.bindDecoupledSource(e, index)
+      case (e: RegisterEntry, index) => mcrIO.bindReg(e, index)
+    }
   }
 
   def genHeader(prefix: String, base: BigInt, sb: StringBuilder, addrsToExclude: Seq[Int] = Nil): Unit = {
     // get widget name with no widget number (prefix includes it)
     val prefix_no_num = prefix.split("_")(0)
-
-    val filteredRegs = name2addr.toList.filterNot({ case (_, idx) => addrsToExclude.contains(idx) })
+    val filteredRegs = name2addr.toList.filterNot({ case (_, addr) => addrsToExclude.contains(addr) })
 
     // emit generic struct for this widget type. guarded so it only gets
     // defined once
     sb append s"#ifndef ${prefix_no_num}_struct_guard\n"
     sb append s"#define ${prefix_no_num}_struct_guard\n"
     sb append s"typedef struct ${prefix_no_num}_struct {\n"
-    filteredRegs foreach { case (regName, idx) =>
+    filteredRegs foreach { case (regName, addr) =>
       sb append s"    unsigned long ${regName};\n"
     }
     sb append s"} ${prefix_no_num}_struct;\n"
@@ -235,8 +251,8 @@ class MCRFileMap() {
     sb append s"#define ${prefix}_substruct_create \\\n"
     // assume the widget destructor will free this
     sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
-    filteredRegs foreach { case (regName, idx) =>
-      val address = base + idx
+    filteredRegs foreach { case (regName, localAddress) =>
+      val address = base + localAddress
       sb append s"${prefix}_substruct->${regName} = ${address}; \\\n"
     }
     sb append s"\n"
@@ -270,33 +286,39 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
   val write = Vec(numCRs, Decoupled(UInt(nastiXDataBits.W)))
   val wstrb = Output(UInt(nastiWStrobeBits.W))
 
-  def bindReg(reg: RegisterEntry, addr: Int): Unit = {
+  // Translates a static address into an index into the vecs above
+  def toIndex(addr: Int): Int = addr >> log2Ceil(nastiXDataBits / 8)
+
+  // Using a static address. determine if the associated register is being written to in the current cycle.
+  def activeWriteToAddress(addr: Int): Bool = write(toIndex(addr)).valid
+
+  def bindReg(reg: RegisterEntry, index: Int): Unit = {
     if (reg.permissions.writeable) {
-      when(write(addr).valid){
-        reg.node := write(addr).bits
+      when(write(index).valid){
+        reg.node := write(index).bits
       }
     } else {
-      assert(write(addr).valid =/= true.B, s"Register ${reg.name} is read only")
+      assert(write(index).valid =/= true.B, s"Register ${reg.name} is read only")
     }
 
     if (reg.permissions.readable) {
-      read(addr).bits := reg.node
+      read(index).bits := reg.node
     } else {
-      assert(read(addr).ready === false.B, "Register ${reg.name} is write only")
+      assert(read(index).ready === false.B, "Register ${reg.name} is write only")
     }
 
-    read(addr).valid := true.B
-    write(addr).ready := true.B
+    read(index).valid := true.B
+    write(index).ready := true.B
   }
 
-  def bindDecoupledSink(channel: DecoupledSinkEntry, addr: Int): Unit = {
-    channel.node <> write(addr)
-    assert(read(addr).ready === false.B, "Can only write to this decoupled sink")
+  def bindDecoupledSink(channel: DecoupledSinkEntry, index: Int): Unit = {
+    channel.node <> write(index)
+    assert(read(index).ready === false.B, "Can only write to this decoupled sink")
   }
 
-  def bindDecoupledSource(channel: DecoupledSourceEntry, addr: Int): Unit = {
-    read(addr) <> channel.node
-    assert(write(addr).valid =/= true.B, "Can only read from this decoupled source")
+  def bindDecoupledSource(channel: DecoupledSourceEntry, index: Int): Unit = {
+    read(index) <> channel.node
+    assert(write(index).valid =/= true.B, "Can only read from this decoupled source")
   }
 
 }
@@ -317,52 +339,52 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   val rId = Reg(UInt(p(NastiKey).idBits.W))
   val rData = Reg(UInt(nastiXDataBits.W))
   val wData = Reg(UInt(nastiXDataBits.W))
-  val wAddr = Reg(UInt(log2Up(numRegs).W))
-  val rAddr = Reg(UInt(log2Up(numRegs).W))
+  val wIndex = Reg(UInt(log2Up(numRegs).W))
+  val rIndex = Reg(UInt(log2Up(numRegs).W))
   val wStrb = Reg(UInt(nastiWStrobeBits.W))
 
-  when(io.nasti.aw.fire()){
+  when(io.nasti.aw.fire){
     awFired := true.B
-    wAddr := io.nasti.aw.bits.addr >> log2Up(nastiWStrobeBits)
+    wIndex := io.nasti.aw.bits.addr >> log2Up(nastiWStrobeBits)
     bId := io.nasti.aw.bits.id
     assert(io.nasti.aw.bits.len === 0.U)
   }
 
-  when(io.nasti.w.fire()){
+  when(io.nasti.w.fire){
     wFired := true.B
     wData := io.nasti.w.bits.data
     wStrb := io.nasti.w.bits.strb
   }
 
-  when(io.nasti.ar.fire()) {
+  when(io.nasti.ar.fire) {
     arFired := true.B
-    rAddr := (io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0)
+    rIndex := (io.nasti.ar.bits.addr >> log2Up(nastiWStrobeBits))(log2Up(numRegs)-1,0)
     rId := io.nasti.ar.bits.id
     assert(io.nasti.ar.bits.len === 0.U, "MCRFile only support single beat reads")
   }
 
-  when(io.nasti.r.fire()) {
+  when(io.nasti.r.fire) {
     arFired := false.B
   }
 
-  when(io.nasti.b.fire()) {
+  when(io.nasti.b.fire) {
     awFired := false.B
     wFired := false.B
     wCommited := false.B
   }
 
-  when(io.mcr.write(wAddr).fire()){
+  when(io.mcr.write(wIndex).fire){
     wCommited := true.B
   }
 
   io.mcr.write foreach { w => w.valid := false.B; w.bits := wData }
-  io.mcr.write(wAddr).valid := awFired && wFired && ~wCommited
+  io.mcr.write(wIndex).valid := awFired && wFired && ~wCommited
   io.mcr.read.zipWithIndex foreach { case (decoupled, idx: Int) =>
-    decoupled.ready := (rAddr === idx.U) && arFired && io.nasti.r.ready
+    decoupled.ready := (rIndex === idx.U) && arFired && io.nasti.r.ready
   }
 
-  io.nasti.r.bits := NastiReadDataChannel(rId, io.mcr.read(rAddr).bits)
-  io.nasti.r.valid := arFired && io.mcr.read(rAddr).valid
+  io.nasti.r.bits := NastiReadDataChannel(rId, io.mcr.read(rIndex).bits)
+  io.nasti.r.valid := arFired && io.mcr.read(rIndex).valid
 
   io.nasti.b.bits := NastiWriteResponseChannel(bId)
   io.nasti.b.valid := awFired && wFired && wCommited
@@ -385,9 +407,7 @@ object CRIO {
     new CRIO(direction, width, default)
 }
 
-class DecoupledCRIO[+T <: Data](gen: T) extends DecoupledIO[T](gen) {
-  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
-}
+class DecoupledCRIO[+T <: Data](gen: T) extends DecoupledIO[T](gen)
 object DecoupledCRIO {
   def apply[T <: Data](gen: T): DecoupledCRIO[T] = new DecoupledCRIO(gen)
 }
@@ -438,8 +458,8 @@ class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
   io.count := 0.U
 
   val do_flow = Wire(Bool())
-  val do_enq = io.enq.fire() && !do_flow
-  val do_deq = io.deq.fire() && !do_flow
+  val do_enq = io.enq.fire && !do_flow
+  val do_deq = io.deq.fire && !do_flow
 
   val maybe_full = RegInit(false.B)
   val enq_ptr = Counter(do_enq, entries)._1
@@ -467,7 +487,12 @@ class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
 class BRAMQueue[T <: Data](val entries: Int)(data: => T) extends Module {
   val io = IO(new QueueIO(data, entries))
 
-  io.count := 0.U
+  val count = RegInit(0.U(log2Ceil(entries + 1).W))
+
+  when (io.enq.fire ^ io.deq.fire) {
+    count := Mux(io.enq.fire, count + 1.U, count - 1.U)
+  }
+  io.count := count
 
   val fq = Module(new BRAMFlowQueue(entries)(data))
   fq.io.enq <> io.enq

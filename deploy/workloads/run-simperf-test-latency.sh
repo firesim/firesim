@@ -10,7 +10,7 @@ set -e
 set -o pipefail
 
 if [ "$1" == "withlaunch" ]; then
-    firesim launchrunfarm -c workloads/simperf-test-latency-config.ini
+    firesim launchrunfarm -c workloads/simperf-test-latency-config.yaml
 fi
 
 ORIGDIR=$(pwd)
@@ -31,15 +31,15 @@ sleep 2
 
 for i in "${latencies[@]}"
 do
-    firesim infrasetup -c workloads/simperf-test-latency-config.ini
-    firesim runworkload -c workloads/simperf-test-latency-config.ini --overrideconfigdata "targetconfig linklatency $i"
+    firesim infrasetup -c workloads/simperf-test-latency-config.yaml
+    firesim runworkload -c workloads/simperf-test-latency-config.yaml --overrideconfigdata "target_config link_latency $i"
     # rename the output directory with the ping latency
     files=(*simperf-test-latency*)
     originalfilename=${files[-1]}
     mv $originalfilename $resultsdir/$i
 done
 
-python $ORIGDIR/simperf-test-latency/simperf-test-results.py $(pwd)/$resultsdir
-firesim terminaterunfarm -c workloads/simperf-test-latency-config.ini --forceterminate
+python3 $ORIGDIR/simperf-test-latency/simperf-test-results.py $(pwd)/$resultsdir
+firesim terminaterunfarm -c workloads/simperf-test-latency-config.yaml --forceterminate
 
 

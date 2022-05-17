@@ -240,6 +240,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
 
   val hostClock = state.annotations.collect({ case FAMEHostClock(rt) => rt }).head
   val hostReset = state.annotations.collect({ case FAMEHostReset(rt) => rt }).head
+  lazy val targetClockChInfo = state.annotations.collectFirst({
+    case FAMEChannelConnectionAnnotation(_,chInfo: TargetClockChannel,_,_,_) => chInfo
+  }).get
+
 
   private def irPortFromGlobalTarget(mt: ModuleTarget)(rt: ReferenceTarget): Option[Port] = {
     val modelPort = topConnects(rt).pathlessTarget

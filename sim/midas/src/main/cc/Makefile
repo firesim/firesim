@@ -6,7 +6,7 @@ r_dir = $(abspath ../resources)
 
 ########################################################################
 # Parameters:
-# 1) PLATFORM: FPGA platform board(by default zynq)
+# 1) PLATFORM: FPGA platform board(by default f1)
 # 2) DRIVER_NAME: Base name for compiled drivers and ML simulators
 # 3) GEN_DIR: Directory for generated source code
 # 4) OUT_DIR: Directory for binary files (by default GEN_DIR)
@@ -16,7 +16,7 @@ r_dir = $(abspath ../resources)
 # 8) VERILATOR_FLAGS(optional): set of verilator flags to add
 ########################################################################
 
-PLATFORM ?= zynq
+PLATFORM ?= f1
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 1.0
 
@@ -61,7 +61,7 @@ $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) 
 $(PLATFORM): $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM)
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
-override CFLAGS += -include $(design_h)
+override CXXFLAGS += -include $(design_h)
 
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v

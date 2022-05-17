@@ -203,11 +203,11 @@ module emul;
 
   always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
-  reg [2047:0] vcdplusfile = '0;
-  reg [63:0] dump_start = '0;
+  reg [2047:0] vcdplusfile = 2048'h0;
+  reg [63:0] dump_start = 64'h0;
   reg [63:0] dump_end = {64{1'b1}};
-  reg [63:0] dump_cycles = '0;
-  reg [63:0] trace_count = '0;
+  reg [63:0] dump_cycles = 64'h0;
+  reg [63:0] trace_count = 64'h0;
 
   initial begin
 `ifdef DEBUG

@@ -1,11 +1,11 @@
 //See LICENSE for license details.
 
-#include "simif.h"
+#include "simif_peek_poke.h"
 #include "bridges/reset_pulse.h"
 
 #include <vector>
 
-class ResetPulseBridgeTest_t: virtual simif_t {
+class ResetPulseBridgeTest_t: public simif_peek_poke_t {
   public:
     reset_pulse_t * rb;
     // Define a dummy function so we can use the instantiation macro

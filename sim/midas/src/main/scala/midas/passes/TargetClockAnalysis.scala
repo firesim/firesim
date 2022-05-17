@@ -26,7 +26,7 @@ object ChannelClockInfoAnalysis extends Transform {
   def outputForm = LowForm
   def analyze(state: CircuitState): Map[String, RationalClock] = {
     val clockChannels = state.annotations.collect {
-      case FAMEChannelConnectionAnnotation(_,TargetClockChannel(clocks),_,_,Some(clockRTs)) =>
+      case FAMEChannelConnectionAnnotation(_,TargetClockChannel(clocks,_),_,_,Some(clockRTs)) =>
         clockRTs zip clocks
     }
     require(clockChannels.size == 1,
@@ -40,7 +40,14 @@ object ChannelClockInfoAnalysis extends Transform {
 
     val finder = new ClockSourceFinder(state)
     val clockSourceMap = channelClocks.map({ case (k, v) => v -> finder.findRootDriver(v) }).toMap
-    channelClocks.mapValues(sinkClock => sourceInfoMap(clockSourceMap(sinkClock).get))
+    channelClocks.map { case (channelName, sinkClock) =>
+      val source = clockSourceMap(sinkClock).getOrElse(throw new Exception(
+        s"""|Could not find source clock for channel ${channelName}.
+            |It is either unconnected or there is an intermediate operation (e.g., a clock gate
+            |or clock mux) between the channel's clock and the clock bridge generated clock.""".stripMargin))
+
+      (channelName, sourceInfoMap(source))
+    }.toMap
   }
   def execute(state: CircuitState): CircuitState = {
     val infoAnno = ChannelClockInfoAnnotation(analyze(state))

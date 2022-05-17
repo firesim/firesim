@@ -1,0 +1,18 @@
+name: change-workflow-instance-states
+description: "Changes the state of all instances associated with the current workflow."
+
+inputs:
+  new-state:
+    description: "The state the workflow instances should adopt."
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ env.AWS-ACCESS-KEY-ID }}
+          aws-secret-access-key: ${{ env.AWS-SECRET-ACCESS-KEY }}
+          aws-region: ${{ env.AWS-DEFAULT-REGION }}
+      - run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} ${{ inputs.new-state }} ${{ github.token }}
+        shell: bash

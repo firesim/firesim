@@ -1,7 +1,10 @@
 """ Tools to help manage afis. """
 
+from __future__ import annotations
+
 import logging
 import boto3
+from awstools.awstools import depaginated_boto_query
 
 rootLogger = logging.getLogger()
 
@@ -24,8 +27,8 @@ def get_afi_for_agfi(agfi_id, region=None):
     region = region if region is not None else get_current_region()
 
     client = boto3.client('ec2', region_name=region)
-    result = client.describe_fpga_images(
-        Filters=[
+    operation_params = {
+        'Filters': [
             {
                 'Name': 'fpga-image-global-id',
                 'Values': [
@@ -33,9 +36,10 @@ def get_afi_for_agfi(agfi_id, region=None):
                 ]
             },
         ]
-    )
-    rootLogger.debug(result)
-    return result['FpgaImages'][0]['FpgaImageId']
+    }
+    fpga_images_all = depaginated_boto_query(client, 'describe_fpga_images', operation_params, 'FpgaImages')
+    rootLogger.debug(fpga_images_all)
+    return fpga_images_all[0]['FpgaImageId']
 
 def copy_afi_to_all_regions(afi_id, starting_region=None):
     """ Copies an AFI to all regions, excluding the specified region.
@@ -112,12 +116,12 @@ def firesim_description_to_tags(description):
 def get_firesim_tagval_for_afi(afi_id, tagkey):
     """ Given an afi_id, and tag key, return the FireSim tag value of the afi."""
     client = boto3.client('ec2')
-    result = client.describe_fpga_images(
-        FpgaImageIds=[
+    operation_params = {
+        'FpgaImageIds': [
             afi_id
         ]
-    )['FpgaImages'][0]['Description']
-
+    }
+    result = depaginated_boto_query(client, 'describe_fpga_images', operation_params, 'FpgaImages')[0]['Description']
     return firesim_description_to_tags(result)[tagkey]
 
 def get_firesim_tagval_for_agfi(agfi_id, tagkey):

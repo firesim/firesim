@@ -3,14 +3,14 @@
 set -ex
 
 # deps
-sudo yum -y install xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils "perl(ExtUtils::Embed)"
+sudo yum -y install rpm-build xmlto asciidoc hmaccalc newt-devel pesign elfutils-devel binutils-devel audit-libs-devel numactl-devel pciutils-devel python-docutils python-devel "perl(ExtUtils::Embed)" bison java-devel ncurses-devel
 
 # update this as FPGA Dev AMI updates
 KSRC='3.10.0-957.5.1.el7'
 
 # other vars
 TARGET=x86_64
-DISTSITE='http://vault.centos.org/7.6.1810'
+DISTSITE='http://mirror.nsc.liu.se/centos-store/7.6.1810'
 
 GENERICBUILDDIR=$(pwd)/build
 NBDBUILDDIR=$GENERICBUILDDIR/nbdbuild

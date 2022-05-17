@@ -54,7 +54,7 @@ end up with something like this (a line beginning with a ``#`` is a comment):
 
    [builds]
    # this section references builds defined in config_build_recipes.ini
-   # if you add a build here, it will be built when you run buildafi
+   # if you add a build here, it will be built when you run buildbitstream
    firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
 
 
@@ -65,7 +65,7 @@ Now, we can run a build like so:
 
 ::
 
-    firesim buildafi
+    firesim buildbitstream
 
 This will run through the entire build process, taking the Chisel RTL
 and producing an AFI/AGFI that runs on the FPGA. This whole process will

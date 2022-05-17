@@ -18,6 +18,9 @@ object BuildStrategies {
     def emitTcl =  "set strategy \"" + flowString + "\"\n"
   }
   object Basic extends IsBuildStrategy { val flowString = "BASIC" }
+  // Tries to minimize resource utilization. Notably passes directive
+  // "AreaOptimized_high" to synth_design.
+  object Area extends IsBuildStrategy { val flowString = "AREA" }
   // This is the default strategy AWS sets in "aws_build_dcp_from_cl.sh"
   object Timing extends IsBuildStrategy { val flowString = "TIMING" }
   object Explore extends IsBuildStrategy { val flowString = "EXPLORE" }
@@ -43,6 +46,7 @@ class ILADepth16384 extends WithILADepth(16384)
 
 
 class Congestion extends WithBuildStrategy(BuildStrategies.Congestion)
+class Area extends WithBuildStrategy(BuildStrategies.Area)
 class Timing extends WithBuildStrategy(BuildStrategies.Timing)
 class Explore extends WithBuildStrategy(BuildStrategies.Explore)
 class NoRetiming extends WithBuildStrategy(BuildStrategies.NoRetiming)
