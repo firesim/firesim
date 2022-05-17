@@ -9,4 +9,5 @@
 
 set -ex
 source ../env.sh
-java -jar /home/centos/firesim-global-reset/target-design/chipyard/generators/rocket-chip/sbt-launch.jar "$@"
+sbt "$@"
+
