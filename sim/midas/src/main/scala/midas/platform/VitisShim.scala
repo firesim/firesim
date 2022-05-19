@@ -13,6 +13,7 @@ import midas.core.{DMANastiKey, HostMemChannelKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.platform.xilinx._
+import midas.targetutils.xdc._
 
 object VitisConstants {
   // Configurable through v++
@@ -120,5 +121,6 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       s"# Currenty unused",
       ".env.tcl")
+    SpecifyXDCCircuitPaths(Some("firesim_top"), Some("WRAPPER_INST/CL/firesim_top"))
   }
 }
