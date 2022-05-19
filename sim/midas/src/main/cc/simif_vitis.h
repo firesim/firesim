@@ -12,10 +12,13 @@ class simif_vitis_t: public virtual simif_t
   public:
     simif_vitis_t(int argc, char** argv);
     virtual ~simif_vitis_t();
-    virtual void write(size_t addr, uint32_t data);
-    virtual uint32_t read(size_t addr);
-    virtual ssize_t pull(size_t addr, char* data, size_t size);
-    virtual ssize_t push(size_t addr, char* data, size_t size);
+    // Unused by Vitis since initialization / deinitization is done in the constructor
+    virtual void host_init(int argc, char** argv) override {};
+    virtual int host_finish() override { return 0; };
+    virtual void write(size_t addr, uint32_t data) override;
+    virtual uint32_t read(size_t addr) override;
+    virtual ssize_t pull(size_t addr, char* data, size_t size) override;
+    virtual ssize_t push(size_t addr, char* data, size_t size) override;
     uint32_t is_write_ready();
   private:
     int device_index;
