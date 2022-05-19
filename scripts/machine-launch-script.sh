@@ -280,6 +280,7 @@ set -o pipefail
         dtc \
         verilator==4.034 \
 	screen \
+	xilinx-xrt==2021.1 \
     )
 
     # python packages
@@ -329,7 +330,8 @@ set -o pipefail
     CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
-    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -y "${CONDA_PACKAGE_SPECS[@]}"
+    # only temporarily use tsnyder channel until xilinx-xrt is in a more official place
+    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -c tsnyder -y "${CONDA_PACKAGE_SPECS[@]}"
 
 
     # Install python packages using pip that are not available from conda
