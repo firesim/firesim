@@ -17,6 +17,7 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
   case SynthAsserts => true
   case GenerateMultiCycleRamModels => true
   case EnableModelMultiThreading => true
+  case EnableAutoILA => true
   case SynthPrints => true
   case EnableAutoCounter => true
 }) ++ new Config(

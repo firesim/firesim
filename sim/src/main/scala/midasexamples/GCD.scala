@@ -7,7 +7,7 @@ import freechips.rocketchip.config.Parameters
 import chisel3.experimental.annotate
 
 import midas.widgets.PeekPokeBridge
-import midas.targetutils.FAMEModelAnnotation
+import midas.targetutils.{FAMEModelAnnotation, FpgaDebug}
 
 class GCDIO extends Bundle {
   val a  = Input(UInt(16.W))
@@ -29,6 +29,7 @@ class GCDInner extends Module {
   // TODO: this assertion fails spuriously with deduped, extracted models
   // assert(!io.e || io.a =/= 0.U && io.b =/= 0.U, "Inputs to GCD cannot be 0")
   printf("X: %d, Y:%d\n", x, y)
+  FpgaDebug(x)
 }
 
 class GCDDUT extends Module {
