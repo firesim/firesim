@@ -195,8 +195,7 @@ repo_state     := $(fpga_work_dir)/design/repo_state
 # Enumerates the subset of generated files that must be copied over for FPGA compilation
 fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
 	.sv .defines.vh .env.tcl \
-	.synthesis.xdc .implementation.xdc \
-	.ila_insert_inst.v .ila_insert_ports.v .ila_insert_wires.v .ila_insert_vivado.tcl)
+	.synthesis.xdc .implementation.xdc )
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
@@ -207,6 +206,7 @@ $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 
 $(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
+	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
 # Goes as far as setting up the build directory without running the cad job

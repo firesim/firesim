@@ -23,7 +23,6 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
   new firesim.configs.WithEC2F1Artefacts ++
   new WithDefaultMemModel ++
   new WithWiringTransform ++
-  new firesim.configs.WithILATopWiringTransform ++
   new midas.F1Config))
 
 class PointerChaserConfig extends Config((site, here, up) => {
