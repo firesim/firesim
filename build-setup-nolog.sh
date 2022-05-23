@@ -140,6 +140,10 @@ if [ "$IS_LIBRARY" = false ]; then
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
     cd $RDIR/target-design/chipyard
+
+    # Prevent initialization of Chipyard's FireSim submodule so that
+    # fuzzy-finders, and IDEs don't get confused by source duplication.
+    git config submodule.sims/firesim.update none
     ./scripts/init-submodules-no-riscv-tools.sh --skip-validate
     cd $RDIR
 
