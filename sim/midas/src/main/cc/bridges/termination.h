@@ -14,7 +14,7 @@ class termination_t: public bridge_driver_t
     std::vector<std::string> &args,
     TERMINATIONBRIDGEMODULE_struct * mmio_addrs,
     unsigned int num_messages,
-    unsigned int* isErr,
+    unsigned int* is_err,
     const char* const* msgs);
     ~termination_t();
     virtual void init() {};
@@ -23,7 +23,7 @@ class termination_t: public bridge_driver_t
     virtual bool terminate() { return test_done; };
     virtual int exit_code() { return fail; };
     const char* exit_message();
-    int cycleCount();
+    int cycle_count();
   private:
     TERMINATIONBRIDGEMODULE_struct * mmio_addrs;
     bool test_done = false;
@@ -31,7 +31,7 @@ class termination_t: public bridge_driver_t
     int tick_rate = 10;
     int tick_counter = 0;
     unsigned int num_messages;
-    unsigned int* isErr;
+    unsigned int* is_err;
     const char* const* msgs;
 };
 #endif // TerminationBridgeModule_struct_guard

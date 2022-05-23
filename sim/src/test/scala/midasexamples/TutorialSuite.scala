@@ -370,7 +370,6 @@ class ResetPulseBridgeActiveLowTest extends TutorialSuite(
 
 class TerminationF1Test extends TutorialSuite("TerminationModule") {
   1 to 10 foreach {x => runTest(backendSimulator, args = Seq("+tick-rate=10", s"+seed=${x}"), shouldPass = true)}
-  //runTest(backendSimulator, args = Seq("+tick-rate=10", s"+seed=10"), shouldPass = true)
 }
 
 // Suite Collections

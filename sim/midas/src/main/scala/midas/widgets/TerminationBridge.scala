@@ -1,5 +1,5 @@
 
-package firesim.bridges
+package midas.widgets
 
 import chisel3._
 import chisel3.util._
@@ -23,7 +23,7 @@ case class TerminationBridgeParams(
 
 class TerminationBridgeTargetIO(params: TerminationBridgeParams) extends Bundle {
   val clock = Input(Clock())
-  val errCode = Input(UInt((log2Ceil((params.conditionInfo).size)).W))
+  val terminationCode = Input(UInt((log2Ceil((params.conditionInfo).size)).W))
   val valid = Input(Bool()) 
 }
 
@@ -33,7 +33,7 @@ class TerminationBridgeHostIO(params: TerminationBridgeParams)
   def targetClockRef = targetIO.clock 
   //It is just inputs from the target to indicate test completion
   //The HostPort annotation would not work with aggregates so creating individual channels.
-  val errCodeH = InputChannel(targetIO.errCode)
+  val terminationCodeH = InputChannel(targetIO.terminationCode)
   val validH = InputChannel(targetIO.valid)
 }
 
@@ -52,11 +52,9 @@ object TerminationBridge {
   private def annotateTerminationBridge(clock: Clock, reset: Reset, conditionBools: Seq[Bool], params: TerminationBridgeParams): TerminationBridge = {
     val finish = conditionBools.reduce(_||_)
     val errMessageID = PriorityEncoder(conditionBools)
-    //val gReset = WireInit(false.B)
-    //GlobalResetCondition.sink(gReset)
     require(params.conditionInfo.size==conditionBools.size)
     val terminationBridgeTarget = Module(new TerminationBridge(params))
-    terminationBridgeTarget.io.errCode := errMessageID
+    terminationBridgeTarget.io.terminationCode := errMessageID
     terminationBridgeTarget.io.valid := finish && !reset.asBool
     terminationBridgeTarget.io.clock := clock 
     terminationBridgeTarget  
@@ -85,40 +83,32 @@ object TerminationBridge {
 
 class TerminationBridgeModule(params: TerminationBridgeParams)(implicit p: Parameters) extends BridgeModule[TerminationBridgeHostIO]()(p) {
   lazy val module = new BridgeModuleImp(this) {
-    // This creates the interfaces for all of the host-side transport
-    // AXI4-lite for the simulation control bus, =
-    // AXI4 for DMA
+
     val io = IO(new WidgetIO())
-
-
-
-    // This creates the host-side interface of your TargetIO
     val hPort = IO(new TerminationBridgeHostIO(params)())
     
-    val statusDone = Module(new Queue(Bool(), 1))
-    val errCode = Module(new Queue(hPort.errCodeH.bits.cloneType, 1))
+    val statusDone = Queue(hPort.validH)
+    val terminationCode = Queue(hPort.terminationCodeH)
 
-    val cycleCountWidth = 64 //Data width is capped by nastikey 
+    val cycleCountWidth = 64
 
-    val tokenCounter = genWideRORegInit(0.U(cycleCountWidth.W), "out_counter")    
+    val tokenCounter = genWideRORegInit(0.U(cycleCountWidth.W), "out_counter") 
 
+    val noTermination = !statusDone.bits
 
-    statusDone.io.enq <> hPort.validH
-    errCode.io.enq <> hPort.errCodeH 
+    val tFireHelper = DecoupledHelper(terminationCode.valid, statusDone.valid, noTermination)
 
-    val noTermination = !statusDone.io.deq.bits
-
-    val tFireHelper = DecoupledHelper(errCode.io.deq.valid, statusDone.io.deq.valid, noTermination)
-
-    when(tFireHelper.fire()) {
+    when(tFireHelper.fire) {
       tokenCounter := tokenCounter + 1.U
     }
 
-    statusDone.io.deq.ready := tFireHelper.fire(statusDone.io.deq.valid)
-    errCode.io.deq.ready := tFireHelper.fire(errCode.io.deq.valid)
+    statusDone.ready := tFireHelper.fire(statusDone.valid)
+    terminationCode.ready := tFireHelper.fire(terminationCode.valid)
 
-    genROReg(statusDone.io.deq.bits && statusDone.io.deq.valid, "out_status")
-    genROReg(errCode.io.deq.bits, "out_errCode")
+    //MMIO to indicate if the simulation has to be terminated
+    genROReg(statusDone.bits && statusDone.valid, "out_status")
+    //MMIO to indicate one of the target defined termination messages
+    genROReg(terminationCode.bits, "out_terminationCode")
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
       import CppGenerationUtils._
