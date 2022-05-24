@@ -146,6 +146,17 @@ jobs:
       - name: Run mypy type checker
         run: .github/scripts/run-mypy-typechecker.py
 
+  run-scalafmt-check:
+    name: run-scalafmt-check
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Scalafmt on FireSim Scala main sources
+        run: .github/scripts/run-scalafmt-check.py
+
   run-test-groupA:
     name: run-test-groupA
     needs: [setup-manager]
