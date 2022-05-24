@@ -39,9 +39,9 @@ public:
     poke(io_doneErrCode, termination_code);
     step(reset_length);
     poke(reset, 0);
-    if(termination_code %2 !=0) {
+    if (termination_code %2 !=0) {
       msgid = 0;
-    } else if(termination_code %4 != 0) {
+    } else if (termination_code %4 != 0) {
       msgid = 1;
     } else {
       msgid = 2;

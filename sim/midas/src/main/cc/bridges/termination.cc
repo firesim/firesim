@@ -17,7 +17,7 @@ termination_t::termination_t(
   msgs(msgs)
 {
   //tick-rate to decide sampling rate of MMIOs per number of ticks
-  std::string tick_rate_arg = std::string("+tick-rate=");
+  std::string tick_rate_arg = std::string("+termination-bridge-tick-rate=");
   for (auto &arg: args) {
     if (arg.find(tick_rate_arg) == 0) {
       char *str = const_cast<char*>(arg.c_str()) + tick_rate_arg.length();
@@ -32,17 +32,14 @@ termination_t::~termination_t() {
 }
 
 void termination_t::tick() {  //reads the MMIOs at tick-rate
-  if(tick_counter == tick_rate) {
+  if (tick_counter == tick_rate) {
     if (read(this->mmio_addrs->out_status)) {
       int msg_id = read(this->mmio_addrs->out_terminationCode);
+      assert(msg_id < this->num_messages);
       this->fail = this->is_err[msg_id];
       test_done = true;
-      if(msg_id < this->num_messages) {
-        std::cerr << "Termination Bridge detected exit on cycle " << this->cycle_count()
-        << " with message " << this->msgs[msg_id] << std::endl;
-      } else {
-        std::cerr << "Unknown Termination message" << std::endl;
-      }
+      std::cerr << "Termination Bridge detected exit on cycle " << this->cycle_count()
+      << " with message " << this->msgs[msg_id] << std::endl;
     }
     tick_counter = 0;
   } else {
