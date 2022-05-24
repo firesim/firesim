@@ -574,6 +574,30 @@
                         <a class="object" href="TargetClockInfo$.html" title=""></a>
                         <a href="TargetClockInfo$.html" title="">TargetClockInfo</a>
                       </li><li class="current-entities indented2">
+                        <a class="object" href="TerminationBridge$.html" title=""></a>
+                        <a class="class" href="TerminationBridge.html" title=""></a>
+                        <a href="TerminationBridge.html" title="">TerminationBridge</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TerminationBridgeHostIO.html" title=""></a>
+                        <a href="TerminationBridgeHostIO.html" title="">TerminationBridgeHostIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TerminationBridgeModule.html" title=""></a>
+                        <a href="TerminationBridgeModule.html" title="">TerminationBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TerminationBridgeParams.html" title="A seq of termination conditions one for each concurrently running program"></a>
+                        <a href="TerminationBridgeParams.html" title="A seq of termination conditions one for each concurrently running program">TerminationBridgeParams</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TerminationBridgeTargetIO.html" title=""></a>
+                        <a href="TerminationBridgeTargetIO.html" title="">TerminationBridgeTargetIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="TerminationCondition.html" title="Defines a condition under which the simulator should halt."></a>
+                        <a href="TerminationCondition.html" title="Defines a condition under which the simulator should halt.">TerminationCondition</a>
+                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="UInt32.html" title=""></a>
                         <a href="UInt32.html" title="">UInt32</a>
@@ -1940,6 +1964,103 @@ runtime-configurable number of cycles. These are its elaboration-time parameters
       </span>
       
       <p class="shortcomment cmt"> Adds a stream interface that will be enqueued to by the BridgeModule.</p>
+    </li><li name="midas.widgets.TerminationBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationBridgeextendsBlackBoxwithBridge[midas.widgets.TerminationBridgeHostIO,midas.widgets.TerminationBridgeModule]"></a><a id="TerminationBridge:TerminationBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridge.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TerminationBridge.html"><span class="name">TerminationBridge</span></a><span class="result"> extends <span class="extype" name="chisel3.BlackBox">BlackBox</span> with <a href="Bridge.html" class="extype" name="midas.widgets.Bridge">Bridge</a>[<a href="TerminationBridgeHostIO.html" class="extype" name="midas.widgets.TerminationBridgeHostIO">TerminationBridgeHostIO</a>, <a href="TerminationBridgeModule.html" class="extype" name="midas.widgets.TerminationBridgeModule">TerminationBridgeModule</a>]</span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.TerminationBridgeHostIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationBridgeHostIOextendsBundlewithChannelizedHostPortIO"></a><a id="TerminationBridgeHostIO:TerminationBridgeHostIO"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridgeHostIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TerminationBridgeHostIO.html"><span class="name">TerminationBridgeHostIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.TerminationBridgeModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationBridgeModuleextendsBridgeModule[midas.widgets.TerminationBridgeHostIO]"></a><a id="TerminationBridgeModule:TerminationBridgeModule"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridgeModule.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TerminationBridgeModule.html"><span class="name">TerminationBridgeModule</span></a><span class="result"> extends <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="TerminationBridgeHostIO.html" class="extype" name="midas.widgets.TerminationBridgeHostIO">TerminationBridgeHostIO</a>]</span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.TerminationBridgeParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationBridgeParamsextendsProductwithSerializable"></a><a id="TerminationBridgeParams:TerminationBridgeParams"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridgeParams.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="A seq of termination conditions one for each concurrently running program" href="TerminationBridgeParams.html"><span class="name">TerminationBridgeParams</span></a><span class="params">(<span name="conditionInfo">conditionInfo: <span class="extype" name="scala.Seq">Seq</span>[<a href="TerminationCondition.html" class="extype" name="midas.widgets.TerminationCondition">TerminationCondition</a>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A seq of termination conditions one for each concurrently running program
+</p>
+    </li><li name="midas.widgets.TerminationBridgeTargetIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationBridgeTargetIOextendsBundle"></a><a id="TerminationBridgeTargetIO:TerminationBridgeTargetIO"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridgeTargetIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TerminationBridgeTargetIO.html"><span class="name">TerminationBridgeTargetIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span></span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.TerminationCondition" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationConditionextendsProductwithSerializable"></a><a id="TerminationCondition:TerminationCondition"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationCondition.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Defines a condition under which the simulator should halt." href="TerminationCondition.html"><span class="name">TerminationCondition</span></a><span class="params">(<span name="isErr">isErr: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Defines a condition under which the simulator should halt.</p>
     </li><li name="midas.widgets.UInt32" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="UInt32extendsIntLikeLiteralwithProductwithSerializable"></a><a id="UInt32:UInt32"></a>
       <span class="permalink">
@@ -2499,6 +2620,22 @@ CAD tools; achieves two goals
       </span>
       <span class="symbol">
         <a title="" href="TargetClockInfo$.html"><span class="name">TargetClockInfo</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.TerminationBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TerminationBridge"></a><a id="TerminationBridge:TerminationBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridge$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="TerminationBridge$.html"><span class="name">TerminationBridge</span></a>
       </span>
       
       
