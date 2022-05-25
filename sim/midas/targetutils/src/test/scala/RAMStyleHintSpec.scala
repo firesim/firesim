@@ -137,6 +137,6 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     when(io.writeEnable) { mem(io.writeAddress) := io.writeData }
   }
   val annos = elaborateAndLower(new MemoryModule)
-  assert(xdc.annos.size == 1)
+  assert(annos.size == 1)
   }
 }
