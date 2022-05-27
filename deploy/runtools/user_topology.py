@@ -50,14 +50,14 @@ class UserTopologies:
 
         def custom_mapper(fsim_topol_with_passes: FireSimTopologyWithPasses) -> None:
             for i, rswitch in enumerate(rootswitches):
-                switch_inst_type = fsim_topol_with_passes.run_farm.mapper_get_default_switch_host_inst_type_name()
-                switch_inst = fsim_topol_with_passes.run_farm.mapper_alloc_instance(switch_inst_type)
+                switch_inst_type = fsim_topol_with_passes.run_farm.get_default_switch_host_handle()
+                switch_inst = fsim_topol_with_passes.run_farm.allocate_sim_host(switch_inst_type)
                 switch_inst.add_switch(rswitch)
 
             for j, lswitch in enumerate(leafswitches):
                 numsims = len(servers[j])
-                inst_type = fsim_topol_with_passes.run_farm.mapper_get_min_sim_host_inst_type_name(numsims)
-                sim_inst = fsim_topol_with_passes.run_farm.mapper_alloc_instance(inst_type)
+                inst_type = fsim_topol_with_passes.run_farm.get_smallest_sim_host_handle(num_sims=numsims)
+                sim_inst = fsim_topol_with_passes.run_farm.allocate_sim_host(inst_type)
                 sim_inst.add_switch(lswitch)
                 for sim in servers[j]:
                     sim_inst.add_simulation(sim)
@@ -119,13 +119,13 @@ class UserTopologies:
             # and two 8-sim-slot (e.g. 8-fpga) instances
             # (e.g., two pods of aggr/edge/4sims per f1.16xlarge)
 
-            switch_inst_type = fsim_topol_with_passes.run_farm.mapper_get_default_switch_host_inst_type_name()
-            switch_inst = fsim_topol_with_passes.run_farm.mapper_alloc_instance(switch_inst_type)
+            switch_inst_type = fsim_topol_with_passes.run_farm.get_default_switch_host_handle()
+            switch_inst = fsim_topol_with_passes.run_farm.allocate_sim_host(switch_inst_type)
             for core in coreswitches:
                 switch_inst.add_switch(core)
 
-            eight_sim_host_type = fsim_topol_with_passes.run_farm.mapper_get_min_sim_host_inst_type_name(8)
-            sim_hosts = [fsim_topol_with_passes.run_farm.mapper_alloc_instance(eight_sim_host_type) for _ in range(2)]
+            eight_sim_host_type = fsim_topol_with_passes.run_farm.get_smallest_sim_host_handle(num_sims=8)
+            sim_hosts = [fsim_topol_with_passes.run_farm.allocate_sim_host(eight_sim_host_type) for _ in range(2)]
 
             for aggrsw in aggrswitches[:4]:
                 sim_hosts[0].add_switch(aggrsw)

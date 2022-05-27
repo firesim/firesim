@@ -187,8 +187,8 @@ class FireSimTopologyWithPasses:
 
         while len(servers) > serverind:
             # this call will error if no such instances are available.
-            instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(1)
-            allocd_instance = self.run_farm.mapper_alloc_instance(instance_type)
+            instance_type = self.run_farm.get_smallest_sim_host_handle(num_sims=1)
+            allocd_instance = self.run_farm.allocate_sim_host(instance_type)
 
             for x in range(allocd_instance.MAX_SIM_SLOTS_ALLOWED):
                 allocd_instance.add_simulation(servers[serverind])
@@ -200,7 +200,7 @@ class FireSimTopologyWithPasses:
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
 
-        switch_host_inst_type = self.run_farm.mapper_get_default_switch_host_inst_type_name()
+        switch_host_inst_type = self.run_farm.get_default_switch_host_handle()
 
         for switch in switches:
             # Filter out FireSimDummyServerNodes for actually deploying.
@@ -209,14 +209,14 @@ class FireSimTopologyWithPasses:
             alldownlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in alldownlinknodes]):
                 # all downlinks are switches
-                self.run_farm.mapper_alloc_instance(switch_host_inst_type).add_switch(switch)
+                self.run_farm.allocate_sim_host(switch_host_inst_type).add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
                 downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
                 # all downlinks are simulations
                 num_downlinks = len(downlinknodes)
 
-                inst_type_for_downlinks = self.run_farm.mapper_get_min_sim_host_inst_type_name(num_downlinks)
-                inst = self.run_farm.mapper_alloc_instance(inst_type_for_downlinks)
+                inst_type_for_downlinks = self.run_farm.get_smallest_sim_host_handle(num_sims=num_downlinks)
+                inst = self.run_farm.allocate_sim_host(inst_type_for_downlinks)
 
                 inst.add_switch(switch)
                 for server in downlinknodes:
@@ -227,10 +227,10 @@ class FireSimTopologyWithPasses:
     def mapping_use_one_8_slot_node(self) -> None:
         """ Just put everything on one 8 slot node """
         switches = self.firesimtopol.get_dfs_order_switches()
-        instance_type = self.run_farm.mapper_get_min_sim_host_inst_type_name(8)
+        instance_type = self.run_farm.get_smallest_sim_host_handle(num_sims=8)
 
         for switch in switches:
-            inst = self.run_farm.mapper_alloc_instance(instance_type)
+            inst = self.run_farm.allocate_sim_host(instance_type)
             inst.add_switch(switch)
             alldownlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
