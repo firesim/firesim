@@ -1,7 +1,13 @@
 # RUNTIME configuration for the FireSim Simulation Manager
 # See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
-run_farm: aws_ec2_f1_run_farm
+run_farm_config:
+  # managerinit replace start
+  defaults: sample-run-farm-recipes/aws_ec2.yaml
+  # Uncomment and add args to override defaults
+  #override_args:
+  #  <ARG>: <OVERRIDE>
+  # managerinit replace end
 
 target_config:
     # Set topology: no_net_config to run without a network simulation

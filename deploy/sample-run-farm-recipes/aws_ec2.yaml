@@ -1,0 +1,24 @@
+run_farm_type: AWSEC2F1
+args:
+    # REQUIRED: tag to apply to run farm hosts
+    run_farm_tag: mainrunfarm
+    # REQUIRED: TODO
+    always_expand_runfarm: true
+    # REQUIRED: TODO
+    launch_instances_timeout_minutes: 60
+    # REQUIRED: run farm host market to use (ondemand or spot)
+    run_instance_market: ondemand
+    # REQUIRED: if using spot instances, determine the interrupt behavior
+    spot_interruption_behavior: terminate
+    # REQUIRED: if using spot instances, determine the max price
+    spot_max_price: ondemand
+    # REQUIRED: default location of the simulation directory on the run farm host
+    default_simulation_dir: /home/centos
+    # REQUIRED: run farm hosts to spawn
+    run_farm_hosts:
+      # fpga instances
+      - f1.16xlarge: 1
+      - f1.4xlarge: 0
+      - f1.2xlarge: 0
+      # switch-only instances
+      - m4.16xlarge: 0

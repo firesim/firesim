@@ -11,6 +11,7 @@ import yaml
 import os
 import sys
 from fabric.api import prefix, settings, local # type: ignore
+from copy import deepcopy
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -274,7 +275,7 @@ class InnerRuntimeConfiguration:
     suffixtag: str
     terminateoncompletion: bool
 
-    def __init__(self, runtimeconfigfile: str, runfarmconfigfile: str, configoverridedata: str) -> None:
+    def __init__(self, runtimeconfigfile: str, configoverridedata: str) -> None:
 
         runtime_configfile = None
         with open(runtimeconfigfile, "r") as yaml_file:
@@ -295,13 +296,28 @@ class InnerRuntimeConfiguration:
             runtime_dict[overridesection][overridefield] = overridevalue
 
         # Setup the run farm
-        run_farm_configfile = None
-        with open(runfarmconfigfile, "r") as yaml_file:
+        defaults_file = runtime_dict['run_farm_config']['defaults']
+        with open(defaults_file, "r") as yaml_file:
             run_farm_configfile = yaml.safe_load(yaml_file)
-        self.run_farm_requested_name = runtime_dict['run_farm']
-        run_farm_conf_dict = run_farm_configfile[self.run_farm_requested_name]
-        run_farm_type = run_farm_conf_dict["run_farm_type"]
-        run_farm_args = run_farm_conf_dict["args"]
+        run_farm_type = run_farm_configfile["run_farm_type"]
+        run_farm_args = run_farm_configfile["args"]
+
+        # add the overrides if it exists
+
+        # taken from https://gist.github.com/angstwad/bf22d1822c38a92ec0a9
+        def deep_merge(a: dict, b: dict) -> dict:
+            result = deepcopy(a)
+            for bk, bv in b.items():
+                av = result.get(bk)
+                if isinstance(av, dict) and isinstance(bv, dict):
+                    result[bk] = deep_merge(av, bv)
+                else:
+                    result[bk] = deepcopy(bv)
+            return result
+
+        override_args = runtime_dict['run_farm_config']['override_args']
+        if override_args:
+            run_farm_args = deep_merge(run_farm_args, override_args)
 
         run_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(RunFarm)])
 
@@ -368,7 +384,6 @@ class RuntimeConfig:
         rootLogger.debug(self.runtimehwdb)
 
         self.innerconf = InnerRuntimeConfiguration(args.runtimeconfigfile,
-                                                   args.runfarmconfigfile,
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
 

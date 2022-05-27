@@ -112,7 +112,7 @@ def managerinit(args: argparse.Namespace):
         sys.exit(1)
 
     rootLogger.info("Backing up initial config files, if they exist.")
-    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime", "run_farm"]
+    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
     for conf_file in config_files:
         with warn_only(), hide('everything'):
             m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
@@ -125,9 +125,39 @@ def managerinit(args: argparse.Namespace):
             m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
-            rootLogger.debug(m)
-            rootLogger.debug(m.stderr)
+
+            if args.platform == 'f1':
+                m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
+                rootLogger.debug(m)
+                rootLogger.debug(m.stderr)
+
+    rootLogger.info("Adding default overrides to default runtime.yaml file")
+    if args.platform == 'f1':
+        with open("config_runtime.yaml", "r") as f:
+            og_lines = f.readlines()
+
+        runfarm_default_file = "sample-run-farm-recipes/aws_ec2.yaml"
+        with open(runfarm_default_file, "r") as f:
+            rf_recipe_lines = f.readlines()
+        start_lines = [f"defaults: {runfarm_default_file}"]
+        start_lines += "override_args:"
+        rf_recipe_lines = ["  " + l for l in start_lines] + ["    " + l for l in rf_recipe_lines]
+
+        with open("config_runtime.yaml", "w") as f:
+            write_og = True
+            for og_line in og_lines:
+                if "managerinit replace start" in og_line:
+                    write_og = False
+
+                if write_og:
+                    f.write(og_line)
+                else:
+                    f.writelines(rf_recipe_lines)
+
+                if "managerinit replace end" in og_line:
+                    write_og = True
+    else:
+        rootLogger.info(f"Unknown platform {args.platform} for runtime.yaml setup. Skipping default overrides.")
 
     if args.platform == 'f1':
         awsinit()
@@ -282,9 +312,6 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
     parser.add_argument('-c', '--runtimeconfigfile', type=str,
                         help='Optional custom runtime/workload config file. Defaults to config_runtime.yaml.',
                         default='config_runtime.yaml')
-    parser.add_argument('-n', '--runfarmconfigfile', type=str,
-                        help='Optional custom run farm config file. Defaults to config_run_farm.yaml.',
-                        default='config_run_farm.yaml')
     parser.add_argument('-b', '--buildconfigfile', type=str,
                         help='Optional custom build config file. Defaults to config_build.yaml.',
                         default='config_build.yaml')
