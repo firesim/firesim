@@ -1,4 +1,12 @@
-run_farm: aws_ec2_f1_run_farm
+run_farm_config:
+  defaults: sample-run-farm-recipes/aws_ec2.yaml
+  override_args:
+    run_farm_tag: gapbs-runfarm
+    run_farm_hosts:
+      - f1.16xlarge: 0
+      - f1.4xlarge: 0
+      - f1.2xlarge: 6
+      - m4.16xlarge: 0
 
 target_config:
     topology: no_net_config

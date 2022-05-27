@@ -1,7 +1,15 @@
-run_farm: aws_ec2_f1_run_farm
+run_farm_config:
+  defaults: sample-run-farm-recipes/aws_ec2.yaml
+  override_args:
+    run_farm_tag: linuxpoweroffallnonictargets
+    run_farm_hosts:
+      - f1.16xlarge: 0
+      - f1.4xlarge: 0
+      - f1.2xlarge: 2
+      - m4.16xlarge: 0
 
 target_config:
-    topology: example_16config
+    topology: all_no_net_targets_config
     no_net_num_nodes: 2
     link_latency: 6405
     switching_latency: 10
@@ -20,7 +28,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: bw-test-two-instances.json
+    workload_name: linux-poweroff-uniform.json
     terminate_on_completion: no
     suffix_tag: null
 
