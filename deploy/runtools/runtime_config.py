@@ -315,7 +315,7 @@ class InnerRuntimeConfiguration:
                     result[bk] = deepcopy(bv)
             return result
 
-        override_args = runtime_dict['run_farm_config']['override_args']
+        override_args = runtime_dict['run_farm_config'].get('override_args')
         if override_args:
             run_farm_args = deep_merge(run_farm_args, override_args)
 
