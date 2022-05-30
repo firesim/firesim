@@ -333,6 +333,7 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         default=-1)
     def terminatesomesplitter(raw_arg):
         split_arg = raw_arg.split(":")
+        assert len(split_arg) == 2, "Invalid terminatesome argument"
         return split_arg[0], int(split_arg[1])
     parser.add_argument('--terminatesome', action='append', type=terminatesomesplitter,
                         help='Only used by terminaterunfarm. Used to specify a restriction on how many instances to terminate. E.g., --terminatesome=f1.2xlarge:2 will terminate only 2 of the f1.2xlarge instances in the runfarm, regardless of what other instances are in the runfarm. This argument can be specified multiple times to terminate additional instance types/counts. Behavior when specifying the same instance type multiple times is undefined. This replaces the old --terminatesome{f116,f12,f14,m416} arguments. Behavior when specifying these old-style terminatesome flags and this new style flag at the same time is also undefined.')
