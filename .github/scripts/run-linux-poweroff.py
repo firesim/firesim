@@ -11,9 +11,6 @@ def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
 
     with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
-        run("cd sw/firesim-software && ./marshal -v build br-base.json && ./marshal -v install br-base.json")
-        run("cd deploy/workloads/ && make linux-poweroff")
-
         def run_w_timeout(workload, timeout):
             """ Run workload with a specific timeout
 

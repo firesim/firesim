@@ -192,7 +192,19 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v2
-      - name: Run linux-poweroff test
+      - name: Run linux-poweroff test w/ AWS EC2 run farm
+        run: .github/scripts/run-linux-poweroff.py
+
+  run-basic-linux-poweroff-externally-provisioned:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    name: run-basic-linux-poweroff-externally-provisioned
+    needs: [build-default-workloads]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
         run: .github/scripts/run-linux-poweroff.py
 
   documentation-check:

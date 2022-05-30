@@ -1,4 +1,5 @@
 run_farm_config:
+# ci replace start
   defaults: sample-run-farm-recipes/aws_ec2.yaml
   override_args:
     run_farm_tag: linuxpoweroffallnonictargets
@@ -7,6 +8,7 @@ run_farm_config:
       - f1.4xlarge: 0
       - f1.2xlarge: 2
       - m4.16xlarge: 0
+# ci replace end
 
 target_config:
     topology: all_no_net_targets_config
