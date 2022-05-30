@@ -228,7 +228,7 @@ class AWSEC2F1(RunFarm):
         self._parse_args()
 
     def _parse_args(self) -> None:
-        run_farm_tag_prefix = "" if 'FIRESIM_RUN_FARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUN_FARM_PREFIX']
+        run_farm_tag_prefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
         if run_farm_tag_prefix != "":
             run_farm_tag_prefix += "-"
 
@@ -399,7 +399,7 @@ class AWSEC2F1(RunFarm):
         all_instances = dict()
         for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
             all_instances[sim_host_handle] = instances_sorted_by_avail_ip(
-            get_run_instances_by_tag_type(runfarmtag, sim_host_handle))
+                get_run_instances_by_tag_type(runfarmtag, sim_host_handle))
 
         all_instance_ids = dict()
         for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
