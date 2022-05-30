@@ -205,7 +205,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
-        run: .github/scripts/run-linux-poweroff.py
+        run: .github/scripts/run-linux-poweroff-externally-provisioned.py
 
   documentation-check:
     name: documentation-check
