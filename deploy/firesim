@@ -25,6 +25,7 @@ from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
+from util.filelineswap import file_line_swap
 
 from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints
 
@@ -133,29 +134,20 @@ def managerinit(args: argparse.Namespace):
 
     rootLogger.info("Adding default overrides to default runtime.yaml file")
     if args.platform == 'f1':
-        with open("config_runtime.yaml", "r") as f:
-            og_lines = f.readlines()
 
         runfarm_default_file = "sample-run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
-        start_lines = [f"defaults: {runfarm_default_file}"]
-        start_lines += "override_args:"
-        rf_recipe_lines = ["  " + l for l in start_lines] + ["    " + l for l in rf_recipe_lines]
+        start_lines = [f"defaults: {runfarm_default_file}\n"]
+        start_lines += ["override_args:\n"]
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[2:]
 
-        with open("config_runtime.yaml", "w") as f:
-            write_og = True
-            for og_line in og_lines:
-                if "managerinit replace start" in og_line:
-                    write_og = False
-
-                if write_og:
-                    f.write(og_line)
-                else:
-                    f.writelines(rf_recipe_lines)
-
-                if "managerinit replace end" in og_line:
-                    write_og = True
+        file_line_swap(
+            "config_runtime.yaml",
+            "config_runtime.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            rf_recipe_lines)
     else:
         rootLogger.info(f"Unknown platform {args.platform} for runtime.yaml setup. Skipping default overrides.")
 

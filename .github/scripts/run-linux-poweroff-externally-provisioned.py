@@ -6,9 +6,13 @@ from fabric.api import *
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 from ci_variables import ci_workflow_run_id
+sys.path.append(ci_workdir + "/deploy/awstools")
+from awstools import get_instances_with_filter, get_private_ips_for_instances
+sys.path.append(ci_workdir + "/deploy/util")
+from util.filelineswap import file_line_swap
 
 def run_linux_poweroff_externally_provisioned():
-    """ Runs Linux poweroff workloads """
+    """ Runs Linux poweroff workloads using externally provisioned AWS run farm """
 
     with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
 
@@ -41,30 +45,19 @@ def run_linux_poweroff_externally_provisioned():
                     instances = get_instances_with_filter(instances_filter, allowed_states=["running"])
                     instance_ips = get_private_ips_for_instances(instances)
 
-                    with open(f"{workload_full}", "r") as f:
-                        og_lines = f.readlines()
-
-                    runfarm_default_file = "sample-run-farm-recipes/externally_provisioned.yaml"
-                    start_lines = [f"  defaults: {runfarm_default_file}"]
-                    start_lines += "   override_args:"
-                    start_lines += "     default_num_fpgas: 1"
-                    start_lines += "     run_farm_hosts:"
+                    start_lines = [f"  defaults: sample-run-farm-recipes/externally_provisioned.yaml\n"]
+                    start_lines += ["   override_args:\n"]
+                    start_lines += ["     default_num_fpgas: 1\n"]
+                    start_lines += ["     run_farm_hosts:\n"]
                     for ip in instance_ips:
-                        start_lines += """       - "centos@{instance_ips}" """
+                        start_lines += ["""       - "centos@{ip}"\n"""]
 
-                    with open("/tmp/{workload}", "w") as f:
-                        write_og = True
-                        for og_line in og_lines:
-                            if "ci replace start" in og_line:
-                                write_og = False
-
-                            if write_og:
-                                f.write(og_line)
-                            else:
-                                f.writelines(rf_recipe_lines)
-
-                            if "ci replace end" in og_line:
-                                write_og = True
+                    file_line_swap(
+                            workload_full,
+                            f"/tmp/{workload}",
+                            "ci replace start",
+                            "ci replace end",
+                            start_lines)
 
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
