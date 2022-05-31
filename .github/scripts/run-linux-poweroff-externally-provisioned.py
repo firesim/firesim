@@ -7,7 +7,7 @@ from fabric.api import *
 from common import manager_fsim_dir, set_fabric_firesim_pem
 from ci_variables import ci_workdir, ci_workflow_run_id
 sys.path.append(ci_workdir + "/deploy/awstools")
-from awstools import get_instances_with_filter, get_private_ips_for_instances
+from awstools import get_instances_with_filter, get_private_ips_for_instances, wait_on_instance_launches
 sys.path.append(ci_workdir + "/deploy/util")
 from filelineswap import file_line_swap
 
@@ -43,6 +43,7 @@ def run_linux_poweroff_externally_provisioned():
                             {'Name': 'tag:fsimcluster', 'Values': [f'{ci_workflow_run_id}-2*']},
                             ]
                     instances = get_instances_with_filter(instances_filter, allowed_states=["running"])
+                    wait_on_instance_launches(instances)
                     instance_ips = [instance['PrivateIpAddress'] for instance in instances]
 
                     start_lines = [f"  defaults: sample-run-farm-recipes/externally_provisioned.yaml\n"]
@@ -78,6 +79,7 @@ def run_linux_poweroff_externally_provisioned():
 
                 if rc != 0:
                     print(f"Workload {workload} failed.")
+                    sys.exit(rc)
                 else:
                     print(f"Workload {workload} successful.")
 
