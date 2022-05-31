@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 import sys
+import time
 
 from fabric.api import *
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 from ci_variables import ci_workdir, ci_workflow_run_id
 sys.path.append(ci_workdir + "/deploy/awstools")
-from awstools import get_instances_with_filter, get_private_ips_for_instances, wait_on_instance_launches
+from awstools import get_instances_with_filter, get_private_ips_for_instances
 sys.path.append(ci_workdir + "/deploy/util")
 from filelineswap import file_line_swap
 
@@ -25,25 +26,26 @@ def run_linux_poweroff_externally_provisioned():
             """
             workload_full = workload_path + "/" + workload
             log_tail_length = 100
+            rf_prefix = f"{ci_workflow_run_id}-ep"
             # rename runfarm tag with a unique tag based on the ci workflow
-            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-ep"):
+            with prefix(f"export FIRESIM_RUNFARM_PREFIX={rf_prefix}"):
                 rc = 0
                 with settings(warn_only=True):
                     # do the following:
                     #   1. launch the run farm w/ the AWS EC2 runfarm
-                    #   2. copy the IP addrs given into a new runfarm file
-                    #   3. point the runtime to that new file
+                    #   2. copy the hostnames given into a new externally provisioned runfarm/runtime file
                     #   4. run launch/infra/runworkload/terminate w/ that runtime
-                    #   5. if successful or fail, run the terminate w/ the old runfarm
+                    #   5. if successful or fail, run the terminate w/ the old AWS EC2 runfarm
 
                     rc = run(f"firesim launchrunfarm -c {workload_full}")
 
+                    time.sleep(3 * 60) # TODO: replace w/ instance_liveness check
+
                     instances_filter = [
                             {'Name': 'instance-type', 'Values': ['f1.2xlarge']},
-                            {'Name': 'tag:fsimcluster', 'Values': [f'{ci_workflow_run_id}-2*']},
+                            {'Name': 'tag:fsimcluster', 'Values': [f'{rf_prefix}*']},
                             ]
                     instances = get_instances_with_filter(instances_filter, allowed_states=["running"])
-                    wait_on_instance_launches(instances)
                     instance_ips = [instance['PrivateIpAddress'] for instance in instances]
 
                     start_lines = [f"  defaults: sample-run-farm-recipes/externally_provisioned.yaml\n"]
@@ -74,7 +76,6 @@ def run_linux_poweroff_externally_provisioned():
                     print(f"Printing last {log_tail_length} lines of all output files. See results-workload for more info.")
                     run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then tail -n{log_tail_length} $LAST_DIR/*/*; fi""")
 
-                    # no matter what terminate using aws ec2 runfarm
                     run(f"firesim terminaterunfarm -q -c {workload_full}")
 
                 if rc != 0:
