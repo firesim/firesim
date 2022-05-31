@@ -19,7 +19,7 @@ def run_linux_poweroff():
             """
             log_tail_length = 100
             # rename runfarm tag with a unique tag based on the ci workflow
-            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}"):
+            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-default"):
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)

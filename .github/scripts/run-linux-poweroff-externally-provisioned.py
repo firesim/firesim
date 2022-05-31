@@ -26,7 +26,7 @@ def run_linux_poweroff_externally_provisioned():
             workload_full = workload_path + "/" + workload
             log_tail_length = 100
             # rename runfarm tag with a unique tag based on the ci workflow
-            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-2"):
+            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-ep"):
                 rc = 0
                 with settings(warn_only=True):
                     # do the following:
@@ -43,14 +43,14 @@ def run_linux_poweroff_externally_provisioned():
                             {'Name': 'tag:fsimcluster', 'Values': [f'{ci_workflow_run_id}-2*']},
                             ]
                     instances = get_instances_with_filter(instances_filter, allowed_states=["running"])
-                    instance_ips = get_private_ips_for_instances(instances)
+                    instance_ips = [instance['PrivateIpAddress'] for instance in instances]
 
                     start_lines = [f"  defaults: sample-run-farm-recipes/externally_provisioned.yaml\n"]
-                    start_lines += ["   override_args:\n"]
-                    start_lines += ["     default_num_fpgas: 1\n"]
-                    start_lines += ["     run_farm_hosts:\n"]
+                    start_lines += ["  override_args:\n"]
+                    start_lines += ["    default_num_fpgas: 1\n"]
+                    start_lines += ["    run_farm_hosts:\n"]
                     for ip in instance_ips:
-                        start_lines += ["""       - "centos@{ip}"\n"""]
+                        start_lines += [f"""      - "centos@{ip}"\n"""]
 
                     file_line_swap(
                             workload_full,
@@ -73,8 +73,8 @@ def run_linux_poweroff_externally_provisioned():
                     print(f"Printing last {log_tail_length} lines of all output files. See results-workload for more info.")
                     run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then tail -n{log_tail_length} $LAST_DIR/*/*; fi""")
 
-                # no matter what terminate using aws ec2 runfarm
-                run(f"firesim terminaterunfarm -q -c {workload_full}")
+                    # no matter what terminate using aws ec2 runfarm
+                    run(f"firesim terminaterunfarm -q -c {workload_full}")
 
                 if rc != 0:
                     print(f"Workload {workload} failed.")

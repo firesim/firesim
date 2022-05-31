@@ -3,16 +3,16 @@ import boto3
 import os
 from fabric.api import *
 import requests
+from local_flags import RUN_LOCAL, local_fsim_dir
 
 # Reuse manager utilities
-script_dir = os.path.dirname(os.path.realpath(__file__)) + "/../.."
-sys.path.append(script_dir + "/deploy/awstools")
+sys.path.append(local_fsim_dir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
 # Remote paths
 manager_home_dir = "/home/centos"
 manager_fsim_pem = manager_home_dir + "/firesim.pem"
-manager_fsim_dir = manager_home_dir + "/firesim"
+manager_fsim_dir = manager_home_dir + "/firesim" if not RUN_LOCAL else local_fsim_dir
 manager_marshal_dir = manager_fsim_dir + "/target-design/chipyard/software/firemarshal"
 manager_ci_dir = manager_fsim_dir + "/.github/scripts"
 
