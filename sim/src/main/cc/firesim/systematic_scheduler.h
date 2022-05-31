@@ -6,7 +6,7 @@
 #include <vector>
 
 // Maximum step size in MIDAS's master is capped to width of the simulation bus
-constexpr uint64_t MAX_MIDAS_STEP = (1LL << sizeof(data_t) * 8) - 1;
+constexpr uint64_t MAX_MIDAS_STEP = (1LL << sizeof(uint32_t) * 8) - 1;
 
 // Schedules a series of tasks that must run a specific cycles on the FPGA, but
 // may be associated with multiple bridges / touch non-bridge simulator

@@ -20,8 +20,8 @@ class simif_emul_t : public virtual simif_t
     virtual void host_init(int argc, char** argv);
     virtual int  host_finish();
 
-    virtual void write(size_t addr, data_t data);
-    virtual data_t read(size_t addr);
+    virtual void write(size_t addr, uint32_t data);
+    virtual uint32_t read(size_t addr);
     virtual ssize_t pull(size_t addr, char* data, size_t size);
     virtual ssize_t push(size_t addr, char* data, size_t size);
 

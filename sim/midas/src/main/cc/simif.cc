@@ -55,15 +55,15 @@ void simif_t::init(int argc, char** argv) {
 
 uint64_t simif_t::actual_tcycle() {
     write(this->clock_bridge_mmio_addrs->tCycle_latch, 1);
-    data_t cycle_l = read(this->clock_bridge_mmio_addrs->tCycle_0);
-    data_t cycle_h = read(this->clock_bridge_mmio_addrs->tCycle_1);
+    uint32_t cycle_l = read(this->clock_bridge_mmio_addrs->tCycle_0);
+    uint32_t cycle_h = read(this->clock_bridge_mmio_addrs->tCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
 uint64_t simif_t::hcycle() {
     write(this->clock_bridge_mmio_addrs->hCycle_latch, 1);
-    data_t cycle_l = read(this->clock_bridge_mmio_addrs->hCycle_0);
-    data_t cycle_h = read(this->clock_bridge_mmio_addrs->hCycle_1);
+    uint32_t cycle_l = read(this->clock_bridge_mmio_addrs->hCycle_0);
+    uint32_t cycle_h = read(this->clock_bridge_mmio_addrs->hCycle_1);
     return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
@@ -92,16 +92,16 @@ void simif_t::load_mem(std::string filename) {
   fprintf(stdout, "[loadmem] done\n");
 }
 
-// NB: mpz_t variables may not export <size> <data_t> beats, if initialized with an array of zeros.
+// NB: mpz_t variables may not export <size> <uint32_t> beats, if initialized with an array of zeros.
 void simif_t::read_mem(size_t addr, mpz_t& value) {
   write(this->loadmem_mmio_addrs->R_ADDRESS_H, addr >> 32);
   write(this->loadmem_mmio_addrs->R_ADDRESS_L, addr & ((1ULL << 32) - 1));
   const size_t size = MEM_DATA_CHUNK;
-  data_t data[size];
+  uint32_t data[size];
   for (size_t i = 0 ; i < size ; i++) {
     data[i] = read(this->loadmem_mmio_addrs->R_DATA);
   }
-  mpz_import(value, size, -1, sizeof(data_t), 0, 0, data);
+  mpz_import(value, size, -1, sizeof(uint32_t), 0, 0, data);
 }
 
 void simif_t::write_mem(size_t addr, mpz_t& value) {
@@ -109,13 +109,13 @@ void simif_t::write_mem(size_t addr, mpz_t& value) {
   write(this->loadmem_mmio_addrs->W_ADDRESS_L, addr & ((1ULL << 32) - 1));
   write(this->loadmem_mmio_addrs->W_LENGTH, 1);
   size_t size;
-  data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
+  uint32_t* data = (uint32_t*)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
   for (size_t i = 0 ; i < MEM_DATA_CHUNK ; i++) {
     write(this->loadmem_mmio_addrs->W_DATA, i < size ? data[i] : 0);
   }
 }
 
-#define MEM_DATA_CHUNK_BYTES (MEM_DATA_CHUNK*sizeof(data_t))
+#define MEM_DATA_CHUNK_BYTES (MEM_DATA_CHUNK*sizeof(uint32_t))
 #define ceil_div(a, b) (((a) - 1) / (b) + 1)
 
 void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
@@ -124,7 +124,7 @@ void simif_t::write_mem_chunk(size_t addr, mpz_t& value, size_t bytes) {
   size_t num_beats = ceil_div(bytes, MEM_DATA_CHUNK_BYTES);
   write(this->loadmem_mmio_addrs->W_LENGTH, num_beats);
   size_t size;
-  data_t* data = (data_t*)mpz_export(NULL, &size, -1, sizeof(data_t), 0, 0, value);
+  uint32_t* data = (uint32_t*)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
   for (size_t i = 0 ; i < num_beats * MEM_DATA_CHUNK ; i++) {
     write(this->loadmem_mmio_addrs->W_DATA, i < size ? data[i] : 0);
   }

@@ -70,8 +70,8 @@ protected:
     for (size_t i = 0; i < multireg_n_copies; i++) {
       for (size_t w_idx = 0; w_idx < multireg_n_writes; w_idx++) {
         if (rand() % 2) {
-          data_t rand_data = rand();
-          data_t rand_addr = rand() % mem_depth;
+          uint32_t rand_data = rand();
+          uint32_t rand_addr = rand() % mem_depth;
           auto mem_slot = std::make_pair(i, rand_addr);
           while (history.count(mem_slot) && history[mem_slot].second == cycle_num) {
             // already written this cycle => would be undefined write collision
@@ -86,7 +86,7 @@ protected:
         }
       }
       for (size_t r_idx = 0; r_idx < multireg_n_reads; r_idx++) {
-        data_t rand_addr = rand() % mem_depth;
+        uint32_t rand_addr = rand() % mem_depth;
         prev_reads[std::make_pair(i, r_idx)] = rand_addr;
         poke(multireg_r_addr_ios[i][r_idx], rand_addr);
       }
@@ -94,7 +94,7 @@ protected:
     step(1);
     for (size_t i = 0; i < multireg_n_copies; i++) {
       for (size_t r_idx = 0; r_idx < multireg_n_reads; r_idx++) {
-        data_t prev_addr = prev_reads[std::make_pair(i, r_idx)];
+        uint32_t prev_addr = prev_reads[std::make_pair(i, r_idx)];
         auto mem_slot = std::make_pair(i, prev_addr);
         if (history.count(mem_slot)) {
           auto w_op = history[mem_slot];
@@ -105,6 +105,6 @@ protected:
     }
   }
 
-  std::map< std::pair<size_t, data_t>, std::pair<data_t, size_t> > history;
-  std::map< std::pair<size_t, size_t>, data_t > prev_reads;
+  std::map< std::pair<size_t, uint32_t>, std::pair<uint32_t, size_t> > history;
+  std::map< std::pair<size_t, size_t>, uint32_t > prev_reads;
 };

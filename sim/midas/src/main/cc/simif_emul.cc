@@ -136,15 +136,15 @@ void simif_emul_t::wait_read(std::unique_ptr<mmio_t>& mmio, void *data) {
   while(!mmio->read_resp(data)) advance_target();
 }
 
-void simif_emul_t::write(size_t addr, data_t data) {
+void simif_emul_t::write(size_t addr, uint32_t data) {
   size_t strb = (1 << CTRL_STRB_BITS) - 1;
   static_assert(CTRL_AXI4_SIZE == 2, "AXI4-lite control interface has unexpected size");
   master->write_req(addr, CTRL_AXI4_SIZE, 0, &data, &strb);
   wait_write(master);
 }
 
-data_t simif_emul_t::read(size_t addr) {
-  data_t data;
+uint32_t simif_emul_t::read(size_t addr) {
+  uint32_t data;
   master->read_req(addr, CTRL_AXI4_SIZE, 0);
   wait_read(master, &data);
   return data;

@@ -35,11 +35,11 @@ public:
   // DOC include end: Bridge Driver Interface
 
 protected:
-  void write(size_t addr, data_t data) {
+  void write(size_t addr, uint32_t data) {
     sim->write(addr, data);
   }
 
-  data_t read(size_t addr) {
+  uint32_t read(size_t addr) {
     return sim->read(addr);
   }
 

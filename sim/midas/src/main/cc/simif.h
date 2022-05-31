@@ -62,8 +62,8 @@ class simif_t
 
     // Widget communication
     // 32b MMIO, issued over the simulation control bus (AXI4-lite).
-    virtual void write(size_t addr, data_t data) = 0;
-    virtual data_t read(size_t addr) = 0;
+    virtual void write(size_t addr, uint32_t data) = 0;
+    virtual uint32_t read(size_t addr) = 0;
 
     // Bulk transfers / bridge streaming interfaces.
 
