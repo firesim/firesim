@@ -174,6 +174,10 @@
                         <a class="class" href="AutoCounterTransform.html" title="Take the annotated cover points and convert them to counters"></a>
                         <a href="AutoCounterTransform.html" title="Take the annotated cover points and convert them to counters">AutoCounterTransform</a>
                       </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="AutoILATransform$.html" title="Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top of the module hierarchy."></a>
+                        <a href="AutoILATransform$.html" title="Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top of the module hierarchy.">AutoILATransform</a>
+                      </li><li class="current-entities indented2">
                         <a class="object" href="BridgeTopWiring$.html" title=""></a>
                         <a class="class" href="BridgeTopWiring.html" title="A utility transform used to implement features that are finely distributed through out the target, such as assertion and printf synthesis."></a>
                         <a href="BridgeTopWiring.html" title="A utility transform used to implement features that are finely distributed through out the target, such as assertion and printf synthesis.">BridgeTopWiring</a>
@@ -257,6 +261,14 @@
                         <span class="separator"></span>
                         <a class="object" href="HoistStopAndPrintfEnables$.html" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE."></a>
                         <a href="HoistStopAndPrintfEnables$.html" title="Pushes enable expressions into seperate nodes that can be consistently optimized across by CSE.">HoistStopAndPrintfEnables</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="HostClockSink.html" title="Labels sinks that must be driven by the HostClock."></a>
+                        <a href="HostClockSink.html" title="Labels sinks that must be driven by the HostClock.">HostClockSink</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="HostClockWiring$.html" title="Does final host clock wiring for transform-injected hardware."></a>
+                        <a href="HostClockWiring$.html" title="Does final host clock wiring for transform-injected hardware.">HostClockWiring</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ModelFame1Transform.html" title=""></a>
@@ -780,6 +792,22 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
       
       <p class="shortcomment cmt">A pass that is described as a chain of pure function calls.</p><div class="fullcomment"><div class="comment cmt"><p>A pass that is described as a chain of pure function calls.
 </p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>The type of the analysis object returned by the analysis phase.</p></dd></dl></div>
+    </li><li name="midas.passes.HostClockSink" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HostClockSinkextendsSingleTargetAnnotation[firrtl.annotations.ReferenceTarget]withProductwithSerializable"></a><a id="HostClockSink:HostClockSink"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HostClockSink.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Labels sinks that must be driven by the HostClock." href="HostClockSink.html"><span class="name">HostClockSink</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Labels sinks that must be driven by the HostClock.</p>
     </li><li name="midas.passes.ModelFame1Transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModelFame1TransformextendsFame1Transform"></a><a id="ModelFame1Transform:ModelFame1Transform"></a>
       <span class="permalink">
@@ -911,7 +939,29 @@ since the &quot;collateral&quot; of that object can be kept in one place.
         <div class="values members">
               <h3>Value Members</h3>
               <ol>
-                <li name="midas.passes.BridgeTopWiring" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+                <li name="midas.passes.AutoILATransform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AutoILATransform"></a><a id="AutoILATransform:AutoILATransform"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top of the module hierarchy." href="AutoILATransform$.html"><span class="name">AutoILATransform</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top
+of the module hierarchy.</p><div class="fullcomment"><div class="comment cmt"><p>Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top
+of the module hierarchy. The ILA is wrapped in a shim module that preserves the marked signal names and instance
+path names in its port list. The shim module instantiates the Xilinx IP only when <code>SYNTHESIS is defined.</code></p><p>This emits an annotation pass generates annotations for two files:</p><ul><li>A ip generation script (tcl) for the ILA IP</li><li>A verilog implementation for the ILA shim. This is verbatim verilog so as to permit using verilog preprocessor
+    macros.</li></ul><p>Caveats:</p><ul><li>Targets labelled with the FPGADebug annotation must be synchronous to the simulator's host clock. In practice,
+    the PlatformShim is the only location where it is possible to violate this assumption.
+</li></ul></div></div>
+    </li><li name="midas.passes.BridgeTopWiring" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="BridgeTopWiring"></a><a id="BridgeTopWiring:BridgeTopWiring"></a>
       <span class="permalink">
       <a href="../../midas/passes/BridgeTopWiring$.html" title="Permalink">
@@ -1069,6 +1119,22 @@ optimized across by CSE.</p><div class="fullcomment"><div class="comment cmt"><p
 optimized across by CSE. This ensures that associated pairs of stops and
 printfs will have references to a common enable node, which allows
 AssertionSynthesis to correctly group and synthesize them.</p></div></div>
+    </li><li name="midas.passes.HostClockWiring" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HostClockWiring"></a><a id="HostClockWiring:HostClockWiring"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/HostClockWiring$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Does final host clock wiring for transform-injected hardware." href="HostClockWiring$.html"><span class="name">HostClockWiring</span></a><span class="result"> extends <a href="AnnotationParameterizedWiringTransform.html" class="extype" name="midas.passes.AnnotationParameterizedWiringTransform">AnnotationParameterizedWiringTransform</a>[<span class="extype" name="midas.passes.HostClockSource">HostClockSource</span>, <a href="HostClockSink.html" class="extype" name="midas.passes.HostClockSink">HostClockSink</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Does final host clock wiring for transform-injected hardware.</p>
     </li><li name="midas.passes.ModuleTransformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ModuleTransformer"></a><a id="ModuleTransformer:ModuleTransformer"></a>
       <span class="permalink">

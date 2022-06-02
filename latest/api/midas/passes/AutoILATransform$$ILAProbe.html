@@ -69,10 +69,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
-    </li><li name="_root_.firesim" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="firesim"></a><a id="firesim:firesim"></a>
+    </li><li name="_root_.midas" visbl="pub" class="indented1 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="midas"></a><a id="midas:midas"></a>
       <span class="permalink">
-      <a href="../../firesim/index.html" title="Permalink">
+      <a href="../../midas/index.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -81,14 +81,14 @@
         <span class="kind">package</span>
       </span>
       <span class="symbol">
-        <a title="" href="../index.html"><span class="name">firesim</span></a>
+        <a title="" href="../index.html"><span class="name">midas</span></a>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../index.html" class="extype" name="_root_">root</a></dd></dl></div>
-    </li><li name="firesim.util" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="util"></a><a id="util:util"></a>
+    </li><li name="midas.passes" visbl="pub" class="indented2 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="passes"></a><a id="passes:passes"></a>
       <span class="permalink">
-      <a href="../../firesim/util/index.html" title="Permalink">
+      <a href="../../midas/passes/index.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -97,177 +97,47 @@
         <span class="kind">package</span>
       </span>
       <span class="symbol">
-        <a title="" href="index.html"><span class="name">util</span></a>
+        <a title="" href="index.html"><span class="name">passes</span></a>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="firesim">firesim</a></dd></dl></div>
-    </li><li class="current-entities indented2">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="midas">midas</a></dd></dl></div>
+    </li><li name="midas.passes.AutoILATransform" visbl="pub" class="indented3 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AutoILATransform"></a><a id="AutoILATransform:AutoILATransform"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top of the module hierarchy." href="AutoILATransform$.html"><span class="name">AutoILATransform</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <span class="extype" name="firrtl.DependencyAPIMigration">DependencyAPIMigration</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top
+of the module hierarchy.</p><div class="fullcomment"><div class="comment cmt"><p>Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top
+of the module hierarchy. The ILA is wrapped in a shim module that preserves the marked signal names and instance
+path names in its port list. The shim module instantiates the Xilinx IP only when <code>SYNTHESIS is defined.</code></p><p>This emits an annotation pass generates annotations for two files:</p><ul><li>A ip generation script (tcl) for the ILA IP</li><li>A verilog implementation for the ILA shim. This is verbatim verilog so as to permit using verilog preprocessor
+    macros.</li></ul><p>Caveats:</p><ul><li>Targets labelled with the FPGADebug annotation must be synchronous to the simulator's host clock. In practice,
+    the PlatformShim is the only location where it is possible to violate this assumption.
+</li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="index.html" class="extype" name="midas.passes">passes</a></dd></dl></div>
+    </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="class" href="Area.html" title=""></a>
-                        <a href="Area.html" title="">Area</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="object" href="BuildStrategies$.html" title=""></a>
-                        <a href="BuildStrategies$.html" title="">BuildStrategies</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="object" href="BuildStrategy$.html" title=""></a>
-                        <a href="BuildStrategy$.html" title="">BuildStrategy</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="Congestion.html" title=""></a>
-                        <a href="Congestion.html" title="">Congestion</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="object" href="DesiredHostFrequency$.html" title=""></a>
-                        <a href="DesiredHostFrequency$.html" title="">DesiredHostFrequency</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="Explore.html" title=""></a>
-                        <a href="Explore.html" title="">Explore</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F100MHz.html" title=""></a>
-                        <a href="F100MHz.html" title="">F100MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F110MHz.html" title=""></a>
-                        <a href="F110MHz.html" title="">F110MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F120MHz.html" title=""></a>
-                        <a href="F120MHz.html" title="">F120MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F130MHz.html" title=""></a>
-                        <a href="F130MHz.html" title="">F130MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F140MHz.html" title=""></a>
-                        <a href="F140MHz.html" title="">F140MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F150MHz.html" title=""></a>
-                        <a href="F150MHz.html" title="">F150MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F160MHz.html" title=""></a>
-                        <a href="F160MHz.html" title="">F160MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F175MHz.html" title=""></a>
-                        <a href="F175MHz.html" title="">F175MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F190MHz.html" title=""></a>
-                        <a href="F190MHz.html" title="">F190MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F30MHz.html" title=""></a>
-                        <a href="F30MHz.html" title="">F30MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F35MHz.html" title=""></a>
-                        <a href="F35MHz.html" title="">F35MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F40MHz.html" title=""></a>
-                        <a href="F40MHz.html" title="">F40MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F45MHz.html" title=""></a>
-                        <a href="F45MHz.html" title="">F45MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F50MHz.html" title=""></a>
-                        <a href="F50MHz.html" title="">F50MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F55MHz.html" title=""></a>
-                        <a href="F55MHz.html" title="">F55MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F60MHz.html" title=""></a>
-                        <a href="F60MHz.html" title="">F60MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F65MHz.html" title=""></a>
-                        <a href="F65MHz.html" title="">F65MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F70MHz.html" title=""></a>
-                        <a href="F70MHz.html" title="">F70MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F75MHz.html" title=""></a>
-                        <a href="F75MHz.html" title="">F75MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F80MHz.html" title=""></a>
-                        <a href="F80MHz.html" title="">F80MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F85MHz.html" title=""></a>
-                        <a href="F85MHz.html" title="">F85MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="F90MHz.html" title=""></a>
-                        <a href="F90MHz.html" title="">F90MHz</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="object" href="" title=""></a>
-                        <a href="" title="">ILADepth</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ILADepth1024.html" title=""></a>
-                        <a href="ILADepth1024.html" title="">ILADepth1024</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ILADepth16384.html" title=""></a>
-                        <a href="ILADepth16384.html" title="">ILADepth16384</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ILADepth2048.html" title=""></a>
-                        <a href="ILADepth2048.html" title="">ILADepth2048</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ILADepth4096.html" title=""></a>
-                        <a href="ILADepth4096.html" title="">ILADepth4096</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ILADepth8192.html" title=""></a>
-                        <a href="ILADepth8192.html" title="">ILADepth8192</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="NoRetiming.html" title=""></a>
-                        <a href="NoRetiming.html" title="">NoRetiming</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="Timing.html" title=""></a>
-                        <a href="Timing.html" title="">Timing</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="WithBuildStrategy.html" title=""></a>
-                        <a href="WithBuildStrategy.html" title="">WithBuildStrategy</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="WithDesiredHostFrequency.html" title=""></a>
-                        <a href="WithDesiredHostFrequency.html" title="">WithDesiredHostFrequency</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="WithILADepth.html" title=""></a>
-                        <a href="WithILADepth.html" title="">WithILADepth</a>
+                        <a class="class" href="" title="Captures per-probe metadata used to build various files related to ILA generation and instantiation"></a>
+                        <a href="" title="Captures per-probe metadata used to build various files related to ILA generation and instantiation">ILAProbe</a>
                       </li>
               </ul>
             </div>
           </div>
           <div id="content">
-            <body class="object value">
+            <body class="class type">
       <div id="definition">
-        <div class="big-circle object">o</div>
-        <p id="owner"><a href="../index.html" class="extype" name="firesim">firesim</a>.<a href="index.html" class="extype" name="firesim.util">util</a></p>
-        <h1>ILADepth<span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html" title="Permalink">
+        <div class="big-circle class">c</div>
+        <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.passes">passes</a>.<a href="AutoILATransform$.html" class="extype" name="midas.passes.AutoILATransform">AutoILATransform</a></p>
+        <h1>ILAProbe<span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -277,19 +147,26 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ILADepth</span><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>
+        <span class="name">ILAProbe</span><span class="params">(<span name="index">index: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="probeTriggers">probeTriggers: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Captures per-probe metadata used to build various files related to ILA generation and instantiation
+</p></div><dl class="paramcmts block"><dt class="param">index</dt><dd class="cmt"><p>
+  index of the probe on the ILA.</p></dd><dt class="param">width</dt><dd class="cmt"><p>
+  bit width of the probe</p></dd><dt class="param">name</dt><dd class="cmt"><p>
+  verilog-compatible string that will be used in the wrapper definition and describes the underlying signal being
+  probed.</p></dd><dt class="param">probeTriggers</dt><dd class="cmt"><p>
+  specifies the number of comparators to be generated for this probe. This will be ignored if
+  CONFIG.ALL_PROBE_SAME_MU_CNT is set.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>], <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -315,7 +192,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="firesim.util.ILADepth"><span>ILADepth</span></li><li class="in" name="chipsalliance.rocketchip.config.Field"><span>Field</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.AutoILATransform.ILAProbe"><span>ILAProbe</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -333,7 +210,32 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="midas.passes.AutoILATransform.ILAProbe#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(index:Int,width:Int,name:String,probeTriggers:Int):midas.passes.AutoILATransform.ILAProbe"></a><a id="&lt;init&gt;:ILAProbe"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#&lt;init&gt;(index:Int,width:Int,name:String,probeTriggers:Int):midas.passes.AutoILATransform.ILAProbe" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ILAProbe</span><span class="params">(<span name="index">index: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="probeTriggers">probeTriggers: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
+      </span>
+      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">index</dt><dd class="cmt"><p>
+  index of the probe on the ILA.</p></dd><dt class="param">width</dt><dd class="cmt"><p>
+  bit width of the probe</p></dd><dt class="param">name</dt><dd class="cmt"><p>
+  verilog-compatible string that will be used in the wrapper definition and describes the underlying signal being
+  probed.</p></dd><dt class="param">probeTriggers</dt><dd class="cmt"><p>
+  specifies the number of comparators to be generated for this probe. This will be ignored if
+  CONFIG.ALL_PROBE_SAME_MU_CNT is set.</p></dd></dl></div>
+    </li></ol>
+            </div>
 
         
 
@@ -345,7 +247,7 @@
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -361,7 +263,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html###():Int" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -377,7 +279,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -393,7 +295,7 @@
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -409,7 +311,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#clone():Object" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -432,26 +334,10 @@
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="chipsalliance.rocketchip.config.Field#default" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="default:Option[T]"></a><a id="default:Option[Int]"></a>
-      <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#default:Option[T]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">default</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Field</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -464,26 +350,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
-      <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#equals(x$1:Any):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -501,10 +371,10 @@
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#ilaPortAssignment" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ilaPortAssignment:String"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#hashCode():Int" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#ilaPortAssignment:String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -513,19 +383,46 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">ilaPortAssignment</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
-                <span class="name">@native</span><span class="args">()</span>
-              
-                <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
-              
-        </dd></dl></div>
+      <p class="shortcomment cmt">A connection from wrapper port to the ILA instance</p>
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#index" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="index:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#index:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">index</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#ipConfigString" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ipConfigString:String"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#ipConfigString:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ipConfigString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">A string that configures the ILA IP elaboration script for this probe</p>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -538,10 +435,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="name:String"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#name:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -557,7 +470,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#notify():Unit" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -578,7 +491,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -596,10 +509,26 @@
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#probeTriggers" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="probeTriggers:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#probeTriggers:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">probeTriggers</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -612,26 +541,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
-      <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#toString():String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -653,7 +566,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -677,7 +590,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#wait():Unit" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -696,6 +609,38 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#width" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="width:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#width:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">width</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
+    </li><li name="midas.passes.AutoILATransform.ILAProbe#wrapperPortDef" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="wrapperPortDef:String"></a>
+      <span class="permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#wrapperPortDef:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wrapperPortDef</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">A verilog input definition on the generated wrapper module</p>
     </li>
               </ol>
             </div>
@@ -707,7 +652,7 @@
               <ol><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../firesim/util/ILADepth$.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/passes/AutoILATransform$$ILAProbe.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -735,8 +680,14 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="chipsalliance.rocketchip.config.Field">
-              <h3>Inherited from <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</h3>
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
