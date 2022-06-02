@@ -69,7 +69,8 @@ object RenameTop extends Transform {
   }
 }
 
-trait FirrtlRunners extends BackendCompilationUtilities {
+trait FirrtlRunners {
+  import BackendCompilationUtilities._
 
   val cppHarnessResourceName: String = "/firrtl/testTop.cpp"
 

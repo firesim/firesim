@@ -54,7 +54,10 @@ class GoldenGateCompilerPhase extends Phase {
 
     // Lower simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      Seq(Dependency[firrtl.passes.memlib.SeparateWriteClocks],
+      Seq(
+          Dependency(midas.passes.AutoILATransform),
+          Dependency(midas.passes.HostClockWiring),
+          Dependency[firrtl.passes.memlib.SeparateWriteClocks],
           Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
           Dependency[firrtl.transforms.SimplifyMems],
       ) ++

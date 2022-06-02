@@ -59,11 +59,6 @@ class WithEC2F1Artefacts extends Config((site, here, up) => {
     case HostTransforms => Dependency(firesim.passes.EC2F1Artefacts) +: up(HostTransforms, site)
 })
 
-// Implements the AutoILA feature on EC2 F1
-class WithILATopWiringTransform extends Config((site, here, up) => {
-  case firesim.passes.ILADepthKey => 1024
-  case HostTransforms => Dependency[firesim.passes.ILATopWiringTransform] +: up(HostTransforms, site)
-})
 
 // Tells ILATopWiringTransform to actually populate the ILA
 class WithAutoILA extends Config((site, here, up) => {
@@ -85,6 +80,5 @@ class BaseF1Config extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
   new WithEC2F1Artefacts ++
-  new WithILATopWiringTransform ++
   new midas.F1Config
 )

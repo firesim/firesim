@@ -5,8 +5,10 @@ package core
 
 import junctions._
 import midas.widgets._
+import midas.passes.{HostClockSource}
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
@@ -256,6 +258,9 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
 }
 
 class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(outer) {
+  // Mark the host clock so that ILA wiring and user-registered host
+  // transformations can inject hardware synchronous to correct clock.
+  HostClockSource.annotate(clock)
 
   val master  = outer.master
 

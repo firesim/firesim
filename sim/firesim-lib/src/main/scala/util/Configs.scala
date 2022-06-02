@@ -6,7 +6,6 @@ import java.io.{File, FileWriter}
 import freechips.rocketchip.config.{Field, Config}
 
 object DesiredHostFrequency extends Field[Int](90) // Host FPGA frequency, in MHz
-object ILADepth extends Field[Int](1024) // Depth of ILA traces
 object BuildStrategy extends Field[BuildStrategies.IsBuildStrategy](BuildStrategies.Timing)
 
 class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
@@ -14,7 +13,7 @@ class WithDesiredHostFrequency(freq: Int) extends Config((site, here, up) => {
 })
 
 class WithILADepth(depth: Int) extends Config((site, here, up) => {
-    case ILADepth => depth
+    case midas.ILADepthKey => depth
 })
 
 object BuildStrategies {

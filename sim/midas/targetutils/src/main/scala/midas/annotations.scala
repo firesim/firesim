@@ -9,10 +9,10 @@ import firrtl.{RenameMap}
 import firrtl.annotations._
 import firrtl.transforms.DontTouchAllTargets
 
-// This is currently consumed by a transformation that runs after MIDAS's core
-// transformations In FireSim, targeting an F1 host, these are consumed by the
-// AutoILA infrastucture (ILATopWiring pass) to generate an ILA that plays nice
-// with AWS's vivado flow
+/**
+  * These are consumed by [[midas.passes.AutoILATransform]] to directly
+  * instantiate an ILA at the top of simulator's design hierarchy (the PlatformShim level).
+  */
 case class FpgaDebugAnnotation(target: chisel3.Data) extends ChiselAnnotation {
   def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
 }
