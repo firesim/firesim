@@ -54,8 +54,8 @@ const char* termination_t::exit_message() {
 
 int termination_t::cycle_count() {
   write(this->mmio_addrs->out_counter_latch, 1);
-  data_t cycle_l = read(this->mmio_addrs->out_counter_0);
-  data_t cycle_h = read(this->mmio_addrs->out_counter_1);
+  uint32_t cycle_l = read(this->mmio_addrs->out_counter_0);
+  uint32_t cycle_h = read(this->mmio_addrs->out_counter_1);
   return (((uint64_t) cycle_h) << 32) | cycle_l;
 }
 
