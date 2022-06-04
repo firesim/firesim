@@ -187,8 +187,8 @@ class FireSimTopologyWithPasses:
 
         while len(servers) > serverind:
             # this call will error if no such instances are available.
-            instance_type = self.run_farm.get_smallest_sim_host_handle(num_sims=1)
-            allocd_instance = self.run_farm.allocate_sim_host(instance_type)
+            instance_handle = self.run_farm.get_smallest_sim_host_handle(num_sims=1)
+            allocd_instance = self.run_farm.allocate_sim_host(instance_handle)
 
             for x in range(allocd_instance.MAX_SIM_SLOTS_ALLOWED):
                 allocd_instance.add_simulation(servers[serverind])
@@ -200,7 +200,7 @@ class FireSimTopologyWithPasses:
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
 
-        switch_host_inst_type = self.run_farm.get_default_switch_host_handle()
+        switch_host_inst_handle = self.run_farm.get_default_switch_host_handle()
 
         for switch in switches:
             # Filter out FireSimDummyServerNodes for actually deploying.
@@ -209,14 +209,14 @@ class FireSimTopologyWithPasses:
             alldownlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in alldownlinknodes]):
                 # all downlinks are switches
-                self.run_farm.allocate_sim_host(switch_host_inst_type).add_switch(switch)
+                self.run_farm.allocate_sim_host(switch_host_inst_handle).add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
                 downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
                 # all downlinks are simulations
                 num_downlinks = len(downlinknodes)
 
-                inst_type_for_downlinks = self.run_farm.get_smallest_sim_host_handle(num_sims=num_downlinks)
-                inst = self.run_farm.allocate_sim_host(inst_type_for_downlinks)
+                inst_handle_for_downlinks = self.run_farm.get_smallest_sim_host_handle(num_sims=num_downlinks)
+                inst = self.run_farm.allocate_sim_host(inst_handle_for_downlinks)
 
                 inst.add_switch(switch)
                 for server in downlinknodes:
@@ -227,10 +227,10 @@ class FireSimTopologyWithPasses:
     def mapping_use_one_8_slot_node(self) -> None:
         """ Just put everything on one 8 slot node """
         switches = self.firesimtopol.get_dfs_order_switches()
-        instance_type = self.run_farm.get_smallest_sim_host_handle(num_sims=8)
+        instance_handle = self.run_farm.get_smallest_sim_host_handle(num_sims=8)
 
         for switch in switches:
-            inst = self.run_farm.allocate_sim_host(instance_type)
+            inst = self.run_farm.allocate_sim_host(instance_handle)
             inst.add_switch(switch)
             alldownlinknodes = map(lambda x: x.get_downlink_side(), switch.downlinks)
             if all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
@@ -396,15 +396,15 @@ class FireSimTopologyWithPasses:
         self.pass_build_required_switches()
 
         @parallel
-        def infrasetup_node_wrapper(runfarm: RunFarm) -> None:
-            my_node = runfarm.lookup_by_hostname(env.host_string)
+        def infrasetup_node_wrapper(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.infrasetup_instance()
 
-        all_runfarm_ips = [x.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
-        execute(instance_liveness, hosts=all_runfarm_ips)
-        execute(infrasetup_node_wrapper, self.run_farm, hosts=all_runfarm_ips)
+        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
+        execute(instance_liveness, hosts=all_run_farm_ips)
+        execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
     def boot_simulation_passes(self, use_mock_instances_for_testing: bool, skip_instance_binding: bool = False) -> None:
         """ Passes that setup for boot and boot the simulation.
@@ -419,45 +419,44 @@ class FireSimTopologyWithPasses:
             self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         @parallel
-        def boot_switch_wrapper(runfarm: RunFarm) -> None:
-            my_node = runfarm.lookup_by_hostname(env.host_string)
+        def boot_switch_wrapper(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_switches_instance()
 
-        all_runfarm_ips = [x.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
-        execute(instance_liveness, hosts=all_runfarm_ips)
-        execute(boot_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
+        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
+        execute(instance_liveness, hosts=all_run_farm_ips)
+        execute(boot_switch_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
         @parallel
-        def boot_simulation_wrapper(runfarm: RunFarm) -> None:
-            my_node = runfarm.lookup_by_hostname(env.host_string)
+        def boot_simulation_wrapper(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_simulations_instance()
 
-        execute(boot_simulation_wrapper, self.run_farm, hosts=all_runfarm_ips)
+        execute(boot_simulation_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
     def kill_simulation_passes(self, use_mock_instances_for_testing: bool, disconnect_all_nbds: bool = True) -> None:
         """ Passes that kill the simulator. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
 
         @parallel
-        def kill_switch_wrapper(runfarm: RunFarm) -> None:
-            my_node = runfarm.lookup_by_hostname(env.host_string)
+        def kill_switch_wrapper(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_switches_instance()
 
         @parallel
-        def kill_simulation_wrapper(runfarm: RunFarm) -> None:
-            my_node = runfarm.lookup_by_hostname(env.host_string)
-            assert my_node is not None
+        def kill_simulation_wrapper(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_simulations_instance(disconnect_all_nbds=disconnect_all_nbds)
 
-        execute(kill_switch_wrapper, self.run_farm, hosts=all_runfarm_ips)
-        execute(kill_simulation_wrapper, self.run_farm, hosts=all_runfarm_ips)
+        execute(kill_switch_wrapper, self.run_farm, hosts=all_run_farm_ips)
+        execute(kill_simulation_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
         def screens() -> None:
             """ poll on screens to make sure kill succeeded. """
@@ -475,13 +474,13 @@ class FireSimTopologyWithPasses:
                             break
                         time.sleep(1)
 
-        execute(screens, hosts=all_runfarm_ips)
+        execute(screens, hosts=all_run_farm_ips)
 
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_runfarm_ips = [x.get_hostname() for x in self.run_farm.get_all_bound_host_nodes()]
+        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -493,10 +492,10 @@ class FireSimTopologyWithPasses:
         self.boot_simulation_passes(False, skip_instance_binding=True)
 
         @parallel
-        def monitor_jobs_wrapper(runfarm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
+        def monitor_jobs_wrapper(run_farm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
             """ on each instance, check over its switches and simulations
             to copy results off. """
-            my_node = runfarm.lookup_by_hostname(env.host_string)
+            my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node.instance_deploy_manager is not None
             return my_node.instance_deploy_manager.monitor_jobs_instance(completed_jobs, teardown, terminateoncompletion, job_results_dir)
 
@@ -551,17 +550,17 @@ class FireSimTopologyWithPasses:
             rootLogger.info("Instances")
             rootLogger.info("-"*80)
             for instance in instancestate_map.keys():
-                rootLogger.info("""Inst. hostname:{:>15} | Terminated: {}""".format(instance, truefalsecolor[instancestate_map[instance]]))
+                rootLogger.info("""Hostname/IP:{:>15} | Terminated: {}""".format(instance, truefalsecolor[instancestate_map[instance]]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Switches")
             rootLogger.info("-"*80)
             for switchinfo in switchstates:
-                rootLogger.info("""Inst. hostname:{:>15} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
+                rootLogger.info("""Hostname/IP:{:>15} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Nodes/Jobs")
             rootLogger.info("-"*80)
             for siminfo in simstates:
-                rootLogger.info("""Inst. hostname:{:>15} | Job: {} | Sim running: {}""".format(siminfo['hostip'], siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
+                rootLogger.info("""Hostname/IP:{:>15} | Job: {} | Sim running: {}""".format(siminfo['hostip'], siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Summary")
             rootLogger.info("-"*80)
@@ -597,7 +596,7 @@ class FireSimTopologyWithPasses:
                                     jobscompleted, teardown,
                                     self.terminateoncompletion,
                                     self.workload.job_results_dir,
-                                    hosts=all_runfarm_ips)
+                                    hosts=all_run_farm_ips)
 
             # log sim state, raw
             rootLogger.debug(pprint.pformat(instancestates))
@@ -627,7 +626,7 @@ class FireSimTopologyWithPasses:
                                         jobscompleted, teardown,
                                         self.terminateoncompletion,
                                         self.workload.job_results_dir,
-                                        hosts=all_runfarm_ips)
+                                        hosts=all_run_farm_ips)
                 break
             if not teardown_required and all(global_status):
                 break

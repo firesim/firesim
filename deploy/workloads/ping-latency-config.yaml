@@ -1,6 +1,6 @@
-run_farm_config:
-  defaults: sample-run-farm-recipes/aws_ec2.yaml
-  override_args:
+run_farm:
+  base_recipe: run-farm-recipes/aws_ec2.yaml
+  recipe_arg_overrides:
     run_farm_tag: pinglatency-mainrunfarm
     run_farm_hosts:
       - f1.16xlarge: 1

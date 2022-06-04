@@ -81,10 +81,10 @@ class FireSimLink:
             self.port = self.get_uplink_side().get_host_instance().allocate_host_port()
         return self.port
 
-    def link_hostserver_hostname(self) -> str:
-        """ Get the hostname used for this Link. This should only be called for
+    def link_hostserver_host(self) -> str:
+        """ Get the host used for this Link. This should only be called for
         links implemented with SocketPorts. """
-        return self.get_uplink_side().get_host_instance().get_hostname()
+        return self.get_uplink_side().get_host_instance().get_host()
 
     def link_crosses_hosts(self) -> bool:
         """ Return True if the user has mapped the two endpoints of this link to

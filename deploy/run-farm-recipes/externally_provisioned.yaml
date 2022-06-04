@@ -1,9 +1,14 @@
 # Unmanaged list of run farm hosts. Assumed that they are pre-setup to run simulations.
+# all fields are required but can be overridden in the `*_runtime.yaml`
+
 run_farm_type: ExternallyProvisioned
 args:
-    # REQUIRED: defaults used for all run farm hosts
+    # REQUIRED: default num fpgas of type platform (see below) used for all run farm hosts
     default_num_fpgas: 4
+    # REQUIRED: default platform used for all run farm hosts. this is a class specifying
+    # how to run simulations on a run farm host.
     default_platform: EC2InstanceDeployManager
+    # REQUIRED: default directory where simulations are run out of on the run farm host
     default_simulation_dir: /home/centos
     # REQUIRED: List of unique hostnames. Each can have multiple OPTIONAL
     # arguments, called "override_*", corresponding to the "default_*" arguments specified

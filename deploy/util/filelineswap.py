@@ -32,6 +32,17 @@ def file_line_swap(in_file: str, out_file: str, start_marker: str, end_marker: s
     with open(in_file, "r") as f:
         og_lines = f.readlines()
 
+    start_count = 0
+    end_count = 0
+    for og_line in og_lines:
+        if start_marker in og_line:
+            start_count += 1
+        if end_marker in og_line:
+            end_count += 1
+
+    assert start_count == 1, f"""Found {start_count} occurrences of "{start_marker}" in {in_file}. Only 1 allowed."""
+    assert end_count == 1, f"""Found {end_count} occurrences of "{end_marker}" in {in_file}. Only 1 allowed."""
+
     with open(out_file, "w") as f:
         write_og = True
         written = False

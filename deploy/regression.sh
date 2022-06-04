@@ -20,7 +20,7 @@ if [[ $local_diff_rc = 0 && $remote_diff_rc = 0 ]]; then
 fi
 
 # Run linux-poweroff on unnetworked targets
-./workloads/run-workload.sh workloads/linux-poweroff-all-no-nic --withlaunch
+./workloads/run-workload.sh workloads/linux-poweroff-all-no-nic.yaml --withlaunch
 
 # Run linux-poweroff on the networked target running on a f1.16xlarge
-./workloads/run-workload.sh workloads/linux-poweroff-nic --withlaunch
+./workloads/run-workload.sh workloads/linux-poweroff-nic.yaml --withlaunch

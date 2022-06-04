@@ -129,7 +129,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             with prefix('cd ../'), \
                 StreamLogger('stdout'), \
                 StreamLogger('stderr'):
-                # use local version of aws_fpga on runfarm nodes
+                # use local version of aws_fpga on run farm nodes
                 aws_fpga_upstream_version = local('git -C platforms/f1/aws-fpga describe --tags --always --dirty', capture=True)
                 if "-dirty" in aws_fpga_upstream_version:
                     rootLogger.critical("Unable to use local changes to aws-fpga. Continuing without them.")

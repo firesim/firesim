@@ -135,12 +135,12 @@ def managerinit(args: argparse.Namespace):
     rootLogger.info("Adding default overrides to default runtime.yaml file")
     if args.platform == 'f1':
 
-        runfarm_default_file = "sample-run-farm-recipes/aws_ec2.yaml"
+        runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
-        start_lines = [f"defaults: {runfarm_default_file}\n"]
-        start_lines += ["override_args:\n"]
-        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[2:]
+        start_lines = [f"base_recipe: {runfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[5:]
 
         file_line_swap(
             "config_runtime.yaml",

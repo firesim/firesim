@@ -1,0 +1,27 @@
+# AWS EC2 run farm hosts recipe.
+# all fields are required but can be overridden in the `*_runtime.yaml`
+
+run_farm_type: AWSEC2F1
+args:
+    # tag to apply to run farm hosts
+    run_farm_tag: mainrunfarm
+    # TODO
+    always_expand_run_farm: true
+    # TODO
+    launch_instances_timeout_minutes: 60
+    # run farm host market to use (ondemand or spot)
+    run_instance_market: ondemand
+    # if using spot instances, determine the interrupt behavior
+    spot_interruption_behavior: terminate
+    # if using spot instances, determine the max price
+    spot_max_price: ondemand
+    # default location of the simulation directory on the run farm host
+    default_simulation_dir: /home/centos
+    # run farm hosts to spawn
+    run_farm_hosts:
+      # fpga instances
+      - f1.16xlarge: 0
+      - f1.4xlarge: 0
+      - f1.2xlarge: 0
+      # switch-only instances
+      - m4.16xlarge: 0

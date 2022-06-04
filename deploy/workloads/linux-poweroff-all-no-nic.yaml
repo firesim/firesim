@@ -1,7 +1,7 @@
-run_farm_config:
+run_farm:
 # ci replace start
-  defaults: sample-run-farm-recipes/aws_ec2.yaml
-  override_args:
+  base_recipe: run-farm-recipes/aws_ec2.yaml
+  recipe_arg_overrides:
     run_farm_tag: linuxpoweroffallnonictargets
     run_farm_hosts:
       - f1.16xlarge: 0

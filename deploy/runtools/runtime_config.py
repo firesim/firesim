@@ -44,14 +44,6 @@ class RuntimeHWConfig:
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        # TODO: this will change based on the "what-to-build" PR
-        #self.agfi = None
-        #self.xclbin = None
-        #self.platform = hwconfig_dict['platform']
-        #if self.platform == 'vitis':
-        #    self.xclbin = hwconfig_dict['xclbin']
-        #elif self.platform == 'f1':
-        #    self.agfi = hwconfig_dict['agfi']
         self.platform = "f1"
         self.agfi = hwconfig_dict['agfi']
 
@@ -163,7 +155,7 @@ class RuntimeHWConfig:
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
         screen_name = "fsim{}".format(slotid)
-        run_device_placement = "+slotid={}".format(slotid) if self.platform == "f1" else "+device_index={}".format(slotid)
+        run_device_placement = "+slotid={}".format(slotid)
         # TODO: re-enable for vitis
         #other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
 
@@ -296,7 +288,7 @@ class InnerRuntimeConfiguration:
             runtime_dict[overridesection][overridefield] = overridevalue
 
         # Setup the run farm
-        defaults_file = runtime_dict['run_farm_config']['defaults']
+        defaults_file = runtime_dict['run_farm']['base_recipe']
         with open(defaults_file, "r") as yaml_file:
             run_farm_configfile = yaml.safe_load(yaml_file)
         run_farm_type = run_farm_configfile["run_farm_type"]
@@ -315,7 +307,7 @@ class InnerRuntimeConfiguration:
                     result[bk] = deepcopy(bv)
             return result
 
-        override_args = runtime_dict['run_farm_config'].get('override_args')
+        override_args = runtime_dict['run_farm'].get('recipe_arg_overrides')
         if override_args:
             run_farm_args = deep_merge(run_farm_args, override_args)
 

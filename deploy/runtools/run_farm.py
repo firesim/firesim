@@ -36,7 +36,7 @@ class Inst(metaclass=abc.ABCMeta):
         sim_slots: simulation node slots
         sim_dir: name of simulation directory on the run host
         instance_deploy_manager: platform specific implementation
-        hostname: hostname of the instance (normally set by the `RunFarm` type)
+        host: hostname or ip address of the instance
     """
 
     # switch variables
@@ -54,7 +54,7 @@ class Inst(metaclass=abc.ABCMeta):
     # instances parameterized by this
     instance_deploy_manager: InstanceDeployManager
 
-    hostname: Optional[str]
+    host: Optional[str]
 
     def __init__(self, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None) -> None:
         super().__init__()
@@ -68,7 +68,7 @@ class Inst(metaclass=abc.ABCMeta):
 
         self.instance_deploy_manager = instance_deploy_manager(self)
 
-        self.hostname = None
+        self.host = None
 
     def set_sim_dir(self, drctry: str) -> None:
         self.sim_dir = drctry
@@ -77,12 +77,12 @@ class Inst(metaclass=abc.ABCMeta):
         assert self.sim_dir is not None
         return self.sim_dir
 
-    def get_hostname(self) -> str:
-        assert self.hostname is not None
-        return self.hostname
+    def get_host(self) -> str:
+        assert self.host is not None
+        return self.host
 
-    def set_hostname(self, hostname: str) -> None:
-        self.hostname = hostname
+    def set_host(self, host: str) -> None:
+        self.host = host
 
     def add_switch(self, firesimswitchnode: FireSimSwitchNode) -> None:
         """ Add a switch to the next available switch slot. """
@@ -107,7 +107,7 @@ class Inst(metaclass=abc.ABCMeta):
 class RunFarm(metaclass=abc.ABCMeta):
     """Abstract class to represent how to manage run farm hosts (similar to `BuildFarm`).
     In addition to having to implement how to spawn/terminate nodes, the child classes must
-    implement `mapper_*` functions to help topologies map run farm hosts (`Inst`s) to `FireSimNodes`.
+    implement helper functions to help topologies map run farm hosts (`Inst`s) to `FireSimNodes`.
     """
 
     def __init__(self, args: Dict[str, Any]) -> None:
@@ -115,24 +115,22 @@ class RunFarm(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_smallest_sim_host_handle(self, num_sims: int) -> str:
-        """Return the smallest run host type that supports greater than or
-        equal to num_sims simulations AND has available run hosts of that type
-        (according to run host counts you've specified in config_run_farm.ini).
+        """Return the smallest run host handle (unique string to identify a run host type) that
+        supports greater than or equal to num_sims simulations AND has available run hosts
+        of that type (according to run host counts you've specified in config_run_farm.ini).
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def allocate_sim_host(self, sim_host_handle: str) -> Inst:
-        """Let user allocate and use an run host (assign sims, etc.).
-        This deliberately exposes sim_host_handles to users, so that if
-        they know exactly how to map to a particular platform, they always
-        have an escape hatch."""
+        """Let user allocate and use an run host (assign sims, etc.) given it's handle."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def get_default_switch_host_handle(self) -> str:
-        """Get the default host instance type name that can host switch
-        simulations. """
+        """Get the default run host handle (unique string to identify a run host type) that can
+        host switch simulations.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -154,7 +152,7 @@ class RunFarm(metaclass=abc.ABCMeta):
         """Terminate run hosts for simulations.
 
         Args:
-            terminate_some_dict: Dict of run host names to amount of that type to terminate.
+            terminate_some_dict: Dict of run host handles to amount of that type to terminate.
             forceterminate: Don't prompt user to terminate.
         """
         raise NotImplementedError
@@ -170,8 +168,8 @@ class RunFarm(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def lookup_by_hostname(self, hostname: str) -> Inst:
-        """Return run farm host based on hostname."""
+    def lookup_by_host(self, host: str) -> Inst:
+        """Return run farm host based on host."""
         raise NotImplementedError
 
 def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
@@ -182,25 +180,14 @@ def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
     return sorted(out_list, key=lambda x: x[0])
 
 class AWSEC2F1(RunFarm):
-    """ This manages the set of AWS resources requested for the run farm. It
-    essentially decouples launching instances from assigning them to simulations.
-
-    This way, you can assign "instances" to simulations first, and then assign
-    the real instance ids to the instance objects managed here."""
+    """This manages the set of AWS resources requested for the run farm."""
     run_farm_tag: str
-    always_expand_runfarm: bool
+    always_expand_run_farm: bool
     launch_timeout: timedelta
     run_instance_market: str
     spot_interruption_behavior: str
     spot_max_price: str
     default_simulation_dir: str
-
-    SUPPORTED_SIM_HOST_HANDLES: Set[str] = {
-        'f1.16xlarge',
-        'f1.4xlarge',
-        'f1.2xlarge',
-        'm4.16xlarge',
-    }
 
     SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: Dict[str, int] = {
         'f1.16xlarge': 8,
@@ -219,8 +206,7 @@ class AWSEC2F1(RunFarm):
     def __init__(self, args: Dict[str, Any]) -> None:
         super().__init__(args)
 
-        for inst_type in self.SUPPORTED_SIM_HOST_HANDLES:
-            assert inst_type in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS.keys()
+        assert self.SIM_HOST_HANDLE_FOR_SWITCH_ONLY_SIM in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS, f"Default switch {self.SIM_HOST_HANDLE_FOR_SWITCH_ONLY_SIM} not present in {self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS}"
 
         # for later use during mapping
         self.SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS = invert_filter_sort(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS)
@@ -239,7 +225,7 @@ class AWSEC2F1(RunFarm):
             # if specified, further prefix runfarmtag
             self.run_farm_tag = aws_resource_names_dict['runfarmprefix'] + "-" + self.run_farm_tag
 
-        self.always_expand_runfarm = self.args['always_expand_runfarm']
+        self.always_expand_run_farm = self.args['always_expand_run_farm']
 
         if 'launch_instances_timeout_minutes' in self.args:
             self.launch_timeout = timedelta(minutes=int(self.args['launch_instances_timeout_minutes']))
@@ -265,26 +251,21 @@ class AWSEC2F1(RunFarm):
 
                 assert (len(items) == 1), f"dict type 'runhost' items map a single EC2 instance name to a number. Not {pprint.pformat(runhost)}"
 
-                inst_type, num_insts = next(iter(items))
+                inst_handle, num_insts = next(iter(items))
 
-                if inst_type in self.SUPPORTED_SIM_HOST_HANDLES:
-                    num_sim_slots = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[inst_type]
+                if inst_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+                    num_sim_slots = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[inst_handle]
                     insts: List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]] = []
                     for n in range(num_insts):
                         insts.append((Inst(num_sim_slots, EC2InstanceDeployManager, self.default_simulation_dir), None))
-                    self.run_farm_hosts_dict[inst_type] = insts
-                    self.mapper_consumed[inst_type] = 0
+                    self.run_farm_hosts_dict[inst_handle] = insts
+                    self.mapper_consumed[inst_handle] = 0
                 else:
-                    rootLogger.critical(f"WARNING: Skipping {inst_type} since it is not supported. Use {self.SUPPORTED_SIM_HOST_HANDLES}.")
+                    rootLogger.critical(f"WARNING: Skipping {inst_handle} since it is not supported. Use {self.SIM_HOST_HANDLE_FOR_SWITCH_ONLY_SIM}.")
             else:
-                raise Exception(f"Unknown runhost type of {runhost}")
+                raise Exception(f"Unknown runhost handle of {runhost}")
 
     def get_smallest_sim_host_handle(self, num_sims: int) -> str:
-        """ Return the smallest instance type that supports greater than or
-        equal to num_sims simulations AND has available instances of that type
-        (according to instance counts you've specified in config_runtime.ini).
-        """
-
         for max_simcount, sim_host_handle in self.SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             if max_simcount < num_sims:
                 # instance doesn't support enough sims
@@ -296,59 +277,53 @@ class AWSEC2F1(RunFarm):
                 continue
             return sim_host_handle
 
-        rootLogger.critical(f"ERROR: No instances are available to satisfy the request for an instance with support for {num_sims} simulation slots. Add more instances in your runfarm configuration (e.g., config_run_farm.ini).")
+        rootLogger.critical(f"ERROR: No instances are available to satisfy the request for an instance with support for {num_sims} simulation slots. Add more instances in your run farm configuration (e.g., config_run_farm.ini).")
         raise Exception
 
     def allocate_sim_host(self, sim_host_handle: str) -> Inst:
-        """ Let user allocate and use an instance (assign sims, etc.).
-        This deliberately exposes sim_host_handles to users, so that if
-        they know exactly how to map to a particular platform, they always
-        have an escape hatch. """
         inst_tup = self.run_farm_hosts_dict[sim_host_handle][self.mapper_consumed[sim_host_handle]]
         inst_ret = inst_tup[0]
         self.mapper_consumed[sim_host_handle] += 1
         return inst_ret
 
     def get_default_switch_host_handle(self) -> str:
-        """ Get the default host instance type name that can host switch
-        simulations. """
         return self.SIM_HOST_HANDLE_FOR_SWITCH_ONLY_SIM
 
     def bind_mock_instances_to_objects(self) -> None:
         """ Only used for testing. Bind mock Boto3 instances to objects. """
-        for inst_type, inst_list in self.run_farm_hosts_dict.items():
+        for inst_handle, inst_list in self.run_farm_hosts_dict.items():
             for idx, run_farm_host_tup in enumerate(inst_list):
                 boto_obj = MockBoto3Instance()
                 inst = run_farm_host_tup[0]
-                inst.set_hostname("centos@" + boto_obj.private_ip_address)
+                inst.set_host("centos@" + boto_obj.private_ip_address)
                 inst_list[idx] = (inst, boto_obj)
-            self.run_farm_hosts_dict[inst_type] = inst_list
+            self.run_farm_hosts_dict[inst_handle] = inst_list
 
     def bind_real_instances_to_objects(self) -> None:
         """ Attach running instances to the Run Farm. """
         # fetch instances based on tag,
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
-        available_instances_per_type = {}
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
-            available_instances_per_type[sim_host_handle] = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(self.run_farm_tag, sim_host_handle))
+        available_instances_per_handle = {}
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            available_instances_per_handle[sim_host_handle] = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(self.run_farm_tag, sim_host_handle))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
         # confirm that we have the correct number of instances
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
-            if not (len(available_instances_per_type[sim_host_handle]) >= len(self.run_farm_hosts_dict[sim_host_handle])):
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            if not (len(available_instances_per_handle[sim_host_handle]) >= len(self.run_farm_hosts_dict[sim_host_handle])):
                 rootLogger.warning(message.format(sim_host_handle))
 
         ipmessage = """Using {} instances with IPs:\n{}"""
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
-            rootLogger.debug(ipmessage.format(sim_host_handle, str(get_private_ips_for_instances(available_instances_per_type[sim_host_handle]))))
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            rootLogger.debug(ipmessage.format(sim_host_handle, str(get_private_ips_for_instances(available_instances_per_handle[sim_host_handle]))))
 
         # assign boto3 instance objects to our instance objects
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
-            for index, instance in enumerate(available_instances_per_type[sim_host_handle]):
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            for index, instance in enumerate(available_instances_per_handle[sim_host_handle]):
                 inst_tup = self.run_farm_hosts_dict[sim_host_handle][index]
                 inst = inst_tup[0]
-                inst.set_hostname("centos@" + instance.private_ip_address)
+                inst.set_host("centos@" + instance.private_ip_address)
                 new_tup = (inst, instance)
                 self.run_farm_hosts_dict[sim_host_handle][index] = new_tup
 
@@ -359,55 +334,53 @@ class AWSEC2F1(RunFarm):
             self.bind_real_instances_to_objects()
 
     def launch_run_farm(self) -> None:
-        """ Launch the run farm. """
-
         runfarmtag = self.run_farm_tag
         runinstancemarket = self.run_instance_market
         spotinterruptionbehavior = self.spot_interruption_behavior
         spotmaxprice = self.spot_max_price
         timeout = self.launch_timeout
-        always_expand = self.always_expand_runfarm
+        always_expand = self.always_expand_run_farm
 
         # actually launch the instances
         launched_instance_objs = {}
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
-            expected_number_of_instances_of_type = len(self.run_farm_hosts_dict[sim_host_handle])
-            launched_instance_objs[sim_host_handle] = launch_run_instances(sim_host_handle, expected_number_of_instances_of_type, runfarmtag,
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            expected_number_of_instances_of_handle = len(self.run_farm_hosts_dict[sim_host_handle])
+            launched_instance_objs[sim_host_handle] = launch_run_instances(sim_host_handle, expected_number_of_instances_of_handle, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
                                       spotmaxprice, timeout, always_expand)
 
         # wait for instances to get to running state, so that they have been
         # assigned IP addresses
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             wait_on_instance_launches(launched_instance_objs[sim_host_handle], sim_host_handle)
 
     def terminate_run_farm(self, terminate_some_dict: Dict[str, int], forceterminate: bool) -> None:
         runfarmtag = self.run_farm_tag
 
-        # make sure requested instance types are valid
-        terminate_some_requested_types_set = set(terminate_some_dict.keys())
-        allowed_types_set = set(self.SUPPORTED_SIM_HOST_HANDLES)
-        not_allowed_types = terminate_some_requested_types_set - allowed_types_set
-        if len(not_allowed_types) != 0:
+        # make sure requested instance handles are valid
+        terminate_some_requested_handles_set = set(terminate_some_dict.keys())
+        allowed_handles_set = set(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS)
+        not_allowed_handles = terminate_some_requested_handles_set - allowed_handles_set
+        if len(not_allowed_handles) != 0:
             # the terminatesome logic becomes messy if you have invalid instance
-            # types specified, so just exit and indicate error
-            rootLogger.critical("WARNING: You have requested --terminatesome for the following invalid instance types. Nothing has been terminated.\n" + str(not_allowed_types))
+            # handles specified, so just exit and indicate error
+            rootLogger.critical("WARNING: You have requested --terminatesome for the following invalid instance handles. Nothing has been terminated.\n" + str(not_allowed_handles))
             exit(1)
 
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
         all_instances = dict()
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             all_instances[sim_host_handle] = instances_sorted_by_avail_ip(
                 get_run_instances_by_tag_type(runfarmtag, sim_host_handle))
 
         all_instance_ids = dict()
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             all_instance_ids[sim_host_handle] = get_instance_ids_for_instances(all_instances[sim_host_handle])
 
         if len(terminate_some_dict) != 0:
             # In this mode, only terminate instances that are specifically supplied.
-            for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+            for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
                 if sim_host_handle in terminate_some_dict and terminate_some_dict[sim_host_handle] > 0:
                     termcount = terminate_some_dict[sim_host_handle]
                     # grab the last N instances to terminate
@@ -416,7 +389,7 @@ class AWSEC2F1(RunFarm):
                     all_instance_ids[sim_host_handle] = []
 
         rootLogger.critical("IMPORTANT!: This will terminate the following instances:")
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             rootLogger.critical(sim_host_handle)
             rootLogger.critical(all_instance_ids[sim_host_handle])
 
@@ -427,7 +400,7 @@ class AWSEC2F1(RunFarm):
             userconfirm = "yes"
 
         if userconfirm == "yes":
-            for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+            for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
                 if len(all_instance_ids[sim_host_handle]) != 0:
                     terminate_instances(all_instance_ids[sim_host_handle], False)
             rootLogger.critical("Instances terminated. Please confirm in your AWS Management Console.")
@@ -436,7 +409,7 @@ class AWSEC2F1(RunFarm):
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             inst_list = self.run_farm_hosts_dict[sim_host_handle]
             for inst, boto in inst_list:
                 all_insts.append(inst)
@@ -444,26 +417,23 @@ class AWSEC2F1(RunFarm):
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for sim_host_handle in self.SUPPORTED_SIM_HOST_HANDLES:
+        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             inst_list = self.run_farm_hosts_dict[sim_host_handle]
             for inst, boto in inst_list:
                 if boto is not None:
                     all_insts.append(inst)
         return all_insts
 
-    def lookup_by_hostname(self, hostname) -> Inst:
-        """ Get an instance object from its IP address. """
+    def lookup_by_host(self, host) -> Inst:
         for host_node in self.get_all_bound_host_nodes():
-            if host_node.get_hostname() == hostname:
+            if host_node.get_host() == host:
                 return host_node
-        assert False, f"Unable to find host node by {hostname} host name"
+        assert False, f"Unable to find host node by {host}"
 
 class ExternallyProvisioned(RunFarm):
-    """ This manages the set of AWS resources requested for the run farm. It
-    essentially decouples launching instances from assigning them to simulations.
-
-    This way, you can assign "instances" to simulations first, and then assign
-    the real instance ids to the instance objects managed here."""
+    """This manages the set of externally provisioned instances. This class doesn't manage
+    launch/terminating instances. It is assumed that the instances are "ready to use".
+    """
     run_farm_hosts_dict: Dict[str, Inst]
     mapper_consumed: Dict[str, bool]
     SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: List[Tuple[int, str]]
@@ -500,7 +470,7 @@ class ExternallyProvisioned(RunFarm):
                 simulation_dir = ip_args.get("override_simulation_dir", default_simulation_dir)
 
                 inst = Inst(num_fpgas, dispatch_dict[platform], simulation_dir)
-                inst.set_hostname(ip_addr)
+                inst.set_host(ip_addr)
                 assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
                 self.run_farm_hosts_dict[ip_addr] = inst
                 self.mapper_consumed[ip_addr] = False
@@ -510,25 +480,21 @@ class ExternallyProvisioned(RunFarm):
                 assert default_platform is not None and isinstance(default_platform, str)
                 assert default_simulation_dir is not None and isinstance(default_simulation_dir, str)
                 inst = Inst(default_num_fpgas, dispatch_dict[default_platform], default_simulation_dir)
-                inst.set_hostname(runhost)
+                inst.set_host(runhost)
                 assert not runhost in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {runhost}"
                 self.run_farm_hosts_dict[runhost] = inst
                 self.mapper_consumed[runhost] = False
             else:
-                raise Exception("Unknown runhost type")
+                raise Exception("Unknown runhost handle")
 
         # sort the instances
         host_sim_slot_dict = {}
-        for hostname, inst in self.run_farm_hosts_dict.items():
-            host_sim_slot_dict[hostname] = inst.MAX_SIM_SLOTS_ALLOWED
+        for host, inst in self.run_farm_hosts_dict.items():
+            host_sim_slot_dict[host] = inst.MAX_SIM_SLOTS_ALLOWED
 
         self.SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS = invert_filter_sort(host_sim_slot_dict)
 
     def get_smallest_sim_host_handle(self, num_sims: int) -> str:
-        """ Return the smallest instance type that supports greater than or
-        equal to num_sims simulations AND has available instances of that type
-        (according to instance counts you've specified in config_runtime.ini).
-        """
         # then iterate through them
         for max_simcount, sim_host_handle in self.SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
             if max_simcount < num_sims:
@@ -540,26 +506,20 @@ class ExternallyProvisioned(RunFarm):
                 continue
             return sim_host_handle
 
-        rootLogger.critical(f"ERROR: No run hosts are available to satisfy the request for an instance with support for {num_sims} simulation slots. Add more instances in your runfarm configuration (e.g., config_run_farm.ini).")
+        rootLogger.critical(f"ERROR: No run hosts are available to satisfy the request for an instance with support for {num_sims} simulation slots. Add more instances in your run farm configuration (e.g., config_run_farm.ini).")
         raise Exception
 
     def allocate_sim_host(self, sim_host_handle: str) -> Inst:
-        """ Let user allocate and use an instance (assign sims, etc.).
-        This deliberately exposes sim_host_handles to users, so that if
-        they know exactly how to map to a particular platform, they always
-        have an escape hatch. """
         inst_ret = self.run_farm_hosts_dict[sim_host_handle]
         assert self.mapper_consumed[sim_host_handle] == False, "{sim_host_handle} is already allocated."
         self.mapper_consumed[sim_host_handle] = True
         return inst_ret
 
     def get_default_switch_host_handle(self) -> str:
-        """ Get the default host instance type name that can host switch
-        simulations. """
         # get the first inst that doesn't have fpga slots
-        for hostname, inst in self.run_farm_hosts_dict.items():
+        for host, inst in self.run_farm_hosts_dict.items():
             if len(inst.sim_slots) == 0:
-                return hostname
+                return host
 
         assert False, "Unable to return run host to host switches. Make sure at least one run host is available with no FPGAs in use."
 
@@ -567,9 +527,11 @@ class ExternallyProvisioned(RunFarm):
         return
 
     def launch_run_farm(self) -> None:
+        rootLogger.info(f"WARNING: Skipping launchrunfarm since run hosts are externally provisioned.")
         return
 
     def terminate_run_farm(self, terminate_some_dict: Dict[str, int], forceterminate: bool) -> None:
+        rootLogger.info(f"WARNING: Skipping terminaterunfarm since run hosts are externally provisioned.")
         return
 
     def get_all_host_nodes(self) -> List[Inst]:
@@ -581,9 +543,8 @@ class ExternallyProvisioned(RunFarm):
     def get_all_bound_host_nodes(self) -> List[Inst]:
         return self.get_all_host_nodes()
 
-    def lookup_by_hostname(self, hostname: str) -> Inst:
-        """ Get an instance object from its IP address. """
+    def lookup_by_host(self, host: str) -> Inst:
         for host_node in self.get_all_bound_host_nodes():
-            if host_node.get_hostname() == hostname:
+            if host_node.get_host() == host:
                 return host_node
-        assert False, f"Unable to find host node by {hostname} host name"
+        assert False, f"Unable to find host node by {host} host name"
