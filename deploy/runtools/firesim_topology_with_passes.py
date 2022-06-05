@@ -538,6 +538,10 @@ class FireSimTopologyWithPasses:
             runningsims = len([x for x in simstates if x['running']])
             runninginsts = len([x for x in instancestate_map.items() if not x[1]])
 
+            longestinst = max([len(e) for e in instancestate_map.keys()])
+            longestswitch = max([len(e['hostip']) for e in switchstates])
+            longestsim = max([len(e['hostip']) for e in simstates])
+
             # clear the screen
             rootLogger.info('\033[2J')
             rootLogger.info("""FireSim Simulation Status @ {}""".format(str(datetime.datetime.utcnow())))
@@ -550,17 +554,17 @@ class FireSimTopologyWithPasses:
             rootLogger.info("Instances")
             rootLogger.info("-"*80)
             for instance in instancestate_map.keys():
-                rootLogger.info("""Hostname/IP:{:>15} | Terminated: {}""".format(instance, truefalsecolor[instancestate_map[instance]]))
+                rootLogger.info("""Hostname/IP:{:>{}} | Terminated: {}""".format(instance, longestinst, truefalsecolor[instancestate_map[instance]]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Switches")
             rootLogger.info("-"*80)
             for switchinfo in switchstates:
-                rootLogger.info("""Hostname/IP:{:>15} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
+                rootLogger.info("""Hostname/IP:{:>{}} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], longestswitch, switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Nodes/Jobs")
             rootLogger.info("-"*80)
             for siminfo in simstates:
-                rootLogger.info("""Hostname/IP:{:>15} | Job: {} | Sim running: {}""".format(siminfo['hostip'], siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
+                rootLogger.info("""Hostname/IP:{:>{}} | Job: {} | Sim running: {}""".format(siminfo['hostip'], longestsim, siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Summary")
             rootLogger.info("-"*80)
