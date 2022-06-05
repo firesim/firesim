@@ -1,0 +1,34 @@
+# Build-time build farm design configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+###########
+# Schema:
+###########
+#   # Class name of the build farm type.
+#   # This can be determined from `deploy/buildtools/buildfarm.py`).
+#   build_farm_type: <TYPE NAME>
+#   args:
+#       # Build farm arguments that are passed to the `BuildFarmHostDispatcher`
+#       # object. Determined by looking at `parse_args` function of class.
+#       <K/V pairs of args>
+
+# Unmanaged list of build hosts. Assumed that they are pre-setup to run builds.
+build_farm_type: ExternallyProvisioned
+args:
+    # REQUIRED: default location of build directory on build host
+    default_build_dir: /home/centos/firesim-build
+    # REQUIRED: List of IP addresses (or "localhost"). Each can have an OPTIONAL
+    # argument, called "override_build_dir", specifying to override the default
+    # build directory.
+    #
+    # Ex:
+    # build_farm_hosts:
+    #     # use localhost and don't override the default build dir
+    #     - localhost
+    #     # use other IP address (don't override default build dir)
+    #     - "111.111.1.111"
+    #     # use other IP address (override default build dir for this build host)
+    #     - "222.222.2.222":
+    #         override_build_dir: /scratch/specific-build-host-build-dir
+    build_farm_hosts:
+        - localhost

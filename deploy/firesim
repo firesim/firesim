@@ -113,7 +113,7 @@ def managerinit(args: argparse.Namespace):
         sys.exit(1)
 
     rootLogger.info("Backing up initial config files, if they exist.")
-    config_files = ["build", "build_recipes", "build_farm", "hwdb", "runtime"]
+    config_files = ["build", "build_recipes", "hwdb", "runtime"]
     for conf_file in config_files:
         with warn_only(), hide('everything'):
             m = local("""cp config_{}.yaml sample-backup-configs/backup_config_{}.yaml""".format(conf_file, conf_file), capture=True)
@@ -132,15 +132,23 @@ def managerinit(args: argparse.Namespace):
                 rootLogger.debug(m)
                 rootLogger.debug(m.stderr)
 
-    rootLogger.info("Adding default overrides to default runtime.yaml file")
+    rootLogger.info("Adding default overrides to config files")
     if args.platform == 'f1':
+        keyword = "managerinit arg start"
 
         runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
         start_lines = [f"base_recipe: {runfarm_default_file}\n"]
         start_lines += ["recipe_arg_overrides:\n"]
-        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[5:]
+
+        arg_idx = None
+        for i, l in enumerate(rf_recipe_lines):
+            if keyword in l:
+                arg_idx = i + 1
+        assert arg_idx is not None
+
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[arg_idx:]
 
         file_line_swap(
             "config_runtime.yaml",
@@ -148,8 +156,29 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             rf_recipe_lines)
+
+        buildfarm_default_file = "build-farm-recipes/aws_ec2.yaml"
+        with open(buildfarm_default_file, "r") as f:
+            bf_recipe_lines = f.readlines()
+        start_lines = [f"base_recipe: {buildfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+
+        arg_idx = None
+        for i, l in enumerate(bf_recipe_lines):
+            if keyword in l:
+                arg_idx = i + 1
+        assert arg_idx is not None
+
+        bf_recipe_lines = ["  " + l for l in start_lines] + bf_recipe_lines[arg_idx:]
+
+        file_line_swap(
+            "config_build.yaml",
+            "config_build.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            bf_recipe_lines)
     else:
-        rootLogger.info(f"Unknown platform {args.platform} for runtime.yaml setup. Skipping default overrides.")
+        rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 
     if args.platform == 'f1':
         awsinit()
@@ -310,9 +339,6 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
     parser.add_argument('-r', '--buildrecipesconfigfile', type=str,
                         help='Optional custom build recipe config file. Defaults to config_build_recipes.yaml.',
                         default='config_build_recipes.yaml')
-    parser.add_argument('-s', '--buildfarmconfigfile', type=str,
-                        help='Optional custom build farm config file. Defaults to config_build_farm.yaml.',
-                        default='config_build_farm.yaml')
     parser.add_argument('-a', '--hwdbconfigfile', type=str,
                         help='Optional custom HW database config file. Defaults to config_hwdb.yaml.',
                         default='config_hwdb.yaml')

@@ -11,7 +11,6 @@ import yaml
 import os
 import sys
 from fabric.api import prefix, settings, local # type: ignore
-from copy import deepcopy
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -21,6 +20,7 @@ from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
+from util.deepmerge import deep_merge
 
 from typing import Optional, Dict, Any, List, Sequence, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -295,17 +295,6 @@ class InnerRuntimeConfiguration:
         run_farm_args = run_farm_configfile["args"]
 
         # add the overrides if it exists
-
-        # taken from https://gist.github.com/angstwad/bf22d1822c38a92ec0a9
-        def deep_merge(a: dict, b: dict) -> dict:
-            result = deepcopy(a)
-            for bk, bv in b.items():
-                av = result.get(bk)
-                if isinstance(av, dict) and isinstance(bv, dict):
-                    result[bk] = deep_merge(av, bv)
-                else:
-                    result[bk] = deepcopy(bv)
-            return result
 
         override_args = runtime_dict['run_farm'].get('recipe_arg_overrides')
         if override_args:

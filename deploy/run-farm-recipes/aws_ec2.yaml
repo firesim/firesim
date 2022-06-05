@@ -3,6 +3,7 @@
 
 run_farm_type: AWSEC2F1
 args:
+    # managerinit arg start
     # tag to apply to run farm hosts
     run_farm_tag: mainrunfarm
     # TODO

@@ -1,0 +1,30 @@
+# Build-time build farm design configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+###########
+# Schema:
+###########
+#   # Class name of the build farm type.
+#   # This can be determined from `deploy/buildtools/buildfarm.py`).
+#   build_farm_type: <TYPE NAME>
+#   args:
+#       # Build farm arguments that are passed to the `BuildFarmHostDispatcher`
+#       # object. Determined by looking at `parse_args` function of class.
+#       <K/V pairs of args>
+
+# Note: For large designs (ones that would fill a EC2.2xlarge/Xilinx VU9P)
+# Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
+# non-default instance type.
+build_farm_type: AWSEC2
+args:
+    # managerinit arg start
+    # REQUIRED: instance type to use per build
+    instance_type: z1d.2xlarge
+    # REQUIRED: instance market to use per build
+    build_instance_market: ondemand
+    # REQUIRED: if using spot instances, determine the interrupt behavior
+    spot_interruption_behavior: terminate
+    # REQUIRED: if using spot instances, determine the max price
+    spot_max_price: ondemand
+    # REQUIRED: default location of build directory on build host
+    default_build_dir: /home/centos/firesim-build
