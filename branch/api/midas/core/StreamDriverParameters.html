@@ -316,7 +316,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamDriverParameters</span><span class="params">(<span name="channelName">channelName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferBaseAddress">bufferBaseAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="mmioRegisters">mmioRegisters: (<span class="extype" name="scala.Predef.String">String</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>)*</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">StreamDriverParameters</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferBaseAddress">bufferBaseAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="countMMIOAddress">countMMIOAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="bufferCapacity">bufferCapacity: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
@@ -374,9 +374,9 @@ currently somewhat redundant with the default header emission for widgets.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.core.StreamDriverParameters#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(channelName:String,bufferBaseAddress:Int,mmioRegisters:(String,Int)*):midas.core.StreamDriverParameters"></a><a id="&lt;init&gt;:StreamDriverParameters"></a>
+      <a id="&lt;init&gt;(name:String,bufferBaseAddress:Int,countMMIOAddress:Int,bufferCapacity:Int):midas.core.StreamDriverParameters"></a><a id="&lt;init&gt;:StreamDriverParameters"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#&lt;init&gt;(channelName:String,bufferBaseAddress:Int,mmioRegisters:(String,Int)*):midas.core.StreamDriverParameters" title="Permalink">
+      <a href="../../midas/core/StreamDriverParameters.html#&lt;init&gt;(name:String,bufferBaseAddress:Int,countMMIOAddress:Int,bufferCapacity:Int):midas.core.StreamDriverParameters" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -385,7 +385,7 @@ currently somewhat redundant with the default header emission for widgets.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamDriverParameters</span><span class="params">(<span name="channelName">channelName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferBaseAddress">bufferBaseAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="mmioRegisters">mmioRegisters: (<span class="extype" name="scala.Predef.String">String</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>)*</span>)</span>
+        <span class="name">StreamDriverParameters</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferBaseAddress">bufferBaseAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="countMMIOAddress">countMMIOAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="bufferCapacity">bufferCapacity: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
       </span>
       
       
@@ -479,10 +479,10 @@ currently somewhat redundant with the default header emission for widgets.
       </span>
       
       
-    </li><li name="midas.core.StreamDriverParameters#channelName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="channelName:String"></a>
+    </li><li name="midas.core.StreamDriverParameters#bufferCapacity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bufferCapacity:Int"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#channelName:String" title="Permalink">
+      <a href="../../midas/core/StreamDriverParameters.html#bufferCapacity:Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -491,7 +491,7 @@ currently somewhat redundant with the default header emission for widgets.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">channelName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">bufferCapacity</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
       </span>
       
       
@@ -521,6 +521,22 @@ currently somewhat redundant with the default header emission for widgets.
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.core.StreamDriverParameters#countMMIOAddress" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="countMMIOAddress:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/StreamDriverParameters.html#countMMIOAddress:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">countMMIOAddress</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -558,22 +574,6 @@ currently somewhat redundant with the default header emission for widgets.
                 <span class="name">@HotSpotIntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.core.StreamDriverParameters#headerFragment" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="headerFragment(mmioBaseAddress:BigInt):String"></a><a id="headerFragment(BigInt):String"></a>
-      <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#headerFragment(mmioBaseAddress:BigInt):String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">headerFragment</span><span class="params">(<span name="mmioBaseAddress">mmioBaseAddress: <span class="extype" name="scala.BigInt">BigInt</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      
-      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
@@ -590,10 +590,10 @@ currently somewhat redundant with the default header emission for widgets.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.core.StreamDriverParameters#mmioRegisters" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mmioRegisters:(String,Int)*"></a>
+    </li><li name="midas.core.StreamDriverParameters#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="name:String"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#mmioRegisters:(String,Int)*" title="Permalink">
+      <a href="../../midas/core/StreamDriverParameters.html#name:String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -602,7 +602,7 @@ currently somewhat redundant with the default header emission for widgets.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">mmioRegisters</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>)*</span>
+        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       
       
