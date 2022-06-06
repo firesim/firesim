@@ -12,6 +12,8 @@
 #endif
 #include <signal.h>
 
+#include "bridges/cpu_managed_stream.h"
+
 uint64_t main_time = 0;
 std::unique_ptr<mmio_t> master;
 std::unique_ptr<mmio_t> dma;
@@ -46,6 +48,43 @@ void finish() {
 
 void handle_sigterm(int sig) {
   finish();
+}
+
+simif_emul_t::simif_emul_t() {
+
+  using namespace std::placeholders;
+  auto mmio_read_func  = std::bind(&simif_emul_t::read, this, _1);
+  auto pcis_read_func  = std::bind(&simif_emul_t::pcis_read, this, _1, _2, _3);
+  auto pcis_write_func = std::bind(&simif_emul_t::pcis_write, this, _1, _2, _3);
+
+  for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
+    auto params = CPUManagedStreamParameters(
+      std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
+      CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]
+      );
+
+    from_host_streams.push_back(StreamFromCPU(
+      params,
+      mmio_read_func,
+      pcis_write_func
+    ));
+  }
+
+  for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
+    auto params = CPUManagedStreamParameters(
+      std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
+      CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
+
+    to_host_streams.push_back(StreamToCPU(
+      params,
+      mmio_read_func,
+      pcis_read_func
+    ));
+  }
 }
 
 simif_emul_t::~simif_emul_t() { }
@@ -152,7 +191,17 @@ uint32_t simif_emul_t::read(size_t addr) {
 
 #define MAX_LEN 255
 
-ssize_t simif_emul_t::pull(size_t addr, char* data, size_t size) {
+size_t simif_emul_t::pull(unsigned stream_idx, void* dest, size_t num_bytes, size_t threshold_bytes) {
+  assert(stream_idx < to_host_streams.size());
+  return this->to_host_streams[stream_idx].pull(dest, num_bytes, threshold_bytes);
+}
+
+size_t simif_emul_t::push(unsigned stream_idx, void* src, size_t num_bytes, size_t threshold_bytes) {
+  assert(stream_idx < from_host_streams.size());
+  return this->from_host_streams[stream_idx].push(src, num_bytes, threshold_bytes);
+}
+
+size_t simif_emul_t::pcis_read(size_t addr, char* data, size_t size) {
   ssize_t len = (size - 1) / DMA_BEAT_BYTES;
 
   while (len >= 0) {
@@ -168,7 +217,7 @@ ssize_t simif_emul_t::pull(size_t addr, char* data, size_t size) {
   return size;
 }
 
-ssize_t simif_emul_t::push(size_t addr, char *data, size_t size) {
+size_t simif_emul_t::pcis_write(size_t addr, char *data, size_t size) {
   ssize_t len = (size - 1) / DMA_BEAT_BYTES;
   size_t remaining = size - len * DMA_BEAT_BYTES;
   size_t strb[len + 1];

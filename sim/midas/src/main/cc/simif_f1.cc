@@ -27,6 +27,51 @@ simif_f1_t::simif_f1_t(int argc, char** argv) {
     }
     fpga_setup(slot_id);
 #endif
+
+
+  using namespace std::placeholders;
+  auto mmio_read_func  = std::bind(&simif_f1_t::read, this, _1);
+  auto pcis_read_func  = std::bind(&simif_f1_t::pcis_read, this, _1, _2, _3);
+  auto pcis_write_func = std::bind(&simif_f1_t::pcis_write, this, _1, _2, _3);
+
+  for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
+    auto params = CPUManagedStreamParameters(
+      std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
+      CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]
+      );
+
+    from_host_streams.push_back(StreamFromCPU(
+      params,
+      mmio_read_func,
+      pcis_write_func
+    ));
+  }
+
+  for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
+    auto params = CPUManagedStreamParameters(
+      std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
+      CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
+      CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
+
+    to_host_streams.push_back(StreamToCPU(
+      params,
+      mmio_read_func,
+      pcis_read_func
+    ));
+  }
+}
+
+size_t simif_f1_t::pull(unsigned stream_idx, void* dest, size_t num_bytes, size_t threshold_bytes) {
+  assert(stream_idx < to_host_streams.size());
+  return this->to_host_streams[stream_idx].pull(dest, num_bytes, threshold_bytes);
+}
+
+size_t simif_f1_t::push(unsigned stream_idx, void* src, size_t num_bytes, size_t threshold_bytes) {
+  assert(stream_idx < from_host_streams.size());
+  return this->from_host_streams[stream_idx].push(src, num_bytes, threshold_bytes);
 }
 
 void simif_f1_t::check_rc(int rc, char * infostr) {
@@ -177,17 +222,17 @@ uint32_t simif_f1_t::read(size_t addr) {
 #endif
 }
 
-ssize_t simif_f1_t::pull(size_t addr, char* data, size_t size) {
+size_t simif_f1_t::pcis_read(size_t addr, char* data, size_t size) {
 #ifdef SIMULATION_XSIM
-  return -1; // TODO
+  assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else
   return ::pread(edma_read_fd, data, size, addr);
 #endif
 }
 
-ssize_t simif_f1_t::push(size_t addr, char* data, size_t size) {
+size_t simif_f1_t::pcis_write(size_t addr, char* data, size_t size) {
 #ifdef SIMULATION_XSIM
-  return -1; // TODO
+  assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else
   return ::pwrite(edma_write_fd, data, size, addr);
 #endif

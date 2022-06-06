@@ -10,15 +10,28 @@
 #define MAX_BANDWIDTH 200
 
 #ifdef SIMPLENICBRIDGEMODULE_struct_guard
+
+#define INSTANTIATE_SIMPLENIC(FUNC,IDX) \
+    SIMPLENICBRIDGEMODULE_ ## IDX ## _substruct_create; \
+    FUNC(new simplenic_t( \
+        this, \
+        args, \
+        SIMPLENICBRIDGEMODULE_ ## IDX ## _substruct, \
+        IDX, \
+        SIMPLENICBRIDGEMODULE_ ## IDX ## _to_cpu_stream_idx, \
+        SIMPLENICBRIDGEMODULE_ ## IDX ## _to_cpu_stream_depth, \
+        SIMPLENICBRIDGEMODULE_ ## IDX ## _from_cpu_stream_idx, \
+        SIMPLENICBRIDGEMODULE_ ## IDX ## _from_cpu_stream_depth)); \
+
 class simplenic_t: public bridge_driver_t
 {
     public:
         simplenic_t(simif_t* sim, std::vector<std::string> &args,
             SIMPLENICBRIDGEMODULE_struct *addrs, int simplenicno,
-            const unsigned int stream_to_cpu_count_address,
-            long               stream_to_cpu_dma_address,
-            const unsigned int stream_from_cpu_count_address,
-            long               stream_from_cpu_dma_address);
+            const int stream_to_cpu_idx,
+            const int stream_to_cpu_depth,
+            const int stream_from_cpu_idx,
+            const int stream_from_cpu_depth);
         ~simplenic_t();
 
         virtual void init();
@@ -55,10 +68,10 @@ class simplenic_t: public bridge_driver_t
         // only for TOKENVERIFY
         uint64_t timeelapsed_cycles = 0;
 
-        const unsigned int stream_to_cpu_count_address;
-        long               stream_to_cpu_dma_address;
-        const unsigned int stream_from_cpu_count_address;
-        long               stream_from_cpu_dma_address;
+        const int stream_to_cpu_idx;
+        const int stream_to_cpu_depth;
+        const int stream_from_cpu_idx;
+        const int stream_from_cpu_depth;
 };
 #endif // SIMPLENICBRIDGEMODULE_struct_guard
 

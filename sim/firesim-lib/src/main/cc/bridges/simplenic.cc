@@ -3,6 +3,7 @@
 
 #include "simplenic.h"
 
+#include <iostream>
 #include <stdio.h>
 #include <string.h>
 
@@ -46,15 +47,15 @@ static void simplify_frac(int n, int d, int *nn, int *dd)
 
 simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
         SIMPLENICBRIDGEMODULE_struct *mmio_addrs, int simplenicno,
-        const unsigned int stream_to_cpu_count_address,
-        long               stream_to_cpu_dma_address,
-        const unsigned int stream_from_cpu_count_address,
-        long               stream_from_cpu_dma_address):
+        const int stream_to_cpu_idx,
+        const int stream_to_cpu_depth,
+        const int stream_from_cpu_idx,
+        const int stream_from_cpu_depth):
     bridge_driver_t(sim),
-    stream_to_cpu_count_address(stream_to_cpu_count_address),
-    stream_to_cpu_dma_address(stream_to_cpu_dma_address),
-    stream_from_cpu_count_address(stream_from_cpu_count_address),
-    stream_from_cpu_dma_address(stream_from_cpu_dma_address)
+    stream_to_cpu_idx(stream_to_cpu_idx),
+    stream_to_cpu_depth(stream_to_cpu_depth),
+    stream_from_cpu_idx(stream_from_cpu_idx),
+    stream_from_cpu_depth(stream_from_cpu_depth)
 {
     this->mmio_addrs = mmio_addrs;
 
@@ -124,7 +125,24 @@ simplenic_t::simplenic_t(simif_t *sim, std::vector<std::string> &args,
         }
     }
 
+    if (stream_from_cpu_depth < SIMLATENCY_BT) {
+        // Workaround: pick a smaller latency, or up-size the queue.
+        std::cerr << "CPU-to-FPGA stream undersized for requested link latency."
+            << " Available: " << stream_from_cpu_depth
+            << " Required: "  << SIMLATENCY_BT << std::endl;
+        exit(1);
+    }
+
+    if (stream_to_cpu_depth < SIMLATENCY_BT) {
+        // Workaround: pick a smaller latency, or up-size the queue.
+        std::cerr << "FPGA-to-CPU stream undersized for requested link latency."
+            << " Available: " << stream_to_cpu_depth
+            << " Required: "  << SIMLATENCY_BT << std::endl;
+        exit(1);
+    }
+
     assert(this->LINKLATENCY > 0);
+    assert(this->LINKLATENCY % TOKENS_PER_BIGTOKEN == 0);
     assert(netbw <= MAX_BANDWIDTH);
     assert(netburst < 256);
     simplify_frac(netbw, MAX_BANDWIDTH, &rlimit_inc, &rlimit_period);
@@ -201,21 +219,32 @@ void simplenic_t::init() {
     write(mmio_addrs->pause_times,
             (pause_refresh << 16) | (pause_quanta & 0xffff));
 
-    uint32_t output_tokens_available = read(stream_to_cpu_count_address);
-    uint32_t input_token_capacity = SIMLATENCY_BT - read(stream_from_cpu_count_address);
-    if ((input_token_capacity != SIMLATENCY_BT) || (output_tokens_available != 0)) {
-        printf("FAIL. INCORRECT TOKENS ON BOOT. produced tokens available %d, input slots available %d\n", output_tokens_available, input_token_capacity);
+    // In lieu of reading "count", check that the stream is empty by doing a pull.
+    // To make this work under alveo we'd almost definitely need to call flush first.
+    auto bytes_received = this->pull(stream_to_cpu_idx, pcis_read_bufs[0], SIMLATENCY_BT * BUFWIDTH, 0);
+    if ((bytes_received != 0)) {
+        printf("FAIL. Exactly 1 tokens should be present in the cpu-bound stream on init");
         exit(1);
     }
 
-    printf("On init, %d token slots available on input.\n", input_token_capacity);
-    uint32_t token_bytes_produced = 0;
-    token_bytes_produced = push(
-            stream_from_cpu_dma_address,
+    // Enqueue SIMLATENCY_BT beats into the from-cpu stream. This permits the
+    // FPGA-hosted part of the simulator to execute SIMLATENCY cycles in the
+    // NIC-local clock domain before requiring additional interaction from the
+    // driver.
+    auto token_bytes_to_send = SIMLATENCY_BT * BUFWIDTH;
+    // Set the threshold here to 0 as a proxy for checking the stream capacity. 
+    // If we cannot enqueue the full payload, the stream is likely undersized
+    // for our desired latency or the FPGA has not been properly reset /
+    // reprogrammed.
+    auto token_bytes_produced = this->push(
+            stream_from_cpu_idx,
             pcis_write_bufs[1],
-            BUFWIDTH*input_token_capacity);
-    if (token_bytes_produced != input_token_capacity*BUFWIDTH) {
-        printf("ERR MISMATCH!\n");
+            token_bytes_to_send,
+            0);
+
+    if (token_bytes_produced != token_bytes_to_send) {
+        printf("FAIL. Could not enqueue big tokens to support the desired sim latency on init. Required %d, enqueued %d\n",
+            SIMLATENCY_BT, token_bytes_produced / BUFWIDTH);
         exit(1);
     }
     return;
@@ -229,34 +258,26 @@ void simplenic_t::tick() {
     //#define DEBUG_NIC_PRINT
 
     while (true) { // break when we don't have 5k tokens
-        uint32_t tokens_this_round = 0;
+        uint32_t tokens_this_round = SIMLATENCY_BT;
 
-        uint32_t output_tokens_available = read(stream_to_cpu_count_address);
-        uint32_t input_token_capacity = SIMLATENCY_BT - read(stream_from_cpu_count_address);
+        uint32_t token_bytes_obtained_from_fpga = 0;
+        auto requested_token_bytes = BUFWIDTH * tokens_this_round;
+        token_bytes_obtained_from_fpga = pull(
+                stream_to_cpu_idx,
+                pcis_read_bufs[currentround],
+                requested_token_bytes,
+                requested_token_bytes // Copy only if the stream can provide exactly as many bytes as we want
+                );
 
-        // we will read/write the min of tokens available / token input capacity
-        tokens_this_round = std::min(output_tokens_available, input_token_capacity);
-#ifdef DEBUG_NIC_PRINT
-        niclog_printf("tokens this round: %d\n", tokens_this_round);
-#endif
-
-        if (tokens_this_round != SIMLATENCY_BT) {
-#ifdef DEBUG_NIC_PRINT
-            niclog_printf("FAIL: output available %d, input capacity: %d\n", output_tokens_available, input_token_capacity);
-#endif
+        if (token_bytes_obtained_from_fpga == 0) {
             return;
         }
-
         // read into read_buffer
 #ifdef DEBUG_NIC_PRINT
         iter++;
         niclog_printf("read fpga iter %ld\n", iter);
 #endif
-        uint32_t token_bytes_obtained_from_fpga = 0;
-        token_bytes_obtained_from_fpga = pull(
-                stream_to_cpu_dma_address,
-                pcis_read_bufs[currentround],
-                BUFWIDTH * tokens_this_round);
+
 #ifdef DEBUG_NIC_PRINT
         niclog_printf("send iter %ld\n", iter);
 #endif
@@ -330,9 +351,11 @@ void simplenic_t::tick() {
 #endif
         uint32_t token_bytes_sent_to_fpga = 0;
         token_bytes_sent_to_fpga = push(
-                stream_from_cpu_dma_address,
+                stream_from_cpu_idx,
                 pcis_write_bufs[currentround],
-                BUFWIDTH * tokens_this_round);
+                BUFWIDTH * tokens_this_round,
+                BUFWIDTH * tokens_this_round
+                );
         pcis_write_bufs[currentround][BUFBYTES] = 0;
         if (token_bytes_sent_to_fpga != tokens_this_round * BUFWIDTH) {
             printf("ERR MISMATCH! on writing tokens in. actually wrote in %d bytes, wanted %d bytes.\n", token_bytes_sent_to_fpga, BUFWIDTH * tokens_this_round);
