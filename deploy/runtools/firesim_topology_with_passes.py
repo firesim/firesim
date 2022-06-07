@@ -538,9 +538,9 @@ class FireSimTopologyWithPasses:
             runningsims = len([x for x in simstates if x['running']])
             runninginsts = len([x for x in instancestate_map.items() if not x[1]])
 
-            longestinst = max([len(e) for e in instancestate_map.keys()])
-            longestswitch = max([len(e['hostip']) for e in switchstates])
-            longestsim = max([len(e['hostip']) for e in simstates])
+            longestinst = max([len(e) for e in instancestate_map.keys()], default=15)
+            longestswitch = max([len(e['hostip']) for e in switchstates], default=15)
+            longestsim = max([len(e['hostip']) for e in simstates], default=15)
 
             # clear the screen
             rootLogger.info('\033[2J')
