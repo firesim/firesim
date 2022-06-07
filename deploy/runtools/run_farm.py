@@ -108,6 +108,9 @@ class RunFarm(metaclass=abc.ABCMeta):
     """Abstract class to represent how to manage run farm hosts (similar to `BuildFarm`).
     In addition to having to implement how to spawn/terminate nodes, the child classes must
     implement helper functions to help topologies map run farm hosts (`Inst`s) to `FireSimNodes`.
+
+    Attributes:
+        args: Set of options from the 'args' section of the YAML associated with the run farm.
     """
 
     def __init__(self, args: Dict[str, Any]) -> None:
@@ -135,7 +138,7 @@ class RunFarm(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def post_launch_binding(self, mock: bool = False) -> None:
-        """Functionality to bind potentially launched objects to run hosts (mainly used in AWS case).
+        """Bind launched platform API objects to run hosts (only used in firesim-managed runfarms).
 
         Args:
             mock: In AWS case, for testing, assign mock boto objects.
@@ -180,7 +183,24 @@ def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
     return sorted(out_list, key=lambda x: x[0])
 
 class AWSEC2F1(RunFarm):
-    """This manages the set of AWS resources requested for the run farm."""
+    """This manages the set of AWS resources requested for the run farm.
+
+    Attributes:
+        run_farm_tag: tag given to instances launched in this run farm
+        always_expand_run_farm: enable expanding run farm on each "launchrunfarm" call
+        launch_timeout:
+        run_instance_market: host market to use
+        spot_interruption_behavior: if using spot instances, determine the interrupt behavior
+        spot_max_price: if using spot instances, determine the max price
+        default_simulation_dir: default location of the simulation dir on the run farm host
+        SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: dict of instance names to number of FPGAs available
+        SIM_HOST_HANDLE_FOR_SWITCH_ONLY_SIM: default instance name used for switche only simulations
+        SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: sorted 'SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS' by FPGAs available
+        run_farm_hosts_dict: list of instances requested (instance object and boto3 object)
+        mapper_consumed: dict of allocated instance names to number of allocations of that instance name.
+            this mapping API tracks instances allocated not sim slots (it is possible to allocate an instance
+            that has some sim slots unassigned)
+    """
     run_farm_tag: str
     always_expand_run_farm: bool
     launch_timeout: timedelta
@@ -295,7 +315,7 @@ class AWSEC2F1(RunFarm):
             for idx, run_farm_host_tup in enumerate(inst_list):
                 boto_obj = MockBoto3Instance()
                 inst = run_farm_host_tup[0]
-                inst.set_host("centos@" + boto_obj.private_ip_address)
+                inst.set_host(boto_obj.private_ip_address)
                 inst_list[idx] = (inst, boto_obj)
             self.run_farm_hosts_dict[inst_handle] = inst_list
 
@@ -323,7 +343,7 @@ class AWSEC2F1(RunFarm):
             for index, instance in enumerate(available_instances_per_handle[sim_host_handle]):
                 inst_tup = self.run_farm_hosts_dict[sim_host_handle][index]
                 inst = inst_tup[0]
-                inst.set_host("centos@" + instance.private_ip_address)
+                inst.set_host(instance.private_ip_address)
                 new_tup = (inst, instance)
                 self.run_farm_hosts_dict[sim_host_handle][index] = new_tup
 
@@ -433,6 +453,14 @@ class AWSEC2F1(RunFarm):
 class ExternallyProvisioned(RunFarm):
     """This manages the set of externally provisioned instances. This class doesn't manage
     launch/terminating instances. It is assumed that the instances are "ready to use".
+
+    Attributes:
+        run_farm_hosts_dict: list of instances requested (instance object only)
+        mapper_consumed: dict of instance names to bool indicating if it is allocated.
+            this mapping API tracks instances allocated not sim slots (it is possible to allocate an instance
+            that has some sim slots unassigned)
+        SORTED_SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: sorted dict of instance names to number of FPGAs
+            available (sorted by FPGAs available)
     """
     run_farm_hosts_dict: Dict[str, Inst]
     mapper_consumed: Dict[str, bool]
