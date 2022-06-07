@@ -25,6 +25,7 @@ from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
+from util.filelineswap import file_line_swap
 
 from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints
 
@@ -125,9 +126,30 @@ def managerinit(args: argparse.Namespace):
             m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
-            m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
-            rootLogger.debug(m)
-            rootLogger.debug(m.stderr)
+
+            if args.platform == 'f1':
+                m = local("""sed -i 's/AWSUSERNAME/{}/g' config_{}.yaml""".format(get_aws_userid(), conf_file), capture=True)
+                rootLogger.debug(m)
+                rootLogger.debug(m.stderr)
+
+    rootLogger.info("Adding default overrides to default runtime.yaml file")
+    if args.platform == 'f1':
+
+        runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
+        with open(runfarm_default_file, "r") as f:
+            rf_recipe_lines = f.readlines()
+        start_lines = [f"base_recipe: {runfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[5:]
+
+        file_line_swap(
+            "config_runtime.yaml",
+            "config_runtime.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            rf_recipe_lines)
+    else:
+        rootLogger.info(f"Unknown platform {args.platform} for runtime.yaml setup. Skipping default overrides.")
 
     if args.platform == 'f1':
         awsinit()
@@ -242,7 +264,7 @@ def launchrunfarm(runtime_conf: RuntimeConfig) -> None:
     a consistent "first" instance (useful for debugging)
     """
     # short versions of config file vars
-    runtime_conf.runfarm.launch_run_farm()
+    runtime_conf.run_farm.launch_run_farm()
 
 
 @register_task
@@ -298,17 +320,23 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='Override a single value from one of the the RUNTIME e.g.: --overrideconfigdata "target-config link-latency 6405".',
                         default="")
     parser.add_argument('-f', '--terminatesomef116', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.16xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.16xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.16xlarges.',
                         default=-1)
     parser.add_argument('-g', '--terminatesomef12', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.2xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.2xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.2xlarges.',
                         default=-1)
     parser.add_argument('-i', '--terminatesomef14', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched f1.4xlarges.',
+                        help='DEPRECATED. Use --terminatesome=f1.4xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched f1.4xlarges.',
                         default=-1)
     parser.add_argument('-m', '--terminatesomem416', type=int,
-                        help='Only used by terminatesome. Terminates this many of the previously launched m4.16xlarges.',
+                        help='DEPRECATED. Use --terminatesome=m4.16xlarge:count instead. Will be removed in the next major version of FireSim (1.15.X). Old help message: Only used by terminaterunfarm. Terminates this many of the previously launched m4.16xlarges.',
                         default=-1)
+    def terminatesomesplitter(raw_arg):
+        split_arg = raw_arg.split(":")
+        assert len(split_arg) == 2, "Invalid terminatesome argument"
+        return split_arg[0], int(split_arg[1])
+    parser.add_argument('--terminatesome', action='append', type=terminatesomesplitter,
+                        help='Only used by terminaterunfarm. Used to specify a restriction on how many instances to terminate. E.g., --terminatesome=f1.2xlarge:2 will terminate only 2 of the f1.2xlarge instances in the runfarm, regardless of what other instances are in the runfarm. This argument can be specified multiple times to terminate additional instance types/counts. Behavior when specifying the same instance type multiple times is undefined. This replaces the old --terminatesome{f116,f12,f14,m416} arguments. Behavior when specifying these old-style terminatesome flags and this new style flag at the same time is also undefined.')
     parser.add_argument('-q', '--forceterminate', action='store_true',
                         help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,

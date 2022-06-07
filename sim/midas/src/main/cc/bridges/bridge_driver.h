@@ -6,11 +6,14 @@
 #include "simif.h"
 
 // DOC include start: Bridge Driver Interface
-// Bridge Drivers are the CPU-hosted component of a Target-to-Host Bridge. A
-// Bridge Driver interacts with their accompanying FPGA-hosted BridgeModule
-// using MMIO (via read() and write() methods) or CPU-mastered DMA (via pull()
-// and push()).
-
+/**
+ * @brief Base class for Bridge Drivers
+ *
+ * Bridge Drivers are the CPU-hosted component of a Target-to-Host Bridge. A
+ * Bridge Driver interacts with their accompanying FPGA-hosted BridgeModule
+ * using MMIO (via read() and write() methods) or bridge streams (via pull()
+ * and push()).
+ */
 class bridge_driver_t
 {
 public:
@@ -35,22 +38,22 @@ public:
   // DOC include end: Bridge Driver Interface
 
 protected:
-  void write(size_t addr, data_t data) {
+  void write(size_t addr, uint32_t data) {
     sim->write(addr, data);
   }
 
-  data_t read(size_t addr) {
+  uint32_t read(size_t addr) {
     return sim->read(addr);
   }
 
-  ssize_t pull(size_t addr, char *data, size_t size) {
-    return sim->pull(addr, data, size);
+  size_t pull(unsigned stream_idx, void *data, size_t size, size_t minimum_batch_size) {
+    return sim->pull(stream_idx, data, size, minimum_batch_size);
   }
 
-  ssize_t push(size_t addr, char *data, size_t size) {
+  size_t push(unsigned stream_idx, void *data, size_t size, size_t minimum_batch_size) {
     if (size == 0)
       return 0;
-    return sim->push(addr, data, size);
+    return sim->push(stream_idx, data, size, minimum_batch_size);
   }
 
 private:

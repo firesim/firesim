@@ -223,7 +223,6 @@ fpga_driver_dir:= $(fpga_work_dir)/driver
 fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
 	.sv .defines.vh .env.tcl \
 	.synthesis.xdc .implementation.xdc)
-	#.ila_insert_inst.v .ila_insert_ports.v .ila_insert_wires.v .ila_insert_vivado.tcl)
 
 # Files used to run FPGA-level metasimulation
 fpga_sim_delivery_files = $(addprefix $(fpga_driver_dir)/$(BASE_FILE_NAME), .runtime.conf) \
@@ -238,7 +237,7 @@ $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 
 $(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
-	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D)
+	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
 $(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
@@ -322,6 +321,27 @@ scaladoc:
 	cd $(base_dir) && $(SBT) "project {file:$(firesim_base_dir)}firesim" "unidoc"
 
 .PHONY: scaladoc
+
+#########################
+# Scalafmt              #
+#########################
+# Checks that all scala main sources under firesim SBT subprojects are formatted.
+scalafmtCheckAll:
+	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
+		firesim / scalafmtCheckAll; \
+		firesimLib / scalafmtCheckAll; \
+		midas / scalafmtCheckAll ; \
+		targetutils / scalafmtCheckAll ;"
+
+# Runs the code reformatter in all firesim SBT subprojects
+scalafmtAll:
+	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
+		firesim / scalafmtAll; \
+		firesimLib / scalafmtAll; \
+		midas / scalafmtAll ; \
+		targetutils / scalafmtAll ;"
+
+.PHONY: scalafmtCheckAll scalafmtAll
 #########################
 # Cleaning Recipes      #
 #########################

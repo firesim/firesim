@@ -5,8 +5,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream>
 
 constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
+/**
+ * We currently support only a single FPGA DRAM channel. When the buffer is allocated
+ * in XRT, we'd generally have to write the offset back to the kernel using
+ * MMIO. For now we've hardcoded the offset for a U250 with no other
+ * concurrently running kernel.
+ */
+constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
 
 simif_vitis_t::simif_vitis_t(int argc, char** argv) {
     device_index = -1;
@@ -50,23 +58,17 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
     // https://xilinx.github.io/XRT/master/html/xclbintools.html
     auto fpga_mem_0 = xrt::bo(device_handle, u250_dram_channel_size_bytes, xrt::bo::flags::device_only, 0);
 
-    fprintf(stdout, "fpga_mem_0 offset: %llx\n", fpga_mem_0.address());
-
-    fprintf(stdout, "DEBUG: Successfully opened kernel\n");
-
-}
-
-simif_vitis_t::~simif_vitis_t() {
-    fprintf(stdout, "Graceful shutdown\n");
+    if (fpga_mem_0.address() != u250_dram_expected_offset) {
+        std::cerr << "Allocated device_only buffer address not match the expected offset." << std::endl;
+        std::cerr << "Expected: " << u250_dram_expected_offset << "Received: " << fpga_mem_0.address() << std::endl;
+        exit(1);
+    }
 }
 
 void simif_vitis_t::write(size_t addr, uint32_t data) {
     // addr is really a (32-byte) word address because of zynq implementation
     addr <<= CTRL_AXI4_SIZE;
     kernel_handle.write_register(addr, data);
-
-    //fprintf(stdout, "DEBUG: Write 0x%lx(%ld):%d\n", addr, addr/4, data);
-    //exit(1);
 }
 
 uint32_t simif_vitis_t::read(size_t addr) {
@@ -74,30 +76,22 @@ uint32_t simif_vitis_t::read(size_t addr) {
     addr <<= CTRL_AXI4_SIZE;
     uint32_t value;
     value = kernel_handle.read_register(addr);
-
-    //fprintf(stdout, "DEBUG: Read 0x%lx(%ld):%d\n", addr, addr/4, value);
-    //exit(1);
-
     return value & 0xFFFFFFFF;
 }
 
-// TODO: Not implemented
-ssize_t simif_vitis_t::pull(size_t addr, char* data, size_t size) {
-  return -1; //::pread(edma_read_fd, data, size, addr);
+size_t simif_vitis_t::pull(unsigned stream_idx, void* dest, size_t num_bytes, size_t threshold_bytes) {
+    std::cerr << "FPGA-to-CPU Bridge streams are not yet supported on vitis-based FPGA deployments." << std::endl;
+    exit(1);
 }
 
-// TODO: Not implemented
-ssize_t simif_vitis_t::push(size_t addr, char* data, size_t size) {
-  return -1; //::pwrite(edma_write_fd, data, size, addr);
+size_t simif_vitis_t::push(unsigned stream_idx, void* src, size_t num_bytes, size_t threshold_bytes) {
+    std::cerr << "CPU-to-FPGA Bridge streams are not yet supported on vitis-based FPGA deployments." << std::endl;
+    exit(1);
 }
 
 uint32_t simif_vitis_t::is_write_ready() {
     uint64_t addr = 0x4;
     uint32_t value;
     value = kernel_handle.read_register(addr);
-
-    fprintf(stdout, "DEBUG: Read-is_write_ready() 0x%lx(%ld):%d\n", addr, addr/4, value);
-    //exit(1);
-
     return value & 0xFFFFFFFF;
 }

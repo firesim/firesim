@@ -19,8 +19,22 @@ case object Platform extends Field[(Parameters) => PlatformShim]
 case object SynthAsserts extends Field[Boolean]
 case object SynthPrints extends Field[Boolean]
 
-// When False FpgaDebug() annotations are ignored
+/** When set, [[targetutils.FPGADebugAnnotation]]s (signals labelled with FPGADebug())
+  * are automatically wired out to an ILA.
+  */
 case object EnableAutoILA extends Field[Boolean](false)
+
+/** Sets a per-probe buffer depth on the ILA. A greater value permits capturing a longer
+  * waveform, at the expense of FPGA reasources. See PG172
+  * ([200~https://docs.xilinx.com/v/u/en-US/pg172-ila) for more info.
+  */
+case object ILADepthKey extends Field[Int](1024)
+
+/** Sets the number of comparators to be generated per ILA-probe.
+  * See PG172 ([200~https://docs.xilinx.com/v/u/en-US/pg172-ila) for more
+  * info.
+  */
+case object ILAProbeTriggersKey extends Field[Int](2)
 
 // Auto Counter Switches
 case object EnableAutoCounter extends Field[Boolean](false)

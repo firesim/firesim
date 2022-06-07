@@ -171,6 +171,8 @@ set -o pipefail
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set changeps1 false
         # don't automatically activate the 'base' environment when intializing shells
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_activate_base false
+	# don't automatically update conda to avoid https://github.com/conda-forge/conda-libmamba-solver-feedstock/issues/2
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_update_conda false
 
         # conda-build is a special case and must always be installed into the base environment
         $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-build

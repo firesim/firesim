@@ -15,9 +15,6 @@
 
 #include <sys/mman.h>
 
-// The maximum number of beats available in the FPGA-side FIFO
-#define QUEUE_DEPTH 6144
-
 // put FIREPERF in a mode that writes a simple log for processing later.
 // useful for iterating on software side only without re-running on FPGA.
 //#define FIREPERF_LOGGER
@@ -28,9 +25,8 @@ tracerv_t::tracerv_t(
     simif_t *sim,
     std::vector<std::string> &args,
     TRACERVBRIDGEMODULE_struct * mmio_addrs,
-    const unsigned int dma_address,
-    const unsigned int stream_count_address,
-    const unsigned int stream_full_address,
+    int stream_idx,
+    int stream_depth,
     const unsigned int max_core_ipc,
     const char* const  clock_domain_name,
     const unsigned int clock_multiplier,
@@ -38,9 +34,8 @@ tracerv_t::tracerv_t(
     int tracerno) :
         bridge_driver_t(sim),
         mmio_addrs(mmio_addrs),
-        dma_address(dma_address),
-        stream_count_address(stream_count_address),
-        stream_full_address(stream_full_address),
+        stream_idx(stream_idx),
+        stream_depth(stream_depth),
         max_core_ipc(max_core_ipc),
         clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
     //Biancolin: move into elaboration
@@ -204,16 +199,18 @@ void tracerv_t::init() {
     write(this->mmio_addrs->initDone, true);
 }
 
-void tracerv_t::process_tokens(int num_beats) {
+size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
+    size_t maximum_batch_bytes = num_beats * DMA_BEAT_BYTES;
+    size_t minimum_batch_bytes = minimum_batch_beats * DMA_BEAT_BYTES;
     // TODO. as opt can mmap file and just load directly into it.
-    alignas(4096) uint64_t OUTBUF[QUEUE_DEPTH * 8];
-    pull(dma_address, (char*)OUTBUF, num_beats * 64);
+    alignas(4096) uint64_t OUTBUF[this->stream_depth * DMA_BEAT_BYTES];
+    auto bytes_received = pull(this->stream_idx, (char*)OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
     //check that a tracefile exists (one is enough) since the manager
     //does not create a tracefile when trace_enable is disabled, but the
     //TracerV bridge still exists, and no tracefile is created by default.
     if (this->tracefile) {
         if (this->human_readable || this->test_output) {
-            for (int i = 0; i < num_beats * 8; i+=8) {
+            for (int i = 0; i < bytes_received; i+=8) {
                 if (this->test_output) {
                     fprintf(this->tracefile, "%016lx", OUTBUF[i+7]);
                     fprintf(this->tracefile, "%016lx", OUTBUF[i+6]);
@@ -236,7 +233,7 @@ void tracerv_t::process_tokens(int num_beats) {
             }
         } else if (this->fireperf) {
 
-            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+            for (int i = 0; i < bytes_received; i+=8) {
                 uint64_t cycle_internal = OUTBUF[i+0];
 
                 for (int q = 0; q < max_core_ipc; q++) {
@@ -251,7 +248,7 @@ void tracerv_t::process_tokens(int num_beats) {
                 }
             }
         } else {
-            for (int i = 0; i < QUEUE_DEPTH * 8; i+=8) {
+            for (int i = 0; i < bytes_received; i+=8) {
                 // this stores as raw binary. stored as little endian.
                 // e.g. to get the same thing as the human readable above,
                 // flip all the bytes in each 512-bit line.
@@ -265,28 +262,12 @@ void tracerv_t::process_tokens(int num_beats) {
 
 void tracerv_t::tick() {
   if (this->trace_enabled) {
-    uint64_t outfull = read(stream_full_address);
-    if (outfull) process_tokens(QUEUE_DEPTH);
+    process_tokens(this->stream_depth, this->stream_depth);
   }
 }
-
-int tracerv_t::beats_available_stable() {
-  size_t prev_beats_available = 0;
-  size_t beats_available = read(stream_count_address);
-  while (beats_available > prev_beats_available) {
-    prev_beats_available = beats_available;
-    beats_available = read(stream_count_address);
-  }
-  return beats_available;
-}
-
 
 // Pull in any remaining tokens and flush them to file
-// WARNING: may not function correctly if the simulator is actively running
 void tracerv_t::flush() {
-    if (this->trace_enabled) {
-        size_t beats_available = beats_available_stable();
-        process_tokens(beats_available);
-    }
+    while(this->trace_enabled && (process_tokens(this->stream_depth, 0) > 0));
 }
 #endif // TRACERVBRIDGEMODULE_struct_guard

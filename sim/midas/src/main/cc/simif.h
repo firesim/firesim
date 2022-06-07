@@ -21,6 +21,28 @@ double diff_secs(midas_time_t end, midas_time_t start);
 typedef std::map< std::string, size_t > idmap_t;
 typedef std::map< std::string, size_t >::const_iterator idmap_it_t;
 
+/** \class simif_t
+ *
+ *  @brief FireSim's main simulation class.
+ *
+ *  Historically this god class wrapped all of the features presented by FireSim
+ *  / MIDAS-derived simulators. Critically, it declares an interface for interacting with
+ *  the host-FPGA, which consist of methods for implementing 32b MMIO (read,
+ *  write), and latency-insensitive bridge streams (push, pull). Concrete
+ *  subclasses of simif_t must be written for metasimulation and each supported
+ *  host plaform. See simif_f1_t for an example.
+
+ *  simif_t also provides a few core functions that are tied to bridges and widgets that
+ *  must be present in all simulators:
+ *
+ *  - To track simulation time, it provides methods to interact with the
+ *    ClockBridge. This bridge is solely responsible for defining a schedule of
+ *    clock edges to simulate, and must be instantiated in all targets. See actual_tcycle() and hcycle().
+ *    Utilities to report performance are based off these measures of time.
+ *
+ *  - To read and write into FPGA DRAM, the LoadMem widget provides a
+ *    low-bandwidth side channel via MMIO. See read_mem, write_mem, zero_out_dram.
+ */
 class simif_t
 {
   public:
@@ -53,27 +75,69 @@ class simif_t
 
     // Host-platform interface. See simif_f1; simif_emul for implementation examples
 
-    // Performs platform-level initialization that for some reason or another
-    // cannot be done in the constructor. (For one, currently command line args
-    // are not passed to constructor).
+    /**
+     * Performs platform-level initialization that for some reason or another
+     * cannot be done in the constructor. (For one, currently command line args
+     * are not passed to constructor).
+     */
     virtual void host_init(int argc, char** argv) = 0;
-    // Does final platform-specific cleanup before destructors are called.
+
+    /**
+     *  Does final platform-specific cleanup before destructors are called.
+     */
     virtual int host_finish() = 0;
 
-    // Widget communication
-    // 32b MMIO, issued over the simulation control bus (AXI4-lite).
-    virtual void write(size_t addr, data_t data) = 0;
-    virtual data_t read(size_t addr) = 0;
+    /** Bridge / Widget MMIO methods */
 
-    // Bulk transfers / bridge streaming interfaces.
+    /**
+     * @brief 32b MMIO write, issued over the simulation control bus (AXI4-lite).
+     *
+     * @param addr The address to preform the 32b read in the MMIO address space..
+     */
+    virtual void write(size_t addr, uint32_t data) = 0;
 
-    // Moves <bytes>B of data from a bridge FIFO at address <addr> (on the
-    // FPGA) to a buffer specified by <data>. FIFO addresses are emitted in the
-    // simulation header, and are in a distinct address space from MMIO.
-    virtual ssize_t pull(size_t addr, char *data, size_t size) = 0;
-    // Moves <bytes>B of data from the buffer <data> to a bridge FIFO at
-    // address <addr> (on the FPGA.
-    virtual ssize_t push(size_t addr, char *data, size_t size) = 0;
+    /**
+     * @brief 32b MMIO read, issued over the simulation control bus (AXI4-lite).
+     *
+     * @param addr The address to preform the 32b read in the MMIO address space..
+     * @returns A uint32_t capturing the read value.
+     */
+    virtual uint32_t read(size_t addr) = 0;
+
+    /** Bridge Stream Methods */
+
+    /**
+     * @brief Dequeues num_bytes of data from an FPGA-to-CPU stream
+     *
+     * Attempts to copy @num_bytes of data from the head of a bridge stream
+     * specified by @stream_idx into a destination buffer (@dest) in the
+     * process’s memory space. Non-blocking.
+     *
+     * @param stream_idx Stream index. Assigned at Golden Gate compile time
+     * @param dest Destination buffer into which to copy stream data. (Virtual address.)
+     * @param num_bytes Number of bytes to copy.
+     * @param required_bytes If pull would return less than this many bytes, it returns 0 instead.
+     *
+     * @returns Number of bytes copied. Can be less than requested.
+     *
+     */
+    virtual size_t pull(unsigned int stream_idx, void* dest, size_t num_bytes, size_t required_bytes) = 0;
+
+    /**
+     * @brief Enqueues num_bytes of data into a CPU-to-FPGA stream
+     *
+     * Attempts to copy @num_bytes of data from a source buffer (@src) to the
+     * tail of the CPU-to-FPGA bridge stream specified by @stream_idx.
+     *
+     * @param stream_idx Stream index. Assigned at Golden Gate compile time
+     * @param src Source buffer from which to copy stream data.
+     * @param num_bytes Number of bytes to copy.
+     * @param required_bytes If push would accept less than this many bytes, it accepts 0 instead.
+     * 
+     * @returns Number of bytes copied. Can be less than requested.
+     *
+     */
+    virtual size_t push(unsigned int stream_idx, void* src, size_t num_bytes, size_t required_bytes) = 0;
 
     // End host-platform interface.
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+from pathlib import Path
 
 from fabric.api import *
 
@@ -11,9 +12,6 @@ def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
 
     with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
-        run("cd sw/firesim-software && ./marshal -v build br-base.json && ./marshal -v install br-base.json")
-        run("cd deploy/workloads/ && make linux-poweroff")
-
         def run_w_timeout(workload, timeout):
             """ Run workload with a specific timeout
 
@@ -21,8 +19,10 @@ def run_linux_poweroff():
             :arg: timeout (str) - timeout amount for the workload to run
             """
             log_tail_length = 100
-            # rename runfarm tag with a unique tag based on the ci workflow
-            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}"):
+            # unique tag based on the ci workflow and filename is needed to ensure
+            # run farm is unique to each linux-poweroff test
+            script_name = Path(__file__).stem
+            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-{script_name}"):
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)

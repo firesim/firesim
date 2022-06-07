@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pprint import pprint
 
 # Do NOT import any firesim code being tested that might open connections to AWS here.

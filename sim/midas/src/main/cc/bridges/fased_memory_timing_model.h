@@ -36,8 +36,8 @@
 constexpr int HISTOGRAM_SIZE = 1024;
 constexpr int BIN_SIZE = 36;
 constexpr int RANGE_COUNT_SIZE = 48;
-constexpr data_t BIN_H_MASK = (1L << (BIN_SIZE - 32)) - 1;
-constexpr data_t RANGE_H_MASK = (1L << (RANGE_COUNT_SIZE - 32)) - 1;
+constexpr uint32_t BIN_H_MASK = (1L << (BIN_SIZE - 32)) - 1;
+constexpr uint32_t RANGE_H_MASK = (1L << (RANGE_COUNT_SIZE - 32)) - 1;
 
 class AddrRangeCounter: public FpgaModel {
   public:

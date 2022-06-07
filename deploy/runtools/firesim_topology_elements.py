@@ -10,13 +10,15 @@ from fabric.api import run, local, warn_only, get # type: ignore
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
 from util.streamlogger import StreamLogger
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.workload import JobConfig
-    from runtools.run_farm import EC2Inst
+    from runtools.run_farm import Inst
     from runtools.runtime_config import RuntimeHWConfig
     from runtools.utils import MacAddress
+    from runtools.run_farm_deploy_managers import EC2InstanceDeployManager
 
 rootLogger = logging.getLogger()
 
@@ -79,10 +81,10 @@ class FireSimLink:
             self.port = self.get_uplink_side().get_host_instance().allocate_host_port()
         return self.port
 
-    def link_hostserver_ip(self) -> str:
-        """ Get the IP address used for this Link. This should only be called for
+    def link_hostserver_host(self) -> str:
+        """ Get the host used for this Link. This should only be called for
         links implemented with SocketPorts. """
-        return self.get_uplink_side().get_host_instance().get_private_ip()
+        return self.get_uplink_side().get_host_instance().get_host()
 
     def link_crosses_hosts(self) -> bool:
         """ Return True if the user has mapped the two endpoints of this link to
@@ -117,13 +119,11 @@ class FireSimNode(metaclass=abc.ABCMeta):
     downlinks: List[FireSimLink]
     downlinkmacs: List[MacAddress]
     uplinks: List[FireSimLink]
-    host_instance: Optional[EC2Inst]
+    host_instance: Optional[Inst]
 
     def __init__(self) -> None:
         self.downlinks = []
         self.downlinkmacs = []
-        # used when there are multiple links between switches to disambiguate
-        #self.downlinks_consumed = []
         self.uplinks = []
         self.host_instance = None
 
@@ -134,7 +134,6 @@ class FireSimNode(metaclass=abc.ABCMeta):
         linkobj = FireSimLink(self, firesimnode)
         firesimnode.add_uplink(linkobj)
         self.downlinks.append(linkobj)
-        #self.downlinks_consumed.append(False)
 
     def add_downlinks(self, firesimnodes: Sequence[FireSimNode]) -> None:
         """ Just a convenience function to add multiple downlinks at once.
@@ -157,10 +156,10 @@ class FireSimNode(metaclass=abc.ABCMeta):
     def has_assigned_host_instance(self) -> bool:
         return self.host_instance is not None
 
-    def assign_host_instance(self, host_instance_run_farm_object: EC2Inst) -> None:
+    def assign_host_instance(self, host_instance_run_farm_object: Inst) -> None:
         self.host_instance = host_instance_run_farm_object
 
-    def get_host_instance(self) -> EC2Inst:
+    def get_host_instance(self) -> Inst:
         assert self.host_instance is not None
         return self.host_instance
 
@@ -176,42 +175,32 @@ class FireSimServerNode(FireSimNode):
     server_link_latency: Optional[int]
     server_bw_max: Optional[int]
     server_profile_interval: Optional[int]
-    trace_enable: Optional[bool]
-    trace_select: Optional[str]
-    trace_start: Optional[str]
-    trace_end: Optional[str]
-    trace_output_format: Optional[str]
-    autocounter_readrate: Optional[int]
-    zerooutdram: Optional[bool]
-    disable_asserts: Optional[bool]
-    print_start: Optional[str]
-    print_end: Optional[str]
-    print_cycle_prefix: Optional[bool]
+    tracerv_config: Optional[TracerVConfig]
+    autocounter_config: Optional[AutoCounterConfig]
+    hostdebug_config: Optional[HostDebugConfig]
+    synthprint_config: Optional[SynthPrintConfig]
     job: Optional[JobConfig]
     server_id_internal: int
     mac_address: Optional[MacAddress]
 
-    def __init__(self, server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None, server_link_latency: Optional[int] = None,
-                 server_bw_max: Optional[int] = None, server_profile_interval: Optional[int] = None,
-                 trace_enable: Optional[bool] = None, trace_select: Optional[str] = None, trace_start: Optional[str] = None, trace_end: Optional[str] = None, trace_output_format: Optional[str] = None, autocounter_readrate: Optional[int] = None,
-                 zerooutdram: Optional[bool] = None, disable_asserts: Optional[bool] = None,
-                 print_start: Optional[str] = None, print_end: Optional[str] = None, print_cycle_prefix: Optional[bool] = None):
+    def __init__(self,
+            server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None,
+            server_link_latency: Optional[int] = None,
+            server_bw_max: Optional[int] = None,
+            server_profile_interval: Optional[int] = None,
+            tracerv_config: Optional[TracerVConfig] = None,
+            autocounter_config: Optional[AutoCounterConfig] = None,
+            hostdebug_config: Optional[HostDebugConfig] = None,
+            synthprint_config: Optional[SynthPrintConfig] = None):
         super().__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
         self.server_bw_max = server_bw_max
         self.server_profile_interval = server_profile_interval
-        self.trace_enable = trace_enable
-        self.trace_select = trace_select
-        self.trace_start = trace_start
-        self.trace_end = trace_end
-        self.trace_output_format = trace_output_format
-        self.autocounter_readrate = autocounter_readrate
-        self.zerooutdram = zerooutdram
-        self.disable_asserts = disable_asserts
-        self.print_start = print_start
-        self.print_end = print_end
-        self.print_cycle_prefix = print_cycle_prefix
+        self.tracerv_config = tracerv_config
+        self.autocounter_config = autocounter_config
+        self.hostdebug_config = hostdebug_config
+        self.synthprint_config = synthprint_config
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         self.mac_address = None
@@ -247,7 +236,9 @@ class FireSimServerNode(FireSimNode):
         result_list = []
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
-                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
+                host_inst = self.get_host_instance()
+                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
                 # connect the /dev/nbdX device to the rootfs
                 run("""sudo qemu-nbd -c {devname} {rootfs}""".format(devname=allocd_device, rootfs=rootfsname))
@@ -256,13 +247,13 @@ class FireSimServerNode(FireSimNode):
         return result_list
 
     def allocate_nbds(self) -> None:
-        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
-        """
+        """ called by the allocate nbds pass to assign an nbd to a qcow2 image. """
         rootfses_list = [self.get_rootfs_name()]
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
-                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
-
+                host_inst = self.get_host_instance()
+                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
     def diagramstr(self) -> str:
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
@@ -280,6 +271,14 @@ class FireSimServerNode(FireSimNode):
         if self.uplinks:
             shmemportname = self.uplinks[0].get_global_link_id()
 
+        assert self.server_link_latency is not None
+        assert self.server_bw_max is not None
+        assert self.server_profile_interval is not None
+        assert self.tracerv_config is not None
+        assert self.autocounter_config is not None
+        assert self.hostdebug_config is not None
+        assert self.synthprint_config is not None
+
         all_macs = [self.get_mac_address()]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()])
         all_linklatencies = [self.server_link_latency]
@@ -287,17 +286,19 @@ class FireSimServerNode(FireSimNode):
         all_bootbins = [self.get_bootbin_name()]
         all_shmemportnames = [shmemportname]
 
-        assert (self.server_profile_interval is not None and all_bootbins is not None and self.trace_enable is not None and
-            self.trace_select is not None and self.trace_start is not None and self.trace_end is not None and self.trace_output_format is not None and
-            self.autocounter_readrate is not None and all_shmemportnames is not None and self.zerooutdram is not None and self.disable_asserts is not None and
-            self.print_start is not None and self.print_end is not None and self.print_cycle_prefix is not None)
-
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
-            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
-            self.server_profile_interval, all_bootbins, self.trace_enable,
-            self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
-            self.autocounter_readrate, all_shmemportnames, self.zerooutdram, self.disable_asserts,
-            self.print_start, self.print_end, self.print_cycle_prefix)
+            slotno,
+            all_macs,
+            all_rootfses,
+            all_linklatencies,
+            all_maxbws,
+            self.server_profile_interval,
+            all_bootbins,
+            all_shmemportnames,
+            self.tracerv_config,
+            self.autocounter_config,
+            self.hostdebug_config,
+            self.synthprint_config)
 
         run(runcommand)
 
@@ -325,18 +326,22 @@ class FireSimServerNode(FireSimNode):
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
+        dest_sim_dir = self.get_host_instance().get_sim_dir()
+
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()
         if rfsname is not None:
             is_qcow2 = rfsname.endswith(".qcow2")
-            mountpoint = """/home/centos/sim_slot_{}/mountpoint""".format(simserverindex)
+            mountpoint = """{}/sim_slot_{}/mountpoint""".format(dest_sim_dir, simserverindex)
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 run("""sudo mkdir -p {}""".format(mountpoint))
 
                 if is_qcow2:
-                    rfsname = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rfsname)
+                    host_inst = self.get_host_instance()
+                    assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                    rfsname = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rfsname)
                 else:
-                    rfsname = """/home/centos/sim_slot_{}/{}""".format(simserverindex, rfsname)
+                    rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
 
                 run("""sudo mount {blockfile} {mntpt}""".format(blockfile=rfsname, mntpt=mountpoint))
                 with warn_only():
@@ -368,7 +373,7 @@ class FireSimServerNode(FireSimNode):
 
         ## copy output files generated by the simulator that live on the host:
         ## e.g. uartlog, memory_stats.csv, etc
-        remote_sim_run_dir = """/home/centos/sim_slot_{}/""".format(simserverindex)
+        remote_sim_run_dir = """{}/sim_slot_{}/""".format(dest_sim_dir, simserverindex)
         for simoutputfile in jobinfo.simoutputs:
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
                 rsync_cap = rsync_project(remote_dir=remote_sim_run_dir + simoutputfile,
@@ -466,7 +471,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             sib.assign_host_instance(super_server_host)
             sib.copy_back_job_results_from_run(slotno)
 
-
     def allocate_nbds(self) -> None:
         """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
         """
@@ -476,9 +480,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
-                allocd_device = self.get_host_instance().nbd_tracker.get_nbd_for_imagename(rootfsname)
-
-
+                host_inst = self.get_host_instance()
+                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
+                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
 
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
@@ -512,27 +516,45 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 
+        assert self.server_link_latency is not None
+        assert self.server_bw_max is not None
+        assert self.server_profile_interval is not None
+        assert self.tracerv_config is not None
+        assert self.autocounter_config is not None
+        assert self.hostdebug_config is not None
+        assert self.synthprint_config is not None
+
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling(x).get_mac_address() for x in range(1, num_siblings)]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)])
         all_bootbins = [self.get_bootbin_name()] + [self.supernode_get_sibling(x).get_bootbin_name() for x in range(1, num_siblings)]
-        all_linklatencies = [self.server_link_latency] + [self.supernode_get_sibling(x).server_link_latency for x in range(1, num_siblings)]
-        all_maxbws = [self.server_bw_max] + [self.supernode_get_sibling(x).server_bw_max for x in range(1, num_siblings)]
+        all_linklatencies = [self.server_link_latency]
+        for x in range(1, num_siblings):
+            sibling = self.supernode_get_sibling(x)
+            assert sibling.server_link_latency is not None
+            all_linklatencies.append(sibling.server_link_latency)
+        all_maxbws = [self.server_bw_max]
+        for x in range(1, num_siblings):
+            sibling = self.supernode_get_sibling(x)
+            assert sibling.server_bw_max is not None
+            all_maxbws.append(sibling.server_bw_max)
 
         all_shmemportnames = ["default" for x in range(num_siblings)]
         if self.uplinks:
             all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [self.supernode_get_sibling(x).uplinks[0].get_global_link_id() for x in range(1, num_siblings)]
 
-        assert (self.server_profile_interval is not None and all_bootbins is not None and self.trace_enable is not None and
-            self.trace_select is not None and self.trace_start is not None and self.trace_end is not None and self.trace_output_format is not None and
-            self.autocounter_readrate is not None and all_shmemportnames is not None and self.zerooutdram is not None and self.disable_asserts is not None and
-            self.print_start is not None and self.print_end is not None and self.print_cycle_prefix is not None)
-
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
-            slotno, all_macs, all_rootfses, all_linklatencies, all_maxbws,
-            self.server_profile_interval, all_bootbins, self.trace_enable,
-            self.trace_select, self.trace_start, self.trace_end, self.trace_output_format,
-            self.autocounter_readrate, all_shmemportnames, self.zerooutdram, self.disable_asserts,
-            self.print_start, self.print_end, self.print_cycle_prefix)
+            slotno,
+            all_macs,
+            all_rootfses,
+            all_linklatencies,
+            all_maxbws,
+            self.server_profile_interval,
+            all_bootbins,
+            all_shmemportnames,
+            self.tracerv_config,
+            self.autocounter_config,
+            self.hostdebug_config,
+            self.synthprint_config)
 
         run(runcommand)
 
@@ -580,8 +602,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append((hw_cfg.get_local_runtime_conf_path(), ''))
         return all_paths
 
+
 class FireSimDummyServerNode(FireSimServerNode):
     """ This is a dummy server node for supernode mode. """
+
     def __init__(self, server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None, server_link_latency: Optional[int] = None,
             server_bw_max: Optional[int] = None):
         super().__init__(server_hardware_config, server_link_latency, server_bw_max)
@@ -655,13 +679,14 @@ class FireSimSwitchNode(FireSimNode):
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
+        dest_sim_dir = self.get_host_instance().get_sim_dir()
+
         ## copy output files generated by the simulator that live on the host:
         ## e.g. uartlog, memory_stats.csv, etc
-        remote_sim_run_dir = """/home/centos/switch_slot_{}/""".format(switch_slot_no)
+        remote_sim_run_dir = """{}/switch_slot_{}/""".format(dest_sim_dir, switch_slot_no)
         for simoutputfile in ["switchlog"]:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 get(remote_path=remote_sim_run_dir + simoutputfile, local_path=job_dir)
-
 
     def diagramstr(self) -> str:
         msg =  f"FireSimSwitchNode:{self.switch_id_internal}\n"

@@ -5,11 +5,10 @@ import java.io.{File, FileWriter}
 
 import freechips.rocketchip.config.{Field, Config}
 
-object ILADepth extends Field[Int](1024) // Depth of ILA traces
 object BuildStrategy extends Field[BuildStrategies.IsBuildStrategy](BuildStrategies.Timing)
 
 class WithILADepth(depth: Int) extends Config((site, here, up) => {
-    case ILADepth => depth
+    case midas.ILADepthKey => depth
 })
 
 object BuildStrategies {

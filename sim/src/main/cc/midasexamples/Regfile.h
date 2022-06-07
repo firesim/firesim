@@ -37,8 +37,8 @@ private:
   void do_iteration(size_t cycle_num) {
     for (size_t w_idx = 0; w_idx < reg_n_writes; w_idx++) {
       if (rand() % 2) {
-        data_t rand_data = rand();
-        data_t rand_addr = rand() % mem_depth;
+        uint32_t rand_data = rand();
+        uint32_t rand_addr = rand() % mem_depth;
         while (history.count(rand_addr) && history[rand_addr].second == cycle_num) {
           // already written this cycle => would be undefined write collision
           rand_addr = rand() % mem_depth;
@@ -52,13 +52,13 @@ private:
       }
     }
     for (size_t r_idx = 0; r_idx < reg_n_reads; r_idx++) {
-      data_t rand_addr = rand() % mem_depth;
+      uint32_t rand_addr = rand() % mem_depth;
       prev_reads[r_idx] = rand_addr;
       poke(reg_r_addr_ios[r_idx], rand_addr);
     }
     step(1);
     for (size_t r_idx = 0; r_idx < reg_n_reads; r_idx++) {
-      data_t prev_addr = prev_reads[r_idx];
+      uint32_t prev_addr = prev_reads[r_idx];
       if (history.count(prev_addr)) {
         expect(reg_r_data_ios[r_idx], history[prev_addr].first);
       }
@@ -67,6 +67,6 @@ private:
 
  private:
 
-  std::map< data_t, std::pair<data_t, size_t> > history;
-  std::map< size_t, data_t > prev_reads;
+  std::map< uint32_t, std::pair<uint32_t, size_t> > history;
+  std::map< size_t, uint32_t > prev_reads;
 };

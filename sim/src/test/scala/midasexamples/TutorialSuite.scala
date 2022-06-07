@@ -368,6 +368,10 @@ class ResetPulseBridgeActiveLowTest extends TutorialSuite(
     shouldPass = false)
 }
 
+class TerminationF1Test extends TutorialSuite("TerminationModule") {
+  1 to 10 foreach {x => runTest(backendSimulator, args = Seq("+termination-bridge-tick-rate=10", s"+seed=${x}"), shouldPass = true)}
+}
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
@@ -378,7 +382,8 @@ class ChiselExampleDesigns extends Suites(
   new RiscF1Test,
   new RiscSRAMF1Test,
   new AccumulatorF1Test,
-  new VerilogAccumulatorF1Test
+  new VerilogAccumulatorF1Test,
+  new TerminationF1Test
 )
 
 class PrintfSynthesisCITests extends Suites(

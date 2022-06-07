@@ -45,6 +45,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
    Developer-Docs/GoldenGate-and-Driver-Development
    Developer-Docs/Host-Platform-Debugging
+   Developer-Docs/VSCode-Integration
 
 Indices and tables
 ==================
