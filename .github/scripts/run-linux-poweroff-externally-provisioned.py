@@ -2,6 +2,7 @@
 
 import sys
 import time
+from pathlib import Path
 
 from fabric.api import *
 
@@ -26,8 +27,11 @@ def run_linux_poweroff_externally_provisioned():
             """
             workload_full = workload_path + "/" + workload
             log_tail_length = 100
-            rf_prefix = f"{ci_workflow_run_id}-ep"
-            # rename runfarm tag with a unique tag based on the ci workflow
+            script_name = Path(__file__).stem
+            rf_prefix = f"{ci_workflow_run_id}-{script_name}"
+
+            # unique tag based on the ci workflow and filename is needed to ensure
+            # run farm is unique to each linux-poweroff test
             with prefix(f"export FIRESIM_RUNFARM_PREFIX={rf_prefix}"):
                 rc = 0
                 with settings(warn_only=True):
