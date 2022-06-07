@@ -295,7 +295,7 @@ set -o pipefail
         pyparsing==3.0.6 \
         numpy==1.19.5 \
         kiwisolver==1.3.1 \
-        matplotlib==3.3.4 \
+        matplotlib-base==3.3.4 \
         pandas==1.1.5 \
         awscli==1.22.21 \
         pytest==6.2.5 \
