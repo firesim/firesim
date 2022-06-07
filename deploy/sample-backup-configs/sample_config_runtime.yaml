@@ -2,16 +2,14 @@
 # See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
 run_farm:
-    run_farm_tag: mainrunfarm
-    always_expand_runfarm: yes
-    f1_16xlarges: 1
-    m4_16xlarges: 0
-    f1_4xlarges: 0
-    f1_2xlarges: 0
-    launch_instances_timeout_minutes: 60
-    run_instance_market: ondemand
-    spot_interruption_behavior: terminate
-    spot_max_price: ondemand
+  # managerinit replace start
+  base_recipe: run-farm-recipes/aws_ec2.yaml
+  # Uncomment and add args to override defaults.
+  # Arg structure should be identical to the args given
+  # in the base_recipe.
+  #recipe_arg_overrides:
+  #  <ARG>: <OVERRIDE>
+  # managerinit replace end
 
 target_config:
     # Set topology: no_net_config to run without a network simulation

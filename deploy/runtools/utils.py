@@ -15,7 +15,7 @@ rootLogger = logging.getLogger()
 def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
     """ Given path to executable `exe`, returns a list of path tuples, (A, B), where:
         A is the local file path on the manager instance to the library
-        B is the destination file path on the runfarm instance relative to the driver
+        B is the destination file path on the run farm instance relative to the driver
 
         NOTE: ignores the following dso's reported by ldd:
          * linux-vdso : special dso injected by the kernel, not copyable

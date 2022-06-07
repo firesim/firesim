@@ -11,20 +11,23 @@ import yaml
 import os
 import sys
 from fabric.api import prefix, settings, local # type: ignore
+from copy import deepcopy
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
+from util.inheritors import inheritors
 
 from typing import Optional, Dict, Any, List, Sequence, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
 if TYPE_CHECKING:
     from runtools.utils import MacAddress
 
-LOCAL_DRIVERS_BASE = "../sim/output/f1/"
+LOCAL_DRIVERS_BASE = "../sim/output/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
@@ -40,7 +43,10 @@ class RuntimeHWConfig:
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
+
+        self.platform = "f1"
         self.agfi = hwconfig_dict['agfi']
+
         self.deploytriplet = hwconfig_dict['deploy_triplet_override']
         if self.deploytriplet is not None:
             rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
@@ -66,12 +72,12 @@ class RuntimeHWConfig:
 
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
-        return self.get_design_name() + "-f1"
+        return self.get_design_name() + "-" + self.platform
 
     def get_local_driver_path(self) -> str:
         """ return relative local path of the driver used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + my_deploytriplet + "/"
+        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + self.platform + "/" + my_deploytriplet + "/"
         fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
         return fpga_driver_local
 
@@ -82,7 +88,7 @@ class RuntimeHWConfig:
     def get_local_runtime_conf_path(self) -> str:
         """ return relative local path of the runtime conf used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + my_deploytriplet + "/"
+        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + self.platform + "/" + my_deploytriplet + "/"
         my_runtimeconfig = self.customruntimeconfig
         if my_runtimeconfig is None:
             runtime_conf_local = drivers_software_base + "runtime.conf"
@@ -90,16 +96,19 @@ class RuntimeHWConfig:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
 
-    def get_boot_simulation_command(self, slotid: int, all_macs: Sequence[Optional[MacAddress]],
-            all_rootfses: Sequence[Optional[str]], all_linklatencies: Sequence[Optional[int]],
-            all_netbws: Sequence[Optional[int]], profile_interval: int,
-            all_bootbinaries: List[str], trace_enable: bool,
-            trace_select: str, trace_start: str, trace_end: str,
-            trace_output_format: str,
-            autocounter_readrate: int, all_shmemportnames: List[str],
-            enable_zerooutdram: bool, disable_asserts_arg: bool,
-            print_start: str, print_end: str,
-            enable_print_cycle_prefix: bool) -> str:
+    def get_boot_simulation_command(self,
+            slotid: int,
+            all_macs: Sequence[MacAddress],
+            all_rootfses: Sequence[Optional[str]],
+            all_linklatencies: Sequence[int],
+            all_netbws: Sequence[int],
+            profile_interval: int,
+            all_bootbinaries: List[str],
+            all_shmemportnames: List[str],
+            tracerv_config: TracerVConfig,
+            autocounter_config: AutoCounterConfig,
+            hostdebug_config: HostDebugConfig,
+            synthprint_config: SynthPrintConfig) -> str:
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -107,7 +116,7 @@ class RuntimeHWConfig:
         runtime parameters currently. """
 
         # TODO: supernode support
-        tracefile = "+tracefile=TRACEFILE" if trace_enable else ""
+        tracefile = "+tracefile=TRACEFILE" if tracerv_config.enable else ""
         autocounterfile = "+autocounter-filename-base=AUTOCOUNTERFILE"
 
         # this monstrosity boots the simulator, inside screen, inside script
@@ -115,14 +124,14 @@ class RuntimeHWConfig:
         driver = self.get_local_driver_binaryname()
         runtimeconf = self.get_local_runtimeconf_binaryname()
 
-        def array_to_plusargs(valuesarr, plusarg):
+        def array_to_plusargs(valuesarr: Sequence[Optional[Any]], plusarg: str) -> List[str]:
             args = []
             for index, arg in enumerate(valuesarr):
                 if arg is not None:
                     args.append("""{}{}={}""".format(plusarg, index, arg))
-            return " ".join(args) + " "
+            return args
 
-        def array_to_lognames(values, prefix):
+        def array_to_lognames(values: Sequence[Optional[Any]], prefix: str) -> List[str]:
             names = ["{}{}".format(prefix, i) if val is not None else None
                      for (i, val) in enumerate(values)]
             return array_to_plusargs(names, "+" + prefix)
@@ -138,25 +147,46 @@ class RuntimeHWConfig:
         command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")
 
         command_bootbinaries = array_to_plusargs(all_bootbinaries, "+prog")
-        zero_out_dram = "+zero-out-dram" if (enable_zerooutdram) else ""
-        disable_asserts = "+disable-asserts" if (disable_asserts_arg) else ""
-        print_cycle_prefix = "+print-no-cycle-prefix" if not enable_print_cycle_prefix else ""
+        zero_out_dram = "+zero-out-dram" if (hostdebug_config.zero_out_dram) else ""
+        disable_asserts = "+disable-asserts" if (hostdebug_config.disable_synth_asserts) else ""
+        print_cycle_prefix = "+print-no-cycle-prefix" if not synthprint_config.cycle_prefix else ""
 
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
+        screen_name = "fsim{}".format(slotid)
+        run_device_placement = "+slotid={}".format(slotid)
+        # TODO: re-enable for vitis
+        #other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
+
         # TODO: supernode support (tracefile, trace-select.. etc)
-        basecommand = f"""screen -S fsim{slotid} -d -m bash -c "script -f -c 'stty intr ^] && sudo ./{driver} +permissive $(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf}) +slotid={slotid} +profile-interval={profile_interval} {zero_out_dram} {disable_asserts} {command_macs} {command_rootfses} {command_niclogs} {command_blkdev_logs}  {tracefile} +trace-select={trace_select} +trace-start={trace_start} +trace-end={trace_end} +trace-output-format={trace_output_format} {dwarf_file_name} +autocounter-readrate={autocounter_readrate} {autocounterfile} {command_dromajo} {print_cycle_prefix} +print-start={print_start} +print-end={print_end} {command_linklatencies} {command_netbws}  {command_shmemportnames} +permissive-off {command_bootbinaries} && stty intr ^c' uartlog"; sleep 1"""
+        permissive_driver_args = []
+        permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"]
+        permissive_driver_args += [run_device_placement]
+        permissive_driver_args += [f"+profile-interval={profile_interval}"]
+        permissive_driver_args += [zero_out_dram]
+        permissive_driver_args += [disable_asserts]
+        permissive_driver_args += command_macs
+        permissive_driver_args += command_rootfses
+        permissive_driver_args += command_niclogs
+        permissive_driver_args += command_blkdev_logs
+        permissive_driver_args += [f"{tracefile}", f"+trace-select={tracerv_config.select}", f"+trace-start={tracerv_config.start}", f"+trace-end={tracerv_config.end}", f"+trace-output-format={tracerv_config.output_format}", dwarf_file_name]
+        permissive_driver_args += [f"+autocounter-readrate={autocounter_config.readrate}", autocounterfile]
+        permissive_driver_args += [command_dromajo]
+        permissive_driver_args += [print_cycle_prefix, f"+print-start={synthprint_config.start}", f"+print-end={synthprint_config.end}"]
+        permissive_driver_args += command_linklatencies
+        permissive_driver_args += command_netbws
+        permissive_driver_args += command_shmemportnames
+        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {" ".join(command_bootbinaries)}"""
+        base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
+        screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
-        return basecommand
-
-
+        return screen_wrapped
 
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
         # Note that pkill only works for names <=15 characters
         return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
-
 
     def build_fpga_driver(self) -> None:
         """ Build FPGA driver for running simulation """
@@ -179,7 +209,7 @@ class RuntimeHWConfig:
              StreamLogger('stderr'):
             localcap = None
             with settings(warn_only=True):
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} f1""".format(design, target_config, platform_config)
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} PLATFORM={} driver""".format(design, target_config, platform_config, self.platform)
                 localcap = local(driverbuildcommand, capture=True)
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
@@ -219,14 +249,8 @@ class RuntimeHWDB:
 
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.yaml """
-    runfarmtag: str
-    f1_16xlarges_requested: int
-    f1_4xlarges_requested: int
-    m4_16xlarges_requested: int
-    f1_2xlarges_requested: int
-    run_instance_market: str
-    spot_interruption_behavior: str
-    spot_max_price: str
+    run_farm_requested_name: str
+    run_farm_dispatcher: RunFarm
     topology: str
     no_net_num_nodes: int
     linklatency: int
@@ -235,26 +259,21 @@ class InnerRuntimeConfiguration:
     profileinterval: int
     launch_timeout: timedelta
     always_expand: bool
-    trace_enable: bool
-    trace_select: str
-    trace_start: str
-    trace_end: str
-    trace_output_format: str
-    autocounter_readrate: int
-    zerooutdram: bool
-    disable_asserts: bool
-    print_start: str
-    print_end: str
-    print_cycle_prefix: bool
+    tracerv_config: TracerVConfig
+    autocounter_config: AutoCounterConfig
+    hostdebug_config: HostDebugConfig
+    synthprint_config: SynthPrintConfig
     workload_name: str
     suffixtag: str
     terminateoncompletion: bool
 
     def __init__(self, runtimeconfigfile: str, configoverridedata: str) -> None:
 
-        runtime_dict = None
+        runtime_configfile = None
         with open(runtimeconfigfile, "r") as yaml_file:
-            runtime_dict = yaml.safe_load(yaml_file)
+            runtime_configfile = yaml.safe_load(yaml_file)
+
+        runtime_dict = runtime_configfile
 
         # override parts of the runtime conf if specified
         if configoverridedata != "":
@@ -268,25 +287,34 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        runfarmtagprefix = "" if 'FIRESIM_RUNFARM_PREFIX' not in os.environ else os.environ['FIRESIM_RUNFARM_PREFIX']
-        if runfarmtagprefix != "":
-            runfarmtagprefix += "-"
+        # Setup the run farm
+        defaults_file = runtime_dict['run_farm']['base_recipe']
+        with open(defaults_file, "r") as yaml_file:
+            run_farm_configfile = yaml.safe_load(yaml_file)
+        run_farm_type = run_farm_configfile["run_farm_type"]
+        run_farm_args = run_farm_configfile["args"]
 
-        self.runfarmtag = runfarmtagprefix + runtime_dict['run_farm']['run_farm_tag']
+        # add the overrides if it exists
 
-        aws_resource_names_dict = aws_resource_names()
-        if aws_resource_names_dict['runfarmprefix'] is not None:
-            # if specified, further prefix runfarmtag
-            self.runfarmtag = aws_resource_names_dict['runfarmprefix'] + "-" + self.runfarmtag
+        # taken from https://gist.github.com/angstwad/bf22d1822c38a92ec0a9
+        def deep_merge(a: dict, b: dict) -> dict:
+            result = deepcopy(a)
+            for bk, bv in b.items():
+                av = result.get(bk)
+                if isinstance(av, dict) and isinstance(bv, dict):
+                    result[bk] = deep_merge(av, bv)
+                else:
+                    result[bk] = deepcopy(bv)
+            return result
 
-        self.f1_16xlarges_requested = int(runtime_dict['run_farm']['f1_16xlarges']) if 'f1_16xlarges' in runtime_dict['run_farm'] else 0
-        self.f1_4xlarges_requested = int(runtime_dict['run_farm']['f1_4xlarges']) if 'f1_4xlarges' in runtime_dict['run_farm'] else 0
-        self.m4_16xlarges_requested = int(runtime_dict['run_farm']['m4_16xlarges']) if 'm4_16xlarges' in runtime_dict['run_farm'] else 0
-        self.f1_2xlarges_requested = int(runtime_dict['run_farm']['f1_2xlarges']) if 'f1_2xlarges' in runtime_dict['run_farm'] else 0
+        override_args = runtime_dict['run_farm'].get('recipe_arg_overrides')
+        if override_args:
+            run_farm_args = deep_merge(run_farm_args, override_args)
 
-        self.run_instance_market = runtime_dict['run_farm']['run_instance_market']
-        self.spot_interruption_behavior = runtime_dict['run_farm']['spot_interruption_behavior']
-        self.spot_max_price = runtime_dict['run_farm']['spot_max_price']
+        run_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(RunFarm)])
+
+        # create dispatcher object using class given and pass args to it
+        self.run_farm_dispatcher = run_farm_dispatch_dict[run_farm_type](run_farm_args)
 
         self.topology = runtime_dict['target_config']['topology']
         self.no_net_num_nodes = int(runtime_dict['target_config']['no_net_num_nodes'])
@@ -295,42 +323,26 @@ class InnerRuntimeConfiguration:
         self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
         self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
 
-        if 'launch_instances_timeout_minutes' in runtime_dict['run_farm']:
-            self.launch_timeout = timedelta(minutes=int(runtime_dict['run_farm']['launch_instances_timeout_minutes']))
-        else:
-            self.launch_timeout = timedelta() # default to legacy behavior of not waiting
-
-        self.always_expand = runtime_dict['run_farm'].get('always_expand_runfarm', "yes") == "yes"
-
-        # Default values
-        self.trace_enable = False
-        self.trace_select = "0"
-        self.trace_start = "0"
-        self.trace_end = "-1"
-        self.trace_output_format = "0"
-        self.autocounter_readrate = 0
-        self.zerooutdram = False
-        self.disable_asserts = False
-        self.print_start = "0"
-        self.print_end = "-1"
-        self.print_cycle_prefix = True
-
+        self.tracerv_config = TracerVConfig()
         if 'tracing' in runtime_dict:
-            self.trace_enable = runtime_dict['tracing'].get('enable') == "yes"
-            self.trace_select = runtime_dict['tracing'].get('selector', "0")
-            self.trace_start = runtime_dict['tracing'].get('start', "0")
-            self.trace_end = runtime_dict['tracing'].get('end', "-1")
-            self.trace_output_format = runtime_dict['tracing'].get('output_format', "0")
+            self.tracerv_config.enable = runtime_dict['tracing'].get('enable') == "yes"
+            self.tracerv_config.select = runtime_dict['tracing'].get('selector', "0")
+            self.tracerv_config.start = runtime_dict['tracing'].get('start', "0")
+            self.tracerv_config.end = runtime_dict['tracing'].get('end', "-1")
+            self.tracerv_config.output_format = runtime_dict['tracing'].get('output_format', "0")
+        self.autocounter_config = AutoCounterConfig()
         if 'autocounter' in runtime_dict:
-            self.autocounter_readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
+            self.autocounter_config.readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
         self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
+        self.hostdebug_config = HostDebugConfig()
         if 'host_debug' in runtime_dict:
-            self.zerooutdram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
-            self.disable_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
+            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+        self.synthprint_config = SynthPrintConfig()
         if 'synth_print' in runtime_dict:
-            self.print_start = runtime_dict['synth_print'].get("start", "0")
-            self.print_end = runtime_dict['synth_print'].get("end", "-1")
-            self.print_cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
+            self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
+            self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
+            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
 
         self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
@@ -343,6 +355,13 @@ class InnerRuntimeConfiguration:
 class RuntimeConfig:
     """ This class manages the overall configuration of the manager for running
     simulation tasks. """
+    launch_time: str
+    args: argparse.Namespace
+    runtimehwdb: RuntimeHWDB
+    innerconf: InnerRuntimeConfiguration
+    run_farm: RunFarm
+    workload: WorkloadConfig
+    firesim_topology_with_passes: FireSimTopologyWithPasses
 
     def __init__(self, args: argparse.Namespace) -> None:
         """ This reads runtime configuration files, massages them into formats that
@@ -360,6 +379,8 @@ class RuntimeConfig:
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
 
+        self.run_farm = self.innerconf.run_farm_dispatcher
+
         # construct a privateip -> instance obj mapping for later use
         #self.instancelookuptable = instance_privateip_lookup_table(
         #    f1_16_instances + f1_2_instances + m4_16_instances)
@@ -369,40 +390,41 @@ class RuntimeConfig:
         self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
                                        self.innerconf.suffixtag)
 
-        self.runfarm = RunFarm(self.innerconf.f1_16xlarges_requested,
-                               self.innerconf.f1_4xlarges_requested,
-                               self.innerconf.f1_2xlarges_requested,
-                               self.innerconf.m4_16xlarges_requested,
-                               self.innerconf.runfarmtag,
-                               self.innerconf.run_instance_market,
-                               self.innerconf.spot_interruption_behavior,
-                               self.innerconf.spot_max_price,
-                               self.innerconf.launch_timeout,
-                               self.innerconf.always_expand)
-
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
             self.innerconf.topology, self.innerconf.no_net_num_nodes,
-            self.runfarm, self.runtimehwdb, self.innerconf.defaulthwconfig,
+            self.run_farm, self.runtimehwdb, self.innerconf.defaulthwconfig,
             self.workload, self.innerconf.linklatency,
             self.innerconf.switchinglatency, self.innerconf.netbandwidth,
-            self.innerconf.profileinterval, self.innerconf.trace_enable,
-            self.innerconf.trace_select, self.innerconf.trace_start, self.innerconf.trace_end,
-            self.innerconf.trace_output_format,
-            self.innerconf.autocounter_readrate, self.innerconf.terminateoncompletion,
-            self.innerconf.zerooutdram, self.innerconf.disable_asserts,
-            self.innerconf.print_start, self.innerconf.print_end,
-            self.innerconf.print_cycle_prefix)
+            self.innerconf.profileinterval,
+            self.innerconf.tracerv_config,
+            self.innerconf.autocounter_config,
+            self.innerconf.hostdebug_config,
+            self.innerconf.synthprint_config,
+            self.innerconf.terminateoncompletion)
 
     def launch_run_farm(self) -> None:
         """ directly called by top-level launchrunfarm command. """
-        self.runfarm.launch_run_farm()
+        self.run_farm.launch_run_farm()
 
     def terminate_run_farm(self) -> None:
         """ directly called by top-level terminaterunfarm command. """
-        args = self.args
-        self.runfarm.terminate_run_farm(args.terminatesomef116, args.terminatesomef14, args.terminatesomef12,
-                                        args.terminatesomem416, args.forceterminate)
+        terminate_some_dict = {}
+        if self.args.terminatesome is not None:
+            for pair in self.args.terminatesome:
+                terminate_some_dict[pair[0]] = pair[1]
+
+        def old_style_terminate_args(instance_type, arg_val, arg_flag_str):
+            if arg_val != -1:
+                rootLogger.critical("WARNING: You are using the old-style " + arg_flag_str + " flag. See the new --terminatesome flag in help. The old-style flag will be removed in the next major FireSim release (1.15.X).")
+                terminate_some_dict[instance_type] = arg_val
+
+        old_style_terminate_args('f1.16xlarge', self.args.terminatesomef116, '--terminatesomef116')
+        old_style_terminate_args('f1.4xlarge', self.args.terminatesomef14, '--terminatesomef14')
+        old_style_terminate_args('f1.2xlarge', self.args.terminatesomef12, '--terminatesomef12')
+        old_style_terminate_args('m4.16xlarge', self.args.terminatesomem416, '--terminatesomem416')
+
+        self.run_farm.terminate_run_farm(terminate_some_dict, self.args.forceterminate)
 
     def infrasetup(self) -> None:
         """ directly called by top-level infrasetup command. """
@@ -423,6 +445,3 @@ class RuntimeConfig:
     def run_workload(self) -> None:
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.run_workload_passes(use_mock_instances_for_testing)
-
-
-

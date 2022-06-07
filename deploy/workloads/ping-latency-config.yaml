@@ -1,12 +1,12 @@
 run_farm:
+  base_recipe: run-farm-recipes/aws_ec2.yaml
+  recipe_arg_overrides:
     run_farm_tag: pinglatency-mainrunfarm
-    f1_16xlarges: 1
-    m4_16xlarges: 0
-    f1_4xlarges: 0
-    f1_2xlarges: 0
-    run_instance_market: ondemand
-    spot_interruption_behavior: terminate
-    spot_max_price: ondemand
+    run_farm_hosts:
+      - f1.16xlarge: 1
+      - f1.4xlarge: 0
+      - f1.2xlarge: 0
+      - m4.16xlarge: 0
 
 target_config:
     topology: example_8config

@@ -10,32 +10,13 @@ from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
 from awstools.awstools import auto_create_bucket, get_snsname_arn
 from buildtools.buildfarm import BuildFarm
+from util.inheritors import inheritors
 
 # imports needed for python type checking
 from typing import Dict, Optional, List, Set, Type, Any, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
 
 rootLogger = logging.getLogger()
-
-def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
-    """Determine the subclasses that inherit from the input class.
-    This is taken from https://stackoverflow.com/questions/5881873/python-find-all-classes-which-inherit-from-this-one.
-
-    Args:
-        klass: Input class.
-
-    Returns:
-        Set of subclasses that inherit from input class.
-    """
-    subclasses = set()
-    work = [klass]
-    while work:
-        parent = work.pop()
-        for child in parent.__subclasses__():
-            if child not in subclasses:
-                subclasses.add(child)
-                work.append(child)
-    return subclasses
 
 class BuildConfigFile:
     """Class representing the "global" build config file i.e. `config_build.yaml`.
