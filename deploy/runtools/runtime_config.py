@@ -325,7 +325,7 @@ class InnerRuntimeConfiguration:
 
         self.tracerv_config = TracerVConfig()
         if 'tracing' in runtime_dict:
-            self.tracerv_config.enable = runtime_dict['tracing'].get('enable') == "yes"
+            self.tracerv_config.enable = runtime_dict['tracing'].get('enable', False) == True
             self.tracerv_config.select = runtime_dict['tracing'].get('selector', "0")
             self.tracerv_config.start = runtime_dict['tracing'].get('start', "0")
             self.tracerv_config.end = runtime_dict['tracing'].get('end', "-1")
@@ -336,18 +336,18 @@ class InnerRuntimeConfiguration:
         self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
         self.hostdebug_config = HostDebugConfig()
         if 'host_debug' in runtime_dict:
-            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
-            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram', False) == True
+            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts', False) == True
         self.synthprint_config = SynthPrintConfig()
         if 'synth_print' in runtime_dict:
             self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
             self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
-            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
+            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", True) == True
 
         self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
         self.suffixtag = runtime_dict['workload']['suffix_tag'] if 'suffix_tag' in runtime_dict['workload'] else None
-        self.terminateoncompletion = runtime_dict['workload']['terminate_on_completion'] == "yes"
+        self.terminateoncompletion = runtime_dict['workload']['terminate_on_completion'] == True
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self))
