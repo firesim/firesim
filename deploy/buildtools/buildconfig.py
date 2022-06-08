@@ -7,6 +7,7 @@ import yaml
 from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
 import buildtools
+from util.deepmerge import deep_merge
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
@@ -72,7 +73,15 @@ class BuildConfig:
         bitbuilder_type_name = bitbuilder_conf_dict["bit_builder_type"]
         bitbuilder_args = bitbuilder_conf_dict["args"]
 
+        # add the overrides if it exists
+        override_args = recipe_config_dict.get('bit_builder_arg_overrides')
+        if override_args:
+            bitbuilder_args = deep_merge(bitbuilder_args, override_args)
+
         bitbuilder_dispatch_dict = dict([(x.__name__, x) for x in buildtools.buildconfigfile.inheritors(BitBuilder)])
+
+        if not bitbuilder_type_name in bitbuilder_dispatch_dict:
+            raise Exception(f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}")
 
         # create dispatcher object using class given and pass args to it
         self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)

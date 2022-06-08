@@ -241,6 +241,14 @@ def get_aws_userid() -> str:
     else:
         assert False, "Unable to obtain accountId from instance metadata"
 
+def get_aws_region() -> str:
+    """ Get the user's current region to intelligently create a bucket name when doing awsinit(). """
+    info = get_localhost_instance_info("dynamic/instance-identity/document")
+    if info is not None:
+        return json.loads(info)['region'].lower()
+    else:
+        assert False, "Unable to obtain region from instance metadata"
+
 def construct_instance_market_options(instancemarket: str, spotinterruptionbehavior: str, spotmaxprice: str) -> Dict[str, Any]:
     """ construct the dictionary necessary to configure instance market selection
     (on-demand vs spot)
@@ -537,7 +545,7 @@ def auto_create_bucket(userbucketname: str) -> None:
         s3cli.head_bucket(Bucket=userbucketname)
     except s3cli.exceptions.ClientError as exc:
         if 'Forbidden' in repr(exc):
-            rootLogger.critical("You tried to access a bucket that is Forbidden. This probably means that someone else has taken the name already.")
+            rootLogger.critical(f"You tried to access a bucket {userbucketname} that is Forbidden. This probably means that someone else has taken the name already.")
             rootLogger.critical("The full exception is printed below:")
             rootLogger.critical("____________________________________________________________")
             rootLogger.critical(repr(exc))
