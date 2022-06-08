@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from runtools.run_farm import Inst
     from runtools.runtime_config import RuntimeHWConfig
     from runtools.utils import MacAddress
-    from runtools.run_farm_deploy_managers import EC2InstanceDeployManager
+    from runtools.deploy_managers.aws_ec2 import EC2InstanceDeployManager
 
 rootLogger = logging.getLogger()
 
@@ -416,7 +416,9 @@ class FireSimServerNode(FireSimNode):
 
     def get_agfi(self) -> str:
         """ Return the AGFI that should be flashed. """
-        return self.get_resolved_server_hardware_config().agfi
+        agfi = self.get_resolved_server_hardware_config().agfi
+        assert agfi is not None
+        return agfi
 
     def assign_job(self, job: JobConfig) -> None:
         """ Assign a job to this node. """

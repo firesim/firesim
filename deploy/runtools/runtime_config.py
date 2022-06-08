@@ -36,20 +36,34 @@ class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.yaml """
     name: str
     platform: str
-    agfi: str
+    agfi: Optional[str]
+    xclbin: Optional[str]
     deploytriplet: Optional[str]
     customruntimeconfig: str
     driver_built: bool
+    sudo: str
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        self.platform = "f1"
-        self.agfi = hwconfig_dict['agfi']
+        if 'agfi' in hwconfig_dict and 'xclbin' in hwconfig_dict:
+            raise Exception(f"Unable to have agfi and xclbin in HWDB entry {name}.")
+
+        self.agfi = hwconfig_dict.get('agfi')
+        self.xclbin = hwconfig_dict.get('xclbin')
+
+        if self.agfi is not None:
+            self.platform = "f1"
+            self.sudo = "sudo"
+        else:
+            self.platform = "vitis"
+            self.sudo = ""
 
         self.deploytriplet = hwconfig_dict['deploy_triplet_override']
         if self.deploytriplet is not None:
             rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
+            if self.platform == "vitis":
+                raise Exception(f"Must set the deploy_triplet_override for Vitis bitstreams")
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
@@ -156,13 +170,18 @@ class RuntimeHWConfig:
 
         screen_name = "fsim{}".format(slotid)
         run_device_placement = "+slotid={}".format(slotid)
-        # TODO: re-enable for vitis
-        #other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
+
+        if self.platform == "vitis":
+            assert self.xclbin is not None
+            vitis_bit = "+binary_file={}".format(self.xclbin)
+        else:
+            vitis_bit = ""
 
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"]
         permissive_driver_args += [run_device_placement]
+        permissive_driver_args += [vitis_bit]
         permissive_driver_args += [f"+profile-interval={profile_interval}"]
         permissive_driver_args += [zero_out_dram]
         permissive_driver_args += [disable_asserts]
@@ -177,7 +196,8 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {" ".join(command_bootbinaries)}"""
+
+        driver_call = f"""{self.sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {" ".join(command_bootbinaries)}"""
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -186,7 +206,7 @@ class RuntimeHWConfig:
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
         # Note that pkill only works for names <=15 characters
-        return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
+        return f"""{self.sudo} pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
     def build_fpga_driver(self) -> None:
         """ Build FPGA driver for running simulation """
@@ -222,7 +242,7 @@ class RuntimeHWConfig:
 
 
     def __str__(self) -> str:
-        return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, str(self.customruntimeconfig))
+        return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
 
 
 class RuntimeHWDB:

@@ -22,7 +22,7 @@ from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscri
 from awstools.afitools import share_agfi_in_all_regions
 
 from buildtools.buildconfigfile import BuildConfigFile
-from buildtools.bitbuilder import F1BitBuilder
+from buildtools.bit_builders.f1 import F1BitBuilder
 
 from util.streamlogger import StreamLogger
 from util.filelineswap import file_line_swap
