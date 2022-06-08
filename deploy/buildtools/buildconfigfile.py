@@ -99,6 +99,9 @@ class BuildConfigFile:
 
         build_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(BuildFarm)])
 
+        if not build_farm_type_name in build_farm_dispatch_dict:
+            raise Exception(f"Unable to find {build_farm_type_name} in available build farm classes: {build_farm_dispatch_dict.keys()}")
+
         # create dispatcher object using class given and pass args to it
         self.build_farm = build_farm_dispatch_dict[build_farm_type_name](build_farm_args)
 

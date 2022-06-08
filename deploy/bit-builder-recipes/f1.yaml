@@ -16,5 +16,5 @@ bit_builder_type: F1BitBuilder
 args:
     # REQUIRED: name of s3 bucket
     s3_bucket_name: firesim
-    # REQUIRED: append aws username to s3 bucket?
-    append_userid: true
+    # REQUIRED: append aws username and current region to s3_bucket_name?
+    append_userid_region: true

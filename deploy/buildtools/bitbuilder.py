@@ -13,7 +13,7 @@ from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
-from awstools.awstools import send_firesim_notification, get_aws_userid, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
+from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
 from util.streamlogger import StreamLogger, InfoStreamLogger
 
 # imports needed for python type checking
@@ -92,8 +92,8 @@ class F1BitBuilder(BitBuilder):
     def _parse_args(self) -> None:
         """Parse bitbuilder arguments."""
         self.s3_bucketname = self.args["s3_bucket_name"]
-        if self.args["append_userid"]:
-            self.s3_bucketname += "-" + get_aws_userid()
+        if self.args["append_userid_region"]:
+            self.s3_bucketname += "-" + get_aws_userid() + "-" + get_aws_region()
 
         if valid_aws_configure_creds():
             aws_resource_names_dict = aws_resource_names()

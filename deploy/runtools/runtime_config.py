@@ -302,6 +302,9 @@ class InnerRuntimeConfiguration:
 
         run_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(RunFarm)])
 
+        if not run_farm_type in run_farm_dispatch_dict:
+            raise Exception(f"Unable to find {run_farm_type} in available run farm classes: {run_farm_dispatch_dict.keys()}")
+
         # create dispatcher object using class given and pass args to it
         self.run_farm_dispatcher = run_farm_dispatch_dict[run_farm_type](run_farm_args)
 
