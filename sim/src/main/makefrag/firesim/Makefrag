@@ -8,12 +8,13 @@ DESIGN ?= FireSim
 # These guide chisel elaboration of the target design specified above.
 # See src/main/scala/SimConfigs.scala
 TARGET_CONFIG_PACKAGE ?= firesim.firesim
+#TARGET_CONFIG ?= FireSimNoMemPortConfig
 TARGET_CONFIG ?= FireSimRocketConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
-PLATFORM_CONFIG ?= BaseF1Config
+PLATFORM_CONFIG ?= BaseVitisConfig
 
 name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
@@ -89,7 +90,8 @@ DROMAJO_REQS = $(DROMAJO_H) $(DROMAJO_ROM) $(DROMAJO_DTB)
 
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
-DRIVER_H = $(shell find $(driver_dir) -name "*.h") \
+DRIVER_H = \
+	$(shell find $(driver_dir) -name "*.h") \
 	$(shell find $(firesim_lib_dir) -name "*.h") \
 	$(DROMAJO_REQS) \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
@@ -100,7 +102,6 @@ DRIVER_CC = \
 	    $(RISCV)/lib/libfesvr.a \
 	    $(DROMAJO_LIB) \
 	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
-
 
 # Per-repository dependencies (e.g., libdwarf) are installed under this sysroot
 firesim_local_sysroot = $(firesim_base_dir)/lib-install
