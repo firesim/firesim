@@ -36,6 +36,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             parent_node: Run farm host to associate with this platform implementation
         """
         self.parent_node = parent_node
+        self.sim_type_message = 'FPGA' if not parent_node.metasimulation_enabled else 'Metasim'
 
     @abc.abstractmethod
     def infrasetup_instance(self) -> None:
@@ -157,7 +158,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                     run('make clean')
                     run('make')
 
-    def fpga_node_qcow(self) -> None:
+    def sim_node_qcow(self) -> None:
         """ Install qemu-img management tools and copy NBD infra to remote
         node. This assumes that the kernel module was already built and exists
         in the directory on this machine.
@@ -292,7 +293,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self) -> None:
-        """ start the vivado hw_server and virtual jtag on simulation instance.) """
+        """ start the vivado hw_server and virtual jtag on simulation instance. """
         if self.instance_assigned_simulations():
             self.instance_logger("Starting Vivado hw_server.")
             with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -315,7 +316,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots)
             serv = self.parent_node.sim_slots[slotno]
 
-            self.instance_logger("""Copying FPGA simulation infrastructure for slot: {}.""".format(slotno))
+            self.instance_logger("""Copying {sim_type_message} simulation infrastructure for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
 
             remote_home_dir = self.parent_node.get_sim_dir()
 
@@ -365,7 +366,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     def start_sim_slot(self, slotno: int) -> None:
         if self.instance_assigned_simulations():
-            self.instance_logger("""Starting FPGA simulation for slot: {}.""".format(slotno))
+            self.instance_logger("""Starting {sim_type_message} simulation for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
             assert slotno < len(self.parent_node.sim_slots)
@@ -384,7 +385,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     def kill_sim_slot(self, slotno: int) -> None:
         if self.instance_assigned_simulations():
-            self.instance_logger("""Killing FPGA simulation for slot: {}.""".format(slotno))
+            self.instance_logger("""Killing {sim_type_message} simulation for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
             assert slotno < len(self.parent_node.sim_slots)
             server = self.parent_node.sim_slots[slotno]
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -400,37 +401,41 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     def infrasetup_instance(self) -> None:
         """ Handle infrastructure setup for this instance. """
-        # check if fpga node
-        if self.instance_assigned_simulations():
-            # This is an FPGA-host node.
 
-            # copy fpga sim infrastructure
+        metasim_enabled = self.parent_node.metasimulation_enabled
+
+        if self.instance_assigned_simulations():
+            # This is a sim-host node.
+
+            # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
 
-            self.get_and_install_aws_fpga_sdk()
-            # unload any existing edma/xdma/xocl
-            self.unload_xrt_and_xocl()
-            # copy xdma driver
-            self.fpga_node_xdma()
-            # load xdma
-            self.load_xdma()
+            if not metasim_enabled:
+                self.get_and_install_aws_fpga_sdk()
+                # unload any existing edma/xdma/xocl
+                self.unload_xrt_and_xocl()
+                # copy xdma driver
+                self.fpga_node_xdma()
+                # load xdma
+                self.load_xdma()
 
             # setup nbd/qcow infra
-            self.fpga_node_qcow()
+            self.sim_node_qcow()
             # load nbd module
             self.load_nbd_module()
 
-            # clear/flash fpgas
-            self.clear_fpgas()
-            self.flash_fpgas()
+            if not metasim_enabled:
+                # clear/flash fpgas
+                self.clear_fpgas()
+                self.flash_fpgas()
 
-            # re-load XDMA
-            self.load_xdma()
+                # re-load XDMA
+                self.load_xdma()
 
-            #restart (or start form scratch) ila server
-            self.kill_ila_server()
-            self.start_ila_server()
+                #restart (or start form scratch) ila server
+                self.kill_ila_server()
+                self.start_ila_server()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
@@ -504,7 +509,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
         rootLogger.debug("completed jobs " + str(completed_jobs))
 
         if not self.instance_assigned_simulations() and self.instance_assigned_switches():
-            # this node hosts ONLY switches and not fpga sims
+            # this node hosts ONLY switches and not sims
             #
             # just confirm that our switches are still running
             # switches will never trigger shutdown in the cycle-accurate -
@@ -535,7 +540,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             return {'switches': switchescompleteddict, 'sims': dict()}
 
         if self.instance_assigned_simulations():
-            # this node has fpga sims attached
+            # this node has sims attached
 
             # first, figure out which jobs belong to this instance.
             # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING

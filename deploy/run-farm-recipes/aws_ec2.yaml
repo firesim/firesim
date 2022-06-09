@@ -17,11 +17,46 @@ args:
     spot_max_price: ondemand
     # default location of the simulation directory on the run farm host
     default_simulation_dir: /home/centos
-    # run farm hosts to spawn
-    run_farm_hosts:
-      # fpga instances
+
+    # run farm hosts to spawn: a mapping from a spec below (which is an EC2
+    # instance type) to the number of instances of the given type that you
+    # want in your runfarm.
+    run_farm_hosts_to_use:
       - f1.16xlarge: 0
       - f1.4xlarge: 0
       - f1.2xlarge: 0
-      # switch-only instances
       - m4.16xlarge: 0
+      - z1d.3xlarge: 0
+      - z1d.6xlarge: 0
+      - z1d.12xlarge: 0
+
+    run_farm_host_specs:
+      - f1.2xlarge:
+          num_fpgas: 1
+          num_metasims: 0
+          use_switch_only: false
+      - f1.4xlarge:
+          num_fpgas: 2
+          num_metasims: 0
+          use_switch_only: false
+      - f1.16xlarge:
+          num_fpgas: 8
+          num_metasims: 0
+          use_switch_only: false
+      - m4.16xlarge:
+          num_fpgas: 0
+          num_metasims: 0
+          use_switch_only: true
+      - z1d.3xlarge:
+          num_fpgas: 0
+          num_metasims: 1
+          use_switch_only: false
+      - z1d.6xlarge:
+          num_fpgas: 0
+          num_metasims: 2
+          use_switch_only: false
+      - z1d.12xlarge:
+          num_fpgas: 0
+          num_metasims: 8
+          use_switch_only: false
+

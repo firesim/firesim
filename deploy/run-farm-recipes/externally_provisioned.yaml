@@ -3,27 +3,53 @@
 
 run_farm_type: ExternallyProvisioned
 args:
-    # REQUIRED: default num fpgas of type platform (see below) used for all run farm hosts
-    default_num_fpgas: 4
-    # REQUIRED: default platform used for all run farm hosts. this is a class specifying
+    # REQUIRED: default platform used for run farm hosts. this is a class specifying
     # how to run simulations on a run farm host.
     default_platform: EC2InstanceDeployManager
-    # REQUIRED: default directory where simulations are run out of on the run farm host
+
+    # REQUIRED: default directory where simulations are run out of on the run farm hosts
     default_simulation_dir: /home/centos
-    # REQUIRED: List of unique hostnames. Each can have multiple OPTIONAL
-    # arguments, called "override_*", corresponding to the "default_*" arguments specified
-    # above. Each "override_*" argument overrides the corresponding "default_*" argument for
-    # that specific run host.
+
+    # REQUIRED: List of unique hostnames/IP addresses, each with their
+    # corresponding specification that describes the properties of the host.
     #
     # Ex:
-    # run_farm_hosts:
-    #     # use localhost and don't override the defaults
-    #     - localhost
-    #     # use other IP address (don't override the defaults)
-    #     - "111.111.1.111"
-    #     # use other IP address (override default sim dir and num fpgas for this build host)
-    #     - "222.222.2.222":
-    #         override_simulation_dir: /scratch/specific-build-host-build-dir
-    #         override_num_fpgas: 2
-    run_farm_hosts:
-        - localhost
+    # run_farm_hosts_to_use:
+    #     # use localhost which is described by "four_fpgas_spec" below.
+    #     - localhost: four_fpgas_spec
+    #     # supply IP address, which points to a machine that is described
+    #     # by "four_fpgas_spec" below.
+    #     - "111.111.1.111": four_fpgas_spec
+    run_farm_hosts_to_use:
+        - localhost: four_fpgas_spec
+
+    # REQUIRED: List of host "specifications", i.e. re-usable collections of
+    # host parameters.
+    #
+    # Besides required parameters shown below, each can have multiple OPTIONAL
+    # arguments, called "override_*", corresponding to the "default_*" arguments
+    # specified above. Each "override_*" argument overrides the corresponding
+    # "default_*" argument in that run host spec.
+    #
+    # Optional params include:
+    #       override_simulation_dir: /scratch/specific-build-host-build-dir
+    #       override_platform: EC2InstanceDeployManager
+    run_farm_host_specs:
+        - four_fpgas_spec:
+            # REQUIRED: number of FPGAs on the machine
+            num_fpgas: 4
+            # REQUIRED: number of metasims this machine can host
+            num_metasims: 0
+            # REQUIRED: whether it is acceptable to use machines of this spec
+            # to host ONLY switches (e.g. any attached FPGAs are "wasted")
+            use_switch_only: false
+
+        - four_metasims_spec:
+            num_fpgas: 0
+            num_metasims: 4
+            use_switch_only: false
+
+        - switch_only_spec:
+            num_fpgas: 0
+            num_metasims: 0
+            use_switch_only: true
