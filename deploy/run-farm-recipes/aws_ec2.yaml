@@ -6,13 +6,13 @@ args:
     # managerinit arg start
     # tag to apply to run farm hosts
     run_farm_tag: mainrunfarm
-    # TODO
+    # enable expanding run farm by run_farm_hosts given
     always_expand_run_farm: true
-    # TODO
+    # minutes to retry attempting to request instances
     launch_instances_timeout_minutes: 60
-    # run farm host market to use (ondemand or spot)
+    # run farm host market to use (ondemand, spot)
     run_instance_market: ondemand
-    # if using spot instances, determine the interrupt behavior
+    # if using spot instances, determine the interrupt behavior (terminate, stop, hibernate)
     spot_interruption_behavior: terminate
     # if using spot instances, determine the max price
     spot_max_price: ondemand
