@@ -188,23 +188,22 @@ class AXI4ClockConverter(bundleParams: AXI4BundleParameters, override val desire
 
   GoldenGateOutputFileAnnotation.annotateFromChisel(
     s"""|create_ip -name axi_clock_converter \\
-			  |          -vendor xilinx.com \\
-			  |          -library ip \\
-			  |          -version 2.1 \\
-			  |          -module_name ${desiredName} \\
-        |          -dir ./ipgen
-			  |
-			  |set_property -dict [list CONFIG.PROTOCOL {${protocolParam}} \\
-			  |                         CONFIG.ADDR_WIDTH {${bundleParams.addrBits}} \\
-			  |                         CONFIG.SYNCHRONIZATION_STAGES {3} \\
-			  |                         CONFIG.DATA_WIDTH {${bundleParams.dataBits}} \\
-			  |                         CONFIG.ID_WIDTH {${bundleParams.idBits}} \\
-			  |                         CONFIG.AWUSER_WIDTH {0} \\
-			  |                         CONFIG.ARUSER_WIDTH {0} \\
-			  |                         CONFIG.RUSER_WIDTH {0} \\
-			  |                         CONFIG.WUSER_WIDTH {0} \\
-			  |                         CONFIG.BUSER_WIDTH {0}] \\
-			  |             [get_ips ${desiredName}]
+        |          -vendor xilinx.com \\
+        |          -library ip \\
+        |          -version 2.1 \\
+        |          -module_name ${desiredName}
+        |
+        |set_property -dict [list CONFIG.PROTOCOL {${protocolParam}} \\
+        |                         CONFIG.ADDR_WIDTH {${bundleParams.addrBits}} \\
+        |                         CONFIG.SYNCHRONIZATION_STAGES {3} \\
+        |                         CONFIG.DATA_WIDTH {${bundleParams.dataBits}} \\
+        |                         CONFIG.ID_WIDTH {${bundleParams.idBits}} \\
+        |                         CONFIG.AWUSER_WIDTH {0} \\
+        |                         CONFIG.ARUSER_WIDTH {0} \\
+        |                         CONFIG.RUSER_WIDTH {0} \\
+        |                         CONFIG.WUSER_WIDTH {0} \\
+        |                         CONFIG.BUSER_WIDTH {0}] \\
+        |             [get_ips ${desiredName}]
         |""".stripMargin,
     s".${desiredName}.ipgen.tcl"
   )

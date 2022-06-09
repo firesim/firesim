@@ -30,7 +30,6 @@ add_files -norecurse [ list \
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1
 
-file mkdir ./ipgen
 set ipgen_scripts [glob $path_to_hdl/FireSim-generated.*.ipgen.tcl]
 foreach script $ipgen_scripts {
     source $script

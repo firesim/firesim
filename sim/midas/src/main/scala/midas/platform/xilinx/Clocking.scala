@@ -17,8 +17,7 @@ class MMCM(inputFreqMHz: Double, outputFreqMHz: Double, override val desiredName
         |          -vendor xilinx.com \\
         |          -library ip \\
         |          -version 6.0 \\
-        |          -module_name ${desiredName} \\
-        |          -dir ./ipgen
+        |          -module_name ${desiredName}
         |
         |set_property -dict [list CONFIG.USE_PHASE_ALIGNMENT {false} \\
         |                         CONFIG.PRIM_SOURCE {No_buffer} \\
