@@ -15,14 +15,12 @@ from collections import defaultdict
 from awstools.awstools import instances_sorted_by_avail_ip, get_run_instances_by_tag_type, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, terminate_instances, get_instance_ids_for_instances, aws_resource_names, MockBoto3Instance
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
-from runtools.run_farm_deploy_managers import InstanceDeployManager
-from runtools.deploy_managers.aws_ec2 import EC2InstanceDeployManager
+from runtools.run_farm_deploy_managers import InstanceDeployManager, EC2InstanceDeployManager
 
 from typing import Any, Dict, Optional, List, Union, Set, Type, Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
     from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
     from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
-    from runtools.run_farm_deploy_managers import InstanceDeployManager
 
 rootLogger = logging.getLogger()
 

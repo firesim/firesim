@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from runtools.run_farm import Inst
     from runtools.runtime_config import RuntimeHWConfig
     from runtools.utils import MacAddress
-    from runtools.deploy_managers.aws_ec2 import EC2InstanceDeployManager
+    from runtools.run_farm_deploy_managers import EC2InstanceDeployManager
 
 rootLogger = logging.getLogger()
 

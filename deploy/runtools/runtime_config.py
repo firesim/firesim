@@ -36,8 +36,11 @@ class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.yaml """
     name: str
     platform: str
+
+    # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
     xclbin: Optional[str]
+
     deploytriplet: Optional[str]
     customruntimeconfig: str
     driver_built: bool
@@ -62,8 +65,11 @@ class RuntimeHWConfig:
         self.deploytriplet = hwconfig_dict['deploy_triplet_override']
         if self.deploytriplet is not None:
             rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
-            if self.platform == "vitis":
-                raise Exception(f"Must set the deploy_triplet_override for Vitis bitstreams")
+
+        # TODO: obtain deploy_triplet from tag in xclbin
+        if self.deploytriplet is None and self.platform == "vitis":
+            raise Exception(f"Must set the deploy_triplet_override for Vitis bitstreams")
+
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
