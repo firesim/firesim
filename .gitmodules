@@ -25,6 +25,3 @@
 [submodule "sim/firesim-lib/src/main/cc/lib/libdwarf"]
 	path = sim/firesim-lib/src/main/cc/lib/libdwarf
 	url = https://github.com/davea42/libdwarf-code
-[submodule "platforms/vitis"]
-	path = platforms/vitis
-	url = https://github.com/firesim/vitis-shell.git
