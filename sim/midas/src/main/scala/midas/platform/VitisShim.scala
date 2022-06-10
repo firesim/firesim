@@ -96,6 +96,8 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     ctrl_cdc.io.m_axi_aclk := hostClock
     ctrl_cdc.io.m_axi_aresetn := (!hostSyncReset).asAsyncReset
 
+    midas.targetutils.FpgaDebug(top.module.mem(0))
+    midas.targetutils.FpgaDebug(top.module.ctrl)
     // All this awful block of code does is convert between three different
     // AXI4 bundle formats (Xilinx, RC Standard, Legacy Nasti).
     val axi4ToNasti = Module(new AXI42NastiIdentityModule(ctrlAXI4BundleParams))
