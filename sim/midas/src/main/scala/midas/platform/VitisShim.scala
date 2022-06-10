@@ -58,7 +58,11 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     def resetSync(areset: AsyncReset, clock: Clock, length: Int = 3): Bool = {
       withClockAndReset(clock, areset) {
         val sync_regs = Seq.fill(length)(RegInit(true.B))
-        sync_regs.foldLeft(false.B) { case (prev, curr) => curr := prev; curr }
+        sync_regs.foldLeft(false.B) { case (prev, curr) =>
+          XDC(XDCFiles.Synthesis, "set_property ASYNC_REG TRUE [get_cells {}_reg]", curr)
+          curr := prev
+          curr
+        }
       }
     }
 
