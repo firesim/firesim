@@ -1,0 +1,54 @@
+run_farm:
+    base_recipe: str()
+    # map values unspecified since these are build farm specific
+    recipe_arg_overrides: include("recipe_args", required=False)
+
+metasimulation:
+    metasimulation_enabled: bool()
+    metasimulation_host_simulator: str()
+    metasimulation_only_plusargs: str()
+    metasimulation_only_vcs_plusargs: str()
+
+target_config:
+    topology: str()
+    no_net_num_nodes: int()
+    link_latency: int()
+    switching_latency: int()
+    net_bandwidth: int()
+    profile_interval: int()
+    default_hw_config: str()
+    plusarg_passthrough: str()
+
+tracing: include("tracing_spec", required=False)
+
+autocounter: include("autocounter_spec", required=False)
+
+workload:
+    workload_name: str()
+    terminate_on_completion: bool()
+    suffix_tag: any(null(), str(), required=False)
+
+host_debug: include("host_debug_spec", required=False)
+
+synth_print: include("synth_print_spec", required=False)
+
+---
+
+tracing_spec:
+    enable: bool(required=False)
+    output_format: int(min=0, max=2, required=False)
+    selector: int(min=0, max=3, required=False)
+    start: int(required=False)
+    end: int(required=False)
+
+autocounter_spec:
+    read_rate: int(required=False)
+
+host_debug_spec:
+    zero_out_dram: bool(required=False)
+    disable_synth_asserts: bool(required=False)
+
+synth_print_spec:
+    start: int(required=False)
+    end: int(required=False)
+    cycle_prefix: bool(required=False)

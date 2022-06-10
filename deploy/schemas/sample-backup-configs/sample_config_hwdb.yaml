@@ -1,0 +1,8 @@
+map(include("hwdb_entry_spec"), key=str())
+
+---
+
+hwdb_entry_spec:
+    agfi: str()
+    deploy_triplet_override: any(null(), str())
+    custom_runtime_config: any(null(), str())

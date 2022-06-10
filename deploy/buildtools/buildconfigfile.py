@@ -5,12 +5,14 @@ import pprint
 import logging
 import sys
 import yaml
+import os
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
 from buildtools.buildfarm import BuildFarm
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
+from util.configvalidation import validate
 
 # imports needed for python type checking
 from typing import Dict, Optional, List, Set, Type, Any, TYPE_CHECKING
@@ -52,6 +54,10 @@ class BuildConfigFile:
 
         self.args = args
 
+        # validate w/o overrides
+        if not validate(args.buildconfigfile, "schemas/sample-backup-configs/sample_config_build.yaml", "schemas/build-farm-recipes/generic.yaml"):
+            raise Exception(f"Invalid YAML in file: {args.buildconfigfile}")
+
         global_build_config_file = None
         with open(args.buildconfigfile, "r") as yaml_file:
             global_build_config_file = yaml.safe_load(yaml_file)
@@ -63,6 +69,10 @@ class BuildConfigFile:
         # this is a list of actual builds to run
         builds_to_run_list = global_build_config_file['builds_to_run']
         self.num_builds = len(builds_to_run_list)
+
+        # validate w/o overrides
+        if not validate(args.buildrecipesconfigfile, "schemas/sample-backup-configs/sample_config_build_recipes.yaml", "schemas/bit-builder-recipes/generic.yaml"):
+            raise Exception(f"Invalid YAML in file: {args.buildrecipesconfigfile}")
 
         build_recipes_config_file = None
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
@@ -85,6 +95,17 @@ class BuildConfigFile:
         # retrieve the build host section
 
         build_farm_defaults_file = global_build_config_file["build_farm"]["base_recipe"]
+
+        schema_file = f"schemas/{build_farm_defaults_file}"
+        def validate_helper(val_cond: bool, error_msg: str):
+            if os.path.exists(schema_file):
+                if not val_cond:
+                    raise Exception(error_msg)
+            else:
+                rootLogger.warning(f"Unable to find schema file for {build_farm_defaults_file}. Skipping validation.")
+
+        validate_helper(validate(build_farm_defaults_file, schema_file), f"Invalid YAML in {build_farm_defaults_file}")
+
         build_farm_config_file = None
         with open(build_farm_defaults_file, "r") as yaml_file:
             build_farm_config_file = yaml.safe_load(yaml_file)
@@ -95,6 +116,10 @@ class BuildConfigFile:
         # add the overrides if it exists
         override_args = global_build_config_file['build_farm'].get('recipe_arg_overrides')
         if override_args:
+            # validate overrides
+            override_build_farm_arg_dict = {"build_farm_type": build_farm_type_name, "args": override_args}
+            validate_helper(validate(yaml.dump(override_build_farm_arg_dict), schema_file, None, ["Required field missing"], True), f"Invalid YAML in {args.buildconfigfile}")
+
             build_farm_args = deep_merge(build_farm_args, override_args)
 
         build_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(BuildFarm)])

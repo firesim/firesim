@@ -1,0 +1,8 @@
+bit_builder_type: enum("F1BitBuilder")
+args: include("recipe_args")
+
+---
+
+recipe_args:
+    s3_bucket_name: str()
+    append_userid_region: bool()

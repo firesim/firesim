@@ -1,0 +1,11 @@
+build_farm_type: enum("ExternallyProvisioned")
+args: include("recipe_args")
+
+---
+
+recipe_args:
+    default_build_dir: any(null(), str())
+    build_farm_hosts: list(str(), include("build_farm_host_spec"))
+
+build_farm_host_spec:
+    override_build_dir: str(required=False)

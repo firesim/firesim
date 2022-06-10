@@ -3,16 +3,21 @@ from __future__ import annotations
 from time import strftime, gmtime
 import pprint
 import yaml
+import os
+import logging
 
 from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
-import buildtools
 from util.deepmerge import deep_merge
+from util.configvalidation import validate
+from util.inheritors import inheritors
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
+
+rootLogger = logging.getLogger()
 
 class BuildConfig:
     """Represents a single build configuration used to build RTL, drivers, and bitstreams.
@@ -65,9 +70,21 @@ class BuildConfig:
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
         self.post_build_hook = recipe_config_dict['post_build_hook']
 
+        bit_builder_recipe_file = recipe_config_dict['bit_builder_recipe']
+        schema_file = f"schemas/{bit_builder_recipe_file}"
+
+        def validate_helper(val_cond: bool):
+            if os.path.exists(schema_file):
+                if not val_cond:
+                    raise Exception(f"Invalid YAML in build recipe: {name}")
+            else:
+                rootLogger.warning(f"Unable to find schema file for {bit_builder_recipe_file}. Skipping validation.")
+
+        validate_helper(validate(bit_builder_recipe_file, schema_file))
+
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
-        with open(recipe_config_dict['bit_builder_recipe'], "r") as yaml_file:
+        with open(bit_builder_recipe_file, "r") as yaml_file:
             bitbuilder_conf_dict = yaml.safe_load(yaml_file)
 
         bitbuilder_type_name = bitbuilder_conf_dict["bit_builder_type"]
@@ -76,9 +93,13 @@ class BuildConfig:
         # add the overrides if it exists
         override_args = recipe_config_dict.get('bit_builder_arg_overrides')
         if override_args:
+            # validate overrides
+            override_bit_builder_arg_dict = {"bit_builder_type": bitbuilder_type_name, "args": override_args}
+            validate_helper(validate(yaml.dump(override_bit_builder_arg_dict), schema_file, None, ["Required field missing"], True))
+
             bitbuilder_args = deep_merge(bitbuilder_args, override_args)
 
-        bitbuilder_dispatch_dict = dict([(x.__name__, x) for x in buildtools.buildconfigfile.inheritors(BitBuilder)])
+        bitbuilder_dispatch_dict = dict([(x.__name__, x) for x in inheritors(BitBuilder)])
 
         if not bitbuilder_type_name in bitbuilder_dispatch_dict:
             raise Exception(f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}")

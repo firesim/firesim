@@ -21,6 +21,7 @@ from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, H
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
+from util.configvalidation import validate
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -369,6 +370,9 @@ class RuntimeHWDB:
         self.config_file_name = hardwaredbconfigfile
         self.simulation_mode_string = "FPGA simulation"
 
+        if not validate(hardwaredbconfigfile, "schemas/sample-backup-configs/sample_config_hwdb.yaml"):
+            raise Exception(f"Invalid YAML in file: {hardwaredbconfigfile}")
+
         agfidb_configfile = None
         with open(hardwaredbconfigfile, "r") as yaml_file:
             agfidb_configfile = yaml.safe_load(yaml_file)
@@ -435,6 +439,9 @@ class InnerRuntimeConfiguration:
     default_plusarg_passthrough: str
 
     def __init__(self, runtimeconfigfile: str, configoverridedata: str) -> None:
+        # validate w/o overrides
+        if not validate(runtimeconfigfile, "schemas/sample-backup-configs/sample_config_runtime.yaml", "schemas/run-farm-recipes/generic.yaml"):
+            raise Exception(f"Invalid YAML in file: {runtimeconfigfile}")
 
         runtime_configfile = None
         with open(runtimeconfigfile, "r") as yaml_file:
@@ -470,6 +477,17 @@ class InnerRuntimeConfiguration:
 
         # Setup the run farm
         defaults_file = runtime_dict['run_farm']['base_recipe']
+
+        schema_file = f"schemas/{defaults_file}"
+        def validate_helper(val_cond: bool, error_msg: str):
+            if os.path.exists(schema_file):
+                if not val_cond:
+                    raise Exception(error_msg)
+            else:
+                rootLogger.warning(f"Unable to find schema file for {defaults_file}. Skipping validation.")
+
+        validate_helper(validate(defaults_file, schema_file), f"Invalid YAML in {defaults_file}")
+
         with open(defaults_file, "r") as yaml_file:
             run_farm_configfile = yaml.safe_load(yaml_file)
         run_farm_type = run_farm_configfile["run_farm_type"]
@@ -479,6 +497,10 @@ class InnerRuntimeConfiguration:
 
         override_args = runtime_dict['run_farm'].get('recipe_arg_overrides')
         if override_args:
+            # validate overrides
+            override_run_farm_arg_dict = {"run_farm_type": run_farm_type, "args": override_args}
+            validate_helper(validate(yaml.dump(override_run_farm_arg_dict), schema_file, None, ["Required field missing"], True), f"Invalid YAML in {runtimeconfigfile}")
+
             run_farm_args = deep_merge(run_farm_args, override_args)
 
         run_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(RunFarm)])

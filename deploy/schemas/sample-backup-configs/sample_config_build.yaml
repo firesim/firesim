@@ -1,0 +1,10 @@
+build_farm:
+    base_recipe: str()
+    # map values unspecified since these are build farm specific
+    recipe_arg_overrides: include("recipe_args", required=False)
+
+builds_to_run: any(list(str()), null())
+
+agfis_to_share: any(list(str()), null)
+
+share_with_accounts: map(any(enum("public"), int()), key=str())

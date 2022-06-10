@@ -232,6 +232,7 @@ class TestConfigBuildAPI:
                 deploy_triplet: null
                 PLATFORM_CONFIG: Config
                 post_build_hook: null
+                metasim_customruntimeconfig: null
                 bit_builder_recipe: bit-builder-recipes/f1.yaml
             """))
         build_yamls.write()

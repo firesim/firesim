@@ -1,0 +1,6 @@
+bit_builder_type: enum("VitisBitBuilder")
+args: include("recipe_args")
+
+---
+
+recipe_args: null()

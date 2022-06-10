@@ -1,0 +1,18 @@
+run_farm_type: enum("ExternallyProvisioned")
+args: include("recipe_args")
+
+---
+
+recipe_args:
+    default_num_fpgas: int(required=False)
+    default_platform: str(required=False)
+    default_simulation_dir: str(required=False)
+    run_farm_hosts_to_use: list(map(str(), key=str()))
+    run_farm_host_specs: list(map(include("run_farm_host_spec"), key=str()))
+
+run_farm_host_spec:
+    num_fpgas: int()
+    num_metasims: int()
+    use_for_switch_only: bool()
+    override_platform: str(required=False)
+    override_simulation_dir: str(required=False)

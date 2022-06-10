@@ -1,0 +1,22 @@
+run_farm_type: enum("AWSEC2F1")
+args: include("recipe_args")
+
+---
+
+recipe_args:
+    run_farm_tag: str()
+    always_expand_run_farm: bool()
+    launch_instances_timeout_minutes: int(required=False)
+    run_instance_market: enum("ondemand", "spot")
+    spot_interruption_behavior: enum("hibernate", "stop", "terminate")
+    spot_max_price: any(enum("ondemand"), str())
+    default_simulation_dir: str()
+    run_farm_hosts_to_use: list(map(int(), key=str()))
+    run_farm_host_specs: list(map(include("run_farm_host_spec"), key=str()))
+
+run_farm_host_spec:
+    num_fpgas: int()
+    num_metasims: int()
+    use_for_switch_only: bool()
+    override_simulation_dir: str(required=False)
+    override_platform: str(required=False)

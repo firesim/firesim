@@ -1,0 +1,6 @@
+build_farm_type: str()
+args: include("recipe_args")
+
+---
+
+recipe_args: map()

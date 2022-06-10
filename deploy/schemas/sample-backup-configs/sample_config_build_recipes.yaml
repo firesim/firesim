@@ -1,0 +1,14 @@
+map(include("build_recipe_spec"), key=str())
+
+---
+
+build_recipe_spec:
+    DESIGN: str()
+    TARGET_CONFIG: str()
+    PLATFORM_CONFIG: str()
+    deploy_triplet: any(null(), str())
+    post_build_hook: any(null(), str())
+    TARGET_PROJECT: str(required=False)
+    metasim_customruntimeconfig: any(null(), str())
+    bit_builder_recipe: str()
+    bit_builder_arg_overrides: include("recipe_args", required=False)

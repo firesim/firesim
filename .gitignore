@@ -9,3 +9,4 @@ tags
 build
 scala-doc-env.sh
 *.swp
+__pycache__

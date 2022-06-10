@@ -3,14 +3,14 @@
 
 # this refers to build farms defined in config_build_farm.yaml
 build_farm:
-  # managerinit replace start
-  base_recipe: build-farm-recipes/aws_ec2.yaml
-  # Uncomment and add args to override defaults.
-  # Arg structure should be identical to the args given
-  # in the base_recipe.
-  #recipe_arg_overrides:
-  #  <ARG>: <OVERRIDE>
-  # managerinit replace end
+    # managerinit replace start
+    base_recipe: build-farm-recipes/aws_ec2.yaml
+    # Uncomment and add args to override defaults.
+    # Arg structure should be identical to the args given
+    # in the base_recipe.
+    #recipe_arg_overrides:
+    #  <ARG>: <OVERRIDE>
+    # managerinit replace end
 
 builds_to_run:
     # this section references builds defined in config_build_recipes.yaml
