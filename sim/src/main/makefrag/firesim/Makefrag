@@ -14,7 +14,7 @@ TARGET_CONFIG ?= FireSimRocketConfig
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
-PLATFORM_CONFIG ?= BaseVitisConfig
+PLATFORM_CONFIG ?= WithAutoILA_BaseVitisConfig
 
 name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
