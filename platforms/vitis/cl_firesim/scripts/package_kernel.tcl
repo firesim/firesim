@@ -12,7 +12,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-#
+
+# This file was originally a vitis RTL kernel example design.
 
 set path_to_hdl "../design"
 set path_to_packaged "./packaged_kernel_${suffix}"
@@ -64,33 +65,6 @@ foreach up [ipx::get_user_parameters] {
 
 ipx::associate_bus_interfaces -busif s_axi_lite -clock ap_clk $core
 ipx::associate_bus_interfaces -busif host_mem_0 -clock ap_clk $core
-
-# TODO: Re-add
-#ipx::infer_bus_interface ap_clk_2 xilinx.com:signal:clock_rtl:1.0 $core
-#ipx::infer_bus_interface ap_rst_n_2 xilinx.com:signal:reset_rtl:1.0 $core
-
-# TODO: Apparently not needed anymore?
-## Specify the freq_hz parameter
-#set clkbif      [::ipx::get_bus_interfaces -of $core "ap_clk"]
-#set clkbifparam [::ipx::add_bus_parameter -quiet "FREQ_HZ" $clkbif]
-## Set desired frequency (prev was 300MHz)
-#set_property value 300000000 $clkbifparam
-## set value_resolve_type 'user' if the frequency can vary.
-##set_property value_resolve_type user $clkbifparam
-## set value_resolve_type 'immediate' if the frequency cannot change.
-#set_property value_resolve_type immediate $clkbifparam
-
-# TODO: Apparently not needed anymore?
-## Specify the freq_hz parameter
-#set clkbif1      [::ipx::get_bus_interfaces -of $core "ap_clk_2"]
-#set clkbifparam1 [::ipx::add_bus_parameter -quiet "FREQ_HZ" $clkbif1]
-## Set desired frequency
-## TODO: Have FireSim TCL set this
-#set_property value 500000000 $clkbifparam1
-## set value_resolve_type 'user' if the frequency can vary.
-##set_property value_resolve_type user $clkbifparam1
-## set value_resolve_type 'immediate' if the frequency cannot change.
-#set_property value_resolve_type immediate $clkbifparam1
 
 # set up mem map for axis intf
 set mem_map    [::ipx::add_memory_map -quiet "s_axi_lite" $core]
