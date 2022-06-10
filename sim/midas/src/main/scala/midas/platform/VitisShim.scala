@@ -125,6 +125,9 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       s"# Currenty unused",
       ".env.tcl")
-    SpecifyXDCCircuitPaths(Some("firesim_top"), Some("WRAPPER_INST/CL/firesim_top"))
+    // We don't need to provide paths because
+    // 1) The Shim module is the top-level of the kernel
+    // 2) Implementation constraints are scoped to the kernel level in our vitis flow
+    SpecifyXDCCircuitPaths(None, None)
   }
 }

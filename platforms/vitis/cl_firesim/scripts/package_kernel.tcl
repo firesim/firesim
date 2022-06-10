@@ -20,12 +20,20 @@ set path_to_tmp_project "./tmp_kernel_pack_${suffix}"
 
 set projPart "xcu250-figd2104-2L-e"
 
+set base_filename "FireSim-generated"
+set synth_xdc_path "${path_to_hdl}/${base_filename}.synthesis.xdc"
+set impl_xdc_path  "${path_to_hdl}/${base_filename}.implementation.xdc"
+
 create_project -force kernel_pack $path_to_tmp_project -part ${projPart}
 add_files -norecurse [ list \
     $path_to_hdl/defines.vh \
+    $synth_xdc_path \
+    $impl_xdc_path \
     $path_to_hdl/FireSim-generated.post-processed.sv \
-    $path_to_hdl/constraints.xdc \
 ]
+
+set_property USED_IN_SYNTHESIS false     [get_files $impl_xdc_path]
+set_property USED_IN_IMPLEMENTATION true [get_files $impl_xdc_path]
 
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1
