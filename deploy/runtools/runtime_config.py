@@ -270,7 +270,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
-        self.customruntimeconfig = self.customruntimeconfig if self.customruntimeconfig != "None" else None
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
         self.metasim_host_simulator = default_metasim_host_sim
