@@ -56,7 +56,7 @@ def run_linux_poweroff_externally_provisioned():
                     start_lines += ["  recipe_arg_overrides:\n"]
                     start_lines += ["    run_farm_hosts_to_use:\n"]
                     for ip in instance_ips:
-                        start_lines += [f"""      - "centos@{ip}: one_fpga_spec"\n"""]
+                        start_lines += [f"""      - "centos@{ip}": one_fpga_spec\n"""]
 
                     file_line_swap(
                             workload_full,

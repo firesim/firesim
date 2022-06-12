@@ -523,13 +523,17 @@ class ExternallyProvisioned(RunFarm):
 
         for runhost in runhosts_list:
             if not isinstance(runhost, dict):
-                raise Exception("Unknown runhost handle")
+                raise Exception(f"Invalid runhost to spec mapping for {runhost}.")
 
             items = runhost.items()
 
             assert (len(items) == 1), f"dict type 'run_hosts' items map a single host name to a host spec. Not: {pprint.pformat(runhost)}"
 
             ip_addr, host_spec_name = next(iter(items))
+
+            if host_spec_name not in runhost_specs.keys():
+                raise Exception(f"Unknown runhost spec of {host_spec_name}")
+
             host_spec = runhost_specs[host_spec_name]
 
             # populate mapping helpers based on runhost_specs:
