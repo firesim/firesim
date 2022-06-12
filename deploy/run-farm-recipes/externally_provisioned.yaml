@@ -26,6 +26,9 @@ args:
     # REQUIRED: List of host "specifications", i.e. re-usable collections of
     # host parameters.
     #
+    # The "name" of a spec (e.g. "four_fpgas_spec" below) is user-determined
+    # and is used to refer to the spec above.
+    #
     # Besides required parameters shown below, each can have multiple OPTIONAL
     # arguments, called "override_*", corresponding to the "default_*" arguments
     # specified above. Each "override_*" argument overrides the corresponding

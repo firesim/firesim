@@ -42,6 +42,11 @@ class RuntimeHWConfig:
     customruntimeconfig: str
     driver_built: bool
     additional_required_files: List[Tuple[str, str]]
+    driver_name_prefix: str
+    driver_name_suffix: str
+    local_driver_base_dir: str
+    driver_build_target: str
+    driver_type_message: str
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
@@ -96,7 +101,7 @@ class RuntimeHWConfig:
 
     def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
-        return self.get_design_name() + "-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
+        return "FireSim-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
 
     def get_local_runtime_conf_path(self) -> str:
         """ return relative local path of the runtime conf used to run this sim. """
@@ -256,7 +261,10 @@ class RuntimeHWConfig:
 class RuntimeBuildRecipeConfig(RuntimeHWConfig):
     """ A pythonic version of the entires in config_build_recipes.yaml """
 
-    def __init__(self, name: str, build_recipe_dict: Dict[str, Any], default_metasim_host_sim: str) -> None:
+    def __init__(self, name: str, build_recipe_dict: Dict[str, Any],
+                 default_metasim_host_sim: str,
+                 metasimulation_only_plusargs: str,
+                 metasimulation_only_vcs_plusargs: str) -> None:
         self.name = name
         self.agfi = "Metasim" # for __str__ to work
         self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
@@ -283,6 +291,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.driver_build_target = self.metasim_host_simulator
         self.driver_type_message = "Metasim"
 
+        self.metasimulation_only_plusargs = metasimulation_only_plusargs
+        self.metasimulation_only_vcs_plusargs = metasimulation_only_vcs_plusargs
+
     def get_boot_simulation_command(self,
             slotid: int,
             all_macs: Sequence[MacAddress],
@@ -299,10 +310,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             extra_plusargs: str = "",
             extra_args: str = "") -> str:
         """ return the command used to boot the meta simulation. """
-        full_extra_plusargs = " +fesvr-step-size=128 +dramsim +max-cycles=100000000" + extra_plusargs
-        if self.metasim_host_simulator == "vcs":
-            vcs_plusargs = " +vcs+initreg+0 +vcs+initmem+0 "
-            full_extra_plusargs = vcs_plusargs + full_extra_plusargs
+        full_extra_plusargs = " " + self.metasimulation_only_plusargs + " " + extra_plusargs
+        if self.metasim_host_simulator in ['vcs', 'vcs-debug']:
+            full_extra_plusargs = " " + self.metasimulation_only_vcs_plusargs + " " +  full_extra_plusargs
         if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
             full_extra_plusargs += " +waveform=metasim_waveform.vpd "
         # TODO: spike-dasm support
@@ -348,7 +358,10 @@ class RuntimeBuildRecipes(RuntimeHWDB):
     """ Same as RuntimeHWDB, but use information from build recipes entries
     instead of hwdb for metasimulation."""
 
-    def __init__(self, build_recipes_config_file: str, metasim_host_simulator: str) -> None:
+    def __init__(self, build_recipes_config_file: str,
+                 metasim_host_simulator: str,
+                 metasimulation_only_plusargs: str,
+                 metasimulation_only_vcs_plusargs: str) -> None:
 
         recipes_configfile = None
         with open(build_recipes_config_file, "r") as yaml_file:
@@ -356,7 +369,7 @@ class RuntimeBuildRecipes(RuntimeHWDB):
 
         recipes_dict = recipes_configfile
 
-        self.hwconf_dict = {s: RuntimeBuildRecipeConfig(s, v, metasim_host_simulator) for s, v in recipes_dict.items()}
+        self.hwconf_dict = {s: RuntimeBuildRecipeConfig(s, v, metasim_host_simulator, metasimulation_only_plusargs, metasimulation_only_vcs_plusargs) for s, v in recipes_dict.items()}
 
 
 class InnerRuntimeConfiguration:
@@ -379,6 +392,9 @@ class InnerRuntimeConfiguration:
     suffixtag: str
     terminateoncompletion: bool
     metasimulation_enabled: bool
+    metasimulation_host_simulator: str
+    metasimulation_only_plusargs: str
+    metasimulation_only_vcs_plusargs: str
     default_plusarg_passthrough: str
 
     def __init__(self, runtimeconfigfile: str, configoverridedata: str) -> None:
@@ -401,14 +417,19 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        self.metasimulation_enabled = False
-        self.metasimulation_host_simulator = 'verilator'
-        if 'metasimulation' in runtime_dict:
-            metasim_dict = runtime_dict['metasimulation']
-            if 'metasimulation_enabled' in metasim_dict:
-                self.metasimulation_enabled = metasim_dict['metasimulation_enabled']
-            if 'metasimulation_host_simulator' in metasim_dict:
-                self.metasimulation_host_simulator = metasim_dict['metasimulation_host_simulator']
+        def dict_assert(key_check, dict_name):
+            assert key_check in dict_name, f"FAIL: missing {key_check} in runtime config."
+
+        dict_assert('metasimulation', runtime_dict)
+        metasim_dict = runtime_dict['metasimulation']
+        dict_assert('metasimulation_enabled', metasim_dict)
+        self.metasimulation_enabled = metasim_dict['metasimulation_enabled']
+        dict_assert('metasimulation_host_simulator', metasim_dict)
+        self.metasimulation_host_simulator = metasim_dict['metasimulation_host_simulator']
+        dict_assert('metasimulation_only_plusargs', metasim_dict)
+        self.metasimulation_only_plusargs = metasim_dict['metasimulation_only_plusargs']
+        dict_assert('metasimulation_only_vcs_plusargs', metasim_dict)
+        self.metasimulation_only_vcs_plusargs = metasim_dict['metasimulation_only_vcs_plusargs']
 
         # Setup the run farm
         defaults_file = runtime_dict['run_farm']['base_recipe']
@@ -455,9 +476,9 @@ class InnerRuntimeConfiguration:
             self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
             self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
             self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", True) == True
-        self.default_plusarg_passthrough = ""
-        if 'plusarg_passthrough' in runtime_dict['target_config']:
-            self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']
+
+        dict_assert('plusarg_passthrough', runtime_dict['target_config'])
+        self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']
 
         self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
@@ -495,7 +516,7 @@ class RuntimeConfig:
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
 
-        self.runtime_build_recipes = RuntimeBuildRecipes(args.buildrecipesconfigfile, self.innerconf.metasimulation_host_simulator)
+        self.runtime_build_recipes = RuntimeBuildRecipes(args.buildrecipesconfigfile, self.innerconf.metasimulation_host_simulator, self.innerconf.metasimulation_only_plusargs, self.innerconf.metasimulation_only_vcs_plusargs)
         rootLogger.debug(self.runtime_build_recipes)
 
         self.run_farm = self.innerconf.run_farm_dispatcher

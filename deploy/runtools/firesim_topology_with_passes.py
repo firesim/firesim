@@ -544,17 +544,17 @@ class FireSimTopologyWithPasses:
             rootLogger.info("Instances")
             rootLogger.info("-"*80)
             for instance in instancestate_map.keys():
-                rootLogger.info("""Hostname/IP:{:>{}} | Terminated: {}""".format(instance, longestinst, truefalsecolor[instancestate_map[instance]]))
+                rootLogger.info("""Hostname/IP: {:>{}} | Terminated: {}""".format(instance, longestinst, truefalsecolor[instancestate_map[instance]]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Switches")
             rootLogger.info("-"*80)
             for switchinfo in switchstates:
-                rootLogger.info("""Hostname/IP:{:>{}} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], longestswitch, switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
+                rootLogger.info("""Hostname/IP: {:>{}} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], longestswitch, switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Nodes/Jobs")
             rootLogger.info("-"*80)
             for siminfo in simstates:
-                rootLogger.info("""Hostname/IP:{:>{}} | Job: {} | Sim running: {}""".format(siminfo['hostip'], longestsim, siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
+                rootLogger.info("""Hostname/IP: {:>{}} | Job: {} | Sim running: {}""".format(siminfo['hostip'], longestsim, siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Summary")
             rootLogger.info("-"*80)

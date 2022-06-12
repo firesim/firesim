@@ -12,9 +12,13 @@ run_farm:
   # managerinit replace end
 
 metasimulation:
-  metasimulation_enabled: no
+  metasimulation_enabled: false
   # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
   metasimulation_host_simulator: verilator
+  # plusargs passed to the simulator for all metasimulations
+  metasimulation_only_plusargs: "+fesvr-step-size=128 +dramsim +max-cycles=100000000"
+  # plusargs passed to the simulator ONLY FOR vcs metasimulations
+  metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
 
 target_config:
     # Set topology: no_net_config to run without a network simulation
@@ -31,8 +35,10 @@ target_config:
     # for all simulators
     default_hw_config: firesim_rocket_quadcore_nic_l2_llc4mb_ddr3
 
-    # Advanced: Specify any extra plusargs you would like to provide when booting
-    # the simulator.
+    # Advanced: Specify any extra plusargs you would like to provide when
+    # booting the simulator (in both FPGA-sim and metasim modes). This is
+    # a string, with the contents formatted as if you were passing the plusargs
+    # at command line, e.g. "+a=1 +b=2"
     plusarg_passthrough: ""
 
 tracing:

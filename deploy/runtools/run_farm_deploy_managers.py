@@ -40,7 +40,15 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def infrasetup_instance(self) -> None:
-        """Run platform specific implementation of how to setup simulations."""
+        """Run platform specific implementation of how to setup simulations.
+
+        Anything that should only be executed if prepping for an actual FPGA-based
+        simulation (i.e. not metasim mode) should be gated by:
+
+        if not self.parent_node.metasimulation_enabled:
+            [FPGA-specific logic, e.g. flashing FPGAs]
+
+        """
         raise NotImplementedError
 
     @abc.abstractmethod

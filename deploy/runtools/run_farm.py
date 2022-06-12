@@ -37,6 +37,7 @@ class Inst(metaclass=abc.ABCMeta):
         sim_dir: name of simulation directory on the run host
         instance_deploy_manager: platform specific implementation
         host: hostname or ip address of the instance
+        metasimulation_enabled: true if this instance will be running metasimulations
     """
 
     # switch variables
@@ -126,6 +127,7 @@ class RunFarm(metaclass=abc.ABCMeta):
         mapper_consumed: dict of allocated instance names to number of allocations of that instance name.
             this mapping API tracks instances allocated not sim slots (it is possible to allocate an instance
             that has some sim slots unassigned)
+        metasimulation_enabled: true if this run farm will be running metasimulations
 
     """
 
@@ -140,6 +142,7 @@ class RunFarm(metaclass=abc.ABCMeta):
     mapper_consumed: Dict[str, int]
 
     default_simulation_dir: str
+    metasimulation_enabled: bool
 
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None:
         self.args = args
@@ -190,7 +193,7 @@ class RunFarm(metaclass=abc.ABCMeta):
         """Get the default run host handle (unique string to identify a run host type) that can
         host switch simulations.
         """
-        for sim_host_handle, switch_ok in self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK.items():
+        for sim_host_handle, switch_ok in sorted(self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK.items(), key=lambda x: x[0]):
             if not switch_ok:
                 # cannot use this handle for switch-only mapping
                 continue
@@ -251,6 +254,7 @@ def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
     out_list = list(filter(lambda x: x[0] != 0, out_list))
     return sorted(out_list, key=lambda x: x[0])
 
+
 class AWSEC2F1(RunFarm):
     """This manages the set of AWS resources requested for the run farm.
 
@@ -299,6 +303,10 @@ class AWSEC2F1(RunFarm):
         self.spot_interruption_behavior = self.args['spot_interruption_behavior']
         self.spot_max_price = self.args['spot_max_price']
 
+        dispatch_dict = dict([(x.__name__, x) for x in inheritors(InstanceDeployManager)])
+
+        default_platform = "EC2InstanceDeployManager"
+
         runhost_specs = dict()
         for specinfo in self.args["run_farm_host_specs"]:
             specinfo_value = next(iter(specinfo.items()))
@@ -316,33 +324,37 @@ class AWSEC2F1(RunFarm):
         self.mapper_consumed = defaultdict(int)
 
         for runhost in runhosts_list:
-            if isinstance(runhost, dict):
-                # add element { NAME: int }
-                items = runhost.items()
+            if not isinstance(runhost, dict):
+                raise Exception(f"Invalid runhost count definition for {runhost}.")
 
-                assert (len(items) == 1), f"dict type 'runhost' items map a single EC2 instance name to a number. Not {pprint.pformat(runhost)}"
+            items = runhost.items()
+            assert (len(items) == 1), f"dict type 'runhost' items map a single EC2 instance name to a number. Not {pprint.pformat(runhost)}"
 
-                inst_handle, num_insts = next(iter(items))
+            inst_handle, num_insts = next(iter(items))
 
-                if inst_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
-                    num_sim_slots = 0
-                    if self.metasimulation_enabled:
-                        num_sim_slots = self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[inst_handle]
-                    else:
-                        num_sim_slots = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[inst_handle]
-                    insts: List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]] = []
-                    for n in range(num_insts):
-                        insts.append((Inst(num_sim_slots, EC2InstanceDeployManager, self.default_simulation_dir, self.metasimulation_enabled), None))
-                    self.run_farm_hosts_dict[inst_handle] = insts
-                    self.mapper_consumed[inst_handle] = 0
-                else:
-                    raise Exception(f"Unknown runhost handle of {runhost}")
-            else:
+            if inst_handle not in runhost_specs.keys():
                 raise Exception(f"Unknown runhost handle of {runhost}")
+
+            num_sim_slots = 0
+            if self.metasimulation_enabled:
+                num_sim_slots = self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[inst_handle]
+            else:
+                num_sim_slots = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[inst_handle]
+
+            host_spec = runhost_specs[inst_handle]
+            platform = host_spec.get("override_platform", default_platform)
+            simulation_dir = host_spec.get("override_simulation_dir", self.default_simulation_dir)
+
+            insts: List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]] = []
+            for _ in range(num_insts):
+                insts.append((Inst(num_sim_slots, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled), None))
+            self.run_farm_hosts_dict[inst_handle] = insts
+            self.mapper_consumed[inst_handle] = 0
+
 
     def bind_mock_instances_to_objects(self) -> None:
         """ Only used for testing. Bind mock Boto3 instances to objects. """
-        for inst_handle, inst_list in self.run_farm_hosts_dict.items():
+        for inst_handle, inst_list in sorted(self.run_farm_hosts_dict.items(), key=lambda x: x[0]):
             for idx, run_farm_host_tup in enumerate(inst_list):
                 boto_obj = MockBoto3Instance()
                 inst = run_farm_host_tup[0]
@@ -356,21 +368,21 @@ class AWSEC2F1(RunFarm):
         # populate IP addr list for use in the rest of our tasks.
         # we always sort by private IP when handling instances
         available_instances_per_handle = {}
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             available_instances_per_handle[sim_host_handle] = instances_sorted_by_avail_ip(get_run_instances_by_tag_type(self.run_farm_tag, sim_host_handle))
 
         message = """Insufficient {}. Did you run `firesim launchrunfarm`?"""
         # confirm that we have the correct number of instances
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             if not (len(available_instances_per_handle[sim_host_handle]) >= len(self.run_farm_hosts_dict[sim_host_handle])):
                 rootLogger.warning(message.format(sim_host_handle))
 
         ipmessage = """Using {} instances with IPs:\n{}"""
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             rootLogger.debug(ipmessage.format(sim_host_handle, str(get_private_ips_for_instances(available_instances_per_handle[sim_host_handle]))))
 
         # assign boto3 instance objects to our instance objects
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             for index, instance in enumerate(available_instances_per_handle[sim_host_handle]):
                 inst_tup = self.run_farm_hosts_dict[sim_host_handle][index]
                 inst = inst_tup[0]
@@ -394,7 +406,7 @@ class AWSEC2F1(RunFarm):
 
         # actually launch the instances
         launched_instance_objs = {}
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             expected_number_of_instances_of_handle = len(self.run_farm_hosts_dict[sim_host_handle])
             launched_instance_objs[sim_host_handle] = launch_run_instances(sim_host_handle, expected_number_of_instances_of_handle, runfarmtag,
                                       runinstancemarket, spotinterruptionbehavior,
@@ -402,7 +414,7 @@ class AWSEC2F1(RunFarm):
 
         # wait for instances to get to running state, so that they have been
         # assigned IP addresses
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             wait_on_instance_launches(launched_instance_objs[sim_host_handle], sim_host_handle)
 
     def terminate_run_farm(self, terminate_some_dict: Dict[str, int], forceterminate: bool) -> None:
@@ -421,17 +433,17 @@ class AWSEC2F1(RunFarm):
         # get instances that belong to the run farm. sort them in case we're only
         # terminating some, to try to get intra-availability-zone locality
         all_instances = dict()
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             all_instances[sim_host_handle] = instances_sorted_by_avail_ip(
                 get_run_instances_by_tag_type(runfarmtag, sim_host_handle))
 
         all_instance_ids = dict()
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             all_instance_ids[sim_host_handle] = get_instance_ids_for_instances(all_instances[sim_host_handle])
 
         if len(terminate_some_dict) != 0:
             # In this mode, only terminate instances that are specifically supplied.
-            for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
                 if sim_host_handle in terminate_some_dict and terminate_some_dict[sim_host_handle] > 0:
                     termcount = terminate_some_dict[sim_host_handle]
                     # grab the last N instances to terminate
@@ -440,7 +452,7 @@ class AWSEC2F1(RunFarm):
                     all_instance_ids[sim_host_handle] = []
 
         rootLogger.critical("IMPORTANT!: This will terminate the following instances:")
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             rootLogger.critical(sim_host_handle)
             rootLogger.critical(all_instance_ids[sim_host_handle])
 
@@ -451,7 +463,7 @@ class AWSEC2F1(RunFarm):
             userconfirm = "yes"
 
         if userconfirm == "yes":
-            for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+            for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
                 if len(all_instance_ids[sim_host_handle]) != 0:
                     terminate_instances(all_instance_ids[sim_host_handle], False)
             rootLogger.critical("Instances terminated. Please confirm in your AWS Management Console.")
@@ -460,7 +472,7 @@ class AWSEC2F1(RunFarm):
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             inst_list = self.run_farm_hosts_dict[sim_host_handle]
             for inst, boto in inst_list:
                 all_insts.append(inst)
@@ -468,7 +480,7 @@ class AWSEC2F1(RunFarm):
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for sim_host_handle in self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS:
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
             inst_list = self.run_farm_hosts_dict[sim_host_handle]
             for inst, boto in inst_list:
                 if boto is not None:
@@ -510,33 +522,35 @@ class ExternallyProvisioned(RunFarm):
         self.mapper_consumed = defaultdict(int)
 
         for runhost in runhosts_list:
-            if isinstance(runhost, dict):
-                items = runhost.items()
-
-                assert (len(items) == 1), f"dict type 'run_hosts' items map a single host name to a host spec. Not: {pprint.pformat(runhost)}"
-
-                ip_addr, host_spec = next(iter(items))
-
-                # populate mapping helpers based on runhost_specs:
-                self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = host_spec['num_fpgas']
-                self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = host_spec['num_metasims']
-                self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec['use_for_switch_only']
-
-                num_sims = 0
-                if self.metasimulation_enabled:
-                    num_sims = host_spec.get("num_metasims")
-                else:
-                    num_sims = host_spec.get("num_fpgas")
-                platform = ip_args.get("override_platform", default_platform)
-                simulation_dir = ip_args.get("override_simulation_dir", default_simulation_dir)
-
-                inst = Inst(num_sims, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled)
-                inst.set_host(ip_addr)
-                assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
-                self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
-                self.mapper_consumed[ip_addr] = 0
-            else:
+            if not isinstance(runhost, dict):
                 raise Exception("Unknown runhost handle")
+
+            items = runhost.items()
+
+            assert (len(items) == 1), f"dict type 'run_hosts' items map a single host name to a host spec. Not: {pprint.pformat(runhost)}"
+
+            ip_addr, host_spec_name = next(iter(items))
+            host_spec = runhost_specs[host_spec_name]
+
+            # populate mapping helpers based on runhost_specs:
+            self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = host_spec['num_fpgas']
+            self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = host_spec['num_metasims']
+            self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec['use_for_switch_only']
+
+            num_sims = 0
+            if self.metasimulation_enabled:
+                num_sims = host_spec.get("num_metasims")
+            else:
+                num_sims = host_spec.get("num_fpgas")
+            platform = host_spec.get("override_platform", default_platform)
+            simulation_dir = host_spec.get("override_simulation_dir", self.default_simulation_dir)
+
+            inst = Inst(num_sims, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled)
+            inst.set_host(ip_addr)
+            assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
+            self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
+            self.mapper_consumed[ip_addr] = 0
+
 
     def post_launch_binding(self, mock: bool = False) -> None:
         return
@@ -551,8 +565,10 @@ class ExternallyProvisioned(RunFarm):
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []
-        for name, inst_cloud_pair in self.run_farm_hosts_dict.items():
-            all_insts.append(inst_cloud_pair[0])
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
+            inst_list = self.run_farm_hosts_dict[sim_host_handle]
+            for inst, cloudobj in inst_list:
+                all_insts.append(inst)
         return all_insts
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
