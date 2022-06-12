@@ -197,7 +197,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""sudo LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
+        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -234,7 +234,7 @@ class RuntimeHWConfig:
                 # work
                 local("""mkdir -p {}""".format(self.get_local_driver_dir()))
                 buildlogfile = """{}firesim-manager-make-{}-temp-output-log""".format(self.get_local_driver_dir(), self.driver_build_target)
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} {}""" .format(design, target_config, platform_config, self.driver_build_target)
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} PLATFORM={} {}""" .format(design, target_config, platform_config, self.platform, self.driver_build_target)
                 driverbuildcommand_full = driverbuildcommand + """ 2>&1 | tee {}""".format(buildlogfile)
                 localcap = local(driverbuildcommand_full)
                 logcapture = local("""cat {}""".format(buildlogfile), capture=True)
