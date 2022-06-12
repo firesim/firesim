@@ -42,14 +42,14 @@ args:
             num_metasims: 0
             # REQUIRED: whether it is acceptable to use machines of this spec
             # to host ONLY switches (e.g. any attached FPGAs are "wasted")
-            use_switch_only: false
+            use_for_switch_only: false
 
         - four_metasims_spec:
             num_fpgas: 0
             num_metasims: 4
-            use_switch_only: false
+            use_for_switch_only: false
 
         - switch_only_spec:
             num_fpgas: 0
             num_metasims: 0
-            use_switch_only: true
+            use_for_switch_only: true

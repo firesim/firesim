@@ -308,7 +308,7 @@ class AWSEC2F1(RunFarm):
         for runhost_spec_name, runhost_spec in runhost_specs.items():
             self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[runhost_spec_name] = runhost_spec['num_fpgas']
             self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[runhost_spec_name] = runhost_spec['num_metasims']
-            self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[runhost_spec_name] = runhost_spec['use_switch_only']
+            self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[runhost_spec_name] = runhost_spec['use_for_switch_only']
 
         runhosts_list = self.args["run_farm_hosts_to_use"]
 
@@ -520,7 +520,7 @@ class ExternallyProvisioned(RunFarm):
                 # populate mapping helpers based on runhost_specs:
                 self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = host_spec['num_fpgas']
                 self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = host_spec['num_metasims']
-                self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec['use_switch_only']
+                self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec['use_for_switch_only']
 
                 num_sims = 0
                 if self.metasimulation_enabled:

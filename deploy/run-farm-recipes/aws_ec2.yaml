@@ -35,29 +35,29 @@ args:
       - f1.2xlarge:
           num_fpgas: 1
           num_metasims: 0
-          use_switch_only: false
+          use_for_switch_only: false
       - f1.4xlarge:
           num_fpgas: 2
           num_metasims: 0
-          use_switch_only: false
+          use_for_switch_only: false
       - f1.16xlarge:
           num_fpgas: 8
           num_metasims: 0
-          use_switch_only: false
+          use_for_switch_only: false
       - m4.16xlarge:
           num_fpgas: 0
           num_metasims: 0
-          use_switch_only: true
+          use_for_switch_only: true
       - z1d.3xlarge:
           num_fpgas: 0
           num_metasims: 1
-          use_switch_only: false
+          use_for_switch_only: false
       - z1d.6xlarge:
           num_fpgas: 0
           num_metasims: 2
-          use_switch_only: false
+          use_for_switch_only: false
       - z1d.12xlarge:
           num_fpgas: 0
           num_metasims: 8
-          use_switch_only: false
+          use_for_switch_only: false
 
