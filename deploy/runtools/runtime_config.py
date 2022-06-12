@@ -11,7 +11,6 @@ import yaml
 import os
 import sys
 from fabric.api import prefix, settings, local # type: ignore
-from copy import deepcopy
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -21,6 +20,7 @@ from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
+from util.deepmerge import deep_merge
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -419,17 +419,6 @@ class InnerRuntimeConfiguration:
 
         # add the overrides if it exists
 
-        # taken from https://gist.github.com/angstwad/bf22d1822c38a92ec0a9
-        def deep_merge(a: dict, b: dict) -> dict:
-            result = deepcopy(a)
-            for bk, bv in b.items():
-                av = result.get(bk)
-                if isinstance(av, dict) and isinstance(bv, dict):
-                    result[bk] = deep_merge(av, bv)
-                else:
-                    result[bk] = deepcopy(bv)
-            return result
-
         override_args = runtime_dict['run_farm'].get('recipe_arg_overrides')
         if override_args:
             run_farm_args = deep_merge(run_farm_args, override_args)
@@ -448,7 +437,7 @@ class InnerRuntimeConfiguration:
 
         self.tracerv_config = TracerVConfig()
         if 'tracing' in runtime_dict:
-            self.tracerv_config.enable = runtime_dict['tracing'].get('enable') == "yes"
+            self.tracerv_config.enable = runtime_dict['tracing'].get('enable', False) == True
             self.tracerv_config.select = runtime_dict['tracing'].get('selector', "0")
             self.tracerv_config.start = runtime_dict['tracing'].get('start', "0")
             self.tracerv_config.end = runtime_dict['tracing'].get('end', "-1")
@@ -459,13 +448,13 @@ class InnerRuntimeConfiguration:
         self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
         self.hostdebug_config = HostDebugConfig()
         if 'host_debug' in runtime_dict:
-            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram') == "yes"
-            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts') == "yes"
+            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram', False) == True
+            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts', False) == True
         self.synthprint_config = SynthPrintConfig()
         if 'synth_print' in runtime_dict:
             self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
             self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
-            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", "yes") == "yes"
+            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", True) == True
         self.default_plusarg_passthrough = ""
         if 'plusarg_passthrough' in runtime_dict['target_config']:
             self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']
@@ -473,7 +462,7 @@ class InnerRuntimeConfiguration:
         self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
         self.suffixtag = runtime_dict['workload']['suffix_tag'] if 'suffix_tag' in runtime_dict['workload'] else None
-        self.terminateoncompletion = runtime_dict['workload']['terminate_on_completion'] == "yes"
+        self.terminateoncompletion = runtime_dict['workload']['terminate_on_completion'] == True
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self))
