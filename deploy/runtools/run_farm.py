@@ -533,7 +533,7 @@ class ExternallyProvisioned(RunFarm):
                 inst = Inst(num_sims, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled)
                 inst.set_host(ip_addr)
                 assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
-                self.run_farm_hosts_dict[ip_addr] = [[inst, None]]
+                self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
                 self.mapper_consumed[ip_addr] = 0
             else:
                 raise Exception("Unknown runhost handle")

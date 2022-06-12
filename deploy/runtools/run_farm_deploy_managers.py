@@ -316,7 +316,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots)
             serv = self.parent_node.sim_slots[slotno]
 
-            self.instance_logger("""Copying {sim_type_message} simulation infrastructure for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
+            self.instance_logger(f"""Copying {self.sim_type_message} simulation infrastructure for slot: {slotno}.""")
 
             remote_home_dir = self.parent_node.get_sim_dir()
 
@@ -366,7 +366,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     def start_sim_slot(self, slotno: int) -> None:
         if self.instance_assigned_simulations():
-            self.instance_logger("""Starting {sim_type_message} simulation for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
+            self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
             assert slotno < len(self.parent_node.sim_slots)
@@ -385,7 +385,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     def kill_sim_slot(self, slotno: int) -> None:
         if self.instance_assigned_simulations():
-            self.instance_logger("""Killing {sim_type_message} simulation for slot: {slotno}.""".format(slotno=slotno, sim_type_message=self.sim_type_message))
+            self.instance_logger(f"""Killing {self.sim_type_message} simulation for slot: {slotno}.""")
             assert slotno < len(self.parent_node.sim_slots)
             server = self.parent_node.sim_slots[slotno]
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):

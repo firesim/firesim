@@ -218,7 +218,7 @@ class RuntimeHWConfig:
         design = triplet_pieces[0]
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
-        rootLogger.info("Building " + self.driver_type_message + " driver for " + str(self.get_deploytriplet_for_config()))
+        rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deploytriplet_for_config())}")
         with prefix('cd ../'), \
              prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
              prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
@@ -240,7 +240,7 @@ class RuntimeHWConfig:
                 logcapture = local("""cat {}""".format(buildlogfile), capture=True)
             rootLogger.debug("[localhost] " + str(logcapture))
             if localcap.failed:
-                rootLogger.info(self.driver_type_message + " driver build failed. Exiting. See log for details.")
+                rootLogger.info(f"{self.driver_type_message} driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
                 sys.exit(1)
 
