@@ -454,27 +454,12 @@ class InnerRuntimeConfiguration:
         self.switchinglatency = int(runtime_dict['target_config']['switching_latency'])
         self.netbandwidth = int(runtime_dict['target_config']['net_bandwidth'])
         self.profileinterval = int(runtime_dict['target_config']['profile_interval'])
-
-        self.tracerv_config = TracerVConfig()
-        if 'tracing' in runtime_dict:
-            self.tracerv_config.enable = runtime_dict['tracing'].get('enable', False) == True
-            self.tracerv_config.select = runtime_dict['tracing'].get('selector', "0")
-            self.tracerv_config.start = runtime_dict['tracing'].get('start', "0")
-            self.tracerv_config.end = runtime_dict['tracing'].get('end', "-1")
-            self.tracerv_config.output_format = runtime_dict['tracing'].get('output_format', "0")
-        self.autocounter_config = AutoCounterConfig()
-        if 'autocounter' in runtime_dict:
-            self.autocounter_config.readrate = int(runtime_dict['autocounter'].get('read_rate', "0"))
         self.defaulthwconfig = runtime_dict['target_config']['default_hw_config']
-        self.hostdebug_config = HostDebugConfig()
-        if 'host_debug' in runtime_dict:
-            self.hostdebug_config.zero_out_dram = runtime_dict['host_debug'].get('zero_out_dram', False) == True
-            self.hostdebug_config.disable_synth_asserts = runtime_dict['host_debug'].get('disable_synth_asserts', False) == True
-        self.synthprint_config = SynthPrintConfig()
-        if 'synth_print' in runtime_dict:
-            self.synthprint_config.start = runtime_dict['synth_print'].get("start", "0")
-            self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
-            self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", True) == True
+
+        self.tracerv_config = TracerVConfig(runtime_dict.get('tracing', {}))
+        self.autocounter_config = AutoCounterConfig(runtime_dict.get('autocounter', {}))
+        self.hostdebug_config = HostDebugConfig(runtime_dict.get('host_debug', {}))
+        self.synthprint_config = SynthPrintConfig(runtime_dict.get('synth_print', {}))
 
         dict_assert('plusarg_passthrough', runtime_dict['target_config'])
         self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']
