@@ -16,6 +16,7 @@
 #    post_build_hook: null
 #    # REQUIRED: TODO: Will move to "run platform" work
 #    s3_bucket_name: firesim-AWSUSERNAME
+#    metasim_customruntimeconfig: "path to custom runtime config for metasims"
 
 # Quad-core, Rocket-based recipes
 firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
@@ -25,6 +26,7 @@ firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # NB: This has a faster host-clock frequency than the NIC-based design, because
 # its uncore runs at half rate relative to the tile.
@@ -35,6 +37,7 @@ firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # Single-core, BOOM-based recipes
 firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
@@ -44,6 +47,7 @@ firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # NB: This has a faster host-clock frequency than the NIC-based design, because
 # its uncore runs at half rate relative to the tile.
@@ -54,6 +58,7 @@ firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # Single-core, CVA6-based recipes
 firesim_cva6_singlecore_no_nic_l2_llc4mb_ddr3:
@@ -63,6 +68,7 @@ firesim_cva6_singlecore_no_nic_l2_llc4mb_ddr3:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # Single-core, Rocket-based recipes with Gemmini
 firesim_rocket_singlecore_gemmini_no_nic_l2_llc4mb_ddr3:
@@ -72,6 +78,7 @@ firesim_rocket_singlecore_gemmini_no_nic_l2_llc4mb_ddr3:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # RAM Optimizations enabled by adding _MCRams PLATFORM_CONFIG string
 firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3_ramopts:
@@ -81,6 +88,7 @@ firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3_ramopts:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # Supernode configurations -- multiple instances of an SoC in a single simulator
 firesim_supernode_rocket_singlecore_nic_l2_lbp:
@@ -90,6 +98,7 @@ firesim_supernode_rocket_singlecore_nic_l2_lbp:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
 
 # MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on run farm
 midasexamples_gcd:
@@ -100,3 +109,5 @@ midasexamples_gcd:
     deploy_triplet: null
     post_build_hook: null
     s3_bucket_name: firesim-AWSUSERNAME
+    metasim_customruntimeconfig: null
+

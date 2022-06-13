@@ -182,6 +182,7 @@ class FireSimServerNode(FireSimNode):
     job: Optional[JobConfig]
     server_id_internal: int
     mac_address: Optional[MacAddress]
+    plusarg_passthrough: Optional[str]
 
     def __init__(self,
             server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None,
@@ -191,7 +192,8 @@ class FireSimServerNode(FireSimNode):
             tracerv_config: Optional[TracerVConfig] = None,
             autocounter_config: Optional[AutoCounterConfig] = None,
             hostdebug_config: Optional[HostDebugConfig] = None,
-            synthprint_config: Optional[SynthPrintConfig] = None):
+            synthprint_config: Optional[SynthPrintConfig] = None,
+            plusarg_passthrough: Optional[str] = None):
         super().__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
@@ -204,6 +206,7 @@ class FireSimServerNode(FireSimNode):
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         self.mac_address = None
+        self.plusarg_passthrough = plusarg_passthrough
         FireSimServerNode.SERVERS_CREATED += 1
 
     def set_server_hardware_config(self, server_hardware_config: RuntimeHWConfig) -> None:
@@ -278,6 +281,7 @@ class FireSimServerNode(FireSimNode):
         assert self.autocounter_config is not None
         assert self.hostdebug_config is not None
         assert self.synthprint_config is not None
+        assert self.plusarg_passthrough is not None
 
         all_macs = [self.get_mac_address()]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()])
@@ -298,7 +302,8 @@ class FireSimServerNode(FireSimNode):
             self.tracerv_config,
             self.autocounter_config,
             self.hostdebug_config,
-            self.synthprint_config)
+            self.synthprint_config,
+            self.plusarg_passthrough)
 
         run(runcommand)
 
@@ -410,6 +415,7 @@ class FireSimServerNode(FireSimNode):
 
         # shared libraries
         all_paths += get_local_shared_libraries(driver_path)
+        all_paths += self.get_resolved_server_hardware_config().get_additional_required_sim_files()
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
@@ -447,9 +453,10 @@ class FireSimServerNode(FireSimNode):
 
 
 class FireSimSuperNodeServerNode(FireSimServerNode):
-    """ This is the main server node for supernode mode. This knows how to
-    call out to dummy server nodes to get all the info to launch the one
-    command line to run the FPGA sim that has N > 1 sims on one fpga."""
+    """ This is the main server node for supernode mode. This knows how to call
+    out to dummy server nodes to get all the info to run the single sim binary
+    that models the N > 1 copies of a design present in a single simulator
+    (e.g. a single FPGA or single metasim) in supernode mode."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -523,6 +530,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         assert self.autocounter_config is not None
         assert self.hostdebug_config is not None
         assert self.synthprint_config is not None
+        assert self.plusarg_passthrough is not None
 
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling(x).get_mac_address() for x in range(1, num_siblings)]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)])
@@ -554,7 +562,8 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.tracerv_config,
             self.autocounter_config,
             self.hostdebug_config,
-            self.synthprint_config)
+            self.synthprint_config,
+            self.plusarg_passthrough)
 
         run(runcommand)
 
@@ -581,6 +590,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
 
         # shared libraries
         all_paths += get_local_shared_libraries(driver_path)
+        all_paths += self.get_resolved_server_hardware_config().get_additional_required_sim_files()
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
 

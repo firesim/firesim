@@ -398,7 +398,7 @@ def main(args: argparse.Namespace) -> None:
         rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitstream' and will be removed in a future version")
         args.task = 'buildbitstream'
 
-    rootLogger.info("FireSim Manager. Docs: http://docs.fires.im\nRunning: %s\n", str(args.task))
+    rootLogger.info("FireSim Manager. Docs: https://docs.fires.im\nRunning: %s\n", str(args.task))
 
     t = TASKS[args.task]
     if t['config']:

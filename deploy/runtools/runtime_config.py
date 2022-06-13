@@ -22,12 +22,13 @@ from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 
-from typing import Optional, Dict, Any, List, Sequence, TYPE_CHECKING
+from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
 if TYPE_CHECKING:
     from runtools.utils import MacAddress
 
 LOCAL_DRIVERS_BASE = "../sim/output/"
+LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
@@ -40,11 +41,24 @@ class RuntimeHWConfig:
     deploytriplet: Optional[str]
     customruntimeconfig: str
     driver_built: bool
+    additional_required_files: List[Tuple[str, str]]
+    driver_name_prefix: str
+    driver_name_suffix: str
+    local_driver_base_dir: str
+    driver_build_target: str
+    driver_type_message: str
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
         self.platform = "f1"
+        self.driver_name_prefix = ""
+        self.driver_name_suffix = "-" + self.platform
+
+        self.local_driver_base_dir = LOCAL_DRIVERS_BASE
+        self.driver_build_target = self.platform
+        self.driver_type_message = "FPGA software"
+
         self.agfi = hwconfig_dict['agfi']
 
         self.deploytriplet = hwconfig_dict['deploy_triplet_override']
@@ -53,6 +67,8 @@ class RuntimeHWConfig:
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
+
+        self.additional_required_files = []
 
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
@@ -72,29 +88,36 @@ class RuntimeHWConfig:
 
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
-        return self.get_design_name() + "-" + self.platform
+        return self.driver_name_prefix + self.get_design_name() + self.driver_name_suffix
+
+    def get_local_driver_dir(self) -> str:
+        """ Get the relative local directory that contains the driver used to
+        run this sim. """
+        return self.local_driver_base_dir + "/" + self.platform + "/" + self.get_deploytriplet_for_config() + "/"
 
     def get_local_driver_path(self) -> str:
         """ return relative local path of the driver used to run this sim. """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + self.platform + "/" + my_deploytriplet + "/"
-        fpga_driver_local = drivers_software_base + self.get_local_driver_binaryname()
-        return fpga_driver_local
+        return self.get_local_driver_dir() + self.get_local_driver_binaryname()
 
     def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
-        return "runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
+        return "FireSim-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
 
     def get_local_runtime_conf_path(self) -> str:
         """ return relative local path of the runtime conf used to run this sim. """
         my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_BASE + "/" + self.platform + "/" + my_deploytriplet + "/"
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + self.platform + "/" + my_deploytriplet + "/"
         my_runtimeconfig = self.customruntimeconfig
         if my_runtimeconfig is None:
-            runtime_conf_local = drivers_software_base + "runtime.conf"
+            runtime_conf_local = drivers_software_base + self.get_local_runtimeconf_binaryname()
         else:
             runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
         return runtime_conf_local
+
+    def get_additional_required_sim_files(self) -> List[Tuple[str, str]]:
+        """ return list of any additional files required to run a simulation.
+        """
+        return self.additional_required_files
 
     def get_boot_simulation_command(self,
             slotid: int,
@@ -108,7 +131,9 @@ class RuntimeHWConfig:
             tracerv_config: TracerVConfig,
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
-            synthprint_config: SynthPrintConfig) -> str:
+            synthprint_config: SynthPrintConfig,
+            extra_plusargs: str = "",
+            extra_args: str = "") -> str:
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -177,7 +202,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} +permissive-off {" ".join(command_bootbinaries)}"""
+        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -188,8 +213,8 @@ class RuntimeHWConfig:
         # Note that pkill only works for names <=15 characters
         return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
-    def build_fpga_driver(self) -> None:
-        """ Build FPGA driver for running simulation """
+    def build_sim_driver(self) -> None:
+        """ Build driver for running simulation """
         if self.driver_built:
             # we already built the driver at some point
             return
@@ -198,7 +223,7 @@ class RuntimeHWConfig:
         design = triplet_pieces[0]
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
-        rootLogger.info("Building FPGA software driver for " + str(self.get_deploytriplet_for_config()))
+        rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deploytriplet_for_config())}")
         with prefix('cd ../'), \
              prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
              prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
@@ -206,15 +231,21 @@ class RuntimeHWConfig:
              prefix('source ./sourceme-f1-manager.sh'), \
              prefix('cd sim/'), \
              StreamLogger('stdout'), \
-             StreamLogger('stderr'):
+             StreamLogger('stderr'), \
+             prefix('set -o pipefail'):
             localcap = None
             with settings(warn_only=True):
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} PLATFORM={} driver""".format(design, target_config, platform_config, self.platform)
-                localcap = local(driverbuildcommand, capture=True)
-            rootLogger.debug("[localhost] " + str(localcap))
-            rootLogger.debug("[localhost] " + str(localcap.stderr))
+                # the local driver dir must already exist for the tee to always
+                # work
+                local("""mkdir -p {}""".format(self.get_local_driver_dir()))
+                buildlogfile = """{}firesim-manager-make-{}-temp-output-log""".format(self.get_local_driver_dir(), self.driver_build_target)
+                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} PLATFORM={} {}""" .format(design, target_config, platform_config, self.platform, self.driver_build_target)
+                driverbuildcommand_full = driverbuildcommand + """ 2>&1 | tee {}""".format(buildlogfile)
+                localcap = local(driverbuildcommand_full)
+                logcapture = local("""cat {}""".format(buildlogfile), capture=True)
+            rootLogger.debug("[localhost] " + str(logcapture))
             if localcap.failed:
-                rootLogger.info("FPGA software driver build failed. Exiting. See log for details.")
+                rootLogger.info(f"{self.driver_type_message} driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
                 sys.exit(1)
 
@@ -224,6 +255,82 @@ class RuntimeHWConfig:
     def __str__(self) -> str:
         return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, str(self.customruntimeconfig))
 
+
+
+
+class RuntimeBuildRecipeConfig(RuntimeHWConfig):
+    """ A pythonic version of the entires in config_build_recipes.yaml """
+
+    def __init__(self, name: str, build_recipe_dict: Dict[str, Any],
+                 default_metasim_host_sim: str,
+                 metasimulation_only_plusargs: str,
+                 metasimulation_only_vcs_plusargs: str) -> None:
+        self.name = name
+        self.agfi = "Metasim" # for __str__ to work
+        self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
+
+        self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
+        # note whether we've built a copy of the simulation driver for this hwconf
+        self.driver_built = False
+        self.metasim_host_simulator = default_metasim_host_sim
+
+        self.platform = "f1"
+        self.driver_name_prefix = ""
+        self.driver_name_suffix = ""
+        if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
+            self.driver_name_prefix = "V"
+        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
+            self.driver_name_suffix = "-debug"
+
+        self.local_driver_base_dir = LOCAL_DRIVERS_GENERATED_SRC
+
+        dramsim_pair = (self.get_local_driver_dir() + "dramsim2_ini", "")
+        self.additional_required_files = [dramsim_pair]
+
+        self.driver_build_target = self.metasim_host_simulator
+        self.driver_type_message = "Metasim"
+
+        self.metasimulation_only_plusargs = metasimulation_only_plusargs
+        self.metasimulation_only_vcs_plusargs = metasimulation_only_vcs_plusargs
+
+    def get_boot_simulation_command(self,
+            slotid: int,
+            all_macs: Sequence[MacAddress],
+            all_rootfses: Sequence[Optional[str]],
+            all_linklatencies: Sequence[int],
+            all_netbws: Sequence[int],
+            profile_interval: int,
+            all_bootbinaries: List[str],
+            all_shmemportnames: List[str],
+            tracerv_config: TracerVConfig,
+            autocounter_config: AutoCounterConfig,
+            hostdebug_config: HostDebugConfig,
+            synthprint_config: SynthPrintConfig,
+            extra_plusargs: str = "",
+            extra_args: str = "") -> str:
+        """ return the command used to boot the meta simulation. """
+        full_extra_plusargs = " " + self.metasimulation_only_plusargs + " " + extra_plusargs
+        if self.metasim_host_simulator in ['vcs', 'vcs-debug']:
+            full_extra_plusargs = " " + self.metasimulation_only_vcs_plusargs + " " +  full_extra_plusargs
+        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
+            full_extra_plusargs += " +waveform=metasim_waveform.vpd "
+        # TODO: spike-dasm support
+        full_extra_args = " 2> metasim_stderr.out " + extra_args
+        return super(RuntimeBuildRecipeConfig, self).get_boot_simulation_command(
+            slotid,
+            all_macs,
+            all_rootfses,
+            all_linklatencies,
+            all_netbws,
+            profile_interval,
+            all_bootbinaries,
+            all_shmemportnames,
+            tracerv_config,
+            autocounter_config,
+            hostdebug_config,
+            synthprint_config,
+            full_extra_plusargs,
+            full_extra_args)
 
 class RuntimeHWDB:
     """ This class manages the hardware configurations that are available
@@ -246,6 +353,23 @@ class RuntimeHWDB:
     def __str__(self) -> str:
         return pprint.pformat(vars(self))
 
+class RuntimeBuildRecipes(RuntimeHWDB):
+    """ Same as RuntimeHWDB, but use information from build recipes entries
+    instead of hwdb for metasimulation."""
+
+    def __init__(self, build_recipes_config_file: str,
+                 metasim_host_simulator: str,
+                 metasimulation_only_plusargs: str,
+                 metasimulation_only_vcs_plusargs: str) -> None:
+
+        recipes_configfile = None
+        with open(build_recipes_config_file, "r") as yaml_file:
+            recipes_configfile = yaml.safe_load(yaml_file)
+
+        recipes_dict = recipes_configfile
+
+        self.hwconf_dict = {s: RuntimeBuildRecipeConfig(s, v, metasim_host_simulator, metasimulation_only_plusargs, metasimulation_only_vcs_plusargs) for s, v in recipes_dict.items()}
+
 
 class InnerRuntimeConfiguration:
     """ Pythonic version of config_runtime.yaml """
@@ -266,6 +390,11 @@ class InnerRuntimeConfiguration:
     workload_name: str
     suffixtag: str
     terminateoncompletion: bool
+    metasimulation_enabled: bool
+    metasimulation_host_simulator: str
+    metasimulation_only_plusargs: str
+    metasimulation_only_vcs_plusargs: str
+    default_plusarg_passthrough: str
 
     def __init__(self, runtimeconfigfile: str, configoverridedata: str) -> None:
 
@@ -287,6 +416,20 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
+        def dict_assert(key_check, dict_name):
+            assert key_check in dict_name, f"FAIL: missing {key_check} in runtime config."
+
+        dict_assert('metasimulation', runtime_dict)
+        metasim_dict = runtime_dict['metasimulation']
+        dict_assert('metasimulation_enabled', metasim_dict)
+        self.metasimulation_enabled = metasim_dict['metasimulation_enabled']
+        dict_assert('metasimulation_host_simulator', metasim_dict)
+        self.metasimulation_host_simulator = metasim_dict['metasimulation_host_simulator']
+        dict_assert('metasimulation_only_plusargs', metasim_dict)
+        self.metasimulation_only_plusargs = metasim_dict['metasimulation_only_plusargs']
+        dict_assert('metasimulation_only_vcs_plusargs', metasim_dict)
+        self.metasimulation_only_vcs_plusargs = metasim_dict['metasimulation_only_vcs_plusargs']
+
         # Setup the run farm
         defaults_file = runtime_dict['run_farm']['base_recipe']
         with open(defaults_file, "r") as yaml_file:
@@ -303,7 +446,7 @@ class InnerRuntimeConfiguration:
         run_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(RunFarm)])
 
         # create dispatcher object using class given and pass args to it
-        self.run_farm_dispatcher = run_farm_dispatch_dict[run_farm_type](run_farm_args)
+        self.run_farm_dispatcher = run_farm_dispatch_dict[run_farm_type](run_farm_args, self.metasimulation_enabled)
 
         self.topology = runtime_dict['target_config']['topology']
         self.no_net_num_nodes = int(runtime_dict['target_config']['no_net_num_nodes'])
@@ -333,6 +476,9 @@ class InnerRuntimeConfiguration:
             self.synthprint_config.end = runtime_dict['synth_print'].get("end", "-1")
             self.synthprint_config.cycle_prefix = runtime_dict['synth_print'].get("cycle_prefix", True) == True
 
+        dict_assert('plusarg_passthrough', runtime_dict['target_config'])
+        self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']
+
         self.workload_name = runtime_dict['workload']['workload_name']
         # an extra tag to differentiate workloads with the same name in results names
         self.suffixtag = runtime_dict['workload']['suffix_tag'] if 'suffix_tag' in runtime_dict['workload'] else None
@@ -351,6 +497,7 @@ class RuntimeConfig:
     run_farm: RunFarm
     workload: WorkloadConfig
     firesim_topology_with_passes: FireSimTopologyWithPasses
+    runtime_build_recipes: RuntimeBuildRecipes
 
     def __init__(self, args: argparse.Namespace) -> None:
         """ This reads runtime configuration files, massages them into formats that
@@ -368,11 +515,10 @@ class RuntimeConfig:
                                                    args.overrideconfigdata)
         rootLogger.debug(self.innerconf)
 
-        self.run_farm = self.innerconf.run_farm_dispatcher
+        self.runtime_build_recipes = RuntimeBuildRecipes(args.buildrecipesconfigfile, self.innerconf.metasimulation_host_simulator, self.innerconf.metasimulation_only_plusargs, self.innerconf.metasimulation_only_vcs_plusargs)
+        rootLogger.debug(self.runtime_build_recipes)
 
-        # construct a privateip -> instance obj mapping for later use
-        #self.instancelookuptable = instance_privateip_lookup_table(
-        #    f1_16_instances + f1_2_instances + m4_16_instances)
+        self.run_farm = self.innerconf.run_farm_dispatcher
 
         # setup workload config obj, aka a list of workloads that can be assigned
         # to a server
@@ -390,7 +536,10 @@ class RuntimeConfig:
             self.innerconf.autocounter_config,
             self.innerconf.hostdebug_config,
             self.innerconf.synthprint_config,
-            self.innerconf.terminateoncompletion)
+            self.innerconf.terminateoncompletion,
+            self.runtime_build_recipes,
+            self.innerconf.metasimulation_enabled,
+            self.innerconf.default_plusarg_passthrough)
 
     def launch_run_farm(self) -> None:
         """ directly called by top-level launchrunfarm command. """
