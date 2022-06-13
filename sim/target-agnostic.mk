@@ -42,7 +42,7 @@ DRIVER_H ?=
 # Defined for each platform
 platforms_dir := $(abspath $(firesim_base_dir)/../platforms)
 vitis_CXX_FLAGS ?= -std=c++14 -idirafter ${CONDA_PREFIX}/include -idirafter /usr/include -idirafter $(XILINX_XRT)/include
-vitis_LD_FLAGS ?= -L${CONDA_PREFIX}/lib -L/usr/lib -L$(XILINX_XRT)/lib -luuid -lxrt_coreutil
+vitis_LD_FLAGS ?= -L${CONDA_PREFIX}/lib -Wl,-rpath-link=/usr/lib/x86_64-linux-gnu -L$(XILINX_XRT)/lib -luuid -lxrt_coreutil
 f1_CXX_FLAGS ?= -std=c++11 -I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
 f1_LD_FLAGS ?=
 

@@ -67,13 +67,13 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
 
 void simif_vitis_t::write(size_t addr, uint32_t data) {
     // addr is really a (32-byte) word address because of zynq implementation
-    addr <<= CTRL_AXI4_SIZE;
+    //addr <<= CTRL_AXI4_SIZE;
     kernel_handle.write_register(addr, data);
 }
 
 uint32_t simif_vitis_t::read(size_t addr) {
     // Convert the word address into a byte-address
-    addr <<= CTRL_AXI4_SIZE;
+    //addr <<= CTRL_AXI4_SIZE;
     uint32_t value;
     value = kernel_handle.read_register(addr);
     return value & 0xFFFFFFFF;

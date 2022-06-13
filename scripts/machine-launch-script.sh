@@ -280,7 +280,6 @@ set -o pipefail
         dtc \
         verilator==4.034 \
 	screen \
-	xilinx-xrt==2021.1 \
     )
 
     # python packages
