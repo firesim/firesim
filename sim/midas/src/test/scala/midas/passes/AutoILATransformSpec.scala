@@ -113,15 +113,12 @@ class AutoILATransformSpec extends MiddleTransformSpec with FirrtlRunners {
          |input [0:0] ila_a,
          |input [0:0] ila_mod_a
          |);
-         |// Don't instantiate the ILA when running under metasimulation
-         |`ifdef SYNTHESIS
          |  ila_firesim CL_FIRESIM_DEBUG_WIRING_TRANSFORM (
          |    .clk(clock),
          |    .probe0 (ila_b),
          |    .probe1 (ila_a),
          |    .probe2 (ila_mod_a)
          |  );
-         |`endif
          |endmodule
          |""".stripMargin,
     )

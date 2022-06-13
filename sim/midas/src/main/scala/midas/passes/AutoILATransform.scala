@@ -214,12 +214,9 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
           |module ${ilaWrapperModuleName} (
           |    ${ilaWrapperPortList}
           |);
-          |// Don't instantiate the ILA when running under metasimulation
-          |`ifdef SYNTHESIS
           |  ${ilaBlackBoxName} CL_FIRESIM_DEBUG_WIRING_TRANSFORM (
           |    ${ilaPortAssignments}
           |  );
-          |`endif
           |endmodule
           |""".stripMargin
 
