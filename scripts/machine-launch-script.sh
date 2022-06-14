@@ -32,7 +32,7 @@ sudo yum -y install dtc
 sudo yum -y remove git
 sudo yum -y install epel-release
 sudo yum -y install https://repo.ius.io/ius-release-el7.rpm
-sudo yum -y install git224
+sudo yum -y install git236
 
 # install verilator
 git clone http://git.veripool.org/git/verilator

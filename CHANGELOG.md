@@ -2,6 +2,12 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.13.5] - 2022-06-13
+Critical fix to git package version in machine-launch-script.sh, only required for newly launched manager instances.
+
+### Fixed
+*  Bump git version specified in machine-launch-script.sh from git224 (no longer available) to git236. #1081
+
 ## [1.13.4] - 2022-04-06
 Critical fix to libdwarf submodule URL. Fix boto3 pagination in manager. Fix synth assert stop-printf pair detection.
 
