@@ -30,6 +30,7 @@ args:
       - z1d.3xlarge: 0
       - z1d.6xlarge: 0
       - z1d.12xlarge: 0
+    # managerinit arg end
 
     # REQUIRED: List of host "specifications", i.e. re-usable collections of
     # host parameters.
