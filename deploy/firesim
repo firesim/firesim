@@ -182,6 +182,8 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             bf_recipe_lines)
+    elif args.platform == 'vitis':
+        rootLogger.info(f"Skipping default config overrides for vitis due to experimental support.")
     else:
         rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 

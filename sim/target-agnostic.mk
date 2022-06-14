@@ -190,7 +190,8 @@ $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 
 $(vitis): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
-$(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
+$(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN'
+
 
 # Compile Driver
 $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)

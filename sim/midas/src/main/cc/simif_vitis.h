@@ -21,7 +21,7 @@ class simif_vitis_t: public virtual simif_t
     virtual size_t push(unsigned stream_idx, void* src, size_t num_bytes, size_t threshold_bytes) override;
     uint32_t is_write_ready();
   private:
-    int device_index;
+    int slotid;
     std::string binary_file;
     xrt::device device_handle;
     xrt::uuid uuid;

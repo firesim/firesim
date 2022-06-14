@@ -17,23 +17,23 @@ constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
 constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
 
 simif_vitis_t::simif_vitis_t(int argc, char** argv) {
-    device_index = -1;
+    slotid = -1;
     binary_file = "";
 
     // TODO: Properly read out arguments
     std::vector<std::string> args(argv + 1, argv + argc);
     for (auto &arg: args) {
-        if (arg.find("+device_index=") == 0) {
-            device_index = atoi((arg.c_str()) + 14); // 0
+        if (arg.find("+slotid=") == 0) {
+            slotid = atoi((arg.c_str()) + 8);
         }
         if (arg.find("+binary_file=") == 0) {
             binary_file = arg.substr(13, std::string::npos);//"kernel.xclbin"; //atoi((arg.c_str()) + 8);
         }
     }
 
-    if (device_index == -1) {
+    if (slotid == -1) {
         fprintf(stderr, "Device ID not specified. Assuming Device 0.\n");
-        device_index = 0;
+        slotid = 0;
     }
 
     if (binary_file == "") {
@@ -41,10 +41,10 @@ simif_vitis_t::simif_vitis_t(int argc, char** argv) {
         exit(1);
     }
 
-    fprintf(stdout, "DEBUG: DevIdx:%d XCLBin:%s\n", device_index, binary_file.c_str());
+    fprintf(stdout, "DEBUG: DevIdx:%d XCLBin:%s\n", slotid, binary_file.c_str());
 
     // Open the FPGA device
-    device_handle = xrt::device(device_index);
+    device_handle = xrt::device(slotid);
 
     // Load the XCLBIN (get handle, then load)
     uuid = device_handle.load_xclbin(binary_file);

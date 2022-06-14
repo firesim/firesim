@@ -643,17 +643,18 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             with settings(warn_only=True), hide('everything'):
                 temp_file = "/tmp/xbutil-examine-out.json"
                 collect = run(f"xbutil examine --format JSON -o {temp_file}")
-                json_dict = json.loads(temp_file)
+                with open(temp_file, "r") as f:
+                    json_dict = json.loads(f.read())
                 card_bdfs = [d["bdf"] for d in json_dict["system"]["host"]["devices"]]
 
             for card_bdf in card_bdfs:
                 with StreamLogger('stdout'), StreamLogger('stderr'):
-                    run(f"xbutil reset -d {card_bdf}")
+                    run(f"xbutil reset -d {card_bdf} --force")
 
     def get_simulation_dir(self):
         remote_home_dir = ""
-        if self.parentnode.override_simulation_dir:
-            remote_home_dir = self.parentnode.override_simulation_dir
+        if self.parent_node.override_simulation_dir:
+            remote_home_dir = self.parent_node.override_simulation_dir
         else:
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 remote_home_dir = run('echo $HOME')
@@ -747,14 +748,14 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             # This is an FPGA-host node.
 
             # copy fpga sim infrastructure
-            for slotno in range(len(self.parentnode.sim_slots)):
+            for slotno in range(len(self.parent_node.sim_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
 
             self.clear_fpgas()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
-            for slotno in range(len(self.parentnode.switch_slots)):
+            for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
     def start_switches_instance(self):
@@ -765,7 +766,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         """ Boot up all the sims in a screen. """
         if self.instance_assigned_simulations():
             # only on sim nodes
-            for slotno in range(len(self.parentnode.sim_slots)):
+            for slotno in range(len(self.parent_node.sim_slots)):
                 self.start_sim_slot(slotno)
 
     def kill_switches_instance(self):
