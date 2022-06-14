@@ -422,7 +422,9 @@ class FireSimServerNode(FireSimNode):
 
     def get_agfi(self) -> str:
         """ Return the AGFI that should be flashed. """
-        return self.get_resolved_server_hardware_config().agfi
+        agfi = self.get_resolved_server_hardware_config().agfi
+        assert agfi is not None
+        return agfi
 
     def assign_job(self, job: JobConfig) -> None:
         """ Assign a job to this node. """
