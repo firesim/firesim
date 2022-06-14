@@ -16,12 +16,11 @@ from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.streamlogger import StreamLogger
-from runtools.run_farm import AWSEC2F1
 
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
     from runtools.run_farm import RunFarm
-    from runtools.runtime_config import RuntimeHWDB
+    from runtools.runtime_config import RuntimeHWDB, RuntimeBuildRecipes
     from runtools.workload import WorkloadConfig
 
 rootLogger = logging.getLogger()
@@ -37,14 +36,13 @@ def instance_liveness() -> None:
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
     on the topology to map it all the way to something usable to deploy a simulation.
-
-    >>> tconf = FireSimTargetConfiguration("example_16config")
     """
     passes_used: List[str]
     user_topology_name: str
     no_net_num_nodes: int
     run_farm: RunFarm
     hwdb: RuntimeHWDB
+    build_recipes: RuntimeBuildRecipes
     workload: WorkloadConfig
     firesimtopol: FireSimTopology
     defaulthwconfig: str
@@ -73,12 +71,16 @@ class FireSimTopologyWithPasses:
             defaultautocounterconfig: AutoCounterConfig,
             defaulthostdebugconfig: HostDebugConfig,
             defaultsynthprintconfig: SynthPrintConfig,
-            terminateoncompletion: bool) -> None:
+            terminateoncompletion: bool,
+            build_recipes: RuntimeBuildRecipes,
+            default_metasim_mode: bool,
+            default_plusarg_passthrough: str) -> None:
         self.passes_used = []
         self.user_topology_name = user_topology_name
         self.no_net_num_nodes = no_net_num_nodes
         self.run_farm = run_farm
         self.hwdb = hwdb
+        self.build_recipes = build_recipes
         self.workload = workload
         self.firesimtopol = FireSimTopology(user_topology_name, no_net_num_nodes)
         self.defaulthwconfig = defaulthwconfig
@@ -91,6 +93,8 @@ class FireSimTopologyWithPasses:
         self.defaultautocounterconfig = defaultautocounterconfig
         self.defaulthostdebugconfig = defaulthostdebugconfig
         self.defaultsynthprintconfig = defaultsynthprintconfig
+        self.default_metasim_mode = default_metasim_mode
+        self.default_plusarg_passthrough = default_plusarg_passthrough
 
         self.phase_one_passes()
 
@@ -200,7 +204,6 @@ class FireSimTopologyWithPasses:
         """ A very simple host mapping strategy.  """
         switches = self.firesimtopol.get_dfs_order_switches()
 
-        switch_host_inst_handle = self.run_farm.get_default_switch_host_handle()
 
         for switch in switches:
             # Filter out FireSimDummyServerNodes for actually deploying.
@@ -209,6 +212,7 @@ class FireSimTopologyWithPasses:
             alldownlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
             if all([isinstance(x, FireSimSwitchNode) for x in alldownlinknodes]):
                 # all downlinks are switches
+                switch_host_inst_handle = self.run_farm.get_switch_only_host_handle()
                 self.run_farm.allocate_sim_host(switch_host_inst_handle).add_switch(switch)
             elif all([isinstance(x, FireSimServerNode) for x in alldownlinknodes]):
                 downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
@@ -249,34 +253,9 @@ class FireSimTopologyWithPasses:
         top level elements are switches, it will assume you're simulating a
         networked config, """
 
-        # enforce that this is only no net in all other non-EC2 cases
-        if isinstance(self.run_farm, AWSEC2F1):
-            if self.firesimtopol.custom_mapper is None:
-                """ Use default mapping strategy. The topol has not specified a
-                special one. """
-                # if your roots are servers, just pack as tightly as possible, since
-                # you have no_net_config
-                if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
-                    # all roots are servers, so we're in no_net_config
-                    # if the user has specified any 16xlarges, we assign to them first
-                    self.pass_no_net_host_mapping()
-                else:
-                    # now, we're handling the cycle-accurate networked simulation case
-                    # currently, we only handle the case where
-                    self.pass_simple_networked_host_node_mapping()
-            elif callable(self.firesimtopol.custom_mapper):
-                """ call the mapper fn defined in the topology itself. """
-                self.firesimtopol.custom_mapper(self)
-            elif isinstance(self.firesimtopol.custom_mapper, str):
-                """ assume that the mapping strategy is a custom pre-defined strategy
-                given in this class, supplied as a string in the topology """
-                mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
-                mapperfunc()
-            else:
-                assert False, "IMPROPER MAPPING CONFIGURATION"
-        else:
-            # default to no_net for everything
-            assert self.firesimtopol.custom_mapper is None
+        if self.firesimtopol.custom_mapper is None:
+            """ Use default mapping strategy. The topol has not specified a
+            special one. """
             # if your roots are servers, just pack as tightly as possible, since
             # you have no_net_config
             if all([isinstance(x, FireSimServerNode) for x in self.firesimtopol.roots]):
@@ -284,7 +263,19 @@ class FireSimTopologyWithPasses:
                 # if the user has specified any 16xlarges, we assign to them first
                 self.pass_no_net_host_mapping()
             else:
-                assert False, "Only supporting no_net_config's for non-AWS use cases"
+                # now, we're handling the cycle-accurate networked simulation case
+                # currently, we only handle the case where
+                self.pass_simple_networked_host_node_mapping()
+        elif callable(self.firesimtopol.custom_mapper):
+            """ call the mapper fn defined in the topology itself. """
+            self.firesimtopol.custom_mapper(self)
+        elif isinstance(self.firesimtopol.custom_mapper, str):
+            """ assume that the mapping strategy is a custom pre-defined strategy
+            given in this class, supplied as a string in the topology """
+            mapperfunc = getattr(self, self.firesimtopol.custom_mapper)
+            mapperfunc()
+        else:
+            assert False, "IMPROPER MAPPING CONFIGURATION"
 
     def pass_apply_default_hwconfig(self) -> None:
         """ This is the default mapping pass for hardware configurations - it
@@ -299,18 +290,16 @@ class FireSimTopologyWithPasses:
         """
         servers = self.firesimtopol.get_dfs_order_servers()
 
+        runtimehwconfig_lookup_fn = self.hwdb.get_runtimehwconfig_from_name
+        if self.default_metasim_mode:
+            runtimehwconfig_lookup_fn = self.build_recipes.get_runtimehwconfig_from_name
+
         for server in servers:
             hw_cfg = server.get_server_hardware_config()
             if hw_cfg is None:
-                # 2)
-                defaulthwconfig_obj = self.hwdb.get_runtimehwconfig_from_name(self.defaulthwconfig)
-                hw_cfg = defaulthwconfig_obj
-            else:
-                if isinstance(hw_cfg, str):
-                    # 1) str
-                    hw_cfg = self.hwdb.get_runtimehwconfig_from_name(hw_cfg)
-                # 1) hwcfg
-            # 3)
+                hw_cfg = runtimehwconfig_lookup_fn(self.defaulthwconfig)
+            elif isinstance(hw_cfg, str):
+                hw_cfg = runtimehwconfig_lookup_fn(hw_cfg)
             hw_cfg.get_deploytriplet_for_config()
             server.set_server_hardware_config(hw_cfg)
 
@@ -333,7 +322,6 @@ class FireSimTopologyWithPasses:
                     node.server_link_latency = self.defaultlinklatency
                 if node.server_bw_max is None:
                     node.server_bw_max = self.defaultnetbandwidth
-                # TODO: some of this stuff seems misplaced...
                 if node.server_profile_interval is None:
                     node.server_profile_interval = self.defaultprofileinterval
                 if node.tracerv_config is None:
@@ -344,6 +332,8 @@ class FireSimTopologyWithPasses:
                     node.hostdebug_config = self.defaulthostdebugconfig
                 if node.synthprint_config is None:
                     node.synthprint_config = self.defaultsynthprintconfig
+                if node.plusarg_passthrough is None:
+                    node.plusarg_passthrough = self.default_plusarg_passthrough
 
     def pass_allocate_nbd_devices(self) -> None:
         """ allocate NBD devices. this must be done here to preserve the
@@ -373,12 +363,12 @@ class FireSimTopologyWithPasses:
         self.pass_create_topology_diagram()
 
     def pass_build_required_drivers(self) -> None:
-        """ Build all FPGA drivers. The method we're calling here won't actually
+        """ Build all simulation drivers. The method we're calling here won't actually
         repeat the build process more than once per run of the manager. """
         servers = self.firesimtopol.get_dfs_order_servers()
 
         for server in servers:
-            server.get_resolved_server_hardware_config().build_fpga_driver()
+            server.get_resolved_server_hardware_config().build_sim_driver()
 
     def pass_build_required_switches(self) -> None:
         """ Build all the switches required for this simulation. """
@@ -554,17 +544,17 @@ class FireSimTopologyWithPasses:
             rootLogger.info("Instances")
             rootLogger.info("-"*80)
             for instance in instancestate_map.keys():
-                rootLogger.info("""Hostname/IP:{:>{}} | Terminated: {}""".format(instance, longestinst, truefalsecolor[instancestate_map[instance]]))
+                rootLogger.info("""Hostname/IP: {:>{}} | Terminated: {}""".format(instance, longestinst, truefalsecolor[instancestate_map[instance]]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Switches")
             rootLogger.info("-"*80)
             for switchinfo in switchstates:
-                rootLogger.info("""Hostname/IP:{:>{}} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], longestswitch, switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
+                rootLogger.info("""Hostname/IP: {:>{}} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], longestswitch, switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Simulated Nodes/Jobs")
             rootLogger.info("-"*80)
             for siminfo in simstates:
-                rootLogger.info("""Hostname/IP:{:>{}} | Job: {} | Sim running: {}""".format(siminfo['hostip'], longestsim, siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
+                rootLogger.info("""Hostname/IP: {:>{}} | Job: {} | Sim running: {}""".format(siminfo['hostip'], longestsim, siminfo['simname'], inverttruefalsecolor[siminfo['running']]))
             rootLogger.info("-"*80)
             rootLogger.info("Summary")
             rootLogger.info("-"*80)

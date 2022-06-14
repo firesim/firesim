@@ -275,7 +275,7 @@ class TestConfigRunAPI:
 
         run_yamls.run.data['target_config'].should.contain('default_hw_config')
         run_yamls.run.data['target_config']['default_hw_config'] = 'INVALID_CONFIG'
-        run_yamls.run.data['run_farm']['recipe_arg_overrides'] = {"run_farm_hosts" : [ {"f1.16xlarge" : 1} ] }
+        run_yamls.run.data['run_farm']['recipe_arg_overrides'] = {"run_farm_hosts_to_use" : [ {"f1.16xlarge" : 1} ] }
 
         run_yamls.hwdb.data.should_not.contain('INVALID_CONFIG')
 
