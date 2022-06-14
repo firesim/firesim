@@ -53,6 +53,11 @@ class BitBuilder(metaclass=abc.ABCMeta):
         self.args = args
 
     @abc.abstractmethod
+    def setup(self) -> None:
+        """Any setup needed before `replace_rtl`, `build_driver`, and `build_bitstream` is run."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def replace_rtl(self) -> None:
         """Generate Verilog from build config. Should run on the manager host."""
         raise NotImplementedError
@@ -101,6 +106,7 @@ class F1BitBuilder(BitBuilder):
                 # in tutorial mode, special s3 bucket name
                 self.s3_bucketname = aws_resource_names_dict['s3bucketname']
 
+    def setup(self) -> None:
         auto_create_bucket(self.s3_bucketname)
 
         # check to see email notifications can be subscribed

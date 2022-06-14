@@ -233,8 +233,6 @@ class TestConfigBuildAPI:
                 PLATFORM_CONFIG: Config
                 post_build_hook: null
                 bit_builder_recipe: bit-builder-recipes/f1.yaml
-                bit_builder_arg_overrides:
-                  s3_bucket_name: TESTING_BUCKET_NAME
             """))
         build_yamls.write()
         args = firesim_parse_args(['buildbitstream'] + build_yamls.args)

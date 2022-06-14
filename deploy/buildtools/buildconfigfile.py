@@ -105,6 +105,10 @@ class BuildConfigFile:
         # create dispatcher object using class given and pass args to it
         self.build_farm = build_farm_dispatch_dict[build_farm_type_name](build_farm_args)
 
+        # do bitbuilder setup after all parsing is complete
+        for build in self.builds_list:
+            build.bitbuilder.setup()
+
     def request_build_hosts(self) -> None:
         """Launch an instance for the builds. Exits the program if an IP address is reused."""
         for build in self.builds_list:
