@@ -232,7 +232,7 @@ class TestConfigBuildAPI:
                 deploy_triplet: null
                 PLATFORM_CONFIG: Config
                 post_build_hook: null
-                s3_bucket_name: TESTING_BUCKET_NAME
+                bit_builder_recipe: bit-builder-recipes/f1.yaml
             """))
         build_yamls.write()
         args = firesim_parse_args(['buildbitstream'] + build_yamls.args)

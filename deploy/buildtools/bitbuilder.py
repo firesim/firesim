@@ -13,11 +13,11 @@ from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
-from awstools.awstools import send_firesim_notification
+from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
 from util.streamlogger import StreamLogger, InfoStreamLogger
 
 # imports needed for python type checking
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
 
@@ -38,15 +38,24 @@ class BitBuilder(metaclass=abc.ABCMeta):
 
     Attributes:
         build_config: Build config to build a bitstream for.
+        args: Args (i.e. options) passed to the bitbuilder.
     """
     build_config: BuildConfig
+    args: Dict[str, Any]
 
-    def __init__(self, build_config: BuildConfig) -> None:
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         """
         Args:
             build_config: Build config to build a bitstream for.
+            args: Args (i.e. options) passed to the bitbuilder.
         """
         self.build_config = build_config
+        self.args = args
+
+    @abc.abstractmethod
+    def setup(self) -> None:
+        """Any setup needed before `replace_rtl`, `build_driver`, and `build_bitstream` is run."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def replace_rtl(self) -> None:
@@ -69,7 +78,40 @@ class BitBuilder(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 class F1BitBuilder(BitBuilder):
-    """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config."""
+    """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
+
+    Attributes:
+        s3_bucketname: S3 bucketname for AFI builds.
+    """
+    s3_bucketname: str
+
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        """
+        Args:
+            args: Args (i.e. options) passed to the build farm.
+        """
+        super().__init__(build_config, args)
+
+        self._parse_args()
+
+    def _parse_args(self) -> None:
+        """Parse bitbuilder arguments."""
+        self.s3_bucketname = self.args["s3_bucket_name"]
+        if self.args["append_userid_region"]:
+            self.s3_bucketname += "-" + get_aws_userid() + "-" + get_aws_region()
+
+        if valid_aws_configure_creds():
+            aws_resource_names_dict = aws_resource_names()
+            if aws_resource_names_dict['s3bucketname'] is not None:
+                # in tutorial mode, special s3 bucket name
+                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+
+    def setup(self) -> None:
+        auto_create_bucket(self.s3_bucketname)
+
+        # check to see email notifications can be subscribed
+        get_snsname_arn()
+
     def replace_rtl(self) -> None:
         """Generate Verilog from build config."""
         rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
@@ -224,7 +266,7 @@ class F1BitBuilder(BitBuilder):
 
         afi = None
         agfi = None
-        s3bucket = self.build_config.s3_bucketname
+        s3bucket = self.s3_bucketname
         afiname = self.build_config.name
 
         # construct the "tags" we store in the AGFI description

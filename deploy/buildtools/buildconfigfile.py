@@ -8,7 +8,6 @@ import yaml
 
 from runtools.runtime_config import RuntimeHWDB
 from buildtools.buildconfig import BuildConfig
-from awstools.awstools import auto_create_bucket, get_snsname_arn
 from buildtools.buildfarm import BuildFarm
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
@@ -100,16 +99,15 @@ class BuildConfigFile:
 
         build_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(BuildFarm)])
 
+        if not build_farm_type_name in build_farm_dispatch_dict:
+            raise Exception(f"Unable to find {build_farm_type_name} in available build farm classes: {build_farm_dispatch_dict.keys()}")
+
         # create dispatcher object using class given and pass args to it
         self.build_farm = build_farm_dispatch_dict[build_farm_type_name](build_farm_args)
 
-    def setup(self) -> None:
-        """Setup based on the types of build hosts."""
+        # do bitbuilder setup after all parsing is complete
         for build in self.builds_list:
-            auto_create_bucket(build.s3_bucketname)
-
-        # check to see email notifications can be subscribed
-        get_snsname_arn()
+            build.bitbuilder.setup()
 
     def request_build_hosts(self) -> None:
         """Launch an instance for the builds. Exits the program if an IP address is reused."""
