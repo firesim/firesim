@@ -50,7 +50,7 @@ class UserTopologies:
 
         def custom_mapper(fsim_topol_with_passes: FireSimTopologyWithPasses) -> None:
             for i, rswitch in enumerate(rootswitches):
-                switch_inst_handle = fsim_topol_with_passes.run_farm.get_default_switch_host_handle()
+                switch_inst_handle = fsim_topol_with_passes.run_farm.get_switch_only_host_handle()
                 switch_inst = fsim_topol_with_passes.run_farm.allocate_sim_host(switch_inst_handle)
                 switch_inst.add_switch(rswitch)
 
@@ -119,7 +119,7 @@ class UserTopologies:
             # and two 8-sim-slot (e.g. 8-fpga) instances
             # (e.g., two pods of aggr/edge/4sims per f1.16xlarge)
 
-            switch_inst_handle = fsim_topol_with_passes.run_farm.get_default_switch_host_handle()
+            switch_inst_handle = fsim_topol_with_passes.run_farm.get_switch_only_host_handle()
             switch_inst = fsim_topol_with_passes.run_farm.allocate_sim_host(switch_inst_handle)
             for core in coreswitches:
                 switch_inst.add_switch(core)

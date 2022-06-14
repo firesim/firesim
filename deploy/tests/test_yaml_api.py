@@ -99,20 +99,17 @@ class BuildTmpYamlSet(TmpYamlSet):
     """
     build: TmpYaml
     recipes: TmpYaml
-    farm: TmpYaml
     hwdb: TmpYaml
 
     def write(self):
         self.build.write()
         self.recipes.write()
-        self.farm.write()
         self.hwdb.write()
 
     @property
     def args(self):
         return ['-b', fspath(self.build.path),
                 '-r', fspath(self.recipes.path),
-                '-s', fspath(self.farm.path),
                 '-a', fspath(self.hwdb.path),
                 ]
 
@@ -157,12 +154,8 @@ def scy_build_recipes(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_build_recipes.yaml')
 
 @pytest.fixture()
-def scy_build_farm(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
-    return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_build_farm.yaml')
-
-@pytest.fixture()
-def build_yamls(scy_build, scy_build_recipes, scy_build_farm, scy_hwdb) -> BuildTmpYamlSet:
-    return BuildTmpYamlSet(scy_build, scy_build_recipes, scy_build_farm, scy_hwdb)
+def build_yamls(scy_build, scy_build_recipes, scy_hwdb) -> BuildTmpYamlSet:
+    return BuildTmpYamlSet(scy_build, scy_build_recipes, scy_hwdb)
 
 @pytest.fixture()
 def scy_hwdb(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
@@ -198,7 +191,8 @@ class TestConfigBuildAPI:
         # at the beginning of the test build_yamls contains the backup-sample-configs
         # but we can show exactly what we're doing different from the default by
         build_yamls.build.load(dedent("""
-            build_farm: ec2_build_farm
+            build_farm:
+              base_recipe: build-farm-recipes/aws_ec2.yaml
 
             builds_to_run:
 
@@ -215,11 +209,12 @@ class TestConfigBuildAPI:
         m['task'].assert_not_called()
         m['config'].assert_called_once_with(args)
 
-    def test_invalid_buildfarm_type(self, task_mocker, build_yamls, firesim_parse_args):
+    def test_invalid_buildfarm_recipe(self, task_mocker, build_yamls, firesim_parse_args):
         m = task_mocker.patch('buildbitstream', wrap_config=True)
 
         build_yamls.build.load(dedent("""
-            build_farm: testing_build_farm
+            build_farm:
+              base_recipe: INVALID_RECIPE
 
             builds_to_run:
                 - testing_recipe_name
@@ -229,12 +224,6 @@ class TestConfigBuildAPI:
 
             share_with_accounts:
                 INVALID_NAME: 123456789012
-            """))
-        build_yamls.farm.load(dedent("""
-            testing_build_farm:
-                build_farm_type: INVALID_BUILD_FARM_TYPE
-                args:
-                    DUMMY_ARG: null
             """))
         build_yamls.recipes.load(dedent("""
             testing_recipe_name:
@@ -243,49 +232,19 @@ class TestConfigBuildAPI:
                 deploy_triplet: null
                 PLATFORM_CONFIG: Config
                 post_build_hook: null
-                s3_bucket_name: TESTING_BUCKET_NAME
+                bit_builder_recipe: bit-builder-recipes/f1.yaml
             """))
         build_yamls.write()
         args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
-        firesim.main.when.called_with(args).should.throw(KeyError, re.compile(r'INVALID_BUILD_FARM_TYPE'))
+        firesim.main.when.called_with(args).should.throw(FileNotFoundError, re.compile(r'INVALID_RECIPE'))
         # the exception should happen while building the config, before the task is actually called
         m['config'].assert_called_once_with(args)
-        m['task'].assert_not_called()
-
-    @pytest.mark.parametrize('farm_name',
-                             ['ec2_build_farm',
-                              'local_build_farm',
-                              ])
-    def test_invalid_farm_missing_args(self, task_mocker, build_yamls, firesim_parse_args, farm_name):
-        m = task_mocker.patch('buildbitstream', wrap_config=True)
-
-        build_yamls.build.data.should.contain('build_farm')
-        build_yamls.build.data['build_farm'] = farm_name
-        build_yamls.farm.data[farm_name].should.contain('args')
-        build_yamls.farm.data[farm_name]['args'] = None
-
-        build_yamls.write()
-        args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
-        firesim.main.when.called_with(args).should.throw(TypeError, re.compile(r'object is not subscriptable'))
-        m['task'].assert_not_called()
-
-
-    def test_invalid_unmanaged_missing_args(self, task_mocker, build_yamls, firesim_parse_args):
-        m = task_mocker.patch('buildbitstream', wrap_config=True)
-
-        build_yamls.build.data['build_farm'] = 'local_build_farm'
-        build_yamls.farm.data['local_build_farm']['args']['build_farm_hosts'] = None
-
-        build_yamls.write()
-        args = firesim_parse_args(['buildbitstream'] + build_yamls.args)
-        firesim.main.when.called_with(args).should.throw(TypeError)
         m['task'].assert_not_called()
 
     @pytest.mark.parametrize('task_name', [tn for tn in firesim.TASKS if
                                            firesim.TASKS[tn]['config'] is BuildConfigFile])
     @pytest.mark.parametrize('opt', ['-b',
                                      '-r',
-                                     '-s',
                                     ])
     def test_config_existence(self, task_mocker, build_yamls, firesim_parse_args, task_name, opt, non_existent_file):
         # TODO: Remove after deprecation
@@ -314,7 +273,7 @@ class TestConfigRunAPI:
 
         run_yamls.run.data['target_config'].should.contain('default_hw_config')
         run_yamls.run.data['target_config']['default_hw_config'] = 'INVALID_CONFIG'
-        run_yamls.run.data['run_farm']['recipe_arg_overrides'] = {"run_farm_hosts" : [ {"f1.16xlarge" : 1} ] }
+        run_yamls.run.data['run_farm']['recipe_arg_overrides'] = {"run_farm_hosts_to_use" : [ {"f1.16xlarge" : 1} ] }
 
         run_yamls.hwdb.data.should_not.contain('INVALID_CONFIG')
 

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from time import strftime, gmtime
 import pprint
-from importlib import import_module
+import yaml
 
 from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
+import buildtools
+from util.deepmerge import deep_merge
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
@@ -24,8 +26,8 @@ class BuildConfig:
         deploytriplet: Deploy triplet override.
         launch_time: Launch time of the manager.
         PLATFORM_CONFIG: Platform config to build.
-        s3_bucketname: S3 bucketname for AFI builds.
         post_build_hook: Post build hook script.
+        bitbuilder: bitstream configuration class.
     """
     name: str
     build_config_file: BuildConfigFile
@@ -35,9 +37,8 @@ class BuildConfig:
     deploytriplet: Optional[str]
     launch_time: str
     PLATFORM_CONFIG: str
-    s3_bucketname: str
     post_build_hook: str
-    fpga_bit_builder_dispatcher: BitBuilder
+    bitbuilder: BitBuilder
 
     def __init__(self,
             name: str,
@@ -62,19 +63,28 @@ class BuildConfig:
 
         # run platform specific options
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
-        self.s3_bucketname = recipe_config_dict['s3_bucket_name']
-        if valid_aws_configure_creds():
-            aws_resource_names_dict = aws_resource_names()
-            if aws_resource_names_dict['s3bucketname'] is not None:
-                # in tutorial mode, special s3 bucket name
-                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
         self.post_build_hook = recipe_config_dict['post_build_hook']
 
-        fpga_bit_builder_dispatcher_class_name = recipe_config_dict.get('fpga-platform', "F1BitBuilder")
-        # create run platform dispatcher object using class given and pass args to it
-        self.fpga_bit_builder_dispatcher = getattr(
-            import_module("buildtools.bitbuilder"),
-            fpga_bit_builder_dispatcher_class_name)(self)
+        # retrieve the bitbuilder section
+        bitbuilder_conf_dict = None
+        with open(recipe_config_dict['bit_builder_recipe'], "r") as yaml_file:
+            bitbuilder_conf_dict = yaml.safe_load(yaml_file)
+
+        bitbuilder_type_name = bitbuilder_conf_dict["bit_builder_type"]
+        bitbuilder_args = bitbuilder_conf_dict["args"]
+
+        # add the overrides if it exists
+        override_args = recipe_config_dict.get('bit_builder_arg_overrides')
+        if override_args:
+            bitbuilder_args = deep_merge(bitbuilder_args, override_args)
+
+        bitbuilder_dispatch_dict = dict([(x.__name__, x) for x in buildtools.buildconfigfile.inheritors(BitBuilder)])
+
+        if not bitbuilder_type_name in bitbuilder_dispatch_dict:
+            raise Exception(f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}")
+
+        # create dispatcher object using class given and pass args to it
+        self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
 
     def get_chisel_triplet(self) -> str:
         """Get the unique build-specific '-' deliminated triplet.
