@@ -377,7 +377,7 @@ class FireSimServerNode(FireSimNode):
                     with warn_only():
                         # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
                         run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
-                    run("""sudo chown -R centos {}""".format(mountpoint))
+                    run("""sudo chown -R $(whoami) {}""".format(mountpoint))
 
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):

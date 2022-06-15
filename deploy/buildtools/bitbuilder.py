@@ -194,8 +194,6 @@ class F1BitBuilder(BitBuilder):
 
             message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
 
-            send_firesim_notification(message_title, message_body)
-
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
@@ -362,6 +360,9 @@ class VitisBitBuilder(BitBuilder):
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
+
+    def setup(self) -> None:
+        return
 
     def replace_rtl(self):
         rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
