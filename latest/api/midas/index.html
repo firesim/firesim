@@ -223,8 +223,8 @@
                         <a href="EnableAutoCounter$.html" title="">EnableAutoCounter</a>
                       </li><li class="current-entities indented1">
                         <span class="separator"></span>
-                        <a class="object" href="EnableAutoILA$.html" title="When set, targetutils.FPGADebugAnnotations (signals labelled with FPGADebug()) are automatically wired out to an ILA."></a>
-                        <a href="EnableAutoILA$.html" title="When set, targetutils.FPGADebugAnnotations (signals labelled with FPGADebug()) are automatically wired out to an ILA.">EnableAutoILA</a>
+                        <a class="object" href="EnableAutoILA$.html" title=""></a>
+                        <a href="EnableAutoILA$.html" title="">EnableAutoILA</a>
                       </li><li class="current-entities indented1">
                         <span class="separator"></span>
                         <a class="object" href="EnableModelMultiThreading$.html" title=""></a>
@@ -249,14 +249,6 @@
                         <span class="separator"></span>
                         <a class="object" href="HostTransforms$.html" title=""></a>
                         <a href="HostTransforms$.html" title="">HostTransforms</a>
-                      </li><li class="current-entities indented1">
-                        <span class="separator"></span>
-                        <a class="object" href="ILADepthKey$.html" title="Sets a per-probe buffer depth on the ILA."></a>
-                        <a href="ILADepthKey$.html" title="Sets a per-probe buffer depth on the ILA.">ILADepthKey</a>
-                      </li><li class="current-entities indented1">
-                        <span class="separator"></span>
-                        <a class="object" href="ILAProbeTriggersKey$.html" title="Sets the number of comparators to be generated per ILA-probe."></a>
-                        <a href="ILAProbeTriggersKey$.html" title="Sets the number of comparators to be generated per ILA-probe.">ILAProbeTriggersKey</a>
                       </li><li class="current-entities indented1">
                         <span class="separator"></span>
                         <a class="object" href="OutputDir$.html" title=""></a>
@@ -467,11 +459,10 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="When set, targetutils.FPGADebugAnnotations (signals labelled with FPGADebug()) are automatically wired out to an ILA." href="EnableAutoILA$.html"><span class="name">EnableAutoILA</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="" href="EnableAutoILA$.html"><span class="name">EnableAutoILA</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
-      <p class="shortcomment cmt">When set, <span class="extype" name="targetutils.FPGADebugAnnotation">targetutils.FPGADebugAnnotation</span>s (signals labelled with FPGADebug())
-are automatically wired out to an ILA.</p>
+      
     </li><li name="midas.EnableModelMultiThreading" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="EnableModelMultiThreading"></a><a id="EnableModelMultiThreading:EnableModelMultiThreading"></a>
       <span class="permalink">
@@ -536,44 +527,6 @@ are automatically wired out to an ILA.</p>
       </span>
       
       
-    </li><li name="midas.ILADepthKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ILADepthKey"></a><a id="ILADepthKey:ILADepthKey"></a>
-      <span class="permalink">
-      <a href="../midas/ILADepthKey$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="Sets a per-probe buffer depth on the ILA." href="ILADepthKey$.html"><span class="name">ILADepthKey</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">Sets a per-probe buffer depth on the ILA.</p><div class="fullcomment"><div class="comment cmt"><p>Sets a per-probe buffer depth on the ILA. A greater value permits capturing a longer
-waveform, at the expense of FPGA reasources. See PG172
-([200~https://docs.xilinx.com/v/u/en-US/pg172-ila) for more info.
-</p></div></div>
-    </li><li name="midas.ILAProbeTriggersKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ILAProbeTriggersKey"></a><a id="ILAProbeTriggersKey:ILAProbeTriggersKey"></a>
-      <span class="permalink">
-      <a href="../midas/ILAProbeTriggersKey$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="Sets the number of comparators to be generated per ILA-probe." href="ILAProbeTriggersKey$.html"><span class="name">ILAProbeTriggersKey</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">Sets the number of comparators to be generated per ILA-probe.</p><div class="fullcomment"><div class="comment cmt"><p>Sets the number of comparators to be generated per ILA-probe.
-See PG172 ([200~https://docs.xilinx.com/v/u/en-US/pg172-ila) for more
-info.
-</p></div></div>
     </li><li name="midas.OutputDir" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="OutputDir"></a><a id="OutputDir:OutputDir"></a>
       <span class="permalink">
