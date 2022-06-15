@@ -48,7 +48,7 @@ all of the parameters in the :ref:`manager-configuration-files` section.
 If you open up this file, you will see the following default config (assuming
 you have not modified it):
 
-.. include:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+.. include:: DOCS_EXAMPLE_config_runtime.yaml
    :code: yaml
 
 We'll need to modify a couple of these lines.

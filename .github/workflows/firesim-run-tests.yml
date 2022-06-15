@@ -98,6 +98,9 @@ jobs:
         uses: ./.github/actions/initialize-manager
         with:
           max-runtime-hours: 10
+      - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
+        run: ./.github/scripts/check-docs-generated-components.py
+        continue-on-error: true
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
       - name: Catch potentially orphaned manager
