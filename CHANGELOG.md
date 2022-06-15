@@ -2,6 +2,12 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.13.6] - 2022-06-15
+Last of the 1.13.x release series. CI fixes only, no user facing changes since 1.13.5
+
+### Fixed
+*  CI fixes (scala doc push) related to git version.
+
 ## [1.13.5] - 2022-06-13
 Critical fix to git package version in machine-launch-script.sh, only required for newly launched manager instances.
 
