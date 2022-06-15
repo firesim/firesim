@@ -30,7 +30,7 @@ jobs:
     steps:
       - run: |
           sudo yum -y remove git git224 git224-core ius-release.noarch # remove any older git versions and collateral first from docker image
-          sudo yum -y install https://repo.ius.io/ius-release-el7.rpm6 # re-install for now
+          sudo yum -y install https://repo.ius.io/ius-release-el7.rpm # re-install for now
           sudo yum -y install git236 # install working git version (must match machine-launch)
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup
