@@ -279,7 +279,7 @@ set -o pipefail
         expect \
         dtc \
         verilator==4.034 \
-	screen \
+        screen \
     )
 
     # python packages

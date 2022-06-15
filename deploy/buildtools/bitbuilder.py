@@ -507,9 +507,9 @@ class VitisBitBuilder(BitBuilder):
         results_build_dir = """{}/""".format(local_results_dir)
 
         hwdb_entry = hwdb_entry_name + ":\n"
-        hwdb_entry += "    xclbin: " + xclbin_path + "\n"
-        hwdb_entry += "    deploy_triplet_override: null\n"
-        hwdb_entry += "    custom_runtime_config: null\n"
+        hwdb_entry +=  "    xclbin: " + xclbin_path + "\n"
+        hwdb_entry += f"    deploy_triplet_override: {self.build_config.get_chisel_triplet()}\n"
+        hwdb_entry +=  "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
         message_body = "Your bitstream has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."

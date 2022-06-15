@@ -342,7 +342,10 @@ class FireSimServerNode(FireSimNode):
                 run(f"sudo mount -o loop {img} {mnt}")
             else:
                 run(f"""screen -S guestmount-wait -dm bash -c "guestmount --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
-                run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""")
+                try:
+                    run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""", timeout=60*10)
+                except CommandTimeout:
+                    umount(mnt, tmp_dir)
 
         def umount(mnt: str, tmp_dir: str) -> None:
             if has_sudo():

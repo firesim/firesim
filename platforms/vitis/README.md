@@ -61,10 +61,3 @@ prj/ -- root of generated vivado project
 This project can be re-opened interactively using
 cd $BUILD/vivado/vpl/
 vivado -source openprj.tcl
-
-# For Abe
-
-- I put one built bitstream under /scratch/biancolin/xclbins. You should be able to rebuild the default driver
-  by typing `make vitis` under sim/.
-- Scripts to reflash FPGAs second stage shells and reset can be found under scripts/
-
