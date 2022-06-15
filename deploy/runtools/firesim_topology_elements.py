@@ -333,13 +333,37 @@ class FireSimServerNode(FireSimNode):
 
         dest_sim_dir = self.get_host_instance().get_sim_dir()
 
+        def has_sudo() -> bool:
+            with warn_only():
+                return run("sudo -ln true").return_code == 0
+
+        def mount(img: str, mnt: str, tmp_dir: str) -> None:
+            if has_sudo():
+                run(f"sudo mount -o loop {img} {mnt}")
+            else:
+                run(f"""screen -S guestmount-wait -dm bash -c "guestmount --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
+                run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""")
+
+        def umount(mnt: str, tmp_dir: str) -> None:
+            if has_sudo():
+                run(f"sudo umount {mnt}")
+            else:
+                pid = run(f"cat {tmp_dir}/guestmount.pid")
+                run("screen -XS guestmount-wait quit")
+                run(f"guestunmount {mnt}")
+                run(f"tail --pid={pid} -f /dev/null")
+                run(f"rm -f {tmp_dir}/guestmount.pid")
+
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()
         if rfsname is not None:
             is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = """{}/sim_slot_{}/mountpoint""".format(dest_sim_dir, simserverindex)
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo mkdir -p {}""".format(mountpoint))
+                if has_sudo():
+                    run("""sudo mkdir -p {}""".format(mountpoint))
+                else:
+                    run("""mkdir -p {}""".format(mountpoint))
 
                 if is_qcow2:
                     host_inst = self.get_host_instance()
@@ -348,11 +372,12 @@ class FireSimServerNode(FireSimNode):
                 else:
                     rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
 
-                run("""sudo mount {blockfile} {mntpt}""".format(blockfile=rfsname, mntpt=mountpoint))
-                with warn_only():
-                    # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
-                    run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
-                run("""sudo chown -R centos {}""".format(mountpoint))
+                mount(rfsname, mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
+                if has_sudo():
+                    with warn_only():
+                        # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
+                        run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
+                    run("""sudo chown -R centos {}""".format(mountpoint))
 
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -368,7 +393,7 @@ class FireSimServerNode(FireSimNode):
 
             ## unmount
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo umount {}""".format(mountpoint))
+                umount(mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
 
             ## if qcow2, detach .qcow2 image from the device, we're done with it
             if is_qcow2:
