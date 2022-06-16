@@ -9,8 +9,8 @@ def run_docs_generated_components_check():
     updated. """
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("cd deploy && diff -q config_runtime.yaml ../docs/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
-        run("cd deploy && firesim --help &> TEMP_HELP_OUTPUT && diff -q TEMP_HELP_OUTPUT ../docs/Advanced-Usage/Manager/HELP_OUTPUT")
+        run("cd deploy && diff config_runtime.yaml ../docs/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
+        run("cd deploy && firesim --help &> TEMP_HELP_OUTPUT && diff TEMP_HELP_OUTPUT ../docs/Advanced-Usage/Manager/HELP_OUTPUT")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
