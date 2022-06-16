@@ -5,10 +5,10 @@ import midas.stage.GoldenGateOutputFileAnnotation
 
 class MMCM(inputFreqMHz: Double, outputFreqMHz: Double, override val desiredName: String) extends BlackBox {
   val io = IO(new Bundle {
-    val clk_in1   = Input(Clock())
-    val clk_out1  = Output(Clock())
-    val reset     = Input(AsyncReset()) // Active high
-    val locked    = Output(Bool())
+    val clk_in1  = Input(Clock())
+    val clk_out1 = Output(Clock())
+    val reset    = Input(AsyncReset()) // Active high
+    val locked   = Output(Bool())
   })
 
   GoldenGateOutputFileAnnotation.annotateFromChisel(
@@ -26,6 +26,6 @@ class MMCM(inputFreqMHz: Double, outputFreqMHz: Double, override val desiredName
         |                         CONFIG.CLKOUT1_DRIVES {Buffer}] \\
         |             [get_ips ${desiredName}]
         |""".stripMargin,
-    s".${desiredName}.ipgen.tcl"
+    s".${desiredName}.ipgen.tcl",
   )
 }

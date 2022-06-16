@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import junctions._
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyRawModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
@@ -24,36 +24,28 @@ object VitisConstants {
 }
 
 class VitisShim(implicit p: Parameters) extends PlatformShim {
-  val ctrlAXI4BundleParams = AXI4BundleParameters(
-    p(CtrlNastiKey).addrBits,
-    p(CtrlNastiKey).dataBits,
-    p(CtrlNastiKey).idBits)
+  val ctrlAXI4BundleParams =
+    AXI4BundleParameters(p(CtrlNastiKey).addrBits, p(CtrlNastiKey).dataBits, p(CtrlNastiKey).idBits)
 
-  val hostMemAXI4BundleParams = p(HostMemChannelKey)
-    .axi4BundleParams
+  val hostMemAXI4BundleParams = p(HostMemChannelKey).axi4BundleParams
     .copy(addrBits = VitisConstants.axi4MAddressBits)
 
-
-  lazy val module = new LazyRawModuleImp(this) {
-    val ap_rst_n    = IO(Input(AsyncReset()))
-    val ap_clk      = IO(Input(Clock()))
-    val s_axi_lite  = IO(Flipped(new XilinxAXI4Bundle(ctrlAXI4BundleParams, isAXI4Lite = true)))
-    val host_mem_0    = IO((new XilinxAXI4Bundle(hostMemAXI4BundleParams)))
+  lazy val module             = new LazyRawModuleImp(this) {
+    val ap_rst_n   = IO(Input(AsyncReset()))
+    val ap_clk     = IO(Input(Clock()))
+    val s_axi_lite = IO(Flipped(new XilinxAXI4Bundle(ctrlAXI4BundleParams, isAXI4Lite = true)))
+    val host_mem_0 = IO((new XilinxAXI4Bundle(hostMemAXI4BundleParams)))
 
     val ap_rst = (!ap_rst_n.asBool)
 
     // Setup Internal Clocking
-    val firesimMMCM = Module(new MMCM(
-      VitisConstants.kernelDefaultFreqMHz,
-      p(DesiredHostFrequency),
-      "firesim_clocking"))
+    val firesimMMCM = Module(new MMCM(VitisConstants.kernelDefaultFreqMHz, p(DesiredHostFrequency), "firesim_clocking"))
     firesimMMCM.io.clk_in1 := ap_clk
     firesimMMCM.io.reset   := ap_rst.asAsyncReset
 
     val hostClock = firesimMMCM.io.clk_out1
 
-    /**
-      * Synchronizes an active high asynchronous reset.
+    /** Synchronizes an active high asynchronous reset.
       */
     def resetSync(areset: AsyncReset, clock: Clock, length: Int = 3): Bool = {
       withClockAndReset(clock, areset) {
@@ -68,7 +60,7 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
 
     // Synchronize asyncReset passed to kernel
     val hostAsyncReset = (ap_rst || !firesimMMCM.io.locked).asAsyncReset
-    val hostSyncReset = resetSync(hostAsyncReset, hostClock)
+    val hostSyncReset  = resetSync(hostAsyncReset, hostClock)
 
     top.module.reset := hostSyncReset
     top.module.clock := hostClock
@@ -89,11 +81,11 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     })
 
     val ctrl_cdc = Module(new AXI4ClockConverter(ctrlAXI4BundleParams, "ctrl_cdc", isAXI4Lite = true))
-    ctrl_cdc.io.s_axi <> s_axi_lite
-    ctrl_cdc.io.s_axi_aclk := ap_clk
+    ctrl_cdc.io.s_axi         <> s_axi_lite
+    ctrl_cdc.io.s_axi_aclk    := ap_clk
     ctrl_cdc.io.s_axi_aresetn := (!ap_rst).asAsyncReset
 
-    ctrl_cdc.io.m_axi_aclk := hostClock
+    ctrl_cdc.io.m_axi_aclk    := hostClock
     ctrl_cdc.io.m_axi_aresetn := (!hostSyncReset).asAsyncReset
 
     // All this awful block of code does is convert between three different
@@ -104,27 +96,24 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     ctrl_cdc.io.m_axi.driveStandardAXI4(axi4ToNasti.io.axi4, hostClock, hostSyncReset)
     top.module.ctrl <> axi4ToNasti.io.nasti
 
-
     val host_mem_cdc = Module(new AXI4ClockConverter(hostMemAXI4BundleParams, "host_mem_cdc"))
     host_mem_cdc.io.s_axi.drivenByStandardAXI4(top.module.mem(0), hostClock, hostSyncReset)
-    host_mem_cdc.io.s_axi_aclk := hostClock
+    host_mem_cdc.io.s_axi_aclk    := hostClock
     host_mem_cdc.io.s_axi_aresetn := (!hostSyncReset).asAsyncReset
-    host_mem_cdc.io.s_axi.araddr := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).ar.bits.addr
-    host_mem_cdc.io.s_axi.awaddr := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).aw.bits.addr
+    host_mem_cdc.io.s_axi.araddr  := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).ar.bits.addr
+    host_mem_cdc.io.s_axi.awaddr  := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).aw.bits.addr
     host_mem_cdc.io.s_axi.arcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
     host_mem_cdc.io.s_axi.awcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
 
-    host_mem_0 <> host_mem_cdc.io.m_axi
-    host_mem_cdc.io.m_axi_aclk := ap_clk
+    host_mem_0                    <> host_mem_cdc.io.m_axi
+    host_mem_cdc.io.m_axi_aclk    := ap_clk
     host_mem_cdc.io.m_axi_aresetn := ap_rst_n
-
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       s"// Vitis Shim requires no dynamically generated macros \n",
-      fileSuffix = ".defines.vh")
-    GoldenGateOutputFileAnnotation.annotateFromChisel(
-      s"# Currenty unused",
-      ".env.tcl")
+      fileSuffix = ".defines.vh",
+    )
+    GoldenGateOutputFileAnnotation.annotateFromChisel(s"# Currenty unused", ".env.tcl")
     // We don't need to provide paths because
     // 1) The Shim module is the top-level of the kernel
     // 2) Implementation constraints are scoped to the kernel level in our vitis flow
