@@ -13,6 +13,7 @@ from os.path import join as pjoin
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
+from runtools.utils import has_sudo
 
 from typing import List, Dict, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -200,7 +201,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert switchslot < len(self.parent_node.switch_slots)
             switch = self.parent_node.switch_slots[switchslot]
             with cd(remote_switch_dir), StreamLogger('stdout'), StreamLogger('stderr'):
-                run(switch.get_switch_start_command())
+                run(switch.get_switch_start_command(has_sudo()))
 
     def start_sim_slot(self, slotno: int) -> None:
         """ start a simulation. """
@@ -211,7 +212,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert slotno < len(self.parent_node.sim_slots)
             server = self.parent_node.sim_slots[slotno]
             with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
-                server.run_sim_start_command(slotno)
+                run(server.get_sim_start_command(slotno, has_sudo()))
+
 
     def kill_switch_slot(self, switchslot: int) -> None:
         """ kill the switch in slot switchslot. """
@@ -220,7 +222,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert switchslot < len(self.parent_node.switch_slots)
             switch = self.parent_node.switch_slots[switchslot]
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-                run(switch.get_switch_kill_command())
+                if has_sudo():
+                    run("sudo " + switch.get_switch_kill_command())
+                else:
+                    run(switch.get_switch_kill_command())
 
     def kill_sim_slot(self, slotno: int) -> None:
         """ kill the simulation in slot slotno. """
@@ -229,7 +234,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert slotno < len(self.parent_node.sim_slots)
             server = self.parent_node.sim_slots[slotno]
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
-                run(server.get_sim_kill_command(slotno))
+                if has_sudo():
+                    run("sudo " + server.get_sim_kill_command(slotno))
+                else:
+                    run(server.get_sim_kill_command(slotno))
 
     def instance_assigned_simulations(self) -> bool:
         """ return true if this instance has any assigned fpga simulations. """
@@ -373,7 +381,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                     self.instance_logger("Slot " + str(slotno) + " completed! copying results.")
                     # NOW, we must copy off the results of this sim, since it just exited
                     parent = parentslots[slotno]
-                    parent.copy_back_job_results_from_run(slotno)
+                    parent.copy_back_job_results_from_run(slotno, has_sudo())
                     # add our job to our copy of completed_jobs, so that next,
                     # we can test again to see if this instance is "done" and
                     # can be terminated

@@ -51,7 +51,6 @@ class RuntimeHWConfig:
     local_driver_base_dir: str
     driver_build_target: str
     driver_type_message: str
-    sudo: str
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
@@ -64,10 +63,8 @@ class RuntimeHWConfig:
 
         if self.agfi is not None:
             self.platform = "f1"
-            self.sudo = "sudo"
         else:
             self.platform = "vitis"
-            self.sudo = ""
 
         self.driver_name_prefix = ""
         self.driver_name_suffix = "-" + self.platform
@@ -152,6 +149,7 @@ class RuntimeHWConfig:
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
+            sudo: bool,
             extra_plusargs: str = "",
             extra_args: str = "") -> str:
         """ return the command used to boot the simulation. this has to have
@@ -227,7 +225,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""{self.sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
+        driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -236,7 +234,7 @@ class RuntimeHWConfig:
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
         # Note that pkill only works for names <=15 characters
-        return f"""{self.sudo} pkill -SIGKILL {driver}""".format(driver=driver[:15])
+        return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
     def build_sim_driver(self) -> None:
         """ Build driver for running simulation """
@@ -331,6 +329,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
+            sudo: bool,
             extra_plusargs: str = "",
             extra_args: str = "") -> str:
         """ return the command used to boot the meta simulation. """
@@ -354,6 +353,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config,
             hostdebug_config,
             synthprint_config,
+            sudo,
             full_extra_plusargs,
             full_extra_args)
 

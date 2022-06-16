@@ -7,10 +7,15 @@ import logging
 from os import fspath
 from os.path import realpath
 from pathlib import Path
+from fabric.api import run, warn_only # type: ignore
 
 from typing import List, Tuple, Type
 
 rootLogger = logging.getLogger()
+
+def has_sudo() -> bool:
+    with warn_only():
+        return run("sudo -ln true").return_code == 0
 
 def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
     """ Given path to executable `exe`, returns a list of path tuples, (A, B), where:

@@ -271,8 +271,8 @@ class FireSimServerNode(FireSimNode):
                                                    str(self.server_hardware_config))
         return msg
 
-    def run_sim_start_command(self, slotno: int) -> None:
-        """ get/run the command to run a simulation. assumes it will be
+    def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
+        """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
         shmemportname = "default"
@@ -308,11 +308,12 @@ class FireSimServerNode(FireSimNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
+            sudo,
             self.plusarg_passthrough)
 
-        run(runcommand)
+        return runcommand
 
-    def copy_back_job_results_from_run(self, slotno: int) -> None:
+    def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
         """
         1) Make the local directory for this job's output
         2) Copy back UART log
@@ -338,12 +339,8 @@ class FireSimServerNode(FireSimNode):
 
         dest_sim_dir = self.get_host_instance().get_sim_dir()
 
-        def has_sudo() -> bool:
-            with warn_only():
-                return run("sudo -ln true").return_code == 0
-
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
-            if has_sudo():
+            if sudo:
                 run(f"sudo mount -o loop {img} {mnt}")
             else:
                 run(f"""screen -S guestmount-wait -dm bash -c "guestmount --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
@@ -353,7 +350,7 @@ class FireSimServerNode(FireSimNode):
                     umount(mnt, tmp_dir)
 
         def umount(mnt: str, tmp_dir: str) -> None:
-            if has_sudo():
+            if sudo:
                 run(f"sudo umount {mnt}")
             else:
                 pid = run(f"cat {tmp_dir}/guestmount.pid")
@@ -368,10 +365,7 @@ class FireSimServerNode(FireSimNode):
             is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = """{}/sim_slot_{}/mountpoint""".format(dest_sim_dir, simserverindex)
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                if has_sudo():
-                    run("""sudo mkdir -p {}""".format(mountpoint))
-                else:
-                    run("""mkdir -p {}""".format(mountpoint))
+                run("""{} mkdir -p {}""".format("sudo" if sudo else "", mountpoint))
 
                 if is_qcow2:
                     host_inst = self.get_host_instance()
@@ -383,11 +377,10 @@ class FireSimServerNode(FireSimNode):
                     rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
 
                 mount(rfsname, mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
-                if has_sudo():
-                    with warn_only():
-                        # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
-                        run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
-                    run("""sudo chown -R $(whoami) {}""".format(mountpoint))
+                with warn_only():
+                    # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
+                    run("""{} chattr -i {}/etc/sysconfig/nfs""".format("sudo" if sudo else "", mountpoint))
+                run("""{} chown -R $(whoami) {}""".format("sudo" if sudo else "", mountpoint))
 
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -498,10 +491,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def __init__(self) -> None:
         super().__init__()
 
-    def copy_back_job_results_from_run(self, slotno: int) -> None:
+    def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
         """ This override is to call copy back job results for all the dummy nodes too. """
         # first call the original
-        super().copy_back_job_results_from_run(slotno)
+        super().copy_back_job_results_from_run(slotno, sudo)
 
         # call on all siblings
         num_siblings = self.supernode_get_num_siblings_plus_one()
@@ -513,7 +506,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         for sibindex in range(1, num_siblings):
             sib = self.supernode_get_sibling(sibindex)
             sib.assign_host_instance(super_server_host)
-            sib.copy_back_job_results_from_run(slotno)
+            sib.copy_back_job_results_from_run(slotno, sudo)
 
     def allocate_nbds(self) -> None:
         """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
@@ -556,8 +549,8 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                 return node
         assert False, "Should return supernode sibling"
 
-    def run_sim_start_command(self, slotno: int) -> None:
-        """ get/run the command to run a simulation. assumes it will be
+    def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
+        """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located."""
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
@@ -602,9 +595,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
+            sudo,
             self.plusarg_passthrough)
 
-        run(runcommand)
+        return runcommand
 
     def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
         """ Return local paths of all stuff needed to run this simulation as
@@ -709,8 +703,8 @@ class FireSimSwitchNode(FireSimNode):
         all_paths += get_local_shared_libraries(bin)
         return all_paths
 
-    def get_switch_start_command(self) -> str:
-        return self.switch_builder.run_switch_simulation_command()
+    def get_switch_start_command(self, sudo: bool) -> str:
+        return self.switch_builder.get_switch_simulation_command(sudo)
 
     def get_switch_kill_command(self) -> str:
         return self.switch_builder.kill_switch_simulation_command()
