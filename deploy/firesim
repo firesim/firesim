@@ -37,7 +37,7 @@ from buildtools.bitbuilder import F1BitBuilder
 from util.streamlogger import StreamLogger
 from util.filelineswap import file_line_swap
 
-from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints
+from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints, Tuple, List
 
 PLATFORM_LIST = [_.name for _ in Path(__file__).parent.parent.joinpath('platforms').iterdir()]
 
@@ -139,7 +139,19 @@ def managerinit(args: argparse.Namespace):
 
     rootLogger.info("Adding default overrides to config files")
     if args.platform == 'f1':
-        keyword = "managerinit arg start"
+        def get_indexes(lines: List[str], keyword_start: str, keyword_end: str)-> Tuple[int, int]:
+            start_arg_idx = None
+            end_arg_idx = None
+            for i, l in enumerate(lines):
+                if keyword_start in l:
+                    start_arg_idx = i + 1
+                if keyword_end in l:
+                    end_arg_idx = i
+
+            assert start_arg_idx is not None, f"""Unable to find "{keyword_start}" in input lines"""
+            assert end_arg_idx is not None, f"""Unable to find "{keyword_end}" in input lines"""
+
+            return start_arg_idx, end_arg_idx
 
         runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
@@ -147,13 +159,8 @@ def managerinit(args: argparse.Namespace):
         start_lines = [f"base_recipe: {runfarm_default_file}\n"]
         start_lines += ["recipe_arg_overrides:\n"]
 
-        arg_idx = None
-        for i, l in enumerate(rf_recipe_lines):
-            if keyword in l:
-                arg_idx = i + 1
-        assert arg_idx is not None
-
-        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[arg_idx:]
+        start_arg_idx, end_arg_idx = get_indexes(rf_recipe_lines, "managerinit arg start", "managerinit arg end")
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[start_arg_idx:end_arg_idx]
 
         file_line_swap(
             "config_runtime.yaml",
@@ -168,13 +175,8 @@ def managerinit(args: argparse.Namespace):
         start_lines = [f"base_recipe: {buildfarm_default_file}\n"]
         start_lines += ["recipe_arg_overrides:\n"]
 
-        arg_idx = None
-        for i, l in enumerate(bf_recipe_lines):
-            if keyword in l:
-                arg_idx = i + 1
-        assert arg_idx is not None
-
-        bf_recipe_lines = ["  " + l for l in start_lines] + bf_recipe_lines[arg_idx:]
+        start_arg_idx, end_arg_idx = get_indexes(bf_recipe_lines, "managerinit arg start", "managerinit arg end")
+        bf_recipe_lines = ["  " + l for l in start_lines] + bf_recipe_lines[start_arg_idx:end_arg_idx]
 
         file_line_swap(
             "config_build.yaml",
