@@ -1,8 +1,8 @@
 usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
-               [-r BUILDRECIPESCONFIGFILE] [-s BUILDFARMCONFIGFILE]
-               [-a HWDBCONFIGFILE] [-x OVERRIDECONFIGDATA]
-               [-f TERMINATESOMEF116] [-g TERMINATESOMEF12]
-               [-i TERMINATESOMEF14] [-m TERMINATESOMEM416] [-q]
+               [-r BUILDRECIPESCONFIGFILE] [-a HWDBCONFIGFILE]
+               [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
+               [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
+               [-m TERMINATESOMEM416] [--terminatesome TERMINATESOME] [-q]
                [-t LAUNCHTIME] [--platform {f1}]
                {managerinit,infrasetup,boot,kill,runworkload,buildafi,buildbitstream,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
 
@@ -23,9 +23,6 @@ optional arguments:
   -r BUILDRECIPESCONFIGFILE, --buildrecipesconfigfile BUILDRECIPESCONFIGFILE
                         Optional custom build recipe config file. Defaults to
                         config_build_recipes.yaml.
-  -s BUILDFARMCONFIGFILE, --buildfarmconfigfile BUILDFARMCONFIGFILE
-                        Optional custom build farm config file. Defaults to
-                        config_build_farm.yaml.
   -a HWDBCONFIGFILE, --hwdbconfigfile HWDBCONFIGFILE
                         Optional custom HW database config file. Defaults to
                         config_hwdb.yaml.
@@ -34,17 +31,43 @@ optional arguments:
                         e.g.: --overrideconfigdata "target-config link-latency
                         6405".
   -f TERMINATESOMEF116, --terminatesomef116 TERMINATESOMEF116
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched f1.16xlarges.
+                        DEPRECATED. Use --terminatesome=f1.16xlarge:count
+                        instead. Will be removed in the next major version of
+                        FireSim (1.15.X). Old help message: Only used by
+                        terminaterunfarm. Terminates this many of the
+                        previously launched f1.16xlarges.
   -g TERMINATESOMEF12, --terminatesomef12 TERMINATESOMEF12
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched f1.2xlarges.
+                        DEPRECATED. Use --terminatesome=f1.2xlarge:count
+                        instead. Will be removed in the next major version of
+                        FireSim (1.15.X). Old help message: Only used by
+                        terminaterunfarm. Terminates this many of the
+                        previously launched f1.2xlarges.
   -i TERMINATESOMEF14, --terminatesomef14 TERMINATESOMEF14
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched f1.4xlarges.
+                        DEPRECATED. Use --terminatesome=f1.4xlarge:count
+                        instead. Will be removed in the next major version of
+                        FireSim (1.15.X). Old help message: Only used by
+                        terminaterunfarm. Terminates this many of the
+                        previously launched f1.4xlarges.
   -m TERMINATESOMEM416, --terminatesomem416 TERMINATESOMEM416
-                        Only used by terminatesome. Terminates this many of
-                        the previously launched m4.16xlarges.
+                        DEPRECATED. Use --terminatesome=m4.16xlarge:count
+                        instead. Will be removed in the next major version of
+                        FireSim (1.15.X). Old help message: Only used by
+                        terminaterunfarm. Terminates this many of the
+                        previously launched m4.16xlarges.
+  --terminatesome TERMINATESOME
+                        Only used by terminaterunfarm. Used to specify a
+                        restriction on how many instances to terminate. E.g.,
+                        --terminatesome=f1.2xlarge:2 will terminate only 2 of
+                        the f1.2xlarge instances in the runfarm, regardless of
+                        what other instances are in the runfarm. This argument
+                        can be specified multiple times to terminate
+                        additional instance types/counts. Behavior when
+                        specifying the same instance type multiple times is
+                        undefined. This replaces the old
+                        --terminatesome{f116,f12,f14,m416} arguments. Behavior
+                        when specifying these old-style terminatesome flags
+                        and this new style flag at the same time is also
+                        undefined.
   -q, --forceterminate  For terminaterunfarm, force termination without
                         prompting user for confirmation. Defaults to False
   -t LAUNCHTIME, --launchtime LAUNCHTIME
