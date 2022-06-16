@@ -6,6 +6,7 @@ import logging
 import abc
 from fabric.contrib.project import rsync_project # type: ignore
 from fabric.api import run, local, warn_only, get # type: ignore
+from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
@@ -241,7 +242,9 @@ class FireSimServerNode(FireSimNode):
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                assert nbd_tracker is not None
+                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
                 # connect the /dev/nbdX device to the rootfs
                 run("""sudo qemu-nbd -c {devname} {rootfs}""".format(devname=allocd_device, rootfs=rootfsname))
@@ -256,7 +259,9 @@ class FireSimServerNode(FireSimNode):
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                assert nbd_tracker is not None
+                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
     def diagramstr(self) -> str:
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
@@ -371,7 +376,9 @@ class FireSimServerNode(FireSimNode):
                 if is_qcow2:
                     host_inst = self.get_host_instance()
                     assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                    rfsname = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rfsname)
+                    nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                    assert nbd_tracker is not None
+                    rfsname = nbd_tracker.get_nbd_for_imagename(rfsname)
                 else:
                     rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
 
@@ -519,7 +526,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                assert nbd_tracker is not None
+                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
