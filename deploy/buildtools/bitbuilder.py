@@ -194,6 +194,8 @@ class F1BitBuilder(BitBuilder):
 
             message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
 
+            send_firesim_notification(message_title, message_body)
+
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
@@ -448,8 +450,6 @@ class VitisBitBuilder(BitBuilder):
             message_title = "FireSim Vitis FPGA Build Failed"
 
             message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
-
-            send_firesim_notification(message_title, message_body)
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
