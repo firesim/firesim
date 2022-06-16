@@ -8,11 +8,10 @@ def run_docs_generated_components_check():
     """ Runs checks to make sure generated components of docs have been
     updated. """
 
-    with cd(manager_fsim_dir), prefix('source env.sh'):
+    with cd(manager_fsim_dir), prefix('source sourceme-f1-manager.sh'):
         run("cd deploy && cat config_runtime.yaml")
         run("cd deploy && cat ../docs/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
         run("cd deploy && diff config_runtime.yaml ../docs/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
-
 
         run("cd deploy && firesim --help")
         run("cd deploy && cat ../docs/Advanced-Usage/Manager/HELP_OUTPUT")
