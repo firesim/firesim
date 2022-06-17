@@ -211,6 +211,10 @@
                         <a href="AutoCounterFirrtlAnnotation.html" title="AutoCounter annotations.">AutoCounterFirrtlAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="object" href="ElaborateChiselSubCircuit$.html" title=""></a>
+                        <a href="ElaborateChiselSubCircuit$.html" title="">ElaborateChiselSubCircuit</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="EnableModelMultiThreadingAnnotation.html" title="This specifies that the module should be automatically multi-threaded (Chisel annotator)."></a>
                         <a href="EnableModelMultiThreadingAnnotation.html" title="This specifies that the module should be automatically multi-threaded (Chisel annotator).">EnableModelMultiThreadingAnnotation</a>
                       </li><li class="current-entities indented2">
@@ -251,8 +255,8 @@
                         <a href="FpgaDebug$.html" title="">FpgaDebug</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="FpgaDebugAnnotation.html" title=""></a>
-                        <a href="FpgaDebugAnnotation.html" title="">FpgaDebugAnnotation</a>
+                        <a class="class" href="FpgaDebugAnnotation.html" title="These are consumed by midas.passes.AutoILATransform to directly instantiate an ILA at the top of simulator's design hierarchy (the PlatformShim level)."></a>
+                        <a href="FpgaDebugAnnotation.html" title="These are consumed by midas.passes.AutoILATransform to directly instantiate an ILA at the top of simulator's design hierarchy (the PlatformShim level).">FpgaDebugAnnotation</a>
                       </li><li class="current-entities indented2">
                         <a class="object" href="GlobalResetCondition$.html" title=""></a>
                         <a class="class" href="GlobalResetCondition.html" title="Masks off assertions, printfs, and autocounter events when the target bool is deasserted."></a>
@@ -586,10 +590,11 @@ instead.</p></div></div>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="FpgaDebugAnnotation.html"><span class="name">FpgaDebugAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="These are consumed by midas.passes.AutoILATransform to directly instantiate an ILA at the top of simulator's design hierarchy (the PlatformShim level)." href="FpgaDebugAnnotation.html"><span class="name">FpgaDebugAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="chisel3.Data">Data</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">These are consumed by <a href="../passes/AutoILATransform$.html" class="extype" name="midas.passes.AutoILATransform">midas.passes.AutoILATransform</a> to directly
+instantiate an ILA at the top of simulator's design hierarchy (the PlatformShim level).</p>
     </li><li name="midas.targetutils.GlobalResetCondition" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="GlobalResetConditionextendsSingleTargetAnnotation[firrtl.annotations.ReferenceTarget]withDontTouchAllTargetswithProductwithSerializable"></a><a id="GlobalResetCondition:GlobalResetCondition"></a>
       <span class="permalink">
@@ -706,7 +711,23 @@ globalResetCondition if it is available.</p>
         <div class="values members">
               <h3>Value Members</h3>
               <ol>
-                <li name="midas.targetutils.ExcludeInstanceAsserts" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+                <li name="midas.targetutils.ElaborateChiselSubCircuit" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ElaborateChiselSubCircuit"></a><a id="ElaborateChiselSubCircuit:ElaborateChiselSubCircuit"></a>
+      <span class="permalink">
+      <a href="../../midas/targetutils/ElaborateChiselSubCircuit$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="ElaborateChiselSubCircuit$.html"><span class="name">ElaborateChiselSubCircuit</span></a>
+      </span>
+      
+      
+    </li><li name="midas.targetutils.ExcludeInstanceAsserts" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ExcludeInstanceAsserts"></a><a id="ExcludeInstanceAsserts:ExcludeInstanceAsserts"></a>
       <span class="permalink">
       <a href="../../midas/targetutils/ExcludeInstanceAsserts$.html" title="Permalink">
