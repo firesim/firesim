@@ -6,6 +6,7 @@ import logging
 import abc
 from fabric.contrib.project import rsync_project # type: ignore
 from fabric.api import run, local, warn_only, get # type: ignore
+from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
@@ -241,7 +242,9 @@ class FireSimServerNode(FireSimNode):
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                assert nbd_tracker is not None
+                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
                 # connect the /dev/nbdX device to the rootfs
                 run("""sudo qemu-nbd -c {devname} {rootfs}""".format(devname=allocd_device, rootfs=rootfsname))
@@ -256,7 +259,9 @@ class FireSimServerNode(FireSimNode):
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                assert nbd_tracker is not None
+                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
     def diagramstr(self) -> str:
         msg = """{}:{}\n----------\nMAC: {}\n{}\n{}""".format("FireSimServerNode",
@@ -266,8 +271,8 @@ class FireSimServerNode(FireSimNode):
                                                    str(self.server_hardware_config))
         return msg
 
-    def run_sim_start_command(self, slotno: int) -> None:
-        """ get/run the command to run a simulation. assumes it will be
+    def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
+        """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
         shmemportname = "default"
@@ -303,11 +308,12 @@ class FireSimServerNode(FireSimNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
+            sudo,
             self.plusarg_passthrough)
 
-        run(runcommand)
+        return runcommand
 
-    def copy_back_job_results_from_run(self, slotno: int) -> None:
+    def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
         """
         1) Make the local directory for this job's output
         2) Copy back UART log
@@ -333,26 +339,48 @@ class FireSimServerNode(FireSimNode):
 
         dest_sim_dir = self.get_host_instance().get_sim_dir()
 
+        def mount(img: str, mnt: str, tmp_dir: str) -> None:
+            if sudo:
+                run(f"sudo mount -o loop {img} {mnt}")
+            else:
+                run(f"""screen -S guestmount-wait -dm bash -c "guestmount --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
+                try:
+                    run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""", timeout=60*10)
+                except CommandTimeout:
+                    umount(mnt, tmp_dir)
+
+        def umount(mnt: str, tmp_dir: str) -> None:
+            if sudo:
+                run(f"sudo umount {mnt}")
+            else:
+                pid = run(f"cat {tmp_dir}/guestmount.pid")
+                run("screen -XS guestmount-wait quit")
+                run(f"guestunmount {mnt}")
+                run(f"tail --pid={pid} -f /dev/null")
+                run(f"rm -f {tmp_dir}/guestmount.pid")
+
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()
         if rfsname is not None:
             is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = """{}/sim_slot_{}/mountpoint""".format(dest_sim_dir, simserverindex)
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo mkdir -p {}""".format(mountpoint))
+                run("""{} mkdir -p {}""".format("sudo" if sudo else "", mountpoint))
 
                 if is_qcow2:
                     host_inst = self.get_host_instance()
                     assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                    rfsname = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rfsname)
+                    nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                    assert nbd_tracker is not None
+                    rfsname = nbd_tracker.get_nbd_for_imagename(rfsname)
                 else:
                     rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
 
-                run("""sudo mount {blockfile} {mntpt}""".format(blockfile=rfsname, mntpt=mountpoint))
+                mount(rfsname, mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
                 with warn_only():
                     # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
-                    run("""sudo chattr -i {}/etc/sysconfig/nfs""".format(mountpoint))
-                run("""sudo chown -R centos {}""".format(mountpoint))
+                    run("""{} chattr -i {}/etc/sysconfig/nfs""".format("sudo" if sudo else "", mountpoint))
+                run("""{} chown -R $(whoami) {}""".format("sudo" if sudo else "", mountpoint))
 
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
@@ -368,7 +396,7 @@ class FireSimServerNode(FireSimNode):
 
             ## unmount
             with StreamLogger('stdout'), StreamLogger('stderr'):
-                run("""sudo umount {}""".format(mountpoint))
+                umount(mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
 
             ## if qcow2, detach .qcow2 image from the device, we're done with it
             if is_qcow2:
@@ -422,7 +450,9 @@ class FireSimServerNode(FireSimNode):
 
     def get_agfi(self) -> str:
         """ Return the AGFI that should be flashed. """
-        return self.get_resolved_server_hardware_config().agfi
+        agfi = self.get_resolved_server_hardware_config().agfi
+        assert agfi is not None
+        return agfi
 
     def assign_job(self, job: JobConfig) -> None:
         """ Assign a job to this node. """
@@ -461,10 +491,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def __init__(self) -> None:
         super().__init__()
 
-    def copy_back_job_results_from_run(self, slotno: int) -> None:
+    def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
         """ This override is to call copy back job results for all the dummy nodes too. """
         # first call the original
-        super().copy_back_job_results_from_run(slotno)
+        super().copy_back_job_results_from_run(slotno, sudo)
 
         # call on all siblings
         num_siblings = self.supernode_get_num_siblings_plus_one()
@@ -476,7 +506,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         for sibindex in range(1, num_siblings):
             sib = self.supernode_get_sibling(sibindex)
             sib.assign_host_instance(super_server_host)
-            sib.copy_back_job_results_from_run(slotno)
+            sib.copy_back_job_results_from_run(slotno, sudo)
 
     def allocate_nbds(self) -> None:
         """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
@@ -489,7 +519,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
                 assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                allocd_device = host_inst.instance_deploy_manager.nbd_tracker.get_nbd_for_imagename(rootfsname)
+                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
+                assert nbd_tracker is not None
+                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
@@ -517,8 +549,8 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                 return node
         assert False, "Should return supernode sibling"
 
-    def run_sim_start_command(self, slotno: int) -> None:
-        """ get/run the command to run a simulation. assumes it will be
+    def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
+        """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located."""
 
         num_siblings = self.supernode_get_num_siblings_plus_one()
@@ -563,9 +595,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
+            sudo,
             self.plusarg_passthrough)
 
-        run(runcommand)
+        return runcommand
 
     def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
         """ Return local paths of all stuff needed to run this simulation as
@@ -670,8 +703,8 @@ class FireSimSwitchNode(FireSimNode):
         all_paths += get_local_shared_libraries(bin)
         return all_paths
 
-    def get_switch_start_command(self) -> str:
-        return self.switch_builder.run_switch_simulation_command()
+    def get_switch_start_command(self, sudo: bool) -> str:
+        return self.switch_builder.get_switch_simulation_command(sudo)
 
     def get_switch_kill_command(self) -> str:
         return self.switch_builder.kill_switch_simulation_command()

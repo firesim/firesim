@@ -3,7 +3,7 @@ usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
                [-x OVERRIDECONFIGDATA] [-f TERMINATESOMEF116]
                [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
                [-m TERMINATESOMEM416] [--terminatesome TERMINATESOME] [-q]
-               [-t LAUNCHTIME] [--platform {f1}]
+               [-t LAUNCHTIME] [--platform {f1,vitis}]
                {managerinit,infrasetup,boot,kill,runworkload,buildafi,buildbitstream,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
 
 FireSim Simulation Manager.
@@ -74,5 +74,6 @@ optional arguments:
                         Give the "Y-m-d--H-M-S" prefix of results-build
                         directory. Useful for tar2afi when finishing a partial
                         buildafi
-  --platform {f1}       Required argument for "managerinit" to specify which
+  --platform {f1,vitis}
+                        Required argument for "managerinit" to specify which
                         platform you will be using

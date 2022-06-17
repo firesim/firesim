@@ -15,6 +15,7 @@
 # Unmanaged list of build hosts. Assumed that they are pre-setup to run builds.
 build_farm_type: ExternallyProvisioned
 args:
+    # managerinit arg start
     # REQUIRED: (replace this) default location of build directory on build host.
     default_build_dir: null
     # REQUIRED: List of IP addresses (or "localhost"). Each can have an OPTIONAL
@@ -32,3 +33,4 @@ args:
     #         override_build_dir: /scratch/specific-build-host-build-dir
     build_farm_hosts:
         - localhost
+    # managerinit arg end

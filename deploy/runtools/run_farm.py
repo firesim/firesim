@@ -21,7 +21,6 @@ from typing import Any, Dict, Optional, List, Union, Set, Type, Tuple, TYPE_CHEC
 if TYPE_CHECKING:
     from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
     from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
-    from runtools.run_farm_deploy_managers import InstanceDeployManager
 
 rootLogger = logging.getLogger()
 

@@ -137,22 +137,22 @@ def managerinit(args: argparse.Namespace):
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
+    def get_indexes(lines: List[str], keyword_start: str, keyword_end: str)-> Tuple[int, int]:
+        start_arg_idx = None
+        end_arg_idx = None
+        for i, l in enumerate(lines):
+            if keyword_start in l:
+                start_arg_idx = i + 1
+            if keyword_end in l:
+                end_arg_idx = i
+
+        assert start_arg_idx is not None, f"""Unable to find "{keyword_start}" in input lines"""
+        assert end_arg_idx is not None, f"""Unable to find "{keyword_end}" in input lines"""
+
+        return start_arg_idx, end_arg_idx
+
     rootLogger.info("Adding default overrides to config files")
     if args.platform == 'f1':
-        def get_indexes(lines: List[str], keyword_start: str, keyword_end: str)-> Tuple[int, int]:
-            start_arg_idx = None
-            end_arg_idx = None
-            for i, l in enumerate(lines):
-                if keyword_start in l:
-                    start_arg_idx = i + 1
-                if keyword_end in l:
-                    end_arg_idx = i
-
-            assert start_arg_idx is not None, f"""Unable to find "{keyword_start}" in input lines"""
-            assert end_arg_idx is not None, f"""Unable to find "{keyword_end}" in input lines"""
-
-            return start_arg_idx, end_arg_idx
-
         runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
@@ -170,6 +170,38 @@ def managerinit(args: argparse.Namespace):
             rf_recipe_lines)
 
         buildfarm_default_file = "build-farm-recipes/aws_ec2.yaml"
+        with open(buildfarm_default_file, "r") as f:
+            bf_recipe_lines = f.readlines()
+        start_lines = [f"base_recipe: {buildfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+
+        start_arg_idx, end_arg_idx = get_indexes(bf_recipe_lines, "managerinit arg start", "managerinit arg end")
+        bf_recipe_lines = ["  " + l for l in start_lines] + bf_recipe_lines[start_arg_idx:end_arg_idx]
+
+        file_line_swap(
+            "config_build.yaml",
+            "config_build.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            bf_recipe_lines)
+    elif args.platform == 'vitis':
+        runfarm_default_file = "run-farm-recipes/externally_provisioned.yaml"
+        with open(runfarm_default_file, "r") as f:
+            rf_recipe_lines = f.readlines()
+        start_lines = [f"base_recipe: {runfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+
+        start_arg_idx, end_arg_idx = get_indexes(rf_recipe_lines, "managerinit arg start", "managerinit arg end")
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[start_arg_idx:end_arg_idx]
+
+        file_line_swap(
+            "config_runtime.yaml",
+            "config_runtime.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            rf_recipe_lines)
+
+        buildfarm_default_file = "build-farm-recipes/externally_provisioned.yaml"
         with open(buildfarm_default_file, "r") as f:
             bf_recipe_lines = f.readlines()
         start_lines = [f"base_recipe: {buildfarm_default_file}\n"]

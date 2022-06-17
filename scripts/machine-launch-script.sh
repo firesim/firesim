@@ -279,6 +279,7 @@ set -o pipefail
         expect \
         dtc \
         verilator==4.034 \
+        screen \
     )
 
     # python packages
@@ -294,7 +295,7 @@ set -o pipefail
         pyparsing==3.0.6 \
         numpy==1.19.5 \
         kiwisolver==1.3.1 \
-        matplotlib==3.3.4 \
+        matplotlib-base==3.3.4 \
         pandas==1.1.5 \
         awscli==1.22.21 \
         pytest==6.2.5 \
@@ -328,7 +329,8 @@ set -o pipefail
     CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
-    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -y "${CONDA_PACKAGE_SPECS[@]}"
+    # only temporarily use tsnyder channel until xilinx-xrt is in a more official place
+    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -c tsnyder -y "${CONDA_PACKAGE_SPECS[@]}"
 
 
     # Install python packages using pip that are not available from conda

@@ -37,7 +37,11 @@ class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.yaml """
     name: str
     platform: str
-    agfi: str
+
+    # TODO: should be abstracted out between platforms with a URI
+    agfi: Optional[str]
+    xclbin: Optional[str]
+
     deploytriplet: Optional[str]
     customruntimeconfig: str
     driver_built: bool
@@ -51,19 +55,32 @@ class RuntimeHWConfig:
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        self.platform = "f1"
+        if 'agfi' in hwconfig_dict and 'xclbin' in hwconfig_dict:
+            raise Exception(f"Unable to have agfi and xclbin in HWDB entry {name}.")
+
+        self.agfi = hwconfig_dict.get('agfi')
+        self.xclbin = hwconfig_dict.get('xclbin')
+
+        if self.agfi is not None:
+            self.platform = "f1"
+        else:
+            self.platform = "vitis"
+
         self.driver_name_prefix = ""
         self.driver_name_suffix = "-" + self.platform
 
         self.local_driver_base_dir = LOCAL_DRIVERS_BASE
-        self.driver_build_target = self.platform
         self.driver_type_message = "FPGA software"
-
-        self.agfi = hwconfig_dict['agfi']
+        self.driver_build_target = self.platform
 
         self.deploytriplet = hwconfig_dict['deploy_triplet_override']
         if self.deploytriplet is not None:
             rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
+
+        # TODO: obtain deploy_triplet from tag in xclbin
+        if self.deploytriplet is None and self.platform == "vitis":
+            raise Exception(f"Must set the deploy_triplet_override for Vitis bitstreams")
+
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
@@ -132,6 +149,7 @@ class RuntimeHWConfig:
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
+            sudo: bool,
             extra_plusargs: str = "",
             extra_args: str = "") -> str:
         """ return the command used to boot the simulation. this has to have
@@ -181,13 +199,18 @@ class RuntimeHWConfig:
 
         screen_name = "fsim{}".format(slotid)
         run_device_placement = "+slotid={}".format(slotid)
-        # TODO: re-enable for vitis
-        #other = "+binary_file={}".format(self.xclbin) if self.platform == "vitis" else ""
+
+        if self.platform == "vitis":
+            assert self.xclbin is not None
+            vitis_bit = "+binary_file={}".format(self.xclbin)
+        else:
+            vitis_bit = ""
 
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"]
         permissive_driver_args += [run_device_placement]
+        permissive_driver_args += [vitis_bit]
         permissive_driver_args += [f"+profile-interval={profile_interval}"]
         permissive_driver_args += [zero_out_dram]
         permissive_driver_args += [disable_asserts]
@@ -202,7 +225,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""sudo ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
+        driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -211,7 +234,7 @@ class RuntimeHWConfig:
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
         # Note that pkill only works for names <=15 characters
-        return """sudo pkill -SIGKILL {driver}""".format(driver=driver[:15])
+        return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
     def build_sim_driver(self) -> None:
         """ Build driver for running simulation """
@@ -253,7 +276,7 @@ class RuntimeHWConfig:
 
 
     def __str__(self) -> str:
-        return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, str(self.customruntimeconfig))
+        return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
 
 
 
@@ -306,6 +329,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
+            sudo: bool,
             extra_plusargs: str = "",
             extra_args: str = "") -> str:
         """ return the command used to boot the meta simulation. """
@@ -329,6 +353,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config,
             hostdebug_config,
             synthprint_config,
+            sudo,
             full_extra_plusargs,
             full_extra_args)
 

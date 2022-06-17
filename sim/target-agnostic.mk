@@ -39,9 +39,18 @@ PLATFORM ?=
 DRIVER_CC ?=
 DRIVER_H ?=
 
+# Defined for each platform
+platforms_dir := $(abspath $(firesim_base_dir)/../platforms)
+vitis_CXX_FLAGS ?= -std=c++14 -idirafter ${CONDA_PREFIX}/include -idirafter /usr/include -idirafter $(XILINX_XRT)/include
+vitis_LD_FLAGS ?= -L${CONDA_PREFIX}/lib -Wl,-rpath-link=/usr/lib/x86_64-linux-gnu -L$(XILINX_XRT)/lib -luuid -lxrt_coreutil
+f1_CXX_FLAGS ?= -std=c++11 -I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
+f1_LD_FLAGS ?=
+
 # Target-specific CXX and LD flags for compiling the driver and meta-simulators
 TARGET_CXX_FLAGS ?=
+override TARGET_CXX_FLAGS += $($(PLATFORM)_CXX_FLAGS)
 TARGET_LD_FLAGS ?=
+override TARGET_LD_FLAGS += $($(PLATFORM)_LD_FLAGS)
 
 simif_dir = $(firesim_base_dir)/midas/src/main/cc
 midas_h  = $(shell find $(simif_dir) -name "*.h")
@@ -164,11 +173,9 @@ $(PLATFORM) = $(OUTPUT_DIR)/$(DESIGN)-$(PLATFORM)
 $(PLATFORM): $($(PLATFORM))
 
 .PHONY: driver
-driver: $($(PLATFORM))
+driver: $(PLATFORM)
 
-fpga_dir = $(firesim_base_dir)/../platforms/$(PLATFORM)/aws-fpga
-
-$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) -I$(fpga_dir)/sdk/userspace/include
+$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
 # Statically link libfesvr to make it easier to distribute drivers to f1 instances
 # We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt
@@ -181,22 +188,45 @@ $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
+$(vitis): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
+# Statically link libfesvr to make it easier to distribute drivers to f1 instances
+$(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN'
+
+
+# Compile Driver
+$(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+	mkdir -p $(OUTPUT_DIR)/build
+	cp $(header) $(OUTPUT_DIR)/build/
+	$(MAKE) -C $(simif_dir) vitis PLATFORM=vitis DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
+	TOP_DIR=$(chipyard_dir)
+
 #############################
 # FPGA Build Initialization #
 #############################
-board_dir 	   := $(fpga_dir)/hdk/cl/developer_designs
+ifeq ($(PLATFORM), vitis)
+board_dir 	   := $(platforms_dir)/vitis
+else
+board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
+endif
+
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
 fpga_build_dir := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
 repo_state     := $(fpga_work_dir)/design/repo_state
+fpga_driver_dir:= $(fpga_work_dir)/driver
 
 # Enumerates the subset of generated files that must be copied over for FPGA compilation
 fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
 	.sv .defines.vh .env.tcl \
-	.synthesis.xdc .implementation.xdc )
+	.synthesis.xdc .implementation.xdc)
+
+# Files used to run FPGA-level metasimulation
+fpga_sim_delivery_files = $(addprefix $(fpga_driver_dir)/$(BASE_FILE_NAME), .runtime.conf) \
+	$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
-	mkdir -p $(@D)
+	mkdir -p $(driver_dir) #Could just set up in the shell project
 	cp -rf $(board_dir)/cl_firesim -T $(fpga_work_dir)
 	touch $@
 
@@ -207,9 +237,16 @@ $(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir
 	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
+$(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $(GENERATED_DIR)/$(@F) $@
+
+$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM): $($(PLATFORM))
+	cp -f $< $@
+
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_delivery_files)
+replace-rtl: $(fpga_delivery_files) $(fpga_sim_delivery_files)
 
 .PHONY: replace-rtl
 

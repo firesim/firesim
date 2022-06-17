@@ -3,6 +3,7 @@
 
 run_farm_type: ExternallyProvisioned
 args:
+    # managerinit arg start
     # REQUIRED: default platform used for run farm hosts. this is a class specifying
     # how to run simulations on a run farm host.
     default_platform: EC2InstanceDeployManager
@@ -22,6 +23,7 @@ args:
     #     - "111.111.1.111": four_fpgas_spec
     run_farm_hosts_to_use:
         - localhost: four_fpgas_spec
+    # managerinit arg end
 
     # REQUIRED: List of host "specifications", i.e. re-usable collections of
     # host parameters.
