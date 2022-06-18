@@ -17,16 +17,16 @@ either:
 - A single type of job, that is run on as many simulations as specfied by the user.
   These workloads are usually suffixed with ``-uniform``, which indicates that
   all nodes in the workload run the same job. An example of such a workload is
-  ``firesim/deploy/workloads/linux-uniform.json``.
+  :gh-file-ref:`deploy/workloads/linux-uniform.json`.
 
 - Several different jobs, in which case there must be exactly as many
   jobs as there are running simulated nodes. An example of such a workload is
-  ``firesim/deploy/workloads/ping-latency.json``.
+  :gh-file-ref:`deploy/workloads/ping-latency.json`.
 
 
 FireSim can take these workload definitions and perform two functions:
 
-- Building workloads using ``firesim/deploy/workloads/gen-benchmark-rootfs.py``
+- Building workloads using :gh-file-ref:`deploy/workloads/gen-benchmark-rootfs.py`
 
 - Deploying workloads using the manager
 
@@ -46,7 +46,7 @@ image directly (or in QEMU). Imporantly, Fedora currently does not support the
 Uniform Workload JSON
 ----------------------------
 
-``firesim/deploy/workloads/linux-uniform.json`` is an example of a "uniform"
+:gh-file-ref:`deploy/workloads/linux-uniform.json` is an example of a "uniform"
 style workload, where each simulated node runs the same software configuration.
 
 Let's take a look at this file:
@@ -81,7 +81,7 @@ Next, the ``common_bootbinary`` field represents the binary that the simulations
 in this workload are expected to boot from. The manager will copy this binary
 for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is
 relative to the workload's directory, in this case
-``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
+:gh-file-ref:`deploy/workloads/linux-uniform`. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
 is built by the :ref:`FireMarshal <firemarshal>` tool.
 
@@ -90,7 +90,7 @@ in this workload are expected to boot from. The manager will copy this root
 filesystem image for each of the nodes in the simulation (each gets its own copy).
 The ``common_rootfs`` path is
 relative to the workload's directory, in this case
-``firesim/deploy/workloads/linux-uniform``. You'll notice in the above output
+:gh-file-ref:`deploy/workloads/linux-uniform`. You'll notice in the above output
 from ``ls -la`` that this is actually just a symlink to ``br-base.img`` that
 is built by the :ref:`FireMarshal <firemarshal>` tool.
 
@@ -203,7 +203,7 @@ You'll notice a Makefile in the ``workloads/`` directory -- it contains many
 similar commands for all of the workloads included with FireSim.
 
 Once you generate the rootfses for this workload, you can run it with the manager
-by setting ``workload=ping-latency.json`` in ``config_runtime.ini``. The manager
+by setting ``workload_name: ping-latency.json`` in ``config_runtime.ini``. The manager
 will automatically look for the generated rootfses (based on workload and job names
 that it reads from the json) and distribute work appropriately.
 

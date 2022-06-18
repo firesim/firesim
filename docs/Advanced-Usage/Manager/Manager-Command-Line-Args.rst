@@ -13,16 +13,15 @@ complicated, so we will give them their own section on the following pages.
 ``--runtimeconfigfile`` ``FILENAME``
 -----------------------------------------
 
-This lets you specify a custom runtime config file. By default, ``config_runtime.yaml``
+This lets you specify a custom **runtime** config file. By default, ``config_runtime.yaml``
 is used. See :ref:`config-runtime` for what this config file does.
 
 
 ``--buildconfigfile`` ``FILENAME``
 ------------------------------------------
 
-This lets you specify a custom build config file. By default, ``config_build.yaml``
+This lets you specify a custom **build** config file. By default, ``config_build.yaml``
 is used. See :ref:`config-build` for what this config file does.
-
 
 ``--buildrecipesconfigfile`` ``FILENAME``
 ---------------------------------------------------
@@ -35,17 +34,17 @@ this config file does.
 ``--hwdbconfigfile`` ``FILENAME``
 --------------------------------------------
 
-This lets you specify a custom hardware database config file. By default,
+This lets you specify a custom **hardware database** config file. By default,
 ``config_hwdb.yaml`` is used. See :ref:`config-hwdb` for what this config file does.
 
 
 ``--overrideconfigdata`` ``SECTION`` ``PARAMETER`` ``VALUE``
 ------------------------------------------------------------------
 
-This lets you override a single value from the runtime config file. For
+This lets you override a single value from the **runtime** config file. For
 example, if you want to use a link latency of 3003 cycles for a particular run
 (and your ``config_runtime.yaml`` file specifies differently), you can pass
-``--overrideconfigdata target-config link-latency 6405`` to the manager. This
+``--overrideconfigdata target_config link_latency 6405`` to the manager. This
 can be used with any task that uses the runtime config.
 
 
@@ -53,8 +52,8 @@ can be used with any task that uses the runtime config.
 ---------------------------------------------------
 
 Specifies the "Y-m-d--H-M-S" timestamp to be used as the prefix in
-results-build directories.  Useful when wanting to run tar2afi after an
-aborted buildafi was manually fixed.
+``results-build`` directories.  Useful when wanting to run ``tar2afi`` after an
+aborted ``buildbitstream`` was manually fixed.
 
 
 ``TASK``

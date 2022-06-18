@@ -16,7 +16,7 @@ features. Each of these tests proceeds as follows:
 #. Run metasimulation with provided arguments (possibly multiple times)
 #. Post-process metasimulation outputs in Scala
 
-Single tests may be run directly out of ``sim/`` as follows::
+Single tests may be run directly out of :gh-file-ref:`sim/` as follows::
 
    # Run all Chipyard-based tests (uses Rocket + BOOM)
    make test
@@ -28,7 +28,7 @@ Single tests may be run directly out of ``sim/`` as follows::
    make TARGET_PROJECT=midasexamples testOnly=firesim.midasexamples.GCDF1Test
 
 These tests may be run from the SBT console continuously, and SBT will rerun
-them on Scala changes (but not driver changes). Out of ``sim/``::
+them on Scala changes (but not driver changes). Out of :gh-file-ref:`sim/`::
 
    # Launch the SBT console into the firesim subproject
    # NB: omitting TARGET_PROJECT will put you in the FireChip subproject instead
@@ -82,7 +82,7 @@ Synthesizable Unit Tests
 These are derived from Rocket-Chip's synthesizable unit test library and are
 used to test smaller, stand-alone Chisel modules.
 
-Synthesizable unit tests may be run out of ``sim/`` as follows::
+Synthesizable unit tests may be run out of :gh-file-ref:`sim/` as follows::
 
    # Run default tests without waves
    $ make run-midas-unittests
@@ -126,7 +126,7 @@ generator (they elaborate correctly or they give the desired error message.)
 ScalaTests in ``midas`` are mostly tailored to testing FIRRTL transforms, and
 have copied FIRRTL testing utilities into the source tree to make that process easier.
 
-``targetUtils`` scala tests can be run out of ``sim/`` as follows::
+``targetUtils`` scala tests can be run out of :gh-file-ref:`sim/` as follows::
 
    # Pull open the SBT console in the firesim subproject
    $ make TARGET_PROJECT=midasexamples sbt

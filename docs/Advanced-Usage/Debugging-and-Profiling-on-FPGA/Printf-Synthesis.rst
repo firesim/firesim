@@ -79,12 +79,10 @@ Runtime Arguments
 You can set some of these options by changing the fields in the "synthprint"
 section of your config_runtime.yaml.
 
-::
-
-    [synthprint]
-    start=0
-    end=-1
-    cycleprefix=yes
+.. literalinclude:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
+   :language: yaml
+   :start-after: DOCREF START: Synthesized Prints
+   :end-before: DOCREF END: Synthesized Prints
 
 The "start" field corresponds to "print-start", "end" to "print-end", and
 "cycleprefix" to "print-no-cycle-prefix".

@@ -11,7 +11,7 @@ FireSim is capable of simulating from **one to thousands of multi-core compute
 nodes**, derived from **silicon-proven** and **open** target-RTL, with an optional
 cycle-accurate network simulation tying them together. FireSim runs on FPGAs in **public
 cloud** environments like AWS EC2 F1, removing the high capex traditionally
-involved in large-scale FPGA-based simulation.
+involved in large-scale FPGA-based simulation, as well as on on-premise FPGAs.
 
 FireSim is useful both for datacenter architecture research as well as running
 many single-node architectural experiments in parallel on FPGAs. By harnessing
@@ -25,18 +25,28 @@ To learn more, see the `FireSim website <https://fires.im>`__ and the FireSim
 For a two-minute overview that describes how FireSim simulates a datacenter,
 see our ISCA 2018 lightning talk `on YouTube <https://www.youtube.com/watch?v=4XwoSe5c8lY>`__.
 
-Two common use cases:
+Three common use cases:
 --------------------------
 
-Single-Node Simulation, in Parallel
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Single-Node Simulation In Parallel Using On-Premise FPGAs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this mode, FireSim allows for simulation of individual Rocket
 Chip-based nodes without a network, which allows individual simulations to run
 at ~150 MHz. The FireSim manager has the ability to automatically distribute
-jobs to many parallel simulations, expediting the process of running large
+jobs to on-premise FPGAs allowing users to harness existing FPGAs for quick turnaround time and
+maximum flexibility. For example, users can run all of SPECInt2017 on Rocket Chip
+in ~1 day by running the 10 separate workloads in parallel on 10 on-premise FPGAs.
+
+Single-Node Simulation In Parallel Using Cloud FPGAs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this mode, FireSim allows for simulation of individual Rocket
+Chip-based nodes without a network, which allows individual simulations to run
+at ~150 MHz. The FireSim manager has the ability to automatically distribute
+jobs to many parallel simulations running on cloud FPGAs, expediting the process of running large
 workloads like SPEC. For example, users can run all of SPECInt2017 on Rocket Chip
-in ~1 day by running the 10 separate workloads in parallel on 10 FPGAs.
+in ~1 day by running the 10 separate workloads in parallel on 10 FPGAs hosted in the cloud.
 
 Datacenter/Cluster Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -77,20 +87,19 @@ Background/Terminology
   instead of VMs/containers.
 
 **Manager Instance**
-  This is the AWS EC2 instance that you will
+  This is the main host (ex. AWS EC2 instance or local machine) that you will
   SSH-into and do work on. This is where you'll clone your copy of FireSim and
   use the FireSim Manager to deploy builds/simulations from.
 
 **Build Farm**
-  These are instances that are elastically
-  started/terminated by the FireSim manager when you run FPGA builds.
+  These are instances that are managed by the FireSim manager when you run FPGA builds.
   The manager will automatically ship source for builds to these instances and
   run the Verilog -> FPGA Image process on them.
 
 **Run Farm**
-  These are a tagged collection of F1 (and M4) instances that the manager
-  automatically launches and deploys simulations onto. You can launch multiple
-  Run Farms in parallel, each with their own tag, to run multiple separate
+  These are a collection of instances that the manager
+  manages and deploys simulations onto. You can use multiple
+  Run Farms in parallel, to run multiple separate
   simulations in parallel.
 
 To disambiguate between the computers being simulated and the computers doing
@@ -114,7 +123,7 @@ Using FireSim/The FireSim Workflow
 -------------------------------------
 
 The tutorials that follow this page will guide you through the complete flow for
-getting an example FireSim simulation up and running. At the end of this
+getting an example FireSim simulation up and running using AWS EC2 F1. At the end of this
 tutorial, you'll have a simulation that simulates a single quad-core Rocket
 Chip-based node with a 4 MB last level cache, 16 GB DDR3, and no NIC. After
 this, you can continue to a tutorial that shows you how to simulate
@@ -123,7 +132,7 @@ will show you how to build your own FPGA images with customized hardware.
 After you complete these tutorials, you can look at the Advanced documentation
 in the sidebar to the left.
 
-Here's a high-level outline of what we'll be doing in our tutorials:
+Here's a high-level outline of what we'll be doing in our AWS EC2 tutorials:
 
 #. **Initial Setup/Installation**
 
@@ -145,4 +154,4 @@ Here's a high-level outline of what we'll be doing in our tutorials:
 Generally speaking, you only need to follow step 4 if you're modifying Chisel
 RTL or changing non-runtime configurable hardware parameters.
 
-Now, hit next to proceed with setup.
+Now, hit Next to proceed with setup.

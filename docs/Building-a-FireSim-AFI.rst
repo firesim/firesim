@@ -13,27 +13,28 @@ backend scripts (which convert the Vivado-generated tar into an AFI).
 The manager will create this bucket for you automatically, you just need
 to specify a name.
 
-So, choose a bucket name, e.g. ``firesim-yourname``. Bucket names must be
+So, choose a bucket name, e.g. ``firesim``. Bucket names must be
 globally unique. If you choose one that's already taken, the manager
 will notice and complain when you tell it to build an AFI. To set your
-bucket name, open ``deploy/config_build.ini`` in your editor and under the
-``[afibuild]`` header, replace
+bucket name, open ``deploy/bit-builder-recipes/f1.yaml`` in your editor and under the
+particular recipe you plan to build, replace
 
 ::
 
-    s3bucketname=firesim-yournamehere
+    s3_bucket_name: firesim
 
 with your own bucket name, e.g.:
 
 ::
 
-    s3bucketname=firesim-sagar
+    s3_bucket_name: firesim
 
+.. Note:: This isn't necessary if you set the ``append_userid_region`` key/value pair to ``true``.
 
 Build Recipes
 ---------------
 
-In the ``deploy/config_build.ini`` file, you will notice that the ``[builds]``
+In the ``deploy/config_build.ini`` file, you will notice that the ``builds_to_run``
 section currently contains several lines, which
 indicates to the build system that you want to run all of these builds in
 parallel, with the parameters listed in the relevant section of the
@@ -45,17 +46,17 @@ different build instance type keep in mind that Vivado will consume in excess
 of 32 GiB for large designs.
 
 
-To start out, let's build a simple design, ``firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3``.
+To start out, let's build a simple design, ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
 This is a design that has four cores, no nic, and uses the 4MB LLC + DDR3 memory model.
 To do so, comment out all of the other build entries in ``deploy/config_build.ini``, besides the one we want. So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
 ::
 
-   [builds]
-   # this section references builds defined in config_build_recipes.ini
-   # if you add a build here, it will be built when you run buildbitstream
-   firesim-rocket-quadcore-no-nic-l2-llc4mb-ddr3
+   builds_to_run:
+       # this section references builds defined in config_build_recipes.ini
+       # if you add a build here, it will be built when you run buildafi
+       - firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
 
 Running a Build

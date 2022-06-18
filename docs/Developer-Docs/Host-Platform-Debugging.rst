@@ -12,7 +12,7 @@ metasimulation should generally not be deployed by users, when we refer to
 metasimulation in absence of the FPGA-level qualifier we mean the faster form
 described in :ref:`Debugging & Testing with Metasimulation<metasimulation>`
 
-FPGA-level metasimulations run out of ``firesim/sim``, and consist of two components:
+FPGA-level metasimulations run out of :gh-file-ref:`sim/`, and consist of two components:
 
 1. A FireSim-f1 driver that talks to a simulated DUT instead of the FPGA
 2. The DUT, a simulator compiled with either XSIM or VCS, that receives commands from the aforementioned
@@ -46,7 +46,7 @@ into FPGA DRAM.
 XSIM is used by default, and will work on EC2 instances with the FPGA developer
 AMI.  If you have a license, setting ``VCS=1`` will use VCS to compile the DUT
 (4x faster than XSIM). Berkeley users running on the Millennium machines should
-be able to source ``firesim/scripts/setup-vcsmx-env.sh`` to setup their
+be able to source :gh-file-ref:`scripts/setup-vcsmx-env.sh` to setup their
 environment for VCS-based FPGA-level simulation.
 
 The waveforms are dumped in the FPGA build directories (

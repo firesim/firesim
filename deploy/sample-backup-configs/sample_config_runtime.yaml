@@ -76,6 +76,7 @@ host_debug:
     # continues simulation.
     disable_synth_asserts: no
 
+# DOCREF START: Synthesized Prints
 synth_print:
     # Start and end cycles for outputting synthesized prints.
     # They are given in terms of the base clock and will be converted
@@ -84,3 +85,4 @@ synth_print:
     end: -1
     # When enabled (=yes), prefix print output with the target cycle at which the print was triggered
     cycle_prefix: yes
+# DOCREF END: Synthesized Prints

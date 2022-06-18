@@ -57,7 +57,7 @@ Enabling Flame Graph generation in ``config_runtime.yaml``
 --------------------------------------------------------------
 
 To enable Flame Graph generation for a simulation, you must set ``enable: yes`` and
-``output-format: 2`` in the ``tracing:`` section of your ``config_runtime.yaml``
+``output_format: 2`` in the ``tracing`` section of your ``config_runtime.yaml``
 file, for example:
 
 .. code-block:: yaml
@@ -68,7 +68,7 @@ file, for example:
         # Trace output formats. Only enabled if "enable" is set to "yes" above
         # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
         # unwinding -> Flame Graph)
-        output-format: 2
+        output_format: 2
 
         # Trigger selector.
         # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =

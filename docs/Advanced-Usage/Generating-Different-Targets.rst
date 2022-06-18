@@ -124,7 +124,7 @@ FireSim-generated RTL, though there are some cases in which it must be coaxed. F
 
     [Synth 8-6057] Memory: "<memory>" defined in module: "<module>" implemented as Ultra-Ram
     has no pipeline registers. It is recommended to use pipeline registers to achieve high
-    performance. 
+    performance.
 
 Since Golden Gate modifies the module hierarchy extensively, it's highly
 desirable to annotate these memories in the Chisel source so that their hints
@@ -334,6 +334,7 @@ use the Makefile-defined defaults of ``DESIGN=FireSim PLATFORM_CONFIG=BaseF1Conf
 Quad-rank DDR3 first-ready, first-come first-served memory access scheduler
 
 ::
+
     make TARGET_CONFIG=DDR3FRFCFS_FireSimRocketConfig
 
 

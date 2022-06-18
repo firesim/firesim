@@ -84,7 +84,7 @@ The filtered modules can be indicated using one of two methods:
   class DigitalTop(implicit p: Parameters) extends ChipyardSystem
   {
     override lazy val module = new DigitalTopModule(this)
-      
+
     chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("StreamWriter"))
   }
 
@@ -98,21 +98,21 @@ AutoCounter Runtime Parameters
 ---------------------------------
 AutoCounter currently takes a single runtime configurable parameter, defined
 under the ``autocounter:`` section in the ``config_runtime.yaml`` file.  The
-``read-rate`` parameter defines the rate at which the counters should be read,
-and is measured in target-cycles of the base target-clock (clock 0 produced by the ClockBridge). 
-Hence, if the read-rate is defined to be 100 and the tile frequency is 2x the base clock (ex., which may drive the uncore),
+``read_rate`` parameter defines the rate at which the counters should be read,
+and is measured in target-cycles of the base target-clock (clock 0 produced by the ClockBridge).
+Hence, if the read_rate is defined to be 100 and the tile frequency is 2x the base clock (ex., which may drive the uncore),
 the simulator will read and print the values of the counters every 200 core-clock cycles.
 If the core-domain clock is the base clock, it would do so every 100 cycles.
-By default, the read-rate is set to 0 cycles, which disables AutoCounter.
+By default, the read_rate is set to 0 cycles, which disables AutoCounter.
 
 .. code-block:: yaml
 
    autocounter:
        # read counters every 100 cycles
-       read-rate: 100
+       read_rate: 100
 
 
-.. Note:: AutoCounter is designed as a coarse-grained observability mechanism, as sampling 
+.. Note:: AutoCounter is designed as a coarse-grained observability mechanism, as sampling
       each counter requires two (blocking) MMIO reads (each read takes O(100) ns on EC2 F1).
       As a result sampling at intervals less than O(10000) cycles may adversely affect
       simulation performance for large numbers of counters.

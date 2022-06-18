@@ -1,7 +1,7 @@
 AGFI Metadata/Tagging
 ================================================
 
-When you build an AGFI in FireSim, the AGFI description stored by AWS is
+In the AWS EC2 case, when you build an AGFI in FireSim, the AGFI description stored by AWS is
 populated with metadata that helps the manager decide how to deploy
 a simulation. The important metadata is listed below, along with how each field
 is set and used:

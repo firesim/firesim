@@ -40,6 +40,7 @@ For more information, you can reference the AWS documentation at https://docs.aw
 
 Help, My Simulation Hangs!
 ----------------------------
+
 Oof. It can be difficult to pin this one down, read through
 :ref:`debugging-hanging-simulators` for some tips to get you started.
 
