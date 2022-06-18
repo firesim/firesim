@@ -49,85 +49,6 @@ Verilator numbers collected on a c4.4xlarge. (metasimulation Verilator version: 
 Verilator version: 3.904)
 
 
-Running Metasimulations Through Make
-------------------------------------
-
-Meta-simulations are run out of the ``firesim/sim`` directory.
-
-::
-
-    [in firesim/sim]
-    make <verilator|vcs>
-
-To compile a simulator with full-visibility waveforms, type:
-
-::
-
-    make <verilator|vcs>-debug
-
-As part of target-generation, Rocket Chip emits a make fragment with recipes
-for running suites of assembly tests. MIDAS puts this in
-``firesim/sim/generated-src/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
-Make sure your ``$RISCV`` environment variable is set by sourcing
-``firesim/sourceme-f1-manager.sh`` or ``firesim/env.sh``, and type:
-
-::
-
-    make run-<asm|bmark>-tests EMUL=<vcs|verilator>
-
-
-To run only a single test, the make target is the full path to the output.
-Specifically:
-
-::
-
-    make EMUL=<vcs|verilator> $PWD/output/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/<RISCV-TEST-NAME>.<vpd|out>
-
-A ``.vpd`` target will use (and, if required, build) a simulator with waveform dumping enabled,
-whereas a ``.out`` target will use the faster waveform-less simulator.
-
-Additionally, you can run a unique binary in the following way:
-
-::
-
-    make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>
-    make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>-debug
-
-
-Examples
-++++++++
-
-Run all RISCV-tools assembly and benchmark tests on a Verilated simulator.
-
-::
-
-    [in firesim/sim]
-    make
-    make -j run-asm-tests
-    make -j run-bmark-tests
-
-Run all RISCV-tools assembly and benchmark tests on a Verilated simulator with waveform dumping.
-
-::
-
-    make verilator-debug
-    make -j run-asm-tests-debug
-    make -j run-bmark-tests-debug
-
-Run rv64ui-p-simple (a single assembly test) on a Verilated simulator.
-
-::
-
-    make
-    make $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
-
-Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
-
-::
-
-    make vcs-debug
-    make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
-
 Running Metasimulations Through The FireSim Manager
 ----------------------------------------------------
 
@@ -250,3 +171,84 @@ wrap calls to Makefiles, and run a limited set of tests on a set of selected
 designs, including all of the MIDAS examples and a handful of Chipyard-based
 designs. This is described in greater detail
 in the :ref:`Developer documentation <Scala Integration Tests>`.
+
+Running Metasimulations Through Make
+------------------------------------
+
+Meta-simulations are run out of the ``firesim/sim`` directory.
+
+::
+
+    [in firesim/sim]
+    make <verilator|vcs>
+
+To compile a simulator with full-visibility waveforms, type:
+
+::
+
+    make <verilator|vcs>-debug
+
+As part of target-generation, Rocket Chip emits a make fragment with recipes
+for running suites of assembly tests. MIDAS puts this in
+``firesim/sim/generated-src/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
+Make sure your ``$RISCV`` environment variable is set by sourcing
+``firesim/sourceme-f1-manager.sh`` or ``firesim/env.sh``, and type:
+
+::
+
+    make run-<asm|bmark>-tests EMUL=<vcs|verilator>
+
+
+To run only a single test, the make target is the full path to the output.
+Specifically:
+
+::
+
+    make EMUL=<vcs|verilator> $PWD/output/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/<RISCV-TEST-NAME>.<vpd|out>
+
+A ``.vpd`` target will use (and, if required, build) a simulator with waveform dumping enabled,
+whereas a ``.out`` target will use the faster waveform-less simulator.
+
+Additionally, you can run a unique binary in the following way:
+
+::
+
+    make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>
+    make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>-debug
+
+
+Examples
+++++++++
+
+Run all RISCV-tools assembly and benchmark tests on a Verilated simulator.
+
+::
+
+    [in firesim/sim]
+    make
+    make -j run-asm-tests
+    make -j run-bmark-tests
+
+Run all RISCV-tools assembly and benchmark tests on a Verilated simulator with waveform dumping.
+
+::
+
+    make verilator-debug
+    make -j run-asm-tests-debug
+    make -j run-bmark-tests-debug
+
+Run rv64ui-p-simple (a single assembly test) on a Verilated simulator.
+
+::
+
+    make
+    make $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
+
+Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
+
+::
+
+    make vcs-debug
+    make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
+
+

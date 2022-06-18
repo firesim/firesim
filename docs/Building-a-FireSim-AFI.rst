@@ -13,7 +13,7 @@ backend scripts (which convert the Vivado-generated tar into an AFI).
 The manager will create this bucket for you automatically, you just need
 to specify a name.
 
-So, choose a bucket name, e.g. ``firesim-yourname``. Bucket names must be
+So, choose a bucket name, e.g. ``firesim``. Bucket names must be
 globally unique. If you choose one that's already taken, the manager
 will notice and complain when you tell it to build an AFI. To set your
 bucket name, open ``deploy/bit-builder-recipes/f1.yaml`` in your editor and under the
@@ -21,14 +21,15 @@ particular recipe you plan to build, replace
 
 ::
 
-    s3_bucket_name: firesim-yournamehere
+    s3_bucket_name: firesim
 
 with your own bucket name, e.g.:
 
 ::
 
-    s3_bucket_name: firesim-itsame
+    s3_bucket_name: firesim
 
+.. Note:: This isn't necessary if you set the ``append_userid_region`` key/value pair to ``true``.
 
 Build Recipes
 ---------------
