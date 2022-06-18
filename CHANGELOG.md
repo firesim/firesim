@@ -2,6 +2,49 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.14.0] - 2022-06-18
+Introduces support for local (on-premises) FPGAs and distributed metasimulation
+
+### Added
+*  Support for Vitis FPGAs #1087
+*  Manager support for deploying verilator/vcs metasimulations, plusarg passthrough, and some useful DRYing-out #1076
+*  ("Where to Run") Initial support running on different run farm hosts #1028
+*  A host-portable AutoILA transform that instantiates the black box in IR #1059
+*  Scala Source Formatting via Scalafmt #1060
+*  VSCode Integration for Scala Development #1056
+*  Support A Resource-Minimizing strategy ("AREA") for AWS-FPGA #1055
+*  XDC-Driven Memory Hints for Xilinx FPGAs #1021
+*  ("what-to-build") Modularize different run platforms (i.e. bitstream builds) #853
+*  .ini to .yaml config files + supporting different build hosts #1006
+*  Capture packet dump from switch #1011
+
+### Changed
+*  Cleanup config initialization #1082
+*  Switch buildfarm API to be similar to runfarm API #1070
+*  ("Where to Run") Initial support running on different run farm hosts #1028
+*  Move C++ implementation of bridge streams out of bridge drivers #1017
+*  awstools typing + small organization #1037
+*  Collect Bridge Stream RTL Implementation under StreamEngine module #996
+*  Use conda for distribution-agnostic dependency management #986
+*  .ini to .yaml config files + supporting different build hosts #1006
+*  Use FIRRTL 'FPGA backend' passes in the GG compiler + Isolate Emitter #981
+
+### Fixed
+*  Allow argument passing to bit builder #1046
+*  Move sim. data class arg parsing into classes #1078
+*  Hide blowfish deprecation warning until 2022-08-31 #1079
+*  Have yes/no resolve to bool in Yaml #1069
+*  Add bash-completion and install argcomplete global into it #1041
+*  Fix CI FPGA sim timeout issue + Use Python3 formatting in run_linux_poweroff CI script #1040
+*  Revert the change from #842 that makes launchrunfarm block on instances passing status checks #1003
+*  Fix first clone setup fast script #990
+*  Update libdwarf submodule url #988
+*  Update test_amis.json #982
+
+### Removed
+*  Remove the data_t type alias + unused macros in generated header #1050
+*  .ini to .yaml config files + supporting different build hosts #1006
+
 ## [1.13.6] - 2022-06-15
 Last of the 1.13.x release series. CI fixes only, no user facing changes since 1.13.5
 
