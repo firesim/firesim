@@ -73,7 +73,7 @@ if a waveform is needed.
 This key/value pair is a string that passes plusargs (arguments with a ``+`` in front) to the metasimulations.
 
 ``metasimulation_only_vcs_plusargs``
-""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""
 
 This key/value pair is a string that passes plusargs (arguments with a ``+`` in front) to metasimulations using ``vcs`` or ``vcs-debug``.
 
