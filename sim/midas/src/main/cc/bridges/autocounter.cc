@@ -59,7 +59,7 @@ autocounter_t::autocounter_t(
             // TODO: Fix this in the bridge by not sampling with a fixed frequency
             if (this->clock_info.to_base_cycles(this->readrate) != this->readrate_base_clock) {
                 fprintf(stderr,
-"[AutoCounter] Warning: requested sample rate of %" PRIu64 " [base] cycles does not map to a whole number\n\
+"[AutoCounter] Warning: requested sample rate of %PRIu64 [base] cycles does not map to a whole number\n\
 of cycles in clock domain: %s, (%d/%d) of base clock.\n\
 See the AutoCounter documentation on Reset And Timing Considerations for discussion.\n",
                        this->readrate_base_clock,
