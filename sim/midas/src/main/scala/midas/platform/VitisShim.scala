@@ -43,7 +43,7 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     firesimMMCM.io.clk_in1 := ap_clk
     firesimMMCM.io.reset   := ap_rst.asAsyncReset
 
-    val hostClock = firesimMMCM.io.clk_out1
+    val hostClock     = firesimMMCM.io.clk_out1
     val hostSyncReset = ResetSynchronizer(ap_rst || !firesimMMCM.io.locked, hostClock, initValue = true)
     top.module.reset := hostSyncReset
     top.module.clock := hostClock
