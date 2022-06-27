@@ -213,9 +213,9 @@ To generate a specific instance of a target, the build system leverages four Mak
    Common platform configs are described in ``firesim-lib/sim/src/main/scala/configs/CompilerConfigs.scala``).
 
 ``TARGET_CONFIG`` and ``PLATFORM_CONFIG`` are strings that are used to construct a
-``Config`` instance (derives from RocketChip's parameterization system, ``Config``, see
-`freechips.rocketchip.config
-<https://github.com/freechipsproject/rocket-chip/blob/master/src/main/scala/config/Config.scala>`_). These strings are of the form
+``Config`` instance (derives from RocketChip's parameterization system, ``Config``, see the
+`CDE repo
+<https://github.com/chipsalliance/cde>`_). These strings are of the form
 "{..._}{<Class Name>\_}<Class Name>". Only the final, base class name is
 compulsory: class names that are prepended with "_" are used to create a
 compound Config instance.
