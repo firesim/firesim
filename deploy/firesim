@@ -292,6 +292,11 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     # run builds, then terminate instances
     execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
 
+@register_task
+def builddriver(runtime_conf: RuntimeConfig) -> None:
+    """ Only perform the driver build (host-processor side of an FPGA sim or
+    an entire metasim)."""
+    runtime_conf.build_driver()
 
 @register_task
 # XXX this needs to be renamed or rethought, perhaps this is a backend-specific task?

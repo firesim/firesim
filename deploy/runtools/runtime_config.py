@@ -289,7 +289,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
                  metasimulation_only_plusargs: str,
                  metasimulation_only_vcs_plusargs: str) -> None:
         self.name = name
-        self.agfi = "Metasim" # for __str__ to work
+        self.agfi = None
+        self.xclbin = None
         self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
@@ -583,6 +584,10 @@ class RuntimeConfig:
         # the manager.
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.infrasetup_passes(use_mock_instances_for_testing)
+
+    def build_driver(self) -> None:
+        """ directly called by top-level builddriver command. """
+        self.firesim_topology_with_passes.build_driver_passes()
 
     def boot(self) -> None:
         """ directly called by top-level boot command. """

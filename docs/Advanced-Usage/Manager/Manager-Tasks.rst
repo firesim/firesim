@@ -106,6 +106,26 @@ This directory will contain:
         This contains reports, ``stdout`` from the build, and the final bitstream ``xclbin`` file produced by Vitis.
         This also contains a copy of the generated verilog (``FireSim-generated.sv``) used to produce this build.
 
+.. _firesim-builddriver:
+
+``firesim builddriver``
+--------------------------------
+
+For metasimulations (when ``metasimulation_enabled`` is ``true`` in
+``config_runtime.yaml``), this command will build the entire software
+simulator without requiring any simulation hosts to be launched or reachable.
+This is useful for example if you are using FireSim metasimulations as
+your primary simulation tool while developing target RTL, since it allows you
+to run the Chisel build flow and iterate on your design without
+launching/setting up extra machines to run simulations.
+
+For FPGA-based simulations (when ``metasimulation_enabled`` is ``false`` in
+``config_runtime.yaml``), this command will build the host-side simulation
+driver, also without requiring any simulation hosts to be launched or reachable.
+For complicated designs, running this before running ``firesim launchrunfarm``
+can reduce the time spent leaving FPGA hosts idling while waiting for
+driver build.
+
 .. _firesim-tar2afi:
 
 ``firesim tar2afi``

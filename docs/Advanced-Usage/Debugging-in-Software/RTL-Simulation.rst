@@ -3,13 +3,13 @@
 Debugging & Testing with Metasimulation
 =========================================
 
-When we speak of RTL simulation in FireSim, we are generally referring to
+When discussing RTL simulation in FireSim, we are generally referring to
 `metasimulation`: simulating the FireSim simulator's RTL, typically using VCS or
-Verilator. In contrast, we we'll refer to native simulation of the target's RTL
+Verilator. In contrast, we'll refer to native simulation of the target's RTL
 as `target-level` simulation. Target-level simulation in Chipyard is described at length
 `here <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulation.html>`_.
 
-Meta-simulation is the most productive way to catch bugs
+Metasimulation is the most productive way to catch bugs
 before generating an AGFI, and a means for reproducing bugs seen on the FPGA.
 By default, metasimulation uses an abstract but fast model of the host: the
 FPGA's DRAM controllers are modeled with DRAMSim2, the PCI-E subsystem is not
@@ -18,7 +18,7 @@ verilog DPI. Since FireSim simulations are robust against timing differences
 across hosts, target behavior observed in an FPGA-hosted simulation should be
 exactly reproducible in a metasimulation.
 
-Generally, meta-simulators are only slightly slower than target-level
+Generally, metasimulators are only slightly slower than target-level
 ones. This illustrated in the chart below.
 
 ====== ===== =======  ========= ============= =============
@@ -41,25 +41,34 @@ Meta   On    35s      49s       5m27s         6m33s
 ====== ===== =======  ========= ============= =============
 
 Notes: Default configurations of a single-core, Rocket-based instance running
-rv64ui-v-add. Frequencies are given in target-Hz. Presently, the default
+``rv64ui-v-add``. Frequencies are given in target-Hz. Presently, the default
 compiler flags passed to Verilator and VCS differ from level to level. Hence,
 these numbers are only intended to ball park simulation speeds, not provide a
 scientific comparison between simulators. VCS numbers collected on a local Berkeley machine,
-Verilator numbers collected on a c4.4xlarge. (metasimulation Verilator version: 4.002, target-level
+Verilator numbers collected on a ``c4.4xlarge``. (metasimulation Verilator version: 4.002, target-level
 Verilator version: 3.904)
 
 
-Running Metasimulations Through The FireSim Manager
+Running Metasimulations using the FireSim Manager
 ----------------------------------------------------
 
-In addition to the default ``make`` API to run metasimulations,
-there is now support in the FireSim manager for distributed metasimulations.
-Assuming you have a pre-setup ``config_runtime.yaml`` that is setup for FPGA-accelerated simulations,
-a few modifications can convert it to distributed metasimulation.
+The FireSim manager supports running metasimulations using the standard
+``firesim {launchrunfarm, infrasetup, runworkload, terminaterunfarm}`` flow
+that is also used for FPGA-accelerated simulations. Rather than using FPGAs,
+these metasimulations run within a software simulator (e.g. verilator, vcs) on
+standard compute hosts (i.e. those without FPGAs). This allows users to write
+a single definition of a target design/configuration and software workload,
+while seamlessly moving between software-only metasimulations and
+FPGA-accelerated simulations.
 
-Modify the existing ``metasimulation`` mapping in ``config_runtime.yaml`` to the following:
+As an example, if you have the default ``config_runtime.yaml`` that is setup for
+FPGA-accelerated simulations (e.g. the one used for the 8-node networked
+simulation from the :ref:``cluster-sim`` section), a few modifications to the
+configuration files can convert it to running a distributed metasimulation.
 
-::
+First, modify the existing ``metasimulation`` mapping in ``config_runtime.yaml`` to the following:
+
+.. code-block:: yaml
 
     metasimulation:
         metasimulation_enabled: true
@@ -70,14 +79,23 @@ Modify the existing ``metasimulation`` mapping in ``config_runtime.yaml`` to the
         # plusargs passed to the simulator ONLY FOR vcs metasimulations
         metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
 
-This will enable you to run Verilator metasimulations for the given ``config_runtime.yaml``.
-This includes you being able to run NIC simulations, and use existing FireSim debugging tools (i.e. AutoCounter, TracerV, etc).
 
-The number of metasimulations that are run is determined by the Run Farm in conjunction with the ``topology`` in ``config_runtime.yaml``.
-When you are specifying a Run Farm host to use using the ``run_farm_hosts_to_use`` mapping, a specification must include a number of metasimulations
-to support (i.e. ``num_metasims``). For example, in the AWS EC2 ``aws_ec2.yaml`` run farm case:
+This configures the manager to run Verilator-hosted metasimulations (without waveform generation) for the target specified in ``config_runtime.yaml``.
+When in metasimulation mode, the ``default_hw_config`` that you specify in ``target_config``
+references an entry in ``config_build_recipes.yaml`` instead of an entry in ``config_hwdb.ini``.
 
-::
+As is the case when the manager runs FPGA-accelerated simulations, the number
+of metasimulations that are run is determined by the parameters in the
+``target_config`` section, e.g. ``topology`` and ``no_net_num_nodes``. Many
+parallel metasimulations can then be run by writing a FireMarshal
+workload with a corresponding number of jobs.
+
+In metasimulation mode, the run farm configuration must be able to support the required number of metasimulations. The ``num_metasims`` parameter on a run farm host specification defines how many metasimulations are allowed to run on a particular host. This corresponds with the ``num_fpgas`` parameter used in FPGA-accelerated simulation mode. However ``num_metasims`` does not correspond as tightly with any physical property of the host; it can be tuned depending on the complexity of your design and the compute/memory resources on a host.
+
+For example, in the case of the AWS EC2 run farm (``aws_ec2.yaml``), we define three
+instance types (``z1d.{3, 6, 12}xlarge``) by default that loosely correspond with ``f1.{2, 4, 16}xlarge`` instances, but instead have no FPGAs and run only metasims (of course, the ``f1.*`` instances could run metasims, but this would be wasteful):
+
+.. code-block:: yaml
 
     run_farm_hosts_to_use:
         - z1d.3xlarge: 0
@@ -98,22 +116,33 @@ to support (i.e. ``num_metasims``). For example, in the AWS EC2 ``aws_ec2.yaml``
             num_metasims: 8
             use_for_switch_only: false
 
-In this case, the Run Farm will use a ``z1d.12xlarge`` instance to host
-8 metasimulations (determined by the specification).
 
-Other than these changes, the rest of the manager is the same between FPGA simulations and
-metasimulations.
-In other words, outputs are stored in ``deploy/result-workload``, FireMarshal SW workloads are used,
-screen sessions are run, etc.
+In this case, the run farm will use a ``z1d.12xlarge`` instance to host
+8 metasimulations.
 
-If you are interested in getting a waveform back from the metasimulations
-when running with ``*-debug``, make sure to add ``waveform.vpd`` to the ``common_simulation_outputs`` area of the workload JSON file.
-Additionally, unlike the normal FPGA simulation case, there are two output logs.
-First, there is a ``metasim_stderr.out`` file that holds ``stderr`` coming out of the metasimulation.
-Second, there is a ``uartlog`` file that holds the ``stdout`` from the metasimulation (like normal FPGA simulations).
-If you want to copy them back, you must also add them to the ``common_simulation_outputs`` of the workload JSON.
+To generate waveforms in a metasimulation, change
+``metasimulation_host_simulator`` to a simulator ending in ``-debug`` (e.g.
+``verilator-debug``).
+When running with a simulator with waveform generation, make sure to add ``waveform.vpd`` to the ``common_simulation_outputs`` area of your workload JSON file,
+so that the waveform is copied back to your manager host when the simulation
+completes.
 
-Understanding A Metasimulation Waveform
+A last notable point is that unlike the normal FPGA simulation case, there are two output logs in metasimulations.
+There is the expected ``uartlog`` file that holds the ``stdout`` from the metasimulation (as in FPGA-based simulations).
+However, there will also be a ``metasim_stderr.out`` file that holds ``stderr`` coming out of the metasimulation, commonly populated by ``printf`` calls in the
+RTL, including those that are not marked for ``printf`` synthesis.
+If you want to copy ``metasim_stderr.out`` to your manager when a simulation completes, you must add it to the ``common_simulation_outputs`` of the workload JSON.
+
+Other than the changes discussed in this section, manager behavior is identical between FPGA-based simulations and
+metasimulations. For example, simulation outputs are stored in ``deploy/results-workload/`` on your manager host, FireMarshal workload definitions are used to supply target software, and more.
+All standard manager functionality is supported in metasimulations, including running networked simulations and using existing FireSim debugging tools (i.e. AutoCounter, TracerV, etc).
+
+Once the configuration changes discussed thus far in this section are made, the standard ``firesim {launchrunfarm, infrasetup, runworkload, terminaterunfarm}`` set of commands will run metasimulations.
+
+If you are planning to use FireSim metasimulations as your primary simulation tool while developing a new target design, see the (optional) ``firesim builddriver`` command, which can build metasimulations through the manager without requiring run farm hosts to be launched or accessible. More about this command is found in the :ref:`firesim-builddriver` section.
+
+
+Understanding a Metasimulation Waveform
 ----------------------------------------
 
 Module Hierarchy
@@ -172,10 +201,12 @@ designs, including all of the MIDAS examples and a handful of Chipyard-based
 designs. This is described in greater detail
 in the :ref:`Developer documentation <Scala Integration Tests>`.
 
-Running Metasimulations Through Make
+Running Metasimulations through Make
 ------------------------------------
 
-Meta-simulations are run out of the ``firesim/sim`` directory.
+.. Warning:: This section is for advanced developers; most metasimulation users should use the manager-based metasimulation flow described above.
+
+Metasimulations are run out of the ``firesim/sim`` directory.
 
 ::
 
@@ -237,14 +268,14 @@ Run all RISCV-tools assembly and benchmark tests on a Verilated simulator with w
     make -j run-asm-tests-debug
     make -j run-bmark-tests-debug
 
-Run rv64ui-p-simple (a single assembly test) on a Verilated simulator.
+Run ``rv64ui-p-simple`` (a single assembly test) on a Verilated simulator.
 
 ::
 
     make
     make $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
 
-Run rv64ui-p-simple (a single assembly test) on a VCS simulator with waveform dumping.
+Run ``rv64ui-p-simple`` (a single assembly test) on a VCS simulator with waveform dumping.
 
 ::
 
