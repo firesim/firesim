@@ -102,6 +102,18 @@ class F1Config extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 4
 }) ++ new SimConfig)
 
+class F1Config1Mem extends Config(new Config((site, here, up) => {
+  case Platform       => (p: Parameters) => new F1Shim()(p)
+  case HasDMAChannel  => true
+  case CtrlNastiKey   => NastiParameters(32, 25, 12)
+  case DMANastiKey => NastiParameters(512, 64, 4) // change to 4 bit id
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x400000000L, // 16 GiB
+    beatBytes = 8,
+    idBits    = 16)
+  case HostMemNumChannels => 1
+}) ++ new SimConfig)
+
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case HasDMAChannel  => false

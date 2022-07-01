@@ -201,13 +201,25 @@ $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
 	TOP_DIR=$(chipyard_dir)
 
+$(u250): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS)
+$(u250): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN'
+
+# Compile Driver
+$(u250): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(GENERATED_DIR)/$(BASE_FILE_NAME).runtime.conf
+	mkdir -p $(OUTPUT_DIR)/build
+	cp $(header) $(OUTPUT_DIR)/build/
+	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).runtime.conf $(OUTPUT_DIR)/runtime.conf
+	$(MAKE) -C $(simif_dir) u250 PLATFORM=u250 DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
+	TOP_DIR=$(chipyard_dir)
+
 #############################
 # FPGA Build Initialization #
 #############################
-ifeq ($(PLATFORM), vitis)
-board_dir 	   := $(platforms_dir)/vitis
-else
+ifeq ($(PLATFORM), f1)
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
+else
+board_dir 	   := $(platforms_dir)/$(PLATFORM)
 endif
 
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
@@ -250,6 +262,59 @@ replace-rtl: $(fpga_delivery_files) $(fpga_sim_delivery_files)
 
 .PHONY: replace-rtl
 
+ifeq ($(PLATFORM), u250)
+
+u250_stamp             := $(GENERATED_DIR)/u250/stamp
+u250_repo_state        := $(GENERATED_DIR)/u250/design/repo_state
+u250_firesim_top       := $(GENERATED_DIR)/u250/design/firesim_top.sv
+u250_firesim_defines   := $(GENERATED_DIR)/u250/design/firesim_defines.vh
+u250_firesim_synth_xdc := $(GENERATED_DIR)/u250/design/firesim_synth.xdc
+u250_firesim_impl_xdc  := $(GENERATED_DIR)/u250/design/firesim_impl.xdc
+u250_firesim_env       := $(GENERATED_DIR)/u250/scripts/firesim_env.tcl
+
+$(u250_stamp): $(shell find $(board_dir)/cl_firesim -name '*')
+	mkdir -p $(@D)
+	cp -rf $(board_dir)/cl_firesim -T $(@D)
+	touch $@
+
+$(u250_repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $@
+
+$(u250_firesim_top): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $< $@
+
+# Unused since these constraints are not yet applicable
+$(u250_firesim_synth_xdc): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).synthesis.xdc $@
+	sed -i "s/ firesim_top\// design_1_i\/firesim_wrapper_0\/inst\/firesim_top\//g" $@
+
+# Unused since these constraints are not yet applicable
+$(u250_firesim_impl_xdc): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).implementation.xdc $@
+	sed -i "s/ WRAPPER_INST\/CL\/firesim_top\// design_1_i\/firesim_wrapper_0\/inst\/firesim_top\//g" $@
+
+$(u250_firesim_env): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).env.tcl $@
+
+$(u250_firesim_defines): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).defines.vh $@
+	echo "\`define ABSTRACTCLOCKGATE" >> $@
+
+replace-rtl-u250: $(u250_stamp) $(u250_repo_state) $(u250_firesim_top) $(u250_firesim_env) $(u250_firesim_defines)
+
+fpga: replace-rtl-u250
+	cd $(GENERATED_DIR)/u250 && vivado -mode batch -source ./scripts/generate_bitstream.tcl
+
+.PHONY: replace-rtl-u250 fpga $(u250_stamp) $(u250_firesim_top) $(u250_firesim_synth_xdc) $(u250_firesim_impl_xdc) $(u250_firesim_env) $(u250_firesim_defines)
+
+else
+
 $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/stamp
 	mkdir -p $(@D)
 	ln -sf $(fpga_build_dir)/checkpoints/to_aws $@
@@ -259,7 +324,7 @@ fpga: export CL_DIR := $(fpga_work_dir)
 fpga: $(fpga_delivery_files) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 	cd $(fpga_build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
 
-
+endif
 #############################
 # FPGA-level RTL Simulation #
 #############################

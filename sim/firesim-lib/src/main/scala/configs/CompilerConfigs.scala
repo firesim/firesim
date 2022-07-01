@@ -2,8 +2,8 @@
 package firesim.configs
 
 import firrtl.options.Dependency
-import freechips.rocketchip.config.{Parameters, Config, Field}
-import midas.{TargetTransforms, HostTransforms}
+import freechips.rocketchip.config.{Config, Field, Parameters}
+import midas.{F1Config1Mem, HostTransforms, TargetTransforms}
 import firesim.bridges._
 
 // Experimental: mixing this in will enable assertion synthesis
@@ -81,6 +81,14 @@ class BaseF1Config extends Config(
   new WithAsyncResetReplacement ++
   new WithEC2F1Artefacts ++
   new midas.F1Config
+)
+
+class BaseF1Config1Mem extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new WithEC2F1Artefacts ++
+//  new WithILATopWiringTransform ++
+  new midas.F1Config1Mem
 )
 
 class BaseVitisConfig extends Config(
