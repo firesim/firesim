@@ -21,7 +21,9 @@ class GoldenGateStage extends Stage with PreservesAll[Phase] {
         new firrtl.stage.phases.AddDefaults,
         new firrtl.stage.phases.Checks,
         new firrtl.stage.phases.AddCircuit,
-        new midas.stage.GoldenGateCompilerPhase)
+        new midas.stage.GoldenGateCompilerPhase,
+        midas.stage.phases.GenerateOutputFileManifest
+        )
       .map(DeletedWrapper(_))
 
 

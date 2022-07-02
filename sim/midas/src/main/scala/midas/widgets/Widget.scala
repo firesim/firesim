@@ -14,6 +14,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.ParameterizedBundle
 
 import scala.collection.mutable
+import midas.stage.DownstreamFlows
 
 // The AXI4-lite key for the simulation control bus
 case object CtrlNastiKey extends Field[NastiParameters]
@@ -303,6 +304,7 @@ trait HasWidgets {
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       // Append an extra \n to prevent the file from being empty.
       body = widgets.map(_.defaultPlusArgs).flatten.mkString("\n") + "\n",
-      fileSuffix = ".runtime.conf"
+      fileSuffix = ".runtime.conf",
+      downstreamDependencies = Set(DownstreamFlows.RuntimeDeployment),
     )
 }

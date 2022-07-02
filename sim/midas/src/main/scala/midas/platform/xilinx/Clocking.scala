@@ -1,7 +1,7 @@
 package midas.platform.xilinx
 
 import chisel3._
-import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.{DownstreamFlows, GoldenGateOutputFileAnnotation}
 
 class MMCM(inputFreqMHz: Double, outputFreqMHz: Double, override val desiredName: String) extends BlackBox {
   val io = IO(new Bundle {
@@ -27,5 +27,6 @@ class MMCM(inputFreqMHz: Double, outputFreqMHz: Double, override val desiredName
         |             [get_ips ${desiredName}]
         |""".stripMargin,
     s".${desiredName}.ipgen.tcl",
+    Set(DownstreamFlows.BitstreamCompile),
   )
 }
