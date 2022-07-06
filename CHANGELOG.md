@@ -13,7 +13,7 @@ Adds firesim builddriver command, various bugfixes.
 * Docs cleanup #1114 #1106
 
 ### Fixed
-* Fixed documentation for SSH-ing into simulations of target designs with NICs #1119
+* Fixed documentation for SSH-ing into simulations of target designs with NICs #1119. Fixes #580.
 * VitisShell: Use XPM xpm_cdc_sync_rst for reset synchronizer #1100
 * Fix manager xclbin lookup bug during metasimulation #1114, https://groups.google.com/g/firesim/c/VxHX7QkKJCM
 
