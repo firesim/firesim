@@ -5,7 +5,7 @@ Debugging & Testing with Metasimulation
 
 When discussing RTL simulation in FireSim, we are generally referring to
 `metasimulation`: simulating the FireSim simulator's RTL, typically using VCS or
-Verilator. In contrast, we'll refer to native simulation of the target's RTL
+Verilator. In contrast, we'll refer to simulation of the target's unmodified (by GoldenGate decoupling, host and target transforms) RTL
 as `target-level` simulation. Target-level simulation in Chipyard is described at length
 `here <https://chipyard.readthedocs.io/en/latest/Simulation/Software-RTL-Simulation.html>`_.
 
@@ -57,7 +57,7 @@ The FireSim manager supports running metasimulations using the standard
 that is also used for FPGA-accelerated simulations. Rather than using FPGAs,
 these metasimulations run within a software simulator (e.g. verilator, vcs) on
 standard compute hosts (i.e. those without FPGAs). This allows users to write
-a single definition of a target design/configuration and software workload,
+a single definition of a target (configured design and software workload),
 while seamlessly moving between software-only metasimulations and
 FPGA-accelerated simulations.
 
@@ -134,7 +134,7 @@ RTL, including those that are not marked for ``printf`` synthesis.
 If you want to copy ``metasim_stderr.out`` to your manager when a simulation completes, you must add it to the ``common_simulation_outputs`` of the workload JSON.
 
 Other than the changes discussed in this section, manager behavior is identical between FPGA-based simulations and
-metasimulations. For example, simulation outputs are stored in ``deploy/results-workload/`` on your manager host, FireMarshal workload definitions are used to supply target software, and more.
+metasimulations. For example, simulation outputs are stored in ``deploy/results-workload/`` on your manager host, FireMarshal workload definitions are used to supply target software, etc.
 All standard manager functionality is supported in metasimulations, including running networked simulations and using existing FireSim debugging tools (i.e. AutoCounter, TracerV, etc).
 
 Once the configuration changes discussed thus far in this section are made, the standard ``firesim {launchrunfarm, infrasetup, runworkload, terminaterunfarm}`` set of commands will run metasimulations.
