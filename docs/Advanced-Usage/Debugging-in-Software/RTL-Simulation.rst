@@ -90,7 +90,7 @@ of metasimulations that are run is determined by the parameters in the
 parallel metasimulations can then be run by writing a FireMarshal
 workload with a corresponding number of jobs.
 
-In metasimulation mode, the run farm configuration must be able to support the required number of metasimulations. The ``num_metasims`` parameter on a run farm host specification defines how many metasimulations are allowed to run on a particular host. This corresponds with the ``num_fpgas`` parameter used in FPGA-accelerated simulation mode. However ``num_metasims`` does not correspond as tightly with any physical property of the host; it can be tuned depending on the complexity of your design and the compute/memory resources on a host.
+In metasimulation mode, the run farm configuration must be able to support the required number of metasimulations (see :ref:`run-farm-config-in-config-runtime` for details). The ``num_metasims`` parameter on a run farm host specification defines how many metasimulations are allowed to run on a particular host. This corresponds with the ``num_fpgas`` parameter used in FPGA-accelerated simulation mode. However ``num_metasims`` does not correspond as tightly with any physical property of the host; it can be tuned depending on the complexity of your design and the compute/memory resources on a host.
 
 For example, in the case of the AWS EC2 run farm (``aws_ec2.yaml``), we define three
 instance types (``z1d.{3, 6, 12}xlarge``) by default that loosely correspond with ``f1.{2, 4, 16}xlarge`` instances, but instead have no FPGAs and run only metasims (of course, the ``f1.*`` instances could run metasims, but this would be wasteful):
@@ -120,12 +120,12 @@ instance types (``z1d.{3, 6, 12}xlarge``) by default that loosely correspond wit
 In this case, the run farm will use a ``z1d.12xlarge`` instance to host
 8 metasimulations.
 
-To generate waveforms in a metasimulation, change
-``metasimulation_host_simulator`` to a simulator ending in ``-debug`` (e.g.
-``verilator-debug``).
-When running with a simulator with waveform generation, make sure to add ``waveform.vpd`` to the ``common_simulation_outputs`` area of your workload JSON file,
-so that the waveform is copied back to your manager host when the simulation
-completes.
+.. warning:: To generate waveforms in a metasimulation, change
+   ``metasimulation_host_simulator`` to a simulator ending in ``-debug`` (e.g.
+   ``verilator-debug``).
+   When running with a simulator with waveform generation, make sure to add ``waveform.vpd`` to the ``common_simulation_outputs`` area of your workload JSON file,
+   so that the waveform is copied back to your manager host when the simulation
+   completes.
 
 A last notable point is that unlike the normal FPGA simulation case, there are two output logs in metasimulations.
 There is the expected ``uartlog`` file that holds the ``stdout`` from the metasimulation (as in FPGA-based simulations).

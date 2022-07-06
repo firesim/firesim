@@ -20,6 +20,8 @@ Here is a sample of this configuration file:
 
 Below, we outline each mapping in detail.
 
+.. _run-farm-config-in-config-runtime:
+
 ``run_farm``
 ^^^^^^^^^^^^^^^^^^^
 
