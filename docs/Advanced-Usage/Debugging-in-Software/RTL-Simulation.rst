@@ -23,7 +23,7 @@ As a final note, metasimulations are generally only slightly slower than
 target-level simulations. Example performance numbers can be found at
 :ref:`metasimulation-performance`.
 
-.. _metasimulation-supported-host-sims
+.. _metasimulation-supported-host-sims:
 
 Supported Host Simulators
 ----------------------------------------------------
@@ -317,8 +317,8 @@ waveform dumping.
 Metasimulation vs. Target simulation performance
 ---------------------------------------------------------
 
-Generally, metasimulators are only slightly slower than target-level
-ones. This illustrated in the chart below.
+Generally, metasimulations are only slightly slower than target-level
+simulations. This is illustrated in the chart below.
 
 ====== ===== =======  ========= ============= =============
 Type   Waves VCS      Verilator Verilator -O1 Verilator -O2
@@ -342,7 +342,7 @@ Meta   On    35s      49s       5m27s         6m33s
 Notes: Default configurations of a single-core, Rocket-based instance running
 ``rv64ui-v-add``. Frequencies are given in target-Hz. Presently, the default
 compiler flags passed to Verilator and VCS differ from level to level. Hence,
-these numbers are only intended to ball park simulation speeds, not provide
+these numbers are only intended to give ball park simulation speeds, not provide
 a scientific comparison between simulators. VCS numbers collected on a local
 Berkeley machine, Verilator numbers collected on a ``c4.4xlarge``.
 (metasimulation Verilator version: 4.002, target-level Verilator version:
