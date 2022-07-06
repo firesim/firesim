@@ -280,6 +280,7 @@ set -o pipefail
         dtc \
         verilator==4.034 \
         screen \
+        jq \
     )
 
     # python packages
