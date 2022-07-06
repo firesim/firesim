@@ -89,6 +89,13 @@ VPP_COMMON_ARGS = \
 	$(VPP_OTHER_FLAGS) \
 	$(VPP_MSG_FLAGS)
 
+
+# Specifically, these are applied immediately after the base config is passed in.
+CONFIG_OVERLAY ?=
+ifneq ($(CONFIG_OVERLAY),)
+	VPP_CONFIG_OVERLAY_FLAG := --config $(abspath $(CONFIG_OVERLAY))
+endif
+
 PROFILE := no
 ifeq ($(PROFILE), yes)
 	VPP_LDFLAGS += --profile.data all:all:all
@@ -122,14 +129,14 @@ ipgen_scripts = $(shell find design/ -iname "*.ipgen.tcl")
 %/$(PROJECT_NAME).link.xclbin: %/$(PROJECT_NAME).xo
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
-	cd $(@D)/..; $(VPP) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) \
+	cd $(@D)/..; $(VPP) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_CONFIG_OVERLAY_FLAG) $(VPP_COMMON_ARGS) \
 	--connectivity.sp $(PROJECT_NAME)_1.host_mem_0:DDR[0] \
 	--link $(VPP_LDFLAGS) -o $@ $<
 
 %/$(BUILD_SUBDIR)/$(PROJECT_NAME).xclbin: %/$(TEMP_SUBDIR)/$(PROJECT_NAME).link.xclbin
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
-	cd $(@D)/..; $(VPP) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
+	cd $(@D)/..; $(VPP) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_CONFIG_OVERLAY_FLAG) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
 
 # FPGA-level simulation support
 driver_bin = FireSim-vitis
