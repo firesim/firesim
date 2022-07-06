@@ -396,6 +396,10 @@ class FireSimTopologyWithPasses:
         execute(instance_liveness, hosts=all_run_farm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
+    def build_driver_passes(self) -> None:
+        """ Only run passes to build drivers. """
+        self.pass_build_required_drivers()
+
     def boot_simulation_passes(self, use_mock_instances_for_testing: bool, skip_instance_binding: bool = False) -> None:
         """ Passes that setup for boot and boot the simulation.
         skip instance binding lets users not call the binding pass on the run_farm
