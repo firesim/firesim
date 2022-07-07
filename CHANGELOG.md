@@ -11,6 +11,7 @@ Adds firesim builddriver command, various bugfixes.
 
 ### Changed
 * Docs cleanup #1114 #1106
+* Don't use tsnyder conda channel in production machine-launch-script.sh #1121
 
 ### Fixed
 * Fixed documentation for SSH-ing into simulations of target designs with NICs #1119. Fixes #580.
