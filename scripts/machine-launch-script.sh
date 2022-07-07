@@ -329,7 +329,6 @@ set -o pipefail
     CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
-    # only temporarily use tsnyder channel until xilinx-xrt is in a more official place
     $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -y "${CONDA_PACKAGE_SPECS[@]}"
 
 
