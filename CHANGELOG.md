@@ -2,7 +2,7 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-## [1.14.1] - 2022-07-06
+## [1.14.1] - 2022-07-07
 Adds firesim builddriver command, various bugfixes.
 
 ### Added
