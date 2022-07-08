@@ -1,4 +1,4 @@
-""" Tools to help manage afis. """
+"""Tools to help manage afis."""
 
 from __future__ import annotations
 
