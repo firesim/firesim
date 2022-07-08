@@ -2,6 +2,22 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.14.1] - 2022-07-07
+Adds firesim builddriver command, various bugfixes.
+
+### Added
+* New firesim builddriver command, which runs required driver/metasimulation builds without a launched run farm #1114
+* Support for Sydney region on AWS #1111
+
+### Changed
+* Docs cleanup #1114 #1106
+* Don't use tsnyder conda channel in production machine-launch-script.sh #1121
+
+### Fixed
+* Fixed documentation for SSH-ing into simulations of target designs with NICs #1119. Fixes #580.
+* VitisShell: Use XPM xpm_cdc_sync_rst for reset synchronizer #1100
+* Fix manager xclbin lookup bug during metasimulation #1114, https://groups.google.com/g/firesim/c/VxHX7QkKJCM
+
 ## [1.14.0] - 2022-06-18
 Introduces support for local (on-premises) FPGAs and distributed metasimulation
 
