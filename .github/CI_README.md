@@ -48,5 +48,3 @@ GitHub Secrets
 * **FIRESIM_PEM**: Used by the manager on CI manager instances
 * **FIRESIM_REPO_DEP_KEY**: Used to push scala doc to GH pages
 * **GH_A_PERSONAL_ACCESS_TOKEN**: Used to dynamically register and deregister GitHub Actions runners. See `https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token`, and enable the `workflow` (Update GitHub Action workflows) setting.
-* **SERVER_KEY**: 
-* **SERVER_NAME**: 
