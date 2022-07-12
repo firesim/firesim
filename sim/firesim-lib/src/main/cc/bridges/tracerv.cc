@@ -258,6 +258,7 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
             }
         }
     }
+    return bytes_received;
 }
 
 void tracerv_t::tick() {
