@@ -112,13 +112,13 @@ output format to ``json``. You will need to generate an AWS access key in the "S
 
 Again on the ``t2.nano`` instance, do the following:
 
-::
+.. parsed-literal::
 
     sudo yum install -y python36-pip
     sudo pip3 install --upgrade pip
     sudo python3 -m pip install boto3
     sudo python3 -m pip install --upgrade awscli
-    wget https://raw.githubusercontent.com/firesim/firesim/master/deploy/awstools/aws_setup.py
+    wget https://raw.githubusercontent.com/firesim/firesim/|version|/deploy/awstools/aws_setup.py
     ./aws_setup.py
 
 This will create a VPC named ``firesim`` and a security group named
