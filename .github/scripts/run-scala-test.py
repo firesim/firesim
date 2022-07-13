@@ -14,11 +14,9 @@ def run_scala_test(target_project, test_name):
     test_name -- the full classname of the test
     """
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
         with settings(warn_only=True):
-            rc = run("make -C sim testOnly TARGET_PROJECT={} SCALA_TEST={} &> scala-test.full.log".format(target_project, test_name)).return_code
+            rc = run("make -C sim testOnly TARGET_PROJECT={} SCALA_TEST={}".format(target_project, test_name)).return_code
             if rc != 0:
-                run("cat scala-test.full.log")
                 raise Exception("Running scala test failed")
 
 if __name__ == "__main__":
