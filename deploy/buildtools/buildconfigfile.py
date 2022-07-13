@@ -55,7 +55,7 @@ class BuildConfigFile:
         self.args = args
 
         # validate w/o overrides
-        if not validate(args.buildconfigfile, "schemas/sample-backup-configs/sample_config_build.yaml", "schemas/build-farm-recipes/generic.yaml"):
+        if not validate(args.buildconfigfile, None, "schemas/sample-backup-configs/sample_config_build.yaml", "schemas/build-farm-recipes/generic.yaml"):
             raise Exception(f"Invalid YAML in file: {args.buildconfigfile}")
 
         global_build_config_file = None
@@ -71,7 +71,7 @@ class BuildConfigFile:
         self.num_builds = len(builds_to_run_list)
 
         # validate w/o overrides
-        if not validate(args.buildrecipesconfigfile, "schemas/sample-backup-configs/sample_config_build_recipes.yaml", "schemas/bit-builder-recipes/generic.yaml"):
+        if not validate(args.buildrecipesconfigfile, None, "schemas/sample-backup-configs/sample_config_build_recipes.yaml", "schemas/bit-builder-recipes/generic.yaml"):
             raise Exception(f"Invalid YAML in file: {args.buildrecipesconfigfile}")
 
         build_recipes_config_file = None
@@ -97,14 +97,14 @@ class BuildConfigFile:
         build_farm_defaults_file = global_build_config_file["build_farm"]["base_recipe"]
 
         schema_file = f"schemas/{build_farm_defaults_file}"
-        def validate_helper(val_cond: bool, error_msg: str):
+        def validate_helper(val_cond: bool, error_msg: str) -> None:
             if os.path.exists(schema_file):
                 if not val_cond:
                     raise Exception(error_msg)
             else:
                 rootLogger.warning(f"Unable to find schema file for {build_farm_defaults_file}. Skipping validation.")
 
-        validate_helper(validate(build_farm_defaults_file, schema_file), f"Invalid YAML in {build_farm_defaults_file}")
+        validate_helper(validate(build_farm_defaults_file, None, schema_file), f"Invalid YAML in {build_farm_defaults_file}")
 
         build_farm_config_file = None
         with open(build_farm_defaults_file, "r") as yaml_file:
@@ -118,7 +118,7 @@ class BuildConfigFile:
         if override_args:
             # validate overrides
             override_build_farm_arg_dict = {"build_farm_type": build_farm_type_name, "args": override_args}
-            validate_helper(validate(yaml.dump(override_build_farm_arg_dict), schema_file, None, ["Required field missing"], True), f"Invalid YAML in {args.buildconfigfile}")
+            validate_helper(validate(None, yaml.dump(override_build_farm_arg_dict), schema_file, None, ["Required field missing"]), f"Invalid YAML in {args.buildconfigfile}")
 
             build_farm_args = deep_merge(build_farm_args, override_args)
 

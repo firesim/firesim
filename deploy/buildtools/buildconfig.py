@@ -73,14 +73,14 @@ class BuildConfig:
         bit_builder_recipe_file = recipe_config_dict['bit_builder_recipe']
         schema_file = f"schemas/{bit_builder_recipe_file}"
 
-        def validate_helper(val_cond: bool):
+        def validate_helper(val_cond: bool) -> None:
             if os.path.exists(schema_file):
                 if not val_cond:
                     raise Exception(f"Invalid YAML in build recipe: {name}")
             else:
                 rootLogger.warning(f"Unable to find schema file for {bit_builder_recipe_file}. Skipping validation.")
 
-        validate_helper(validate(bit_builder_recipe_file, schema_file))
+        validate_helper(validate(bit_builder_recipe_file, None, schema_file))
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -95,7 +95,7 @@ class BuildConfig:
         if override_args:
             # validate overrides
             override_bit_builder_arg_dict = {"bit_builder_type": bitbuilder_type_name, "args": override_args}
-            validate_helper(validate(yaml.dump(override_bit_builder_arg_dict), schema_file, None, ["Required field missing"], True))
+            validate_helper(validate(None, yaml.dump(override_bit_builder_arg_dict), schema_file, None, ["Required field missing"]))
 
             bitbuilder_args = deep_merge(bitbuilder_args, override_args)
 

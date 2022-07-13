@@ -29,7 +29,7 @@ paths_dict = dict([(p, (f"{fsim_dir}/deploy/{p}", f"{fsim_dir}/deploy/schemas/{p
 # validate all configs
 # TODO: validate override section
 for k, (src_yaml, schema_yaml) in paths_dict.items():
-    if not validate(src_yaml, schema_yaml):
+    if not validate(src_yaml, None, schema_yaml):
         raise Exception
 
 print("All validations successful")

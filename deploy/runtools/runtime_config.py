@@ -370,7 +370,7 @@ class RuntimeHWDB:
         self.config_file_name = hardwaredbconfigfile
         self.simulation_mode_string = "FPGA simulation"
 
-        if not validate(hardwaredbconfigfile, "schemas/sample-backup-configs/sample_config_hwdb.yaml"):
+        if not validate(hardwaredbconfigfile, None, "schemas/sample-backup-configs/sample_config_hwdb.yaml"):
             raise Exception(f"Invalid YAML in file: {hardwaredbconfigfile}")
 
         agfidb_configfile = None
@@ -440,7 +440,7 @@ class InnerRuntimeConfiguration:
 
     def __init__(self, runtimeconfigfile: str, configoverridedata: str) -> None:
         # validate w/o overrides
-        if not validate(runtimeconfigfile, "schemas/sample-backup-configs/sample_config_runtime.yaml", "schemas/run-farm-recipes/generic.yaml"):
+        if not validate(runtimeconfigfile, None, "schemas/sample-backup-configs/sample_config_runtime.yaml", "schemas/run-farm-recipes/generic.yaml"):
             raise Exception(f"Invalid YAML in file: {runtimeconfigfile}")
 
         runtime_configfile = None
@@ -479,14 +479,14 @@ class InnerRuntimeConfiguration:
         defaults_file = runtime_dict['run_farm']['base_recipe']
 
         schema_file = f"schemas/{defaults_file}"
-        def validate_helper(val_cond: bool, error_msg: str):
+        def validate_helper(val_cond: bool, error_msg: str) -> None:
             if os.path.exists(schema_file):
                 if not val_cond:
                     raise Exception(error_msg)
             else:
                 rootLogger.warning(f"Unable to find schema file for {defaults_file}. Skipping validation.")
 
-        validate_helper(validate(defaults_file, schema_file), f"Invalid YAML in {defaults_file}")
+        validate_helper(validate(defaults_file, None, schema_file), f"Invalid YAML in {defaults_file}")
 
         with open(defaults_file, "r") as yaml_file:
             run_farm_configfile = yaml.safe_load(yaml_file)
@@ -499,7 +499,7 @@ class InnerRuntimeConfiguration:
         if override_args:
             # validate overrides
             override_run_farm_arg_dict = {"run_farm_type": run_farm_type, "args": override_args}
-            validate_helper(validate(yaml.dump(override_run_farm_arg_dict), schema_file, None, ["Required field missing"], True), f"Invalid YAML in {runtimeconfigfile}")
+            validate_helper(validate(None, yaml.dump(override_run_farm_arg_dict), schema_file, None, ["Required field missing"]), f"Invalid YAML in {runtimeconfigfile}")
 
             run_farm_args = deep_merge(run_farm_args, override_args)
 

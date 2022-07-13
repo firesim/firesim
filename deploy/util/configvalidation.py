@@ -4,35 +4,38 @@ import yamale # type: ignore
 
 from typing import Optional, List
 
-def validate(src_yaml: str, schema_yaml: str, extra_schema_yaml: Optional[str] = None, ignore_statements: List[str] = [], src_as_str: bool = False) -> bool:
+def validate(src_yaml_path: str = None, src_yaml_str: str = None, schema_yaml_path: str = None, extra_schema_yaml_path: Optional[str] = None, ignore_statements: List[str] = []) -> bool:
     """Validate a src yaml file with a schema file (or extra one)
 
     Args:
-        src_yaml: path to yaml file (default) or yaml string to check
-        schema_yaml: path to schema yaml file to use for check
-        extra_schema_yaml: path to another schema yaml file to use for check
+        src_yaml_path: path to yaml file to check (cannot be used with src_yaml_str)
+        src_yaml_str: yaml string to check (cannot be used with src_yaml_path)
+        schema_yaml_path: path to schema yaml file to use for check
+        extra_schema_yaml_path: path to another schema yaml file to use for check
         ignore_statements: if an error message matches any string in the list of strings then ignore that error
-        src_as_str: treat src_yaml input as a yaml string instead of file
 
     Returns:
         Boolean indicating if validation was successful
     """
-    schema = yamale.make_schema(schema_yaml)
-    if src_as_str:
-        data = yamale.make_data(content=src_yaml)
-    else:
-        data = yamale.make_data(src_yaml)
+    if (src_yaml_path is None and src_yaml_str is None) or (src_yaml_path is not None and src_yaml_str is not None):
+        raise Exception("Pass either src_yaml_path= or src_yaml_str=, not both")
 
-    if extra_schema_yaml:
-        raw_schemas = yamale.readers.parse_yaml(extra_schema_yaml)
+    schema = yamale.make_schema(schema_yaml_path)
+    if src_yaml_path:
+        data = yamale.make_data(src_yaml_path)
+    else:
+        data = yamale.make_data(content=src_yaml_str)
+
+    if extra_schema_yaml_path:
+        raw_schemas = yamale.readers.parse_yaml(extra_schema_yaml_path)
         if not raw_schemas:
-            raise ValueError(f'{extra_schema_yaml} is an empty file!')
+            raise ValueError(f'{extra_schema_yaml_path} is an empty file!')
 
         try:
             for raw_schema in raw_schemas:
                 schema.add_include(raw_schema)
         except (TypeError, SyntaxError) as e:
-            raise SyntaxError(f'Schema error in file {extra_schema_yaml}\n{e}')
+            raise SyntaxError(f'Schema error in file {extra_schema_yaml_path}\n{e}')
 
     errors = validate_wrapper(schema, data)
     if errors is None:
@@ -45,12 +48,13 @@ def validate(src_yaml: str, schema_yaml: str, extra_schema_yaml: Optional[str] =
             return True
         filtered_errors = list(filter(filter_cond, errors) )
         if filtered_errors:
-            if src_as_str:
-                print(f"Error validating YAML string:\n{src_yaml}\nwith {schema_yaml} and {extra_schema_yaml}:")
+            all_schema_files = [schema_yaml_path] + ([extra_schema_yaml_path] if extra_schema_yaml_path else [])
+            if src_yaml_str:
+                print(f"::ERROR:: Unable to validate following YAML snippet with schema(s) ({all_schema_files}):\n{src_yaml_str.strip()}")
             else:
-                print(f"Error validating {src_yaml} with {schema_yaml} and {extra_schema_yaml}:")
+                print(f"::ERROR:: Unable to validate {src_yaml_path} (source yaml) with schema(s) ({all_schema_files}).")
             for error in filtered_errors:
-                print(f'\t{error}')
+                print(f'::ERROR:: Mismatch:    {error}')
             return False
         else:
             return True
