@@ -8,7 +8,7 @@ import random
 import string
 import logging
 import os
-from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
+from fabric.api import prefix, local, run, env, lcd, parallel, settings # type: ignore
 from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
@@ -68,12 +68,15 @@ class BitBuilder(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def build_bitstream(self, bypass: bool = False) -> None:
+    def build_bitstream(self, bypass: bool = False) -> bool:
         """Run bitstream build and terminate the build host at the end.
         Must run after `replace_rtl` and `build_driver` are run.
 
         Args:
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
+
+        Returns:
+            Boolean indicating if the build passed or failed.
         """
         raise NotImplementedError
 
@@ -176,15 +179,18 @@ class F1BitBuilder(BitBuilder):
 
         return f"{dest_awsfpga_dir}/{fpga_build_postfix}"
 
-    def build_bitstream(self, bypass: bool = False) -> None:
+    def build_bitstream(self, bypass: bool = False) -> bool:
         """Run Vivado, convert tar -> AGFI/AFI, and then terminate the instance at the end.
 
         Args:
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
+
+        Returns:
+            Boolean indicating if the build passed or failed.
         """
         if bypass:
             self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
-            return
+            return True
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
@@ -213,6 +219,7 @@ class F1BitBuilder(BitBuilder):
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
         vivado_result = 0
+<<<<<<< HEAD
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # copy script to the cl_dir and execute
             rsync_cap = rsync_project(
@@ -223,6 +230,19 @@ class F1BitBuilder(BitBuilder):
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
+=======
+
+        # copy script to the cl_dir and execute
+        rsync_cap = rsync_project(
+            local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
+            remote_dir=f"{cl_dir}/",
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        with settings(warn_only=True):
+>>>>>>> 8e23e1f6 (Aggregate bitstream failures after all completions)
             vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
 
         # put build results in the result-build area
@@ -237,13 +257,15 @@ class F1BitBuilder(BitBuilder):
 
         if vivado_result != 0:
             on_build_failure()
-            return
+            return False
 
         if not self.aws_create_afi():
             on_build_failure()
-            return
+            return False
 
         self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+
+        return True
 
     def aws_create_afi(self) -> Optional[bool]:
         """Convert the tarball created by Vivado build into an Amazon Global FPGA Image (AGFI).
@@ -413,6 +435,7 @@ class VitisBitBuilder(BitBuilder):
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
+<<<<<<< HEAD
         with StreamLogger('stdout'), StreamLogger('stderr'):
             run('mkdir -p {}'.format(dest_vitis_dir))
             rsync_cap = rsync_project(
@@ -430,18 +453,40 @@ class VitisBitBuilder(BitBuilder):
                 extra_opts="-l", capture=True)
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
+=======
+
+        run('mkdir -p {}'.format(dest_vitis_dir))
+        rsync_cap = rsync_project(
+            local_dir=local_vitis_dir,
+            remote_dir=dest_vitis_dir,
+            ssh_opts="-o StrictHostKeyChecking=no",
+            exclude="cl_*",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+        rsync_cap = rsync_project(
+            local_dir="{}/{}/".format(local_vitis_dir, fpga_build_postfix),
+            remote_dir='{}/{}'.format(dest_vitis_dir, fpga_build_postfix),
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+>>>>>>> 8e23e1f6 (Aggregate bitstream failures after all completions)
 
         return f"{dest_vitis_dir}/{fpga_build_postfix}"
 
-    def build_bitstream(self, bypass: bool = False) -> None:
+    def build_bitstream(self, bypass: bool = False) -> bool:
         """ Run Vitis to generate an xclbin. Then terminate the instance at the end.
 
         Args:
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
+
+        Returns:
+            Boolean indicating if the build passed or failed.
         """
         if bypass:
             self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
-            return
+            return True
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
@@ -474,6 +519,7 @@ class VitisBitBuilder(BitBuilder):
         #    run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(cl_dir, local_results_dir))
 
         vitis_result = 0
+<<<<<<< HEAD
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # TODO: Put script within Vitis area
             # copy script to the cl_dir and execute
@@ -485,6 +531,19 @@ class VitisBitBuilder(BitBuilder):
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
+=======
+        # TODO: Put script within Vitis area
+        # copy script to the cl_dir and execute
+        rsync_cap = rsync_project(
+            local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
+            remote_dir=f"{cl_dir}/",
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        with settings(warn_only=True):
+>>>>>>> 8e23e1f6 (Aggregate bitstream failures after all completions)
             vitis_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
 
         # put build results in the result-build area
@@ -499,7 +558,7 @@ class VitisBitBuilder(BitBuilder):
 
         if vitis_result != 0:
             on_build_failure()
-            return
+            return False
 
         hwdb_entry_name = self.build_config.name
         xclbin_path = cl_dir + "/bitstream/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
@@ -526,11 +585,19 @@ class VitisBitBuilder(BitBuilder):
             outputfile.write(hwdb_entry)
 
         if self.build_config.post_build_hook:
+<<<<<<< HEAD
             with StreamLogger('stdout'), StreamLogger('stderr'):
                 localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
                 rootLogger.debug("[localhost] " + str(localcap))
                 rootLogger.debug("[localhost] " + str(localcap.stderr))
+=======
+            localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
+>>>>>>> 8e23e1f6 (Aggregate bitstream failures after all completions)
 
         rootLogger.info(f"Build complete! Vitis bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
         self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+
+        return True
