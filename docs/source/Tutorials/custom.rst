@@ -89,13 +89,13 @@ uart log will be saved in in the ``runOutputs`` directory with a name like
 
 Bare-Metal Workload
 -------------------------
-``test/bare.json``
+``test/bare.yaml``
 
 FireMarshal was primarily designed to support linux-based workloads. However,
-it provides basic support for bare-metal workloads. Take ``test/bare.json`` as
+it provides basic support for bare-metal workloads. Take ``test/bare.yaml`` as
 an example:
 
-.. include:: ../../../test/bare.json
+.. include:: ../../../test/bare.yaml
   :code: json
 
 This workload creates a simple "Hello World" bare-metal workload. This workload

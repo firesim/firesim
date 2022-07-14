@@ -28,16 +28,42 @@ outs = {
         }
 
 
-def checkOuts(want, stdout):
+outsSubDir = {
+        "root": "jobs",
+        "j0": "jobs-j0",
+        "j1": "jobs-j1"
+        }
+
+
+# Parse stdout of marshal command to find runOutput dir
+def findOutDir(stdout):
     stdout = stdout.decode("utf-8")
+    for line in stdout.split("\n"):
+        if "Workload outputs available at" in line:
+            pathStr = line.split(":")[1].strip()
+            return pth.Path(pathStr)
+
+
+# Check for required outputs (wamt) in uartlog files inside outDir
+def checkOuts(want, outDir):
     for name, output in outs.items():
-        if name in want:
-            if output not in stdout:
-                print("Expected output '" + output + "' not in stdout", file=sys.stderr)
+        rPath = outDir / outsSubDir[name] / "uartlog"
+
+        if not rPath.is_file():
+            if name in want:
+                print("Result file not found at :" + str(rPath), file=sys.stderr)
                 return False
-        elif output in stdout:
-            print("Unexpected output '" + output + "' in stdout", file=sys.stderr)
-            return False
+            continue
+
+        with open(str(rPath), 'r') as rFile:
+            stdout = rFile.read()
+            if name in want:
+                if output not in stdout:
+                    print("Expected output '" + output + "' not in stdout", file=sys.stderr)
+                    return False
+            elif output in stdout:
+                print("Unexpected output '" + output + "' in stdout", file=sys.stderr)
+                return False
 
     return True
 
@@ -58,7 +84,7 @@ proc = sp.run(str(managerPath) + " launch " + str(testCfg), shell=True, stdout=s
 if proc.returncode != 0:
     print("Failure: marshal returned non-zero exit code", file=sys.stderr)
     sys.exit(1)
-elif not checkOuts(['root'], proc.stdout):
+elif not checkOuts(['root'], findOutDir(proc.stdout)):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
 
@@ -67,7 +93,7 @@ proc = sp.run(str(managerPath) + " launch -j j0 " + str(testCfg), shell=True, st
 if proc.returncode != 0:
     print("Failure: marshal returned non-zero exit code", file=sys.stderr)
     sys.exit(1)
-elif not checkOuts(['j0'], proc.stdout):
+elif not checkOuts(['j0'], findOutDir(proc.stdout)):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
 
@@ -76,7 +102,7 @@ proc = sp.run(str(managerPath) + " launch -j j1 " + str(testCfg), shell=True, st
 if proc.returncode != 0:
     print("Failure: marshal returned non-zero exit code", file=sys.stderr)
     sys.exit(1)
-elif not checkOuts(['j1'], proc.stdout):
+elif not checkOuts(['j1'], findOutDir(proc.stdout)):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
 
@@ -85,7 +111,7 @@ proc = sp.run(str(managerPath) + " launch -j j0 -j j1 " + str(testCfg), shell=Tr
 if proc.returncode != 0:
     print("Failure: marshal returned non-zero exit code", file=sys.stderr)
     sys.exit(1)
-elif not checkOuts(['j1', 'j0'], proc.stdout):
+elif not checkOuts(['j1', 'j0'], findOutDir(proc.stdout)):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
 
@@ -94,7 +120,7 @@ proc = sp.run(str(managerPath) + " launch -a " + str(testCfg), shell=True, stdou
 if proc.returncode != 0:
     print("Failure: marshal returned non-zero exit code", file=sys.stderr)
     sys.exit(1)
-elif not checkOuts(['j1', 'j0'], proc.stdout):
+elif not checkOuts(['j1', 'j0'], findOutDir(proc.stdout)):
     print("Failure: contained incorrect outputs", file=sys.stderr)
     sys.exit(1)
 
