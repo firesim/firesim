@@ -486,7 +486,7 @@ class AWSEC2F1(RunFarm):
                     all_insts.append(inst)
         return all_insts
 
-    def lookup_by_host(self, host) -> Inst:
+    def lookup_by_host(self, host: str) -> Inst:
         for host_node in self.get_all_bound_host_nodes():
             if host_node.get_host() == host:
                 return host_node

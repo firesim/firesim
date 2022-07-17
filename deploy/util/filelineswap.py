@@ -3,7 +3,7 @@ from __future__ import annotations
 # imports needed for python type checking
 from typing import List
 
-def file_line_swap(in_file: str, out_file: str, start_marker: str, end_marker: str, inject_lines: List[str]):
+def file_line_swap(in_file: str, out_file: str, start_marker: str, end_marker: str, inject_lines: List[str]) -> None:
     """Inject a set of lines into a file given two markers. Output into a new file.
 
     Ex.

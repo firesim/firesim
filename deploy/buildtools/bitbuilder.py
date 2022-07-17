@@ -187,7 +187,7 @@ class F1BitBuilder(BitBuilder):
             return
 
         # The default error-handling procedure. Send an email and teardown instance
-        def on_build_failure():
+        def on_build_failure() -> None:
             """ Terminate build host and notify user that build failed """
 
             message_title = "FireSim FPGA Build Failed"
@@ -366,7 +366,7 @@ class VitisBitBuilder(BitBuilder):
     def setup(self) -> None:
         return
 
-    def replace_rtl(self):
+    def replace_rtl(self) -> None:
         rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
 
         with prefix(f'cd {get_deploy_dir()}/../'), \
@@ -379,7 +379,7 @@ class VitisBitBuilder(BitBuilder):
             InfoStreamLogger('stderr'):
             run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
 
-    def build_driver(self):
+    def build_driver(self) -> None:
         rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
 
         with prefix(f'cd {get_deploy_dir()}/../'), \
@@ -444,7 +444,7 @@ class VitisBitBuilder(BitBuilder):
             return
 
         # The default error-handling procedure. Send an email and teardown instance
-        def on_build_failure():
+        def on_build_failure() -> None:
             """ Terminate build host and notify user that build failed """
 
             message_title = "FireSim Vitis FPGA Build Failed"

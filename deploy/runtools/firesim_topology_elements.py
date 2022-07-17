@@ -604,9 +604,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         """ Return local paths of all stuff needed to run this simulation as
         an array. """
 
-        def get_path_trailing(filepath):
+        def get_path_trailing(filepath: str) -> str:
             return filepath.split("/")[-1]
-        def local_and_remote(filepath, index):
+        def local_and_remote(filepath: str, index: int) -> List[str]:
             return [filepath, get_path_trailing(filepath) + str(index)]
 
         hw_cfg = self.get_resolved_server_hardware_config()

@@ -6,9 +6,11 @@ import logging
 import boto3
 from awstools.awstools import depaginated_boto_query
 
+from typing import List, Any, Dict, Optional
+
 rootLogger = logging.getLogger()
 
-def get_fpga_regions():
+def get_fpga_regions() -> List[str]:
     """ Get list of all regions with F1 support """
     fpga_regions = [
         'us-east-1',       # US East (N. Virginia)
@@ -18,11 +20,11 @@ def get_fpga_regions():
     ]
     return list(fpga_regions)
 
-def get_current_region():
+def get_current_region() -> str:
     boto_session = boto3.session.Session()
     return boto_session.region_name
 
-def get_afi_for_agfi(agfi_id, region=None):
+def get_afi_for_agfi(agfi_id: str, region: Optional[str] = None) -> str:
     """ Get the AFI for the AGFI in the specified region.
     region = None means use default region
     (AFIs are region specific, AGFIs are global).
@@ -46,7 +48,7 @@ def get_afi_for_agfi(agfi_id, region=None):
     rootLogger.debug(fpga_images_all)
     return fpga_images_all[0]['FpgaImageId']
 
-def copy_afi_to_all_regions(afi_id, starting_region=None):
+def copy_afi_to_all_regions(afi_id: str, starting_region: Optional[str] = None) -> None:
     """ Copies an AFI to all regions, excluding the specified region.
     starting_region=None makes starting region = to the default region. """
     starting_region = starting_region if starting_region is not None else get_current_region()
@@ -71,7 +73,7 @@ def copy_afi_to_all_regions(afi_id, starting_region=None):
         rootLogger.info("Copy result: " + str(result['FpgaImageId']))
 
 
-def share_afi_with_users(afi_id, region, useridlist):
+def share_afi_with_users(afi_id: str, region: str, useridlist: List[str]) -> None:
     """ share the AFI in Region region with users in userlist. """
     client = boto3.client('ec2', region_name=region)
     if "public" in useridlist:
@@ -92,11 +94,11 @@ def share_afi_with_users(afi_id, region, useridlist):
         )
     rootLogger.debug(result)
 
-def get_afi_sharing_ids_from_conf(conf):
+def get_afi_sharing_ids_from_conf(conf: Any) -> List[str]:
     usersdict = conf.ini['agfisharing']
     return usersdict.values()
 
-def share_agfi_in_all_regions(agfi_id, useridlist):
+def share_agfi_in_all_regions(agfi_id: str, useridlist: List[str]) -> None:
     """ For the given AGFI, for each fpga region, get the AFI, then share
     with the users in useridlist """
     all_fpga_regions = get_fpga_regions()
@@ -104,11 +106,11 @@ def share_agfi_in_all_regions(agfi_id, useridlist):
         afi_id = get_afi_for_agfi(agfi_id, region)
         share_afi_with_users(afi_id, region, useridlist)
 
-def firesim_tags_to_description(buildtriplet, deploytriplet, commit):
+def firesim_tags_to_description(buildtriplet: str, deploytriplet: str, commit: str) -> str:
     """ Serialize the tags we want to set for storage in the AGFI description """
     return """firesim-buildtriplet:{},firesim-deploytriplet:{},firesim-commit:{}""".format(buildtriplet,deploytriplet,commit)
 
-def firesim_description_to_tags(description):
+def firesim_description_to_tags(description: str) -> Dict[Any, Any]:
     """ Deserialize the tags we want to read from the AGFI description string.
     Return dictionary of keys/vals [buildtriplet, deploytriplet, commit]. """
     returndict = dict()
@@ -118,7 +120,7 @@ def firesim_description_to_tags(description):
         returndict[splitpair[0]] = splitpair[1]
     return returndict
 
-def get_firesim_tagval_for_afi(afi_id, tagkey):
+def get_firesim_tagval_for_afi(afi_id: str, tagkey: str) -> str:
     """ Given an afi_id, and tag key, return the FireSim tag value of the afi."""
     client = boto3.client('ec2')
     operation_params = {
@@ -129,7 +131,7 @@ def get_firesim_tagval_for_afi(afi_id, tagkey):
     result = depaginated_boto_query(client, 'describe_fpga_images', operation_params, 'FpgaImages')[0]['Description']
     return firesim_description_to_tags(result)[tagkey]
 
-def get_firesim_tagval_for_agfi(agfi_id, tagkey):
+def get_firesim_tagval_for_agfi(agfi_id: str, tagkey: str) -> str:
     """ Given an agfi_id and tagkey, return the tagval. """
     afi_id = get_afi_for_agfi(agfi_id)
     return get_firesim_tagval_for_afi(afi_id, tagkey)

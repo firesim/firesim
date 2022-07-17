@@ -9,7 +9,7 @@ import boto3
 vpcname = 'firesim'
 secgroupname = 'firesim'
 
-def aws_setup():
+def aws_setup() -> None:
     ec2 = boto3.resource('ec2')
     client = boto3.client('ec2')
 

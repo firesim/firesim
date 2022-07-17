@@ -93,6 +93,7 @@ class RuntimeHWConfig:
         if self.deploytriplet is not None:
             return self.deploytriplet
         rootLogger.debug("Setting deploytriplet by querying the AGFI's description.")
+        assert self.agfi is not None
         self.deploytriplet = get_firesim_tagval_for_agfi(self.agfi,
                                                          'firesim-deploytriplet')
         return self.deploytriplet
@@ -454,7 +455,7 @@ class InnerRuntimeConfiguration:
             rootLogger.warning(overridefield + "=" + overridevalue)
             runtime_dict[overridesection][overridefield] = overridevalue
 
-        def dict_assert(key_check, dict_name):
+        def dict_assert(key_check: str, dict_name: Dict[str, Any]) -> None:
             assert key_check in dict_name, f"FAIL: missing {key_check} in runtime config."
 
         dict_assert('metasimulation', runtime_dict)
@@ -578,7 +579,7 @@ class RuntimeConfig:
             for pair in self.args.terminatesome:
                 terminate_some_dict[pair[0]] = pair[1]
 
-        def old_style_terminate_args(instance_type, arg_val, arg_flag_str):
+        def old_style_terminate_args(instance_type: str, arg_val: int, arg_flag_str: str) -> None:
             if arg_val != -1:
                 rootLogger.critical("WARNING: You are using the old-style " + arg_flag_str + " flag. See the new --terminatesome flag in help. The old-style flag will be removed in the next major FireSim release (1.15.X).")
                 terminate_some_dict[instance_type] = arg_val

@@ -48,7 +48,7 @@ class MockBoto3Instance:
         MockBoto3Instance.base_ip += 1
         self.private_ip_address = ".".join([str((self.ip_addr_int >> (8*x)) & 0xFF) for x in [3, 2, 1, 0]])
 
-def depaginated_boto_query(client, operation, operation_params, return_key):
+def depaginated_boto_query(client: Any, operation: str, operation_params: Dict[Any, Any], return_key: str) -> List[Any]:
     paginator = client.get_paginator(operation)
     page_iterator = paginator.paginate(**operation_params)
     return_values_all = []

@@ -486,7 +486,7 @@ class FireSimTopologyWithPasses:
         self.boot_simulation_passes(False, skip_instance_binding=True)
 
         @parallel
-        def monitor_jobs_wrapper(run_farm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
+        def monitor_jobs_wrapper(run_farm: RunFarm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
             """ on each instance, check over its switches and simulations
             to copy results off. """
             my_node = run_farm.lookup_by_host(env.host_string)
@@ -574,7 +574,7 @@ class FireSimTopologyWithPasses:
             """ break out of this loop when either all sims are completed (no
             network) or when one sim is completed (networked case) """
 
-            def get_jobs_completed_local_info():
+            def get_jobs_completed_local_info() -> List[str]:
                 # this is a list of jobs completed, since any completed job will have
                 # a directory within this directory.
                 jobscompleted = os.listdir(self.workload.job_results_dir)
