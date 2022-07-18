@@ -499,11 +499,29 @@ key/value in the same recipe).
 ``xclbin``
 """""""""""""""
 
-This represents a path to a bitstream (FPGA Image) used by this hardware configuration.
-This path must be local to the run farm host that the simulation runs on.
-Only used in Vitis FireSim configurations (an ``agfi`` key/value cannot exist with this
-key/value in the same recipe)
+Indicates where the bitstream (FPGA Image) is located, may be one of:
+  * A Uniform Resource Identifier (URI) which specifies a protocol supported either `directly
+    by the fsspec library <https://filesystem-spec.readthedocs.io/en/latest/api.html#built-in-implementations>`_ or
+    by `one of the many third party extension libraries which build on fsspec. <https://filesystem-spec.readthedocs.io/en/latest/api.html#other-known-implementations>`_
+  * A filesystem path available to the run farm host.
 
+Please note that while use use the ``fsspec`` library to handle many different URI protocols,
+many of them require additional dependencies that FireSim itself does not require you to install.
+For example, if you want to use ``s3://`` URIs, you will need to install the additional s3fs
+package.  ``fsspec`` will throw an exception telling you to install missing packages if you use
+one of the many URI protocols we do not test.
+
+Likewise, individual URI protocols will have their own requirements for specifying credentials.
+Documentation supplying credentials is provided by the individual protocol implementation.  For
+example:
+  * `s3fs for AWS S3 <https://s3fs.readthedocs.io/en/latest/#credentials>`_
+  * `gcfs for Google Cloud Services https://gcsfs.readthedocs.io/en/latest/#credentials>`_
+
+For SSH, add any required keys to your ssh-agent.
+
+We currently support protocols that provide authentication via their own configuration files
+or environment variables.  In the future, we may provide a means for passing credentials that can
+only be passed to the fsspec method calls.
 
 ``deploy_triplet_override``
 """""""""""""""""""""""""""""

@@ -10,6 +10,9 @@ from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hi
 from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
+from os import PathLike, fspath
+from fsspec.core import url_to_fs
+from pathlib import Path
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
@@ -23,6 +26,8 @@ if TYPE_CHECKING:
     from awstools.awstools import MockBoto3Instance
 
 rootLogger = logging.getLogger()
+
+_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
 
 class NBDTracker:
     """Track allocation of NBD devices on an instance. Used for mounting
@@ -656,6 +661,37 @@ class VitisInstanceDeployManager(InstanceDeployManager):
                 with StreamLogger('stdout'), StreamLogger('stderr'):
                     run(f"xbutil reset -d {card_bdf} --force")
 
+    def localize_xclbin(self, slotno: int) -> None:
+        """ download xclbin URI to remote node. """
+        assert slotno < len(self.parent_node.sim_slots)
+        serv = self.parent_node.sim_slots[slotno]
+        hwcfg = serv.get_resolved_server_hardware_config()
+        if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
+            remote_home_dir = self.parent_node.get_sim_dir()
+            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            hwcfg.local_xclbin = './local.xclbin'
+
+            def get_xclbin(xclbin_uri:str, xclbin_lpath:PathLike) -> None:
+                # TODO instead of blowing up if the file exists, consider using fsspec
+                # filecache https://filesystem-spec.readthedocs.io/en/latest/features.html#caching-files-locally
+                # so that multiple slots using the same xclbin only grab it once and
+                # we only download it if it has changed at the source.
+                # HOWEVER, 'filecache' isn't thread/process safe and I'm not sure whether
+                # this runs in @parallel for fabric
+                lpath = Path(xclbin_lpath)
+                assert not lpath.exists, f"{lpath.resolve(strict=False)} already exists, refusing to overwrite"
+                rootLogger.debug("Downloading '%s' to '%s'", xclbin_uri, )
+                fs, rpath = url_to_fs(xclbin_uri)
+                fs.get_file(rpath, fspath(lpath)) # fsspec deals in strings, not PathLike
+
+            with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+                run(get_xclbin, hwcfg.xclbin, hwcfg.local_xclbin)
+
+        else:
+            hwcfg.local_xclbin = hwcfg.xclbin
+
+
+
     def infrasetup_instance(self) -> None:
         """ Handle infrastructure setup for this platform. """
         metasim_enabled = self.parent_node.metasimulation_enabled
@@ -666,6 +702,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
+                self.localize_xclbin(slotno)
 
             if not metasim_enabled:
                 # clear/flash fpgas
