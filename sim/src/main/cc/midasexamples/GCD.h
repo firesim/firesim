@@ -1,13 +1,12 @@
-//See LICENSE for license details.
+// See LICENSE for license details.
 
 #include "simif_peek_poke.h"
 
-class GCD_t: public simif_peek_poke_t
-{
+class GCD_t : public simif_peek_poke_t {
 public:
-  GCD_t(int argc, char** argv) {}
+  GCD_t(int argc, char **argv) {}
   void run() {
-    uint32_t a = 64, b = 48, z = 16; //test vectors
+    uint32_t a = 64, b = 48, z = 16; // test vectors
     target_reset();
     poke(io_a, a);
     poke(io_b, b);

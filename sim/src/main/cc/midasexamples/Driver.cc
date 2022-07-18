@@ -1,4 +1,4 @@
-//See LICENSE for license details.
+// See LICENSE for license details.
 
 #ifndef RTLSIM
 #include "simif_f1.h"
@@ -93,26 +93,23 @@
 #include "TerminationModule.h"
 #endif
 
-class dut_emul_t:
+class dut_emul_t :
 #ifdef RTLSIM
-  public simif_emul_t,
+    public simif_emul_t,
 #else
-  public simif_f1_t,
+    public simif_f1_t,
 #endif
-  public DESIGNDRIVERCLASS
-{
+    public DESIGNDRIVERCLASS {
 public:
 #ifdef RTLSIM
-  dut_emul_t(int argc, char** argv):
-    DESIGNDRIVERCLASS(argc, argv) { }
+  dut_emul_t(int argc, char **argv) : DESIGNDRIVERCLASS(argc, argv) {}
 #else
-  dut_emul_t(int argc, char** argv): simif_f1_t(argc, argv), DESIGNDRIVERCLASS(argc, argv) { }
+  dut_emul_t(int argc, char **argv)
+      : simif_f1_t(argc, argv), DESIGNDRIVERCLASS(argc, argv) {}
 #endif
-
 };
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
   dut_emul_t dut(argc, argv);
   dut.init(argc, argv);
   dut.run();

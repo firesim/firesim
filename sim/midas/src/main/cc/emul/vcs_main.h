@@ -4,20 +4,19 @@
 #define __VCS_MAIN
 
 extern "C" {
-extern int vcs_main(int argc, char** argv);
+extern int vcs_main(int argc, char **argv);
 }
 
 struct target_args_t {
-  target_args_t(int c, char** v):
-    argc(c), argv(v) { }
+  target_args_t(int c, char **v) : argc(c), argv(v) {}
   int argc;
-  char** argv;
+  char **argv;
 };
 
 void target_thread(void *arg) {
-  target_args_t* targs = reinterpret_cast<target_args_t*>(arg);
+  target_args_t *targs = reinterpret_cast<target_args_t *>(arg);
   int argc = targs->argc;
-  char** argv = targs->argv;
+  char **argv = targs->argv;
   delete targs;
   vcs_main(argc, argv);
 }

@@ -1,32 +1,29 @@
 #ifdef ASSERTBRIDGEMODULE_struct_guard
 
 #include "synthesized_assertions.h"
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 synthesized_assertions_t::synthesized_assertions_t(
-  simif_t* sim,
-  std::vector<std::string> &args,
-  ASSERTBRIDGEMODULE_struct * mmio_addrs,
-  unsigned int num_asserts,
-  const char* const* msgs) :
-    bridge_driver_t(sim),
-    mmio_addrs(mmio_addrs),
-    num_asserts(num_asserts),
-    msgs(msgs)
-{
-  for (auto &arg: args) {
+    simif_t *sim,
+    std::vector<std::string> &args,
+    ASSERTBRIDGEMODULE_struct *mmio_addrs,
+    unsigned int num_asserts,
+    const char *const *msgs)
+    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), num_asserts(num_asserts),
+      msgs(msgs) {
+  for (auto &arg : args) {
     if (arg.find("+disable-asserts") == 0)
       enable = false;
   }
 }
 
 synthesized_assertions_t::~synthesized_assertions_t() {
-    free(this->mmio_addrs);
+  free(this->mmio_addrs);
 }
 
 void synthesized_assertions_t::init() {
-    write(this->mmio_addrs->enable, this->enable);
+  write(this->mmio_addrs->enable, this->enable);
 }
 
 void synthesized_assertions_t::tick() {

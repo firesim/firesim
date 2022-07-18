@@ -1,9 +1,9 @@
-#include "mmio.h"
 #include "mm.h"
 #include "mm_dramsim2.h"
-#include <memory>
+#include "mmio.h"
 #include <cassert>
 #include <cmath>
+#include <memory>
 #include <verilated.h>
 #if VM_TRACE
 #include <verilated_vcd_c.h>
@@ -14,15 +14,15 @@ extern std::unique_ptr<mmio_t> master;
 extern std::unique_ptr<mmio_t> dma;
 extern std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
 
-extern Vverilator_top* top;
+extern Vverilator_top *top;
 #if VM_TRACE
-extern VerilatedVcdC* tfp;
+extern VerilatedVcdC *tfp;
 #endif // VM_TRACE
 
 void tick() {
   mmio_t *m, *d;
-  assert(m = dynamic_cast<mmio_t*>(master.get()));
-  assert(d = dynamic_cast<mmio_t*>(dma.get()));
+  assert(m = dynamic_cast<mmio_t *>(master.get()));
+  assert(d = dynamic_cast<mmio_t *>(dma.get()));
 
   // ASSUMPTION: All models have *no* combinational paths through I/O
   // Step 1: Clock lo -> propagate signals between DUT and software models
@@ -45,7 +45,6 @@ void tick() {
   top->ctrl_r_ready = m->r_ready();
   top->ctrl_b_ready = m->b_ready();
   memcpy(&top->ctrl_w_bits_data, m->w_data(), CTRL_BEAT_BYTES);
-
 
   top->dma_aw_valid = d->aw_valid();
   top->dma_aw_bits_id = d->aw_id();
@@ -142,154 +141,144 @@ void tick() {
 
   top->eval();
 #if VM_TRACE
-  if (tfp) tfp->dump((double) main_time);
+  if (tfp)
+    tfp->dump((double)main_time);
 #endif // VM_TRACE
   main_time++;
 
   top->clock = 0;
   top->eval(); // This shouldn't do much
 #if VM_TRACE
-  if (tfp) tfp->dump((double) main_time);
+  if (tfp)
+    tfp->dump((double)main_time);
 #endif // VM_TRACE
   main_time++;
 
   // Step 2: Clock high, tick all software models and evaluate DUT with posedge
-  m->tick(
-    top->reset,
-    top->ctrl_ar_ready,
-    top->ctrl_aw_ready,
-    top->ctrl_w_ready,
-    top->ctrl_r_bits_id,
-    &top->ctrl_r_bits_data,
-    top->ctrl_r_bits_last,
-    top->ctrl_r_valid,
-    top->ctrl_b_bits_id,
-    top->ctrl_b_valid
-  );
+  m->tick(top->reset,
+          top->ctrl_ar_ready,
+          top->ctrl_aw_ready,
+          top->ctrl_w_ready,
+          top->ctrl_r_bits_id,
+          &top->ctrl_r_bits_data,
+          top->ctrl_r_bits_last,
+          top->ctrl_r_valid,
+          top->ctrl_b_bits_id,
+          top->ctrl_b_valid);
 
-  d->tick(
-    top->reset,
-    top->dma_ar_ready,
-    top->dma_aw_ready,
-    top->dma_w_ready,
-    top->dma_r_bits_id,
-    &top->dma_r_bits_data,
-    top->dma_r_bits_last,
-    top->dma_r_valid,
-    top->dma_b_bits_id,
-    top->dma_b_valid
-  );
+  d->tick(top->reset,
+          top->dma_ar_ready,
+          top->dma_aw_ready,
+          top->dma_w_ready,
+          top->dma_r_bits_id,
+          &top->dma_r_bits_data,
+          top->dma_r_bits_last,
+          top->dma_r_valid,
+          top->dma_b_bits_id,
+          top->dma_b_valid);
 
-  slave[0]->tick(
-    top->reset,
-    top->mem_0_ar_valid,
-    top->mem_0_ar_bits_addr,
-    top->mem_0_ar_bits_id,
-    top->mem_0_ar_bits_size,
-    top->mem_0_ar_bits_len,
+  slave[0]->tick(top->reset,
+                 top->mem_0_ar_valid,
+                 top->mem_0_ar_bits_addr,
+                 top->mem_0_ar_bits_id,
+                 top->mem_0_ar_bits_size,
+                 top->mem_0_ar_bits_len,
 
-    top->mem_0_aw_valid,
-    top->mem_0_aw_bits_addr,
-    top->mem_0_aw_bits_id,
-    top->mem_0_aw_bits_size,
-    top->mem_0_aw_bits_len,
+                 top->mem_0_aw_valid,
+                 top->mem_0_aw_bits_addr,
+                 top->mem_0_aw_bits_id,
+                 top->mem_0_aw_bits_size,
+                 top->mem_0_aw_bits_len,
 
-    top->mem_0_w_valid,
-    top->mem_0_w_bits_strb,
+                 top->mem_0_w_valid,
+                 top->mem_0_w_bits_strb,
 #if MEM_DATA_BITS > 64
-    top->mem_0_w_bits_data,
+                 top->mem_0_w_bits_data,
 #else
-    &top->mem_0_w_bits_data,
+                 &top->mem_0_w_bits_data,
 #endif
-    top->mem_0_w_bits_last,
+                 top->mem_0_w_bits_last,
 
-    top->mem_0_r_ready,
-    top->mem_0_b_ready
-  );
+                 top->mem_0_r_ready,
+                 top->mem_0_b_ready);
 
 #ifdef MEM_HAS_CHANNEL1
-  slave[1]->tick(
-    top->reset,
-    top->mem_1_ar_valid,
-    top->mem_1_ar_bits_addr,
-    top->mem_1_ar_bits_id,
-    top->mem_1_ar_bits_size,
-    top->mem_1_ar_bits_len,
+  slave[1]->tick(top->reset,
+                 top->mem_1_ar_valid,
+                 top->mem_1_ar_bits_addr,
+                 top->mem_1_ar_bits_id,
+                 top->mem_1_ar_bits_size,
+                 top->mem_1_ar_bits_len,
 
-    top->mem_1_aw_valid,
-    top->mem_1_aw_bits_addr,
-    top->mem_1_aw_bits_id,
-    top->mem_1_aw_bits_size,
-    top->mem_1_aw_bits_len,
+                 top->mem_1_aw_valid,
+                 top->mem_1_aw_bits_addr,
+                 top->mem_1_aw_bits_id,
+                 top->mem_1_aw_bits_size,
+                 top->mem_1_aw_bits_len,
 
-    top->mem_1_w_valid,
-    top->mem_1_w_bits_strb,
+                 top->mem_1_w_valid,
+                 top->mem_1_w_bits_strb,
 #if MEM_DATA_BITS > 64
-    top->mem_1_w_bits_data,
+                 top->mem_1_w_bits_data,
 #else
-    &top->mem_1_w_bits_data,
+                 &top->mem_1_w_bits_data,
 #endif
-    top->mem_1_w_bits_last,
+                 top->mem_1_w_bits_last,
 
-    top->mem_1_r_ready,
-    top->mem_1_b_ready
-  );
+                 top->mem_1_r_ready,
+                 top->mem_1_b_ready);
 #endif // MEM_HAS_CHANNEL1
 #ifdef MEM_HAS_CHANNEL2
-  slave[2]->tick(
-    top->reset,
-    top->mem_2_ar_valid,
-    top->mem_2_ar_bits_addr,
-    top->mem_2_ar_bits_id,
-    top->mem_2_ar_bits_size,
-    top->mem_2_ar_bits_len,
+  slave[2]->tick(top->reset,
+                 top->mem_2_ar_valid,
+                 top->mem_2_ar_bits_addr,
+                 top->mem_2_ar_bits_id,
+                 top->mem_2_ar_bits_size,
+                 top->mem_2_ar_bits_len,
 
-    top->mem_2_aw_valid,
-    top->mem_2_aw_bits_addr,
-    top->mem_2_aw_bits_id,
-    top->mem_2_aw_bits_size,
-    top->mem_2_aw_bits_len,
+                 top->mem_2_aw_valid,
+                 top->mem_2_aw_bits_addr,
+                 top->mem_2_aw_bits_id,
+                 top->mem_2_aw_bits_size,
+                 top->mem_2_aw_bits_len,
 
-    top->mem_2_w_valid,
-    top->mem_2_w_bits_strb,
+                 top->mem_2_w_valid,
+                 top->mem_2_w_bits_strb,
 #if MEM_DATA_BITS > 64
-    top->mem_2_w_bits_data,
+                 top->mem_2_w_bits_data,
 #else
-    &top->mem_2_w_bits_data,
+                 &top->mem_2_w_bits_data,
 #endif
-    top->mem_2_w_bits_last,
+                 top->mem_2_w_bits_last,
 
-    top->mem_2_r_ready,
-    top->mem_2_b_ready
-  );
+                 top->mem_2_r_ready,
+                 top->mem_2_b_ready);
 #endif // MEM_HAS_CHANNEL2
 #ifdef MEM_HAS_CHANNEL3
-  slave[3]->tick(
-    top->reset,
-    top->mem_3_ar_valid,
-    top->mem_3_ar_bits_addr,
-    top->mem_3_ar_bits_id,
-    top->mem_3_ar_bits_size,
-    top->mem_3_ar_bits_len,
+  slave[3]->tick(top->reset,
+                 top->mem_3_ar_valid,
+                 top->mem_3_ar_bits_addr,
+                 top->mem_3_ar_bits_id,
+                 top->mem_3_ar_bits_size,
+                 top->mem_3_ar_bits_len,
 
-    top->mem_3_aw_valid,
-    top->mem_3_aw_bits_addr,
-    top->mem_3_aw_bits_id,
-    top->mem_3_aw_bits_size,
-    top->mem_3_aw_bits_len,
+                 top->mem_3_aw_valid,
+                 top->mem_3_aw_bits_addr,
+                 top->mem_3_aw_bits_id,
+                 top->mem_3_aw_bits_size,
+                 top->mem_3_aw_bits_len,
 
-    top->mem_3_w_valid,
-    top->mem_3_w_bits_strb,
+                 top->mem_3_w_valid,
+                 top->mem_3_w_bits_strb,
 #if MEM_DATA_BITS > 64
-    top->mem_3_w_bits_data,
+                 top->mem_3_w_bits_data,
 #else
-    &top->mem_3_w_bits_data,
+                 &top->mem_3_w_bits_data,
 #endif
-    top->mem_3_w_bits_last,
+                 top->mem_3_w_bits_last,
 
-    top->mem_3_r_ready,
-    top->mem_3_b_ready
-  );
+                 top->mem_3_r_ready,
+                 top->mem_3_b_ready);
 #endif // MEM_HAS_CHANNEL3
 
   top->clock = 1;
