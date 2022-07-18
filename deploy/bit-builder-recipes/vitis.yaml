@@ -13,4 +13,6 @@
 #     <K/V pairs of args>
 
 bit_builder_type: VitisBitBuilder
-args: null
+args:
+    # REQUIRED: vitis fpga platform
+    device: xilinx_u250_gen3x16_xdma_3_1_202020_1

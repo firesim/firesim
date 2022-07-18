@@ -223,7 +223,7 @@ class F1BitBuilder(BitBuilder):
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
-            vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
+            vivado_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir}").return_code
 
         # put build results in the result-build area
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -358,10 +358,17 @@ class VitisBitBuilder(BitBuilder):
     """Bit builder class that builds a Vitis bitstream from the build config.
 
     Attributes:
+        device: vitis fpga platform string to use for building the bitstream
     """
+    device: str
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
+        self._parse_args()
+
+    def _parse_args(self) -> None:
+        """Parse bitbuilder arguments."""
+        self.device = self.args["device"]
 
     def setup(self) -> None:
         return
@@ -475,7 +482,6 @@ class VitisBitBuilder(BitBuilder):
 
         vitis_result = 0
         with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            # TODO: Put script within Vitis area
             # copy script to the cl_dir and execute
             rsync_cap = rsync_project(
                 local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
@@ -485,7 +491,7 @@ class VitisBitBuilder(BitBuilder):
             rootLogger.debug(rsync_cap)
             rootLogger.debug(rsync_cap.stderr)
 
-            vitis_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
+            vitis_result = run(f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device}").return_code
 
         # put build results in the result-build area
         with StreamLogger('stdout'), StreamLogger('stderr'):
@@ -502,7 +508,7 @@ class VitisBitBuilder(BitBuilder):
             return
 
         hwdb_entry_name = self.build_config.name
-        xclbin_path = cl_dir + "/bitstream/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
+        xclbin_path = cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
 
         results_build_dir = """{}/""".format(local_results_dir)
 
