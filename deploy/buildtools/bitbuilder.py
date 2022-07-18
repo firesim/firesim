@@ -93,10 +93,10 @@ class F1BitBuilder(BitBuilder):
     def _parse_args(self) -> None:
         """Parse bitbuilder arguments."""
         self.s3_bucketname = self.args["s3_bucket_name"]
-        if self.args["append_userid_region"]:
-            self.s3_bucketname += "-" + get_aws_userid() + "-" + get_aws_region()
-
         if valid_aws_configure_creds():
+            if self.args["append_userid_region"]:
+                self.s3_bucketname += "-" + get_aws_userid() + "-" + get_aws_region()
+
             aws_resource_names_dict = aws_resource_names()
             if aws_resource_names_dict['s3bucketname'] is not None:
                 # in tutorial mode, special s3 bucket name
@@ -223,11 +223,11 @@ class F1BitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap.stderr)
 
         # get the frequency and strategy
-        fpga_frequency = self.build_config.get_f1_frequency()
-        build_strategy = self.build_config.get_f1_strategy()
+        fpga_frequency = self.build_config.get_frequency()
+        build_strategy = self.build_config.get_strategy().name
 
         with settings(warn_only=True):
-            vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir} {fpga_frequency} {build_strategy}").return_code
+            vivado_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
 
         # put build results in the result-build area
 
@@ -362,10 +362,17 @@ class VitisBitBuilder(BitBuilder):
     """Bit builder class that builds a Vitis bitstream from the build config.
 
     Attributes:
+        device: vitis fpga platform string to use for building the bitstream
     """
+    device: str
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
+        self._parse_args()
+
+    def _parse_args(self) -> None:
+        """Parse bitbuilder arguments."""
+        self.device = self.args["device"]
 
     def setup(self) -> None:
         return
@@ -470,12 +477,6 @@ class VitisBitBuilder(BitBuilder):
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
-        # TODO: Does this still apply or is this done in the Makefile
-        ## copy over generated RTL into local CL_DIR before remote
-        #
-        #run("""mkdir -p {}""".format(local_results_dir))
-        #run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(cl_dir, local_results_dir))
-
         vitis_result = 0
         # TODO: Put script within Vitis area
         # copy script to the cl_dir and execute
@@ -487,8 +488,11 @@ class VitisBitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
+        fpga_frequency = self.build_config.get_frequency()
+        build_strategy = self.build_config.get_strategy().name
+
         with settings(warn_only=True):
-            vitis_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
+            vitis_result = run(f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
 
         # put build results in the result-build area
 
@@ -505,7 +509,7 @@ class VitisBitBuilder(BitBuilder):
             return False
 
         hwdb_entry_name = self.build_config.name
-        xclbin_path = cl_dir + "/bitstream/build_dir.xilinx_u250_gen3x16_xdma_3_1_202020_1/firesim.xclbin"
+        xclbin_path = cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
 
         results_build_dir = """{}/""".format(local_results_dir)
 
