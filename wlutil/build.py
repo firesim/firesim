@@ -11,7 +11,7 @@ from . import launch as wllaunch
 taskLoader = None
 
 
-class doitLoader(doit.cmd_base.TaskLoader):
+class doitLoader(doit.cmd_base.TaskLoader2):
     workloads = []
 
     # Idempotent add (no duplicates)
@@ -19,9 +19,13 @@ class doitLoader(doit.cmd_base.TaskLoader):
         if not any(t['name'] == tsk['name'] for t in self.workloads):
             self.workloads.append(tsk)
 
-    def load_tasks(self, cmd, opt_values, pos_args):
+    def load_doit_config(self):
+        # return {'run': {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}}
+        return {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}
+
+    def load_tasks(self, cmd, pos_args):
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
-        return task_list, {}
+        return task_list
 
 
 def buildBusybox():
@@ -348,8 +352,7 @@ def buildWorkload(cfgName, cfgs, buildBin=True, buildImg=True):
             if 'img' in jCfg and buildImg and not jCfg['img-hardcoded']:
                 imgList.append(jCfg['img'])
 
-    opts = {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}
-    doitHandle = doit.doit_cmd.DoitMain(taskLoader, extra_config={'run': opts})
+    doitHandle = doit.doit_cmd.DoitMain(taskLoader)
 
     # The order isn't critical here, we should have defined the dependencies correctly in loader
     return doitHandle.run([str(p) for p in binList + imgList])

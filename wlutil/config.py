@@ -390,7 +390,7 @@ def inheritFirmwareOpts(config, baseCfg):
             config['firmware']['source'] = config['firmware']['opensbi-src']
 
 
-class Config(collections.MutableMapping):
+class Config(collections.abc.MutableMapping):
     # Configs are assumed to be partially initialized until this is explicitly
     # set.
     initialized = False
@@ -612,7 +612,7 @@ def findConfig(targetName, searchPaths):
 
 
 # The configuration of sw-manager is derived from the *.json files in workloads/
-class ConfigManager(collections.MutableMapping):
+class ConfigManager(collections.abc.MutableMapping):
     # This contains all currently loaded configs, indexed by config file path
     cfgs = {}
 

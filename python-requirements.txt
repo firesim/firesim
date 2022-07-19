@@ -1,5 +1,5 @@
 psutil
-doit
+doit >= 0.34
 gitpython
 humanfriendly
 PyYAML
