@@ -17,7 +17,7 @@ import logger.{Logger, LogLevel}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
-import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule}
+import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule, PrintBridgeParameters, PrintPort}
 import midas.targetutils.{SynthPrintfAnnotation, GlobalResetConditionSink}
 
 private[passes] class PrintSynthesis extends firrtl.Transform {
@@ -124,8 +124,13 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
       val printFCCAs = oAnnos.flatMap({ case BridgeTopWiringOutputAnnotation(_,_,oPortRT,_,oClockRT) =>
         genFCCAsFromPort(portMap(oPortRT), oPortRT, oClockRT) })
 
-      val portTuples = oAnnos.map({ case BridgeTopWiringOutputAnnotation(srcRT,_,oPortRT,_,_) =>
-        portMap(oPortRT) -> formatStringMap(srcRT) })
+      val portTuples = oAnnos
+          .map({ case BridgeTopWiringOutputAnnotation(srcRT,_,oPortRT,_,_) =>
+            val formatString = formatStringMap(srcRT)
+            val firrtl.ir.Port(_, portName, _, ty @ firrtl.ir.BundleType(_)) = portMap(oPortRT)
+            val fields = ty.fields.map({ case f => f.name -> f.tpe.serialize})
+            PrintPort(portName, fields, formatString)
+          })
 
       /**
         * For the global reset condition, add an additional boolean channel. We
@@ -147,7 +152,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
       val fccaAnnos = resetFCCA +: printFCCAs
       val bridgeAnno = BridgeIOAnnotation(
         target = ModuleTarget(c.main, c.main).ref(topWiringPrefix.stripSuffix("_")),
-        widget = (p: Parameters) => new PrintBridgeModule(resetPortName, portTuples)(p),
+        widget = (p: Parameters) => new PrintBridgeModule(PrintBridgeParameters(resetPortName, portTuples))(p),
         channelNames = fccaAnnos.map(_.globalName)
       )
       (resetConditionAnno +: bridgeAnno +: fccaAnnos, resetPort, resetPortConn)
