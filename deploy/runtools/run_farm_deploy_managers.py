@@ -676,11 +676,11 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         hwcfg = serv.get_resolved_server_hardware_config()
         if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
             remote_home_dir = self.parent_node.get_sim_dir()
-            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
             hwcfg.local_xclbin = './local.xclbin'
 
-            def get_xclbin(xclbin_uri:str, xclbin_lpath:PathLike) -> None:
-                # TODO instead of blowing up if the file exists, consider using fsspec
+            def get_xclbin(xclbin_uri: str, xclbin_lpath: PathLike) -> None:
+                # TODO consider using fsspec
                 # filecache https://filesystem-spec.readthedocs.io/en/latest/features.html#caching-files-locally
                 # so that multiple slots using the same xclbin only grab it once and
                 # we only download it if it has changed at the source.
@@ -690,7 +690,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
                 assert not lpath.exists, f"{lpath.resolve(strict=False)} already exists, refusing to overwrite"
                 rootLogger.debug("Downloading '%s' to '%s'", xclbin_uri, )
                 fs, rpath = url_to_fs(xclbin_uri)
-                fs.get_file(rpath, fspath(lpath)) # fsspec deals in strings, not PathLike
+                fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
 
             with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
                 run(get_xclbin, hwcfg.xclbin, hwcfg.local_xclbin)
