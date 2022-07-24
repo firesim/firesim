@@ -679,8 +679,9 @@ class VitisInstanceDeployManager(InstanceDeployManager):
                 # HOWEVER, 'filecache' isn't thread/process safe and I'm not sure whether
                 # this runs in @parallel for fabric
                 lpath = Path(xclbin_lpath)
-                assert not lpath.exists, f"{lpath.resolve(strict=False)} already exists, refusing to overwrite"
-                rootLogger.debug("Downloading '%s' to '%s'", xclbin_uri, )
+                if lpath.exists:
+                    rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
+                rootLogger.debug(f"Downloading '{xclbin_uri}' to '{lpath}'")
                 fs, rpath = url_to_fs(xclbin_uri)
                 fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
 
