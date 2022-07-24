@@ -167,7 +167,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
     def copy_sim_slot_infrastructure(self, slotno: int) -> None:
         """ copy all the simulation infrastructure to the remote node. """
         if self.instance_assigned_simulations():
-            assert slotno < len(self.parent_node.sim_slots)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             serv = self.parent_node.sim_slots[slotno]
 
             self.instance_logger(f"""Copying {self.sim_type_message} simulation infrastructure for slot: {slotno}.""")
@@ -230,7 +230,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
-            assert slotno < len(self.parent_node.sim_slots)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
             # make the local job results dir for this sim slot
@@ -259,7 +259,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """ kill the simulation in slot slotno. """
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Killing {self.sim_type_message} simulation for slot: {slotno}.""")
-            assert slotno < len(self.parent_node.sim_slots)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
             with warn_only():
                 if has_sudo():
@@ -671,7 +671,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
     def localize_xclbin(self, slotno: int) -> None:
         """ download xclbin URI to remote node. """
-        assert slotno < len(self.parent_node.sim_slots)
+        assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
         serv = self.parent_node.sim_slots[slotno]
         hwcfg = serv.get_resolved_server_hardware_config()
         if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
