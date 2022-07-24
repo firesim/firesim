@@ -11,7 +11,7 @@ from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
 from os import PathLike, fspath
-from fsspec.core import url_to_fs
+from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
 
 from runtools.utils import has_sudo
@@ -674,6 +674,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
         serv = self.parent_node.sim_slots[slotno]
         hwcfg = serv.get_resolved_server_hardware_config()
+        assert hwcfg.xclbin is not None
         if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
             remote_home_dir = self.parent_node.get_sim_dir()
             remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
