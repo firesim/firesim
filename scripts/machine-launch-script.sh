@@ -231,6 +231,7 @@ set -o pipefail
         azure-identity==1.5.0 \
         azure-mgmt-compute \
         azure-mgmt-network \
+        fsspec \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
