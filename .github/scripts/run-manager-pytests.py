@@ -8,6 +8,7 @@ def run_manager_pytests():
     """ Runs all manager pytests """
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
+        run("git rev-parse HEAD")
         run("cd deploy && python3 -m pytest")
 
 if __name__ == "__main__":
