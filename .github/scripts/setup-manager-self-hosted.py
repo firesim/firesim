@@ -54,7 +54,7 @@ def initialize_manager_hosted():
 
                 # get registration token from API
                 headers = {'Authorization': "token {}".format(ci_personal_api_token.strip())}
-                r = requests.post("https://api.github.com/repos/firesim/firesim/actions/runners/registration-token", headers=headers)
+                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=headers)
                 if r.status_code != 201:
                     raise Exception("HTTPS error: {} {}. Retrying.".format(r.status_code, r.json()))
 
