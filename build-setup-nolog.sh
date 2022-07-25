@@ -141,10 +141,10 @@ if [ "$IS_LIBRARY" = false ]; then
     git submodule update --init target-design/chipyard
     cd $RDIR/target-design/chipyard
 
-    # Prevent initialization of Chipyard's FireSim submodule so that
-    # fuzzy-finders, and IDEs don't get confused by source duplication.
-    git config submodule.sims/firesim.update none
     ./scripts/init-submodules-no-riscv-tools.sh --skip-validate
+    # Deinitialize Chipyard's FireSim submodule so that fuzzy finders, IDEs,
+    # etc., don't get confused by source duplication.
+    git submodule deinit sims/firesim
     cd $RDIR
 
     # Configure firemarshal to know where our firesim installation is.
