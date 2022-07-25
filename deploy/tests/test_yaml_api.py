@@ -129,11 +129,13 @@ class RunTmpYamlSet(TmpYamlSet):
 
     Attributes:
     """
+    recipes: TmpYaml
     hwdb: TmpYaml
     run: TmpYaml
     non_existent_file: Path
 
     def write(self):
+        self.recipes.write()
         self.hwdb.write()
         self.run.write()
 
@@ -144,7 +146,7 @@ class RunTmpYamlSet(TmpYamlSet):
         # whether `firesim managerinit` has been run
         # https://github.com/firesim/firesim/pull/1145#issuecomment-1194392085
         return ['-b', fspath(self.non_existent_file),
-                '-r', fspath(self.non_existent_file),
+                '-r', fspath(self.recipes.path),
                 '-a', fspath(self.hwdb.path),
                 '-c', fspath(self.run.path)]
 
@@ -187,8 +189,8 @@ def scy_runtime(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_runtime.yaml')
 
 @pytest.fixture()
-def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml, non_existent_file: Path) -> RunTmpYamlSet:
-    return RunTmpYamlSet(scy_hwdb, scy_runtime, non_existent_file)
+def run_yamls(scy_build_recipes: TmpYaml, scy_hwdb: TmpYaml, scy_runtime: TmpYaml, non_existent_file: Path) -> RunTmpYamlSet:
+    return RunTmpYamlSet(scy_build_recipes, scy_hwdb, scy_runtime, non_existent_file)
 
 @pytest.fixture()
 def firesim_parse_args():
