@@ -342,8 +342,9 @@ class FireSimServerNode(FireSimNode):
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
             if sudo:
                 run(f"sudo mount -o loop {img} {mnt}")
+                run(f"sudo chown -R $(whoami) {mnt}")
             else:
-                run(f"""screen -S guestmount-wait -dm bash -c "guestmount --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
+                run(f"""screen -S guestmount-wait -dm bash -c "guestmount -o uid=$(id -u) -o gid=$(id -g) --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
                 try:
                     run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""", timeout=60*10)
                 except CommandTimeout:
@@ -380,7 +381,6 @@ class FireSimServerNode(FireSimNode):
                 with warn_only():
                     # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
                     run("""{} chattr -i {}/etc/sysconfig/nfs""".format("sudo" if sudo else "", mountpoint))
-                run("""{} chown -R $(whoami) {}""".format("sudo" if sudo else "", mountpoint))
 
             ## copy back files from inside the rootfs
             with warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
