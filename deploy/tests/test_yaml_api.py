@@ -175,7 +175,7 @@ def scy_build_recipes(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_build_recipes.yaml')
 
 @pytest.fixture()
-def build_yamls(scy_build, scy_build_recipes, scy_hwdb, non_existent_file) -> BuildTmpYamlSet:
+def build_yamls(scy_build: TmpYaml, scy_build_recipes: TmpYaml, scy_hwdb: TmpYaml, non_existent_file: Path) -> BuildTmpYamlSet:
     return BuildTmpYamlSet(scy_build, scy_build_recipes, scy_hwdb, non_existent_file)
 
 @pytest.fixture()
@@ -187,8 +187,8 @@ def scy_runtime(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_runtime.yaml')
 
 @pytest.fixture()
-def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml) -> RunTmpYamlSet:
-    return RunTmpYamlSet(scy_hwdb, scy_runtime)
+def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml, non_existent_file: Path) -> RunTmpYamlSet:
+    return RunTmpYamlSet(scy_hwdb, scy_runtime, non_existent_file)
 
 @pytest.fixture()
 def firesim_parse_args():
