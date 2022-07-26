@@ -88,7 +88,7 @@ jobs:
       - name: Install FireSim pem
         run: ./.github/scripts/install-firesim-pem.py
       - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
-        run: ./.github/scripts/initialize-manager.py
+        run: ./.github/scripts/initialize-repo.py
       - name: Run AWS configure
         run: ./.github/scripts/run-aws-configure.py
       - name: Setup Workflow monitor

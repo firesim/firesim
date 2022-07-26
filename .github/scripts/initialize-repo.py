@@ -6,7 +6,7 @@ from common import manager_home_dir, manager_fsim_dir, manager_marshal_dir, set_
 # This is expected to be launch from the ci container
 from ci_variables import *
 
-def initialize_manager():
+def initialize_repo():
     """ Initializes firesim repo: clones, runs build-setup, and intializes marshal submodules """
 
     with cd(manager_home_dir):
@@ -25,4 +25,4 @@ def initialize_manager():
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
-    execute(initialize_manager, hosts=["localhost"])
+    execute(initialize_repo, hosts=["localhost"])
