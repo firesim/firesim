@@ -103,7 +103,7 @@ def deregister_runner_if_exists(gh_token, runner_name):
     runner_list = res_dict["runners"]
     for runner in runner_list:
         if runner_name in runner["name"]:
-            r = requests.delete("{}/{}".format(gha_runners_api_url, runner["id"]), headers=headers)
+            r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=headers)
             if r.status_code != 204:
                 # if couldn't delete then just exit
                 return
