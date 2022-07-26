@@ -3,16 +3,15 @@ import boto3
 import os
 from fabric.api import *
 import requests
-from local_flags import RUN_LOCAL, local_fsim_dir
-from ci_variables import ci_firesim_dir
+from ci_variables import ci_firesim_dir, local_fsim_dir, ci_gha_api_url, ci_repo_name
 
 # Reuse manager utilities
+# Note: ci_firesim_dir must not be used here because the persistent clone my not be initialized yet.
 sys.path.append(local_fsim_dir + "/deploy/awstools")
 from awstools import get_instances_with_filter
 
 # Github URL related constants
-gh_repo_path        = "firesim/firesim"
-gha_api_url         = f"https://api.github.com/repos/{gh_repo_path}/actions"
+gha_api_url         = f"{ci_gha_api_url}/repos/{ci_repo_name}/actions"
 gha_runners_api_url = f"{gha_api_url}/runners"
 gha_runs_api_url    = f"{gha_api_url}/runs"
 
