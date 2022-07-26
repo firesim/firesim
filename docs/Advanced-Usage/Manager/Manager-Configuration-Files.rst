@@ -537,8 +537,8 @@ one of the many URI protocols we do not test.
 Likewise, individual URI protocols will have their own requirements for specifying credentials.
 Documentation supplying credentials is provided by the individual protocol implementation.  For
 example:
-  * `s3fs for AWS S3 <https://s3fs.readthedocs.io/en/latest/#credentials>`_
-  * `gcfs for Google Cloud Services https://gcsfs.readthedocs.io/en/latest/#credentials>`_
+* `s3fs for AWS S3 <https://s3fs.readthedocs.io/en/latest/#credentials>`_
+* `gcfs for Google Cloud Services <https://gcsfs.readthedocs.io/en/latest/#credentials>`_
 
 For SSH, add any required keys to your ssh-agent.
 
