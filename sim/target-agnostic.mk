@@ -277,31 +277,31 @@ $(u250_stamp): $(shell find $(board_dir)/cl_firesim -name '*')
 	cp -rf $(board_dir)/cl_firesim -T $(@D)
 	touch $@
 
-$(u250_repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
+$(u250_repo_state): $(simulator_verilog) $(u250_stamp)
 	mkdir -p $(@D)
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $@
 
-$(u250_firesim_top): $(simulator_verilog) $(fpga_work_dir)/stamp
+$(u250_firesim_top): $(simulator_verilog) $(u250_stamp)
 	mkdir -p $(@D)
 	cp -f $< $@
 
 # Unused since these constraints are not yet applicable
-$(u250_firesim_synth_xdc): $(simulator_verilog) $(fpga_work_dir)/stamp
+$(u250_firesim_synth_xdc): $(simulator_verilog) $(u250_stamp)
 	mkdir -p $(@D)
 	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).synthesis.xdc $@
 	sed -i "s/ firesim_top\// design_1_i\/firesim_wrapper_0\/inst\/firesim_top\//g" $@
 
 # Unused since these constraints are not yet applicable
-$(u250_firesim_impl_xdc): $(simulator_verilog) $(fpga_work_dir)/stamp
+$(u250_firesim_impl_xdc): $(simulator_verilog) $(u250_stamp)
 	mkdir -p $(@D)
 	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).implementation.xdc $@
 	sed -i "s/ WRAPPER_INST\/CL\/firesim_top\// design_1_i\/firesim_wrapper_0\/inst\/firesim_top\//g" $@
 
-$(u250_firesim_env): $(simulator_verilog) $(fpga_work_dir)/stamp
+$(u250_firesim_env): $(simulator_verilog) $(u250_stamp)
 	mkdir -p $(@D)
 	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).env.tcl $@
 
-$(u250_firesim_defines): $(simulator_verilog) $(fpga_work_dir)/stamp
+$(u250_firesim_defines): $(simulator_verilog) $(u250_stamp)
 	mkdir -p $(@D)
 	cp -f $(GENERATED_DIR)/$(BASE_FILE_NAME).defines.vh $@
 	echo "\`define ABSTRACTCLOCKGATE" >> $@
