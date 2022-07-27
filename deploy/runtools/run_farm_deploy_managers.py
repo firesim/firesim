@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 rootLogger = logging.getLogger()
 
+# from  https://github.com/pandas-dev/pandas/blob/96b036cbcf7db5d3ba875aac28c4f6a678214bfb/pandas/io/common.py#L73
 _RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
 
 class NBDTracker:
