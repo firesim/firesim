@@ -119,6 +119,10 @@
                         <a href="AssertBridgeModule.html" title="">AssertBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="AssertBridgeParameters.html" title=""></a>
+                        <a href="AssertBridgeParameters.html" title="">AssertBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="AssertBridgeRecord.html" title=""></a>
                         <a href="AssertBridgeRecord.html" title="">AssertBridgeRecord</a>
                       </li><li class="current-entities indented2">
@@ -133,6 +137,10 @@
                         <span class="separator"></span>
                         <a class="trait" href="AutoCounterConsts.html" title=""></a>
                         <a href="AutoCounterConsts.html" title="">AutoCounterConsts</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="AutoCounterParameters.html" title=""></a>
+                        <a href="AutoCounterParameters.html" title="">AutoCounterParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="BRAMFlowQueue.html" title=""></a>
@@ -193,6 +201,10 @@
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeModule.html" title="The host-side implementation."></a>
                         <a href="ClockBridgeModule.html" title="The host-side implementation.">ClockBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ClockParameters.html" title="Parameters to construct a clock bridge from."></a>
+                        <a href="ClockParameters.html" title="Parameters to construct a clock bridge from.">ClockParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockTokenVector.html" title="The host-land clock bridge interface."></a>
@@ -369,6 +381,14 @@
                         <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PrintBridgeParameters.html" title=""></a>
+                        <a href="PrintBridgeParameters.html" title="">PrintBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PrintPort.html" title=""></a>
+                        <a href="PrintPort.html" title="">PrintPort</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="PrintRecord.html" title=""></a>
@@ -604,9 +624,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.AutoCounterBridgeModule#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(eventMetadata:Seq[midas.widgets.EventMetadata],triggerName:String,resetPortName:String)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule"></a><a id="&lt;init&gt;:AutoCounterBridgeModule"></a>
+      <a id="&lt;init&gt;(key:midas.widgets.AutoCounterParameters)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule"></a><a id="&lt;init&gt;:AutoCounterBridgeModule"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/AutoCounterBridgeModule.html#&lt;init&gt;(eventMetadata:Seq[midas.widgets.EventMetadata],triggerName:String,resetPortName:String)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule" title="Permalink">
+      <a href="../../midas/widgets/AutoCounterBridgeModule.html#&lt;init&gt;(key:midas.widgets.AutoCounterParameters)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.AutoCounterBridgeModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -615,7 +635,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AutoCounterBridgeModule</span><span class="params">(<span name="eventMetadata">eventMetadata: <span class="extype" name="scala.Seq">Seq</span>[<a href="EventMetadata.html" class="extype" name="midas.widgets.EventMetadata">EventMetadata</a>]</span>, <span name="triggerName">triggerName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="resetPortName">resetPortName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
+        <span class="name">AutoCounterBridgeModule</span><span class="params">(<span name="key">key: <a href="AutoCounterParameters.html" class="extype" name="midas.widgets.AutoCounterParameters">AutoCounterParameters</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
       </span>
       
       
@@ -879,6 +899,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.widgets.AutoCounterBridgeModule#eventMetadata" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="eventMetadata:Seq[midas.widgets.EventMetadata]"></a><a id="eventMetadata:Seq[EventMetadata]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/AutoCounterBridgeModule.html#eventMetadata:Seq[midas.widgets.EventMetadata]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eventMetadata</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="EventMetadata.html" class="extype" name="midas.widgets.EventMetadata">EventMetadata</a>]</span>
+      </span>
+      
+      
     </li><li name="midas.widgets.Widget#getCRAddr" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getCRAddr(name:String):Int"></a><a id="getCRAddr(String):Int"></a>
       <span class="permalink">
@@ -1363,6 +1399,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
+    </li><li name="midas.widgets.AutoCounterBridgeModule#resetPortName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resetPortName:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/AutoCounterBridgeModule.html#resetPortName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetPortName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="midas.widgets.AutoCounterConsts#sanitizeDescriptionForCSV" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sanitizeDescriptionForCSV(description:String):String"></a><a id="sanitizeDescriptionForCSV(String):String"></a>
       <span class="permalink">
@@ -1475,6 +1527,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.widgets.AutoCounterBridgeModule#triggerName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="triggerName:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/AutoCounterBridgeModule.html#triggerName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">triggerName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="midas.widgets.Widget#wId" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wId:Int"></a>
       <span class="permalink">

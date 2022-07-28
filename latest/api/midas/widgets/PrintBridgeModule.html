@@ -119,6 +119,10 @@
                         <a href="AssertBridgeModule.html" title="">AssertBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="AssertBridgeParameters.html" title=""></a>
+                        <a href="AssertBridgeParameters.html" title="">AssertBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="AssertBridgeRecord.html" title=""></a>
                         <a href="AssertBridgeRecord.html" title="">AssertBridgeRecord</a>
                       </li><li class="current-entities indented2">
@@ -133,6 +137,10 @@
                         <span class="separator"></span>
                         <a class="trait" href="AutoCounterConsts.html" title=""></a>
                         <a href="AutoCounterConsts.html" title="">AutoCounterConsts</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="AutoCounterParameters.html" title=""></a>
+                        <a href="AutoCounterParameters.html" title="">AutoCounterParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="BRAMFlowQueue.html" title=""></a>
@@ -193,6 +201,10 @@
                         <span class="separator"></span>
                         <a class="class" href="ClockBridgeModule.html" title="The host-side implementation."></a>
                         <a href="ClockBridgeModule.html" title="The host-side implementation.">ClockBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ClockParameters.html" title="Parameters to construct a clock bridge from."></a>
+                        <a href="ClockParameters.html" title="Parameters to construct a clock bridge from.">ClockParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockTokenVector.html" title="The host-land clock bridge interface."></a>
@@ -369,6 +381,14 @@
                         <span class="separator"></span>
                         <a class="class" href="" title=""></a>
                         <a href="" title="">PrintBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PrintBridgeParameters.html" title=""></a>
+                        <a href="PrintBridgeParameters.html" title="">PrintBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PrintPort.html" title=""></a>
+                        <a href="PrintPort.html" title="">PrintPort</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="PrintRecord.html" title=""></a>
@@ -604,9 +624,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.PrintBridgeModule#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(resetPortName:String,printPorts:Seq[(firrtl.ir.Port,String)])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.PrintBridgeModule"></a><a id="&lt;init&gt;:PrintBridgeModule"></a>
+      <a id="&lt;init&gt;(key:midas.widgets.PrintBridgeParameters)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.PrintBridgeModule"></a><a id="&lt;init&gt;:PrintBridgeModule"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/PrintBridgeModule.html#&lt;init&gt;(resetPortName:String,printPorts:Seq[(firrtl.ir.Port,String)])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.PrintBridgeModule" title="Permalink">
+      <a href="../../midas/widgets/PrintBridgeModule.html#&lt;init&gt;(key:midas.widgets.PrintBridgeParameters)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.PrintBridgeModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -615,7 +635,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PrintBridgeModule</span><span class="params">(<span name="resetPortName">resetPortName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="printPorts">printPorts: <span class="extype" name="scala.Seq">Seq</span>[(<span class="extype" name="firrtl.ir.Port">Port</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
+        <span class="name">PrintBridgeModule</span><span class="params">(<span name="key">key: <a href="PrintBridgeParameters.html" class="extype" name="midas.widgets.PrintBridgeParameters">PrintBridgeParameters</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
       </span>
       
       
@@ -1347,6 +1367,38 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
+    </li><li name="midas.widgets.PrintBridgeModule#printPorts" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="printPorts:Seq[(firrtl.ir.Port,String)]"></a><a id="printPorts:Seq[(Port,String)]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PrintBridgeModule.html#printPorts:Seq[(firrtl.ir.Port,String)]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">printPorts</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/Seq.html#scala.collection.Seq" class="extype" name="scala.collection.Seq">Seq</a>[(<span class="extype" name="firrtl.ir.Port">Port</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.PrintBridgeModule#resetPortName" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resetPortName:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PrintBridgeModule.html#resetPortName:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetPortName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#shouldBeInlined" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="shouldBeInlined:Boolean"></a>
       <span class="permalink">

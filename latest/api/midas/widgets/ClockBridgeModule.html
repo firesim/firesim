@@ -119,6 +119,10 @@
                         <a href="AssertBridgeModule.html" title="">AssertBridgeModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="class" href="AssertBridgeParameters.html" title=""></a>
+                        <a href="AssertBridgeParameters.html" title="">AssertBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="AssertBridgeRecord.html" title=""></a>
                         <a href="AssertBridgeRecord.html" title="">AssertBridgeRecord</a>
                       </li><li class="current-entities indented2">
@@ -133,6 +137,10 @@
                         <span class="separator"></span>
                         <a class="trait" href="AutoCounterConsts.html" title=""></a>
                         <a href="AutoCounterConsts.html" title="">AutoCounterConsts</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="AutoCounterParameters.html" title=""></a>
+                        <a href="AutoCounterParameters.html" title="">AutoCounterParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="BRAMFlowQueue.html" title=""></a>
@@ -193,6 +201,10 @@
                         <span class="separator"></span>
                         <a class="class" href="" title="The host-side implementation."></a>
                         <a href="" title="The host-side implementation.">ClockBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="ClockParameters.html" title="Parameters to construct a clock bridge from."></a>
+                        <a href="ClockParameters.html" title="Parameters to construct a clock bridge from.">ClockParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="ClockTokenVector.html" title="The host-land clock bridge interface."></a>
@@ -369,6 +381,14 @@
                         <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PrintBridgeParameters.html" title=""></a>
+                        <a href="PrintBridgeParameters.html" title="">PrintBridgeParameters</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PrintPort.html" title=""></a>
+                        <a href="PrintPort.html" title="">PrintPort</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="PrintRecord.html" title=""></a>
@@ -608,9 +628,9 @@ ahead of the rest of the simulation.</p><p>Target and host time measurements pro
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="midas.widgets.ClockBridgeModule#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(clockInfo:Seq[midas.widgets.RationalClock])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.ClockBridgeModule"></a><a id="&lt;init&gt;:ClockBridgeModule"></a>
+      <a id="&lt;init&gt;(params:midas.widgets.ClockParameters)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.ClockBridgeModule"></a><a id="&lt;init&gt;:ClockBridgeModule"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/ClockBridgeModule.html#&lt;init&gt;(clockInfo:Seq[midas.widgets.RationalClock])(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.ClockBridgeModule" title="Permalink">
+      <a href="../../midas/widgets/ClockBridgeModule.html#&lt;init&gt;(params:midas.widgets.ClockParameters)(implicitp:freechips.rocketchip.config.Parameters):midas.widgets.ClockBridgeModule" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -619,10 +639,10 @@ ahead of the rest of the simulation.</p><p>Target and host time measurements pro
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ClockBridgeModule</span><span class="params">(<span name="clockInfo">clockInfo: <span class="extype" name="scala.Seq">Seq</span>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
+        <span class="name">ClockBridgeModule</span><span class="params">(<span name="params">params: <a href="ClockParameters.html" class="extype" name="midas.widgets.ClockParameters">ClockParameters</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="p">p: <span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span></span>)</span>
       </span>
       
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">clockInfo</dt><dd class="cmt"><p>Clock frequency information for each target clock</p></dd></dl></div>
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">params</dt><dd class="cmt"><p>Structure describing the clocks of the clock bridge.</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -782,6 +802,22 @@ To improve simulator FMR, this module always produces non-zero clock tokens
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyModule</dd></dl></div>
+    </li><li name="midas.widgets.ClockBridgeModule#clockInfo" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="clockInfo:Seq[midas.widgets.RationalClock]"></a><a id="clockInfo:Seq[RationalClock]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/ClockBridgeModule.html#clockInfo:Seq[midas.widgets.RationalClock]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clockInfo</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
