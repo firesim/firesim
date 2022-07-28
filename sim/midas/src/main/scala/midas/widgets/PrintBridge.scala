@@ -52,11 +52,24 @@ class PrintRecordBag(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, Str
   def hasEnabledPrint(): Bool = printRecords.map(_._2.enable).foldLeft(false.B)(_ || _) && !underGlobalReset
 }
 
-class PrintBridgeModule(resetPortName: String, printPorts: Seq[(firrtl.ir.Port, String)])(implicit p: Parameters)
+case class PrintPort(name: String, ports: Seq[(String, String)], format: String)
+
+case class PrintBridgeParameters(resetPortName: String, printPorts: Seq[PrintPort])
+
+class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[PrintRecordBag]]()(p) with StreamToHostCPU {
 
   //  The fewest number of BRAMS that produces a memory that is 512b wide.(8 X 32Kb BRAM)
   override val toHostCPUQueueDepth = 6144 // 12 Ultrascale+ URAMs
+
+  val resetPortName = key.resetPortName
+  val printPorts = key.printPorts.map({
+    case PrintPort(printName, ports, format) => {
+      val fields = firrtl.ir.BundleType(ports.map({ case (name, ty) => firrtl.ir.Field(name, firrtl.ir.Default, firrtl.Parser.parseType(ty)) }))
+      val port = firrtl.ir.Port(firrtl.ir.NoInfo, printName, firrtl.ir.Output, fields)
+      (port, format)
+    }
+  })
 
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())

@@ -62,11 +62,15 @@ class AutoCounterBundle(
   override def cloneType = new AutoCounterBundle(eventMetadata, triggerName, resetPortName).asInstanceOf[this.type]
 }
 
-class AutoCounterBridgeModule(
-    eventMetadata: Seq[EventMetadata],
-    triggerName: String,
-    resetPortName: String)(implicit p: Parameters)
+case class AutoCounterParameters(eventMetadata: Seq[EventMetadata], triggerName: String, resetPortName: String)
+
+class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AutoCounterBundle]]()(p) with AutoCounterConsts {
+
+  val eventMetadata = key.eventMetadata
+  val triggerName = key.triggerName
+  val resetPortName = key.resetPortName
+
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
     val hPort = IO(HostPort(new AutoCounterBundle(eventMetadata, triggerName, resetPortName)))
