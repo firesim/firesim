@@ -3,17 +3,23 @@ import boto3
 import os
 from fabric.api import *
 import requests
-from local_flags import RUN_LOCAL, local_fsim_dir
+from ci_variables import ci_firesim_dir, local_fsim_dir, ci_gha_api_url, ci_repo_name
 
 # Reuse manager utilities
+# Note: ci_firesim_dir must not be used here because the persistent clone my not be initialized yet.
 sys.path.append(local_fsim_dir + "/deploy/awstools")
 from awstools import get_instances_with_filter
+
+# Github URL related constants
+gha_api_url         = f"{ci_gha_api_url}/repos/{ci_repo_name}/actions"
+gha_runners_api_url = f"{gha_api_url}/runners"
+gha_runs_api_url    = f"{gha_api_url}/runs"
 
 # Remote paths
 manager_home_dir = "/home/centos"
 manager_fsim_pem = manager_home_dir + "/firesim.pem"
-manager_fsim_dir = manager_home_dir + "/firesim" if not RUN_LOCAL else local_fsim_dir
-manager_marshal_dir = manager_fsim_dir + "/target-design/chipyard/software/firemarshal"
+manager_fsim_dir = ci_firesim_dir
+manager_marshal_dir = manager_fsim_dir + "/sw/firesim-software"
 manager_ci_dir = manager_fsim_dir + "/.github/scripts"
 
 # Common fabric settings
@@ -87,7 +93,7 @@ def deregister_runner_if_exists(gh_token, runner_name):
     headers = {'Authorization': "token {}".format(gh_token.strip())}
 
     # Check if exists before deregistering
-    r = requests.get("https://api.github.com/repos/firesim/firesim/actions/runners", headers=headers)
+    r = requests.get(gha_runners_api_url, headers=headers)
     if r.status_code != 200:
         # if couldn't delete then just exit
         return
@@ -96,7 +102,7 @@ def deregister_runner_if_exists(gh_token, runner_name):
     runner_list = res_dict["runners"]
     for runner in runner_list:
         if runner_name in runner["name"]:
-            r = requests.delete("https://api.github.com/repos/firesim/firesim/actions/runners/{}".format(runner["id"]), headers=headers)
+            r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=headers)
             if r.status_code != 204:
                 # if couldn't delete then just exit
                 return

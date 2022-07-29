@@ -1,0 +1,13 @@
+name: setup-workflow-monitor
+description: "Sets up a daemon to track when the manager should be torn down."
+
+inputs:
+  max-runtime-hours:
+    description: "Max runtime hours"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - run: .github/scripts/setup-workflow-monitor.py ${{ inputs.max-runtime-hours }}
+      shell: bash
