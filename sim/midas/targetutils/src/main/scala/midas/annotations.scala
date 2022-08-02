@@ -44,48 +44,42 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
 }
 
 private [midas] case class SynthPrintfAnnotation(
-    args: Seq[Seq[ReferenceTarget]], // These aren't currently used; here for future proofing
-    mod: ModuleTarget,
-    format: String,
-    name: Option[String]) extends firrtl.annotations.Annotation {
+    target: ReferenceTarget
+  ) extends firrtl.annotations.SingleTargetAnnotation[ReferenceTarget] {
 
-  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
-    val renamer = new ReferenceTargetRenamer(renames)
-    val renamedArgs = args.map(_.flatMap(renamer(_)))
-    val renamedMod = renames.get(mod).getOrElse(Seq(mod)).collect({ case mt: ModuleTarget => mt })
-    assert(renamedMod.size == 1) // To implement: handle module duplication or deletion
-    Seq(this.copy(args = renamedArgs, mod = renamedMod.head ))
-  }
+  def duplicate(newTarget: ReferenceTarget) = this.copy(newTarget)
 }
 
-// HACK: We're going to reuse the format to find the printf, from which we can grab the printf's enable
-private[midas] case class ChiselSynthPrintfAnnotation(
-    format: String,
-    args: Seq[Bits],
-    mod: BaseModule,
-    name: Option[String]) extends ChiselAnnotation {
-  def getTargetsFromArg(arg: Bits): Seq[ReferenceTarget] = {
-    // To named throughs an exception on literals right now, so dumbly catch everything
-    try {
-      Seq(arg.toNamed.toTarget)
-    } catch {
-      case AnnotationException(_) => Seq()
-    }
-  }
-
-  def toFirrtl() = SynthPrintfAnnotation(args.map(getTargetsFromArg),
-                                         mod.toNamed.toTarget, format, name)
-}
-
-// For now, this needs to be invoked on the arguments to printf, not on the printf itself
-// Eg. printf(SynthesizePrintf("True.B or False.B: Printfs can be annotated: %b\n", false.B))
 object SynthesizePrintf {
+  /**
+    * Annotates a chisel printf as a candidate for synthesis. The printf is only synthesized if Printf synthesis
+    * is enabled in Golden Gate.
+    *
+    * See: https://docs.fires.im/en/stable/search.html?q=Printf+Synthesis&check_keywords=yes&area=default
+    *
+    * @param printf The printf statement to be synthesized.
+    *
+    * @return The original input, so that this annotator may be applied inline if desired.
+    */
+  def apply(printf: chisel3.printf.Printf): chisel3.printf.Printf = {
+    chisel3.experimental.annotate(new ChiselAnnotation {
+      def toFirrtl = SynthPrintfAnnotation(printf.toTarget)
+    })
+    printf
+  }
+
   private def generateAnnotations(format: String, args: Seq[Bits], name: Option[String]): Printable = {
     val thisModule = Module.currentModule.getOrElse(
       throw new RuntimeException("Cannot annotate a printf outside of a Module"))
-    chisel3.experimental.annotate(ChiselSynthPrintfAnnotation(format, args, thisModule, name))
-    Printable.pack(format, args:_*)
+
+    // To preserve the behavior of the printf parameter annotator, generate a
+    // secondary printf and annotate that, instead of the user's printf, which
+    // will be given an empty string. This will be removed with the apply methods in 1.15.
+    val printf = SynthesizePrintf(chisel3.printf(Printable.pack(format, args:_*)))
+    name foreach { n => printf.suggestName(n) }
+    Printable.pack("")
   }
+
   /**
     * Annotates* a printf by intercepting the parameters to a chisel printf, and returning
     * a printable. As a side effect, this function generates a ChiselSynthPrintfAnnotation with the
@@ -100,6 +94,7 @@ object SynthesizePrintf {
     * @param args Hardware references to populate the format string.
     */
 
+  @deprecated("This method will be removed. Annotate the printf statement directly", "FireSim 1.14")
   def apply(format: String, args: Bits*): Printable = generateAnnotations(format, args, None)
 
   /**
@@ -110,10 +105,10 @@ object SynthesizePrintf {
     * @param format The format string for the printf
     * @param args Hardware references to populate the format string.
     */
+  @deprecated("This method will be removed. Annotate the printf statement directly", "FireSim 1.14")
   def apply(name: String, format: String, args: Bits*): Printable =
     generateAnnotations(format, args, Some(name))
 }
-
 
 /**
   * A mixed-in ancestor trait for all FAME annotations, useful for type-casing.
