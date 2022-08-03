@@ -263,3 +263,38 @@ jobs:
           python3 -m sphinx.ext.intersphinx docs/_build/html/objects.inv
           cat /tmp/sphinx-err*.log
       - uses: ./.github/actions/job-end
+
+  clang-format:
+    name: clang-format
+    runs-on: ubuntu-20.04
+    steps:
+      # Clone the repository (shallow to save time).
+      - name: Checkout sources
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+          submodules: false
+
+      # Install clang-format
+      - name: Install clang-format
+        run: |
+          sudo apt update
+          sudo apt install clang-format -y
+
+      # Run 'clang-format', comparing against the base commit hash.
+      # If anything got reformatted, fail and output a patch.
+      - name: Run clang-format
+        run: |
+          git fetch --recurse-submodules=no origin ${{ github.base_ref }}
+          DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
+          git clang-format $DIFF_COMMIT
+          git diff --ignore-submodules > clang-format.patch
+          if [ -s clang-format.patch ]; then
+            echo "error: clang-format had to fix the following files:"
+            git diff --ignore-submodules --name-only
+            echo "----- 8< ---- PATCH ----- 8< ----"
+            cat clang-format.patch
+            echo "----- 8< ---- PATCH ----- 8< ----"
+            git checkout .
+            exit 1
+          fi

@@ -3,48 +3,44 @@
 #ifndef __MMIO_H
 #define __MMIO_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include "mmio.h"
 #include <cstring>
-#include <vector>
 #include <queue>
+#include <stddef.h>
+#include <stdint.h>
+#include <vector>
 
-struct mmio_req_addr_t
-{
+struct mmio_req_addr_t {
   size_t id;
   uint64_t addr;
   size_t size;
   size_t len;
 
-  mmio_req_addr_t(size_t id_, uint64_t addr_, size_t size_, size_t len_):
-    id(id_), addr(addr_), size(size_), len(len_) { }
+  mmio_req_addr_t(size_t id_, uint64_t addr_, size_t size_, size_t len_)
+      : id(id_), addr(addr_), size(size_), len(len_) {}
 };
 
-struct mmio_req_data_t
-{
-  char* data;
+struct mmio_req_data_t {
+  char *data;
   size_t strb;
   bool last;
 
-  mmio_req_data_t(char* data_, size_t strb_, bool last_):
-    data(data_), strb(strb_), last(last_) { }
+  mmio_req_data_t(char *data_, size_t strb_, bool last_)
+      : data(data_), strb(strb_), last(last_) {}
 };
 
-struct mmio_resp_data_t
-{
+struct mmio_resp_data_t {
   size_t id;
-  char* data;
+  char *data;
   bool last;
 
-  mmio_resp_data_t(size_t id_, char* data_, bool last_):
-    id(id_), data(data_), last(last_) { }
+  mmio_resp_data_t(size_t id_, char *data_, bool last_)
+      : id(id_), data(data_), last(last_) {}
 };
 
-class mmio_t
-{
+class mmio_t {
 public:
-  mmio_t(size_t size): read_inflight(false), write_inflight(false) {
+  mmio_t(size_t size) : read_inflight(false), write_inflight(false) {
     dummy_data.resize(size);
   }
 
@@ -63,27 +59,25 @@ public:
   bool w_valid() { return !w.empty(); }
   size_t w_strb() { return w_valid() ? w.front().strb : 0; }
   bool w_last() { return w_valid() ? w.front().last : false; }
-  void* w_data() { return w_valid() ? w.front().data : &dummy_data[0]; }
+  void *w_data() { return w_valid() ? w.front().data : &dummy_data[0]; }
 
   bool r_ready() { return read_inflight; }
   bool b_ready() { return write_inflight; }
 
-  void tick
-  (
-    bool reset,
-    bool ar_ready,
-    bool aw_ready,
-    bool w_ready,
-    size_t r_id,
-    void* r_data,
-    bool r_last,
-    bool r_valid,
-    size_t b_id,
-    bool b_valid
-  );
+  void tick(bool reset,
+            bool ar_ready,
+            bool aw_ready,
+            bool w_ready,
+            size_t r_id,
+            void *r_data,
+            bool r_last,
+            bool r_valid,
+            size_t b_id,
+            bool b_valid);
 
   virtual void read_req(uint64_t addr, size_t size, size_t len);
-  virtual void write_req(uint64_t addr, size_t size, size_t len, void* data, size_t *strb);
+  virtual void
+  write_req(uint64_t addr, size_t size, size_t len, void *data, size_t *strb);
   virtual bool read_resp(void *data);
   virtual bool write_resp();
 

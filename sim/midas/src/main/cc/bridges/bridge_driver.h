@@ -14,43 +14,48 @@
  * using MMIO (via read() and write() methods) or bridge streams (via pull()
  * and push()).
  */
-class bridge_driver_t
-{
+class bridge_driver_t {
 public:
-  bridge_driver_t(simif_t* s): sim(s) { }
-  virtual ~bridge_driver_t() {};
-  // Initialize BridgeModule state -- this can't be done in the constructor currently
+  bridge_driver_t(simif_t *s) : sim(s) {}
+  virtual ~bridge_driver_t(){};
+  // Initialize BridgeModule state -- this can't be done in the constructor
+  // currently
   virtual void init() = 0;
-  // Does work that allows the Bridge to advance in simulation time (one or more cycles)
-  // The standard FireSim driver calls the tick methods of all registered bridge drivers.
-  // Bridges whose BridgeModule is free-running need not implement this method
+  // Does work that allows the Bridge to advance in simulation time (one or more
+  // cycles) The standard FireSim driver calls the tick methods of all
+  // registered bridge drivers. Bridges whose BridgeModule is free-running need
+  // not implement this method
   virtual void tick() = 0;
   // Indicates the simulation should terminate.
-  // Tie off to false if the brige will never call for the simulation to teriminate.
+  // Tie off to false if the brige will never call for the simulation to
+  // teriminate.
   virtual bool terminate() = 0;
-  // If the bridge driver calls for termination, encode a cause here. 0 = PASS All other
-  // codes are bridge-implementation defined
+  // If the bridge driver calls for termination, encode a cause here. 0 = PASS
+  // All other codes are bridge-implementation defined
   virtual int exit_code() = 0;
   // The analog of init(), this provides a final opportunity to interact with
   // the FPGA before destructors are called at the end of simulation. Useful
-  // for doing end-of-simulation clean up that requires calling {read,write,push,pull}.
+  // for doing end-of-simulation clean up that requires calling
+  // {read,write,push,pull}.
   virtual void finish() = 0;
   // DOC include end: Bridge Driver Interface
 
 protected:
-  void write(size_t addr, uint32_t data) {
-    sim->write(addr, data);
-  }
+  void write(size_t addr, uint32_t data) { sim->write(addr, data); }
 
-  uint32_t read(size_t addr) {
-    return sim->read(addr);
-  }
+  uint32_t read(size_t addr) { return sim->read(addr); }
 
-  size_t pull(unsigned stream_idx, void *data, size_t size, size_t minimum_batch_size) {
+  size_t pull(unsigned stream_idx,
+              void *data,
+              size_t size,
+              size_t minimum_batch_size) {
     return sim->pull(stream_idx, data, size, minimum_batch_size);
   }
 
-  size_t push(unsigned stream_idx, void *data, size_t size, size_t minimum_batch_size) {
+  size_t push(unsigned stream_idx,
+              void *data,
+              size_t size,
+              size_t minimum_batch_size) {
     if (size == 0)
       return 0;
     return sim->push(stream_idx, data, size, minimum_batch_size);

@@ -1,27 +1,27 @@
-//See LICENSE for license details.
+// See LICENSE for license details.
 
 #include "simif_peek_poke.h"
 
-typedef std::vector< uint32_t > app_t;
+typedef std::vector<uint32_t> app_t;
 
-class Risc_t: public simif_peek_poke_t
-{
-  public:
+class Risc_t : public simif_peek_poke_t {
+public:
   uint32_t expected = 4;
   uint64_t timeout = 10;
-  Risc_t(int argc, char** argv) {}
+  Risc_t(int argc, char **argv) {}
   void run() {
     app_t app;
     init_app(app);
     target_reset();
     wr(0, 0);
-    for (size_t addr = 0 ; addr < app.size() ; addr++) {
+    for (size_t addr = 0; addr < app.size(); addr++) {
       wr(addr, app[addr]);
     }
     boot();
     uint64_t k = 0;
     do {
-      tick(); k += 1;
+      tick();
+      k += 1;
     } while (peek(io_valid) == 0 && k < timeout);
     expect(k < timeout, "TIME LIMIT");
     expect(io_out, expected);
@@ -50,18 +50,16 @@ private:
   }
 
 protected:
-  virtual void init_app(app_t& app) {
-    short_app(app);  
-  }
+  virtual void init_app(app_t &app) { short_app(app); }
 
-  void short_app(app_t& app) {
+  void short_app(app_t &app) {
     app.push_back(I(1, 1, 0, 1));
     app.push_back(I(0, 1, 1, 1));
     app.push_back(I(0, 1, 1, 1));
     app.push_back(I(0, 255, 1, 0));
   }
 
-  void long_app(app_t& app) {
+  void long_app(app_t &app) {
     app.push_back(I(1, 1, 0, 1));
     app.push_back(I(0, 1, 1, 1));
     app.push_back(I(0, 1, 1, 1));

@@ -1,4 +1,4 @@
-//See LICENSE for license details
+// See LICENSE for license details
 #ifndef __UART_H
 #define __UART_H
 
@@ -15,31 +15,30 @@
 // all-caps, suffixed with "_struct" and "_struct_guard" respectively.
 
 #ifdef UARTBRIDGEMODULE_struct_guard
-class uart_t: public bridge_driver_t
-{
-    public:
-        uart_t(simif_t* sim, UARTBRIDGEMODULE_struct * mmio_addrs, int uartno);
-        ~uart_t();
-        virtual void tick();
-        // Our UART bridge's initialzation and teardown procedures don't
-        // require interaction with the FPGA (i.e., MMIO), and so we don't need
-        // to define init and finish methods (we can do everything in the
-        // ctor/dtor)
-        virtual void init() {};
-        virtual void finish() {};
-        // Our UART bridge never calls for the simulation to terminate
-        virtual bool terminate() { return false; }
-        // ... and thus, never returns a non-zero exit code
-        virtual int exit_code() { return 0; }
+class uart_t : public bridge_driver_t {
+public:
+  uart_t(simif_t *sim, UARTBRIDGEMODULE_struct *mmio_addrs, int uartno);
+  ~uart_t();
+  virtual void tick();
+  // Our UART bridge's initialzation and teardown procedures don't
+  // require interaction with the FPGA (i.e., MMIO), and so we don't need
+  // to define init and finish methods (we can do everything in the
+  // ctor/dtor)
+  virtual void init(){};
+  virtual void finish(){};
+  // Our UART bridge never calls for the simulation to terminate
+  virtual bool terminate() { return false; }
+  // ... and thus, never returns a non-zero exit code
+  virtual int exit_code() { return 0; }
 
-    private:
-        UARTBRIDGEMODULE_struct * mmio_addrs;
-        serial_data_t<char> data;
-        int inputfd;
-        int outputfd;
-        int loggingfd;
-        void send();
-        void recv();
+private:
+  UARTBRIDGEMODULE_struct *mmio_addrs;
+  serial_data_t<char> data;
+  int inputfd;
+  int outputfd;
+  int loggingfd;
+  void send();
+  void recv();
 };
 #endif // UARTBRIDGEMODULE_struct_guard
 

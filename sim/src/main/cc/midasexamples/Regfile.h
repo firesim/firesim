@@ -2,26 +2,27 @@
 
 #include "simif_peek_poke.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include <utility>
 #include <map>
+#include <utility>
 
 constexpr size_t reg_n_reads = 2;
 constexpr size_t reg_n_writes = 2;
 
-const size_t reg_w_addr_ios[reg_n_writes] = { io_writes_0_addr, io_writes_1_addr };
-const size_t reg_w_data_ios[reg_n_writes] = { io_writes_0_data, io_writes_1_data };
-const size_t reg_w_en_ios[reg_n_writes] = { io_writes_0_en, io_writes_1_en };
+const size_t reg_w_addr_ios[reg_n_writes] = {io_writes_0_addr,
+                                             io_writes_1_addr};
+const size_t reg_w_data_ios[reg_n_writes] = {io_writes_0_data,
+                                             io_writes_1_data};
+const size_t reg_w_en_ios[reg_n_writes] = {io_writes_0_en, io_writes_1_en};
 
-const size_t reg_r_addr_ios[reg_n_reads] = { io_reads_0_addr, io_reads_1_addr };
-const size_t reg_r_data_ios[reg_n_reads] = { io_reads_0_data, io_reads_1_data };
+const size_t reg_r_addr_ios[reg_n_reads] = {io_reads_0_addr, io_reads_1_addr};
+const size_t reg_r_data_ios[reg_n_reads] = {io_reads_0_data, io_reads_1_data};
 
-struct Regfile_t: public simif_peek_poke_t
-{
+struct Regfile_t : public simif_peek_poke_t {
 
-  Regfile_t(int argc, char** argv) {}
+  Regfile_t(int argc, char **argv) {}
 
   void run() {
     target_reset();
@@ -31,7 +32,6 @@ struct Regfile_t: public simif_peek_poke_t
   }
 
 private:
-
   size_t mem_depth = 10;
 
   void do_iteration(size_t cycle_num) {
@@ -39,7 +39,8 @@ private:
       if (rand() % 2) {
         uint32_t rand_data = rand();
         uint32_t rand_addr = rand() % mem_depth;
-        while (history.count(rand_addr) && history[rand_addr].second == cycle_num) {
+        while (history.count(rand_addr) &&
+               history[rand_addr].second == cycle_num) {
           // already written this cycle => would be undefined write collision
           rand_addr = rand() % mem_depth;
         }
@@ -65,8 +66,7 @@ private:
     }
   }
 
- private:
-
-  std::map< uint32_t, std::pair<uint32_t, size_t> > history;
-  std::map< size_t, uint32_t > prev_reads;
+private:
+  std::map<uint32_t, std::pair<uint32_t, size_t>> history;
+  std::map<size_t, uint32_t> prev_reads;
 };
