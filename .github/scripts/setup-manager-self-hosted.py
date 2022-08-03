@@ -36,10 +36,6 @@ def initialize_manager_hosted():
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
-        # Better support very parallel builds under marshal (1024 on FPGA developer AMI)
-        # See https://github.com/firesim/firesim/pull/1132
-        run("ulimit -n 4096")
-        
         # get the runner version based off the latest tag on the github runner repo
         RUNNER_VERSION = local("git ls-remote --refs --tags https://github.com/actions/runner.git | cut --delimiter='/' --fields=3 | tr '-' '~' | sort --version-sort | tail --lines=1", capture=True)
         RUNNER_VERSION = RUNNER_VERSION.replace("v", "")
