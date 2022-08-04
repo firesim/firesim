@@ -1,6 +1,5 @@
 from pathlib import Path
 from unittest.mock import MagicMock, call
-from util.io import downloadURI
 from botocore.exceptions import ClientError
 import pytest
 import os
@@ -20,6 +19,8 @@ pytest.mark.usefixtures("aws_test_credentials")
 )
 @mock_s3
 def test_download_uri(mocker,protocol_type,test_dest_file_path):
+    from util.io import downloadURI
+    
     logger_mock = mocker.patch("util.io.rootLogger", MagicMock())
     test_file_path = Path("tests/fsspec_test_json.json")
     
