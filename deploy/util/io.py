@@ -6,7 +6,7 @@ from pathlib import Path
 rootLogger = logging.getLogger()
 
 
-def downloadURI(uri: str, local_dest_path: PathLike):
+def downloadURI(uri: str, local_dest_path: PathLike) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system.
     Args:
         uri: uri of an object to be fetched
@@ -24,4 +24,6 @@ def downloadURI(uri: str, local_dest_path: PathLike):
         rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
     rootLogger.debug(f"Downloading '{uri}' to '{lpath}'")
     fs, rpath = url_to_fs(uri)
+    print(fs, type(fs))
+    print(rpath, type(rpath))
     fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike

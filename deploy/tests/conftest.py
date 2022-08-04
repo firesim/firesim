@@ -5,6 +5,9 @@ from pytest_mock import MockerFixture
 import os
 from os.path import dirname
 from pathlib import Path
+import boto3
+
+from moto import mock_s3
 
 # fixtures defined in this file will be available to all tests. see
 # https://docs.pytest.org/en/4.6.x/example/simple.html#package-directory-level-fixtures-setups
@@ -83,3 +86,14 @@ def task_mocker(mocker: MockerFixture):
 
     return TaskMocker(mocker)
 
+
+#References: https://stackoverflow.com/questions/44718670/mock-s3-decorating-pytest-fixture
+@pytest.fixture()
+def mock_s3_client():
+    # setup: start moto server
+    mocks3 = mock_s3()
+    mocks3.start()
+    s3_client = boto3.client('s3')
+    yield s3_client
+    # teardown: stop moto server
+    mocks3.stop()

@@ -1,37 +1,50 @@
 from pathlib import Path
 from unittest.mock import MagicMock, call
-from util.fsspec_utils import downloadURI
+from util.io import downloadURI
 from fsspec.implementations.local import LocalFileSystem
+from botocore.exceptions import ClientError
+import pytest
+
+pytest.mark.usefixtures("asw_test_credentials")
 
 
-def test_download_uri(mocker):
-    logger_mock = mocker.patch("util.fsspec_utils.rootLogger", MagicMock())
-    local_test_path = Path("tests/spec_results_download.csv")
-    test_uri = "https://www.spec.org/cpu2017/results/res2018q1/cpu2017-20171224-02028.csv"
+def test_download_s3_uri(mocker, mock_s3_client):
+    logger_mock = mocker.patch("util.io.rootLogger", MagicMock())
+    test_file_path = Path("tests/s3_test_json.json")
+    test_dest_file_path = Path("tests/s3_test_download_json.json")
+    test_bucket = "TestBucket"
+    test_bucket_key = "s3_blob.json"
+
+    try:
+        mock_s3_client.create_bucket(Bucket="TestBucket")
+        mock_s3_client.upload_file(str(test_file_path), test_bucket, test_bucket_key)
+        file_uri = f"s3://{test_bucket}/{test_bucket_key}"
+    except ClientError as e:
+        pytest.fail("Failed to mock an S3 client and upload a file.")
 
     fs = LocalFileSystem()
 
-    if local_test_path.exists():
-        fs.rm(str(local_test_path))
+    if test_dest_file_path.exists():
+        fs.rm(str(test_dest_file_path))
 
     downloadURI(
-        uri=test_uri,
-        local_dest_path=local_test_path
+        uri=file_uri,
+        local_dest_path=test_dest_file_path
     )
 
-    assert fs.exists(local_test_path), f"{local_test_path} was not created."
+    assert fs.exists(test_dest_file_path), f"{test_dest_file_path} was not created."
 
-    logger_mock.debug.assert_called_once_with(f"Downloading '{test_uri}' to '{local_test_path}'")
+    logger_mock.debug.assert_called_once_with(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
 
     downloadURI(
-        uri=test_uri,
-        local_dest_path=local_test_path
+        uri=file_uri,
+        local_dest_path=test_dest_file_path
     )
 
     logger_mock.debug.assert_has_calls([
-        call(f"Downloading '{test_uri}' to '{local_test_path}'"),
-        call(f"Overwriting {local_test_path.resolve()}"),
-        call(f"Downloading '{test_uri}' to '{local_test_path}'")
+        call(f"Downloading '{file_uri}' to '{test_dest_file_path}'"),
+        call(f"Overwriting {test_dest_file_path.resolve()}"),
+        call(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
     ])
 
-    fs.rm(str(local_test_path))
+    fs.rm(str(test_dest_file_path))
