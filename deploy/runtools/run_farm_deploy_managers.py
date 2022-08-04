@@ -15,7 +15,7 @@ from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
 
 from util.streamlogger import StreamLogger
-from util.fsspec_utils import downloadURI
+from util.io import downloadURI
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 

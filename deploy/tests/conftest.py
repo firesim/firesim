@@ -5,9 +5,7 @@ from pytest_mock import MockerFixture
 import os
 from os.path import dirname
 from pathlib import Path
-import boto3
 
-from moto import mock_s3
 
 # fixtures defined in this file will be available to all tests. see
 # https://docs.pytest.org/en/4.6.x/example/simple.html#package-directory-level-fixtures-setups
