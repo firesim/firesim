@@ -13,7 +13,7 @@ def build_default_workloads():
         # Better support very parallel builds under marshal (1024 on FPGA developer AMI)
         # See https://github.com/firesim/firesim/pull/1132
         with prefix('ulimit -n 4096'):
-            run("marshal -v build br-base.json")
+            run("ulimit -n && marshal -v build br-base.json")
 
         run("make linux-poweroff")
         run("make allpaper")
