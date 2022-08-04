@@ -85,15 +85,3 @@ def task_mocker(mocker: MockerFixture):
             return t
 
     return TaskMocker(mocker)
-
-
-#References: https://stackoverflow.com/questions/44718670/mock-s3-decorating-pytest-fixture
-@pytest.fixture()
-def mock_s3_client():
-    # setup: start moto server
-    mocks3 = mock_s3()
-    mocks3.start()
-    s3_client = boto3.client('s3')
-    yield s3_client
-    # teardown: stop moto server
-    mocks3.stop()
