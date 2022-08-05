@@ -10,10 +10,7 @@ def build_default_workloads():
     with prefix('cd {} && source ./env.sh'.format(manager_fsim_dir)), \
          prefix('cd deploy/workloads'):
 
-        # Better support very parallel builds under marshal (1024 on FPGA developer AMI)
-        # See https://github.com/firesim/firesim/pull/1132
-        with prefix('ulimit -n 4096'):
-            run("ulimit -n && marshal -v build br-base.json")
+	run("cat /proc/self/limits && marshal -v build br-base.json")
 
         run("make linux-poweroff")
         run("make allpaper")
