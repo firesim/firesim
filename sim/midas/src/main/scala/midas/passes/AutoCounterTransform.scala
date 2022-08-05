@@ -98,7 +98,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         val printName = moduleNS.newName(suggestedPrintName)
         val printStmt = Print(NoInfo, printFormat, Seq(valueToPrint),
                               WRef(clock.ref), And(WRef(trigger), printEnable), printName)
-        addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(valueToPrint.name))), mT, printFormat.string, Some(printName))
+        addedAnnos += SynthPrintfAnnotation(mT.ref(printName))
         addedStmts += printStmt
       }
 

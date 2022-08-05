@@ -34,15 +34,6 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
     Field("enable", Default, BoolType)) ++
     print.args.zipWithIndex.map({ case (arg, idx) => Field(s"args_${idx}", Default, arg.tpe) }))
 
-  def getPrintName(p: Print, anno: SynthPrintfAnnotation, ns: Namespace): String = {
-    // If the user provided a name in the annotation use it; otherwise use the source locator
-    val candidateName = anno.name.getOrElse(p.info match {
-      case i: FileInfo => i.info.string
-      case _ => throw new RuntimeException("Don't know how to generate a name for this printf")
-    }).replaceAll("[^A-Za-z0-9_]", "_")
-    ns.newName(candidateName)
-  }
-
   // Takes a single printPort and emits an FCCA for each field
   def genFCCAsFromPort(p: Port, portRT: ReferenceTarget, clockRT: ReferenceTarget): Seq[FAMEChannelConnectionAnnotation] = {
     p.tpe match {
@@ -66,7 +57,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
     def portRT(p: Port): ReferenceTarget = ModuleTarget(c.main, c.main).ref(p.name)
     def portClockRT(p: Port): ReferenceTarget = portRT(p).field("clock")
 
-    val modToAnnos = printfAnnos.groupBy(_.mod)
+    val modToAnnos = printfAnnos.groupBy(_.target.moduleTarget)
     val topWiringAnnos = mutable.ArrayBuffer[Annotation]()
 
     def onModule(m: DefModule): DefModule = m match {
@@ -77,24 +68,24 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
 
     def onStmt(annos: Seq[SynthPrintfAnnotation], modNamespace: Namespace)
               (s: Statement): Statement = s.map(onStmt(annos, modNamespace)) match {
-      case p @ Print(_,format,args,clk ,en) if annos.exists(_.format == format.string) =>
-        val associatedAnno = annos.find(_.format == format.string).get
-        val printName = getPrintName(p, associatedAnno, modNamespace)
+      case p: Print if annos.exists(_.target.ref == p.name) =>
+        val associatedAnno = annos.find(_.target.ref == p.name).get
+        val wireName = modNamespace.newName(s"${p.name}_wire")
         // Generate an aggregate with all of our arguments; this will be wired out
-        val wire = DefWire(NoInfo, printName, genPrintBundleType(p))
-        val enableConnect = Connect(NoInfo, WSubField(WRef(wire), "enable"), en)
+        val wire = DefWire(NoInfo, wireName, genPrintBundleType(p))
+        val enableConnect = Connect(NoInfo, WSubField(WRef(wire), "enable"), p.en)
         val argumentConnects = (p.args.zipWithIndex).map({ case (arg, idx) =>
           Connect(NoInfo,
                   WSubField(WRef(wire), s"args_${idx}"),
                   arg)})
 
-        val printBundleTarget = associatedAnno.mod.ref(printName)
-        val clockTarget = clk match {
-          case WRef(name,_,_,_) => associatedAnno.mod.ref(name)
+        val printBundleTarget = associatedAnno.target.copy(ref = wireName)
+        val clockTarget = p.clk match {
+          case WRef(name,_,_,_) => associatedAnno.target.copy(ref = name)
           case o => ???
         }
         topWiringAnnos += BridgeTopWiringAnnotation(printBundleTarget, clockTarget)
-        formatStringMap(printBundleTarget) = format.serialize
+        formatStringMap(printBundleTarget) = p.string.serialize
         Block(Seq(p, wire, enableConnect) ++ argumentConnects)
       case s => s
     }
@@ -170,8 +161,8 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
   def execute(state: CircuitState): CircuitState = {
     val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
     val printfAnnos = state.annotations.collect({
-      case anno @ SynthPrintfAnnotation(_, mod, _, _) =>
-        printMods += mod
+      case anno @ SynthPrintfAnnotation(target) =>
+        printMods += target.moduleTarget
         anno
     })
 
