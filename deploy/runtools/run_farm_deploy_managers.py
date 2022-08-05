@@ -15,6 +15,7 @@ from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
 
 from util.streamlogger import StreamLogger
+from util.io import downloadURI
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
@@ -673,22 +674,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
             hwcfg.local_xclbin = './local.xclbin'
 
-            def get_xclbin(xclbin_uri: str, xclbin_lpath: PathLike) -> None:
-                # TODO consider using fsspec
-                # filecache https://filesystem-spec.readthedocs.io/en/latest/features.html#caching-files-locally
-                # so that multiple slots using the same xclbin only grab it once and
-                # we only download it if it has changed at the source.
-                # HOWEVER, 'filecache' isn't thread/process safe and I'm not sure whether
-                # this runs in @parallel for fabric
-                lpath = Path(xclbin_lpath)
-                if lpath.exists:
-                    rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
-                rootLogger.debug(f"Downloading '{xclbin_uri}' to '{lpath}'")
-                fs, rpath = url_to_fs(xclbin_uri)
-                fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
-
             with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
-                run(get_xclbin, hwcfg.xclbin, hwcfg.local_xclbin)
+                run(downloadURI, hwcfg.xclbin, hwcfg.local_xclbin)
 
         else:
             hwcfg.local_xclbin = hwcfg.xclbin
