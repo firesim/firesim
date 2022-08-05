@@ -29,8 +29,7 @@ def get_deploy_dir() -> str:
     Returns:
         Path to firesim/deploy directory.
     """
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        deploydir = local("pwd", capture=True)
+    deploydir = local("pwd", capture=True)
     return deploydir
 
 class BitBuilder(metaclass=abc.ABCMeta):
@@ -115,9 +114,7 @@ class F1BitBuilder(BitBuilder):
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh'), \
-            prefix('cd sim/'), \
-            InfoStreamLogger('stdout'), \
-            InfoStreamLogger('stderr'):
+            prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
     def build_driver(self) -> None:
@@ -128,9 +125,7 @@ class F1BitBuilder(BitBuilder):
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh'), \
-            prefix('cd sim/'), \
-            InfoStreamLogger('stdout'), \
-            InfoStreamLogger('stderr'):
+            prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=f1 driver"))
 
     def cl_dir_setup(self, chisel_triplet: str, dest_build_dir: str) -> str:
@@ -155,24 +150,23 @@ class F1BitBuilder(BitBuilder):
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run(f'mkdir -p {dest_f1_platform_dir}')
-            rsync_cap = rsync_project(
-                local_dir=local_awsfpga_dir,
-                remote_dir=dest_f1_platform_dir,
-                ssh_opts="-o StrictHostKeyChecking=no",
-                exclude=["hdk/cl/developer_designs/cl_*"],
-                extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
-            rsync_cap = rsync_project(
-                local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
-                remote_dir=f'{dest_awsfpga_dir}/{fpga_build_postfix}',
-                exclude=["build/checkpoints"],
-                ssh_opts="-o StrictHostKeyChecking=no",
-                extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
+        run(f'mkdir -p {dest_f1_platform_dir}')
+        rsync_cap = rsync_project(
+            local_dir=local_awsfpga_dir,
+            remote_dir=dest_f1_platform_dir,
+            ssh_opts="-o StrictHostKeyChecking=no",
+            exclude=["hdk/cl/developer_designs/cl_*"],
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+        rsync_cap = rsync_project(
+            local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
+            remote_dir=f'{dest_awsfpga_dir}/{fpga_build_postfix}',
+            exclude=["build/checkpoints"],
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_awsfpga_dir}/{fpga_build_postfix}"
 
@@ -213,27 +207,27 @@ class F1BitBuilder(BitBuilder):
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
         vivado_result = 0
-        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            # copy script to the cl_dir and execute
-            rsync_cap = rsync_project(
-                local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
-                remote_dir=f"{cl_dir}/",
-                ssh_opts="-o StrictHostKeyChecking=no",
-                extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
 
-            vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
+        # copy script to the cl_dir and execute
+        rsync_cap = rsync_project(
+            local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
+            remote_dir=f"{cl_dir}/",
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
 
         # put build results in the result-build area
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            rsync_cap = rsync_project(
-                local_dir=f"{local_results_dir}/",
-                remote_dir=cl_dir,
-                ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-                capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
+
+        rsync_cap = rsync_project(
+            local_dir=f"{local_results_dir}/",
+            remote_dir=cl_dir,
+            ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
+            capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
 
         if vivado_result != 0:
             on_build_failure()
@@ -275,9 +269,8 @@ class F1BitBuilder(BitBuilder):
         assert len(tag_buildtriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for buildtriplet"
         assert len(tag_deploytriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploytriplet"
 
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
-            hash = local("git rev-parse HEAD", capture=True)
+        is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
+        hash = local("git rev-parse HEAD", capture=True)
         tag_fsimcommit = hash + is_dirty_str
 
         assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
@@ -289,7 +282,7 @@ class F1BitBuilder(BitBuilder):
         # append the build node IP + a random string to diff them in s3
         global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-        with lcd(f"{local_results_dir}/cl_{tag_buildtriplet}/build/checkpoints/to_aws/"), StreamLogger('stdout'), StreamLogger('stderr'):
+        with lcd(f"{local_results_dir}/cl_{tag_buildtriplet}/build/checkpoints/to_aws/"):
             files = local('ls *.tar', capture=True)
             rootLogger.debug(files)
             rootLogger.debug(files.stderr)
@@ -310,7 +303,7 @@ class F1BitBuilder(BitBuilder):
 
         rootLogger.info("Waiting for create-fpga-image completion.")
         checkstate = "pending"
-        with lcd(local_results_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+        with lcd(local_results_dir):
             while checkstate == "pending":
                 imagestate = local(f"aws ec2 describe-fpga-images --fpga-image-id {afi} | tee AGFI_INFO", capture=True)
                 state_as_dict = json.loads(imagestate)
@@ -344,10 +337,9 @@ class F1BitBuilder(BitBuilder):
                 outputfile.write(agfi_entry)
 
             if self.build_config.post_build_hook:
-                with StreamLogger('stdout'), StreamLogger('stderr'):
-                    localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
-                    rootLogger.debug("[localhost] " + str(localcap))
-                    rootLogger.debug("[localhost] " + str(localcap.stderr))
+                localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+                rootLogger.debug("[localhost] " + str(localcap))
+                rootLogger.debug("[localhost] " + str(localcap.stderr))
 
             rootLogger.info(f"Build complete! AFI ready. See {os.path.join(hwdb_entry_file_location,afiname)}.")
             return True
@@ -374,9 +366,7 @@ class VitisBitBuilder(BitBuilder):
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh'), \
-            prefix('cd sim/'), \
-            InfoStreamLogger('stdout'), \
-            InfoStreamLogger('stderr'):
+            prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
 
     def build_driver(self):
@@ -387,9 +377,7 @@ class VitisBitBuilder(BitBuilder):
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh'), \
-            prefix('cd sim/'), \
-            InfoStreamLogger('stdout'), \
-            InfoStreamLogger('stderr'):
+            prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=vitis driver"))
 
     def cl_dir_setup(self, chisel_triplet: str, dest_build_dir: str) -> str:
@@ -413,23 +401,23 @@ class VitisBitBuilder(BitBuilder):
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            run('mkdir -p {}'.format(dest_vitis_dir))
-            rsync_cap = rsync_project(
-                local_dir=local_vitis_dir,
-                remote_dir=dest_vitis_dir,
-                ssh_opts="-o StrictHostKeyChecking=no",
-                exclude="cl_*",
-                extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
-            rsync_cap = rsync_project(
-                local_dir="{}/{}/".format(local_vitis_dir, fpga_build_postfix),
-                remote_dir='{}/{}'.format(dest_vitis_dir, fpga_build_postfix),
-                ssh_opts="-o StrictHostKeyChecking=no",
-                extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
+        
+        run('mkdir -p {}'.format(dest_vitis_dir))
+        rsync_cap = rsync_project(
+            local_dir=local_vitis_dir,
+            remote_dir=dest_vitis_dir,
+            ssh_opts="-o StrictHostKeyChecking=no",
+            exclude="cl_*",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+        rsync_cap = rsync_project(
+            local_dir="{}/{}/".format(local_vitis_dir, fpga_build_postfix),
+            remote_dir='{}/{}'.format(dest_vitis_dir, fpga_build_postfix),
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_vitis_dir}/{fpga_build_postfix}"
 
@@ -469,33 +457,32 @@ class VitisBitBuilder(BitBuilder):
 
         # TODO: Does this still apply or is this done in the Makefile
         ## copy over generated RTL into local CL_DIR before remote
-        #with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-        #    run("""mkdir -p {}""".format(local_results_dir))
-        #    run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(cl_dir, local_results_dir))
+        #
+        #run("""mkdir -p {}""".format(local_results_dir))
+        #run("""cp {}/design/FireSim-generated.sv {}/FireSim-generated.sv""".format(cl_dir, local_results_dir))
 
         vitis_result = 0
-        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
-            # TODO: Put script within Vitis area
-            # copy script to the cl_dir and execute
-            rsync_cap = rsync_project(
-                local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
-                remote_dir=f"{cl_dir}/",
-                ssh_opts="-o StrictHostKeyChecking=no",
-                extra_opts="-l", capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
+        # TODO: Put script within Vitis area
+        # copy script to the cl_dir and execute
+        rsync_cap = rsync_project(
+            local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
+            remote_dir=f"{cl_dir}/",
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-l", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
 
-            vitis_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
+        vitis_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir}").return_code
 
         # put build results in the result-build area
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            rsync_cap = rsync_project(
-                local_dir=f"{local_results_dir}/",
-                remote_dir=cl_dir,
-                ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-                capture=True)
-            rootLogger.debug(rsync_cap)
-            rootLogger.debug(rsync_cap.stderr)
+
+        rsync_cap = rsync_project(
+            local_dir=f"{local_results_dir}/",
+            remote_dir=cl_dir,
+            ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
+            capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
 
         if vitis_result != 0:
             on_build_failure()
@@ -526,10 +513,10 @@ class VitisBitBuilder(BitBuilder):
             outputfile.write(hwdb_entry)
 
         if self.build_config.post_build_hook:
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
-                rootLogger.debug("[localhost] " + str(localcap))
-                rootLogger.debug("[localhost] " + str(localcap.stderr))
+            
+            localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         rootLogger.info(f"Build complete! Vitis bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 

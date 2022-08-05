@@ -151,10 +151,9 @@ class AbstractSwitchToSwitchConfig:
 
         def local_logged(command: str) -> None:
             """ Run local command with logging. """
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local(command, capture=True)
-                rootLogger.debug(localcap)
-                rootLogger.debug(localcap.stderr)
+            localcap = local(command, capture=True)
+            rootLogger.debug(localcap)
+            rootLogger.debug(localcap.stderr)
 
         # make a build dir for this switch
         local_logged("mkdir -p " + switchbuilddir)

@@ -253,8 +253,6 @@ class RuntimeHWConfig:
              prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
              prefix('source ./sourceme-f1-manager.sh'), \
              prefix('cd sim/'), \
-             StreamLogger('stdout'), \
-             StreamLogger('stderr'), \
              prefix('set -o pipefail'):
             localcap = None
             with settings(warn_only=True):
