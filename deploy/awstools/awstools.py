@@ -22,6 +22,8 @@ from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 from mypy_boto3_ec2.type_defs import FilterTypeDef
 from mypy_boto3_s3.literals import BucketLocationConstraintType
 
+from util.io import firesim_input
+
 # setup basic config for logging
 if __name__ == '__main__':
     logging.basicConfig()
@@ -209,7 +211,7 @@ def awsinit() -> None:
         if not valid_creds:
             rootLogger.info("Invalid AWS credentials. Try again.")
 
-    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    useremail = firesim_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
     if useremail != "":
         subscribe_to_firesim_topic(useremail)
     else:
