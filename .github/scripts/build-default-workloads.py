@@ -10,7 +10,7 @@ def build_default_workloads():
     with prefix('cd {} && source ./env.sh'.format(manager_fsim_dir)), \
          prefix('cd deploy/workloads'):
 
-	run("cat /proc/self/limits && marshal -v build br-base.json")
+        run("cat /proc/self/limits && marshal -v build br-base.json")
 
         run("make linux-poweroff")
         run("make allpaper")
