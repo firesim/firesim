@@ -232,6 +232,7 @@ set -o pipefail
         azure-mgmt-compute \
         azure-mgmt-network \
         fsspec \
+        s3fs \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then

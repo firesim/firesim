@@ -28,8 +28,13 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
         try:
             test_bucket = "TestBucket"
             test_bucket_key = "s3_blob.json"
-            mock_s3_client = boto3.client('s3')
-            mock_s3_client.create_bucket(Bucket="TestBucket")
+            mock_s3_client = boto3.client('s3', region_name='us-west-2')
+            mock_s3_client.create_bucket(
+                Bucket="TestBucket",
+                CreateBucketConfiguration={
+                   'LocationConstraint': 'us-west-2',
+                }
+            )
             mock_s3_client.upload_file(str(test_file_path), test_bucket, test_bucket_key)
             file_uri = f"s3://{test_bucket}/{test_bucket_key}"
         except ClientError as e:
