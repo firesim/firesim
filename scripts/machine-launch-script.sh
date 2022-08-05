@@ -309,6 +309,7 @@ set -o pipefail
         botocore-stubs==1.24.7 \
         mypy-boto3-s3==1.21.0 \
         fsspec \
+        s3fs \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
