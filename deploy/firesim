@@ -36,6 +36,7 @@ from buildtools.bitbuilder import F1BitBuilder
 
 from util.streamlogger import StreamLogger
 from util.filelineswap import file_line_swap
+from util.io import firesim_input
 
 from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints, Tuple, List
 
@@ -260,7 +261,7 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
+        userconfirm = firesim_input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
         if userconfirm == "yes":
             build_config_file.release_build_hosts()
             rootLogger.info("Build farm hosts released.")
