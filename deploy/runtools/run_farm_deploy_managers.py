@@ -11,7 +11,6 @@ from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
 
-from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 

@@ -14,7 +14,6 @@ from fabric.contrib.project import rsync_project # type: ignore
 
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
 from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
-from util.streamlogger import StreamLogger, InfoStreamLogger
 
 # imports needed for python type checking
 from typing import Optional, Dict, Any, TYPE_CHECKING

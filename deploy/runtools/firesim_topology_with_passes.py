@@ -15,7 +15,6 @@ from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummySe
 from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
-from util.streamlogger import StreamLogger
 
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:

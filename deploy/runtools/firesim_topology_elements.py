@@ -10,7 +10,6 @@ from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
-from util.streamlogger import StreamLogger
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING

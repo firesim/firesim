@@ -13,7 +13,6 @@ import pprint
 from collections import defaultdict
 
 from awstools.awstools import instances_sorted_by_avail_ip, get_run_instances_by_tag_type, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, terminate_instances, get_instance_ids_for_instances, aws_resource_names, MockBoto3Instance
-from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 from util.io import firesim_input
 from runtools.run_farm_deploy_managers import InstanceDeployManager, EC2InstanceDeployManager
