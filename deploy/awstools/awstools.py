@@ -22,11 +22,15 @@ from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 from mypy_boto3_ec2.type_defs import FilterTypeDef
 from mypy_boto3_s3.literals import BucketLocationConstraintType
 
-from util.io import firesim_input
 
-# setup basic config for logging
 if __name__ == '__main__':
+    # setup basic config for logging
     logging.basicConfig()
+
+    # use __builtin.input because we aren't in a StreamLogger context
+    from __builtin__ import input as firesim_input
+else:
+    from util.io import firesim_input
 
 rootLogger = logging.getLogger()
 
