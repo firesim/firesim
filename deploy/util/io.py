@@ -1,15 +1,16 @@
-"""
-See 'streamlogger.py' and it's use at the end of 'firesim.py'
-"""
+
 
 import logging
 
-def firesim_input(prompt=None):
+def firesim_input(prompt: str = None) -> str:
     """wrap __builtin__.input() understanding the idiocyncracies of firesim+fabric+logging
+
     Log the prompt at CRITICAL level so that it will go to the terminal and the log.
     Log the entered text as DEBUG so that the log contains it.
     Don't pass the prompt to __builtin__.input() because we don't need StreamLogger to also
     be trying to log the prompt.
+    
+    See 'streamlogger.py' and it's use at the end of 'firesim.py'
     """
 
     rootLogger = logging.getLogger()
