@@ -206,10 +206,6 @@ def awsinit() -> None:
         # only run aws configure if we cannot already find valid creds
         # this loops calling valid_aws_configure_creds until
         rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-        # stored in the log
-        # XXX confirm that StreamLogger doesn't log the interactive input of the sub-process and
-        # remove the above comment
         local("aws configure")
 
         # check again
