@@ -21,7 +21,7 @@ def main():
         sys.exit(0)
 
     print("Launching a fresh manager instance. This will take a couple minutes")
-    awstools.main([
+    awstools.awstools.main([
         'launch',
         '--inst_type', 'z1d.2xlarge',
         '--market', 'spot',
