@@ -30,7 +30,6 @@ if __name__ == '__main__':
     # use builtin.input because we aren't in a StreamLogger context
     from builtins import input as firesim_input
 else:
-    print("awstools sys.path:"+"\n".join(sys.path))
     from util.io import firesim_input
 
 rootLogger = logging.getLogger()

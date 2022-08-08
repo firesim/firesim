@@ -8,7 +8,6 @@ from ci_variables import ci_firesim_dir, local_fsim_dir, ci_gha_api_url, ci_repo
 # Reuse manager utilities
 # Note: ci_firesim_dir must not be used here because the persistent clone my not be initialized yet.
 sys.path.append(local_fsim_dir + "/deploy")
-print("CI common.py sys.path:"+"\n".join(sys.path))
 from awstools.awstools import get_instances_with_filter
 
 # Github URL related constants
