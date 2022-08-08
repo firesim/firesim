@@ -5,7 +5,7 @@ import re
 from subprocess import run, PIPE
 import sure
 
-from util.streamlogger import StreamInfoLogger
+from util.streamlogger import InfoStreamLogger
 
 
 rootLogger=logging.getLogger()
@@ -65,7 +65,7 @@ class TestGitAssumptions:
 
         # now sha isn't in remote_refs
         rootLogger.info("Ask origin to send unadvertised commit that you know is reachable from there")
-        with StreamInfoLogger('stdout'), StreamInfoLogger('stderr'):
+        with InfoStreamLogger('stdout'), InfoStreamLogger('stderr'):
             # if the server doesn't think 'sha' exists, then this will exit non-zero
             # that can only happen if the server is configured to disallow requesting
             # specific shas
@@ -121,7 +121,7 @@ class TestGitHelpers:
 
 
     def test_git_is_pushed(self, temp_cloned_repo):
-        from util.git import git_origin, git_server_do_you_have_this, git_sha_dirty, GitServerDenial
+        from util.git import git_origin, git_server_do_you_have_this, git_sha_dirty, GitServerSHA1Denial
         from fabric.api import env
 
         # prevent fabric from raising SystemExit because error message is less useful
@@ -131,7 +131,7 @@ class TestGitHelpers:
         sha, dirty = git_sha_dirty(fspath(temp_cloned_repo))
 
         rootLogger.info("Initial request should be denied due to server config")
-        with pytest.raises(GitServerDenial):
+        with pytest.raises(GitServerSHA1Denial):
             git_server_do_you_have_this(origin, sha, fspath(temp_cloned_repo))
 
         rootLogger.info("Change origin config to allow request for unadvertized shas (matching Github)")

@@ -267,7 +267,7 @@ class F1BitBuilder(BitBuilder):
         tags = {}
 
         # construct the "tags" we store in the AGFI description
-        tags['firesim-buildtriplet'] = self.buildconfig.get_chisel_triplet()
+        tags['firesim-buildtriplet'] = self.build_config.get_chisel_triplet()
         tags['firesim-deploytriplet'] = tags['firesim-buildtriplet']
         if self.build_config.deploytriplet:
             tags['firesim-deploytriplet'] = self.build_config.deploytriplet
@@ -292,7 +292,7 @@ class F1BitBuilder(BitBuilder):
         # append the build node IP + a random string to diff them in s3
         global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-        with lcd(f"{local_results_dir}/cl_{tag_buildtriplet}/build/checkpoints/to_aws/"), StreamLogger('stdout'), StreamLogger('stderr'):
+        with lcd(f"{local_results_dir}/cl_{tags['firesim-buildtriplet']}/build/checkpoints/to_aws/"), StreamLogger('stdout'), StreamLogger('stderr'):
             files = local('ls *.tar', capture=True)
             rootLogger.debug(files)
             rootLogger.debug(files.stderr)
