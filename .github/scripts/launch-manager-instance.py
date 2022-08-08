@@ -9,8 +9,8 @@ from ci_variables import *
 from common import *
 
 # Reuse manager utilities
-sys.path.append(ci_workdir + "/deploy/awstools")
-import awstools
+sys.path.append(ci_workdir + "/deploy")
+import awstools.awstools
 
 def main():
     """ Spins up a new manager instance for our CI run """
