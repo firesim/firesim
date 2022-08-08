@@ -504,7 +504,6 @@ if __name__ == '__main__':
     # level logging message and anything printed to stderr converted into INFO.
     # This is primarily because fabric does not use logging, it prints explicitly
     # to stdout and stderr.  We want it's output to be logged.
-    # XXX double check credential logging concern for managerinit
     with StreamLogger('stdout'), InfoStreamLogger('stderr'):
         exitcode = 0
         try:
