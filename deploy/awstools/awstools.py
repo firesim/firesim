@@ -27,8 +27,8 @@ if __name__ == '__main__':
     # setup basic config for logging
     logging.basicConfig()
 
-    # use __builtin.input because we aren't in a StreamLogger context
-    from __builtin__ import input as firesim_input
+    # use builtin.input because we aren't in a StreamLogger context
+    from builtins import input as firesim_input
 else:
     from util.io import firesim_input
 
