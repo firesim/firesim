@@ -8,10 +8,9 @@ from fabric.api import *
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 from ci_variables import ci_workdir, ci_workflow_run_id
-sys.path.append(ci_workdir + "/deploy/awstools")
-from awstools import get_instances_with_filter, get_private_ips_for_instances
-sys.path.append(ci_workdir + "/deploy/util")
-from filelineswap import file_line_swap
+sys.path.append(ci_workdir + "/deploy")
+from awstools.awstools import get_instances_with_filter, get_private_ips_for_instances
+from util.filelineswap import file_line_swap
 
 def run_linux_poweroff_externally_provisioned():
     """ Runs Linux poweroff workloads using externally provisioned AWS run farm """
