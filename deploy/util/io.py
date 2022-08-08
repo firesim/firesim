@@ -2,7 +2,7 @@
 
 import logging
 
-def firesim_input(prompt: str = None) -> str:
+def firesim_input(prompt: object = None) -> str:
     """wrap __builtin__.input() understanding the idiocyncracies of firesim+fabric+logging
 
     Log the prompt at CRITICAL level so that it will go to the terminal and the log.
