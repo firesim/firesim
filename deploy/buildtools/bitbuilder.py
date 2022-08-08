@@ -282,8 +282,8 @@ class F1BitBuilder(BitBuilder):
                 break
             toplevel_superproject_path = next_higher_superproject
 
-        tags['firesim-origin'], tags['firesim-commit'], tags['firesim-ispushed'] = git_origin_sha_is_pushed(".")
-        tags['top-origin'], tags['top-commit'], tags['top-ispushed'] = git_origin_sha_is_pushed(toplevel_superproject_path)
+        tags['firesim-origin'], tags['firesim-commit'], tags['firesim-ispushed'] = git_origin_sha_is_pushed(".") #type: ignore
+        tags['top-origin'], tags['top-commit'], tags['top-ispushed'] = git_origin_sha_is_pushed(toplevel_superproject_path) #type: ignore
 
         # construct the serialized description from these tags.
         description = firesim_tags_to_description(tags)

@@ -1,13 +1,14 @@
+from typing import Tuple
 from util.streamlogger import StreamLogger
-from fabric.api import *
-from fabric.utils import error, abort
+from fabric.api import local, lcd, warn_only, hide # type: ignore
+from fabric.utils import error, abort # type: ignore
 import re
 
 class GitServerSHA1Denial(Exception):
     """Used to indicate Git Server config doesn't allow efficient query in git_server_do_you_have_this"""
 
-def git_sha_dirty(workdir:str = ".") -> (str, str):
-    with StreamLogger('stdout'), StreamLogger('stderr'), lcd(workdir):
+def git_sha_dirty(workdir:str = ".") -> Tuple[str, str]:
+    with lcd(workdir), StreamLogger('stdout'), StreamLogger('stderr'):
         is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
         hash = local("git rev-parse HEAD", capture=True)
         return hash, is_dirty_str
@@ -20,7 +21,7 @@ def git_origin(workdir:str = ".") -> str:
     Returns:
         first fetch url of 'origin' remote in `workdir` or emptystring if it is not defined
     """
-    with StreamLogger('stdout'), StreamLogger('stderr'), lcd(workdir), warn_only():
+    with lcd(workdir), warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
         origin = local("git remote get-url origin", capture=True)
         if origin.return_code != 0:
             origin = ""
@@ -45,7 +46,7 @@ def git_server_do_you_have_this(remote_url:str, sha:str, workdir:str = ".") -> b
     Returns:
         True if `sha` is found by `remote_url`, False if `sha` is `not our ref`
     """
-    with StreamLogger('stdout'), StreamLogger('stderr'), lcd(workdir), warn_only():
+    with lcd(workdir), warn_only(), StreamLogger('stdout'), StreamLogger('stderr'):
         # NOTE: if the remote git server doesn't have at least uploadpack.allowReachableSHA1InWant, then
         #       this will turn into a false-negative.  It currently works for GitHub and there is
         #       test_git.py::TestGitAssumptions::test_git_fetch_pack_for_sha to ensure it continues to work
@@ -64,7 +65,9 @@ def git_server_do_you_have_this(remote_url:str, sha:str, workdir:str = ".") -> b
             with hide('stdout', 'stderr'):
                 error(message=msg, func=abort, stdout=fp_res, stderr=fp_res.stderr)
 
-def git_origin_sha_is_pushed(workdir:str = ".") -> (str, str, bool):
+    return False # only to make mypy pass, this can never be reached.
+
+def git_origin_sha_is_pushed(workdir:str = ".") -> Tuple[str, str, bool]:
     """Query git server regarding current commit checked out in `workdir`
     Args:
         workdir: run git at this path

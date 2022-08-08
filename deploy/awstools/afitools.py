@@ -8,7 +8,7 @@ import boto3
 from awstools.awstools import depaginated_boto_query
 
 from pprint import pformat
-from schema import Schema, And, SchemaError, Or, Use
+from schema import Schema, And, SchemaError, Or, Use # type: ignore
 
 rootLogger = logging.getLogger()
 
