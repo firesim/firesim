@@ -24,8 +24,6 @@ def downloadURI(uri: str, local_dest_path: PathLike) -> None:
         rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
     rootLogger.debug(f"Downloading '{uri}' to '{lpath}'")
     fs, rpath = url_to_fs(uri)
-    print(fs, type(fs))
-    print(rpath, type(rpath))
     fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
 
 
