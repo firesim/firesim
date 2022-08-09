@@ -42,7 +42,6 @@ def setup_self_hosted_runners():
         with settings(warn_only=True):
             for runner_idx in range(NUM_RUNNERS):
                 run(f"screen -XS gh-a-runner-{runner_idx} quit")
-        deregister_offline_runners(ci_personal_api_token)
         deregister_runners(ci_personal_api_token, ci_workflow_run_id)
 
         # spawn runners

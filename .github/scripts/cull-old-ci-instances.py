@@ -8,7 +8,7 @@ import pytz
 import boto3
 import sys
 
-from common import unique_tag_key, deregister_runner_if_exists
+from common import unique_tag_key, deregister_runners
 
 # Reuse manager utilities
 from ci_variables import ci_workdir, ci_personal_api_token, ci_workflow_run_id
@@ -31,7 +31,7 @@ def main():
     for inst in all_ci_instances:
         lifetime_secs = (current_time - inst["LaunchTime"]).total_seconds()
         if lifetime_secs > (INSTANCE_LIFETIME_LIMIT_HOURS * 3600):
-            deregister_runner_if_exists(ci_personal_api_token, ci_workflow_run_id)
+            deregister_runners(ci_personal_api_token, ci_workflow_run_id)
             client.terminate_instances(InstanceIds=[inst["InstanceId"]])
             print("  " + inst["InstanceId"])
 

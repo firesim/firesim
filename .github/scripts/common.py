@@ -136,7 +136,6 @@ def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=Fa
     client = boto3.client('ec2')
     if state_change == 'stop':
         print("Stopping instances: {}".format(", ".join(instance_ids)))
-        deregister_offline_runners(gh_token)
         deregister_runners(gh_token, tag_value)
         client.stop_instances(InstanceIds=instance_ids, DryRun=dryrun)
     elif state_change == 'start':
@@ -154,7 +153,6 @@ def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=Fa
 
     elif state_change == 'terminate':
         print("Terminating instances: {}".format(", ".join(instance_ids)))
-        deregister_offline_runners(gh_token)
         deregister_runners(gh_token, tag_value)
         client.terminate_instances(InstanceIds=instance_ids, DryRun=dryrun)
     else:
