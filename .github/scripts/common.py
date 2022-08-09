@@ -102,7 +102,7 @@ def get_runners(gh_token: str) -> List:
     return res_dict["runners"]
 
 def delete_runner(gh_token: str, runner: Dict[str, Any]) -> bool:
-    r = requests.delete("https://api.github.com/repos/firesim/firesim/actions/runners/{}".format(runner["id"]), headers=get_header(gh_token))
+    r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=get_header(gh_token))
     if r.status_code != 204:
         print(f"""Unable to delete runner {runner["name"]} with id: {runner["id"]}""")
         return False
