@@ -66,7 +66,7 @@ def git_server_do_you_have_this(remote_url:str, sha:str, workdir:str = ".") -> b
 
     return False # only to make mypy pass, this can never be reached.
 
-def git_origin_sha_is_pushed(workdir:str = ".") -> Tuple[str, str, str]:
+def git_origin_sha_is_pushed(workdir:str = ".") -> Tuple[str, str, bool]:
     """Query git server regarding current commit checked out in `workdir`
     Args:
         workdir: run git at this path
@@ -80,4 +80,4 @@ def git_origin_sha_is_pushed(workdir:str = ".") -> Tuple[str, str, str]:
     origin = git_origin(workdir)
     is_pushed = git_server_do_you_have_this(origin, hash, workdir)
 
-    return origin, hash + is_dirty_str, str(is_pushed)
+    return origin, hash + is_dirty_str, is_pushed

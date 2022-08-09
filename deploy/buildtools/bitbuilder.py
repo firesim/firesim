@@ -18,7 +18,7 @@ from util.streamlogger import StreamLogger, InfoStreamLogger
 from util.git import git_origin_sha_is_pushed
 
 # imports needed for python type checking
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Hashable, Optional, Dict, Any, TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
 
@@ -263,8 +263,8 @@ class F1BitBuilder(BitBuilder):
         s3bucket = self.s3_bucketname
         afiname = self.build_config.name
 
-        # tags will be expected to awstools.TAG_DICT_SCHEMA.validate(tags)
-        tags = {}
+        # tags will be expected to awstools.afitools.TAG_DICT_SCHEMA.validate(tags)
+        tags: Dict[Hashable, Union[str, bool]] = {}
 
         # construct the "tags" we store in the AGFI description
         tags['firesim-buildtriplet'] = self.build_config.get_chisel_triplet()
