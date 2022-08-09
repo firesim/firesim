@@ -10,3 +10,4 @@ azure-identity>=1.5.0
 azure-mgmt-compute
 azure-mgmt-network
 azure-mgmt-resourcegraph
+fsspec
