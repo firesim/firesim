@@ -37,8 +37,18 @@ def setup_self_hosted_runners():
         print("Using Github Actions Runner v{}".format(RUNNER_VERSION))
         # create NUM_RUNNER self-hosted runners on the manager that run in parallel
         NUM_RUNNERS = 4
+
+        # verify no existing runners are running and remove unused runners
+        with settings(warn_only=True):
+            for runner_idx in range(NUM_RUNNERS):
+                run(f"screen -XS gh-a-runner-{runner_idx} quit")
+        deregister_offline_runners(ci_personal_api_token)
+        deregister_runners(ci_personal_api_token, ci_workflow_run_id)
+
+        # spawn runners
         for runner_idx in range(NUM_RUNNERS):
             actions_dir = "{}/actions-runner-{}".format(manager_home_dir, runner_idx)
+            run("rm -rf {}".format(actions_dir))
             run("mkdir -p {}".format(actions_dir))
             with cd(actions_dir):
                 run("curl -o actions-runner-linux-x64-{}.tar.gz -L https://github.com/actions/runner/releases/download/v{}/actions-runner-linux-x64-{}.tar.gz".format(RUNNER_VERSION, RUNNER_VERSION, RUNNER_VERSION))
@@ -48,10 +58,9 @@ def setup_self_hosted_runners():
                 run("sudo ./bin/installdependencies.sh")
 
                 # get registration token from API
-                headers = {'Authorization': "token {}".format(ci_personal_api_token.strip())}
-                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=headers)
+                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=get_header(ci_personal_api_token))
                 if r.status_code != 201:
-                    raise Exception("HTTPS error: {} {}. Retrying.".format(r.status_code, r.json()))
+                    raise Exception("HTTPS error: {} {}".format(r.status_code, r.json()))
 
                 res_dict = r.json()
                 reg_token = res_dict["token"]
@@ -59,7 +68,7 @@ def setup_self_hosted_runners():
                 # config runner
                 put(".github/scripts/gh-a-runner.expect", actions_dir)
                 run("chmod +x gh-a-runner.expect")
-                runner_name = "{}-{}".format(ci_workflow_run_id, runner_idx) # used to teardown runner
+                runner_name = f"{ci_workflow_run_id}-{ci_workflow_run_retries}-{runner_idx}" # used to teardown runner
                 unique_label = ci_workflow_run_id # used within the yaml to choose a runner
                 run("./gh-a-runner.expect {} {} {}".format(reg_token, runner_name, unique_label))
 
