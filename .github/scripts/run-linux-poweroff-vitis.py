@@ -22,10 +22,11 @@ def run_linux_poweroff_vitis():
             # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
             with prefix('cd sw/firesim-software'):
                 run("./init-submodules.sh")
+                run("echo 'jlevel: 16' >> ./marshal-config.yaml")
 
                 # build outputs.yaml (use this workload since firemarshal can guestmount)
                 with settings(warn_only=True):
-                    rc = run("./marshal -v build test/outputs.yaml &> outputs.full.log").return_code
+                    rc = run("nice ./marshal -v build test/outputs.yaml &> outputs.full.log").return_code
                     if rc != 0:
                         run("cat outputs.full.log")
                         raise Exception("Building test/outputs.yaml failed to run")
