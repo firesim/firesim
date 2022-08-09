@@ -15,7 +15,6 @@ from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummySe
 from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
-from util.streamlogger import StreamLogger
 
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
@@ -30,8 +29,7 @@ def instance_liveness() -> None:
     """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
     actual firesim-related commands on only some of the run farm machines."""
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
-    with StreamLogger('stdout'), StreamLogger('stderr'):
-        run("uname -a")
+    run("uname -a")
 
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
@@ -458,15 +456,14 @@ class FireSimTopologyWithPasses:
                 rootLogger.info("Confirming exit...")
                 # keep checking screen until it reports that there are no screens left
                 while True:
-                    with StreamLogger('stdout'), StreamLogger('stderr'):
-                        screenoutput = run("screen -ls")
-                        # If AutoILA is enabled, use the following condition
-                        if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
-                            break
-                        # If AutoILA is disabled, use the following condition
-                        elif "No Sockets found" in screenoutput:
-                            break
-                        time.sleep(1)
+                    screenoutput = run("screen -ls")
+                    # If AutoILA is enabled, use the following condition
+                    if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
+                        break
+                    # If AutoILA is disabled, use the following condition
+                    elif "No Sockets found" in screenoutput:
+                        break
+                    time.sleep(1)
 
         execute(screens, hosts=all_run_farm_ips)
 
@@ -477,10 +474,9 @@ class FireSimTopologyWithPasses:
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
 
         rootLogger.info("""Creating the directory: {}""".format(self.workload.job_results_dir))
-        with StreamLogger('stdout'), StreamLogger('stderr'):
-            localcap = local("""mkdir -p {}""".format(self.workload.job_results_dir), capture=True)
-            rootLogger.debug("[localhost] " + str(localcap))
-            rootLogger.debug("[localhost] " + str(localcap.stderr))
+        localcap = local("""mkdir -p {}""".format(self.workload.job_results_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
@@ -634,13 +630,12 @@ class FireSimTopologyWithPasses:
         # run post-workload hook, if one exists
         if self.workload.post_run_hook is not None:
             rootLogger.info("Running post_run_hook...")
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local("""cd {} && {} {}""".format(self.workload.workload_input_base_dir,
-                                                  self.workload.post_run_hook,
-                                                  self.workload.job_results_dir),
-                                                  capture=True)
-                rootLogger.debug("[localhost] " + str(localcap))
-                rootLogger.debug("[localhost] " + str(localcap.stderr))
+            localcap = local("""cd {} && {} {}""".format(self.workload.workload_input_base_dir,
+                                                self.workload.post_run_hook,
+                                                self.workload.job_results_dir),
+                                                capture=True)
+            rootLogger.debug("[localhost] " + str(localcap))
+            rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         rootLogger.info("FireSim Simulation Exited Successfully. See results in:\n" + str(self.workload.job_results_dir))
 
