@@ -14,7 +14,7 @@ import firrtl.Utils.{zero, to_flip, BoolType}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import Utils._
-import midas.widgets.{BridgeIOAnnotation, AssertBridgeRecord, AssertBridgeModule}
+import midas.widgets.{BridgeIOAnnotation, AssertBridgeRecord, AssertBridgeModule, AssertBridgeParameters}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.{ExcludeInstanceAssertsAnnotation, GlobalResetConditionSink}
@@ -240,7 +240,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
         val assertMessages = asserts.map(formattedMessages(_))
         val bridgeAnno = BridgeIOAnnotation(
           target = portRT,
-          widget = (p: Parameters) => new AssertBridgeModule(assertPortName, resetPortName, assertMessages)(p),
+          widget = (p: Parameters) => new AssertBridgeModule(AssertBridgeParameters(assertPortName, resetPortName, assertMessages))(p),
           channelNames = Seq(resetPortName, assertPortName)
         )
         assertAnnos ++= Seq(resetConditionAnno, assertFCCA, resetFCCA, bridgeAnno)

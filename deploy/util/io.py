@@ -27,3 +27,24 @@ def downloadURI(uri: str, local_dest_path: PathLike) -> None:
     print(fs, type(fs))
     print(rpath, type(rpath))
     fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
+
+
+
+def firesim_input(prompt: object = None) -> str:
+    """wrap builtins.input() understanding the idiocyncracies of firesim+fabric+logging
+
+    Log the prompt at CRITICAL level so that it will go to the terminal and the log.
+    Log the entered text as DEBUG so that the log contains it.
+    Don't pass the prompt to builtins.input() because we don't need StreamLogger to also
+    be trying to log the prompt.
+    
+    See 'streamlogger.py' and it's use at the end of 'firesim.py'
+    """
+
+    if prompt:
+        rootLogger.critical(prompt)
+
+    res = input()
+    rootLogger.debug("User Provided input():'%s'", res)
+
+    return res

@@ -20,8 +20,8 @@ body:
       description: Repository version for reproducibility
       placeholder: Version + Hash
       value: |
-        Release: 1.13.0
-        Hash: a6a6a6
+        <!-- copy/paste the output of `git describe --tags --long` below -->
+        
     validations:
       required: true
 
@@ -31,7 +31,9 @@ body:
       description: OS setup for reproducibility
       placeholder: OS information
       value: |
-        Ex: Output of `uname -a` and `lsb_release -a`
+        ```
+        <!-- copy/paste the output of `uname -a; lsb_release -a` below -->
+        ```
     validations:
       required: true
 
@@ -41,7 +43,7 @@ body:
       description: Any other setup relevant
       placeholder: Other setup
       value: |
-        Ex: Prior steps taken / Documentation Followed / etc...
+        <!-- Ex: Prior steps taken / Documentation Followed / etc... -->
     validations:
       required: false
 

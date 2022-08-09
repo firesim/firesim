@@ -17,7 +17,7 @@ import time
 import sys
 import requests
 
-from common import terminate_workflow_instances, stop_workflow_instances
+from common import terminate_workflow_instances, stop_workflow_instances, gha_runs_api_url
 
 # Time between HTTPS requests to github
 POLLING_INTERVAL_SECONDS = 60
@@ -36,11 +36,12 @@ def main(workflow_id, gha_ci_personal_token):
     state = None
     consecutive_failures = 0
     headers = {'Authorization': "token {}".format(gha_ci_personal_token.strip())}
+    gha_workflow_api_url = f"{gha_runs_api_url}/{workflow_id}"
 
     while True:
         time.sleep(POLLING_INTERVAL_SECONDS)
 
-        res = requests.get("https://api.github.com/repos/firesim/firesim/actions/runs/{}".format(workflow_id), headers=headers)
+        res = requests.get(gha_workflow_api_url, headers=headers)
         if res.status_code == 200:
             consecutive_failures = 0
             res_dict = res.json()

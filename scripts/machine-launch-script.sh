@@ -281,6 +281,8 @@ set -o pipefail
         verilator==4.034 \
         screen \
     )
+    # clang-format for driver coding style enforcement.
+    CONDA_PACKAGE_SPECS+=( clang-format clang-tools )
 
     # python packages
     # While it is possible to install using pip after creating the

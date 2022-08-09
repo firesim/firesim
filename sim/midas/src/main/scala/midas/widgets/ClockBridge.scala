@@ -74,10 +74,17 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalC
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      widget = Some((p: Parameters) => new ClockBridgeModule(clocks)(p))
+      widget = Some((p: Parameters) => new ClockBridgeModule(ClockParameters(clocks))(p))
     )
   }
 }
+
+/**
+ * Parameters to construct a clock bridge from. Aggregates information about all the output clocks.
+ *
+ * @param clocks Clock information for each output clock.
+ */
+case class ClockParameters(clocks: Seq[RationalClock])
 
 /**
   * The default target-side clock bridge. Generates a vector of
@@ -151,11 +158,12 @@ class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with Cloc
   *
   * Target and host time measurements provided by simif_t are facilitated with MMIO to this bridge
   *
-  * @param clockInfo Clock frequency information for each target clock
+  * @param params Structure describing the clocks of the clock bridge.
   *
   */
-class ClockBridgeModule(clockInfo: Seq[RationalClock])(implicit p: Parameters)
+class ClockBridgeModule(params: ClockParameters)(implicit p: Parameters)
     extends BridgeModule[ClockTokenVector] {
+  val clockInfo = params.clocks
   lazy val module = new BridgeModuleImp(this) {
   val io = IO(new WidgetIO())
   val hPort = IO(new ClockTokenVector(clockInfo.size))

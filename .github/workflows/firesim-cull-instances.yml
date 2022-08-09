@@ -11,6 +11,7 @@ env:
   AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS-DEFAULT-REGION: ${{ secrets.AWS_DEFAULT_REGION }}
   FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  MANAGER_FIRESIM_LOCATION: "~/firesim"
 
 jobs:
   cull-old-ci-instances:

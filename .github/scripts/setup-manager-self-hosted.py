@@ -26,13 +26,8 @@ def wait_machine_launch_complete():
         terminate_workflow_instances(ci_personal_api_token, ci_workflow_run_id)
         sys.exit(1)
 
-def initialize_manager_hosted():
-    """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
-
-    max_runtime (hours): The maximum uptime this manager and its associated
-        instances should have before it is stopped. This serves as a redundant check
-        in case the workflow-monitor is brought down for some reason.
-    """
+def setup_self_hosted_runners():
+    """ Installs GHA self-hosted runner machinery on the manager.  """
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
@@ -54,7 +49,7 @@ def initialize_manager_hosted():
 
                 # get registration token from API
                 headers = {'Authorization': "token {}".format(ci_personal_api_token.strip())}
-                r = requests.post("https://api.github.com/repos/firesim/firesim/actions/runners/registration-token", headers=headers)
+                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=headers)
                 if r.status_code != 201:
                     raise Exception("HTTPS error: {} {}. Retrying.".format(r.status_code, r.json()))
 
@@ -89,4 +84,4 @@ if __name__ == "__main__":
     execute(wait_machine_launch_complete, hosts=[manager_hostname(ci_workflow_run_id)])
     # after we know machine-launch-script.sh is done, we need to logout and log back in
     fabric.network.disconnect_all()
-    execute(initialize_manager_hosted, hosts=[manager_hostname(ci_workflow_run_id)])
+    execute(setup_self_hosted_runners, hosts=[manager_hostname(ci_workflow_run_id)])

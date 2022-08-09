@@ -154,3 +154,12 @@ Defining A New Test
 Extend the appropriate ScalaTest spec or base class, and
 place the file under the correct ``src/test/scala`` directory. They will be
 automatically enumerated by ScalaTest and will run in CI by default.
+
+C/C++ guidelines
+++++++++++++++++
+
+The C++ sources are formatted using ``clang-format`` and all submitted pull-requests
+must be formatted prior to being accepted and merged. The sources follow the coding
+style defined `here <https://github.com/firesim/firesim/blob/main/.clang_format>`_.
+
+``git clang-format`` can be used before committing to ensure that files are properly formatted.

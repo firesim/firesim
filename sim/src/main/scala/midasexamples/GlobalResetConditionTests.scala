@@ -43,7 +43,7 @@ class AssertGlobalResetCondition(implicit p: Parameters) extends GlobalResetCond
 
 class PrintfGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
   (inReset: Bool) => {
-    when(inReset) { printf(SynthesizePrintf(s"This should not print. %b\n", inReset)) }
+    when(inReset) { SynthesizePrintf(printf(s"This should not print. %b\n", inReset)) }
 })
 
 class AutoCounterGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
