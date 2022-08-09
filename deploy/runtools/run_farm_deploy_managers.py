@@ -684,7 +684,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
             hwcfg.local_xclbin = './local.xclbin'
 
-            with cd(remote_sim_dir), StreamLogger('stdout'), StreamLogger('stderr'):
+            with cd(remote_sim_dir):
                 run(downloadURI, hwcfg.xclbin, hwcfg.local_xclbin)
 
         else:
