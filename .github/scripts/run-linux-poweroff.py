@@ -25,11 +25,8 @@ def run_linux_poweroff():
             with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-{script_name}"):
                 rc = 0
                 with settings(warn_only=True):
-                    # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
-                    rc = run(f"timeout {timeout} ./deploy/workloads/run-workload.sh {workload} --withlaunch &> {workload}.log", pty=False).return_code
-                    print(f" Printing last {log_tail_length} lines of log. See {workload}.log for full info.")
-                    run(f"tail -n {log_tail_length} {workload}.log")
+                    rc = run(f"timeout {timeout} ./deploy/workloads/run-workload.sh {workload} --withlaunch", pty=False).return_code
 
                     # This is a janky solution to the fact the manager does not
                     # return a non-zero exit code or some sort of result summary.

@@ -10,13 +10,7 @@ def build_default_workloads():
     with prefix(f'cd {manager_fsim_dir} && source sourceme-f1-manager.sh'), \
          prefix(f'cd {manager_fsim_dir}/deploy/workloads'):
 
-        # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
-        with settings(warn_only=True):
-            rc = run("marshal -v build br-base.json &> br-base.full.log").return_code
-            if rc != 0:
-                run("cat br-base.full.log")
-                raise Exception("Building br-base.json failed to run")
-
+        run("marshal -v build br-base.json")
         run("make linux-poweroff")
         run("make allpaper")
 
