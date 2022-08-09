@@ -67,7 +67,7 @@ def setup_self_hosted_runners():
                 # config runner
                 put(".github/scripts/gh-a-runner.expect", actions_dir)
                 run("chmod +x gh-a-runner.expect")
-                runner_name = f"{ci_workflow_run_id}-{ci_workflow_run_retries}-{runner_idx}" # used to teardown runner
+                runner_name = f"{ci_workflow_run_id}-{runner_idx}" # used to teardown runner
                 unique_label = ci_workflow_run_id # used within the yaml to choose a runner
                 run("./gh-a-runner.expect {} {} {}".format(reg_token, runner_name, unique_label))
 

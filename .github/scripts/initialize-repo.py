@@ -10,6 +10,7 @@ def initialize_repo():
     """ Initializes firesim repo: clones, runs build-setup, and intializes marshal submodules """
 
     with cd(manager_home_dir):
+        run("rm -rf {}".format(manager_fsim_dir))
         # copy ci version of the repo into the new globally accessible location
         run("git clone {} {}".format(ci_workdir, manager_fsim_dir))
 

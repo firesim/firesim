@@ -15,7 +15,6 @@ local_fsim_dir = os.path.normpath((os.path.realpath(__file__)) + "/../../..")
 
 # This is used as a unique tag for all instances launched in a workflow
 ci_workflow_run_id = os.environ['GITHUB_RUN_ID'] if not RUN_LOCAL else 0
-ci_workflow_run_retries = os.environ['GITHUB_RUN_ATTEMPT'] if not RUN_LOCAL else 0
 ci_commit_sha1 = os.environ['GITHUB_SHA'] if not RUN_LOCAL else 0
 
 # Multiple clones of the FireSim repository exists on manager. We expect state

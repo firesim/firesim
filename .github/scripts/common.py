@@ -1,6 +1,7 @@
 import sys
 import boto3
 import os
+import math
 from fabric.api import *
 import requests
 from ci_variables import ci_firesim_dir, local_fsim_dir, ci_gha_api_url, ci_repo_name
@@ -97,9 +98,19 @@ def get_header(gh_token: str) -> Dict[str, str]:
 def get_runners(gh_token: str) -> List:
     r = requests.get(gha_runners_api_url, headers=get_header(gh_token))
     if r.status_code != 200:
-        raise Exception("Unable to retrieve list of GitHub Actions Runners")
+        raise Exception("Unable to retrieve count of GitHub Actions Runners")
     res_dict = r.json()
-    return res_dict["runners"]
+    runner_count = res_dict["total_count"]
+
+    runners = []
+    for page_idx in range(math.ceil(runner_count / 30)):
+        r = requests.get(gha_runners_api_url, params={"per_page" : 30, "page" : page_idx + 1}, headers=get_header(gh_token))
+        if r.status_code != 200:
+            raise Exception("Unable to retrieve (sub)list of GitHub Actions Runners")
+        res_dict = r.json()
+        runners = runners + res_dict["runners"]
+
+    return runners
 
 def delete_runner(gh_token: str, runner: Dict[str, Any]) -> bool:
     r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=get_header(gh_token))
