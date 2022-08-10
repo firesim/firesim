@@ -1,3 +1,6 @@
+#ifndef __FLIT_H
+#define __FLIT_H
+
 #include <stdlib.h>
 
 #define BROADCAST_ADJUSTED (0xffff)
@@ -84,3 +87,4 @@ uint16_t get_port_from_flit(uint64_t flit, int current_port) {
   // printf("port: %04x\n", sendport);
   return sendport;
 }
+#endif // __FLIT_H
