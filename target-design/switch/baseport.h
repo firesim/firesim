@@ -1,3 +1,8 @@
+#ifndef __BASEPORT_H
+#define __BASEPORT_H
+
+#include "flit.h"
+
 #define FLIT_BITS 64
 #define BITTIME_PER_QUANTA 512
 #define CYCLES_PER_QUANTA (BITTIME_PER_QUANTA / FLIT_BITS)
@@ -181,3 +186,4 @@ void BasePort::setup_send_buf() {
     *((uint64_t *)(current_output_buf) + bigtokenno * 8) = 0L;
   }
 }
+#endif // __BASEPORT_H
