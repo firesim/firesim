@@ -1,3 +1,6 @@
+#ifndef __SOCKETPORT_H
+#define __SOCKETPORT_H
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -210,3 +213,4 @@ void SocketServerPort::tick() {
 void SocketServerPort::tick_pre() {
   // does nothing in this port
 }
+#endif // __SOCKETPORT_H
