@@ -52,6 +52,9 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh
         kwargs["password"] = ""
         kwargs["key_filename"] = os.path.join(os.path.dirname(__file__), test_key)
 
+    else:
+        raise RuntimeError(f"Unknown protocol '{protocol_type}'")
+
     if test_dest_file_path.exists():
         os.remove(os.fspath(test_dest_file_path))
 
