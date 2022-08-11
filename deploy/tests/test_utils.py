@@ -19,7 +19,7 @@ pytest.mark.usefixtures("aws_test_credentials")
     ]
 )
 @mock_s3
-def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh):
+def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh_and_key):
     from util.io import downloadURI
     
     logger_mock = mocker.patch("util.io.rootLogger", MagicMock())
@@ -46,10 +46,11 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh
         file_uri = f"file://{test_file_path}"
 
     elif protocol_type == "ssh":
-        file_uri = f"ssh://{mock_paramiko_ssh.host}:{mock_paramiko_ssh.port}/tmp/test_file.json"
+        mock_paramiko_server, test_key = mock_paramiko_ssh_and_key
+        file_uri = f"ssh://{mock_paramiko_server.host}:{mock_paramiko_server.port}/tmp/test_file.json"
         kwargs["username"] = "sample-user"
         kwargs["password"] = ""
-        kwargs["key_filename"] = os.path.join(os.path.dirname(__file__), "ssh_test_rsa_key")
+        kwargs["key_filename"] = os.path.join(os.path.dirname(__file__), test_key)
 
     if test_dest_file_path.exists():
         os.remove(str(test_dest_file_path))

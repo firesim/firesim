@@ -87,10 +87,12 @@ def task_mocker(mocker: MockerFixture):
 
 
 @pytest.fixture
-def mock_paramiko_ssh():
-    with mockssh.Server(users={"sample-user": os.path.join(os.path.dirname(__file__), "ssh_test_rsa_key")}) as server:
+def mock_paramiko_ssh_and_key():
+    sample_key = os.path.join(os.path.dirname(os.path.abspath(mockssh.__file__)), "sample-user-key")
+
+    with mockssh.Server(users={"sample-user": sample_key}) as server:
         with server.client(uid="sample-user") as c:
             sftp = c.open_sftp()
             sftp.put(os.path.join(os.path.dirname(__file__), "fsspec_test_json.json"), "/tmp/test_file.json", confirm=True)
         
-        yield server
+        yield server, sample_key
