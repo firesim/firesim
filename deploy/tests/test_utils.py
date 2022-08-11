@@ -15,14 +15,17 @@ pytest.mark.usefixtures("aws_test_credentials")
     [
         ('s3',Path("tests/s3_test_download_json.json")),
         ('file',Path("tests/file_test_download_json.json")),
+        #('sftp',Path("tests/sftp_test_download_json.json")),
+        ('ssh',Path("tests/ssh_test_download_json.json")),
     ]
 )
 @mock_s3
-def test_download_uri(mocker,protocol_type,test_dest_file_path):
+def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh):
     from util.io import downloadURI
     
     logger_mock = mocker.patch("util.io.rootLogger", MagicMock())
     test_file_path = Path("tests/fsspec_test_json.json")
+    kwargs = {}
     
     if protocol_type == 's3':
         try:
@@ -40,15 +43,22 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
         except ClientError as e:
             pytest.fail("Failed to mock an S3 client and upload a file.")
 
-    if protocol_type == 'file':
+    elif protocol_type == 'file':
         file_uri = f"file://{test_file_path}"
+
+    elif protocol_type == "ssh":
+        file_uri = f"ssh://{mock_paramiko_ssh.host}:{mock_paramiko_ssh.port}/tmp/test_file.json"
+        kwargs["username"] = "sample-user"
+        kwargs["password"] = ""
+        kwargs["key_filename"] = os.path.join(os.path.dirname(__file__), "ssh_test_rsa_key")
 
     if test_dest_file_path.exists():
         os.remove(str(test_dest_file_path))
 
     downloadURI(
         uri=file_uri,
-        local_dest_path=test_dest_file_path
+        local_dest_path=test_dest_file_path,
+        **kwargs,
     )
 
     assert os.path.exists(test_dest_file_path), f"{test_dest_file_path} was not created."
@@ -57,7 +67,8 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
 
     downloadURI(
         uri=file_uri,
-        local_dest_path=test_dest_file_path
+        local_dest_path=test_dest_file_path,
+        **kwargs,
     )
 
     logger_mock.debug.assert_has_calls([

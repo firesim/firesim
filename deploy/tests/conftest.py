@@ -6,6 +6,7 @@ import os
 from os.path import dirname
 from pathlib import Path
 
+import mockssh
 
 # fixtures defined in this file will be available to all tests. see
 # https://docs.pytest.org/en/4.6.x/example/simple.html#package-directory-level-fixtures-setups
@@ -83,3 +84,13 @@ def task_mocker(mocker: MockerFixture):
             return t
 
     return TaskMocker(mocker)
+
+
+@pytest.fixture
+def mock_paramiko_ssh():
+    with mockssh.Server(users={"sample-user": os.path.join(os.path.dirname(__file__), "ssh_test_rsa_key")}) as server:
+        with server.client(uid="sample-user") as c:
+            sftp = c.open_sftp()
+            sftp.put(os.path.join(os.path.dirname(__file__), "fsspec_test_json.json"), "/tmp/test_file.json", confirm=True)
+        
+        yield server

@@ -347,6 +347,7 @@ set -o pipefail
         mypy-boto3-ec2==1.21.9 \
         sure==2.0.0 \
         pylddwrap==1.2.1 \
+        mock-ssh-server \
     )
     if [[ -n "$PIP_PKGS[*]" ]]; then
         "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_PIP_EXE}" install "${PIP_PKGS[@]}"
