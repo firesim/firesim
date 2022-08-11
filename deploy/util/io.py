@@ -12,6 +12,7 @@ def downloadURI(uri: str, local_dest_path: PathLike, **kwargs) -> None:
         uri: uri of an object to be fetched
         local_dest_path: path on the local file system to store the uri object
         **kwargs: any arguments related to a specific protocol. e.g. username, keyfilename for ssh/sftp.
+            any passed in kwargs will be passed in to url_to_fs as is.
     """    
 
     # TODO consider using fsspec
