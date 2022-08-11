@@ -15,7 +15,6 @@ pytest.mark.usefixtures("aws_test_credentials")
     [
         ('s3',Path("tests/s3_test_download_json.json")),
         ('file',Path("tests/file_test_download_json.json")),
-        #('sftp',Path("tests/sftp_test_download_json.json")),
         ('ssh',Path("tests/ssh_test_download_json.json")),
     ]
 )
