@@ -1,12 +1,13 @@
 import logging
 from os import PathLike, fspath
+from typing import Any
 from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
 
 rootLogger = logging.getLogger()
 
 
-def downloadURI(uri: str, local_dest_path: PathLike, **kwargs) -> None:
+def downloadURI(uri: str, local_dest_path: PathLike, **kwargs: Any) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system.
     Args:
         uri: uri of an object to be fetched

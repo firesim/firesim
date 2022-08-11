@@ -37,7 +37,7 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh
                    'LocationConstraint': 'us-west-2',
                 }
             )
-            mock_s3_client.upload_file(str(test_file_path), test_bucket, test_bucket_key)
+            mock_s3_client.upload_file(os.fspath(test_file_path), test_bucket, test_bucket_key)
             file_uri = f"s3://{test_bucket}/{test_bucket_key}"
         except ClientError as e:
             pytest.fail("Failed to mock an S3 client and upload a file.")
@@ -53,7 +53,7 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh
         kwargs["key_filename"] = os.path.join(os.path.dirname(__file__), test_key)
 
     if test_dest_file_path.exists():
-        os.remove(str(test_dest_file_path))
+        os.remove(os.fspath(test_dest_file_path))
 
     downloadURI(
         uri=file_uri,
@@ -61,7 +61,7 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh
         **kwargs,
     )
 
-    assert os.path.exists(test_dest_file_path), f"{test_dest_file_path} was not created."
+    assert os.path.exists(test_dest_file_path), f"Test destination file {test_dest_file_path} was not created."
 
     logger_mock.debug.assert_called_once_with(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
 
@@ -77,4 +77,4 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path,mock_paramiko_ssh
         call(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
     ])
 
-    os.remove(str(test_dest_file_path))
+    os.remove(os.fspath(test_dest_file_path))
