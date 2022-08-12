@@ -49,6 +49,7 @@ Provide a brief description of the PR immediately below this comment, if the tit
 - [ ] If applicable, did you apply the `Please Backport` label?
 
 ### Reviewer Checklist (only modified by reviewer)
+Note: to run CI on PRs from forks, comment `@Mergifyio copy main` and manage the change from the new PR.
 - [ ] Is the title suitable for inclusion in the changelog and does the PR have a `changelog:<topic>` label?
 - [ ] Did you mark the proper release milestone?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
