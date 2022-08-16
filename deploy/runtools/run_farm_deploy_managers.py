@@ -10,11 +10,7 @@ from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hi
 from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
-from os import PathLike, fspath
-from fsspec.core import url_to_fs # type: ignore
-from pathlib import Path
 
-from util.io import downloadURI
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
@@ -26,9 +22,6 @@ if TYPE_CHECKING:
     from awstools.awstools import MockBoto3Instance
 
 rootLogger = logging.getLogger()
-
-# from  https://github.com/pandas-dev/pandas/blob/96b036cbcf7db5d3ba875aac28c4f6a678214bfb/pandas/io/common.py#L73
-_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
 
 class NBDTracker:
     """Track allocation of NBD devices on an instance. Used for mounting
@@ -155,7 +148,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
     def copy_sim_slot_infrastructure(self, slotno: int) -> None:
         """ copy all the simulation infrastructure to the remote node. """
         if self.instance_assigned_simulations():
-            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            assert slotno < len(self.parent_node.sim_slots)
             serv = self.parent_node.sim_slots[slotno]
 
             self.instance_logger(f"""Copying {self.sim_type_message} simulation infrastructure for slot: {slotno}.""")
@@ -208,7 +201,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
-            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            assert slotno < len(self.parent_node.sim_slots)
             server = self.parent_node.sim_slots[slotno]
             with cd(remote_sim_dir):
                 run(server.get_sim_start_command(slotno, has_sudo()))
@@ -230,7 +223,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """ kill the simulation in slot slotno. """
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Killing {self.sim_type_message} simulation for slot: {slotno}.""")
-            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            assert slotno < len(self.parent_node.sim_slots)
             server = self.parent_node.sim_slots[slotno]
             with warn_only():
                 if has_sudo():
@@ -640,25 +633,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             for card_bdf in card_bdfs:
                 run(f"xbutil reset -d {card_bdf} --force")
 
-    def localize_xclbin(self, slotno: int) -> None:
-        """ download xclbin URI to remote node. """
-        assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
-        serv = self.parent_node.sim_slots[slotno]
-        hwcfg = serv.get_resolved_server_hardware_config()
-        assert hwcfg.xclbin is not None
-        if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
-            remote_home_dir = self.parent_node.get_sim_dir()
-            remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
-            hwcfg.local_xclbin = './local.xclbin'
-
-            with cd(remote_sim_dir):
-                run(downloadURI, hwcfg.xclbin, hwcfg.local_xclbin)
-
-        else:
-            hwcfg.local_xclbin = hwcfg.xclbin
-
-
-
     def infrasetup_instance(self) -> None:
         """ Handle infrastructure setup for this platform. """
         metasim_enabled = self.parent_node.metasimulation_enabled
@@ -669,7 +643,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
-                self.localize_xclbin(slotno)
 
             if not metasim_enabled:
                 # clear/flash fpgas

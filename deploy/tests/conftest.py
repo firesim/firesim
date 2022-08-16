@@ -6,7 +6,6 @@ import os
 from os.path import dirname
 from pathlib import Path
 
-
 # fixtures defined in this file will be available to all tests. see
 # https://docs.pytest.org/en/4.6.x/example/simple.html#package-directory-level-fixtures-setups
 
@@ -83,3 +82,4 @@ def task_mocker(mocker: MockerFixture):
             return t
 
     return TaskMocker(mocker)
+
