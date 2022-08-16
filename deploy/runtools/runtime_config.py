@@ -39,10 +39,7 @@ class RuntimeHWConfig:
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
-    """User-specified, possibly-URI, path to xclbin"""
     xclbin: Optional[str]
-    """RunFarmHost-local path to xclbin"""
-    local_xclbin: Optional[str]
 
     deploytriplet: Optional[str]
     customruntimeconfig: str
@@ -62,7 +59,6 @@ class RuntimeHWConfig:
 
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
-        self.local_xclbin = None
 
         if self.agfi is not None:
             self.platform = "f1"
@@ -204,8 +200,8 @@ class RuntimeHWConfig:
         run_device_placement = "+slotid={}".format(slotid)
 
         if self.platform == "vitis":
-            assert self.local_xclbin is not None
-            vitis_bit = "+binary_file={}".format(self.local_xclbin)
+            assert self.xclbin is not None
+            vitis_bit = "+binary_file={}".format(self.xclbin)
         else:
             vitis_bit = ""
 
