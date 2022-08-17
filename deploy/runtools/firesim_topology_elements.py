@@ -322,6 +322,14 @@ class FireSimServerNode(FireSimNode):
         """
         assert self.has_assigned_host_instance(), "copy requires assigned host instance"
 
+        # rsync_project defaults to using -a and that will copy symlinks as links
+        # and preserve group ownership and permissions.
+        copy_back_extra_opts = ' '.join([
+            '-L', # transform symlink into referent file/dir
+            '--no-group', # use default group here for creating local files
+            '--no-perms --chmod=ugo=rwX', # obey local umask
+        ])
+
         jobinfo = self.get_job()
         simserverindex = slotno
         job_results_dir = self.get_job().parent_workload.job_results_dir
@@ -387,7 +395,7 @@ class FireSimServerNode(FireSimNode):
                     rsync_cap = rsync_project(remote_dir=mountpoint + outputfile,
                             local_dir=job_dir,
                             ssh_opts="-o StrictHostKeyChecking=no",
-                            extra_opts="-L",
+                            extra_opts=copy_back_extra_opts,
                             upload=False,
                             capture=True)
                     rootLogger.debug(rsync_cap)
@@ -409,7 +417,7 @@ class FireSimServerNode(FireSimNode):
                 rsync_cap = rsync_project(remote_dir=remote_sim_run_dir + simoutputfile,
                         local_dir=job_dir,
                         ssh_opts="-o StrictHostKeyChecking=no",
-                        extra_opts="-L",
+                        extra_opts=copy_back_extra_opts,
                         upload=False,
                         capture=True)
                 rootLogger.debug(rsync_cap)
