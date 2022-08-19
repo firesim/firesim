@@ -278,7 +278,7 @@ set -o pipefail
         graphviz \
         expect \
         dtc \
-        verilator==4.034 \
+        verilator==4.224 \
         screen \
     )
     # clang-format for driver coding style enforcement.
