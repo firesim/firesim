@@ -16,10 +16,6 @@
 
 uint64_t main_time = 0;
 
-mmio_t *simif_emul_t::master = nullptr;
-mmio_t *simif_emul_t::dma = nullptr;
-mm_t *simif_emul_t::slave[MEM_NUM_CHANNELS] = {nullptr};
-
 #ifdef VCS
 context_t *host;
 context_t target;
@@ -77,20 +73,9 @@ simif_emul_t::simif_emul_t() {
     to_host_streams.push_back(
         StreamToCPU(params, mmio_read_func, pcis_read_func));
   }
-
-  assert(master == nullptr);
-  assert(dma == nullptr);
-  master = new mmio_t(CTRL_BEAT_BYTES);
-  dma = new mmio_t(DMA_BEAT_BYTES);
 }
 
-simif_emul_t::~simif_emul_t() {
-  delete master;
-  delete dma;
-  for (int i = 0; i < MEM_NUM_CHANNELS; i++) {
-    delete slave[i];
-  }
-}
+simif_emul_t::~simif_emul_t() { };
 
 void simif_emul_t::host_init(int argc, char **argv) {
   // Parse args

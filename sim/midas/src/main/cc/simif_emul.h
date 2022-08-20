@@ -34,17 +34,20 @@ public:
   /**
    * @brief Pointers to inter-context (i.e., between VCS/verilator and driver)
    * AXI4 transaction channels
+   *
+   * These have external linkage to enable VCS to easily access them.
    */
-  static mmio_t *master;
-  static mmio_t *dma;
+  inline static mmio_t *master = new mmio_t(CTRL_BEAT_BYTES);
+  inline static mmio_t *dma = new mmio_t(DMA_BEAT_BYTES);
   /**
    * @brief Host DRAM models shared across the RTL simulator and driver
    * contexts.
    *
    * The driver only needs access to these to implement a faster form of
-   * loadmem.
+   * loadmem, which instead of using mmio (~10 cycles per MMIO transaction),
+   * writes directly into the backing memory (0 cycles). See simif_emul_t::load_mems.
    */
-  static mm_t *slave[MEM_NUM_CHANNELS];
+  inline static mm_t* slave[MEM_NUM_CHANNELS] = {nullptr};
 
 private:
   // The maximum number of cycles the RTL simulator can advance before
