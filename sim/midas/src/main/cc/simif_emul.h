@@ -45,9 +45,10 @@ public:
    *
    * The driver only needs access to these to implement a faster form of
    * loadmem, which instead of using mmio (~10 cycles per MMIO transaction),
-   * writes directly into the backing memory (0 cycles). See simif_emul_t::load_mems.
+   * writes directly into the backing memory (0 cycles). See
+   * simif_emul_t::load_mems.
    */
-  inline static mm_t* slave[MEM_NUM_CHANNELS] = {nullptr};
+  inline static mm_t *slave[MEM_NUM_CHANNELS] = {nullptr};
 
 private:
   // The maximum number of cycles the RTL simulator can advance before

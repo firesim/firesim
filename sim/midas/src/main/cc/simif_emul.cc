@@ -75,7 +75,7 @@ simif_emul_t::simif_emul_t() {
   }
 }
 
-simif_emul_t::~simif_emul_t() { };
+simif_emul_t::~simif_emul_t(){};
 
 void simif_emul_t::host_init(int argc, char **argv) {
   // Parse args
