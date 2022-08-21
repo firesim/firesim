@@ -52,9 +52,9 @@ class TestGitAssumptions:
         remote_refs.should_not.be.empty
         rootLogger.info(f"found {len(remote_refs)} remote references")
 
-        rootLogger.info("start from the default branch of the origin (as of whenever we fetched last)")
-        sha = run(f"git rev-parse origin/HEAD", text=True,
-                     check=True, shell=True, stdout=PIPE).stdout.rstrip("\n")
+        rootLogger.info("start from the default branch of the origin")
+        sha = run(f"git ls-remote origin HEAD", text=True,
+                     check=True, shell=True, stdout=PIPE).stdout.rstrip("\n").split()[0]
         rootLogger.info(f"starting sha:'{sha}'")
 
         while sha in remote_refs:

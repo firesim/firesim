@@ -7,7 +7,18 @@ def shell(cmd:str) -> CompletedProcess:
     return run(cmd, check=True, shell=True, capture_output=True, text=True)
 
 @pytest.fixture()
-def temp_cloned_repo(tmp_path):
+def git_config_only_local(monkeypatch):
+    """Prevent git from being influenced by ~/.gitconfig or $PREFIX/etc/gitconfig
+
+       see:
+         * https://git-scm.com/docs/git#Documentation/git.txt-codeGITCONFIGGLOBALcode
+         * https://docs.pytest.org/en/7.0.x/how-to/monkeypatch.html#monkeypatching-environment-variables
+    """
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", "/dev/null")
+
+@pytest.fixture()
+def temp_cloned_repo(tmp_path, git_config_only_local):
     origin = tmp_path / "origin"
     origin.mkdir()
     shell(f"git -C {origin} init ")
