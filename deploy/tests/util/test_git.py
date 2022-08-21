@@ -59,6 +59,7 @@ class TestGitAssumptions:
 
         while sha in remote_refs:
             # walk first parents backward in history
+            # until we find one that isn't 'advertised' by ls-remote
             # will exit non-zero if we get to the end
             sha = run(f"git rev-parse {sha}~", text=True,
                       check=True, shell=True, stdout=PIPE).stdout.rstrip("\n")
@@ -129,13 +130,6 @@ class TestGitHelpers:
 
         origin = git_origin(fspath(temp_cloned_repo))
         sha, dirty = git_sha_dirty(fspath(temp_cloned_repo))
-
-        rootLogger.info("Initial request should be denied due to server config")
-        with pytest.raises(GitServerSHA1Denial):
-            git_server_do_you_have_this(origin, sha, fspath(temp_cloned_repo))
-
-        rootLogger.info("Change origin config to allow request for unadvertized shas (matching Github)")
-        run(f"git -C {origin} config --local uploadpack.allowReachableSHA1InWant true", shell=True, check=True)
 
         is_pushed = git_server_do_you_have_this(origin, sha, fspath(temp_cloned_repo))
         rootLogger.info("Initially cloned commit should exist on origin")
