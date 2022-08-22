@@ -175,6 +175,9 @@ set -o pipefail
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_update_conda false
 	# automatically use the ucb-bar channel for specific packages https://anaconda.org/ucb-bar/repo
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --add channels ucb-bar
+	
+	# DEBUG:
+	"${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --show channels
 
         # conda-build is a special case and must always be installed into the base environment
         $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-build
