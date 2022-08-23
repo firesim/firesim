@@ -212,108 +212,15 @@ set -o pipefail
     #   documentation on package_spec syntax for constraining versions
     CONDA_PACKAGE_SPECS=()
 
-
-    # handy tool for introspecting package relationships and file ownership
-    # see https://github.com/rvalieris/conda-tree
-    CONDA_PACKAGE_SPECS=( conda-tree )
-
-    # bundle FireSim driver with deps into installer shell-script
-    CONDA_PACKAGE_SPECS=( constructor )
-
-    # https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html#using-the-compiler-packages
-    #    for notes on using the conda compilers
-    # elfutils has trouble building with gcc 11 for something that looks like it needs to be fixed upstream
-    # ebl_syscall_abi.c:37:64: error: argument 5 of type 'int *' declared as a pointer [-Werror=array-parameter=]
-    #    37 | ebl_syscall_abi (Ebl *ebl, int *sp, int *pc, int *callno, int *args)
-    #       |                                                           ~~~~~^~~~
-    # In file included from ./../libasm/libasm.h:35,
-    #                  from ./libeblP.h:33,
-    #                  from ebl_syscall_abi.c:33:
-    # ./libebl.h:254:46: note: previously declared as an array 'int[6]'
-    #   254 |                             int *callno, int args[6]);
-    #       |                                          ~~~~^~~~~~~
-    #
-    # pin to gcc=10 until we get that fixed.
-
-    CONDA_PACKAGE_SPECS+=( gcc=10 gxx=10 binutils conda-gcc-specs )
-
-    # if building riscv-toolchain from source, we need to use bison=3.4 until we have
-    # https://github.com/riscv-collab/riscv-binutils-gdb/commit/314ec7aeeb1b2e68f0d8fb9990f2335f475a6e33
-    CONDA_PACKAGE_SPECS+=( bison=3.4 )
-
-    # poky deps
-    CONDA_PACKAGE_SPECS+=( python=3.8 patch texinfo subversion chrpath git wget )
-    # qemu deps
-    CONDA_PACKAGE_SPECS+=( gtk3 glib pkg-config bison flex )
-    # qemu also requires being built against kernel-headers >= 2.6.38 because of it's use of
-    # MADV_NOHUGEPAGE in a call to madvise.  See:
-    # https://man7.org/linux/man-pages/man2/madvise.2.html
-    # https://conda-forge.org/docs/maintainer/knowledge_base.html#using-centos-7
-    # obvi this would need to be made linux-specific if we supported other MacOS or Windows
-    CONDA_PACKAGE_SPECS+=( "kernel-headers_linux-64>=2.6.38" )
-    # firemarshal deps
-    CONDA_PACKAGE_SPECS+=( rsync psutil doit=0.35.0 gitpython humanfriendly e2fsprogs ctags bison flex expat )
-    # cross-compile glibc 2.28+ deps
-    # current version of buildroot won't build with make 4.3 https://github.com/firesim/FireMarshal/issues/236
-    CONDA_PACKAGE_SPECS+=( make!=4.3 )
-    # build-libelf wants autoconf
-    CONDA_PACKAGE_SPECS+=( autoconf automake libtool )
-    # other misc deps
+    # minimal specs to allow cloning of firesim repo and access to the manager
     CONDA_PACKAGE_SPECS+=(
         bash-completion \
-        sbt \
         ca-certificates \
         mosh \
-        gmp \
-        mpfr \
-        mpc \
-        zlib \
         vim \
         git  \
-        openjdk \
-        gengetopt \
-        libffi \
-        expat \
-        libusb1 \
-        ncurses \
-        cmake \
-        graphviz \
-        expect \
-        dtc \
-        verilator==4.034 \
         screen \
-	elfutils \
-	libdwarf-dev==0.0.0.20190110_28_ga81397fc4 \
-    )
-    # clang-format for driver coding style enforcement.
-    CONDA_PACKAGE_SPECS+=( clang-format clang-tools )
-
-    # python packages
-    # While it is possible to install using pip after creating the
-    # conda environment, pip's dependency resolution can conflict with
-    # conda and create broken environments.  It's best to use the conda
-    # packages so that the environment is consistent
-    CONDA_PACKAGE_SPECS+=( \
-        boto3==1.20.21 \
-        colorama==0.4.3 \
         argcomplete==1.12.3 \
-        python-graphviz==0.19 \
-        pyparsing==3.0.6 \
-        numpy==1.19.5 \
-        kiwisolver==1.3.1 \
-        matplotlib-base==3.3.4 \
-        pandas==1.1.5 \
-        awscli==1.22.21 \
-        pytest==6.2.5 \
-        pytest-dependency==0.5.1 \
-        pytest-mock==3.7.0 \
-        moto==3.1.0 \
-        pyyaml==5.4.1 \
-        mypy==0.931 \
-        types-pyyaml==6.0.4 \
-        boto3-stubs==1.21.6 \
-        botocore-stubs==1.24.7 \
-        mypy-boto3-s3==1.21.0 \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
@@ -331,29 +238,8 @@ set -o pipefail
         fi
     fi
 
-    # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to pip
-    CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
-
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
     $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -y "${CONDA_PACKAGE_SPECS[@]}"
-
-
-    # Install python packages using pip that are not available from conda
-    #
-    # Installing things with pip is possible.  However, to get
-    # the most complete solution to all dependencies, you should
-    # prefer creating the environment with a single invocation of
-    # conda
-    PIP_PKGS=( \
-        fab-classic==1.19.1 \
-        mypy-boto3-ec2==1.21.9 \
-        sure==2.0.0 \
-        pylddwrap==1.2.1 \
-    )
-    if [[ -n "$PIP_PKGS[*]" ]]; then
-        "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_PIP_EXE}" install "${PIP_PKGS[@]}"
-    fi
-
 
     argcomplete_extra_args=()
     if [[ "$INSTALL_TYPE" == system ]]; then

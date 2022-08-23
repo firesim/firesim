@@ -173,36 +173,10 @@ fi
 # When FireSim is being used as a library, the user is expected to build their
 # own toolchain. For FireSim-as-top, call out to Chipyard's toolchain scripts.
 if [ "$SKIP_TOOLCHAIN" != true ]; then
-    # Restrict the devtoolset environment to a subshell
-    #
-    # The devtoolset wrapper around sudo does not correctly pass options
-    # through, which causes an aws-fpga SDK setup script to fail:
-    # platforms/f1/aws-fpga/sdk/userspace/install_fpga_mgmt_tools.sh
-    (
-        # Enable latest Developer Toolset for GNU make 4.x
-        devtoolset=''
-        for dir in /opt/rh/devtoolset-* ; do
-            ! [ -x "${dir}/root/usr/bin/make" ] || devtoolset="${dir}"
-        done
-        if [ -n "${devtoolset}" ] ; then
-            echo "Enabling ${devtoolset##*/}"
-            . "${devtoolset}/enable"
-        fi
-
-	# chipyards build-toolchains.sh make defaults to gnumake or gmake but we 
-	# have latest make installed as make
-	export MAKE=make
-
-        # Build the toolchain through chipyard (whether as top or as library)
-        cd "$target_chipyard_dir"
-        if [ "$FASTINSTALL" = "true" ] ; then
-            MAKE=make ./scripts/build-toolchains.sh ec2fast
-        else
-            MAKE=make ./scripts/build-toolchains.sh
-        fi
-    )
-    source "$target_chipyard_dir/env.sh"
-    env_append "source $target_chipyard_dir/env.sh"
+    conda env create -f=./scripts/conda-requirements.yaml -p=./.conda-env
+    source ./.conda-env/etc/profile.d/conda.sh
+    conda activate ./.conda-env
+    env_append "conda activate ./.conda-env"
 fi
 
 cd $RDIR
