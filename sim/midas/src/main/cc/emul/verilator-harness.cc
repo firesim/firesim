@@ -20,7 +20,7 @@ void tick() {
 
   // ASSUMPTION: All models have *no* combinational paths through I/O
   // Step 1: Clock lo -> propagate signals between DUT and software models
-  top->ctrl_aw_valid = simif_emul_t::simif_emul_t::master->aw_valid();
+  top->ctrl_aw_valid = simif_emul_t::master->aw_valid();
   top->ctrl_aw_bits_id = simif_emul_t::master->aw_id();
   top->ctrl_aw_bits_addr = simif_emul_t::master->aw_addr();
   top->ctrl_aw_bits_size = simif_emul_t::master->aw_size();
