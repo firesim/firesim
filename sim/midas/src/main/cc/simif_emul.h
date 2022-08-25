@@ -3,7 +3,6 @@
 #ifndef __SIMIF_EMUL_H
 #define __SIMIF_EMUL_H
 
-#include <memory>
 #include <vector>
 
 #include "bridges/cpu_managed_stream.h"
@@ -32,6 +31,24 @@ public:
                       void *src,
                       size_t num_bytes,
                       size_t threshold_bytes);
+  /**
+   * @brief Pointers to inter-context (i.e., between VCS/verilator and driver)
+   * AXI4 transaction channels
+   *
+   * These have external linkage to enable VCS to easily access them.
+   */
+  inline static mmio_t *master = new mmio_t(CTRL_BEAT_BYTES);
+  inline static mmio_t *dma = new mmio_t(DMA_BEAT_BYTES);
+  /**
+   * @brief Host DRAM models shared across the RTL simulator and driver
+   * contexts.
+   *
+   * The driver only needs access to these to implement a faster form of
+   * loadmem, which instead of using mmio (~10 cycles per MMIO transaction),
+   * writes directly into the backing memory (0 cycles). See
+   * simif_emul_t::load_mems.
+   */
+  inline static mm_t *slave[MEM_NUM_CHANNELS] = {nullptr};
 
 private:
   // The maximum number of cycles the RTL simulator can advance before
@@ -40,11 +57,14 @@ private:
   // pull) requests
   int maximum_host_delay = 1;
   void advance_target();
-  void wait_read(std::unique_ptr<mmio_t> &mmio, void *data);
-  void wait_write(std::unique_ptr<mmio_t> &mmio);
+  void wait_read(mmio_t *mmio, void *data);
+  void wait_write(mmio_t *mmio);
 
   size_t pcis_write(size_t addr, char *data, size_t size);
   size_t pcis_read(size_t addr, char *data, size_t size);
+
+  // Writes directly into the host DRAM models to initialize them.
+  void load_mems(const char *fname);
 
   std::vector<StreamToCPU> to_host_streams;
   std::vector<StreamFromCPU> from_host_streams;

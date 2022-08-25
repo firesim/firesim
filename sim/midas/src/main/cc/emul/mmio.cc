@@ -1,10 +1,6 @@
 #include "mmio.h"
-#include "mm.h"
-#include "mm_dramsim2.h"
 #include <cassert>
-#include <cmath>
-#include <iostream>
-#include <memory>
+#include <cstdlib>
 
 void mmio_t::read_req(uint64_t addr, size_t size, size_t len) {
   mmio_req_addr_t ar(0, addr, size, len);
@@ -85,26 +81,4 @@ bool mmio_t::write_resp() {
     write_inflight = false;
     return true;
   }
-}
-
-extern uint64_t main_time;
-extern std::unique_ptr<mmio_t> master;
-extern std::unique_ptr<mmio_t> dma;
-std::unique_ptr<mm_t> slave[MEM_NUM_CHANNELS];
-
-void init(uint64_t memsize, bool dramsim) {
-  master.reset(new mmio_t(CTRL_BEAT_BYTES));
-  dma.reset(new mmio_t(DMA_BEAT_BYTES));
-  for (int mem_channel_index = 0; mem_channel_index < MEM_NUM_CHANNELS;
-       mem_channel_index++) {
-    slave[mem_channel_index].reset(
-        dramsim ? (mm_t *)new mm_dramsim2_t(1 << MEM_ID_BITS)
-                : (mm_t *)new mm_magic_t);
-    slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
-  }
-}
-
-void load_mems(const char *fname) {
-  slave[0]->load_mem(0, fname);
-  // TODO: allow file to be split across slaves
 }
