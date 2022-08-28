@@ -383,7 +383,8 @@ class ChiselExampleDesigns extends Suites(
   new RiscSRAMF1Test,
   new AccumulatorF1Test,
   new VerilogAccumulatorF1Test,
-  new TerminationF1Test
+  // This test is known to fail non-deterministically. See https://github.com/firesim/firesim/issues/1147
+  // new TerminationF1Test
 )
 
 class PrintfSynthesisCITests extends Suites(
