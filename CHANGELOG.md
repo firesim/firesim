@@ -168,7 +168,7 @@ FIRRTL deduplication interaction.
 * Fix VCS-related breakages in MIDASExamples, SynthUnittests #725
 * Fix breakages related to new FIRRTL 1.4 DedupModules by limiting how many times it runs (#738, see #766)
 * Replace DualQueue in the DRAM memory model scheduler with RRArbiter+Queue to prevent write starvation (#753)
-* A bug that broke tracerV when using heterogenous mixes of tiles #776 
+* A bug that broke tracerV when using heterogeneous mixes of tiles #776
 
 ### Removed
 * Coremark and SPEC workloads moved to Chipyard
@@ -492,7 +492,7 @@ A more detailed account of everything included is included in the dev->master PR
     * Resolves #56 
 * PR #193. Fedora networking now works in FireSim 
     * Address assignment fixed (gets assigned IP addresses in slot-order on firesim)
-* PR #204. Fix support for heterogenous rootfs's - each job can have its own rootfs, or no rootfs at all
+* PR #204. Fix support for heterogeneous rootfs's - each job can have its own rootfs, or no rootfs at all
 
 ### Deprecated
 
