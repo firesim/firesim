@@ -15,8 +15,8 @@ from awstools.awstools import terminate_instances, get_instance_ids_for_instance
 from runtools.utils import has_sudo
 
 from typing import List, Dict, Optional, Union, TYPE_CHECKING
+from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 if TYPE_CHECKING:
-    from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
     from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
     from runtools.run_farm import Inst
     from awstools.awstools import MockBoto3Instance
