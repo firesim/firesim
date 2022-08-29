@@ -30,7 +30,7 @@ but other resource-reducing optimizations are under development.
 ### 2. Different Inputs and Invocation Model (FIRRTL Stage).
 
 Golden Gate is not invoked in the same process as the target generator.
-instead it's invoked as a seperate process and provided with three inputs:
+instead it's invoked as a separate process and provided with three inputs:
 1) FIRRTL for the target-design
 2) Associated FIRRTL annotations for that design
 3) A compiler parameterization (derived from Rocket Chip's Config system).

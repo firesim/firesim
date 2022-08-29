@@ -28,7 +28,7 @@ def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
          * known members of glibc.  These could be copyable but
            glibc is very coupled to the kernel version and following the pattern
            of the conda packages we build from, we will not copy glibc around.
-           We compile against centos7 glibc and given the backwards compatability of glibc
+           We compile against centos7 glibc and given the backwards compatibility of glibc
            should be able to copy everything else to most other hosts
            and they will work from a DSO linker/loader perspective (i.e.
            if you're building a driver for AWS, it doesn't magically work
