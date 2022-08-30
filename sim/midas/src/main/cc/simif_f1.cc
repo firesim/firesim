@@ -43,7 +43,11 @@ simif_f1_t::simif_f1_t(int argc, char **argv) {
         CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
 
     from_host_streams.push_back(
+<<<<<<< HEAD
         StreamFromCPU(params, mmio_read_func, cpu_managed_axi4_write_func));
+=======
+        CPUManagedCPUToFPGAStream(params, mmio_read_func, pcis_write_func));
+>>>>>>> a5b1eebf (WIP: metasim-able FPGA-controlled bridge streams)
   }
 
   for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {

@@ -309,11 +309,14 @@ void synthesized_prints_t::flush() {
   // empty. It might be safer to put a bound on this though.
   while (process_tokens(batch_beats, 0) != 0)
     ;
+  pull_flush(stream_idx);
+  process_tokens(batch_beats, 0);
 
   // If multiple tokens are being packed into a single stream beat, force the
   // widget to write out any incomplete beat
   if (token_bytes < beat_bytes) {
     write(mmio_addrs->flushNarrowPacket, 1);
+    pull_flush(stream_idx);
 
     // On an FPGA reading from the stream will have enough latency that
     // process_tokens will return non-zero on the first attempt, introducing no

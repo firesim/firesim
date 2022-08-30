@@ -243,6 +243,13 @@ class AutoCounterGlobalResetConditionF1Test extends TutorialSuite("AutoCounterGl
 
 class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  runTest("vcs", true)
+  diffSynthesizedLog("synthprinttest.out0")
+}
+
+class PrintfModuleVitisTest extends TutorialSuite("PrintfModule",
+  platformConfigs = classOf[DefaultVitisConfig].getSimpleName,
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
   diffSynthesizedLog("synthprinttest.out0")
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",

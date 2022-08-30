@@ -12,7 +12,9 @@
  *        would be enqueued, this method enqueues none and returns 0.
  * @return size_t
  */
-size_t StreamFromCPU::push(void *src, size_t num_bytes, size_t required_bytes) {
+size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
+                                                size_t num_bytes,
+                                                size_t required_bytes) {
   assert(num_bytes >= required_bytes);
 
   // Similarly to above, the legacy implementation of DMA does not correctly
@@ -51,7 +53,9 @@ size_t StreamFromCPU::push(void *src, size_t num_bytes, size_t required_bytes) {
  * would be dequeued, dequeue none and return 0.
  * @return size_t Number of bytes successfully dequeued
  */
-size_t StreamToCPU::pull(void *dest, size_t num_bytes, size_t required_bytes) {
+size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
+                                                size_t num_bytes,
+                                                size_t required_bytes) {
   assert(num_bytes >= required_bytes);
 
   // The legacy code is clearly broken for requests that aren't a
