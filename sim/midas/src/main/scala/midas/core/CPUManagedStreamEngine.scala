@@ -45,7 +45,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
   //require(BridgeStreamConstants.streamWidthBits == p(DMANastiKey).dataBits,
   //  s"CPU-mastered AXI4 IF data width must match the stream width ${BridgeStreamConstants.streamWidthBits}".)
 
-  val pcimNodeOpt = None
+  val fmaxi4NodeOpt = None
 
   lazy val module = new WidgetImp(this) {
     val io = IO(new WidgetIO)

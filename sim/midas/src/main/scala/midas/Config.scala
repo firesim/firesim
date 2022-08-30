@@ -10,6 +10,7 @@ import firrtl.stage.TransformManager.TransformDependency
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.unittest.UnitTests
+import freechips.rocketchip.diplomacy.{TransferSizes}
 
 import java.io.{File}
 
@@ -94,6 +95,8 @@ class SimConfig extends Config (new Config((site, here, up) => {
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+  case FPGAManagedAXI4Key   => None
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x400000000L, // 16 GiB
@@ -105,8 +108,21 @@ class F1Config extends Config(new Config((site, here, up) => {
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case HasDMAChannel  => false
-  // ID Width = 1 to avoid any potential zero-width wire issues.
-  case CtrlNastiKey   => NastiParameters(32, 12, 1)
+  case FPGAManagedAXI4Key   => Some(FPGAManagedAXI4Params(
+    // This size value was chosen arbitrarily. Vitis makes it natural to request multiples of 1 GiB, and 
+    // we may wish to expand this as after some performance analysis.
+    size = 4096 * 1024,
+    dataBits = 512,
+    // This was chosen to be inline the AXI4 recommendations and could change.
+    idBits = 4,
+    // Don't support narrow reads/writes, and cap at a page per AXI4 spec
+    writeTransferSizes = TransferSizes(64, 4096),
+    readTransferSizes = TransferSizes(64, 4096)
+  ))
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e)
+  // The ID width here matches F1, it should be smaller to save resources but it runs up against type changes
+  // in the metasimulation harness. 
+  case CtrlNastiKey   => NastiParameters(32, 12, 2)
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x400000000L, // 16 GiB
     beatBytes = 8,

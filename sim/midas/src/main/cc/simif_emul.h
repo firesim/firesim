@@ -48,6 +48,14 @@ public:
    * simif_emul_t::load_mems.
    */
   inline static mm_t *slave[MEM_NUM_CHANNELS] = {nullptr};
+  /**
+   * @brief A model of FPGA-addressable CPU-host memory.
+   *
+   * In metasimulations, FPGA-managed AXI4 transactions read and write to this
+   * AXI4 memory subordinate as a proxy for writing into actual host-CPU DRAM.
+   * The driver-side of FPGAManagedStreams inspect circular buffers hosted here.
+   */
+  inline static mm_t *cpu_mem = new mm_magic_t;
 
 private:
   // The maximum number of cycles the RTL simulator can advance before

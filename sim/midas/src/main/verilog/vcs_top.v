@@ -67,6 +67,39 @@ extern "A" void tick
   input  reg [1:0]                 dma_b_resp,
   input  reg [`DMA_ID_BITS-1:0]    dma_b_id,
 
+  input  reg                                   fmaxi4_ar_valid,
+  output reg                                   fmaxi4_ar_ready,
+  input  reg [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fmaxi4_ar_addr,
+  input  reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_ar_id,
+  input  reg [2:0]                             fmaxi4_ar_size,
+  input  reg [7:0]                             fmaxi4_ar_len,
+
+  input  reg                                   fmaxi4_aw_valid,
+  output reg                                   fmaxi4_aw_ready,
+  input  reg [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fmaxi4_aw_addr,
+  input  reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_aw_id,
+  input  reg [2:0]                             fmaxi4_aw_size,
+  input  reg [7:0]                             fmaxi4_aw_len,
+
+  input  reg                                   fmaxi4_w_valid,
+  output reg                                   fmaxi4_w_ready,
+  input  reg [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fmaxi4_w_strb,
+  input  reg [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fmaxi4_w_data,
+  input  reg                                   fmaxi4_w_last,
+
+  output reg                                   fmaxi4_r_valid,
+  input  reg                                   fmaxi4_r_ready,
+  output reg [1:0]                             fmaxi4_r_resp,
+  output reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_r_id,
+  output reg [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fmaxi4_r_data,
+  output reg                                   fmaxi4_r_last,
+
+  output reg                                   fmaxi4_b_valid,
+  input  reg                                   fmaxi4_b_ready,
+  output reg [1:0]                             fmaxi4_b_resp,
+  output reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_b_id,
+
+
   input  reg                       mem_0_ar_valid,
   output reg                       mem_0_ar_ready,
   input  reg [`MEM_ADDR_BITS-1:0]  mem_0_ar_addr,
@@ -294,6 +327,38 @@ module emul;
   wire [1:0]                 dma_b_resp;
   wire [`DMA_ID_BITS-1:0]    dma_b_id;
 
+  wire                                   fmaxi4_ar_valid;
+  reg                                    fmaxi4_ar_ready;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fmaxi4_ar_addr;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_ar_id;
+  wire [2:0]                             fmaxi4_ar_size;
+  wire [7:0]                             fmaxi4_ar_len;
+
+  wire                                   fmaxi4_aw_valid;
+  reg                                    fmaxi4_aw_ready;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fmaxi4_aw_addr;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_aw_id;
+  wire [2:0]                             fmaxi4_aw_size;
+  wire [7:0]                             fmaxi4_aw_len;
+
+  wire                                   fmaxi4_w_valid;
+  reg                                    fmaxi4_w_ready;
+  wire [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fmaxi4_w_strb;
+  wire [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fmaxi4_w_data;
+  wire                                   fmaxi4_w_last;
+
+  reg                                    fmaxi4_r_valid;
+  wire                                   fmaxi4_r_ready;
+  reg  [1:0]                             fmaxi4_r_resp;
+  reg  [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_r_id;
+  reg  [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fmaxi4_r_data;
+  reg                                    fmaxi4_r_last;
+
+  reg                                    fmaxi4_b_valid;
+  wire                                   fmaxi4_b_ready;
+  reg  [1:0]                             fmaxi4_b_resp;
+  reg  [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_b_id;
+
   wire                       mem_0_ar_valid;
   reg                        mem_0_ar_ready;
   wire [`MEM_ADDR_BITS-1:0]  mem_0_ar_addr;
@@ -488,6 +553,38 @@ module emul;
   wire [1:0]                 dma_b_resp_delay;
   wire [`DMA_ID_BITS-1:0]    dma_b_id_delay;
 
+  wire                                   fmaxi4_ar_valid_delay;
+  wire                                   fmaxi4_ar_ready_delay;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fmaxi4_ar_addr_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_ar_id_delay;
+  wire [2:0]                             fmaxi4_ar_size_delay;
+  wire [7:0]                             fmaxi4_ar_len_delay;
+
+  wire                                   fmaxi4_aw_valid_delay;
+  wire                                   fmaxi4_aw_ready_delay;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fmaxi4_aw_addr_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_aw_id_delay;
+  wire [2:0]                             fmaxi4_aw_size_delay;
+  wire [7:0]                             fmaxi4_aw_len_delay;
+
+  wire                                   fmaxi4_w_valid_delay;
+  wire                                   fmaxi4_w_ready_delay;
+  wire [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fmaxi4_w_strb_delay;
+  wire [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fmaxi4_w_data_delay;
+  wire                                   fmaxi4_w_last_delay;
+
+  wire                                   fmaxi4_r_valid_delay;
+  wire                                   fmaxi4_r_ready_delay;
+  wire [1:0]                             fmaxi4_r_resp_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_r_id_delay;
+  wire [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fmaxi4_r_data_delay;
+  wire                                   fmaxi4_r_last_delay;
+
+  wire                                   fmaxi4_b_valid_delay;
+  wire                                   fmaxi4_b_ready_delay;
+  wire [1:0]                             fmaxi4_b_resp_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fmaxi4_b_id_delay;
+
   wire                       mem_0_ar_valid_delay;
   wire                       mem_0_ar_ready_delay;
   wire [`MEM_ADDR_BITS-1:0]  mem_0_ar_addr_delay;
@@ -680,6 +777,38 @@ module emul;
   assign #0.1 dma_b_resp = dma_b_resp_delay;
   assign #0.1 dma_b_id = dma_b_id_delay;
 
+  assign #0.1 fmaxi4_ar_valid = fmaxi4_ar_valid_delay;
+  assign #0.1 fmaxi4_ar_ready_delay = fmaxi4_ar_ready;
+  assign #0.1 fmaxi4_ar_addr = fmaxi4_ar_addr_delay;
+  assign #0.1 fmaxi4_ar_id = fmaxi4_ar_id_delay;
+  assign #0.1 fmaxi4_ar_size = fmaxi4_ar_size_delay;
+  assign #0.1 fmaxi4_ar_len = fmaxi4_ar_len_delay;
+
+  assign #0.1 fmaxi4_aw_valid = fmaxi4_aw_valid_delay;
+  assign #0.1 fmaxi4_aw_ready_delay = fmaxi4_aw_ready;
+  assign #0.1 fmaxi4_aw_addr = fmaxi4_aw_addr_delay;
+  assign #0.1 fmaxi4_aw_id = fmaxi4_aw_id_delay;
+  assign #0.1 fmaxi4_aw_size = fmaxi4_aw_size_delay;
+  assign #0.1 fmaxi4_aw_len = fmaxi4_aw_len_delay;
+
+  assign #0.1 fmaxi4_w_valid = fmaxi4_w_valid_delay;
+  assign #0.1 fmaxi4_w_ready_delay = fmaxi4_w_ready;
+  assign #0.1 fmaxi4_w_strb = fmaxi4_w_strb_delay;
+  assign #0.1 fmaxi4_w_data = fmaxi4_w_data_delay;
+  assign #0.1 fmaxi4_w_last = fmaxi4_w_last_delay;
+
+  assign #0.1 fmaxi4_r_valid_delay = fmaxi4_r_valid;
+  assign #0.1 fmaxi4_r_ready = fmaxi4_r_ready_delay;
+  assign #0.1 fmaxi4_r_resp_delay = fmaxi4_r_resp;
+  assign #0.1 fmaxi4_r_id_delay = fmaxi4_r_id;
+  assign #0.1 fmaxi4_r_data_delay = fmaxi4_r_data;
+  assign #0.1 fmaxi4_r_last_delay = fmaxi4_r_last;
+
+  assign #0.1 fmaxi4_b_valid_delay = fmaxi4_b_valid;
+  assign #0.1 fmaxi4_b_ready = fmaxi4_b_ready_delay;
+  assign #0.1 fmaxi4_b_resp_delay = fmaxi4_b_resp;
+  assign #0.1 fmaxi4_b_id_delay = fmaxi4_b_id;
+
   assign #0.1 mem_0_ar_valid = mem_0_ar_valid_delay;
   assign #0.1 mem_0_ar_ready_delay = mem_0_ar_ready;
   assign #0.1 mem_0_ar_addr = mem_0_ar_addr_delay;
@@ -843,7 +972,7 @@ module emul;
     .ctrl_b_ready(ctrl_b_ready_delay),
     .ctrl_b_bits_resp(ctrl_b_resp_delay),
     .ctrl_b_bits_id(ctrl_b_id_delay),
-
+`ifdef DMA_PRESENT
     .dma_ar_valid(dma_ar_valid_delay),
     .dma_ar_ready(dma_ar_ready_delay),
     .dma_ar_bits_addr(dma_ar_addr_delay),
@@ -875,6 +1004,40 @@ module emul;
     .dma_b_ready(dma_b_ready_delay),
     .dma_b_bits_resp(dma_b_resp_delay),
     .dma_b_bits_id(dma_b_id_delay),
+`endif
+`ifdef FPGA_MANAGED_AXI4_PRESENT
+    .fmaxi4_ar_valid(fmaxi4_ar_valid_delay),
+    .fmaxi4_ar_ready(fmaxi4_ar_ready_delay),
+    .fmaxi4_ar_bits_addr(fmaxi4_ar_addr_delay),
+    .fmaxi4_ar_bits_id(fmaxi4_ar_id_delay),
+    .fmaxi4_ar_bits_size(fmaxi4_ar_size_delay),
+    .fmaxi4_ar_bits_len(fmaxi4_ar_len_delay),
+
+    .fmaxi4_aw_valid(fmaxi4_aw_valid_delay),
+    .fmaxi4_aw_ready(fmaxi4_aw_ready_delay),
+    .fmaxi4_aw_bits_addr(fmaxi4_aw_addr_delay),
+    .fmaxi4_aw_bits_id(fmaxi4_aw_id_delay),
+    .fmaxi4_aw_bits_size(fmaxi4_aw_size_delay),
+    .fmaxi4_aw_bits_len(fmaxi4_aw_len_delay),
+
+    .fmaxi4_w_valid(fmaxi4_w_valid_delay),
+    .fmaxi4_w_ready(fmaxi4_w_ready_delay),
+    .fmaxi4_w_bits_strb(fmaxi4_w_strb_delay),
+    .fmaxi4_w_bits_data(fmaxi4_w_data_delay),
+    .fmaxi4_w_bits_last(fmaxi4_w_last_delay),
+
+    .fmaxi4_r_valid(fmaxi4_r_valid_delay),
+    .fmaxi4_r_ready(fmaxi4_r_ready_delay),
+    .fmaxi4_r_bits_resp(fmaxi4_r_resp_delay),
+    .fmaxi4_r_bits_id(fmaxi4_r_id_delay),
+    .fmaxi4_r_bits_data(fmaxi4_r_data_delay),
+    .fmaxi4_r_bits_last(fmaxi4_r_last_delay),
+
+    .fmaxi4_b_valid(fmaxi4_b_valid_delay),
+    .fmaxi4_b_ready(fmaxi4_b_ready_delay),
+    .fmaxi4_b_bits_resp(fmaxi4_b_resp_delay),
+    .fmaxi4_b_bits_id(fmaxi4_b_id_delay),
+`endif
 
     .mem_0_ar_valid(mem_0_ar_valid_delay),
     .mem_0_ar_ready(mem_0_ar_ready_delay),
@@ -907,7 +1070,6 @@ module emul;
     .mem_0_b_ready(mem_0_b_ready_delay),
     .mem_0_b_bits_resp(mem_0_b_resp_delay),
     .mem_0_b_bits_id(mem_0_b_id_delay),
-
 `ifdef MEM_HAS_CHANNEL1
     .mem_1_ar_valid(mem_1_ar_valid_delay),
     .mem_1_ar_ready(mem_1_ar_ready_delay),
@@ -1080,6 +1242,38 @@ module emul;
       dma_b_ready,
       dma_b_resp,
       dma_b_id,
+
+      fmaxi4_ar_valid,
+      fmaxi4_ar_ready,
+      fmaxi4_ar_addr,
+      fmaxi4_ar_id,
+      fmaxi4_ar_size,
+      fmaxi4_ar_len,
+
+      fmaxi4_aw_valid,
+      fmaxi4_aw_ready,
+      fmaxi4_aw_addr,
+      fmaxi4_aw_id,
+      fmaxi4_aw_size,
+      fmaxi4_aw_len,
+
+      fmaxi4_w_valid,
+      fmaxi4_w_ready,
+      fmaxi4_w_strb,
+      fmaxi4_w_data,
+      fmaxi4_w_last,
+
+      fmaxi4_r_valid,
+      fmaxi4_r_ready,
+      fmaxi4_r_resp,
+      fmaxi4_r_id,
+      fmaxi4_r_data,
+      fmaxi4_r_last,
+
+      fmaxi4_b_valid,
+      fmaxi4_b_ready,
+      fmaxi4_b_resp,
+      fmaxi4_b_id,
 
       mem_0_ar_valid,
       mem_0_ar_ready,

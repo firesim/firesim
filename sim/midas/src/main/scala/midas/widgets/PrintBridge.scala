@@ -188,7 +188,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets.map(UInt32(_)))
     val formatStrings   = printPort.printRecords.map(_._2.formatString).map(CStrLit)
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)

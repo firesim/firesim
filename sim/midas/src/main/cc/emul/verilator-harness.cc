@@ -1,6 +1,7 @@
 #include "simif_emul.h"
 #include <cassert>
 #include <cmath>
+#include <memory>
 #include <verilated.h>
 #if VM_TRACE
 #include <verilated_vcd_c.h>
@@ -39,6 +40,7 @@ void tick() {
   memcpy(
       &top->ctrl_w_bits_data, simif_emul_t::master->w_data(), CTRL_BEAT_BYTES);
 
+#ifdef DMA_PRESENT
   top->dma_aw_valid = simif_emul_t::dma->aw_valid();
   top->dma_aw_bits_id = simif_emul_t::dma->aw_id();
   top->dma_aw_bits_addr = simif_emul_t::dma->aw_addr();
@@ -62,6 +64,29 @@ void tick() {
 #else
   memcpy(&top->dma_w_bits_data, simif_emul_t::dma->w_data(), DMA_BEAT_BYTES);
 #endif
+#endif // DMA_PRESENT
+
+#ifdef FPGA_MANAGED_AXI4_PRESENT
+  top->fmaxi4_aw_ready = simif_emul_t::cpu_mem->aw_ready();
+  top->fmaxi4_ar_ready = simif_emul_t::cpu_mem->ar_ready();
+  top->fmaxi4_w_ready = simif_emul_t::cpu_mem->w_ready();
+  top->fmaxi4_b_valid = simif_emul_t::cpu_mem->b_valid();
+  top->fmaxi4_b_bits_id = simif_emul_t::cpu_mem->b_id();
+  top->fmaxi4_b_bits_resp = simif_emul_t::cpu_mem->b_resp();
+  top->fmaxi4_r_valid = simif_emul_t::cpu_mem->r_valid();
+  top->fmaxi4_r_bits_id = simif_emul_t::cpu_mem->r_id();
+  top->fmaxi4_r_bits_resp = simif_emul_t::cpu_mem->r_resp();
+  top->fmaxi4_r_bits_last = simif_emul_t::cpu_mem->r_last();
+#if MEM_DATA_BITS > 64
+  memcpy(top->fmaxi4_r_bits_data,
+         simif_emul_t::cpu_mem->r_data(),
+         FPGA_MANAGED_AXI4_DATA_BITS / 8);
+#else
+  memcpy(&top->fmaxi4_r_bits_data,
+         simif_emul_t::cpu_mem->r_data(),
+         FPGA_MANAGED_AXI4_DATA_BITS / 8);
+#endif
+#endif // FPGA_MANAGED_AXI4_PRESENT
 
   top->mem_0_aw_ready = simif_emul_t::slave[0]->aw_ready();
   top->mem_0_ar_ready = simif_emul_t::slave[0]->ar_ready();
@@ -171,6 +196,7 @@ void tick() {
                              top->ctrl_b_bits_id,
                              top->ctrl_b_valid);
 
+#ifdef DMA_PRESENT
   simif_emul_t::dma->tick(top->reset,
                           top->dma_ar_ready,
                           top->dma_aw_ready,
@@ -181,6 +207,38 @@ void tick() {
                           top->dma_r_valid,
                           top->dma_b_bits_id,
                           top->dma_b_valid);
+#endif // DMA_PRESENT
+
+#ifdef FPGA_MANAGED_AXI4_PRESENT
+  simif_emul_t::cpu_mem->tick(top->reset,
+                              top->fmaxi4_ar_valid,
+                              top->fmaxi4_ar_bits_addr,
+                              top->fmaxi4_ar_bits_id,
+                              top->fmaxi4_ar_bits_size,
+                              top->fmaxi4_ar_bits_len,
+
+                              top->fmaxi4_aw_valid,
+                              top->fmaxi4_aw_bits_addr,
+                              top->fmaxi4_aw_bits_id,
+                              top->fmaxi4_aw_bits_size,
+                              top->fmaxi4_aw_bits_len,
+
+                              top->fmaxi4_w_valid,
+#if FPGA_MANAGED_AXI4_STRB_BITS > 64
+                              &top->fmaxi4_w_bits_strb,
+#else
+                              top->fmaxi4_w_bits_strb,
+#endif
+#if FPGA_MANAGED_AXI4_DATA_BITS > 64
+                              &top->fmaxi4_w_bits_data,
+#else
+                              top->fmaxi4_w_bits_data,
+#endif
+                              top->fmaxi4_w_bits_last,
+
+                              top->fmaxi4_r_ready,
+                              top->fmaxi4_b_ready);
+#endif // FPGA_MANAGED_AXI4_PRESENT
 
   simif_emul_t::slave[0]->tick(top->reset,
                                top->mem_0_ar_valid,
