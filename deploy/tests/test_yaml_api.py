@@ -100,6 +100,7 @@ class BuildTmpYamlSet(TmpYamlSet):
     build: TmpYaml
     recipes: TmpYaml
     hwdb: TmpYaml
+    non_existent_file: Path
 
     def write(self):
         self.build.write()
@@ -108,9 +109,14 @@ class BuildTmpYamlSet(TmpYamlSet):
 
     @property
     def args(self):
+        # set configs that should not be read explicitly
+        # to the non_existent_file to avoid influence of
+        # whether `firesim managerinit` has been run
+        # https://github.com/firesim/firesim/pull/1145#issuecomment-1194392085
         return ['-b', fspath(self.build.path),
                 '-r', fspath(self.recipes.path),
                 '-a', fspath(self.hwdb.path),
+                '-c', fspath(self.non_existent_file)
                 ]
 
     @property
@@ -123,16 +129,25 @@ class RunTmpYamlSet(TmpYamlSet):
 
     Attributes:
     """
+    recipes: TmpYaml
     hwdb: TmpYaml
     run: TmpYaml
+    non_existent_file: Path
 
     def write(self):
+        self.recipes.write()
         self.hwdb.write()
         self.run.write()
 
     @property
     def args(self):
-        return ['-a', fspath(self.hwdb.path),
+        # set configs that should not be read explicitly
+        # to the non_existent_file to avoid influence of
+        # whether `firesim managerinit` has been run
+        # https://github.com/firesim/firesim/pull/1145#issuecomment-1194392085
+        return ['-b', fspath(self.non_existent_file),
+                '-r', fspath(self.recipes.path),
+                '-a', fspath(self.hwdb.path),
                 '-c', fspath(self.run.path)]
 
     @property
@@ -146,6 +161,14 @@ def sample_backup_configs() -> Path:
     return dir
 
 @pytest.fixture()
+def non_existent_file(tmp_path: Path) -> Path:
+    # tmp_path is builtin pytest fixture to get a per-test temporary directory that should be clean
+    # but we still make sure that it doesn't exist before giving it
+    file = tmp_path / 'GHOST_FILE'
+    file.exists().should.equal(False)
+    return file
+
+@pytest.fixture()
 def scy_build(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_build.yaml')
 
@@ -154,8 +177,8 @@ def scy_build_recipes(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_build_recipes.yaml')
 
 @pytest.fixture()
-def build_yamls(scy_build, scy_build_recipes, scy_hwdb) -> BuildTmpYamlSet:
-    return BuildTmpYamlSet(scy_build, scy_build_recipes, scy_hwdb)
+def build_yamls(scy_build: TmpYaml, scy_build_recipes: TmpYaml, scy_hwdb: TmpYaml, non_existent_file: Path) -> BuildTmpYamlSet:
+    return BuildTmpYamlSet(scy_build, scy_build_recipes, scy_hwdb, non_existent_file)
 
 @pytest.fixture()
 def scy_hwdb(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
@@ -166,16 +189,8 @@ def scy_runtime(tmp_path: Path, sample_backup_configs: Path) -> TmpYaml:
     return TmpYaml(tmp_path, sample_backup_configs / 'sample_config_runtime.yaml')
 
 @pytest.fixture()
-def run_yamls(scy_hwdb: TmpYaml, scy_runtime: TmpYaml) -> RunTmpYamlSet:
-    return RunTmpYamlSet(scy_hwdb, scy_runtime)
-
-@pytest.fixture()
-def non_existent_file(tmp_path):
-    # tmp_path is builtin pytest fixture to get a per-test temporary directory that should be clean
-    # but we still make sure that it doesn't exist before giving it
-    file = tmp_path / 'GHOST_FILE'
-    file.exists().should.equal(False)
-    return file
+def run_yamls(scy_build_recipes: TmpYaml, scy_hwdb: TmpYaml, scy_runtime: TmpYaml, non_existent_file: Path) -> RunTmpYamlSet:
+    return RunTmpYamlSet(scy_build_recipes, scy_hwdb, scy_runtime, non_existent_file)
 
 @pytest.fixture()
 def firesim_parse_args():

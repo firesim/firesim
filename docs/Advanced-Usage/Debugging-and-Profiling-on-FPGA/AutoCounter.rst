@@ -22,12 +22,12 @@ Chisel Interface
 AutoCounter enables the addition of ad-hoc counters using the ``PerfCounter``
 object in the `midas.targetutils` package. PerfCounters counters can be added in one of two modes:
 
-# `Accumulate`, using the standard ``PerfCounter.apply`` method. Here the annotated UInt (1 or
-  more bits) is added to a 64b accumulation register: the target is treated as
-  representing an N-bit UInt and will increment the counter by a value between [0, 2^n - 1] per cycle.
-# `Identity`, using the ``PerfCounter.identity`` method. Here the annotated UInt is sampled directly. This can be used
-  to annotate a sample with values are not accumulator-like (e.g., a PC),
-  and permits the user to define more complex instrumentation logic in the target itself.
+1. `Accumulate`, using the standard ``PerfCounter.apply`` method. Here the annotated UInt (1 or
+   more bits) is added to a 64b accumulation register: the target is treated as
+   representing an N-bit UInt and will increment the counter by a value between [0, 2^n - 1] per cycle.
+2. `Identity`, using the ``PerfCounter.identity`` method. Here the annotated UInt is sampled directly. This can be used
+   to annotate a sample with values are not accumulator-like (e.g., a PC),
+   and permits the user to define more complex instrumentation logic in the target itself.
 
 We give examples of using PerfCounter below:
 

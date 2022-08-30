@@ -1,11 +1,10 @@
-//See LICENSE for license details.
+// See LICENSE for license details.
 
 #include "simif_peek_poke.h"
 
-class Accumulator_t: public simif_peek_poke_t
-{
+class Accumulator_t : public simif_peek_poke_t {
 public:
-  Accumulator_t(int argc, char** argv) {}
+  Accumulator_t(int argc, char **argv) {}
   void run() {
     uint32_t inputs[] = {4, 18, 9, 77, 5, 3};
     uint32_t i, total = 0;

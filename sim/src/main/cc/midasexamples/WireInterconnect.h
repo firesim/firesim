@@ -1,11 +1,10 @@
-//See LICENSE for license details.
+// See LICENSE for license details.
 
 #include "simif_peek_poke.h"
 
-class WireInterconnect_t: public simif_peek_poke_t
-{
+class WireInterconnect_t : public simif_peek_poke_t {
 public:
-  WireInterconnect_t(int argc, char** argv) {}
+  WireInterconnect_t(int argc, char **argv) {}
   void run() {
     gmp_randstate_t rstate;
     gmp_randinit_default(rstate);
@@ -15,14 +14,14 @@ public:
     int width = 128;
 
     target_reset();
-    for (int i = 0 ; i < 64 ; i++) {
+    for (int i = 0; i < 64; i++) {
 
       // Poke channel A
-      uint32_t in     = rand_next(16);
-      poke(io_aIn,    in);
+      uint32_t in = rand_next(16);
+      poke(io_aIn, in);
 
-      uint32_t vbIn_foo        = rand_next(16);
-      uint32_t vbIn_bar_valid  = rand_next(2);
+      uint32_t vbIn_foo = rand_next(16);
+      uint32_t vbIn_bar_valid = rand_next(2);
       mpz_urandomb(vbIn_bar_bits, rstate, width);
 
       // These pokes also serve to provide some host delay for the poke above to
@@ -31,7 +30,8 @@ public:
       poke(io_bIn_bar_valid, vbIn_bar_valid);
       poke(io_bIn_bar_bits, vbIn_bar_bits);
 
-      // Expect wire outputs -- this propagate combinationally before calling step
+      // Expect wire outputs -- this propagate combinationally before calling
+      // step
       expect(io_aOut, in);
       step(1);
 

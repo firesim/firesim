@@ -4,12 +4,12 @@ usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
                [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
                [-m TERMINATESOMEM416] [--terminatesome TERMINATESOME] [-q]
                [-t LAUNCHTIME] [--platform {f1,vitis}]
-               {managerinit,infrasetup,boot,kill,runworkload,buildafi,buildbitstream,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
+               {managerinit,infrasetup,boot,kill,runworkload,buildafi,buildbitstream,builddriver,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
 
 FireSim Simulation Manager.
 
 positional arguments:
-  {managerinit,infrasetup,boot,kill,runworkload,buildafi,buildbitstream,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
+  {managerinit,infrasetup,boot,kill,runworkload,buildafi,buildbitstream,builddriver,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
                         Management task to run.
 
 optional arguments:

@@ -142,7 +142,7 @@ $(SIM_RUN_DIR)/emconfig.json:
 	emconfigutil --platform $(DEVICE) --od $(SIM_RUN_DIR)
 
 # Populate the run directory. Vitis wants certain files to reside in the same
-# directory as the application binary, keep things seperated by building up a
+# directory as the application binary, keep things separated by building up a
 # fresh location that can be cleanly removed.
 delivered_sim_inputs = $(addprefix $(SIM_RUN_DIR)/, $(driver_bin) $(runtime_conf))
 $(SIM_RUN_DIR)/%: $(DRIVER_DIR)/%

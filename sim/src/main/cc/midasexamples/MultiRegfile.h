@@ -2,56 +2,54 @@
 
 #include "simif_peek_poke.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include <utility>
 #include <map>
+#include <utility>
 
 constexpr size_t multireg_n_copies = 5;
 constexpr size_t multireg_n_reads = 2;
 constexpr size_t multireg_n_writes = 2;
 
-const size_t multireg_w_addr_ios[multireg_n_copies][multireg_n_writes] =
-  { { io_accesses_0_writes_0_addr, io_accesses_0_writes_1_addr },
-    { io_accesses_1_writes_0_addr, io_accesses_1_writes_1_addr },
-    { io_accesses_2_writes_0_addr, io_accesses_2_writes_1_addr },
-    { io_accesses_3_writes_0_addr, io_accesses_3_writes_1_addr },
-    { io_accesses_4_writes_0_addr, io_accesses_4_writes_1_addr } };
+const size_t multireg_w_addr_ios[multireg_n_copies][multireg_n_writes] = {
+    {io_accesses_0_writes_0_addr, io_accesses_0_writes_1_addr},
+    {io_accesses_1_writes_0_addr, io_accesses_1_writes_1_addr},
+    {io_accesses_2_writes_0_addr, io_accesses_2_writes_1_addr},
+    {io_accesses_3_writes_0_addr, io_accesses_3_writes_1_addr},
+    {io_accesses_4_writes_0_addr, io_accesses_4_writes_1_addr}};
 
-const size_t multireg_w_data_ios[multireg_n_copies][multireg_n_writes] =
-  { { io_accesses_0_writes_0_data, io_accesses_0_writes_1_data },
-    { io_accesses_1_writes_0_data, io_accesses_1_writes_1_data },
-    { io_accesses_2_writes_0_data, io_accesses_2_writes_1_data },
-    { io_accesses_3_writes_0_data, io_accesses_3_writes_1_data },
-    { io_accesses_4_writes_0_data, io_accesses_4_writes_1_data } };
+const size_t multireg_w_data_ios[multireg_n_copies][multireg_n_writes] = {
+    {io_accesses_0_writes_0_data, io_accesses_0_writes_1_data},
+    {io_accesses_1_writes_0_data, io_accesses_1_writes_1_data},
+    {io_accesses_2_writes_0_data, io_accesses_2_writes_1_data},
+    {io_accesses_3_writes_0_data, io_accesses_3_writes_1_data},
+    {io_accesses_4_writes_0_data, io_accesses_4_writes_1_data}};
 
-const size_t multireg_w_en_ios[multireg_n_copies][multireg_n_writes] =
-  { { io_accesses_0_writes_0_en, io_accesses_0_writes_1_en },
-    { io_accesses_1_writes_0_en, io_accesses_1_writes_1_en },
-    { io_accesses_2_writes_0_en, io_accesses_2_writes_1_en },
-    { io_accesses_3_writes_0_en, io_accesses_3_writes_1_en },
-    { io_accesses_4_writes_0_en, io_accesses_4_writes_1_en } };
+const size_t multireg_w_en_ios[multireg_n_copies][multireg_n_writes] = {
+    {io_accesses_0_writes_0_en, io_accesses_0_writes_1_en},
+    {io_accesses_1_writes_0_en, io_accesses_1_writes_1_en},
+    {io_accesses_2_writes_0_en, io_accesses_2_writes_1_en},
+    {io_accesses_3_writes_0_en, io_accesses_3_writes_1_en},
+    {io_accesses_4_writes_0_en, io_accesses_4_writes_1_en}};
 
-const size_t multireg_r_addr_ios[multireg_n_copies][multireg_n_reads] =
-  { { io_accesses_0_reads_0_addr, io_accesses_0_reads_1_addr },
-    { io_accesses_1_reads_0_addr, io_accesses_1_reads_1_addr },
-    { io_accesses_2_reads_0_addr, io_accesses_2_reads_1_addr },
-    { io_accesses_3_reads_0_addr, io_accesses_3_reads_1_addr },
-    { io_accesses_4_reads_0_addr, io_accesses_4_reads_1_addr } };
+const size_t multireg_r_addr_ios[multireg_n_copies][multireg_n_reads] = {
+    {io_accesses_0_reads_0_addr, io_accesses_0_reads_1_addr},
+    {io_accesses_1_reads_0_addr, io_accesses_1_reads_1_addr},
+    {io_accesses_2_reads_0_addr, io_accesses_2_reads_1_addr},
+    {io_accesses_3_reads_0_addr, io_accesses_3_reads_1_addr},
+    {io_accesses_4_reads_0_addr, io_accesses_4_reads_1_addr}};
 
-const size_t multireg_r_data_ios[multireg_n_copies][multireg_n_reads] =
-  { { io_accesses_0_reads_0_data, io_accesses_0_reads_1_data },
-    { io_accesses_1_reads_0_data, io_accesses_1_reads_1_data },
-    { io_accesses_2_reads_0_data, io_accesses_2_reads_1_data },
-    { io_accesses_3_reads_0_data, io_accesses_3_reads_1_data },
-    { io_accesses_4_reads_0_data, io_accesses_4_reads_1_data } };
+const size_t multireg_r_data_ios[multireg_n_copies][multireg_n_reads] = {
+    {io_accesses_0_reads_0_data, io_accesses_0_reads_1_data},
+    {io_accesses_1_reads_0_data, io_accesses_1_reads_1_data},
+    {io_accesses_2_reads_0_data, io_accesses_2_reads_1_data},
+    {io_accesses_3_reads_0_data, io_accesses_3_reads_1_data},
+    {io_accesses_4_reads_0_data, io_accesses_4_reads_1_data}};
 
-class MultiRegfile_t: public simif_peek_poke_t
-{
+class MultiRegfile_t : public simif_peek_poke_t {
 public:
-
-  MultiRegfile_t(int argc, char** argv) {}
+  MultiRegfile_t(int argc, char **argv) {}
 
   void run() {
     target_reset();
@@ -61,7 +59,6 @@ public:
   }
 
 protected:
-
   size_t mem_depth = 21;
 
   bool write_first = true;
@@ -73,7 +70,8 @@ protected:
           uint32_t rand_data = rand();
           uint32_t rand_addr = rand() % mem_depth;
           auto mem_slot = std::make_pair(i, rand_addr);
-          while (history.count(mem_slot) && history[mem_slot].second == cycle_num) {
+          while (history.count(mem_slot) &&
+                 history[mem_slot].second == cycle_num) {
             // already written this cycle => would be undefined write collision
             mem_slot.second = rand() % mem_depth;
           }
@@ -99,12 +97,12 @@ protected:
         if (history.count(mem_slot)) {
           auto w_op = history[mem_slot];
           if (w_op.second != cycle_num || write_first)
-	    expect(multireg_r_data_ios[i][r_idx], history[mem_slot].first);
+            expect(multireg_r_data_ios[i][r_idx], history[mem_slot].first);
         }
       }
     }
   }
 
-  std::map< std::pair<size_t, uint32_t>, std::pair<uint32_t, size_t> > history;
-  std::map< std::pair<size_t, size_t>, uint32_t > prev_reads;
+  std::map<std::pair<size_t, uint32_t>, std::pair<uint32_t, size_t>> history;
+  std::map<std::pair<size_t, size_t>, uint32_t> prev_reads;
 };

@@ -18,7 +18,6 @@ from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
-from util.streamlogger import StreamLogger
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 
@@ -253,8 +252,6 @@ class RuntimeHWConfig:
              prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
              prefix('source ./sourceme-f1-manager.sh'), \
              prefix('cd sim/'), \
-             StreamLogger('stdout'), \
-             StreamLogger('stderr'), \
              prefix('set -o pipefail'):
             localcap = None
             with settings(warn_only=True):
@@ -289,7 +286,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
                  metasimulation_only_plusargs: str,
                  metasimulation_only_vcs_plusargs: str) -> None:
         self.name = name
-        self.agfi = "Metasim" # for __str__ to work
+        self.agfi = None
+        self.xclbin = None
         self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
@@ -361,8 +359,12 @@ class RuntimeHWDB:
     """ This class manages the hardware configurations that are available
     as endpoints on the simulation. """
     hwconf_dict: Dict[str, RuntimeHWConfig]
+    config_file_name: str
+    simulation_mode_string: str
 
     def __init__(self, hardwaredbconfigfile: str) -> None:
+        self.config_file_name = hardwaredbconfigfile
+        self.simulation_mode_string = "FPGA simulation"
 
         agfidb_configfile = None
         with open(hardwaredbconfigfile, "r") as yaml_file:
@@ -372,7 +374,13 @@ class RuntimeHWDB:
 
         self.hwconf_dict = {s: RuntimeHWConfig(s, v) for s, v in agfidb_dict.items()}
 
+    def keyerror_message(self, name: str) -> str:
+        """ Return the error message for lookup errors."""
+        return f"'{name}' not found in '{self.config_file_name}', which is used to specify target design descriptions for {self.simulation_mode_string}s."
+
     def get_runtimehwconfig_from_name(self, name: str) -> RuntimeHWConfig:
+        if name not in self.hwconf_dict:
+            raise KeyError(self.keyerror_message(name))
         return self.hwconf_dict[name]
 
     def __str__(self) -> str:
@@ -386,6 +394,8 @@ class RuntimeBuildRecipes(RuntimeHWDB):
                  metasim_host_simulator: str,
                  metasimulation_only_plusargs: str,
                  metasimulation_only_vcs_plusargs: str) -> None:
+        self.config_file_name = build_recipes_config_file
+        self.simulation_mode_string = "Metasimulation"
 
         recipes_configfile = None
         with open(build_recipes_config_file, "r") as yaml_file:
@@ -583,6 +593,10 @@ class RuntimeConfig:
         # the manager.
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.infrasetup_passes(use_mock_instances_for_testing)
+
+    def build_driver(self) -> None:
+        """ directly called by top-level builddriver command. """
+        self.firesim_topology_with_passes.build_driver_passes()
 
     def boot(self) -> None:
         """ directly called by top-level boot command. """

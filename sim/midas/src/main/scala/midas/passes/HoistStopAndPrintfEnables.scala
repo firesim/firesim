@@ -10,7 +10,7 @@ import firrtl.ir._
 import firrtl.options.Dependency
 
 /**
-  * Pushes enable expressions into seperate nodes that can be consistently
+  * Pushes enable expressions into separate nodes that can be consistently
   * optimized across by CSE. This ensures that associated pairs of stops and
   * printfs will have references to a common enable node, which allows
   * AssertionSynthesis to correctly group and synthesize them.

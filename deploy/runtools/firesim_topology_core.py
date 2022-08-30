@@ -1,5 +1,6 @@
 """ These are the base components that make up a FireSim simulation target
-topology. """
+topology.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-name: firesim-cull-instances
+name: firesim-cleanup
 
 on:
   schedule:
@@ -11,6 +11,7 @@ env:
   AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS-DEFAULT-REGION: ${{ secrets.AWS_DEFAULT_REGION }}
   FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  MANAGER_FIRESIM_LOCATION: "~/firesim"
 
 jobs:
   cull-old-ci-instances:
@@ -22,3 +23,13 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/repo-setup-aws
       - run: .github/scripts/cull-old-ci-instances.py
+
+  cull-old-ci-runners:
+    name: cull-old-ci-runners
+    runs-on: ubuntu-latest
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/repo-setup-aws
+      - run: .github/scripts/cull-old-ci-runners.py

@@ -24,13 +24,9 @@ Enabling Printf Synthesis
 ----------------------------
 
 To synthesize a printf, you need to annotate the specific printfs you'd like to
-capture in your Chisel source code.  Presently, due to a limitation in Chisel
-and FIRRTL's annotation system, you need to annotate the arguments to the
-printf, not the printf itself, like so:
+capture in your Chisel source code like so::
 
-::
-
-    printf(midas.targetutils.SynthesizePrintf("x%d p%d 0x%x\n", rf_waddr, rf_waddr, rf_wdata))
+    midas.targetutils.SynthesizePrintf(printf("x%d p%d 0x%x\n", rf_waddr, rf_waddr, rf_wdata))
 
 Be judicious, as synthesizing many, frequently active printfs will slow down your simulator.
 

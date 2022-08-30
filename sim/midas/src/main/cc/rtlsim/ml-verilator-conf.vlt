@@ -1,5 +1,5 @@
 // HACK: Disable MULTIDRIVEN linting, since verilator cannot determine if two
 // syntactically different clocks are aliases of one another if they are
-// driven by seperate ports.
+// driven by separate ports.
 `verilator_config
 lint_off -rule MULTIDRIVEN

@@ -98,7 +98,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         val printName = moduleNS.newName(suggestedPrintName)
         val printStmt = Print(NoInfo, printFormat, Seq(valueToPrint),
                               WRef(clock.ref), And(WRef(trigger), printEnable), printName)
-        addedAnnos += SynthPrintfAnnotation(Seq(Seq(mT.ref(valueToPrint.name))), mT, printFormat.string, Some(printName))
+        addedAnnos += SynthPrintfAnnotation(mT.ref(printName))
         addedStmts += printStmt
       }
 
@@ -218,7 +218,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         target = topMT.ref(topWiringPrefix),
         // We need to pass the name of the trigger port so each bridge can
         // disambiguate between them and connect to the correct one in simulation mapping
-        widget = (p: Parameters) => new AutoCounterBridgeModule(eventMetadata, triggerPortName, globalResetName)(p),
+        widget = (p: Parameters) => new AutoCounterBridgeModule(AutoCounterParameters(eventMetadata, triggerPortName, globalResetName))(p),
         channelNames = (triggerFCCA +: globalResetFCCA +: fccas).map(_.globalName)
       )
       Seq(bridgeAnno, triggerSinkAnno, triggerFCCA, globalResetFCCA, globalResetSink) ++ fccas

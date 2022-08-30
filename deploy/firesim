@@ -34,8 +34,9 @@ from awstools.afitools import share_agfi_in_all_regions
 from buildtools.buildconfigfile import BuildConfigFile
 from buildtools.bitbuilder import F1BitBuilder
 
-from util.streamlogger import StreamLogger
+from util.streamlogger import StreamLogger, InfoStreamLogger
 from util.filelineswap import file_line_swap
+from util.io import firesim_input
 
 from typing import Dict, Callable, Type, Optional, TypedDict, get_type_hints, Tuple, List
 
@@ -260,7 +261,7 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
+        userconfirm = firesim_input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
         if userconfirm == "yes":
             build_config_file.release_build_hosts()
             rootLogger.info("Build farm hosts released.")
@@ -292,6 +293,11 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     # run builds, then terminate instances
     execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
 
+@register_task
+def builddriver(runtime_conf: RuntimeConfig) -> None:
+    """ Only perform the driver build (host-processor side of an FPGA sim or
+    an entire metasim)."""
+    runtime_conf.build_driver()
 
 @register_task
 # XXX this needs to be renamed or rethought, perhaps this is a backend-specific task?
@@ -494,17 +500,18 @@ if __name__ == '__main__':
 
     check_env()
 
-    # lastly - whenever you use run/local/put/etc from fabric, you need to wrap
-    # it up in "with util.StreamLogger('stdout'), util.StreamLogger('stdin').
-    # unfortunately there's no proper way to do it with fabric
-
-    exitcode = 0
-    try:
-        main(args)
-    except:
-        # log all exceptions that make it this far
-        rootLogger.exception("Fatal error.")
-        exitcode = 1
-    finally:
-        rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
-        sys.exit(exitcode)
+    # lastly - we want anything printed to stdout to be converted into a DEBUG
+    # level logging message and anything printed to stderr converted into INFO.
+    # This is primarily because fabric does not use logging, it prints explicitly
+    # to stdout and stderr.  We want it's output to be logged.
+    with StreamLogger('stdout'), InfoStreamLogger('stderr'):
+        exitcode = 0
+        try:
+            main(args)
+        except:
+            # log all exceptions that make it this far
+            rootLogger.exception("Fatal error.")
+            exitcode = 1
+        finally:
+            rootLogger.info("""The full log of this run is:\n{basedir}/{fulllog}""".format(basedir=dname, fulllog=full_log_filename))
+            sys.exit(exitcode)

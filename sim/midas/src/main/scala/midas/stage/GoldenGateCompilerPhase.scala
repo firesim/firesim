@@ -54,23 +54,25 @@ class GoldenGateCompilerPhase extends Phase {
 
     // Lower simulator RTL and run user-requested host-transforms
     val hostLoweringCompiler = new Compiler(
-      Seq(
+      targets = Seq(
           Dependency(midas.passes.AutoILATransform),
           Dependency(midas.passes.HostClockWiring),
           Dependency[firrtl.passes.memlib.SeparateWriteClocks],
           Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
-          Dependency[firrtl.transforms.SimplifyMems],
-      ) ++
-      p(HostTransforms),Forms.VerilogOptimized)
+          Dependency[firrtl.transforms.SimplifyMems]
+        ) ++
+        Forms.LowForm ++
+        p(HostTransforms),
+      currentState = Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(hostLoweringCompiler.prettyPrint("  "))
     val loweredSimulator = hostLoweringCompiler.execute(simulator)
 
     // Workaround under-constrained transform dependencies by forcing the
-    // emitter to run last in a seperate compiler.
+    // emitter to run last in a separate compiler.
     val emitter = new Compiler(
         Seq(Dependency(midas.passes.WriteXDCFile), Dependency[firrtl.SystemVerilogEmitter]),
-        Forms.VerilogOptimized)
+        Forms.LowForm)
     logger.info("Final Emission Transformation Ordering\n")
     logger.info(emitter.prettyPrint("  "))
 

@@ -8,7 +8,6 @@ import random
 import string
 import logging
 from fabric.api import local # type: ignore
-from util.streamlogger import StreamLogger
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -151,10 +150,9 @@ class AbstractSwitchToSwitchConfig:
 
         def local_logged(command: str) -> None:
             """ Run local command with logging. """
-            with StreamLogger('stdout'), StreamLogger('stderr'):
-                localcap = local(command, capture=True)
-                rootLogger.debug(localcap)
-                rootLogger.debug(localcap.stderr)
+            localcap = local(command, capture=True)
+            rootLogger.debug(localcap)
+            rootLogger.debug(localcap.stderr)
 
         # make a build dir for this switch
         local_logged("mkdir -p " + switchbuilddir)

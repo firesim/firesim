@@ -18,8 +18,13 @@ class AssertBridgeRecord(assertPortName: String, resetPortName: String, numAsser
   override def cloneType = new AssertBridgeRecord(assertPortName, resetPortName, numAsserts).asInstanceOf[this.type]
 }
 
-class AssertBridgeModule(assertPortName: String, resetPortName: String, assertMessages: Seq[String])(implicit p: Parameters)
+case class AssertBridgeParameters(assertPortName: String, resetPortName: String, assertMessages: Seq[String])
+
+class AssertBridgeModule(params: AssertBridgeParameters)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[AssertBridgeRecord]]()(p) {
+
+  val AssertBridgeParameters(assertPortName, resetPortName, assertMessages) = params
+
   lazy val module = new BridgeModuleImp(this) {
     val numAsserts = assertMessages.size
     val io = IO(new WidgetIO())

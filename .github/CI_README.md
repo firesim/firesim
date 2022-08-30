@@ -26,12 +26,7 @@ to use this instance as a GH-A self-hosted runner (see https://docs.github.com/e
 Running FPGA-related Tasks
 --------------------------
 
-CI now includes the capability to run FPGA-simulations on specific PRs.
-However, by default, this requires approval from the `firesim-fpga-approval` team (called a "deployment").
-You can gain approval to run FPGA-simulations in two ways.
-
-1. Each member in the `firesim-fpga-approval` team will receive an email asking for approval on a specific PR. From that email, they can approve the request and run the FPGA-simulation tests.
-2. From the workflow run GUI (go to https://github.com/firesim/firesim/actions and click a specific workflow run) a `firesim-fpga-approval` team member can approve the deployment (note this button only shows up once the job that needs approval is reached).
+CI now includes the capability to run FPGA-simulations on specific PRs. This requires that you tag your PR on creation with the tag `ci:fpga-deploy`. Adding the tag after the PR is created will not run the FPGA jobs without a resynchronization event (e.g., closing + reopening the PR, adding a new commit, or rebasing the branch). 
 
 Debugging Failures
 ------------------
@@ -44,3 +39,12 @@ Currently, the only way to access any running instance that is created from the 
 3. SSH into the instance and do any testing required.
 
 If the instance is stopped, then you must request a AWS IAM user account from the FireSim developers to access the EC2 console and restart the instance.
+
+GitHub Secrets
+--------------
+* **AWS_ACCESS_KEY_ID**: Passed to `aws configure` on CI containers + manager instances
+* **AWS_DEFAULT_REGION**: Passed to `aws configure` on CI containers + manager instances
+* **AWS_SECRET_ACCESS_KEY**: Passed to `aws configure` on CI containers + manager instances
+* **FIRESIM_PEM**: Used by the manager on CI manager instances
+* **FIRESIM_REPO_DEP_KEY**: Used to push scala doc to GH pages
+* **GH_A_PERSONAL_ACCESS_TOKEN**: Used to dynamically register and deregister GitHub Actions runners. See `https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token`, and enable the `workflow` (Update GitHub Action workflows) setting.

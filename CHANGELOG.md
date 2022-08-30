@@ -2,6 +2,22 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.14.1] - 2022-07-07
+Adds firesim builddriver command, various bugfixes.
+
+### Added
+* New firesim builddriver command, which runs required driver/metasimulation builds without a launched run farm #1114
+* Support for Sydney region on AWS #1111
+
+### Changed
+* Docs cleanup #1114 #1106
+* Don't use tsnyder conda channel in production machine-launch-script.sh #1121
+
+### Fixed
+* Fixed documentation for SSH-ing into simulations of target designs with NICs #1119. Fixes #580.
+* VitisShell: Use XPM xpm_cdc_sync_rst for reset synchronizer #1100
+* Fix manager xclbin lookup bug during metasimulation #1114, https://groups.google.com/g/firesim/c/VxHX7QkKJCM
+
 ## [1.14.0] - 2022-06-18
 Introduces support for local (on-premises) FPGAs and distributed metasimulation
 
@@ -152,7 +168,7 @@ FIRRTL deduplication interaction.
 * Fix VCS-related breakages in MIDASExamples, SynthUnittests #725
 * Fix breakages related to new FIRRTL 1.4 DedupModules by limiting how many times it runs (#738, see #766)
 * Replace DualQueue in the DRAM memory model scheduler with RRArbiter+Queue to prevent write starvation (#753)
-* A bug that broke tracerV when using heterogenous mixes of tiles #776 
+* A bug that broke tracerV when using heterogeneous mixes of tiles #776
 
 ### Removed
 * Coremark and SPEC workloads moved to Chipyard
@@ -476,7 +492,7 @@ A more detailed account of everything included is included in the dev->master PR
     * Resolves #56 
 * PR #193. Fedora networking now works in FireSim 
     * Address assignment fixed (gets assigned IP addresses in slot-order on firesim)
-* PR #204. Fix support for heterogenous rootfs's - each job can have its own rootfs, or no rootfs at all
+* PR #204. Fix support for heterogeneous rootfs's - each job can have its own rootfs, or no rootfs at all
 
 ### Deprecated
 

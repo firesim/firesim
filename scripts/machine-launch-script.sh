@@ -278,9 +278,11 @@ set -o pipefail
         graphviz \
         expect \
         dtc \
-        verilator==4.034 \
+        verilator==4.224 \
         screen \
     )
+    # clang-format for driver coding style enforcement.
+    CONDA_PACKAGE_SPECS+=( clang-format clang-tools )
 
     # python packages
     # While it is possible to install using pip after creating the
@@ -329,8 +331,7 @@ set -o pipefail
     CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
-    # only temporarily use tsnyder channel until xilinx-xrt is in a more official place
-    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -c tsnyder -y "${CONDA_PACKAGE_SPECS[@]}"
+    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -y "${CONDA_PACKAGE_SPECS[@]}"
 
 
     # Install python packages using pip that are not available from conda

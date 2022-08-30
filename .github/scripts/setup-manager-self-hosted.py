@@ -26,13 +26,8 @@ def wait_machine_launch_complete():
         terminate_workflow_instances(ci_personal_api_token, ci_workflow_run_id)
         sys.exit(1)
 
-def initialize_manager_hosted():
-    """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
-
-    max_runtime (hours): The maximum uptime this manager and its associated
-        instances should have before it is stopped. This serves as a redundant check
-        in case the workflow-monitor is brought down for some reason.
-    """
+def setup_self_hosted_runners():
+    """ Installs GHA self-hosted runner machinery on the manager.  """
 
     # Catch any exception that occurs so that we can gracefully teardown
     try:
@@ -42,8 +37,17 @@ def initialize_manager_hosted():
         print("Using Github Actions Runner v{}".format(RUNNER_VERSION))
         # create NUM_RUNNER self-hosted runners on the manager that run in parallel
         NUM_RUNNERS = 4
+
+        # verify no existing runners are running and remove unused runners
+        with settings(warn_only=True):
+            for runner_idx in range(NUM_RUNNERS):
+                run(f"screen -XS gh-a-runner-{runner_idx} quit")
+        deregister_runners(ci_personal_api_token, ci_workflow_run_id)
+
+        # spawn runners
         for runner_idx in range(NUM_RUNNERS):
             actions_dir = "{}/actions-runner-{}".format(manager_home_dir, runner_idx)
+            run("rm -rf {}".format(actions_dir))
             run("mkdir -p {}".format(actions_dir))
             with cd(actions_dir):
                 run("curl -o actions-runner-linux-x64-{}.tar.gz -L https://github.com/actions/runner/releases/download/v{}/actions-runner-linux-x64-{}.tar.gz".format(RUNNER_VERSION, RUNNER_VERSION, RUNNER_VERSION))
@@ -53,10 +57,9 @@ def initialize_manager_hosted():
                 run("sudo ./bin/installdependencies.sh")
 
                 # get registration token from API
-                headers = {'Authorization': "token {}".format(ci_personal_api_token.strip())}
-                r = requests.post("https://api.github.com/repos/firesim/firesim/actions/runners/registration-token", headers=headers)
+                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=get_header(ci_personal_api_token))
                 if r.status_code != 201:
-                    raise Exception("HTTPS error: {} {}. Retrying.".format(r.status_code, r.json()))
+                    raise Exception("HTTPS error: {} {}".format(r.status_code, r.json()))
 
                 res_dict = r.json()
                 reg_token = res_dict["token"]
@@ -64,7 +67,7 @@ def initialize_manager_hosted():
                 # config runner
                 put(".github/scripts/gh-a-runner.expect", actions_dir)
                 run("chmod +x gh-a-runner.expect")
-                runner_name = "{}-{}".format(ci_workflow_run_id, runner_idx) # used to teardown runner
+                runner_name = f"{ci_workflow_run_id}-{runner_idx}" # used to teardown runner
                 unique_label = ci_workflow_run_id # used within the yaml to choose a runner
                 run("./gh-a-runner.expect {} {} {}".format(reg_token, runner_name, unique_label))
 
@@ -89,4 +92,4 @@ if __name__ == "__main__":
     execute(wait_machine_launch_complete, hosts=[manager_hostname(ci_workflow_run_id)])
     # after we know machine-launch-script.sh is done, we need to logout and log back in
     fabric.network.disconnect_all()
-    execute(initialize_manager_hosted, hosts=[manager_hostname(ci_workflow_run_id)])
+    execute(setup_self_hosted_runners, hosts=[manager_hostname(ci_workflow_run_id)])

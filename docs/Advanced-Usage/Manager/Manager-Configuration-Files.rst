@@ -20,6 +20,8 @@ Here is a sample of this configuration file:
 
 Below, we outline each mapping in detail.
 
+.. _run-farm-config-in-config-runtime:
+
 ``run_farm``
 ^^^^^^^^^^^^^^^^^^^
 
@@ -73,7 +75,7 @@ if a waveform is needed.
 This key/value pair is a string that passes plusargs (arguments with a ``+`` in front) to the metasimulations.
 
 ``metasimulation_only_vcs_plusargs``
-""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""
 
 This key/value pair is a string that passes plusargs (arguments with a ``+`` in front) to metasimulations using ``vcs`` or ``vcs-debug``.
 

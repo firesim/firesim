@@ -43,25 +43,8 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     firesimMMCM.io.clk_in1 := ap_clk
     firesimMMCM.io.reset   := ap_rst.asAsyncReset
 
-    val hostClock = firesimMMCM.io.clk_out1
-
-    /** Synchronizes an active high asynchronous reset.
-      */
-    def resetSync(areset: AsyncReset, clock: Clock, length: Int = 3): Bool = {
-      withClockAndReset(clock, areset) {
-        val sync_regs = Seq.fill(length)(RegInit(true.B))
-        sync_regs.foldLeft(false.B) { case (prev, curr) =>
-          XDC(XDCFiles.Synthesis, "set_property ASYNC_REG TRUE [get_cells {}_reg]", curr)
-          curr := prev
-          curr
-        }
-      }
-    }
-
-    // Synchronize asyncReset passed to kernel
-    val hostAsyncReset = (ap_rst || !firesimMMCM.io.locked).asAsyncReset
-    val hostSyncReset  = resetSync(hostAsyncReset, hostClock)
-
+    val hostClock     = firesimMMCM.io.clk_out1
+    val hostSyncReset = ResetSynchronizer(ap_rst || !firesimMMCM.io.locked, hostClock, initValue = true)
     top.module.reset := hostSyncReset
     top.module.clock := hostClock
 
