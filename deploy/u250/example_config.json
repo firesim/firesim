@@ -1,0 +1,28 @@
+{
+	"resources" : {
+		"acquire" : "scripts/acquireIdunFpgas.sh",
+		"release" : "scripts/releaseIdunFpgas.sh"
+	},
+	"default_workload": {
+		"name" : "unnamed",
+		"scripts" : {
+			"preexec" : "scripts/prepareFireSimImage.sh",
+			"exec" : "scripts/launchFireSimConfig.sh",
+			"postexec" : "scripts/finishFireSimImage.sh"
+		},
+		"parameters": {
+			"preexec": "%resource% %name%",
+			"exec": "%resource% %name%",
+			"postexec": "%resource% %name%"
+		},
+		"environment": {
+			"name": "%name%",
+			"worker": "%worker%",
+			"resource": "%resource%",
+			"FIRESIM_CONFIG": "FireSimRocketConfig_BaseF1Config1Mem_F60MHz",
+			"CUSTOM_RUNTIME_CONFIG": "common/custom_runtime.conf"
+		}
+	},
+	"run_dir": "runs",
+	"workloads": []
+}

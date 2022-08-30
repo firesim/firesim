@@ -1,0 +1,6 @@
+[
+    { "name" : "membench-bwtest" },
+    { "name" : "membench-bwstride" },
+    { "name" : "membench-pointers" },
+    { "name" : "membench-pointers-hugetlb" }
+]
