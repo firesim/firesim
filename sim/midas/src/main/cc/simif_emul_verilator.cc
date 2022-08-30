@@ -38,6 +38,13 @@ void simif_emul_verilator_t::sim_init() {
   for (size_t i = 0; i < 10; i++)
     tick();
   top->reset = 0;
+
+  for (auto &stream : this->fpga_to_cpu_streams) {
+    stream->init();
+  }
+  for (auto &stream : this->cpu_to_fpga_streams) {
+    stream->init();
+  }
 }
 
 void simif_emul_verilator_t::advance_target() {

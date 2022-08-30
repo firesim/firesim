@@ -292,6 +292,7 @@ void tracerv_t::tick() {
 
 // Pull in any remaining tokens and flush them to file
 void tracerv_t::flush() {
+  pull_flush(stream_idx);
   while (this->trace_enabled && (process_tokens(this->stream_depth, 0) > 0))
     ;
 }

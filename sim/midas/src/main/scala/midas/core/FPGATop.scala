@@ -317,8 +317,11 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
         beatBytes = params.dataBits / 8)
     ))
 
-    streamingEngine.fpgaManagedAXI4NodeOpt.foreach {
-      node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := _
+    streamingEngine.fpgaManagedAXI4NodeOpt match {
+      case Some(engineNode) =>
+        node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := engineNode
+      case None =>
+        node := AXI4TieOff()
     }
     (node, params)
   }

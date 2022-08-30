@@ -1,29 +1,33 @@
 // See LICENSE for license details.
 
-#ifndef __CPU_MANAGED_STREAM_H
-#define __CPU_MANAGED_STREAM_H
+#ifndef __BRIDGES_CPU_MANAGED_STREAM_H
+#define __BRIDGES_CPU_MANAGED_STREAM_H
 
 #include <functional>
 #include <string>
+
+#include "bridge_stream_driver.h"
+
+namespace CPUManagedStreams {
 /**
  * @brief Parameters emitted for a CPU-managed stream emitted by Golden Gate.
  *
  * This will be replaced by a protobuf-derived class, and re-used across both
  * Scala and C++.
  */
-typedef struct CPUManagedStreamParameters {
+typedef struct StreamParameters {
   std::string stream_name;
   uint64_t dma_addr;
   uint64_t count_addr;
   uint32_t fpga_buffer_size;
 
-  CPUManagedStreamParameters(std::string stream_name,
-                             uint64_t dma_addr,
-                             uint64_t count_addr,
-                             int fpga_buffer_size)
+  StreamParameters(std::string stream_name,
+                   uint64_t dma_addr,
+                   uint64_t count_addr,
+                   int fpga_buffer_size)
       : stream_name(stream_name), dma_addr(dma_addr), count_addr(count_addr),
         fpga_buffer_size(fpga_buffer_size){};
-} CPUManagedStreamParameters;
+} StreamParameters;
 
 /**
  * @brief Base class for CPU-managed streams
@@ -39,14 +43,15 @@ typedef struct CPUManagedStreamParameters {
  * FPGA-managed AXI4 for their platform.
  *
  */
-class CPUManagedStream {
+class CPUManagedDriver {
 public:
-  CPUManagedStream(CPUManagedStreamParameters params,
+  CPUManagedDriver(StreamParameters params,
                    std::function<uint32_t(size_t)> mmio_read_func)
       : params(params), mmio_read_func(mmio_read_func){};
+  virtual ~CPUManagedDriver(){};
 
 private:
-  CPUManagedStreamParameters params;
+  StreamParameters params;
   std::function<uint32_t(size_t)> mmio_read_func;
 
 public:
@@ -65,14 +70,20 @@ public:
  * implemented with axi4_read, and is provided by the host-platform.
  *
  */
-class StreamToCPU : public CPUManagedStream {
+class FPGAToCPUDriver final : public CPUManagedDriver,
+                              public FPGAToCPUStreamDriver {
 public:
-  StreamToCPU(CPUManagedStreamParameters params,
-              std::function<uint32_t(size_t)> mmio_read,
-              std::function<size_t(size_t, char *, size_t)> axi4_read)
-      : CPUManagedStream(params, mmio_read), axi4_read(axi4_read){};
+  FPGAToCPUDriver(StreamParameters params,
+                  std::function<uint32_t(size_t)> mmio_read,
+                  std::function<size_t(size_t, char *, size_t)> axi4_read)
+      : CPUManagedDriver(params, mmio_read), axi4_read(axi4_read){};
 
-  size_t pull(void *dest, size_t num_bytes, size_t required_bytes);
+  virtual size_t
+  pull(void *dest, size_t num_bytes, size_t required_bytes) override;
+  // The CPU-managed stream engine makes all beats available to the bridge,
+  // hence the NOP.
+  virtual void flush() override{};
+  virtual void init() override{};
 
 private:
   std::function<size_t(size_t, char *, size_t)> axi4_read;
@@ -85,17 +96,24 @@ private:
  * FPGA out of a user-provided buffer. IO over a CPU-managed AXI4 IF is
  * implemented with axi4_write, and is provided by the host-platform.
  */
-class StreamFromCPU : public CPUManagedStream {
+class CPUToFPGADriver final : public CPUManagedDriver,
+                              public CPUToFPGAStreamDriver {
 public:
-  StreamFromCPU(CPUManagedStreamParameters params,
-                std::function<uint32_t(size_t)> mmio_read,
-                std::function<size_t(size_t, char *, size_t)> axi4_write)
-      : CPUManagedStream(params, mmio_read), axi4_write(axi4_write){};
+  CPUToFPGADriver(StreamParameters params,
+                  std::function<uint32_t(size_t)> mmio_read,
+                  std::function<size_t(size_t, char *, size_t)> axi4_write)
+      : CPUManagedDriver(params, mmio_read), axi4_write(axi4_write){};
 
-  size_t push(void *src, size_t num_bytes, size_t required_bytes);
+  virtual size_t
+  push(void *src, size_t num_bytes, size_t required_bytes) override;
+  // On a push all beats are delivered to the FPGA, so a NOP is sufficient here.
+  virtual void flush() override{};
+  virtual void init() override{};
 
 private:
   std::function<size_t(size_t, char *, size_t)> axi4_write;
 };
 
-#endif // __CPU_MANAGED_STREAM_H
+} // namespace CPUManagedStreams
+
+#endif // __BRIDGES_CPU_MANAGED_STREAM_H

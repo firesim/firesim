@@ -76,25 +76,22 @@ protected:
  *
  *  Historically this god class wrapped all of the features presented by FireSim
  *  / MIDAS-derived simulators. Critically, it declares an interface for
- interacting with
- *  the host-FPGA, which consist of methods for implementing 32b MMIO (read,
- *  write), and latency-insensitive bridge streams (push, pull). Concrete
- *  subclasses of simif_t must be written for metasimulation and each supported
- *  host plaform. See simif_f1_t for an example.
-
+ *  interacting with the host-FPGA, which consist of methods for implementing
+ *  32b MMIO (read, write), and latency-insensitive bridge streams (push, pull).
+ *  Concrete subclasses of simif_t must be written for metasimulation and each
+ *  supported host plaform. See simif_f1_t for an example.
  *  simif_t also provides a few core functions that are tied to bridges and
- widgets that
- *  must be present in all simulators:
+ *  widgets that must be present in all simulators:
  *
  *  - To track simulation time, it provides methods to interact with the
  *    ClockBridge. This bridge is solely responsible for defining a schedule of
  *    clock edges to simulate, and must be instantiated in all targets. See
- actual_tcycle() and hcycle().
- *    Utilities to report performance are based off these measures of time.
+ *    actual_tcycle() and hcycle().  Utilities to report performance are based
+ *    off these measures of time.
  *
  *  - To read and write into FPGA DRAM, the LoadMem widget provides a
  *    low-bandwidth side channel via MMIO. See read_mem, write_mem,
- zero_out_dram.
+ *    zero_out_dram.
  */
 class simif_t {
 public:
@@ -180,6 +177,23 @@ public:
                       void *src,
                       size_t num_bytes,
                       size_t required_bytes) = 0;
+  /**
+   * @brief Hint that a stream should bypass any underlying batching
+   * optimizations.
+   *
+   * A user-directed hint that a stream should bypass any underlying batching
+   * optimizations. This may permit a future pull to read data that may
+   * otherwise remain queued in parts of the host.
+   *
+   * @param stream_no The index of the stream to flush
+   */
+  virtual void pull_flush(unsigned int stream_no) = 0;
+  /**
+   * @brief Analagous to pull_flush but for CPU-to-FPGA streams
+   *
+   * @param stream_no The index of the stream to flush
+   */
+  virtual void push_flush(unsigned int stream_no) = 0;
 
   // End host-platform interface.
 
