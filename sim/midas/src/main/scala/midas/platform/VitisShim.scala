@@ -48,13 +48,6 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     top.module.reset := hostSyncReset
     top.module.clock := hostClock
 
-    // tie-off dma/io_slave interfaces
-    top.module.dma.ar.valid := false.B
-    top.module.dma.aw.valid := false.B
-    top.module.dma.w.valid  := false.B
-    top.module.dma.r.ready  := false.B
-    top.module.dma.b.ready  := false.B
-
     top.module.mem.foreach({ case bundle =>
       bundle.ar.ready := false.B
       bundle.aw.ready := false.B

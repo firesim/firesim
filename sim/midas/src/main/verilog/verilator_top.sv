@@ -35,6 +35,7 @@ module verilator_top (
   output reg  [1:0]                 ctrl_b_bits_resp,
   output reg  [`CTRL_ID_BITS-1:0]   ctrl_b_bits_id,
 
+`ifdef DMA_PRESENT
   input reg                         dma_ar_valid,
   output reg                        dma_ar_ready,
   input reg [`DMA_ADDR_BITS-1:0]    dma_ar_bits_addr,
@@ -66,6 +67,41 @@ module verilator_top (
   input reg                         dma_b_ready,
   output reg  [1:0]                 dma_b_bits_resp,
   output reg  [`DMA_ID_BITS-1:0]    dma_b_bits_id,
+`endif // DMA_PRESENT
+
+`ifdef FPGA_MANAGED_AXI4_PRESENT
+  output reg                        fmaxi4_ar_valid,
+  input reg                         fmaxi4_ar_ready,
+  output reg  [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]  fmaxi4_ar_bits_addr,
+  output reg  [`FPGA_MANAGED_AXI4_ID_BITS-1:0]    fmaxi4_ar_bits_id,
+  output reg  [2:0]                 fmaxi4_ar_bits_size,
+  output reg  [7:0]                 fmaxi4_ar_bits_len,
+
+  output reg                        fmaxi4_aw_valid,
+  input reg                         fmaxi4_aw_ready,
+  output reg  [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]  fmaxi4_aw_bits_addr,
+  output reg  [`FPGA_MANAGED_AXI4_ID_BITS-1:0]    fmaxi4_aw_bits_id,
+  output reg  [2:0]                 fmaxi4_aw_bits_size,
+  output reg  [7:0]                 fmaxi4_aw_bits_len,
+
+  output reg                        fmaxi4_w_valid,
+  input reg                         fmaxi4_w_ready,
+  output reg  [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fmaxi4_w_bits_strb,
+  output reg  [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]  fmaxi4_w_bits_data,
+  output reg                        fmaxi4_w_bits_last,
+
+  input reg                         fmaxi4_r_valid,
+  output reg                        fmaxi4_r_ready,
+  input reg [1:0]                   fmaxi4_r_bits_resp,
+  input reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]      fmaxi4_r_bits_id,
+  input reg [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]    fmaxi4_r_bits_data,
+  input reg                         fmaxi4_r_bits_last,
+
+  input reg                         fmaxi4_b_valid,
+  output reg                        fmaxi4_b_ready,
+  input reg [1:0]                   fmaxi4_b_bits_resp,
+  input reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]      fmaxi4_b_bits_id,
+`endif
 
   output reg                        mem_0_ar_valid,
   input reg                         mem_0_ar_ready,
@@ -237,6 +273,7 @@ module verilator_top (
     .ctrl_b_bits_resp(ctrl_b_bits_resp),
     .ctrl_b_bits_id(ctrl_b_bits_id),
 
+`ifdef DMA_PRESENT
     .dma_ar_valid(dma_ar_valid),
     .dma_ar_ready(dma_ar_ready),
     .dma_ar_bits_addr(dma_ar_bits_addr),
@@ -268,6 +305,41 @@ module verilator_top (
     .dma_b_ready(dma_b_ready),
     .dma_b_bits_resp(dma_b_bits_resp),
     .dma_b_bits_id(dma_b_bits_id),
+`endif
+
+`ifdef FPGA_MANAGED_AXI4_PRESENT
+    .fmaxi4_ar_valid(fmaxi4_ar_valid),
+    .fmaxi4_ar_ready(fmaxi4_ar_ready),
+    .fmaxi4_ar_bits_addr(fmaxi4_ar_bits_addr),
+    .fmaxi4_ar_bits_id(fmaxi4_ar_bits_id),
+    .fmaxi4_ar_bits_size(fmaxi4_ar_bits_size),
+    .fmaxi4_ar_bits_len(fmaxi4_ar_bits_len),
+
+    .fmaxi4_aw_valid(fmaxi4_aw_valid),
+    .fmaxi4_aw_ready(fmaxi4_aw_ready),
+    .fmaxi4_aw_bits_addr(fmaxi4_aw_bits_addr),
+    .fmaxi4_aw_bits_id(fmaxi4_aw_bits_id),
+    .fmaxi4_aw_bits_size(fmaxi4_aw_bits_size),
+    .fmaxi4_aw_bits_len(fmaxi4_aw_bits_len),
+
+    .fmaxi4_w_valid(fmaxi4_w_valid),
+    .fmaxi4_w_ready(fmaxi4_w_ready),
+    .fmaxi4_w_bits_strb(fmaxi4_w_bits_strb),
+    .fmaxi4_w_bits_data(fmaxi4_w_bits_data),
+    .fmaxi4_w_bits_last(fmaxi4_w_bits_last),
+
+    .fmaxi4_r_valid(fmaxi4_r_valid),
+    .fmaxi4_r_ready(fmaxi4_r_ready),
+    .fmaxi4_r_bits_resp(fmaxi4_r_bits_resp),
+    .fmaxi4_r_bits_id(fmaxi4_r_bits_id),
+    .fmaxi4_r_bits_data(fmaxi4_r_bits_data),
+    .fmaxi4_r_bits_last(fmaxi4_r_bits_last),
+
+    .fmaxi4_b_valid(fmaxi4_b_valid),
+    .fmaxi4_b_ready(fmaxi4_b_ready),
+    .fmaxi4_b_bits_resp(fmaxi4_b_bits_resp),
+    .fmaxi4_b_bits_id(fmaxi4_b_bits_id),
+`endif
 
     .mem_0_ar_valid(mem_0_ar_valid),
     .mem_0_ar_ready(mem_0_ar_ready),

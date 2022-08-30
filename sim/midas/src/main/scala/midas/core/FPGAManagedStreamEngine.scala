@@ -15,7 +15,7 @@ import midas.widgets._
   */
 class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) extends StreamEngine(p) {
   val pcisNodeOpt = None
-  val pcimNodeOpt = Some(AXI4IdentityNode())
+  val fmaxi4NodeOpt = Some(midas.widgets.AXI4TieOff()(p))
 
   lazy val module = new WidgetImp(this) {
     val io = IO(new WidgetIO)

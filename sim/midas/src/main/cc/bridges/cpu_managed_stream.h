@@ -28,7 +28,7 @@ typedef struct CPUManagedStreamParameters {
 /**
  * @brief Base class for CPU-managed streams
  *
- * Streams implemented with the CPUManagedStreamingEngine have a common set of
+ * Streams implemented with the CPUManagedStreamEngine have a common set of
  * parameters, and use MMIO to measure FPGA-queue occupancy. This base class
  * captures that.
  *

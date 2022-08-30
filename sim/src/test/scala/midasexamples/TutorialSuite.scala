@@ -187,6 +187,11 @@ class ParityF1Test extends TutorialSuite("Parity") {
   runTest("verilator", true)
   runTest("vcs", true)
 }
+
+class ParityVitisTest extends TutorialSuite("Parity", platformConfigs = classOf[DefaultVitisConfig].getSimpleName) {
+  runTest("verilator", true)
+  runTest("vcs", true)
+}
 class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister")
 class ResetShiftRegisterF1Test extends TutorialSuite("ResetShiftRegister")
 class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister")
