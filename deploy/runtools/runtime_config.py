@@ -39,6 +39,7 @@ class RuntimeHWConfig:
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
+    """User-specified, possibly-URI, path to xclbin"""
     xclbin: Optional[str]
 
     deploytriplet: Optional[str]
@@ -200,8 +201,7 @@ class RuntimeHWConfig:
         run_device_placement = "+slotid={}".format(slotid)
 
         if self.platform == "vitis":
-            assert self.xclbin is not None
-            vitis_bit = "+binary_file={}".format(self.xclbin)
+            vitis_bit = "+binary_file=./sim.xclbin"
         else:
             vitis_bit = ""
 
