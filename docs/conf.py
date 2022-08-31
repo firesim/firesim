@@ -44,9 +44,7 @@ if on_rtd:
 if on_rtd:
     logger.info("Running in a RTD Container")
     rtd_version = os.environ.get("READTHEDOCS_VERSION")
-    if rtd_version == "latest":
-        version = "main" # TODO: default to what "latest" points to
-    elif rtd_version == "stable":
+    if rtd_version in ["stable", "latest"]:
         # get the latest git tag (which is what rtd normally builds under "stable")
         # this works since rtd builds things within the repo
         process = subprocess.Popen(["git", "describe", "--exact-match", "--tags"], stdout=subprocess.PIPE)
