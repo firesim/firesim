@@ -2,6 +2,13 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.14.2] - 2022-08-30
+Bump to use AWS FPGA Developer AMI 1.12.1 as 1.11.1 has been de-listed. This also bumps Vivado to 2021.2.
+
+### Fixed
+* Bump to use AWS FPGA Developer AMI 1.12.1
+* Bump Vivado to 2021.2
+
 ## [1.14.1] - 2022-07-07
 Adds firesim builddriver command, various bugfixes.
 
