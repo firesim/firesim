@@ -218,10 +218,12 @@ void tracerv_t::init() {
 }
 
 size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
-  size_t maximum_batch_bytes = num_beats * DMA_BEAT_BYTES;
-  size_t minimum_batch_bytes = minimum_batch_beats * DMA_BEAT_BYTES;
+  size_t maximum_batch_bytes = num_beats * BridgeConstants::STREAM_WIDTH_BYTES;
+  size_t minimum_batch_bytes =
+      minimum_batch_beats * BridgeConstants::STREAM_WIDTH_BYTES;
   // TODO. as opt can mmap file and just load directly into it.
-  alignas(4096) uint64_t OUTBUF[this->stream_depth * DMA_BEAT_BYTES];
+  alignas(4096)
+      uint64_t OUTBUF[this->stream_depth * BridgeConstants::STREAM_WIDTH_BYTES];
   auto bytes_received = pull(this->stream_idx,
                              (char *)OUTBUF,
                              maximum_batch_bytes,
