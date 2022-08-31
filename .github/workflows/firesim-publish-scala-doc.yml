@@ -5,13 +5,14 @@ on:
   push:
     branches:
       - main
+      - stable
     tags:
       - '[0-9]*.[0-9]*.[0-9]*'
   # On PRs to stable or main, check that the docs build correctly without publishing
   pull_request:
     branches:
       - main
-      - '1.[0-9]*.x'
+      - stable
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
