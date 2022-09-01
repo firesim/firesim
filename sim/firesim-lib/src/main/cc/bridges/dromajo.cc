@@ -12,9 +12,7 @@
 #include "dromajo_params.h"
 
 // The maximum number of beats available in the FPGA-side FIFO
-#define QUEUE_DEPTH 6144
-// Size of PCI intf. in bytes
-#define PCIE_SZ_B 64
+#define STREAM_WIDTH_B BridgeConstants::STREAM_WIDTH_BYTES;
 // Create bitmask macro
 #define BIT_MASK(__TYPE__, __ONE_COUNT__)                                      \
   ((__TYPE__)(-((__ONE_COUNT__) != 0))) &                                      \
@@ -229,9 +227,8 @@ int dromajo_t::invoke_dromajo(uint8_t *buf) {
  * Read queue and co-simulate
  */
 size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
-  auto beat_bytes = DMA_DATA_BITS / 8;
-  size_t maximum_batch_bytes = num_beats * beat_bytes;
-  size_t minimum_batch_bytes = minimum_batch_beats * beat_bytes;
+  size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_B;
+  size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_B;
   // TODO: as opt can mmap file and just load directly into it.
   alignas(4096) char OUTBUF[maximum_batch_bytes];
   auto bytes_received =
@@ -241,7 +238,8 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   if (!this->dromajo_cosim)
     return bytes_received;
 
-  for (uint32_t offset = 0; offset < bytes_received; offset += PCIE_SZ_B / 2) {
+  for (uint32_t offset = 0; offset < bytes_received;
+       offset += STREAM_WIDTH_B / 2) {
     // invoke dromajo (requires that buffer is aligned properly)
     int rval = this->invoke_dromajo(OUTBUF + offset);
     if (rval) {
@@ -253,21 +251,21 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       fprintf(stderr,
               "C[%d] off(%d) token(",
               this->_trace_idx,
-              offset / (PCIE_SZ_B / 2));
+              offset / (STREAM_WIDTH_B / 2));
 
-      for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+      for (int32_t i = STREAM_WIDTH_B - 1; i >= 0; --i) {
         fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-        if (i == PCIE_SZ_B / 2)
+        if (i == STREAM_WIDTH_B / 2)
           fprintf(stderr, " ");
       }
       fprintf(stderr, ")\n");
 
       fprintf(stderr, "get_next_token token(");
-      uint32_t next_off = offset += PCIE_SZ_B;
+      uint32_t next_off = offset += STREAM_WIDTH_B;
 
-      for (int32_t i = PCIE_SZ_B - 1; i >= 0; --i) {
+      for (int32_t i = STREAM_WIDTH_B - 1; i >= 0; --i) {
         fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
-        if (i == PCIE_SZ_B / 2)
+        if (i == STREAM_WIDTH_B / 2)
           fprintf(stderr, " ");
       }
       fprintf(stderr, ")\n");
@@ -285,15 +283,15 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       this->saw_int_excp = false;
     }
 
-    // add an extra PCIE_SZ_B if there is an odd amount of traces
+    // add an extra STREAM_WIDTH_B if there is an odd amount of traces
     if (this->_trace_idx == 0 && (this->_num_traces % 2 == 1)) {
 #ifdef DEBUG
       fprintf(stderr,
               "off(%d + 1) = %d\n",
-              offset / (PCIE_SZ_B / 2),
-              (offset + PCIE_SZ_B / 2) / (PCIE_SZ_B / 2));
+              offset / (STREAM_WIDTH_B / 2),
+              (offset + STREAM_WIDTH_B / 2) / (STREAM_WIDTH_B / 2));
 #endif
-      offset += PCIE_SZ_B / 2;
+      offset += STREAM_WIDTH_B / 2;
     }
   }
 
