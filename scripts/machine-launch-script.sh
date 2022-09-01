@@ -166,13 +166,15 @@ set -o pipefail
 
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
         # for more information on strict channel_priority
-        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set channel_priority strict
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set channel_priority flexible
         # By default, don't mess with people's PS1, I personally find it annoying
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set changeps1 false
         # don't automatically activate the 'base' environment when intializing shells
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_activate_base false
 	# don't automatically update conda to avoid https://github.com/conda-forge/conda-libmamba-solver-feedstock/issues/2
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_update_conda false
+	# automatically use the ucb-bar channel for specific packages https://anaconda.org/ucb-bar/repo
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --add channels ucb-bar
 
         # conda-build is a special case and must always be installed into the base environment
         $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-build
@@ -280,6 +282,8 @@ set -o pipefail
         dtc \
         verilator==4.224 \
         screen \
+	elfutils \
+	libdwarf-dev==0.0.0.20190110_28_ga81397fc4 \
     )
     # clang-format for driver coding style enforcement.
     CONDA_PACKAGE_SPECS+=( clang-format clang-tools )
