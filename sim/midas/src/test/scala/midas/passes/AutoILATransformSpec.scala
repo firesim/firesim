@@ -13,8 +13,7 @@ import freechips.rocketchip.config.{Config, Parameters}
 import firrtl.annotations._
 import firrtl.transforms.BlackBoxInlineAnno
 import firrtl.testutils._
-import midas.stage.OutputBaseFilenameAnnotation
-import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.{OutputBaseFilenameAnnotation, GoldenGateOutputFileAnnotation, DownstreamFlows}
 
 class BaseAutoILAConfig extends Config((site, here, up) => { case EnableAutoILA => true })
 
@@ -99,6 +98,7 @@ class AutoILATransformSpec extends MiddleTransformSpec with FirrtlRunners {
          |  CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_ips ila_firesim]
          |""".stripMargin,
       ".ila_firesim.ipgen.tcl",
+      Set(DownstreamFlows.BitstreamCompile)
     )
 
     def bbAnno = BlackBoxInlineAnno(

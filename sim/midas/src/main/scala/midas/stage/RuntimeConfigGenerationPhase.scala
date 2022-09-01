@@ -23,6 +23,7 @@ import logger._
 private [stage] case class RuntimeConfigurationFile(body: String) extends NoTargetAnnotation with GoldenGateFileEmission {
   override def suffix = None
   def getBytes = body.getBytes
+  def downstreamDependencies = Set(DownstreamFlows.RuntimeDeployment)
 }
 
 class RuntimeConfigGenerationPhase extends Phase {

@@ -11,7 +11,7 @@ import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{DMANastiKey, HostMemChannelKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
-import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.{GoldenGateOutputFileAnnotation, DownstreamFlows}
 import midas.platform.xilinx._
 import midas.targetutils.xdc._
 
@@ -95,8 +95,13 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       s"// Vitis Shim requires no dynamically generated macros \n",
       fileSuffix = ".defines.vh",
+      downstreamDependencies = Set(DownstreamFlows.BitstreamCompile)
     )
-    GoldenGateOutputFileAnnotation.annotateFromChisel(s"# Currenty unused", ".env.tcl")
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      s"# Currently unused",
+      ".env.tcl",
+      downstreamDependencies = Set(DownstreamFlows.BitstreamCompile)
+    )
     // We don't need to provide paths because
     // 1) The Shim module is the top-level of the kernel
     // 2) Implementation constraints are scoped to the kernel level in our vitis flow

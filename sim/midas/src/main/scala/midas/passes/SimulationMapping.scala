@@ -24,7 +24,7 @@ import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.core._
 import midas.platform.PlatformShim
-import midas.stage.{OutputFileBuilder, GoldenGateOutputFileAnnotation}
+import midas.stage.{OutputFileBuilder, GoldenGateOutputFileAnnotation, DownstreamFlows}
 
 private[passes] class SimulationMapping(targetName: String) extends firrtl.Transform {
   def inputForm = LowForm
@@ -39,7 +39,9 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
         |// This contains target-specific preprocessor macro definitions,
         |// and encodes all required bridge metadata to instantiate bridge drivers.
         |""".stripMargin,
-      fileSuffix = ".const.h")
+      fileSuffix = ".const.h",
+      downstreamDependencies = Set(DownstreamFlows.MetasimulatorCompile, DownstreamFlows.DriverCompile)
+      )
     csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
     csb append "#define __%s_H\n".format(targetName.toUpperCase)
     c.genHeader(csb.getBuilder, targetName)
@@ -50,7 +52,9 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
         |// This file encodes variable width fields used in MIDAS-level simulation
         |// and is not used in FPGA compilation flows.
         |""".stripMargin,
-      fileSuffix = ".const.vh")
+      fileSuffix = ".const.vh",
+      downstreamDependencies = Set(DownstreamFlows.MetasimulatorCompile),
+    )
 
     vsb append "`ifndef __%s_H\n".format(targetName.toUpperCase)
     vsb append "`define __%s_H\n".format(targetName.toUpperCase)

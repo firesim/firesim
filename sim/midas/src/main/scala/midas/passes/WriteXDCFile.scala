@@ -7,8 +7,9 @@ import firrtl.stage.Forms
 import firrtl.annotations._
 import firrtl.analyses.InstanceKeyGraph
 
-import midas.stage.{GoldenGateFileEmission}
+import midas.stage.{GoldenGateFileEmission, DownstreamFlows}
 import midas.targetutils.xdc._
+import midas.stage.DownstreamFlows
 
 /**
   * We could reuse [[GoldenGateOutputFileAnnotation]] here, but this makes it
@@ -17,6 +18,7 @@ import midas.targetutils.xdc._
 private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[String])
     extends NoTargetAnnotation with GoldenGateFileEmission {
   def getBytes = fileBody.getBytes
+  def downstreamDependencies = Set(DownstreamFlows.BitstreamCompile)
 }
 
 private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration with XDCAnnotationConstants {

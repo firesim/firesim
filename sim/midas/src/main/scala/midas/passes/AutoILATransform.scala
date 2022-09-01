@@ -4,7 +4,7 @@ package midas.passes
 
 import midas.{EnableAutoILA, ILADepthKey, ILAProbeTriggersKey}
 import midas.targetutils.FirrtlFpgaDebugAnnotation
-import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.{GoldenGateOutputFileAnnotation, DownstreamFlows}
 import midas.stage.phases.ConfigParametersAnnotation
 
 import firrtl._
@@ -181,6 +181,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
           |  CONFIG.ALL_PROBE_SAME_MU_CNT {$probeTriggers}] [get_ips ${ilaBlackBoxName}]
           |""".stripMargin,
       s".${ilaBlackBoxName}.ipgen.tcl",
+      downstreamDependencies = Set(DownstreamFlows.BitstreamCompile)
     )
 
     val ilaWrapperModuleName = circuitNamespace.newName("ila_wrapper")

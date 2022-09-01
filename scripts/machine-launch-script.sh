@@ -280,6 +280,7 @@ set -o pipefail
         dtc \
         verilator==4.224 \
         screen \
+        jq \
     )
     # clang-format for driver coding style enforcement.
     CONDA_PACKAGE_SPECS+=( clang-format clang-tools )

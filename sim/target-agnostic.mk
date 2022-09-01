@@ -60,6 +60,14 @@ common_ld_flags := $(TARGET_LD_FLAGS) -lrt
 header := $(GENERATED_DIR)/$(BASE_FILE_NAME).const.h
 # The midas-generated simulator RTL which will be baked into the FPGA shell project
 simulator_verilog := $(GENERATED_DIR)/$(BASE_FILE_NAME).sv
+# Enumerates the different filesets produced by a GG compilation
+gg_file_manifest := $(GENERATED_DIR)/$(BASE_FILE_NAME).file-manifest.json
+
+# Call out some key files that will always be emitted by GG
+statically_known_gg_outputs := \
+	$(gg_file_manifest) \
+	$(header) \
+	$(simulator_verilog)
 
 ####################################
 # Golden Gate Invocation           #
@@ -76,7 +84,7 @@ compile: $(simulator_verilog)
 # empty recipe to help make understand multiple targets come from single recipe invocation
 # without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
 .SECONDARY: $(simulator_verilog).intermediate
-$(simulator_verilog) $(header) $(fame_annos): $(simulator_verilog).intermediate ;
+$(statically_known_gg_outputs): $(simulator_verilog).intermediate ;
 
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
@@ -93,6 +101,19 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL
 	)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
+
+# Assembles strings that can be used in $(shell <query>) commands to look up
+# filesets from GG's output manifest. These are strings so that can be emitted
+# literally into a script to run on a remote as part of distributed elaboration.
+manifest_query             = cat $(gg_file_manifest) 2> /dev/null | jq -r '.$(1) | .[]'
+fpga_src_files_query       = $(call manifest_query,BitstreamCompile)
+runtime_deploy_files_query = $(call manifest_query,RuntimeDeployment)
+
+
+# If GG has run for this tuple before, these will be populated with the correct output files
+# they will be empty otherwise.
+fpga_src_files       := $(addprefix $(GENERATED_DIR)/, $(shell $(fpga_src_files_query)))
+runtime_deploy_files := $(addprefix $(GENERATED_DIR)/, $(shell $(runtime_deploy_files_query)))
 
 ####################################
 # Runtime-Configuration Generation #
@@ -213,17 +234,17 @@ endif
 
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
 fpga_build_dir := $(fpga_work_dir)/build
+fpga_design_dir:= $(fpga_work_dir)/design
 verif_dir      := $(fpga_work_dir)/verif
 repo_state     := $(fpga_work_dir)/design/repo_state
 fpga_driver_dir:= $(fpga_work_dir)/driver
 
-# Enumerates the subset of generated files that must be copied over for FPGA compilation
-fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
-	.sv .defines.vh .env.tcl \
-	.synthesis.xdc .implementation.xdc)
+
+fpga_delivery_files = $(subst $(GENERATED_DIR)/,$(fpga_design_dir)/,$(fpga_src_files) $(simulator_verilog))
 
 # Files used to run FPGA-level metasimulation
-fpga_sim_delivery_files = $(addprefix $(fpga_driver_dir)/$(BASE_FILE_NAME), .runtime.conf) \
+fpga_sim_delivery_files := \
+	$(subst $GENERATED_DIR,$(fpga_driver_dir)/,$(runtime_deploy_files)) \
 	$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
@@ -234,20 +255,29 @@ $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 
-$(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
-	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
-	cp -f $(GENERATED_DIR)/$(@F) $@
+$(fpga_work_dir)/%/:
+	mkdir -p $@
 
-$(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
-	mkdir -p $(@D)
-	cp -f $(GENERATED_DIR)/$(@F) $@
+$(fpga_design_dir)/%: $(GENERATED_DIR)/% | $(fpga_design_dir)/
+	cp -f $< $@
 
-$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM): $($(PLATFORM))
+$(fpga_driver_dir)/%: $(GENERATED_DIR)/% | $(fpga_driver_dir)/
+	cp -f $< $@
+
+$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM): $($(PLATFORM)) | $(fpga_driver_dir)/
 	cp -f $< $@
 
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_delivery_files) $(fpga_sim_delivery_files)
+replace-rtl: $(fpga_delivery_files) $(fpga_sim_delivery_files) $(fpga_work_dir)/stamp
+	if [[ "$(firstword $(fpga_delivery_files))" != "$<" ]]; then \
+		cd $(GENERATED_DIR); \
+		mkdir -p $(fpga_design_dir); \
+		cp -f $$($(fpga_src_files_query)) $(fpga_design_dir); \
+		cp -f $(simulator_verilog) $(fpga_design_dir); \
+		mkdir -p $(fpga_driver_dir); \
+		cp -f $$($(runtime_deploy_files_query)) $(fpga_driver_dir); \
+	fi \
 
 .PHONY: replace-rtl
 

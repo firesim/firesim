@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.util._
 import freechips.rocketchip.amba.axi4._
 import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.DownstreamFlows
 
 /** An AXI4 bundle definition whose names should match the interfaces exposed on Xilinx IP blocks. aresetn and clock are
   * omitted, and no user fields are provided.
@@ -209,5 +210,6 @@ class AXI4ClockConverter(
         |             [get_ips ${desiredName}]
         |""".stripMargin,
     s".${desiredName}.ipgen.tcl",
+    Set(DownstreamFlows.BitstreamCompile)
   )
 }

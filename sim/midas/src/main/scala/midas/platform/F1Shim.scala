@@ -10,7 +10,7 @@ import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{DMANastiKey}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
-import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.{GoldenGateOutputFileAnnotation, DownstreamFlows}
 import midas.targetutils.xdc._
 
 case object AXIDebugPrint extends Field[Boolean]
@@ -52,7 +52,8 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
           |`define USE_DDR_CHANNEL_B ${channelInUse(2)}
           |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
           |""".stripMargin,
-      fileSuffix = ".defines.vh")
+      fileSuffix = ".defines.vh",
+      downstreamDependencies = Set(DownstreamFlows.BitstreamCompile))
 
     SpecifyXDCCircuitPaths(Some("firesim_top"), Some("WRAPPER_INST/CL/firesim_top"))
   }

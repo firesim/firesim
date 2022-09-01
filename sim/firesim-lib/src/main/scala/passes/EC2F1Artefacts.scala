@@ -5,7 +5,7 @@ package firesim.passes
 import firesim.util.{BuildStrategy}
 import midas.{DesiredHostFrequency}
 import midas.stage.phases.ConfigParametersAnnotation
-import midas.stage.GoldenGateOutputFileAnnotation
+import midas.stage.{GoldenGateOutputFileAnnotation, DownstreamFlows}
 
 import freechips.rocketchip.config.Parameters
 
@@ -31,7 +31,7 @@ object EC2F1Artefacts extends Transform {
 set desired_host_frequency ${requestedFrequency}
 ${buildStrategy.emitTcl}
 """
-    GoldenGateOutputFileAnnotation(constraints, fileSuffix = ".env.tcl")
+    GoldenGateOutputFileAnnotation(constraints, fileSuffix = ".env.tcl", downstreamDependencies = Set(DownstreamFlows.BitstreamCompile))
   }
 
   def execute(state: CircuitState): CircuitState = {
