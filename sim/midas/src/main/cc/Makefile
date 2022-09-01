@@ -66,8 +66,8 @@ override CXXFLAGS += -std=c++17 -include $(design_h)
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
-emul_files := simif simif_emul emul/mmio
-emul_h     := $(driver_h) $(bridge_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
+emul_files := simif simif_emul emul/mmio emul/context
+emul_h     := $(driver_h) $(bridge_h) $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files)))
 # This includes c sources and static libraries
 emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files))) $(lib)
 emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
