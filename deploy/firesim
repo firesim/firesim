@@ -15,7 +15,7 @@ from datetime import date
 import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 with warnings.catch_warnings():
-    if date.today() < date(2022, 8, 31):
+    if date.today() < date(2023, 1, 1):
         # get rid of deprecation warnings until 2022-08-31
         # hopefully paramiko-ng bumps before then
         warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
