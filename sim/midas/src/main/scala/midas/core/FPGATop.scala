@@ -16,23 +16,23 @@ import freechips.rocketchip.util.{DecoupledHelper, HeterogeneousBag}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
-import dataclass.data
 
 /**
-  * The following [[Fields]] capture the parameters of the four AXI4 bus types
+  * The following [[Field]]s capture the parameters of the four AXI4 bus types
   * presented to a simulator (in [[FPGATop]]). A [[PlatformShim]] is free to
   * adapt these widths, apply address offsets, etc...,  but the values set here
-  * define what is used in metasimulation, which simulates the design with
+  * define what is used in metasimulation, since it treats
   * [[FPGATop]] as the root of the module hierarchy.
   */
 
-/** CPU-managed AXI4, aka "pcis" on EC2 F1. Used by the CPU to do DMA into fabric controlled memories.
-  *  This could include in-fabric RAMs/FIFOs (for bridge streams) or in the future FPGA-attached DRAM channels.
+/** CPU-managed AXI4, aka "pcis" on EC2 F1. Used by the CPU to do DMA into fabric-controlled memories.
+  *  This could include in-fabric RAMs/FIFOs (for bridge streams) or (in the future) FPGA-attached DRAM channels.
   */
 case object DMANastiKey extends Field[NastiParameters]
 
-/** FPGA-managed AXI4, aka "pcim" on F1. Used by the fabric to do DMA into and out of
+/** FPGA-managed AXI4, aka "pcim" on F1. Used by the fabric to do DMA into
   * the host-CPU's memory. Used to implement bridge streams on platforms that lack a CPU-managed AXI4 interface.
+  * Set this to None if this interface is not present on the host. 
   */
 case object FPGAManagedAXI4Key extends Field[Option[FPGAManagedAXI4Params]]
 
@@ -82,7 +82,7 @@ case class HostMemChannelParams(
 /**
   * Specifies the AXI4 interface for FPGA-driven DMA
   *
-  * @param size The sizes in bytes of the addressable region on the host CPU.
+  * @param size The size, in bytes, of the addressable region on the host CPU.
   * The addressable region is assumed to span [0, size). Host-specific offsets
   * should be handled by the FPGAShim.
   * @param dataBits The width of the interface in bits.
@@ -267,10 +267,10 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
   )
 
   require(streamingEngine.fmaxi4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
-    "Selected StreamEngine uses the FPGA to CPU AXI4 interface, but it is not available on this platform."
+    "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform."
   )
   require(streamingEngine.pcisNodeOpt.isEmpty || p(HasDMAChannel),
-    "Selected StreamEngine uses the CPU to FPGA AXI4 interface, but it is not available on this platform."
+    "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform."
   )
 
   val pcisAXI4BundleParams = AXI4BundleParameters(

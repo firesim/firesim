@@ -298,7 +298,7 @@ void tick(vc_handle reset,
     }
 
     uint64_t fmaxi4_w_strb;
-    assert(FPGA_MANAGED_AXI4_STRB_SIZE <= 2);
+    static_assert(FPGA_MANAGED_AXI4_STRB_SIZE <= 2);
     for (size_t i = 0; i < FPGA_MANAGED_AXI4_STRB_SIZE; i++) {
       ((uint32_t *)&fmaxi4_w_strb)[i] =
           vc_4stVectorRef(fmaxi4_w_bits_strb)[i].d;

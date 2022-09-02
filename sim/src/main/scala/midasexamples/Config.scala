@@ -11,7 +11,7 @@ import firesim.configs.{WithDefaultMemModel, WithWiringTransform}
 
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
-class BaseMidaseExamplesConfig extends Config(
+class BaseMidasExamplesConfig extends Config(
   new WithDefaultMemModel ++
   new WithWiringTransform ++
   new Config((site, here, up) => {
@@ -27,12 +27,12 @@ class BaseMidaseExamplesConfig extends Config(
 )
 class DefaultF1Config extends Config(
   new firesim.configs.WithEC2F1Artefacts ++
-  new BaseMidaseExamplesConfig ++
+  new BaseMidasExamplesConfig ++
   new midas.F1Config
 )
 
 class DefaultVitisConfig extends Config(
-  new BaseMidaseExamplesConfig ++
+  new BaseMidasExamplesConfig ++
   new midas.VitisConfig
 )
 
