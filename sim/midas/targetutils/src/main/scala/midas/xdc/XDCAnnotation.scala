@@ -70,13 +70,14 @@ case class XDCAnnotation(
     destinationFile: XDCDestinationFile,
     formatString: String,
     argumentList: ReferenceTarget*)
-    extends Annotation with XDCAnnotationConstants
+    extends Annotation with XDCAnnotationConstants with HasSerializationHints
     // This is included until we figure out how to gracefully handle deletion.
     with DontTouchAllTargets {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     Seq(XDCAnnotation(destinationFile, formatString, argumentList.map(a => renamer.exactRename(a)):_*))
   }
+  def typeHints: Seq[Class[_]] = Seq(classOf[XDCDestinationFile])
 }
 
 /**

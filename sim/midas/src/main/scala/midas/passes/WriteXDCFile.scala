@@ -27,6 +27,11 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
       argumentList: Iterable[ReferenceTarget],
       pathToCircuit: Option[String]): Iterable[Iterable[String]] = {
 
+    // Just skip empty argument lists.
+    if (argumentList.isEmpty) {
+      return Seq(Seq())
+    }
+
     // Avoid the complexity of managing duplication of targets that don't
     // explicitly agree on a root module.
     //
