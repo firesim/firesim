@@ -27,7 +27,7 @@ static_assert (sizeof(void*)         == 8, "ptr size doesn't match expected 64bi
 
 #endif
 
-class context_t
+class context_t final
 {
  public:
   context_t();

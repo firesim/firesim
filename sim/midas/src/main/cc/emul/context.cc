@@ -50,8 +50,8 @@ void context_t::init(void (*f)(void*), void* a)
 #ifdef USE_UCONTEXT
   getcontext(context.get());
   context->uc_link = creator->context.get();
-  // Note this is 1024x larger than what is found upstream in spike
-  context->uc_stack.ss_size = 64* 1024 * 1024;
+  // Note this is larger than what is upstream in spike to support using VCS as a child context
+  context->uc_stack.ss_size = 64 * 1024 * 1024;
   context->uc_stack.ss_sp = new void*[context->uc_stack.ss_size/sizeof(void*)];
 #ifndef GLIBC_64BIT_PTR_BUG
   makecontext(context.get(), (void(*)(void))&context_t::wrapper, 1, this);
