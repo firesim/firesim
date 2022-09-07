@@ -25,6 +25,8 @@ private:
 
 public:
   FpgaModel(simif_t *s, AddressMap addr_map) : sim(s), addr_map(addr_map){};
+  virtual ~FpgaModel() {}
+
   virtual void init() = 0;
   virtual void profile() = 0;
   virtual void finish() = 0;
