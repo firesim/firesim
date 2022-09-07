@@ -1,38 +1,34 @@
-// clang-format off
 #include "context.h"
 #include <assert.h>
 #include <sched.h>
 #include <stdlib.h>
 
-static __thread context_t* cur;
+static __thread context_t *cur;
 
 context_t::context_t()
-  : creator(NULL), func(NULL), arg(NULL),
+    : creator(NULL), func(NULL), arg(NULL),
 #ifndef USE_UCONTEXT
-    mutex(PTHREAD_MUTEX_INITIALIZER),
-    cond(PTHREAD_COND_INITIALIZER), flag(0)
+      mutex(PTHREAD_MUTEX_INITIALIZER), cond(PTHREAD_COND_INITIALIZER), flag(0)
 #else
-    context(new ucontext_t)
+      context(new ucontext_t)
 #endif
 {
 }
 
 #ifdef USE_UCONTEXT
 #ifndef GLIBC_64BIT_PTR_BUG
-void context_t::wrapper(context_t* ctx)
-{
+void context_t::wrapper(context_t *ctx) {
 #else
-void context_t::wrapper(unsigned int hi, unsigned int lo)
-{
-  context_t* ctx = reinterpret_cast<context_t*>(static_cast<unsigned long>(lo) | (static_cast<unsigned long>(hi) << 32));
+void context_t::wrapper(unsigned int hi, unsigned int lo) {
+  context_t *ctx = reinterpret_cast<context_t *>(
+      static_cast<unsigned long>(lo) | (static_cast<unsigned long>(hi) << 32));
 #endif
   ctx->creator->switch_to();
   ctx->func(ctx->arg);
 }
 #else
-void* context_t::wrapper(void* a)
-{
-  context_t* ctx = static_cast<context_t*>(a);
+void *context_t::wrapper(void *a) {
+  context_t *ctx = static_cast<context_t *>(a);
   cur = ctx;
   ctx->creator->switch_to();
 
@@ -41,8 +37,7 @@ void* context_t::wrapper(void* a)
 }
 #endif
 
-void context_t::init(void (*f)(void*), void* a)
-{
+void context_t::init(void (*f)(void *), void *a) {
   func = f;
   arg = a;
   creator = current();
@@ -50,16 +45,18 @@ void context_t::init(void (*f)(void*), void* a)
 #ifdef USE_UCONTEXT
   getcontext(context.get());
   context->uc_link = creator->context.get();
-  // Note this is larger than what was historically upstream in spike to support using
-  // VCS as a child context. 8 MiB was chosen as it is a typical linux max stack size. 
+  // Note this is larger than what was historically upstream in spike to support
+  // using VCS as a child context. 8 MiB was chosen as it is a typical linux max
+  // stack size.
   context->uc_stack.ss_size = 8 * 1024 * 1024;
-  context->uc_stack.ss_sp = new void*[context->uc_stack.ss_size/sizeof(void*)];
+  context->uc_stack.ss_sp =
+      new void *[context->uc_stack.ss_size / sizeof(void *)];
 #ifndef GLIBC_64BIT_PTR_BUG
-  makecontext(context.get(), (void(*)(void))&context_t::wrapper, 1, this);
+  makecontext(context.get(), (void (*)(void)) & context_t::wrapper, 1, this);
 #else
   unsigned int hi(reinterpret_cast<unsigned long>(this) >> 32);
   unsigned int lo(reinterpret_cast<unsigned long>(this));
-  makecontext(context.get(), (void(*)(void))&context_t::wrapper, 2, hi, lo);
+  makecontext(context.get(), (void (*)(void)) & context_t::wrapper, 2, hi, lo);
 #endif
   switch_to();
 #else
@@ -76,16 +73,12 @@ void context_t::init(void (*f)(void*), void* a)
 #endif
 }
 
-context_t::~context_t()
-{
-  assert(this != cur);
-}
+context_t::~context_t() { assert(this != cur); }
 
-void context_t::switch_to()
-{
+void context_t::switch_to() {
   assert(this != cur);
 #ifdef USE_UCONTEXT
-  context_t* prev = cur;
+  context_t *prev = cur;
   cur = this;
   if (swapcontext(prev->context.get(), context.get()) != 0)
     abort();
@@ -102,10 +95,8 @@ void context_t::switch_to()
 #endif
 }
 
-context_t* context_t::current()
-{
-  if (cur == NULL)
-  {
+context_t *context_t::current() {
+  if (cur == NULL) {
     cur = new context_t;
 #ifdef USE_UCONTEXT
     getcontext(cur->context.get());
@@ -116,4 +107,3 @@ context_t* context_t::current()
   }
   return cur;
 }
-// clang-format on
