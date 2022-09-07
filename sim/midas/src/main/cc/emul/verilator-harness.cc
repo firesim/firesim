@@ -13,8 +13,6 @@ extern VerilatedVcdC *tfp;
 #endif // VM_TRACE
 
 void tick() {
-  // The driver ucontext is initialized before spawning the verilator
-  // context, so these pointers should be initialized.
   assert(simif_emul_t::dma != nullptr);
   assert(simif_emul_t::master != nullptr);
 

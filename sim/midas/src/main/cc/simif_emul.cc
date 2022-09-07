@@ -3,7 +3,7 @@
 #include "simif_emul.h"
 #ifdef VCS
 #include "emul/vcs_main.h"
-#include <fesvr/context.h>
+#include <emul/context.h>
 #else
 #include <verilated.h>
 #if VM_TRACE
