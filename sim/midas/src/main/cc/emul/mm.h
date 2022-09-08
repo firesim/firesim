@@ -3,15 +3,13 @@
 #ifndef __EMUL_MM_H
 #define __EMUL_MM_H
 
-#include <stdint.h>
 #include <cstring>
 #include <queue>
+#include <stdint.h>
 
-class mm_t
-{
- public:
-  mm_t() : data(0), size(0) {
-  }
+class mm_t {
+public:
+  mm_t() : data(0), size(0) {}
 
   virtual void init(size_t sz, int word_size, int line_size);
 
@@ -27,32 +25,29 @@ class mm_t
   virtual void *r_data() = 0;
   virtual bool r_last() = 0;
 
-  virtual void tick
-  (
-    bool reset,
+  virtual void tick(bool reset,
 
-    bool ar_valid,
-    uint64_t ar_addr,
-    uint64_t ar_id,
-    uint64_t ar_size,
-    uint64_t ar_len,
+                    bool ar_valid,
+                    uint64_t ar_addr,
+                    uint64_t ar_id,
+                    uint64_t ar_size,
+                    uint64_t ar_len,
 
-    bool aw_valid,
-    uint64_t aw_addr,
-    uint64_t aw_id,
-    uint64_t aw_size,
-    uint64_t aw_len,
+                    bool aw_valid,
+                    uint64_t aw_addr,
+                    uint64_t aw_id,
+                    uint64_t aw_size,
+                    uint64_t aw_len,
 
-    bool w_valid,
-    uint64_t w_strb,
-    void *w_data,
-    bool w_last,
+                    bool w_valid,
+                    uint64_t w_strb,
+                    void *w_data,
+                    bool w_last,
 
-    bool r_ready,
-    bool b_ready
-  ) = 0;
+                    bool r_ready,
+                    bool b_ready) = 0;
 
-  virtual void* get_data() { return data; }
+  virtual void *get_data() { return data; }
   virtual size_t get_size() { return size; }
   virtual size_t get_word_size() { return word_size; }
   virtual size_t get_line_size() { return line_size; }
@@ -64,37 +59,33 @@ class mm_t
 
   void load_mem(unsigned long start, const char *fname);
 
- protected:
-  uint8_t* data;
+protected:
+  uint8_t *data;
   size_t size;
   int word_size;
   int line_size;
 };
 
-struct mm_rresp_t
-{
+struct mm_rresp_t {
   uint64_t id;
   std::vector<char> data;
   bool last;
 
-  mm_rresp_t(uint64_t id, std::vector<char> data, bool last)
-  {
+  mm_rresp_t(uint64_t id, std::vector<char> data, bool last) {
     this->id = id;
     this->data = data;
     this->last = last;
   }
 
-  mm_rresp_t()
-  {
+  mm_rresp_t() {
     this->id = 0;
     this->last = false;
   }
 };
 
-class mm_magic_t : public mm_t
-{
- public:
-  mm_magic_t() : store_inflight(false) {};
+class mm_magic_t final: public mm_t {
+public:
+  mm_magic_t() : store_inflight(false){};
 
   virtual void init(size_t sz, int word_size, int line_size);
 
@@ -106,36 +97,35 @@ class mm_magic_t : public mm_t
   virtual uint64_t b_id() { return b_valid() ? bresp.front() : 0; }
   virtual bool r_valid() { return !rresp.empty(); }
   virtual uint64_t r_resp() { return 0; }
-  virtual uint64_t r_id() { return r_valid() ? rresp.front().id: 0; }
-  virtual void *r_data() { return r_valid() ? &rresp.front().data[0] : &dummy_data[0]; }
+  virtual uint64_t r_id() { return r_valid() ? rresp.front().id : 0; }
+  virtual void *r_data() {
+    return r_valid() ? &rresp.front().data[0] : &dummy_data[0];
+  }
   virtual bool r_last() { return r_valid() ? rresp.front().last : false; }
 
-  virtual void tick
-  (
-    bool reset,
+  virtual void tick(bool reset,
 
-    bool ar_valid,
-    uint64_t ar_addr,
-    uint64_t ar_id,
-    uint64_t ar_size,
-    uint64_t ar_len,
+                    bool ar_valid,
+                    uint64_t ar_addr,
+                    uint64_t ar_id,
+                    uint64_t ar_size,
+                    uint64_t ar_len,
 
-    bool aw_valid,
-    uint64_t aw_addr,
-    uint64_t aw_id,
-    uint64_t aw_size,
-    uint64_t aw_len,
+                    bool aw_valid,
+                    uint64_t aw_addr,
+                    uint64_t aw_id,
+                    uint64_t aw_size,
+                    uint64_t aw_len,
 
-    bool w_valid,
-    uint64_t w_strb,
-    void *w_data,
-    bool w_last,
+                    bool w_valid,
+                    uint64_t w_strb,
+                    void *w_data,
+                    bool w_last,
 
-    bool r_ready,
-    bool b_ready
-  );
+                    bool r_ready,
+                    bool b_ready);
 
- protected:
+protected:
   bool store_inflight;
   uint64_t store_addr;
   uint64_t store_id;
