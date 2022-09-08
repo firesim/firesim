@@ -41,12 +41,10 @@ constexpr int RANGE_COUNT_SIZE = 48;
 constexpr uint32_t BIN_H_MASK = (1L << (BIN_SIZE - 32)) - 1;
 constexpr uint32_t RANGE_H_MASK = (1L << (RANGE_COUNT_SIZE - 32)) - 1;
 
-class AddrRangeCounter : public FpgaModel {
+class AddrRangeCounter final : public FpgaModel {
 public:
   AddrRangeCounter(simif_t *sim, AddressMap addr_map, std::string name)
       : FpgaModel(sim, addr_map), name(name){};
-  ~AddrRangeCounter(void) { /*delete [] range_bytes;*/
-  }
 
   void init();
   void profile() {}
@@ -63,10 +61,11 @@ private:
   std::string addr = name + "Ranges_addr";
 };
 
-class Histogram : public FpgaModel {
+class Histogram final : public FpgaModel {
 public:
   Histogram(simif_t *s, AddressMap addr_map, std::string name)
       : FpgaModel(s, addr_map), name(name){};
+
   void init();
   void profile(){};
   void finish();

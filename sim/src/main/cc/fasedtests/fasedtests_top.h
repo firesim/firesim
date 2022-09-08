@@ -11,7 +11,7 @@
 
 #include "bridges/synthesized_prints.h"
 
-class fasedtests_top_t : virtual simif_peek_poke_t,
+class fasedtests_top_t : virtual public simif_peek_poke_t,
                          public systematic_scheduler_t {
 public:
   fasedtests_top_t(int argc, char **argv);
