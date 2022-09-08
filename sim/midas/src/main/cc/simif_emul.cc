@@ -83,7 +83,6 @@ void simif_emul_t::host_init(int argc, char **argv) {
   std::string waveform = "dump.vcd";
   std::string loadmem;
   bool fastloadmem = false;
-  bool dramsim = false;
   uint64_t memsize = 1L << MEM_ADDR_BITS;
   for (auto arg : args) {
     if (arg.find("+waveform=") == 0) {
@@ -95,9 +94,6 @@ void simif_emul_t::host_init(int argc, char **argv) {
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
     }
-    if (arg.find("+dramsim") == 0) {
-      dramsim = true;
-    }
     if (arg.find("+memsize=") == 0) {
       memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
@@ -108,9 +104,7 @@ void simif_emul_t::host_init(int argc, char **argv) {
 
   for (int mem_channel_index = 0; mem_channel_index < MEM_NUM_CHANNELS;
        mem_channel_index++) {
-    slave[mem_channel_index] = dramsim
-                                   ? (mm_t *)new mm_dramsim2_t(1 << MEM_ID_BITS)
-                                   : (mm_t *)new mm_magic_t;
+    slave[mem_channel_index] = (mm_t *)new mm_magic_t;
     slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
   }
 

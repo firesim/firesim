@@ -13,7 +13,7 @@ run_farm:
 metasimulation:
   metasimulation_enabled: false
   metasimulation_host_simulator: verilator
-  metasimulation_only_plusargs: "+fesvr-step-size=128 +dramsim +max-cycles=100000000"
+  metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
   metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
 
 target_config:
