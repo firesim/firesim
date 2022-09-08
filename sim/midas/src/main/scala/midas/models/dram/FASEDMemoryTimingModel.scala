@@ -18,7 +18,6 @@ import chisel3.util._
 
 import midas.core._
 import midas.widgets._
-import midas.passes.{Fame1ChiselAnnotation}
 
 import scala.math.min
 import Console.{UNDERLINED, RESET}
@@ -263,9 +262,6 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     val tNasti = hPort.hBits.axi4
     val tReset = hPort.hBits.reset
 
-    val model = cfg.elaborate()
-    printGenerationConfig
-
     // Debug: Put an optional bound on the number of memory requests we can make
     // to the host memory system
     val funcModelRegs = Wire(new FuncModelProgrammableRegs)
@@ -327,6 +323,14 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
                                       ingressReady, bReady, rReady, tResetReady)
 
     val targetFire = tFireHelper.fire
+
+    val gate = Module(new AbstractClockGate)
+    gate.I := clock
+    gate.CE := targetFire
+
+    val model = withClock(gate.O)(cfg.elaborate())
+    printGenerationConfig
+
     // HACK: Feeding valid back on ready and ready back on valid until we figure out
     // channel tokenization
     hPort.toHost.hReady := tFireHelper.fire
@@ -550,8 +554,6 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     attach(brespError, "brespError", ReadOnly)
 
     genCRFile()
-    dontTouch(targetFire)
-    chisel3.experimental.annotate(Fame1ChiselAnnotation(model, "targetFire"))
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
       def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {

@@ -8,10 +8,12 @@ import freechips.rocketchip.unittest.UnitTest
 import junctions._
 
 import chisel3._
+import chisel3.experimental.ExtModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util._
 
 import midas.widgets.{D2V}
+import midas.passes.{DefineAbstractClockGate}
 
 class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   val io = IO(new Bundle {
@@ -749,4 +751,17 @@ class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module
     s"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
   assert(!axi4.aw.fire || axi4.aw.bits.len < cfg.maxWriteLength.U,
     s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+}
+
+/**
+ * External module for a clock gate.
+ *
+ * Controls a clock signal (I) via an enable input (CE).
+ *
+ */
+class AbstractClockGate extends ExtModule {
+  val I = IO(Input(Clock()))
+  val CE = IO(Input(Bool()))
+  val O = IO(Output(Clock()))
+  override def desiredName = DefineAbstractClockGate.blackboxName
 }

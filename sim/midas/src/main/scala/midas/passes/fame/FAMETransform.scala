@@ -452,7 +452,7 @@ class FAMETransform extends Transform {
 
   override def execute(state: CircuitState): CircuitState = {
     val c = state.circuit
-    val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
+    val analysis = new FAMEChannelAnalysis(state)
     // TODO: pick a value that does not collide
     implicit val triggerName = "finishing"
 
