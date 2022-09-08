@@ -6,9 +6,8 @@
 #include <vector>
 
 #include "bridges/cpu_managed_stream.h"
+#include "emul/mm.h"
 #include "emul/mmio.h"
-#include "mm.h"
-#include "mm_dramsim2.h"
 #include "simif.h"
 
 // simif_emul_t is a concrete simif_t implementation for Software RTL simulators

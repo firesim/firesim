@@ -13,9 +13,9 @@ simulation. Target-level simulation in Chipyard is described at length `here
 Metasimulation is the most productive way to catch bugs
 before generating an AGFI, and a means for reproducing bugs seen on the FPGA.
 By default, metasimulation uses an abstract but fast model of the host: the
-FPGA's DRAM controllers are modeled with DRAMSim2, the PCI-E subsystem is not
-simulated, instead the driver presents DMA and MMIO traffic directly via
-verilog DPI. Since FireSim simulations are robust against timing differences
+FPGA's DRAM controllers are modeled with a single-cycle memory system, the PCI-E subsystem is not
+simulated, instead the driver presents DMA and MMIO traffic directly on the FPGATop interfaces.
+Since FireSim simulations are robust against timing differences
 across hosts, target behavior observed in an FPGA-hosted simulation should be
 exactly reproducible in a metasimulation.
 
@@ -73,7 +73,7 @@ First, modify the existing ``metasimulation`` mapping in
         # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
         metasimulation_host_simulator: verilator
         # plusargs passed to the simulator for all metasimulations
-        metasimulation_only_plusargs: "+fesvr-step-size=128 +dramsim +max-cycles=100000000"
+        metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
         # plusargs passed to the simulator ONLY FOR vcs metasimulations
         metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
 

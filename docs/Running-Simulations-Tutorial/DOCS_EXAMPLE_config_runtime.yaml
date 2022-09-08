@@ -36,7 +36,7 @@ metasimulation:
   # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
   metasimulation_host_simulator: verilator
   # plusargs passed to the simulator for all metasimulations
-  metasimulation_only_plusargs: "+fesvr-step-size=128 +dramsim +max-cycles=100000000"
+  metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
   # plusargs passed to the simulator ONLY FOR vcs metasimulations
   metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
 

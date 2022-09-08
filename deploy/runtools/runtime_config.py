@@ -305,9 +305,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.local_driver_base_dir = LOCAL_DRIVERS_GENERATED_SRC
 
-        dramsim_pair = (self.get_local_driver_dir() + "dramsim2_ini", "")
-        self.additional_required_files = [dramsim_pair]
-
         self.driver_build_target = self.metasim_host_simulator
         self.driver_type_message = "Metasim"
 
