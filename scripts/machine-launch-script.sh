@@ -221,6 +221,7 @@ set -o pipefail
         git  \
         screen \
         argcomplete==1.12.3 \
+        conda-lock \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then

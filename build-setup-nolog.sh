@@ -20,16 +20,24 @@ FASTINSTALL=false
 IS_LIBRARY=false
 SKIP_TOOLCHAIN=false
 SKIP_VALIDATE=false
+TOOLCHAIN=riscv-tools
+USE_PINNED_DEPS=true
+ENV_NAME=firesim
 
 function usage
 {
-    echo "usage: build-setup.sh [ fast | --fast] [--skip-toolchain] [--library] [--skip-validate]"
-    echo "   fast: if set, pulls in a pre-compiled RISC-V toolchain for an EC2 manager instance"
-    echo "   skip-toolchain: if set, skips RISC-V toolchain handling (cloning or building)."
-    echo "                   The user must define $RISCV in their env to provide their own toolchain."
-    echo "   library: if set, initializes submodules assuming FireSim is being used"
+    echo "usage: build-setup.sh [OPTIONS] [riscv-tools | esp-tools]"
+    echo "warning: The user must define $RISCV in their env to provide their own cross-compiler + sysroot."
+    echo "installation types:"
+    echo "   riscv-tools: if set, builds the riscv toolchain collateral (this is the default)"
+    echo "   esp-tools: if set, builds the esp toolchain collateral used for the hwacha/gemmini accelerators"
+    echo "options:"
+    echo "   --skip-toolchain: if set, skips building extra RISC-V toolchain collateral i.e Spike,"
+    echo "                   PK, RISC-V tests, libgloss and installing it to $RISCV (including cloning or building)."
+    echo "   --library: if set, initializes submodules assuming FireSim is being used"
     echo "            as a library submodule. Implies --skip-toolchain "
-    echo "   skip-validate: if set, skips checking if user is on release tagged branch"
+    echo "   --skip-validate: if set, skips checking if user is on release tagged branch"
+    echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
 }
 
 if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
@@ -40,9 +48,6 @@ fi
 while test $# -gt 0
 do
    case "$1" in
-        fast | --fast) # I don't want to break this api
-            FASTINSTALL=true
-            ;;
         --library)
             IS_LIBRARY=true;
             SKIP_TOOLCHAIN=true;
@@ -52,6 +57,12 @@ do
             ;;
         --skip-validate)
             SKIP_VALIDATE=true;
+            ;;
+        riscv-tools | esp-tools)
+            TOOLCHAIN=$1;
+            ;;
+        --unpinned-deps)
+            USE_PINNED_DEPS=false;
             ;;
         -h | -H | --help)
             usage
@@ -84,18 +95,11 @@ else
     echo "Setting up official FireSim release: $tag"
 fi
 
-if [ "$SKIP_TOOLCHAIN" = true ]; then
-    if [ -z "$RISCV" ]; then
-        echo "ERROR: You must set the RISCV environment variable before running"
-        echo "firesim/$0 if running under --library or --skip-toolchain."
-        exit 4
-    else
-        echo "Using existing RISCV toolchain at $RISCV"
-    fi
+if [ -z "$RISCV" ]; then
+    echo "ERROR: You must set the RISCV environment variable before running."
+    exit 4
 else
-    RISCV=$(pwd)/riscv-tools-install
-    export RISCV=$RISCV
-    echo "Installing fresh RISCV toolchain to $RISCV"
+    echo "Using existing RISCV toolchain at $RISCV"
 fi
 
 # Remove and backup the existing env.sh if it exists
@@ -169,14 +173,32 @@ else
     ln -sf ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
 fi
 
+# Conda Setup
+if [ "$IS_LIBRARY" = true ]; then
+    # the chipyard conda environment should be installed already and be sufficient
+    if [ -z ${CONDA_DEFAULT_ENV+x} ]; then
+        echo "ERROR: No conda environment detected. If using Chipyard, did you source 'env.sh'."
+        exit 5
+    fi
+else
+    # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
+    LOCKFILE=$RDIR/conda-requirements-$TOOLCHAIN-linux-64.conda-lock.yml
+    YAMLFILE=$RDIR/conda-requirements-$TOOLCHAIN.yaml
+    if [ "$USE_PINNED_DEPS" = true ]; then
+        # use conda-lock to create env
+        conda-lock install -n $ENV_NAME $LOCKFILE
+    else
+        # auto-gen the lockfile
+        conda-lock -f $YAMLFILE -p linux-64 --lockfile $LOCKFILE
+        # use conda-lock to create env
+        conda-lock install -n $ENV_NAME $LOCKFILE
+    fi
+    env_append "conda activate $ENV_NAME"
+fi
+
 # RISC-V Toolchain Compilation
-# When FireSim is being used as a library, the user is expected to build their
-# own toolchain. For FireSim-as-top, call out to Chipyard's toolchain scripts.
 if [ "$SKIP_TOOLCHAIN" != true ]; then
-    conda env create -f=./scripts/conda-requirements.yaml -p=./.conda-env
-    source ./.conda-env/etc/profile.d/conda.sh
-    conda activate ./.conda-env
-    env_append "conda activate ./.conda-env"
+    $target_chipyard_dir/scripts/build-toolchain-extra.sh --skip-validate $TOOLCHAIN
 fi
 
 cd $RDIR
