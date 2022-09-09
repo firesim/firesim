@@ -1,14 +1,17 @@
 import sys
 import boto3
 import os
+import math
 from fabric.api import *
 import requests
 from ci_variables import ci_firesim_dir, local_fsim_dir, ci_gha_api_url, ci_repo_name
 
+from typing import Dict, List, Any
+
 # Reuse manager utilities
 # Note: ci_firesim_dir must not be used here because the persistent clone my not be initialized yet.
-sys.path.append(local_fsim_dir + "/deploy/awstools")
-from awstools import get_instances_with_filter
+sys.path.append(local_fsim_dir + "/deploy")
+from awstools.awstools import get_instances_with_filter
 
 # Github URL related constants
 gha_api_url         = f"{ci_gha_api_url}/repos/{ci_repo_name}/actions"
@@ -89,23 +92,44 @@ def instance_metadata_str(instance):
 
     return static_md + dynamic_md
 
-def deregister_runner_if_exists(gh_token, runner_name):
-    headers = {'Authorization': "token {}".format(gh_token.strip())}
+def get_header(gh_token: str) -> Dict[str, str]:
+    return {"Authorization": f"token {gh_token.strip()}", "Accept": "application/vnd.github+json"}
 
-    # Check if exists before deregistering
-    r = requests.get(gha_runners_api_url, headers=headers)
+def get_runners(gh_token: str) -> List:
+    r = requests.get(gha_runners_api_url, headers=get_header(gh_token))
     if r.status_code != 200:
-        # if couldn't delete then just exit
-        return
-
+        raise Exception("Unable to retrieve count of GitHub Actions Runners")
     res_dict = r.json()
-    runner_list = res_dict["runners"]
-    for runner in runner_list:
+    runner_count = res_dict["total_count"]
+
+    runners = []
+    for page_idx in range(math.ceil(runner_count / 30)):
+        r = requests.get(gha_runners_api_url, params={"per_page" : 30, "page" : page_idx + 1}, headers=get_header(gh_token))
+        if r.status_code != 200:
+            raise Exception("Unable to retrieve (sub)list of GitHub Actions Runners")
+        res_dict = r.json()
+        runners = runners + res_dict["runners"]
+
+    return runners
+
+def delete_runner(gh_token: str, runner: Dict[str, Any]) -> bool:
+    r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=get_header(gh_token))
+    if r.status_code != 204:
+        print(f"""Unable to delete runner {runner["name"]} with id: {runner["id"]}""")
+        return False
+    return True
+
+def deregister_offline_runners(gh_token: str) -> None:
+    runners = get_runners(gh_token)
+    for runner in runners:
+        if runner["status"] == "offline":
+            delete_runner(gh_token, runner)
+
+def deregister_runners(gh_token: str, runner_name: str) -> None:
+    runners = get_runners(gh_token)
+    for runner in runners:
         if runner_name in runner["name"]:
-            r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=headers)
-            if r.status_code != 204:
-                # if couldn't delete then just exit
-                return
+            delete_runner(gh_token, runner)
 
 def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=False):
     """ Change the state of all instances sharing the same CI workflow run's tag. """
@@ -123,7 +147,7 @@ def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=Fa
     client = boto3.client('ec2')
     if state_change == 'stop':
         print("Stopping instances: {}".format(", ".join(instance_ids)))
-        deregister_runner_if_exists(gh_token, tag_value)
+        deregister_runners(gh_token, tag_value)
         client.stop_instances(InstanceIds=instance_ids, DryRun=dryrun)
     elif state_change == 'start':
         print("Starting instances: {}".format(", ".join(instance_ids)))
@@ -140,7 +164,7 @@ def change_workflow_instance_states(gh_token, tag_value, state_change, dryrun=Fa
 
     elif state_change == 'terminate':
         print("Terminating instances: {}".format(", ".join(instance_ids)))
-        deregister_runner_if_exists(gh_token, tag_value)
+        deregister_runners(gh_token, tag_value)
         client.terminate_instances(InstanceIds=instance_ids, DryRun=dryrun)
     else:
         raise ValueError("Unrecognized transition type: {}".format(state_change))

@@ -84,7 +84,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
             leafTargets
           )
         } else {
-        // Bridge is the source; it asserts target-valid and recieves target-backpressure
+        // Bridge is the source; it asserts target-valid and receives target-backpressure
           FAMEChannelConnectionAnnotation.sink(
             fwdChName,
             DecoupledForwardChannel.sink(validTarget, readyTarget),

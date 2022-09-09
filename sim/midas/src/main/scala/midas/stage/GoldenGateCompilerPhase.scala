@@ -69,7 +69,7 @@ class GoldenGateCompilerPhase extends Phase {
     val loweredSimulator = hostLoweringCompiler.execute(simulator)
 
     // Workaround under-constrained transform dependencies by forcing the
-    // emitter to run last in a seperate compiler.
+    // emitter to run last in a separate compiler.
     val emitter = new Compiler(
         Seq(Dependency(midas.passes.WriteXDCFile), Dependency[firrtl.SystemVerilogEmitter]),
         Forms.LowForm)

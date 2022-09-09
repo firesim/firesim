@@ -161,9 +161,20 @@ jobs:
       - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
         run: ./.github/scripts/check-docs-generated-components.py
 
+  build-f1-driver:
+    name: build-f1-driver
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v2
+      - name: Runs compilation of F1 driver for the make-default tuple
+        run: ./.github/scripts/build-f1-driver.py
+  
   run-test-groupA:
     name: run-test-groupA
-    needs: [setup-manager]
+    needs: [build-f1-driver]
     runs-on: ${{ github.run_id }}
     env:
       TERM: xterm-256-color

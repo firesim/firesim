@@ -1,5 +1,4 @@
 midas_dir = $(abspath .)
-util_dir = $(midas_dir)/utils
 bridge_dir = $(midas_dir)/bridges
 v_dir = $(abspath ../verilog)
 r_dir = $(abspath ../resources)
@@ -20,19 +19,8 @@ PLATFORM ?= f1
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 1.0
 
-testchip_dir=$(TOP_DIR)/generators/testchipip/src/main/resources
-testchip_csrc_dir=$(testchip_dir)/testchipip/csrc
-dramsim_dir=$(TOP_DIR)/tools/DRAMSim2
-
-override CXXFLAGS := $(CXXFLAGS) -Wall -I$(dramsim_dir) -I$(testchip_csrc_dir)
-
-include $(util_dir)/utils.mk
-
-$(OUT_DIR)/dramsim2_ini: $(testchip_dir)/dramsim2_ini
-	ln -sf $< $@
-
-override CXXFLAGS += -I$(midas_dir) -I$(util_dir)
-override LDFLAGS := $(LDFLAGS) -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lmidas # The trailing whitespace is important for some reason...
+override CXXFLAGS += -Wall -I$(midas_dir)
+override LDFLAGS += -L$(GEN_DIR) -lstdc++ -lpthread -lgmp
 
 design_v  := $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
 design_h  := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.h
@@ -53,23 +41,23 @@ $(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(platform_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-$(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(design_h) $(lib) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o)
+$(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(design_h) $(DRIVER) $(driver_h) $(platform_o) $(bridge_o)
 	mkdir -p $(OUT_DIR)
 	$(CXX) $(CXXFLAGS) -include $< \
-	-o $@ $(DRIVER) $(lib_o) $(platform_o) $(bridge_o) $(LDFLAGS)
+	-o $@ $(DRIVER) $(platform_o) $(bridge_o) $(LDFLAGS)
 
 $(PLATFORM): $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM)
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
-override CXXFLAGS += -include $(design_h)
+override CXXFLAGS += -std=c++17 -include $(design_h)
 
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
-emul_files := simif simif_emul emul/mmio
-emul_h     := $(driver_h) $(bridge_h)  $( $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files) emul/mmio)))
+emul_files := simif simif_emul emul/mmio emul/mm emul/context
+emul_h     := $(driver_h) $(bridge_h) $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files)))
 # This includes c sources and static libraries
-emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files))) $(lib)
+emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files)))
 emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 verilator_conf := rtlsim/ml-verilator-conf.vlt
@@ -78,8 +66,8 @@ verilator_harness := emul/verilator-harness.cc
 top_module := verilator_top
 include rtlsim/Makefrag-verilator
 
-verilator: $(OUT_DIR)/V$(DRIVER_NAME) $(OUT_DIR)/dramsim2_ini
-verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug $(OUT_DIR)/dramsim2_ini
+verilator: $(OUT_DIR)/V$(DRIVER_NAME)
+verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug
 
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/vcs_top.v
@@ -88,7 +76,7 @@ TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs
 
-vcs: $(OUT_DIR)/$(DRIVER_NAME) $(OUT_DIR)/dramsim2_ini
-vcs-debug: $(OUT_DIR)/$(DRIVER_NAME)-debug $(OUT_DIR)/dramsim2_ini
+vcs: $(OUT_DIR)/$(DRIVER_NAME)
+vcs-debug: $(OUT_DIR)/$(DRIVER_NAME)-debug
 
 .PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug

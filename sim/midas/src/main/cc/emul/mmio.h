@@ -38,6 +38,15 @@ struct mmio_resp_data_t {
       : id(id_), data(data_), last(last_) {}
 };
 
+/**
+ * @brief  staging container for driver-mastered AXI4 transactions
+ *
+ *  AXI4 transactions bound for the RTL-simulator context are queued up in this
+ *  data structure as they wait to be driven into the verilated / or VCS design.
+ *
+ *  Used for CPU-mastered AXI4 (aka, DMA), and MMIO requests (see simif_t::read,
+ *  simif_t::write).
+ */
 class mmio_t {
 public:
   mmio_t(size_t size) : read_inflight(false), write_inflight(false) {

@@ -83,7 +83,7 @@ private:
   const int printno;
 
   // DMA batching parameters
-  const size_t beat_bytes = DMA_DATA_BITS / 8;
+  static constexpr size_t beat_bytes = BridgeConstants::STREAM_WIDTH_BYTES;
   // The number of DMA beats to pull off the FPGA on each invocation of tick()
   // This will be set based on the ratio of token_size : desired_batch_beats
   size_t batch_beats;

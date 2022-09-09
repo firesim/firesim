@@ -60,8 +60,7 @@ DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC := \
 		$(driver_dir)/midasexamples/simif_peek_poke.cc \
 		$(driver_dir)/midasexamples/Driver.cc \
-		$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* )))  \
-		$(RISCV)/lib/libfesvr.a
+		$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* )))
 
 TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(RISCV)/include -I$(driver_dir)/midasexamples -g
 TARGET_LD_FLAGS :=
@@ -90,11 +89,11 @@ waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$(benchmark).$1
 run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
 	cd $(GENERATED_DIR) && ./$(notdir $<) $(COMMON_SIM_ARGS) $(ARGS) \
-	$(loadmem) +dramsim \
+	$(loadmem) \
 	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
 
 run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
 	cd $(GENERATED_DIR) && ./$(notdir $<) $(vcs_args) $(COMMON_SIM_ARGS) $(ARGS) \
-	$(loadmem) +dramsim \
+	$(loadmem) \
 	+waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)

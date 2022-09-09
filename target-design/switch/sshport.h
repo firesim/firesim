@@ -1,3 +1,5 @@
+#ifndef __SSHPORT_H
+#define __SSHPORT_H
 
 #include <queue>
 
@@ -172,3 +174,4 @@ void SSHPort::tick() {
 void SSHPort::tick_pre() {
   // don't need to do anything for SSHPorts
 }
+#endif // __SSHPORT_H

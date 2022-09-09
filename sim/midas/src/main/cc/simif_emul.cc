@@ -3,7 +3,7 @@
 #include "simif_emul.h"
 #ifdef VCS
 #include "emul/vcs_main.h"
-#include <fesvr/context.h>
+#include <emul/context.h>
 #else
 #include <verilated.h>
 #if VM_TRACE
@@ -15,8 +15,6 @@
 #include "bridges/cpu_managed_stream.h"
 
 uint64_t main_time = 0;
-std::unique_ptr<mmio_t> master;
-std::unique_ptr<mmio_t> dma;
 
 #ifdef VCS
 context_t *host;
@@ -77,7 +75,7 @@ simif_emul_t::simif_emul_t() {
   }
 }
 
-simif_emul_t::~simif_emul_t() {}
+simif_emul_t::~simif_emul_t(){};
 
 void simif_emul_t::host_init(int argc, char **argv) {
   // Parse args
@@ -85,7 +83,6 @@ void simif_emul_t::host_init(int argc, char **argv) {
   std::string waveform = "dump.vcd";
   std::string loadmem;
   bool fastloadmem = false;
-  bool dramsim = false;
   uint64_t memsize = 1L << MEM_ADDR_BITS;
   for (auto arg : args) {
     if (arg.find("+waveform=") == 0) {
@@ -97,9 +94,6 @@ void simif_emul_t::host_init(int argc, char **argv) {
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
     }
-    if (arg.find("+dramsim") == 0) {
-      dramsim = true;
-    }
     if (arg.find("+memsize=") == 0) {
       memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
@@ -108,10 +102,15 @@ void simif_emul_t::host_init(int argc, char **argv) {
     }
   }
 
-  ::init(memsize, dramsim);
+  for (int mem_channel_index = 0; mem_channel_index < MEM_NUM_CHANNELS;
+       mem_channel_index++) {
+    slave[mem_channel_index] = (mm_t *)new mm_magic_t;
+    slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
+  }
+
   if (fastloadmem && !loadmem.empty()) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem.c_str());
-    ::load_mems(loadmem.c_str());
+    load_mems(loadmem.c_str());
   }
 
   signal(SIGTERM, handle_sigterm);
@@ -158,12 +157,12 @@ void simif_emul_t::advance_target() {
   }
 }
 
-void simif_emul_t::wait_write(std::unique_ptr<mmio_t> &mmio) {
+void simif_emul_t::wait_write(mmio_t *mmio) {
   while (!mmio->write_resp())
     advance_target();
 }
 
-void simif_emul_t::wait_read(std::unique_ptr<mmio_t> &mmio, void *data) {
+void simif_emul_t::wait_read(mmio_t *mmio, void *data) {
   while (!mmio->read_resp(data))
     advance_target();
 }
@@ -246,4 +245,9 @@ size_t simif_emul_t::pcis_write(size_t addr, char *data, size_t size) {
   }
 
   return size;
+}
+
+void simif_emul_t::load_mems(const char *fname) {
+  slave[0]->load_mem(0, fname);
+  // TODO: allow file to be split across slaves
 }

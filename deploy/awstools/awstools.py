@@ -22,9 +22,15 @@ from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 from mypy_boto3_ec2.type_defs import FilterTypeDef
 from mypy_boto3_s3.literals import BucketLocationConstraintType
 
-# setup basic config for logging
+
 if __name__ == '__main__':
+    # setup basic config for logging
     logging.basicConfig()
+
+    # use builtin.input because we aren't in a StreamLogger context
+    from builtins import input as firesim_input
+else:
+    from util.io import firesim_input
 
 rootLogger = logging.getLogger()
 
@@ -200,8 +206,6 @@ def awsinit() -> None:
         # only run aws configure if we cannot already find valid creds
         # this loops calling valid_aws_configure_creds until
         rootLogger.info("Running aws configure. You must specify your AWS account info here to use the FireSim Manager.")
-        # DO NOT wrap this local call with StreamLogger, we don't want creds to get
-        # stored in the log
         local("aws configure")
 
         # check again
@@ -209,7 +213,7 @@ def awsinit() -> None:
         if not valid_creds:
             rootLogger.info("Invalid AWS credentials. Try again.")
 
-    useremail = input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
+    useremail = firesim_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
     if useremail != "":
         subscribe_to_firesim_topic(useremail)
     else:
