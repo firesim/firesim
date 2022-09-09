@@ -22,7 +22,6 @@ SKIP_TOOLCHAIN=false
 SKIP_VALIDATE=false
 TOOLCHAIN=riscv-tools
 USE_PINNED_DEPS=true
-ENV_NAME=firesim
 
 function usage
 {
@@ -95,11 +94,13 @@ else
     echo "Setting up official FireSim release: $tag"
 fi
 
-if [ -z "$RISCV" ]; then
-    echo "ERROR: You must set the RISCV environment variable before running."
-    exit 4
-else
-    echo "Using existing RISCV toolchain at $RISCV"
+if [ "$IS_LIBRARY" = true ]; then
+    if [ -z "$RISCV" ]; then
+        echo "ERROR: You must set the RISCV environment variable before running."
+        exit 4
+    else
+        echo "Using existing RISCV toolchain at $RISCV"
+    fi
 fi
 
 # Remove and backup the existing env.sh if it exists
@@ -184,16 +185,14 @@ else
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     LOCKFILE=$RDIR/conda-requirements-$TOOLCHAIN-linux-64.conda-lock.yml
     YAMLFILE=$RDIR/conda-requirements-$TOOLCHAIN.yaml
-    if [ "$USE_PINNED_DEPS" = true ]; then
-        # use conda-lock to create env
-        conda-lock install -n $ENV_NAME $LOCKFILE
-    else
+    if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
         conda-lock -f $YAMLFILE -p linux-64 --lockfile $LOCKFILE
-        # use conda-lock to create env
-        conda-lock install -n $ENV_NAME $LOCKFILE
     fi
-    env_append "conda activate $ENV_NAME"
+    conda-lock install -p $RDIR/.conda-env $LOCKFILE
+    source $RDIR/.conda-env/etc/profile.d/conda.sh
+    conda activate $RDIR/.conda-env
+    env_append "conda activate $RDIR/.conda-env"
 fi
 
 # RISC-V Toolchain Compilation

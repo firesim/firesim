@@ -222,6 +222,11 @@ set -o pipefail
         screen \
         argcomplete==1.12.3 \
         conda-lock \
+        expect \
+        python \
+        boto3==1.20.21 \
+        pytz \
+        mypy-boto3-s3==1.21.0 \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
@@ -241,6 +246,23 @@ set -o pipefail
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
     $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -y "${CONDA_PACKAGE_SPECS[@]}"
+
+    # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to pip
+    CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
+
+    # Install python packages using pip that are not available from conda
+    #
+    # Installing things with pip is possible.  However, to get
+    # the most complete solution to all dependencies, you should
+    # prefer creating the environment with a single invocation of
+    # conda
+    PIP_PKGS=( \
+        fab-classic \
+        mypy-boto3-ec2==1.12.9 \
+    )
+    if [[ -n "$PIP_PKGS[*]" ]]; then
+        "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_PIP_EXE}" install "${PIP_PKGS[@]}"
+    fi
 
     argcomplete_extra_args=()
     if [[ "$INSTALL_TYPE" == system ]]; then
