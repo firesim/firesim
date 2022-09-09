@@ -37,8 +37,12 @@ void mm_t::init(size_t sz, int wsz, int lsz) {
   assert(wsz > 0 && lsz > 0 && (lsz & (lsz - 1)) == 0 && lsz % wsz == 0);
   word_size = wsz;
   line_size = lsz;
-  data = (uint8_t *)mmap(
-      NULL, sz, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  data = (uint8_t *)mmap(NULL,
+                         sz,
+                         PROT_READ | PROT_WRITE,
+                         MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE,
+                         -1,
+                         0);
   if (data == MAP_FAILED) {
     std::perror("[mm_t] mmap for backing storage failed");
     exit(-1);
