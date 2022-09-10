@@ -310,7 +310,7 @@ $(u250_firesim_defines): $(simulator_verilog) $(u250_stamp)
 replace-rtl-u250: $(u250_stamp) $(u250_repo_state) $(u250_firesim_top) $(u250_firesim_env) $(u250_firesim_defines)
 
 fpga: replace-rtl-u250
-	cd $(GENERATED_DIR)/u250 && vivado -mode batch -source ./scripts/generate_bitstream.tcl
+	cd $(GENERATED_DIR)/u250 && vivado -mode batch -source ./scripts/main.tcl
 
 .PHONY: replace-rtl-u250 fpga $(u250_stamp) $(u250_firesim_top) $(u250_firesim_synth_xdc) $(u250_firesim_impl_xdc) $(u250_firesim_env) $(u250_firesim_defines)
 
