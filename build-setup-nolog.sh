@@ -195,6 +195,12 @@ else
     env_append "conda activate $RDIR/.conda-env"
 fi
 
+if [ "$IS_LIBRARY" = true ]; then
+    env_append "source $target_chipyard_dir/env.sh"
+else
+    env_append "export PATH=$RDIR/sw/firesim-software:$PATH"
+fi
+
 # RISC-V Toolchain Compilation
 if [ "$SKIP_TOOLCHAIN" != true ]; then
     $target_chipyard_dir/scripts/build-toolchain-extra.sh --skip-validate $TOOLCHAIN
