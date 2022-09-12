@@ -13,7 +13,7 @@ fi
 
 DRIVER="${SCRIPT_DIR}/../../../sim/output/u250/FireSim-${FIRESIM_CONFIG}/FireSim-u250"
 RUNTIME_CONFIG="${SCRIPT_DIR}/../../../sim/output/u250/FireSim-${FIRESIM_CONFIG}/runtime.conf"
-BITSTREAM="${SCRIPT_DIR}/../../../sim/generated-src/u250/FireSim-${FIRESIM_CONFIG}/u250/vivado_proj/firesim.runs/impl_1/design_1_wrapper.bit"
+BITSTREAM="${SCRIPT_DIR}/../../../sim/generated-src/u250/FireSim-${FIRESIM_CONFIG}/u250/vivado_proj/firesim.bit"
 IMAGE_IMG="${RUN_DIR}/workload.img"
 IMAGE_BIN="${RUN_DIR}/workload.bin"
 
