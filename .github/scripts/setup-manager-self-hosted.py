@@ -14,17 +14,11 @@ from ci_variables import *
 
 def wait_machine_launch_complete():
     # Catch any exception that occurs so that we can gracefully teardown
-    try:
-        # wait until machine launch is complete
-        with settings(warn_only=True):
-            rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f /machine-launchstatus)").return_code
-            if rc != 0:
-                run("cat /machine-launchstatus.log")
-                raise Exception("machine-launch-script.sh failed to run")
-    except BaseException as e:
-        traceback.print_exc(file=sys.stdout)
-        terminate_workflow_instances(ci_personal_api_token, ci_workflow_run_id)
-        sys.exit(1)
+     with settings(warn_only=True):
+        rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f /machine-launchstatus)").return_code
+        if rc != 0:
+            run("cat /machine-launchstatus.log")
+            raise Exception("machine-launch-script.sh failed to run")
 
 def setup_self_hosted_runners():
     """ Installs GHA self-hosted runner machinery on the manager.  """
