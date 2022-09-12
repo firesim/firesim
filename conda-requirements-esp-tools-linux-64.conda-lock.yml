@@ -19,7 +19,7 @@ metadata:
   - url: nodefaults
     used_env_vars: []
   content_hash:
-    linux-64: 825448ade596fc26db1afaa1b6866f50e6a7f43684c00ba8f4d97d6a04189213
+    linux-64: 8165c616ff8480f377c84f2c4b4a6066762de073540915f067404a30f81955b5
   platforms:
   - linux-64
   sources:
@@ -36,6 +36,17 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   version: '0.1'
+- category: main
+  dependencies: {}
+  hash:
+    md5: a581b4a89191b6c1d6a16488a9cffbfc
+    sha256: 695e67ae4bc22f9e0be5f54b1948a8f2b678f4da920fa2082a249dd5a88f440e
+  manager: conda
+  name: _sysroot_linux-64_curr_repodata_hack
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/noarch/_sysroot_linux-64_curr_repodata_hack-3-h5bd9786_13.tar.bz2
+  version: '3'
 - category: main
   dependencies: {}
   hash:
@@ -113,17 +124,6 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/noarch/font-ttf-ubuntu-0.83-hab24e00_0.tar.bz2
   version: '0.83'
-- category: main
-  dependencies: {}
-  hash:
-    md5: 5dd5127afd710f91f6a75821bac0a4f0
-    sha256: c9f33acc0f1095bd4e7a2b577dfa41fc3fef3713b3975e8467a0fbed188fe6f4
-  manager: conda
-  name: kernel-headers_linux-64
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-2.6.32-he073ed8_15.tar.bz2
-  version: 2.6.32
 - category: main
   dependencies: {}
   hash:
@@ -207,6 +207,18 @@ package:
   version: '1'
 - category: main
   dependencies:
+    _sysroot_linux-64_curr_repodata_hack: 3.*
+  hash:
+    md5: 523bc836a954faf0cca94831971bb85a
+    sha256: 67a3caa56e2a59f407f3d290437b865aaf996873006e2fcfca6295d0f0be8db9
+  manager: conda
+  name: kernel-headers_linux-64
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-3.10.0-h4a8ded7_13.tar.bz2
+  version: 3.10.0
+- category: main
+  dependencies:
     libgfortran5: 12.1.0 hdcd56e2_16
   hash:
     md5: 6bf15e29a20f614b18ae89368260d0a2
@@ -231,18 +243,6 @@ package:
   version: 12.1.0
 - category: main
   dependencies:
-    kernel-headers_linux-64: 2.6.32 he073ed8_15
-  hash:
-    md5: 66c192522eacf5bb763568b4e415d133
-    sha256: 8498c73b60a7ea6faedf36204ec5a339c78d430fa838860f2b9d5d3a1c354eff
-  manager: conda
-  name: sysroot_linux-64
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.12-he073ed8_15.tar.bz2
-  version: '2.12'
-- category: main
-  dependencies:
     _libgcc_mutex: 0.1 conda_forge
     libgomp: '>=7.5.0'
   hash:
@@ -254,19 +254,6 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-2_gnu.tar.bz2
   version: '4.5'
-- category: main
-  dependencies:
-    ld_impl_linux-64: 2.36.1 hea4e1c9_2
-    sysroot_linux-64: ''
-  hash:
-    md5: 32aae4265554a47ea77f7c09f86aeb3b
-    sha256: 7cdcbb78f3b521efbcbd72424fb56a4e030001cccf2a6bca800aef4b9a5ed93a
-  manager: conda
-  name: binutils_impl_linux-64
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.36.1-h193b22a_2.tar.bz2
-  version: 2.36.1
 - category: main
   dependencies:
     fonts-conda-forge: ''
@@ -281,15 +268,29 @@ package:
   version: '1'
 - category: main
   dependencies:
-    binutils_impl_linux-64: '>=2.36.1,<2.36.2.0a0'
+    _sysroot_linux-64_curr_repodata_hack: 3.*
+    kernel-headers_linux-64: 3.10.0 h4a8ded7_13
   hash:
-    md5: 3111f86041b5b6863545ca49130cca95
-    sha256: 17ae32b02c9cfb4c01ddcbe733d8bc432bd5003447cca9eb1727dd13c8fa940e
+    md5: 57e5a5191ffe999b9f4dfdbcd0ddcba4
+    sha256: f09f2fea4b571dcd225f1e35bd3c851e809cd4c2f5f151438133969ab28478e5
   manager: conda
-  name: binutils
+  name: sysroot_linux-64
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.36.1-hdd6e379_2.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.17-h4a8ded7_13.tar.bz2
+  version: '2.17'
+- category: main
+  dependencies:
+    ld_impl_linux-64: 2.36.1 hea4e1c9_2
+    sysroot_linux-64: ''
+  hash:
+    md5: 32aae4265554a47ea77f7c09f86aeb3b
+    sha256: 7cdcbb78f3b521efbcbd72424fb56a4e030001cccf2a6bca800aef4b9a5ed93a
+  manager: conda
+  name: binutils_impl_linux-64
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.36.1-h193b22a_2.tar.bz2
   version: 2.36.1
 - category: main
   dependencies:
@@ -316,6 +317,18 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/linux-64/alsa-lib-1.2.7.2-h166bdaf_0.tar.bz2
   version: 1.2.7.2
+- category: main
+  dependencies:
+    binutils_impl_linux-64: '>=2.36.1,<2.36.2.0a0'
+  hash:
+    md5: 3111f86041b5b6863545ca49130cca95
+    sha256: 17ae32b02c9cfb4c01ddcbe733d8bc432bd5003447cca9eb1727dd13c8fa940e
+  manager: conda
+  name: binutils
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.36.1-hdd6e379_2.tar.bz2
+  version: 2.36.1
 - category: main
   dependencies:
     libgcc-ng: '>=9.3.0'
@@ -677,13 +690,13 @@ package:
   dependencies:
     libgcc-ng: '>=12'
   hash:
-    md5: 8302381297332ea50532cf2c67961080
-    sha256: 38cf13bff23409683f2da6b0ee156d964f40e6c3dabcee626e0a118e37ab02e4
+    md5: 29b2d63b0e21b765da0418bc452538c9
+    sha256: 864e4de308644dc5f5b88da185bb65e4e437ffe56299bffec9eba496c04758f3
   manager: conda
   name: libzlib
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.2.12-h166bdaf_2.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.2.12-h166bdaf_3.tar.bz2
   version: 1.2.12
 - category: main
   dependencies:
@@ -1300,15 +1313,15 @@ package:
 - category: main
   dependencies:
     libgcc-ng: '>=12'
-    libzlib: 1.2.12 h166bdaf_2
+    libzlib: 1.2.12 h166bdaf_3
   hash:
-    md5: 4533821485cde83ab12ff3d8bda83768
-    sha256: 084342e7f0d2feeca6eb0f194f0a82ac75217730745e6c9033016ed015283bcc
+    md5: 76c717057865201aa2d24b79315645bb
+    sha256: ae9432916a11c7f52ea295d6cad1ecb2b838a75087d14db3a5e50c1949aa9f55
   manager: conda
   name: zlib
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/zlib-1.2.12-h166bdaf_2.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/zlib-1.2.12-h166bdaf_3.tar.bz2
   version: 1.2.12
 - category: main
   dependencies:

@@ -19,7 +19,7 @@ metadata:
   - url: nodefaults
     used_env_vars: []
   content_hash:
-    linux-64: 2fc4766f6699e763678ffe28efc1ffb643a3956e671112d82c6126253832836d
+    linux-64: 5327e849f43227ebb47e2354e4cd7c888f9a0c3c350eac188032eed1b425aaa1
   platforms:
   - linux-64
   sources:
@@ -36,6 +36,17 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   version: '0.1'
+- category: main
+  dependencies: {}
+  hash:
+    md5: a581b4a89191b6c1d6a16488a9cffbfc
+    sha256: 695e67ae4bc22f9e0be5f54b1948a8f2b678f4da920fa2082a249dd5a88f440e
+  manager: conda
+  name: _sysroot_linux-64_curr_repodata_hack
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/noarch/_sysroot_linux-64_curr_repodata_hack-3-h5bd9786_13.tar.bz2
+  version: '3'
 - category: main
   dependencies: {}
   hash:
@@ -113,17 +124,6 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/noarch/font-ttf-ubuntu-0.83-hab24e00_0.tar.bz2
   version: '0.83'
-- category: main
-  dependencies: {}
-  hash:
-    md5: 5dd5127afd710f91f6a75821bac0a4f0
-    sha256: c9f33acc0f1095bd4e7a2b577dfa41fc3fef3713b3975e8467a0fbed188fe6f4
-  manager: conda
-  name: kernel-headers_linux-64
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-2.6.32-he073ed8_15.tar.bz2
-  version: 2.6.32
 - category: main
   dependencies: {}
   hash:
@@ -207,6 +207,18 @@ package:
   version: '1'
 - category: main
   dependencies:
+    _sysroot_linux-64_curr_repodata_hack: 3.*
+  hash:
+    md5: 523bc836a954faf0cca94831971bb85a
+    sha256: 67a3caa56e2a59f407f3d290437b865aaf996873006e2fcfca6295d0f0be8db9
+  manager: conda
+  name: kernel-headers_linux-64
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-3.10.0-h4a8ded7_13.tar.bz2
+  version: 3.10.0
+- category: main
+  dependencies:
     libgfortran5: 12.1.0 hdcd56e2_16
   hash:
     md5: 6bf15e29a20f614b18ae89368260d0a2
@@ -231,18 +243,6 @@ package:
   version: 12.1.0
 - category: main
   dependencies:
-    kernel-headers_linux-64: 2.6.32 he073ed8_15
-  hash:
-    md5: 66c192522eacf5bb763568b4e415d133
-    sha256: 8498c73b60a7ea6faedf36204ec5a339c78d430fa838860f2b9d5d3a1c354eff
-  manager: conda
-  name: sysroot_linux-64
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.12-he073ed8_15.tar.bz2
-  version: '2.12'
-- category: main
-  dependencies:
     _libgcc_mutex: 0.1 conda_forge
     libgomp: '>=7.5.0'
   hash:
@@ -254,19 +254,6 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-2_gnu.tar.bz2
   version: '4.5'
-- category: main
-  dependencies:
-    ld_impl_linux-64: 2.36.1 hea4e1c9_2
-    sysroot_linux-64: ''
-  hash:
-    md5: 32aae4265554a47ea77f7c09f86aeb3b
-    sha256: 7cdcbb78f3b521efbcbd72424fb56a4e030001cccf2a6bca800aef4b9a5ed93a
-  manager: conda
-  name: binutils_impl_linux-64
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.36.1-h193b22a_2.tar.bz2
-  version: 2.36.1
 - category: main
   dependencies:
     fonts-conda-forge: ''
@@ -281,15 +268,29 @@ package:
   version: '1'
 - category: main
   dependencies:
-    binutils_impl_linux-64: '>=2.36.1,<2.36.2.0a0'
+    _sysroot_linux-64_curr_repodata_hack: 3.*
+    kernel-headers_linux-64: 3.10.0 h4a8ded7_13
   hash:
-    md5: 3111f86041b5b6863545ca49130cca95
-    sha256: 17ae32b02c9cfb4c01ddcbe733d8bc432bd5003447cca9eb1727dd13c8fa940e
+    md5: 57e5a5191ffe999b9f4dfdbcd0ddcba4
+    sha256: f09f2fea4b571dcd225f1e35bd3c851e809cd4c2f5f151438133969ab28478e5
   manager: conda
-  name: binutils
+  name: sysroot_linux-64
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.36.1-hdd6e379_2.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.17-h4a8ded7_13.tar.bz2
+  version: '2.17'
+- category: main
+  dependencies:
+    ld_impl_linux-64: 2.36.1 hea4e1c9_2
+    sysroot_linux-64: ''
+  hash:
+    md5: 32aae4265554a47ea77f7c09f86aeb3b
+    sha256: 7cdcbb78f3b521efbcbd72424fb56a4e030001cccf2a6bca800aef4b9a5ed93a
+  manager: conda
+  name: binutils_impl_linux-64
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.36.1-h193b22a_2.tar.bz2
   version: 2.36.1
 - category: main
   dependencies:
@@ -306,16 +307,28 @@ package:
   version: 12.1.0
 - category: main
   dependencies:
-    libgcc-ng: '>=9.4.0'
+    libgcc-ng: '>=12'
   hash:
-    md5: 0347ce6a34f8b55b544b141432c6d4c7
-    sha256: c34e6323cf7f3ec34cac75ed5f3e8a39cb286c5c14de9929b2cab0d0d03800c1
+    md5: 4a826cd983be6c8fff07a64b6d2079e7
+    sha256: b2ea5be6ca4f16d62c7de3df62155b106f2009d9c317db187c47267abc1cb03d
   manager: conda
   name: alsa-lib
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/alsa-lib-1.2.6.1-h7f98852_0.tar.bz2
-  version: 1.2.6.1
+  url: https://conda.anaconda.org/conda-forge/linux-64/alsa-lib-1.2.7.2-h166bdaf_0.tar.bz2
+  version: 1.2.7.2
+- category: main
+  dependencies:
+    binutils_impl_linux-64: '>=2.36.1,<2.36.2.0a0'
+  hash:
+    md5: 3111f86041b5b6863545ca49130cca95
+    sha256: 17ae32b02c9cfb4c01ddcbe733d8bc432bd5003447cca9eb1727dd13c8fa940e
+  manager: conda
+  name: binutils
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.36.1-hdd6e379_2.tar.bz2
+  version: 2.36.1
 - category: main
   dependencies:
     libgcc-ng: '>=9.3.0'
@@ -507,14 +520,14 @@ package:
   dependencies:
     libgcc-ng: '>=12'
   hash:
-    md5: 4b5bee2e957570197327d0b20a718891
-    sha256: 2975c48208cdd8b59096b8bd368044dd1d531ba92da64f4814d58b1533eec1da
+    md5: fc84a0446e4e4fb882e78d786cfb9734
+    sha256: 6f7cbc9347964e7f9697bde98a8fb68e0ed926888b3116474b1224eaa92209dc
   manager: conda
   name: libdeflate
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/libdeflate-1.13-h166bdaf_0.tar.bz2
-  version: '1.13'
+  url: https://conda.anaconda.org/conda-forge/linux-64/libdeflate-1.14-h166bdaf_0.tar.bz2
+  version: '1.14'
 - category: main
   dependencies:
     libgcc-ng: '>=7.5.0'
@@ -677,13 +690,13 @@ package:
   dependencies:
     libgcc-ng: '>=12'
   hash:
-    md5: 8302381297332ea50532cf2c67961080
-    sha256: 38cf13bff23409683f2da6b0ee156d964f40e6c3dabcee626e0a118e37ab02e4
+    md5: 29b2d63b0e21b765da0418bc452538c9
+    sha256: 864e4de308644dc5f5b88da185bb65e4e437ffe56299bffec9eba496c04758f3
   manager: conda
   name: libzlib
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.2.12-h166bdaf_2.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.2.12-h166bdaf_3.tar.bz2
   version: 1.2.12
 - category: main
   dependencies:
@@ -1300,15 +1313,15 @@ package:
 - category: main
   dependencies:
     libgcc-ng: '>=12'
-    libzlib: 1.2.12 h166bdaf_2
+    libzlib: 1.2.12 h166bdaf_3
   hash:
-    md5: 4533821485cde83ab12ff3d8bda83768
-    sha256: 084342e7f0d2feeca6eb0f194f0a82ac75217730745e6c9033016ed015283bcc
+    md5: 76c717057865201aa2d24b79315645bb
+    sha256: ae9432916a11c7f52ea295d6cad1ecb2b838a75087d14db3a5e50c1949aa9f55
   manager: conda
   name: zlib
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/zlib-1.2.12-h166bdaf_2.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/zlib-1.2.12-h166bdaf_3.tar.bz2
   version: 1.2.12
 - category: main
   dependencies:
@@ -1529,21 +1542,21 @@ package:
   dependencies:
     jpeg: '>=9e,<10a'
     lerc: '>=4.0.0,<5.0a0'
-    libdeflate: '>=1.13,<1.14.0a0'
+    libdeflate: '>=1.14,<1.15.0a0'
     libgcc-ng: '>=12'
     libstdcxx-ng: '>=12'
-    libwebp-base: '>=1.2.3,<2.0a0'
+    libwebp-base: '>=1.2.4,<2.0a0'
     libzlib: '>=1.2.12,<1.3.0a0'
-    xz: '>=5.2.5,<5.3.0a0'
+    xz: '>=5.2.6,<5.3.0a0'
     zstd: '>=1.5.2,<1.6.0a0'
   hash:
-    md5: 5627d42c13a9b117ae1701c6e195624f
-    sha256: 1ffb2f138bb44a59d3e51d65cb471dece8cf46ec2d0fbdcbb1ab820edaa5706d
+    md5: 901791f0ec7cddc8714e76e273013a91
+    sha256: 19f29fcaab2e6b97cb1991a5a703b5951e981dc8a093945f20382288b29a4668
   manager: conda
   name: libtiff
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/libtiff-4.4.0-h0e0dad5_3.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/libtiff-4.4.0-h55922b4_4.tar.bz2
   version: 4.4.0
 - category: main
   dependencies:
@@ -1674,17 +1687,18 @@ package:
 - category: main
   dependencies:
     expat: '>=2.4.8,<3.0a0'
-    freetype: '>=2.10.4,<3.0a0'
-    libgcc-ng: '>=10.3.0'
+    freetype: '>=2.12.1,<3.0a0'
+    libgcc-ng: '>=12'
     libuuid: '>=2.32.1,<3.0a0'
+    libzlib: '>=1.2.12,<1.3.0a0'
   hash:
-    md5: f314f79031fec74adc9bff50fbaffd89
-    sha256: 1c61c8cb71d62caddc4f7300936fee16eb3e63d964e1e8555a3d18761e4f461b
+    md5: 139ace7da04f011abbd531cb2a9840ee
+    sha256: 58388e28faa2078b0d93ec8d236f102b945e169c0b0fef9e8aa4496abe9548ce
   manager: conda
   name: fontconfig
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.14.0-h8e229c2_0.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.14.0-hc2a2eb6_1.tar.bz2
   version: 2.14.0
 - category: main
   dependencies:
@@ -3640,10 +3654,10 @@ package:
   version: '0.931'
 - category: main
   dependencies:
-    alsa-lib: '>=1.2.6.1,<1.2.7.0a0'
+    alsa-lib: '>=1.2.7.2,<1.2.8.0a0'
     fontconfig: '>=2.13.96,<3.0a0'
     fonts-conda-ecosystem: ''
-    freetype: '>=2.10.4,<3.0a0'
+    freetype: '>=2.12.1,<3.0a0'
     giflib: '>=5.2.1,<5.3.0a0'
     harfbuzz: '>=5.1.0,<6.0a0'
     jpeg: '>=9e,<10a'
@@ -3659,13 +3673,13 @@ package:
     xorg-libxrender: ''
     xorg-libxtst: ''
   hash:
-    md5: a01d4070e732c1accd5e430bce834465
-    sha256: c463dc79bd884c018ab615e9afa94c6df61cc361bc200c5883d1a9519eec00fd
+    md5: cd1b2e4756ca8d14bc7501e38360aa79
+    sha256: 1274f314793e9b1abb27a2aea581e661d751a4f685be50787bcc135e03fd185b
   manager: conda
   name: openjdk
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/openjdk-17.0.3-h1e1ecb3_1.tar.bz2
+  url: https://conda.anaconda.org/conda-forge/linux-64/openjdk-17.0.3-h85293d2_2.tar.bz2
   version: 17.0.3
 - category: main
   dependencies:
@@ -4023,14 +4037,14 @@ package:
     pango: '>=1.50.9,<1.51.0a0'
     zlib: '>=1.2.12,<1.3.0a0'
   hash:
-    md5: 03f22ca50fcff4bbee39da0943ab8475
-    sha256: 90f943547a5a7940b40454f08b009c47b7b3fc77bb9ea0689258dd5515a79ec3
+    md5: 123c55da3e9ea8664f73c70e13ef08c2
+    sha256: b361670365155a56f0714fef9bae58ff858a0fc13d7f04530e4252e98b9b164d
   manager: conda
   name: graphviz
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/graphviz-5.0.1-h5abf519_0.tar.bz2
-  version: 5.0.1
+  url: https://conda.anaconda.org/conda-forge/linux-64/graphviz-6.0.1-h5abf519_0.tar.bz2
+  version: 6.0.1
 - category: main
   dependencies:
     attrs: ''
