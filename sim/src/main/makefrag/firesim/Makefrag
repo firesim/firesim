@@ -98,7 +98,6 @@ DRIVER_CC = \
 	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
 # Need __STDC_FORMAT_MACROS until usage of inttypes.h (i.e. printf formatting macros) is removed
-# HACK add -I$(chipyard_dir)/tools/dromajo/dromajo-src/src/ back in to access dromajo_cosim.h until it is added to conda package
 TARGET_CXX_FLAGS += -D__STDC_FORMAT_MACROS -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(CONDA_PREFIX)/include -I$(driver_dir)/firesim -I$(RISCV)/include -I$(GENERATED_DIR)
 TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so -lz -l$(DROMAJO_LIB_NAME)
 # DOC include end: Bridge Build System Changes

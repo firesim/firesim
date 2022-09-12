@@ -26,7 +26,6 @@ USE_PINNED_DEPS=true
 function usage
 {
     echo "usage: build-setup.sh [OPTIONS] [riscv-tools | esp-tools]"
-    echo "warning: The user must define $RISCV in their env to provide their own cross-compiler + sysroot."
     echo "installation types:"
     echo "   riscv-tools: if set, builds the riscv toolchain collateral (this is the default)"
     echo "   esp-tools: if set, builds the esp toolchain collateral used for the hwacha/gemmini accelerators"
@@ -182,7 +181,6 @@ if [ "$IS_LIBRARY" = true ]; then
         exit 5
     fi
 else
-    set -x
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     LOCKFILE=$RDIR/conda-requirements-$TOOLCHAIN-linux-64.conda-lock.yml
     YAMLFILE=$RDIR/conda-requirements-$TOOLCHAIN.yaml
@@ -194,7 +192,6 @@ else
     source $RDIR/.conda-env/etc/profile.d/conda.sh
     conda activate $RDIR/.conda-env
     env_append "conda activate $RDIR/.conda-env"
-    set +x
 fi
 
 if [ "$IS_LIBRARY" = true ]; then
