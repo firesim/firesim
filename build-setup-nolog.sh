@@ -182,6 +182,7 @@ if [ "$IS_LIBRARY" = true ]; then
         exit 5
     fi
 else
+    set -x
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     LOCKFILE=$RDIR/conda-requirements-$TOOLCHAIN-linux-64.conda-lock.yml
     YAMLFILE=$RDIR/conda-requirements-$TOOLCHAIN.yaml
@@ -193,6 +194,7 @@ else
     source $RDIR/.conda-env/etc/profile.d/conda.sh
     conda activate $RDIR/.conda-env
     env_append "conda activate $RDIR/.conda-env"
+    set +x
 fi
 
 if [ "$IS_LIBRARY" = true ]; then
