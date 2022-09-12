@@ -20,8 +20,6 @@ Next, setup the FireSim repository.
 2. Use the :gh-file-ref:`scripts/machine-launch-script.sh` to install Conda and the SW packages needed
 3. Continue with the FireSim setup as mentioned by :ref:`setting-up-firesim-repo` with the following modifications:
 
-   * Build your own RISC-V toolchain (see the options given by :gh-file-ref:`build-setup.sh`)
-
    * Run ``firesim managerinit --platform vitis``
 
 Bitstream Build
