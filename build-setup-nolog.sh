@@ -200,7 +200,7 @@ fi
 if [ "$IS_LIBRARY" = true ]; then
     env_append "source $target_chipyard_dir/env.sh"
 else
-    env_append "export PATH=$RDIR/sw/firesim-software:$PATH"
+    env_append "export PATH=$RDIR/sw/firesim-software:\$PATH"
 fi
 
 # RISC-V Toolchain Compilation
