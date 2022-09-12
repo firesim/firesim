@@ -34,9 +34,10 @@ Debugging Failures
 When a failure occurs on the manager instance the CI will stop or terminate the instance (terminate if your instance is using the spot market).
 Currently, the only way to access any running instance that is created from the CI is to do the following:
 
-1. Request the CI PEM file needed to SSH into the CI instances (ask the FireSim developers)
-2. Obtain the public IP address from the "Launch AWS instance used for the FireSim manager (instance info found here)" (which runs the `launch-manager-instance.py` script) step in the `setup-self-hosted-manager` job in the CI.
-3. SSH into the instance and do any testing required.
+1. In the PR, apply the `ci:debug` flag to prevent the CI instance from being terminated
+2. Request the CI PEM file needed to SSH into the CI instances (ask the FireSim developers)
+3. Obtain the public IP address from the "Launch AWS instance used for the FireSim manager (instance info found here)" (which runs the `launch-manager-instance.py` script) step in the `setup-self-hosted-manager` job in the CI.
+4. SSH into the instance and do any testing required.
 
 If the instance is stopped, then you must request a AWS IAM user account from the FireSim developers to access the EC2 console and restart the instance.
 

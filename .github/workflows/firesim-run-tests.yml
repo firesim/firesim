@@ -18,7 +18,8 @@ env:
   LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
   LANGUAGE: "en_US:en"
   LC_ALL: "en_US.UTF-8"
-
+  CI_LABEL_DEBUG: ${{ contains(github.event.pull_request.labels.*.name, 'ci:debug') }}
+  
 jobs:
   cancel-prior-workflows:
     name: cancel-prior-workflows
@@ -74,7 +75,7 @@ jobs:
       - name: Setup N Github Actions Runners on AWS instance
         run: ./.github/scripts/setup-manager-self-hosted.py
       - name: Catch potentially orphaned manager
-        if: ${{ failure() || cancelled() }}
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
         uses: ./.github/actions/change-workflow-instance-states
         with:
           new-state: terminate
@@ -92,13 +93,14 @@ jobs:
       - name: Run AWS configure
         run: ./.github/scripts/run-aws-configure.py
       - name: Setup Workflow monitor
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
         uses: ./.github/actions/setup-workflow-monitor
         with:
           max-runtime-hours: 10
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
       - name: Catch potentially orphaned manager
-        if: ${{ failure() || cancelled() }}
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
         uses: ./.github/actions/change-workflow-instance-states
         with:
           new-state: terminate
