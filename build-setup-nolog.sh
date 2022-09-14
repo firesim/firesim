@@ -27,13 +27,13 @@ function usage
 {
     echo "usage: build-setup.sh [OPTIONS] [riscv-tools | esp-tools]"
     echo "installation types:"
-    echo "   riscv-tools: if set, builds the riscv toolchain collateral (this is the default)"
-    echo "   esp-tools: if set, builds the esp toolchain collateral used for the hwacha/gemmini accelerators"
+    echo "   riscv-tools: if set, installs the riscv toolchain collateral (this is the default)"
+    echo "   esp-tools: if set, installs the esp toolchain collateral used for the hwacha/gemmini accelerators"
     echo "options:"
-    echo "   --skip-toolchain: if set, skips building extra RISC-V toolchain collateral i.e Spike,"
+    echo "   --skip-toolchain-extra: if set, skips building extra RISC-V toolchain collateral i.e Spike,"
     echo "                   PK, RISC-V tests, libgloss and installing it to $RISCV (including cloning or building)."
     echo "   --library: if set, initializes submodules assuming FireSim is being used"
-    echo "            as a library submodule. Implies --skip-toolchain "
+    echo "            as a library submodule. Implies --skip-toolchain-extra"
     echo "   --skip-validate: if set, skips checking if user is on release tagged branch"
     echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
 }
@@ -50,7 +50,7 @@ do
             IS_LIBRARY=true;
             SKIP_TOOLCHAIN=true;
             ;;
-        --skip-toolchain)
+        --skip-toolchain-extra)
             SKIP_TOOLCHAIN=true;
             ;;
         --skip-validate)
