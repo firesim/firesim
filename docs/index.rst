@@ -52,6 +52,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Developer-Docs/GoldenGate-and-Driver-Development
    Developer-Docs/Host-Platform-Debugging
    Developer-Docs/VSCode-Integration
+   Developer-Docs/Managing-Conda-Lock-File
 
 .. toctree::
    :maxdepth: 3
