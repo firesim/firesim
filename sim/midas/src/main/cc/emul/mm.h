@@ -139,4 +139,4 @@ protected:
   uint64_t cycle;
 };
 
-#endif __EMUL_MM_H
+#endif // __EMUL_MM_H
