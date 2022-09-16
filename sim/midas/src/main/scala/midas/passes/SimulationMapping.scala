@@ -95,11 +95,8 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     lazy val shim = PlatformShim(innerState.annotations, portTypeMap)
     val (chirrtl, elaboratedAnnos) = midas.targetutils.ElaborateChiselSubCircuit(LazyModule(shim).module)
 
-    val transforms = Seq(
-      Dependency[Fame1Instances],
-      Dependency(PreLinkRenaming))
     val outerAnnos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: elaboratedAnnos
-    val outerState = new Compiler(Forms.LowForm ++ transforms)
+    val outerState = new Compiler(Forms.LowForm ++ Seq(Dependency(PreLinkRenaming)))
       .execute(CircuitState(chirrtl, ChirrtlForm, outerAnnos))
 
     val outerCircuit = outerState.circuit

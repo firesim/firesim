@@ -31,7 +31,7 @@ class TrivialChannelExcision extends Transform {
       case FAMEHostClock(rt) => rt.ref
       case FAMEHostReset(rt) => rt.ref
     }).toSet
-    val fame1Anno = FAMETransformAnnotation(FAME1Transform, ModuleTarget(topName, topChildren.head.module))
+    val fame1Anno = FAMETransformAnnotation(ModuleTarget(topName, topChildren.head.module))
     val fameChannelAnnos = topModule.ports.collect({
       case ip @ Port(_, name, Input, tpe) if !specialSignals.contains(name) =>
         FAMEChannelConnectionAnnotation.implicitlyClockedSink(name, WireChannel, Seq(ReferenceTarget(topName, topName, Nil, name, Nil)))

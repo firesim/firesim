@@ -29,7 +29,7 @@ class FAMEDefaults extends Transform {
   def outputForm = LowForm
 
   override def execute(state: CircuitState): CircuitState = {
-    val analysis = new FAMEChannelAnalysis(state, FAME1Transform)
+    val analysis = new FAMEChannelAnalysis(state)
     val topModule = state.circuit.modules.find(_.name == state.circuit.main).get.asInstanceOf[Module]
     val fameAnnos = state.annotations.collect({ case fa: FAMEAnnotation => fa }) // for performance, avoid other annos
     val globalSignals = fameAnnos.collect({ case g: FAMEGlobalSignal => g.target.ref }).toSet
@@ -43,7 +43,7 @@ class FAMEDefaults extends Transform {
     val topTarget = ModuleTarget(state.circuit.main, topModule.name)
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
       case wi @ WDefInstance(_, iname, mname, _) if (!channelModules.contains(mname)) =>
-        defaultModelAnnos += FAMETransformAnnotation(FAME1Transform, topTarget.copy(module = mname))
+        defaultModelAnnos += FAMETransformAnnotation(topTarget.copy(module = mname))
         wi
       case c @ Connect(_, WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, _, _), WSubField(WRef(rhsiname, _, InstanceKind, _), rhspname, _, _)) =>
         if (c.loc.tpe != ClockType && c.expr.tpe != ClockType) {

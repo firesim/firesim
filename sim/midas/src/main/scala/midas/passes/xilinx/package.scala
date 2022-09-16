@@ -13,10 +13,26 @@ package object xilinx {
     val transformer = { c: Circuit => c.copy(modules = c.modules :+ blackbox) }
   }
 
-  object ReplaceAbstractClockGates extends Transform with NoAnalysisPass {
-    val transformer = StatementTransformer {
-      case wi: WDefInstance if wi.module == DefineAbstractClockGate.blackboxName =>
-        wi.copy(module = DefineBUFGCE.blackboxName)
+  object ReplaceAbstractClockGates extends Transform {
+    def inputForm = MidForm
+    def outputForm = MidForm
+    override def name = "[Golden Gate] Xilinx ReplaceAbstractClockGates"
+
+    def execute(state: CircuitState): CircuitState = {
+      val clockModules = state.circuit.modules.collect({
+        case m : ExtModule if m.defname == DefineAbstractClockGate.blackboxName => m.name
+      }).toSet
+
+
+      state.copy(circuit = state.circuit.mapModule(OrElseIdentity({
+        case m: Module => {
+          val onStmt : Function[Statement, Statement] = OrElseIdentity({
+            case wi: WDefInstance if clockModules.contains(wi.module) =>
+              wi.copy(module = DefineBUFGCE.blackboxName)
+          })
+          m mapStmt { s => onStmt(s mapStmt onStmt) }
+        }
+      })))
     }
   }
 

@@ -78,7 +78,7 @@ case object ChannelSink extends ChannelFlow { def suffix = "_sink" }
   * TODO: Break this up.
   */
 
-private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: FAMETransformType) {
+private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
   // TODO: only transform submodules of model modules
   // TODO: add renames!
   val circuit = state.circuit
@@ -120,7 +120,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState, val fameType: F
   val channelsByPort = new LinkedHashMap[ReferenceTarget, mutable.Set[String]] with MultiMap[ReferenceTarget, String]
   val transformedModules = new LinkedHashSet[ModuleTarget]
   state.annotations.collect({
-    case fta @ FAMETransformAnnotation(tpe, mt) if (tpe == fameType) =>
+    case fta @ FAMETransformAnnotation(mt) =>
       transformedModules += mt
     case fca: FAMEChannelConnectionAnnotation =>
       channels += fca.globalName
