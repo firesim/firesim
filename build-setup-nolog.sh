@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 
-# FireSim initial setup script. Under FireSim-as-top this script will:
-# 1) Initalize submodules (only the required ones, minimizing duplicates
-# 2) Install RISC-V tools, including linux tools
-# 3) Installs python requirements for firesim manager
-
-# Under library mode, (2) is skipped.
+# FireSim initial setup script.
 
 # TODO: build FireSim linux distro here?
 
@@ -20,16 +15,19 @@ FASTINSTALL=false
 IS_LIBRARY=false
 SKIP_TOOLCHAIN=false
 SKIP_VALIDATE=false
+TOOLCHAIN=riscv-tools
+USE_PINNED_DEPS=true
 
 function usage
 {
-    echo "usage: build-setup.sh [ fast | --fast] [--skip-toolchain] [--library] [--skip-validate]"
-    echo "   fast: if set, pulls in a pre-compiled RISC-V toolchain for an EC2 manager instance"
-    echo "   skip-toolchain: if set, skips RISC-V toolchain handling (cloning or building)."
-    echo "                   The user must define $RISCV in their env to provide their own toolchain."
-    echo "   library: if set, initializes submodules assuming FireSim is being used"
-    echo "            as a library submodule. Implies --skip-toolchain "
-    echo "   skip-validate: if set, skips checking if user is on release tagged branch"
+    echo "usage: build-setup.sh [OPTIONS]"
+    echo "options:"
+    echo "   --skip-toolchain-extra: if set, skips building extra RISC-V toolchain collateral i.e Spike,"
+    echo "                   PK, RISC-V tests, libgloss and installing it to $RISCV (including cloning or building)."
+    echo "   --library: if set, initializes submodules assuming FireSim is being used"
+    echo "            as a library submodule. Implies --skip-toolchain-extra"
+    echo "   --skip-validate: if set, skips checking if user is on release tagged branch"
+    echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
 }
 
 if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
@@ -40,18 +38,18 @@ fi
 while test $# -gt 0
 do
    case "$1" in
-        fast | --fast) # I don't want to break this api
-            FASTINSTALL=true
-            ;;
         --library)
             IS_LIBRARY=true;
             SKIP_TOOLCHAIN=true;
             ;;
-        --skip-toolchain)
+        --skip-toolchain-extra)
             SKIP_TOOLCHAIN=true;
             ;;
         --skip-validate)
             SKIP_VALIDATE=true;
+            ;;
+        --unpinned-deps)
+            USE_PINNED_DEPS=false;
             ;;
         -h | -H | --help)
             usage
@@ -72,30 +70,25 @@ done
 # before doing anything verify that you are on a release branch/tag
 set +e
 tag=$(git describe --exact-match --tags)
-tag_ret_code=$?
+tag_ret_code="$?"
 set -e
-if [ $tag_ret_code -ne 0 ]; then
+if [ "$tag_ret_code" -ne 0 ]; then
     if [ "$SKIP_VALIDATE" = false ]; then
         read -p "WARNING: You are not on an official release of FireSim."$'\n'"Type \"y\" to continue if this is intended, otherwise see https://docs.fires.im/en/stable/Initial-Setup/Setting-up-your-Manager-Instance.html#setting-up-the-firesim-repo: " validate
-        [[ $validate == [yY] ]] || exit 5
+        [[ "$validate" == [yY] ]] || exit 5
         echo "Setting up non-official FireSim release"
     fi
 else
     echo "Setting up official FireSim release: $tag"
 fi
 
-if [ "$SKIP_TOOLCHAIN" = true ]; then
+if [ "$IS_LIBRARY" = true ]; then
     if [ -z "$RISCV" ]; then
-        echo "ERROR: You must set the RISCV environment variable before running"
-        echo "firesim/$0 if running under --library or --skip-toolchain."
+        echo "ERROR: You must set the RISCV environment variable before running."
         exit 4
     else
         echo "Using existing RISCV toolchain at $RISCV"
     fi
-else
-    RISCV=$(pwd)/riscv-tools-install
-    export RISCV=$RISCV
-    echo "Installing fresh RISCV toolchain to $RISCV"
 fi
 
 # Remove and backup the existing env.sh if it exists
@@ -122,16 +115,38 @@ echo "$bad_env" > env.sh
 
 env_append "export FIRESIM_ENV_SOURCED=1"
 
+# Conda Setup
+if [ "$IS_LIBRARY" = true ]; then
+    # the chipyard conda environment should be installed already and be sufficient
+    if [ -z "${CONDA_DEFAULT_ENV+x}" ]; then
+        echo "ERROR: No conda environment detected. If using Chipyard, did you source 'env.sh'."
+        exit 5
+    fi
+else
+    # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
+    LOCKFILE="$RDIR/conda-requirements-$TOOLCHAIN-linux-64.conda-lock.yml"
+    YAMLFILE="$RDIR/conda-requirements-$TOOLCHAIN.yaml"
+    if [ "$USE_PINNED_DEPS" = false ]; then
+        # auto-gen the lockfile
+        conda-lock -f "$YAMLFILE" -p linux-64 --lockfile "$LOCKFILE"
+    fi
+    conda-lock install -p $RDIR/.conda-env $LOCKFILE
+    source $RDIR/.conda-env/etc/profile.d/conda.sh
+    conda activate $RDIR/.conda-env
+    env_append "conda activate $RDIR/.conda-env"
+fi
+
 git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive #--jobs 8
 
+# Chipyard setup
 if [ "$IS_LIBRARY" = false ]; then
     # This checks if firemarshal has already been configured by someone. If
     # not, we will provide our own config. This must be checked before calling
     # init-submodules-no-riscv-tools.sh because that will configure
     # firemarshal.
-    marshal_cfg=$RDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml
-    if [ ! -f $marshal_cfg ]; then
+    marshal_cfg="$RDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml"
+    if [ ! -f "$marshal_cfg" ]; then
       first_init=true
     else
       first_init=false
@@ -141,7 +156,13 @@ if [ "$IS_LIBRARY" = false ]; then
     git submodule update --init target-design/chipyard
     cd $RDIR/target-design/chipyard
 
-    ./scripts/init-submodules-no-riscv-tools.sh --skip-validate
+    SKIP_TOOLCHAIN_ARG=""
+    if [ "$SKIP_TOOLCHAIN" = true ]; then
+        SKIP_TOOLCHAIN_ARG="--skip-toolchain-extra"
+    fi
+    # default to normal riscv-tools toolchain
+    ./build-setup.sh --skip-validate --skip-conda $SKIP_TOOLCHAIN_ARG
+
     # Deinitialize Chipyard's FireSim submodule so that fuzzy finders, IDEs,
     # etc., don't get confused by source duplication.
     git submodule deinit sims/firesim
@@ -154,58 +175,26 @@ if [ "$IS_LIBRARY" = false ]; then
       echo "firesim-dir: '../../../../'" > $marshal_cfg
     fi
     env_append "export FIRESIM_STANDALONE=1"
+else
+    env_append "source $target_chipyard_dir/env.sh"
 fi
 
 # FireMarshal Setup
 if [ "$IS_LIBRARY" = true ]; then
-    target_chipyard_dir=$RDIR/../..
+    target_chipyard_dir="$RDIR/../.."
 
     # setup marshal symlink
     ln -sf ../../../software/firemarshal $RDIR/sw/firesim-software
 else
-    target_chipyard_dir=$RDIR/target-design/chipyard
+    target_chipyard_dir="$RDIR/target-design/chipyard"
 
     # setup marshal symlink
     ln -sf ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
+
+    env_append "export PATH=$RDIR/sw/firesim-software:\$PATH"
 fi
 
-# RISC-V Toolchain Compilation
-# When FireSim is being used as a library, the user is expected to build their
-# own toolchain. For FireSim-as-top, call out to Chipyard's toolchain scripts.
-if [ "$SKIP_TOOLCHAIN" != true ]; then
-    # Restrict the devtoolset environment to a subshell
-    #
-    # The devtoolset wrapper around sudo does not correctly pass options
-    # through, which causes an aws-fpga SDK setup script to fail:
-    # platforms/f1/aws-fpga/sdk/userspace/install_fpga_mgmt_tools.sh
-    (
-        # Enable latest Developer Toolset for GNU make 4.x
-        devtoolset=''
-        for dir in /opt/rh/devtoolset-* ; do
-            ! [ -x "${dir}/root/usr/bin/make" ] || devtoolset="${dir}"
-        done
-        if [ -n "${devtoolset}" ] ; then
-            echo "Enabling ${devtoolset##*/}"
-            . "${devtoolset}/enable"
-        fi
-
-	# chipyards build-toolchains.sh make defaults to gnumake or gmake but we 
-	# have latest make installed as make
-	export MAKE=make
-
-        # Build the toolchain through chipyard (whether as top or as library)
-        cd "$target_chipyard_dir"
-        if [ "$FASTINSTALL" = "true" ] ; then
-            MAKE=make ./scripts/build-toolchains.sh ec2fast
-        else
-            MAKE=make ./scripts/build-toolchains.sh
-        fi
-    )
-    source "$target_chipyard_dir/env.sh"
-    env_append "source $target_chipyard_dir/env.sh"
-fi
-
-cd $RDIR
+cd "$RDIR"
 
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
@@ -213,7 +202,6 @@ cd $RDIR
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 
     (
-
 	# ensure that we're using the system toolchain to build the kernel modules
 	# newer gcc has --enable-default-pie and older kernels think the compiler
 	# is broken unless you pass -fno-pie but then I was encountering a weird
@@ -223,16 +211,12 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 	cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
 	make
 
-	# Install firesim-software dependencies
-	# We always setup the symlink correctly above, so use sw/firesim-software
-	marshal_dir=$RDIR/sw/firesim-software
 	# the only ones missing are libguestfs-tools
 	sudo yum install -y libguestfs-tools bc
 
 	# Setup for using qcow2 images
-	cd $RDIR
+	cd "$RDIR"
 	./scripts/install-nbd-kmod.sh
-
     )
 
     (
@@ -247,20 +231,18 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 	# Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
 	# pull down some IP, so we don't have to waste time doing it each time on
 	# worker instances
-	AWSFPGA=$RDIR/platforms/f1/aws-fpga
-	cd $AWSFPGA
+	AWSFPGA="$RDIR/platforms/f1/aws-fpga"
+	cd "$AWSFPGA"
 	bash -c "source ./sdk_setup.sh"
 	bash -c "source ./hdk_setup.sh"
     )
 
 fi
 
-cd $RDIR
+cd "$RDIR"
 set +e
 ./gen-tags.sh
 set -e
-
-
 
 read -r -d '\0' NDEBUG_CHECK <<'END_NDEBUG'
 # Ensure that we don't have -DNDEBUG anywhere in our environment

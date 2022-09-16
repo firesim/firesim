@@ -117,7 +117,7 @@ We're finally ready to fetch FireSim's sources. Run:
     # checkout latest official firesim release
     # note: this may not be the latest release if the documentation version != "stable"
     git checkout |version|
-    ./build-setup.sh fast
+    ./build-setup.sh
 
 The ``build-setup.sh`` script will validate that you are on a tagged branch,
 otherwise it will prompt for confirmation.

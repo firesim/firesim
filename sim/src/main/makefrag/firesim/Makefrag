@@ -53,10 +53,8 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DE
 ##########################
 
 # dromajo modifications
-DROMAJO_DIR = $(chipyard_dir)/tools/dromajo/dromajo-src/src
-
 DROMAJO_LIB_NAME = dromajo_cosim
-DROMAJO_LIB = $(DROMAJO_DIR)/lib$(DROMAJO_LIB_NAME).a
+DROMAJO_LIB = $(CONDA_PREFIX)/lib/lib$(DROMAJO_LIB_NAME).a
 
 DROMAJO_H = $(GENERATED_DIR)/dromajo_params.h
 DROMAJO_LONG_H = $(GENERATED_DIR)/$(long_name).dromajo_params.h
@@ -68,9 +66,6 @@ DROMAJO_ROM = $(GENERATED_DIR)/$(long_name).rom
 
 DTS_FILE = $(GENERATED_DIR)/$(long_name).dts
 DROMAJO_DTB = $(GENERATED_DIR)/$(long_name).dtb
-
-$(DROMAJO_LIB):
-	$(MAKE) -C $(DROMAJO_DIR)
 
 $(DROMAJO_LONG_H) $(DTS_FILE): $(simulator_verilog)
 
@@ -102,8 +97,9 @@ DRIVER_CC = \
 	    $(DROMAJO_LIB) \
 	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
-TARGET_CXX_FLAGS += -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(CONDA_PREFIX)/include -I$(driver_dir)/firesim -I$(RISCV)/include -I$(DROMAJO_DIR) -I$(GENERATED_DIR)
-TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so -lz -L$(DROMAJO_DIR) -l$(DROMAJO_LIB_NAME)
+# Need __STDC_FORMAT_MACROS until usage of inttypes.h (i.e. printf formatting macros) is removed
+TARGET_CXX_FLAGS += -D__STDC_FORMAT_MACROS -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(CONDA_PREFIX)/include -I$(driver_dir)/firesim -I$(RISCV)/include -I$(GENERATED_DIR)
+TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so -lz -l$(DROMAJO_LIB_NAME)
 # DOC include end: Bridge Build System Changes
 
 #######################################

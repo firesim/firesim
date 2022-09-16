@@ -9,15 +9,13 @@ def run_linux_poweroff_vitis():
     """ Runs Base Vitis Build """
 
     # assumptions:
-    #   - machine-launch-script requirements are already installed (i.e. conda env is already active)
+    #   - machine-launch-script requirements are already installed
     #   - XILINX_VITIS, XILINX_XRT, XILINX_VIVADO are setup (in env / LD_LIBRARY_PATH / path / etc)
-    #   - RISCV toolchain is already installed
 
     # repo should already be checked out
 
-    # HACK: take the RISC-V toolchain prebuilt
-    with prefix(f'source /scratch/abejgonza/chipyard-work/chipyard/env-riscv-tools.sh && cd {ci_workdir}'):
-        run("./build-setup.sh --skip-toolchain --skip-validate")
+    with prefix(f'cd {ci_workdir}'):
+        run("./build-setup.sh --skip-validate")
         with prefix('source sourceme-f1-manager.sh'):
             # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
             with prefix('cd sw/firesim-software'):
