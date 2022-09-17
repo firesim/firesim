@@ -85,6 +85,16 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     host_mem_cdc.io.m_axi_aclk    := ap_clk
     host_mem_cdc.io.m_axi_aresetn := ap_rst_n
 
+    top.module.fmaxi4.map { axi4 =>
+      axi4.ar.ready := false.B
+      axi4.aw.ready := false.B
+      axi4. w.ready := false.B
+      axi4. r <> DontCare
+      axi4. b <> DontCare
+      axi4. r.valid := false.B
+      axi4. b.valid := false.B
+    }
+
     GoldenGateOutputFileAnnotation.annotateFromChisel(
       s"// Vitis Shim requires no dynamically generated macros \n",
       fileSuffix = ".defines.vh",
