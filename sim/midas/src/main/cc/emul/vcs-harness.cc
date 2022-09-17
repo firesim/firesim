@@ -21,6 +21,48 @@ constexpr size_t FPGA_MANAGED_AXI4_STRB_SIZE =
     ((FPGA_MANAGED_AXI4_DATA_BITS / 8) / 8 + sizeof(uint32_t) - 1) /
     sizeof(uint32_t);
 constexpr size_t MEM_DATA_SIZE = MEM_BEAT_BYTES / sizeof(uint32_t);
+
+/**
+ * @brief get a uint64_t from a vc_handle that may be a scalar or vector
+ *
+ * vc_handles for single bit vs multibit values need to be accessed at runtime
+ * with different methods. This handles that for fields that might be 1-bit wide
+ *
+ * In practise this is just the ID field, so return uint64_t which is what mm
+ * expects
+ *
+ * @param h the vc_handle
+ * @param width the expected width of the bitvector
+ * @return uint64_t the bitvector encoded as uint64_t
+ */
+uint64_t getScalarOrVector(const vc_handle &h, int width) {
+  assert(width >= 1 && width <= 64);
+  return (width == 1) ? vc_getScalar(h) : vc_4stVectorRef(h)->d;
+}
+
+/**
+ * @brief Put the LSBs of @value into a vc_handle that may be a vector or
+ * scalar.
+ *
+ * @param h the vc_handle
+ * @param value a uint64_t whose LSBs contain a bitvector to drive onto the
+ * handle
+ * @param width the width of the bitvector
+ */
+void putScalarOrVector(const vc_handle &h, uint64_t value, int width) {
+  assert(width >= 1 && width <= 64);
+  if (width == 1) {
+    vc_putScalar(h, value & 1);
+  } else {
+    vec32 md[sizeof(uint64_t) / sizeof(uint32_t)];
+    md[0].c = 0;
+    md[0].d = (uint32_t)value;
+    md[1].c = 0;
+    md[1].d = (uint32_t)(value >> 32);
+    vc_put4stVector(h, md);
+  }
+}
+
 extern "C" {
 void tick(vc_handle reset,
           vc_handle fin,
@@ -265,11 +307,11 @@ void tick(vc_handle reset,
                                vc_getScalar(ctrl_ar_ready),
                                vc_getScalar(ctrl_aw_ready),
                                vc_getScalar(ctrl_w_ready),
-                               vc_4stVectorRef(ctrl_r_bits_id)->d,
+                               getScalarOrVector(ctrl_r_bits_id, CTRL_ID_BITS),
                                ctrl_r_data,
                                vc_getScalar(ctrl_r_bits_last),
                                vc_getScalar(ctrl_r_valid),
-                               vc_4stVectorRef(ctrl_b_bits_id)->d,
+                               getScalarOrVector(ctrl_b_bits_id, CTRL_ID_BITS),
                                vc_getScalar(ctrl_b_valid));
 
 #ifdef DMA_PRESENT
@@ -304,26 +346,27 @@ void tick(vc_handle reset,
           vc_4stVectorRef(fmaxi4_w_bits_strb)[i].d;
     }
 
-    simif_emul_t::cpu_mem->tick(vcs_rst,
-                                vc_getScalar(fmaxi4_ar_valid),
-                                vc_4stVectorRef(fmaxi4_ar_bits_addr)->d,
-                                vc_4stVectorRef(fmaxi4_ar_bits_id)->d,
-                                vc_4stVectorRef(fmaxi4_ar_bits_size)->d,
-                                vc_4stVectorRef(fmaxi4_ar_bits_len)->d,
+    simif_emul_t::cpu_mem->tick(
+        vcs_rst,
+        vc_getScalar(fmaxi4_ar_valid),
+        vc_4stVectorRef(fmaxi4_ar_bits_addr)->d,
+        getScalarOrVector(fmaxi4_ar_bits_id, FPGA_MANAGED_AXI4_ID_BITS),
+        vc_4stVectorRef(fmaxi4_ar_bits_size)->d,
+        vc_4stVectorRef(fmaxi4_ar_bits_len)->d,
 
-                                vc_getScalar(fmaxi4_aw_valid),
-                                vc_4stVectorRef(fmaxi4_aw_bits_addr)->d,
-                                vc_4stVectorRef(fmaxi4_aw_bits_id)->d,
-                                vc_4stVectorRef(fmaxi4_aw_bits_size)->d,
-                                vc_4stVectorRef(fmaxi4_aw_bits_len)->d,
+        vc_getScalar(fmaxi4_aw_valid),
+        vc_4stVectorRef(fmaxi4_aw_bits_addr)->d,
+        getScalarOrVector(fmaxi4_aw_bits_id, FPGA_MANAGED_AXI4_ID_BITS),
+        vc_4stVectorRef(fmaxi4_aw_bits_size)->d,
+        vc_4stVectorRef(fmaxi4_aw_bits_len)->d,
 
-                                vc_getScalar(fmaxi4_w_valid),
-                                fmaxi4_w_strb,
-                                fmaxi4_w_data,
-                                vc_getScalar(fmaxi4_w_bits_last),
+        vc_getScalar(fmaxi4_w_valid),
+        fmaxi4_w_strb,
+        fmaxi4_w_data,
+        vc_getScalar(fmaxi4_w_bits_last),
 
-                                vc_getScalar(fmaxi4_r_ready),
-                                vc_getScalar(fmaxi4_b_ready));
+        vc_getScalar(fmaxi4_r_ready),
+        vc_getScalar(fmaxi4_b_ready));
 #endif // FPGA_MANAGED_AXI4_PRESENT
 
 #define MEMORY_CHANNEL_TICK(IDX)                                               \
@@ -378,9 +421,6 @@ void tick(vc_handle reset,
 
     vec32 md[CTRL_DATA_SIZE];
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->aw_id();
-    vc_put4stVector(ctrl_aw_bits_id, md);
-    md[0].c = 0;
     md[0].d = simif_emul_t::master->aw_addr();
     vc_put4stVector(ctrl_aw_bits_addr, md);
     md[0].c = 0;
@@ -389,9 +429,6 @@ void tick(vc_handle reset,
     md[0].c = 0;
     md[0].d = simif_emul_t::master->aw_len();
     vc_put4stVector(ctrl_aw_bits_len, md);
-    md[0].c = 0;
-    md[0].d = simif_emul_t::master->ar_id();
-    vc_put4stVector(ctrl_ar_bits_id, md);
     md[0].c = 0;
     md[0].d = simif_emul_t::master->ar_addr();
     vc_put4stVector(ctrl_ar_bits_addr, md);
@@ -410,6 +447,11 @@ void tick(vc_handle reset,
       md[i].d = ((uint32_t *)simif_emul_t::master->w_data())[i];
     }
     vc_put4stVector(ctrl_w_bits_data, md);
+
+    putScalarOrVector(
+        ctrl_aw_bits_id, simif_emul_t::master->aw_id(), CTRL_ID_BITS);
+    putScalarOrVector(
+        ctrl_ar_bits_id, simif_emul_t::master->ar_id(), CTRL_ID_BITS);
 
 #ifdef DMA_PRESENT
     vc_putScalar(dma_aw_valid, simif_emul_t::dma->aw_valid());
@@ -473,14 +515,8 @@ void tick(vc_handle reset,
 
     vec32 fmaxi4d[FPGA_MANAGED_AXI4_DATA_SIZE];
     fmaxi4d[0].c = 0;
-    fmaxi4d[0].d = simif_emul_t::cpu_mem->b_id();
-    vc_put4stVector(fmaxi4_b_bits_id, fmaxi4d);
-    fmaxi4d[0].c = 0;
     fmaxi4d[0].d = simif_emul_t::cpu_mem->b_resp();
     vc_put4stVector(fmaxi4_b_bits_resp, fmaxi4d);
-    fmaxi4d[0].c = 0;
-    fmaxi4d[0].d = simif_emul_t::cpu_mem->r_id();
-    vc_put4stVector(fmaxi4_r_bits_id, fmaxi4d);
     fmaxi4d[0].c = 0;
     fmaxi4d[0].d = simif_emul_t::cpu_mem->r_resp();
     vc_put4stVector(fmaxi4_r_bits_resp, fmaxi4d);
@@ -490,6 +526,13 @@ void tick(vc_handle reset,
       fmaxi4d[i].d = ((uint32_t *)simif_emul_t::cpu_mem->r_data())[i];
     }
     vc_put4stVector(fmaxi4_r_bits_data, fmaxi4d);
+
+    putScalarOrVector(fmaxi4_b_bits_id,
+                      simif_emul_t::cpu_mem->b_id(),
+                      FPGA_MANAGED_AXI4_ID_BITS);
+    putScalarOrVector(fmaxi4_r_bits_id,
+                      simif_emul_t::cpu_mem->r_id(),
+                      FPGA_MANAGED_AXI4_ID_BITS);
 #endif // FPGA_MANAGED_AXI4_PRESENT
 
 #define MEMORY_CHANNEL_PROP(IDX)                                               \
