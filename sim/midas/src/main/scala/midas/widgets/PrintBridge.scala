@@ -11,8 +11,6 @@ import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-import midas.core.{DMANastiKey}
-
 class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
     case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)

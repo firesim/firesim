@@ -9,7 +9,7 @@ import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.{LazyModule, LazyRawModuleImp}
 import freechips.rocketchip.util.HeterogeneousBag
 
-import midas.core.{DMANastiKey, HostMemChannelKey}
+import midas.core.HostMemChannelKey
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.platform.xilinx._
@@ -85,14 +85,14 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     host_mem_cdc.io.m_axi_aclk    := ap_clk
     host_mem_cdc.io.m_axi_aresetn := ap_rst_n
 
-    top.module.fmaxi4.map { axi4 =>
+    top.module.fpga_managed_axi4.map { axi4 =>
       axi4.ar.ready := false.B
       axi4.aw.ready := false.B
-      axi4. w.ready := false.B
-      axi4. r <> DontCare
-      axi4. b <> DontCare
-      axi4. r.valid := false.B
-      axi4. b.valid := false.B
+      axi4.w.ready  := false.B
+      axi4.r        <> DontCare
+      axi4.b        <> DontCare
+      axi4.r.valid  := false.B
+      axi4.b.valid  := false.B
     }
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
