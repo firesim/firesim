@@ -17,8 +17,8 @@ class QoRShim(implicit val p: Parameters) extends Module {
   val modules = p(QoRTargets)(p)
   val scanOuts = modules.map({ module =>
     val ports = module.getPorts.flatMap({
-      case chisel3.internal.firrtl.Port(id: Clock, _) => None
-      case chisel3.internal.firrtl.Port(id, _) => Some(id)
+      case chisel3.internal.firrtl.Port(id: Clock, _, _) => None
+      case chisel3.internal.firrtl.Port(id, _, _) => Some(id)
     })
     ScanRegister(ports, io.scanEnable, io.scanIn)
   })
