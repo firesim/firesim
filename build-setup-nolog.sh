@@ -175,23 +175,24 @@ if [ "$IS_LIBRARY" = false ]; then
       echo "firesim-dir: '../../../../'" > $marshal_cfg
     fi
     env_append "export FIRESIM_STANDALONE=1"
-else
-    env_append "source $target_chipyard_dir/env.sh"
-fi
 
-# FireMarshal Setup
-if [ "$IS_LIBRARY" = true ]; then
-    target_chipyard_dir="$RDIR/../.."
-
-    # setup marshal symlink
-    ln -sf ../../../software/firemarshal $RDIR/sw/firesim-software
-else
+    # FireMarshal setup
     target_chipyard_dir="$RDIR/target-design/chipyard"
 
     # setup marshal symlink
     ln -sf ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
 
     env_append "export PATH=$RDIR/sw/firesim-software:\$PATH"
+
+else
+    # FireMarshal setup
+    target_chipyard_dir="$RDIR/../.."
+
+    # setup marshal symlink
+    ln -sf ../../../software/firemarshal $RDIR/sw/firesim-software
+
+    # Source CY env.sh in library-mode
+    env_append "source $target_chipyard_dir/env.sh"
 fi
 
 cd "$RDIR"
