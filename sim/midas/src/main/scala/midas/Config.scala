@@ -80,9 +80,9 @@ class WithoutTLMonitors extends freechips.rocketchip.subsystem.WithoutTLMonitors
 class SimConfig extends Config (new Config((site, here, up) => {
   case SynthAsserts     => false
   case SynthPrints      => false
-  case DMANastiKey      => NastiParameters(512, 64, 6)
   case AXIDebugPrint    => false
-
+  // TODO remove
+  case HasDMAChannel    => site(CPUManagedAXI4Key).nonEmpty
   // Remove once AXI4 port is complete
   case MemNastiKey      => {
     NastiParameters(
@@ -96,6 +96,11 @@ class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
   case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+  case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
+    addrBits = 64,
+    dataBits = 512,
+    idBits = 6,
+  ))
   case FPGAManagedAXI4Key   => None
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
   case HostMemChannelKey => HostMemChannelParams(
@@ -107,7 +112,7 @@ class F1Config extends Config(new Config((site, here, up) => {
 
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
-  case HasDMAChannel  => false
+  case CPUManagedAXI4Key => None
   case FPGAManagedAXI4Key   =>
     val dataBits = 512
     Some(FPGAManagedAXI4Params(
@@ -118,7 +123,7 @@ class VitisConfig extends Config(new Config((site, here, up) => {
     dataBits = dataBits,
     // This was chosen to match the AXI4 recommendations and could change.
     idBits = 4,
-    // Don't support narrow reads/writes, and cap at a page per the AXI4 spec
+    // Don't support narrow reads/writes, and cap at a page per the AXI5 spec
     writeTransferSizes = TransferSizes(dataBits / 8, 4096),
     readTransferSizes  = TransferSizes(dataBits / 8, 4096)
   ))

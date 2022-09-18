@@ -28,7 +28,7 @@ import scala.collection.mutable
 /** CPU-managed AXI4, aka "pcis" on EC2 F1. Used by the CPU to do DMA into fabric-controlled memories.
   *  This could include in-fabric RAMs/FIFOs (for bridge streams) or (in the future) FPGA-attached DRAM channels.
   */
-case object DMANastiKey extends Field[NastiParameters]
+case object CPUManagedAXI4Key extends Field[Option[CPUManagedAXI4Params]]
 
 /** FPGA-managed AXI4, aka "pcim" on F1. Used by the fabric to do DMA into
   * the host-CPU's memory. Used to implement bridge streams on platforms that lack a CPU-managed AXI4 interface.
@@ -110,7 +110,20 @@ case class FPGAManagedAXI4Params(
   )
 }
 
-// Platform agnostic wrapper of the simulation models for FPGA
+case class CPUManagedAXI4Params(
+    addrBits: Int,
+    dataBits: Int,
+    idBits: Int,
+    maxFlight: Option[Int] = None,
+  ) {
+  def axi4BundleParams = AXI4BundleParameters(
+    addrBits = addrBits,
+    dataBits = dataBits,
+    idBits = idBits,
+  )
+}
+
+// Platform-agnostic wrapper of the simulation models for FPGA
 class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperConfig with HasWidgets {
   require(p(HostMemNumChannels) <= 4, "Midas-level simulation harnesses support up to 4 channels")
   require(p(CtrlNastiKey).dataBits == 32,
@@ -266,37 +279,30 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
     StreamEngineParameters(toCPUStreamParams.toSeq, fromCPUStreamParams.toSeq), p)
   )
 
-  require(streamingEngine.fmaxi4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
+  require(streamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
     "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform."
   )
-  require(streamingEngine.pcisNodeOpt.isEmpty || p(HasDMAChannel),
+  require(streamingEngine.cpuManagedAXI4NodeOpt.isEmpty || p(CPUManagedAXI4Key).nonEmpty,
     "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform."
   )
 
-  val pcisAXI4BundleParams = AXI4BundleParameters(
-    addrBits = p(DMANastiKey).addrBits,
-    dataBits = p(DMANastiKey).dataBits,
-    idBits   = p(DMANastiKey).idBits)  // Dubious...
-
-  val pcisNodeTuple = if (p(HasDMAChannel)) {
+  val cpuManagedAXI4NodeTuple =  p(CPUManagedAXI4Key).map { params =>
     val node = AXI4MasterNode(Seq(AXI4MasterPortParameters(
       masters = Seq(AXI4MasterParameters(
-          name       = "cpu-mastered-axi4",
-          id         = IdRange(0, 1 << p(DMANastiKey).idBits),
+          name       = "cpu-managed-axi4",
+          id         = IdRange(0, 1 << params.idBits),
           aligned    = false,
-          maxFlight  = None, // None = infinite, else is a per-ID cap
+          maxFlight  = params.maxFlight, // None = infinite, else is a per-ID cap
         ))
       )
     ))
-    streamingEngine.pcisNodeOpt.foreach {
+    streamingEngine.cpuManagedAXI4NodeOpt.foreach {
       _ := AXI4Buffer() := node
     }
-    Some(node, pcisAXI4BundleParams)
-  } else {
-    None
+    (node, params)
   }
 
-  val fmaxi4NodeTuple: Option[(AXI4SlaveNode, FPGAManagedAXI4Params)] =  p(FPGAManagedAXI4Key).map { params =>
+  val fpga_managed_axi4NodeTuple: Option[(AXI4SlaveNode, FPGAManagedAXI4Params)] =  p(FPGAManagedAXI4Key).map { params =>
     val node = AXI4SlaveNode(
       Seq(AXI4SlavePortParameters(
         slaves = Seq(AXI4SlaveParameters(
@@ -310,7 +316,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperCon
         beatBytes = params.dataBits / 8)
     ))
 
-    streamingEngine.fmaxi4NodeOpt.foreach {
+    streamingEngine.fpgaManagedAXI4NodeOpt.foreach {
       node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := _
     }
     (node, params)
@@ -333,13 +339,14 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
   val ctrl = IO(Flipped(WidgetMMIO()))
   val mem = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
-  val dma  = outer.pcisNodeTuple.map { case (node, params) => 
-    val port = IO(Flipped(AXI4Bundle(params)))
+
+  val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) => 
+    val port = IO(Flipped(AXI4Bundle(params.axi4BundleParams)))
     node.out.head._1 <> port
     port
   }
 
-  val fmaxi4 = outer.fmaxi4NodeTuple.map { case (node, params) =>
+  val fpga_managed_axi4 = outer.fpga_managed_axi4NodeTuple.map { case (node, params) =>
     val port = IO(AXI4Bundle(params.axi4BundleParams))
     port <> node.in.head._1
     port
@@ -347,8 +354,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // Hack: Don't touch the ports so that we can use FPGATop as top-level in ML simulation
   dontTouch(ctrl)
   dontTouch(mem)
-  dma.foreach(dontTouch(_))
-  fmaxi4.foreach(dontTouch(_))
+  cpu_managed_axi4.foreach(dontTouch(_))
+  fpga_managed_axi4.foreach(dontTouch(_))
 
   (mem zip outer.memAXI4Nodes.map(_.in.head)).foreach { case (io, (bundle, _)) =>
     require(bundle.params.idBits <= p(HostMemChannelKey).idBits,
@@ -414,18 +421,18 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "MEM_LEN_BITS"   -> AXI4Parameters.lenBits,
     "MEM_RESP_BITS"  -> AXI4Parameters.respBits,
     // Address width of the aggregated host-DRAM space
-    "DMA_ID_BITS"    -> dma.map(_.params.idBits)      .getOrElse(0).toLong,
-    "DMA_ADDR_BITS"  -> dma.map(_.params.addrBits)    .getOrElse(0).toLong,
-    "DMA_DATA_BITS"  -> dma.map(_.params.dataBits)    .getOrElse(0).toLong,
-    "DMA_STRB_BITS"  -> dma.map(_.params.dataBits / 8).getOrElse(0).toLong,
-    "DMA_BEAT_BYTES" -> dma.map(_.params.dataBits / 8).getOrElse(0).toLong,
+    "CPU_MANAGED_AXI4_ID_BITS"    -> cpu_managed_axi4.map(_.params.idBits)      .getOrElse(0).toLong,
+    "CPU_MANAGED_AXI4_ADDR_BITS"  -> cpu_managed_axi4.map(_.params.addrBits)    .getOrElse(0).toLong,
+    "CPU_MANAGED_AXI4_DATA_BITS"  -> cpu_managed_axi4.map(_.params.dataBits)    .getOrElse(0).toLong,
+    "CPU_MANAGED_AXI4_STRB_BITS"  -> cpu_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
+    "CPU_MANAGED_AXI4_BEAT_BYTES" -> cpu_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
     // Widths of the AXI4 FPGA to CPU channel
-    "FPGA_MANAGED_AXI4_ID_BITS"    -> fmaxi4.map(_.params.idBits)  .getOrElse(0).toLong,
-    "FPGA_MANAGED_AXI4_ADDR_BITS"  -> fmaxi4.map(_.params.addrBits).getOrElse(0).toLong,
-    "FPGA_MANAGED_AXI4_DATA_BITS"  -> fmaxi4.map(_.params.dataBits).getOrElse(0).toLong,
+    "FPGA_MANAGED_AXI4_ID_BITS"    -> fpga_managed_axi4.map(_.params.idBits)  .getOrElse(0).toLong,
+    "FPGA_MANAGED_AXI4_ADDR_BITS"  -> fpga_managed_axi4.map(_.params.addrBits).getOrElse(0).toLong,
+    "FPGA_MANAGED_AXI4_DATA_BITS"  -> fpga_managed_axi4.map(_.params.dataBits).getOrElse(0).toLong,
   ) ++:
-   dma.map { _ => "DMA_PRESENT" -> 1.toLong } ++:
-   fmaxi4.map { _ => "FPGA_MANAGED_AXI4_PRESENT" -> 1.toLong } ++:
+   cpu_managed_axi4.map { _ => "CPU_MANAGED_AXI4_PRESENT" -> 1.toLong } ++:
+   fpga_managed_axi4.map { _ => "FPGA_MANAGED_AXI4_PRESENT" -> 1.toLong } ++:
    Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
   def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)
 }

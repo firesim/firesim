@@ -37,7 +37,8 @@ public:
    * These have external linkage to enable VCS to easily access them.
    */
   inline static mmio_t *master = new mmio_t(CTRL_BEAT_BYTES);
-  inline static mmio_t *dma = new mmio_t(DMA_BEAT_BYTES);
+  inline static mmio_t *cpu_managed_axi4 =
+      new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
   /**
    * @brief Host DRAM models shared across the RTL simulator and driver
    * contexts.
@@ -60,15 +61,15 @@ public:
 private:
   // The maximum number of cycles the RTL simulator can advance before
   // switching back to the driver process. +fuzz-host-timings sets this to a
-  // value > 1, introducing random delays in MMIO (read, write) and DMA (push,
-  // pull) requests
+  // value > 1, introducing random delays in axi4 tranactions that MMIO and
+  // bridge streams.
   int maximum_host_delay = 1;
   void advance_target();
   void wait_read(mmio_t *mmio, void *data);
   void wait_write(mmio_t *mmio);
 
-  size_t pcis_write(size_t addr, char *data, size_t size);
-  size_t pcis_read(size_t addr, char *data, size_t size);
+  size_t cpu_managed_axi4_write(size_t addr, char *data, size_t size);
+  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size);
 
   // Writes directly into the host DRAM models to initialize them.
   void load_mems(const char *fname);
