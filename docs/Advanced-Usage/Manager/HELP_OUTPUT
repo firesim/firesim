@@ -68,8 +68,9 @@ optional arguments:
                         when specifying these old-style terminatesome flags
                         and this new style flag at the same time is also
                         undefined.
-  -q, --forceterminate  For terminaterunfarm, force termination without
-                        prompting user for confirmation. Defaults to False
+  -q, --forceterminate  For terminaterunfarm and buildbitstream, force
+                        termination without prompting user for confirmation.
+                        Defaults to False
   -t LAUNCHTIME, --launchtime LAUNCHTIME
                         Give the "Y-m-d--H-M-S" prefix of results-build
                         directory. Useful for tar2afi when finishing a partial

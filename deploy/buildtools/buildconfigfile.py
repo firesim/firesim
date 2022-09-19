@@ -32,6 +32,7 @@ class BuildConfigFile:
         build_farm: Build farm used to host builds.
     """
     args: argparse.Namespace
+    forceterminate: bool
     agfistoshare: List[str]
     acctids_to_sharewith: List[str]
     hwdb: RuntimeHWDB
@@ -51,6 +52,8 @@ class BuildConfigFile:
             launch_time = strftime("%Y-%m-%d--%H-%M-%S", gmtime())
 
         self.args = args
+
+        self.forceterminate = args.forceterminate
 
         global_build_config_file = None
         with open(args.buildconfigfile, "r") as yaml_file:
