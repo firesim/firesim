@@ -73,12 +73,13 @@ case class HostMemChannelParams(
 
 
 // Platform agnostic wrapper of the simulation models for FPGA
-class FPGATop(implicit p: Parameters) extends LazyModule with UnpackedWrapperConfig with HasWidgets {
+class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   require(p(HostMemNumChannels) <= 4, "Midas-level simulation harnesses support up to 4 channels")
   require(p(CtrlNastiKey).dataBits == 32,
     "Simulation control bus must be 32-bits wide per AXI4-lite specification")
-  lazy val config = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
+
+  val bridgeAnnos = p(SimWrapperKey).annotations collect { case ba: BridgeIOAnnotation => ba }
   val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = 
     ListMap((bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget))):_*)
 

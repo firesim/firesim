@@ -2,7 +2,7 @@
 
 package midas.widgets
 
-import midas.core.{SimWrapperChannels, SimUtils}
+import midas.core.{TargetChannelIO, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel}
 
@@ -145,8 +145,8 @@ class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with Cloc
   val clocks = new DecoupledIO(Vec(numClocks, Bool()))
 
   def allChannelNames = Seq(clockChannelName)
-  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit =
-    simIo.clockElement._2 <> clocks
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit =
+    targetIO.clockElement._2 <> clocks
   def generateAnnotations(): Unit = {}
 }
 
