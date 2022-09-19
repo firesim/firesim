@@ -90,7 +90,7 @@ if {$WNS < 0 || $WHS < 0} {
             set WNS [get_property STATS.WNS [get_runs ${impl_run}]]
             set WHS [get_property STATS.WHS [get_runs ${impl_run}]]
 
-            if ($WNS >= 0 && $WHS >= 0) {
+            if {$WNS >= 0 && $WHS >= 0} {
                 break
             }
         }
