@@ -31,7 +31,7 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
 
   val (fuzzers, models) = fuzzerModelPairs.unzip
   val xbar = AXI4Xbar()
-  val MemoryPortParams(portParams, nMemoryChannels) = p(ExtMem).get
+  val MemoryPortParams(portParams, nMemoryChannels, _) = p(ExtMem).get
   val slave  = AXI4SlaveNode(Seq.tabulate(nMemoryChannels){ i =>
     val base = AddressSet.misaligned(0, (BigInt(1) << p(AddrBits)))
     val filter = AddressSet(i * p(MaxTransferSize), ~((nMemoryChannels-1) * p(MaxTransferSize)))
