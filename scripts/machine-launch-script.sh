@@ -221,7 +221,7 @@ set -o pipefail
         git  \
         screen \
         argcomplete==1.12.3 \
-        conda-lock \
+        conda-lock>1 \
         expect \
         python \
         boto3==1.20.21 \
