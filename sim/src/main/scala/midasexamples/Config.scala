@@ -22,7 +22,6 @@ class BaseMidasExamplesConfig extends Config(
     case EnableAutoILA => true
     case SynthPrints => true
     case EnableAutoCounter => true
-
   })
 )
 class DefaultF1Config extends Config(
