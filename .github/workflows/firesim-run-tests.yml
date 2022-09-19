@@ -269,6 +269,10 @@ jobs:
     env:
       TERM: xterm-256-color
     steps:
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v2
       - name: Run simple linux poweroff test w/ vitis
         run: .github/scripts/run-linux-poweroff-vitis.py
