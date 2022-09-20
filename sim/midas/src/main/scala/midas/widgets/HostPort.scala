@@ -46,66 +46,6 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
     allTargetClocks.head
   }
 
-  private def getRVChannelNames(channels: Seq[SimUtils.RVChTuple]): Seq[String] =
-    channels.flatMap({ channel =>
-      val (fwd, rev) =  SimUtils.rvChannelNamePair(channel)
-      Seq(fwd, rev)
-    })
-
-  // Create a wire channel annotation
-  protected def generateWireChannelFCCAs(channels: Seq[(Data, String)], bridgeSunk: Boolean = false, latency: Int = 0): Unit = {
-    for ((field, chName) <- channels) {
-      annotate(new ChiselAnnotation { def toFirrtl =
-        if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.source(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
-        } else {
-          FAMEChannelConnectionAnnotation.sink(chName, PipeChannel(latency), Some(getClock.toNamed.toTarget), Seq(field.toNamed.toTarget))
-        }
-      })
-    }
-  }
-
-  // Create Ready Valid channel annotations assuming bridge-sourced directions
-  protected def generateRVChannelFCCAs(channels: Seq[(ReadyValidIO[Data], String)], bridgeSunk: Boolean = false): Unit = {
-    for ((field, chName) <- channels) yield {
-      // Generate the forward channel annotation
-      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
-      annotate(new ChiselAnnotation { def toFirrtl = {
-        val clockTarget = Some(getClock.toNamed.toTarget)
-        val validTarget = field.valid.toNamed.toTarget
-        val readyTarget = field.ready.toNamed.toTarget
-        val leafTargets = Seq(validTarget) ++ SimUtils.lowerAggregateIntoLeafTargets(field.bits)
-        // Bridge is the sink; it applies target backpressure
-        if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.source(
-            fwdChName,
-            DecoupledForwardChannel.source(validTarget, readyTarget),
-            clockTarget,
-            leafTargets
-          )
-        } else {
-        // Bridge is the source; it asserts target-valid and receives target-backpressure
-          FAMEChannelConnectionAnnotation.sink(
-            fwdChName,
-            DecoupledForwardChannel.sink(validTarget, readyTarget),
-            clockTarget,
-            leafTargets
-          )
-        }
-      }})
-
-      annotate(new ChiselAnnotation { def toFirrtl = {
-        val clockTarget = Some(getClock.toNamed.toTarget)
-        val readyTarget = Seq(field.ready.toNamed.toTarget)
-        if (bridgeSunk) {
-          FAMEChannelConnectionAnnotation.sink(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
-        } else {
-          FAMEChannelConnectionAnnotation.source(revChName, DecoupledReverseChannel, clockTarget, readyTarget)
-        }
-      }})
-    }
-  }
-
   // These are lazy because parsePorts needs a directioned gen; these can be called once 
   // this Record has been bound to Hardware
   //private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
@@ -180,16 +120,53 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
     SimUtils.findClocks(hBits).map(_ := false.B.asClock)
   }
 
-  def generateAnnotations(): Unit = {
-    generateWireChannelFCCAs(inputWireChannels, bridgeSunk = true, latency = 1)
-    generateWireChannelFCCAs(outputWireChannels, bridgeSunk = false, latency = 1)
-    generateRVChannelFCCAs(inputRVChannels, bridgeSunk = true)
-    generateRVChannelFCCAs(outputRVChannels, bridgeSunk = false)
-  }
-  def allChannelNames: Seq[String] = ins.unzip._2 ++ outs.unzip._2 ++
-  (rvIns.unzip._2 ++ rvOuts.unzip._2).flatMap { ch =>
-    val (fwd, rev) = SimUtils.rvChannelNamePair(ch)
-    Seq(fwd, rev)
+  def bridgeChannels: Seq[BridgeChannel] = {
+    val clockRT = getClock.toNamed.toTarget
+
+    inputWireChannels.map({ case (field, chName) =>
+      PipeBridgeChannel(
+          chName,
+          clock = clockRT,
+          sinks = Seq(),
+          sources = Seq(field.toNamed.toTarget),
+          latency = 1
+      )
+    }) ++
+    outputWireChannels.map({ case (field, chName) =>
+      PipeBridgeChannel(
+          chName,
+          clock = clockRT,
+          sinks = Seq(field.toNamed.toTarget),
+          sources = Seq(),
+          latency = 1
+      )
+    }) ++
+    rvIns.map({ case (field, chName) =>
+      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
+      val validTarget = field.valid.toNamed.toTarget
+      ReadyValidBridgeChannel(
+        fwdChName,
+        revChName,
+        clock = getClock.toNamed.toTarget,
+        sinks = Seq(),
+        sources = Seq(validTarget) ++ SimUtils.lowerAggregateIntoLeafTargets(field.bits),
+        valid = validTarget,
+        ready = field.ready.toNamed.toTarget
+      )
+    }) ++
+    rvOuts.map({ case (field, chName) =>
+      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
+      val validTarget = field.valid.toNamed.toTarget
+      ReadyValidBridgeChannel(
+        fwdChName,
+        revChName,
+        clock = getClock.toNamed.toTarget,
+        sinks = Seq(validTarget) ++ SimUtils.lowerAggregateIntoLeafTargets(field.bits),
+        sources = Seq(),
+        valid = validTarget,
+        ready = field.ready.toNamed.toTarget
+      )
+    })
   }
 }
 

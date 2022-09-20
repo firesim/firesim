@@ -2,8 +2,10 @@
 
 package midas.passes
 
-import midas.widgets.{BridgeAnnotation, ClockBridgeModule}
-import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation}
+import midas.widgets.{BridgeAnnotation, ClockBridgeModule, FindScaledPeriodGCD}
+import midas.widgets.{PipeBridgeChannel, ClockBridgeChannel, ReadyValidBridgeChannel}
+import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation, RTRenamer}
+import midas.passes.fame.{PipeChannel, TargetClockChannel, DecoupledReverseChannel, DecoupledForwardChannel}
 
 import firrtl._
 import firrtl.ir._
@@ -84,16 +86,13 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
     val topModule = c.modules.find(_.name == c.main).get
     // Collect all bridge modules
     val bridgeAnnos = mutable.ArrayBuffer[BridgeAnnotation]()
-    val fcaAnnos = mutable.ArrayBuffer[FAMEChannelConnectionAnnotation]()
 
     val otherAnnos = state.annotations.flatMap({
       case anno: BridgeAnnotation => bridgeAnnos += anno; None
-      case fca: FAMEChannelConnectionAnnotation => fcaAnnos += fca; None
       case otherAnno => Some(otherAnno)
     })
 
     val bridgeAnnoMap = bridgeAnnos.map(anno => anno.target.module -> anno ).toMap
-    val fcaMap = fcaAnnos.groupBy(_.getBridgeModule).toMap
 
     val portInstPairs = new mutable.ArrayBuffer[(String, String)]()
     val instList      = new mutable.ArrayBuffer[(String, String)]()
@@ -110,9 +109,68 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
       s"Multiple ClockBridge instances found: ${clockBridgeInsts.mkString("\n")} ${bridgeInstMessage}")
 
     val ioAnnotations = portInstPairs.flatMap({ case (port, inst) =>
-      val updatedBridgeAnno = bridgeAnnoMap(instMap(inst)).toIOAnnotation(port)
-      val updatedFCAAnnos = fcaMap(instMap(inst)).map(_.moveFromBridge(port))
-      Seq(updatedBridgeAnno) ++ updatedFCAAnnos
+      val bridge = bridgeAnnoMap(instMap(inst))
+      val updatedBridgeAnno = bridge.toIOAnnotation(port)
+
+      def buildRenamer(rTs: Seq[ReferenceTarget]) = {
+        def updateRT(rT: ReferenceTarget): ReferenceTarget =
+          ModuleTarget(rT.circuit, rT.circuit).ref(port).field(rT.ref)
+        RTRenamer.exact(RenameMap(Map((rTs.map(rT => rT -> Seq(updateRT(rT)))):_*)))
+      }
+
+      val bridgeFCCAAnnos : AnnotationSeq = bridge.bridgeChannels.flatMap({
+        case PipeBridgeChannel(name, clock, sinks, sources, latency) => {
+          val renamer = buildRenamer(sinks ++ sources ++ Seq(clock))
+
+          Seq(FAMEChannelConnectionAnnotation(
+            s"${port}_${name}",
+            PipeChannel(latency),
+            Some(renamer(clock)),
+            if (sources.isEmpty) { None } else { Some(sources.map(renamer(_))) },
+            if (sinks.isEmpty) { None } else { Some(sinks.map(renamer(_))) }
+          ))
+        }
+        case ClockBridgeChannel(name, sinks, clocks, clockMFMRs) => {
+          val renamer = buildRenamer(sinks)
+
+          Seq(FAMEChannelConnectionAnnotation(
+            s"${port}_${name}",
+            channelInfo = TargetClockChannel(clocks, clockMFMRs),
+            clock = None,
+            sinks = Some(sinks.map(renamer(_))),
+            sources = None
+          ))
+        }
+        case ReadyValidBridgeChannel(fwdName, revName, clock, sinks, sources, valid, ready) => {
+          val renamer = buildRenamer(sinks ++ sources ++ Seq(clock, valid, ready))
+
+          val clockRT = renamer(clock)
+          val validRT = renamer(valid)
+          val readyRT = renamer(ready)
+
+          Seq(
+            FAMEChannelConnectionAnnotation(
+                s"${port}_${fwdName}",
+                if (sinks.isEmpty) {
+                  DecoupledForwardChannel.source(validRT, readyRT)
+                } else {
+                  DecoupledForwardChannel.sink(validRT, readyRT)
+                },
+                Some(clockRT),
+                if (sources.isEmpty) { None } else { Some(sources.map(renamer(_))) },
+                if (sinks.isEmpty) { None } else { Some(sinks.map(renamer(_))) }
+            ),
+            FAMEChannelConnectionAnnotation(
+                s"${port}_${revName}",
+                DecoupledReverseChannel,
+                Some(clockRT),
+                if (sources.isEmpty) { Some(Seq(readyRT)) } else { None },
+                if (sinks.isEmpty) { Some(Seq(readyRT)) } else { None }
+            )
+          )
+        }
+      })
+      Seq(updatedBridgeAnno) ++ bridgeFCCAAnnos
     })
 
     state.copy(annotations = otherAnnos ++ ioAnnotations)

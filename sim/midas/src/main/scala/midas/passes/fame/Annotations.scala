@@ -65,19 +65,6 @@ case class FAMEChannelConnectionAnnotation(
 
   def getBridgeModule(): String = sources.getOrElse(sinks.get).head.module
 
-  def moveFromBridge(portName: String): FAMEChannelConnectionAnnotation = {
-    def updateRT(rT: ReferenceTarget): ReferenceTarget = ModuleTarget(rT.circuit, rT.circuit).ref(portName).field(rT.ref)
-
-    require(sources == None || sinks == None, "Bridge-connected channels cannot loopback")
-    val rTs = sources.getOrElse(sinks.get) ++ clock ++ (channelInfo match {
-      case i: DecoupledForwardChannel => Seq(i.readySink.getOrElse(i.readySource.get))
-      case other => Seq()
-    })
-
-    val localRenames = RenameMap(Map((rTs.map(rT => rT -> Seq(updateRT(rT)))):_*))
-    copy(globalName = s"${portName}_${globalName}").update(localRenames).head.asInstanceOf[this.type]
-  }
-
   override def getTargets: Seq[ReferenceTarget] = clock ++: (sources.toSeq.flatten ++ sinks.toSeq.flatten)
 }
 

@@ -3,20 +3,83 @@
 package midas.widgets
 
 import chisel3._
+
+import firrtl.{RenameMap}
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, HasSerializationHints}
+import firrtl.annotations.{Annotation, ReferenceTarget, ModuleTarget, HasSerializationHints}
 import freechips.rocketchip.config.Parameters
 
+import midas.passes.fame.{RTRenamer}
 import midas.targetutils.FAMEAnnotation
 
+sealed trait BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel
+}
+
+/**
+  * Descriptor for a pipe channel ending at the bridge.
+  */
+case class PipeBridgeChannel(
+    name: String,
+    clock: ReferenceTarget,
+    sinks: Seq[ReferenceTarget],
+    sources: Seq[ReferenceTarget],
+    latency: Int
+) extends BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel = {
+    val renamer = RTRenamer.exact(renames)
+    PipeBridgeChannel(name, renamer(clock), sinks.map(renamer), sources.map(renamer), latency)
+  }
+}
+
+/**
+  * Descriptor for a clock channel originating from a clock bridge.
+  */
+case class ClockBridgeChannel(
+    name: String,
+    sinks: Seq[ReferenceTarget],
+    clocks: Seq[RationalClock],
+    clockMFMRs: Seq[Int]
+) extends BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel = {
+    val renamer = RTRenamer.exact(renames)
+    ClockBridgeChannel(name, sinks.map(renamer), clocks, clockMFMRs)
+  }
+}
+
+/**
+  * Descriptor for a Ready-Valid channel originating from a bridge.
+  */
+case class ReadyValidBridgeChannel(
+    fwdName: String,
+    revName: String,
+    clock: ReferenceTarget,
+    sinks: Seq[ReferenceTarget],
+    sources: Seq[ReferenceTarget],
+    valid: ReferenceTarget,
+    ready: ReferenceTarget,
+) extends BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel = {
+    val renamer = RTRenamer.exact(renames)
+    ReadyValidBridgeChannel(
+      fwdName,
+      revName,
+      renamer(clock),
+      sinks.map(renamer),
+      sources.map(renamer),
+      renamer(valid),
+      renamer(ready)
+    )
+  }
+}
 
 /**
   * A serializable annotation emitted by Chisel Modules that extend Bridge
   *
   * @param target  The module representing an Bridge. Typically a black box
   *
-  * @param channelNames  A list of channel names that match the globalName emitted in the FCCAs
-  *   associated with this bridge. We use these strings to look up those annotations
+  * @param bridgeChannels  A list of descriptors for the channels attached to the
+  *   bridge. FCCAs are materialized from these descriptors.
   *
   * @param widgetClass  The full class name of the BridgeModule generator
   *
@@ -31,7 +94,7 @@ import midas.targetutils.FAMEAnnotation
 
 case class BridgeAnnotation(
     target: ModuleTarget,
-    channelNames: Seq[String],
+    bridgeChannels: Seq[BridgeChannel],
     widgetClass: String,
     widgetConstructorKey: Option[_ <: AnyRef])
   extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation with HasSerializationHints {
@@ -41,21 +104,32 @@ case class BridgeAnnotation(
     * a ReferenceTarget based one that can be attached to newly created IO on the top-level
     */
   def toIOAnnotation(port: String): BridgeIOAnnotation = {
+    val channelNames = bridgeChannels.flatMap({
+      case ch: PipeBridgeChannel => Seq(ch.name)
+      case ch: ClockBridgeChannel => Seq(ch.name)
+      case ch: ReadyValidBridgeChannel => Seq(ch.fwdName, ch.revName)
+    })
     val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
     BridgeIOAnnotation(target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
       widgetClass = widgetClass,
-      widgetConstructorKey = widgetConstructorKey)
+      widgetConstructorKey = widgetConstructorKey
+    )
   }
 
-  def typeHints() = widgetConstructorKey match {
+  def typeHints() = bridgeChannels.map(_.getClass) ++ (widgetConstructorKey match {
     // If the key has extra type hints too, grab them as well
     case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
     case Some(key) => Seq(key.getClass)
     case None => Seq()
-  }
+  })
 
   def duplicate(n: ModuleTarget) = this.copy(target)
+
+  override def update(renames: RenameMap): Seq[Annotation] = {
+    val renamer = RTRenamer.exact(renames)
+    Seq(BridgeAnnotation(target, bridgeChannels.map(_.update(renames)), widgetClass, widgetConstructorKey))
+  }
 }
 
 /**

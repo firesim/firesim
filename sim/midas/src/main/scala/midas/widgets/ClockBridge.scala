@@ -4,7 +4,7 @@ package midas.widgets
 
 import midas.core.{TargetChannelIO, SimUtils}
 import midas.core.SimUtils.{RVChTuple}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel}
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel, RTRenamer}
 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DensePrefixSum
@@ -12,7 +12,9 @@ import freechips.rocketchip.util.DensePrefixSum
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
-import firrtl.annotations.{ModuleTarget, ReferenceTarget}
+
+import firrtl.{RenameMap}
+import firrtl.annotations.{Annotation, ModuleTarget, ReferenceTarget}
 
 /**
   * Defines a generated clock as a rational multiple of some reference clock. The generated
@@ -87,18 +89,14 @@ class RationalClockBridge(val allClocks: Seq[RationalClock]) extends BlackBox wi
   annotate(new ChiselAnnotation { def toFirrtl =
       BridgeAnnotation(
         target = outer.toTarget,
-        channelNames = Seq(clockChannelName),
+        bridgeChannels = Seq(
+          ClockBridgeChannel(
+            name = clockChannelName,
+            sinks = io.clocks.map(_.toTarget),
+            clocks = allClocks,
+            clockMFMRs)),
         widgetClass = classOf[ClockBridgeModule].getName,
         widgetConstructorKey = Some(ClockParameters(allClocks))
-      )
-  })
-  annotate(new ChiselAnnotation { def toFirrtl =
-      FAMEChannelConnectionAnnotation(
-        clockChannelName,
-        channelInfo = TargetClockChannel(allClocks, clockMFMRs),
-        clock = None, // Clock channels do not have a reference clock
-        sinks = Some(io.clocks.map(_.toTarget)),
-        sources = None
       )
   })
 }
@@ -127,9 +125,11 @@ object RationalClockBridge {
 class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with ClockBridgeConsts {
   val clocks = new DecoupledIO(Vec(numClocks, Bool()))
 
-  def allChannelNames = Seq(clockChannelName)
+  def bridgeChannels = Seq()
+
   def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit =
     targetIO.clockElement._2 <> clocks
+
   def generateAnnotations(): Unit = {}
 }
 
