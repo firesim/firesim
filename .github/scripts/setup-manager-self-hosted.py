@@ -14,7 +14,7 @@ from ci_variables import *
 
 def wait_machine_launch_complete():
     # Catch any exception that occurs so that we can gracefully teardown
-     with settings(warn_only=True):
+    with settings(warn_only=True):
         rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f /machine-launchstatus)").return_code
         if rc != 0:
             run("cat /machine-launchstatus.log")
@@ -22,8 +22,6 @@ def wait_machine_launch_complete():
     # increase file descriptor limit system wide
     sudo("echo '* hard nofile 16384' >> /etc/security/limits.conf")
     sudo("echo '* soft nofile 16384' >> /etc/security/limits.conf")
-
-
 
 def setup_self_hosted_runners():
     """ Installs GHA self-hosted runner machinery on the manager.  """
