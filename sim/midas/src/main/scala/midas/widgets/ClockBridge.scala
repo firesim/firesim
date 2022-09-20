@@ -74,8 +74,8 @@ case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalC
     BridgeIOAnnotation(
       target.copy(module = target.circuit).ref(port),
       channelMapping.toMap,
-      widget = Some((p: Parameters) => new ClockBridgeModule(ClockParameters(clocks))(p))
-    )
+      widgetClass = classOf[ClockBridgeModule].getName,
+      widgetConstructorKey = Some(ClockParameters(clocks)))
   }
 }
 

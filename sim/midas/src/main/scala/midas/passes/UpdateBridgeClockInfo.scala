@@ -23,7 +23,7 @@ object UpdateBridgeClockInfo extends Transform {
       s"Expected exactly one ChannelClockInfoAnnotation. Got: ${infoMaps.size}")
     val infoMap = infoMaps.head
     val annosx =  state.annotations.map({
-      case a@BridgeIOAnnotation(_,_,None,_,_,_) =>
+      case a : BridgeIOAnnotation if a.clockInfo == None =>
         // There will be some cases where this is left unpopulated, i.e., for the clockBridge
         a.copy(clockInfo = infoMap.get(a.channelMapping.values.head))
       case o => o
