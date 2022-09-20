@@ -12,7 +12,7 @@ FireMarshal is a workload generation tool for RISC-V based systems that automate
 
 ## Setup
 
-### ::RECOMMENDED:: Chipyard/FireSim Integration
+### *RECOMMENDED* Chipyard/FireSim Integration
 
 The easiest way to use FireMarshal is to run it via [Chipyard](https://chipyard.readthedocs.io/en/latest/) or [FireSim](https://docs.fires.im/en/latest/).
 However, this is not required.
@@ -46,7 +46,7 @@ conda install -n firemarshal -c ucb-bar riscv-tools
 
 To install Spike, please refer to https://github.com/riscv-software-src/riscv-isa-sim.
 
-Finally, if you are running as a user on a machine without ``sudo`` access it is required for you to install ``guestmount`` for disk manipulation. 
+Finally, if you are running as a user on a machine without ``sudo`` access it is required for you to install ``guestmount`` for disk manipulation.
 You can install this through your default package manager (for ex. ``apt`` or ``yum``).
 
 ## Basic Usage
