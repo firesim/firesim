@@ -19,6 +19,11 @@ def wait_machine_launch_complete():
         if rc != 0:
             run("cat /machine-launchstatus.log")
             raise Exception("machine-launch-script.sh failed to run")
+    # increase file descriptor limit system wide
+    sudo("echo '* hard nofile 16384' >> /etc/security/limits.conf")
+    sudo("echo '* soft nofile 16384' >> /etc/security/limits.conf")
+
+
 
 def setup_self_hosted_runners():
     """ Installs GHA self-hosted runner machinery on the manager.  """
