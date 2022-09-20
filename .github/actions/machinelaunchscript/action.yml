@@ -10,11 +10,5 @@ runs:
         # See https://github.blog/2022-04-12-git-security-vulnerability-announced/
         # and https://github.com/actions/checkout/issues/760 for the workaround
         git config --global --add safe.directory $(pwd)
-        sudo yum -y remove git git224 git224-core ius-release.noarch # remove any older git versions and collateral first
-        # The EC2 developer AMI provides libmpc and the prebuilt toolchain
-        # links against it.  Install it here so we can build-setup.sh --fast
-        # instead of building a toolchain from scratch.
-        sudo yum install -y libmpc
         cd scripts/ && /usr/bin/bash machine-launch-script.sh
-        source /etc/profile.d/conda.sh
       shell: bash
