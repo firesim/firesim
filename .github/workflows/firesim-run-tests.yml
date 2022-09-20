@@ -269,6 +269,8 @@ jobs:
     env:
       TERM: xterm-256-color
     steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
       - name: Delete old checkout
         run: |
           rm -rf ${{ github.workspace }}/* || true
