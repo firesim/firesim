@@ -16,7 +16,7 @@ FireMarshal is a workload generation tool for RISC-V based systems that automate
 
 The easiest way to use FireMarshal is to run it via [Chipyard](https://chipyard.readthedocs.io/en/latest/) or [FireSim](https://docs.fires.im/en/latest/).
 However, this is not required.
-To run FireMarshal independently, follow along from (#standalone-setup).
+To run FireMarshal independently, follow along from the next section (Standalone setup).
 
 ### Standalone Setup
 
