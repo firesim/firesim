@@ -59,8 +59,7 @@ dependencies:
     - findutils
     - lzop
 
-    # current version of buildroot won't build with make 4.3 https://github.com/firesim/FireMarshal/issues/236
-    - make!=4.3
+    - make
     - bash-completion
     - sbt
     - ca-certificates
@@ -85,7 +84,7 @@ dependencies:
     - screen
     - elfutils
     - libdwarf-dev==0.0.0.20190110_28_ga81397fc4 # from ucb-bar channel - using mainline libdwarf-feedstock
-    - conda-lock
+    - conda-lock>=1
     - wget
 
     # clang-format for driver coding style enforcement.

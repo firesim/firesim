@@ -19,7 +19,7 @@ metadata:
   - url: nodefaults
     used_env_vars: []
   content_hash:
-    linux-64: 36f0d20de7a5ada08a2377b11118ad7e0e97b2bdb38dd0fb1373fd391ae014eb
+    linux-64: c3a9fc60e8d92f2a6a9de1c9329425f2561dcb26e445f4148ec0a2cdb94dcf53
   platforms:
   - linux-64
   sources:
@@ -761,16 +761,16 @@ package:
   version: 1.4.18
 - category: main
   dependencies:
-    libgcc-ng: '>=7.3.0'
+    libgcc-ng: '>=7.5.0'
   hash:
-    md5: 17a8703794c6960bc79e9966c1e113ab
-    sha256: 1e29c4ea36409b66719cfce3dd9bb1e6a5b366731a0beffaaa77928e514d54fc
+    md5: 4049ebfd3190b580dffe76daed26155a
+    sha256: 4a5fe7c80bb0de0015328e2d3fc8db1736f528cb1fd53cd0d5527e24269a4f7c
   manager: conda
   name: make
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/make-4.2.1-h14c3975_2004.tar.bz2
-  version: 4.2.1
+  url: https://conda.anaconda.org/conda-forge/linux-64/make-4.3-hd18ef5c_1.tar.bz2
+  version: '4.3'
 - category: main
   dependencies:
     libgcc-ng: '>=10.3.0'
