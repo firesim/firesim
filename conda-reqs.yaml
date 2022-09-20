@@ -1,0 +1,49 @@
+channels:
+    - conda-forge
+    - ucb-bar
+    - nodefaults
+
+# non-standard key used in conda-lock: https://github.com/conda-incubator/conda-lock#platform-specification
+platforms:
+    - linux-64
+
+dependencies:
+    - qemu # from ucb-bar channel - https://github.com/ucb-bar/qemu-feedstock
+    - python>=3.8
+    - rsync
+    - psutil
+    - doit>=0.34
+    - git
+    - gitpython
+    - humanfriendly
+    - e2fsprogs
+    - ctags
+    - bison
+    - flex
+    - expat
+    - make
+    - pyyaml
+    - pip
+    - bc
+    - sphinx
+    - sphinx_rtd_theme
+    - unzip
+    - gcc
+    - gxx
+    - conda-gcc-specs
+    - binutils
+    - sysroot_linux-64>=2.17
+    - patch
+    - which
+    - sed
+    - make
+    - diffutils
+    - bash
+    - gzip
+    - bzip2
+    - perl
+    - tar
+    - file
+    - wget
+    - findutils
+    - lzop

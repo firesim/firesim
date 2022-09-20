@@ -1,88 +1,88 @@
-FireMarshal
-==================================
+# FireMarshal
 
-This tool builds base images for several linux-based distros that work with qemu,
-spike, and firesim.
+FireMarshal is a workload generation tool for RISC-V based systems that automates constructing boot binaries and filesystem images and their evaluation.
 
-This is just a quick primer. To see full documentation, please see the official
-documentation:
-https://firemarshal.readthedocs.io/en/latest/index.html
+## Quick Links
 
-# Requirements
-The easiest way to use Marshal is to run it via Chipyard
-(https://chipyard.readthedocs.io/en/latest/) or FireSim
-(https://docs.fires.im/en/latest/). However, this is not required. To run
-FireMarshal independently, you will need the following dependencies:
+* **Stable Documentation**: https://firemarshal.readthedocs.io/en/latest/index.html
+* **Paper Publication**: https://ieeexplore.ieee.org/document/9408192
+* **Bugs and Feature Requests**: https://github.com/firesim/FireMarshal/issues
+* **General Questions, Help, Discussion**: https://groups.google.com/forum/#!forum/firesim
+* **Want to contribute?**: https://github.com/firesim/FireMarshal/blob/master/CONTRIBUTING.md
 
-## Standard Packages
-``centos-requirements.txt`` is a list of packages for centos7 that are needed by
-marshal. You can install these with:
-```
-cat centos-requirements.txt | sudo xargs yum install -y
-```
+## Setup
 
-``ubuntu-requirements.txt`` is a list of packages for Ubuntu 18.04 that are needed by marshal.
-You can install these with:
-```
-cat ubuntu-requirements.txt | sudo xargs apt-get install -y
-```
+### *RECOMMENDED* Chipyard/FireSim Integration
 
-Package names may be different on other distributions.
+The easiest way to use FireMarshal is to run it via [Chipyard](https://chipyard.readthedocs.io/en/latest/) or [FireSim](https://docs.fires.im/en/latest/).
+However, this is not required.
+To run FireMarshal independently, follow along from the next section (Standalone setup).
 
-### Note for Ubuntu
-The libguestfs-tools package (needed for the guestmount command) does not work
-out of the box on Ubuntu. See
-https://github.com/firesim/firesim-software/issues/30 for a workaround.
+### Standalone Setup
 
-## Python
-This project was written for python 3.6. You can install all dependencies using:
-```
-pip3 install -r python-requirements.txt
+FireMarshal uses the [Conda](https://docs.conda.io/en/latest/) package manager to help manage system dependencies.
+This allows users to create an "environment" that holds system dependencies like ``make``, ``git``, etc.
+Please install Conda using the Chipyard documentation [here](https://chipyard.readthedocs.io/en/main/Chipyard-Basics/Initial-Repo-Setup.html#default-requirements-installation).
+
+Next you can run the following command to create a FireMarshal environment called ``firemarshal``.
+
+```bash
+conda env create -f ./conda-reqs.yaml -n firemarshal
 ```
 
-## RISC-V Tools
-In addition to standard libraries, you will need a RISC-V compatible toolchain,
-the RISC-V isa simulator (spike).
+To enter this environment, you then run the ``activate`` command.
+**Note that this command should be run whenever you want to use FireMarshal so that packages can be properly be added to your ``PATH``**.
 
-See the [Chipyard documentation](https://chipyard.readthedocs.io/en/latest/Chipyard-Basics/Initial-Repo-Setup.html#building-a-toolchain)
-for help setting up a known-good toolchain and environment.
+```bash
+conda activate firemarshal # or whatever name you gave during environment creation
+```
 
-## Qemu
-Qemu is the default simulator used by firemarshal. We require version v5.0.0 or
-greater. If you aren't using chipyard, you can get it from:
+In addition to standard packages added in the conda environment, you will need a RISC-V compatible toolchain and the RISC-V ISA simulator (Spike).
+A RISC-V compatible toolchain can be obtained by the following:
 
-https://github.com/qemu/qemu/tree/v5.0.0
+```bash
+conda install -n firemarshal -c ucb-bar riscv-tools
+```
 
-# Basic Usage
-If you only want to build bare-metal workloads, you can skip updating
-submodules. Otherwise, you should update the required submodules by running:
+To install Spike, please refer to https://github.com/riscv-software-src/riscv-isa-sim.
 
-    ./init-submodules.sh
+Finally, if you are running as a user on a machine without ``sudo`` access it is required for you to install ``guestmount`` for disk manipulation.
+You can install this through your default package manager (for ex. ``apt`` or ``yum``).
+
+## Basic Usage
+
+If you only want to build bare-metal workloads, you can skip updating submodules.
+Otherwise, you should update the required submodules by running:
+
+```bash
+./init-submodules.sh
+```
 
 Building workloads:
 
-    ./marshal build br-base.json
+```bash
+./marshal build br-base.json
+```
 
 To run in qemu:
 
-    ./marshal launch br-base.json
+```bash
+./marshal launch br-base.json
+```
 
-To install into FireSim (assuming you cloned this as a submodule of firesim or chipyard):
+To install into FireSim (assuming FireMarshal is setup within a Chipyard/FireSim installation):
 
-    ./marshal install br-base.json
+```bash
+./marshal install br-base.json
+```
 
-# Security Note
-Be advised that FireMarshal will run initialization scripts provided by
-workloads. These scripts will have all the permissions your user has, be sure
-to read all workloads carefully before building them.
+## Security Note
 
-# Releases
-The master branch of this project contains the latest unstable version of
-FireMarshal. It should generally work correctly, but it may contain bugs or
-other inconsistencies from time to time. For stable releases, see the release
-git tags or github releases page.
+Be advised that FireMarshal will run initialization scripts provided by workloads.
+These scripts will have all the permissions your user has, be sure to read all workloads carefully before building them.
 
-# Getting Help / Discussion:
-* For general questions, help, and discussion: use the FireSim user forum: https://groups.google.com/forum/#!forum/firesim
-* For bugs and feature requests: use the github issue tracker: https://github.com/firesim/FireMarshal/issues
-* See CONTRIBUTING.md for information on how to contribute to the project 
+## Releases
+
+The master branch of this project contains the latest unstable version of FireMarshal.
+It should generally work correctly, but it may contain bugs or other inconsistencies from time to time.
+For stable releases, see the release git tags or GitHub releases page.
