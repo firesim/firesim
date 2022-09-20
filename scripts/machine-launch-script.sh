@@ -218,10 +218,10 @@ set -o pipefail
         ca-certificates \
         mosh \
         vim \
-        git  \
+        git \
         screen \
         argcomplete==1.12.3 \
-        conda-lock>=1 \
+        "conda-lock>=1" \
         expect \
         python \
         boto3==1.20.21 \
