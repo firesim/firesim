@@ -227,18 +227,6 @@
                         <a href="package$$ExpressionTransformer$.html" title="Generates a function transforming a circuit from a partial function describing how each expression, if matched, is transformed.">ExpressionTransformer</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="Fame1Annotation.html" title=""></a>
-                        <a href="Fame1Annotation.html" title="">Fame1Annotation</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="Fame1ChiselAnnotation.html" title="An annotation on a module indicating it should be fame1 tranformed using a Bool, whose name is indicated by tFire, used as the targetFire signal"></a>
-                        <a href="Fame1ChiselAnnotation.html" title="An annotation on a module indicating it should be fame1 tranformed using a Bool, whose name is indicated by tFire, used as the targetFire signal">Fame1ChiselAnnotation</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="Fame1Instances.html" title=""></a>
-                        <a href="Fame1Instances.html" title="">Fame1Instances</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="FindClockSourceAnnotation.html" title=""></a>
                         <a href="FindClockSourceAnnotation.html" title="">FindClockSourceAnnotation</a>
                       </li><li class="current-entities indented2">
@@ -269,10 +257,6 @@
                         <span class="separator"></span>
                         <a class="object" href="HostClockWiring$.html" title="Does final host clock wiring for transform-injected hardware."></a>
                         <a href="HostClockWiring$.html" title="Does final host clock wiring for transform-injected hardware.">HostClockWiring</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ModelFame1Transform.html" title=""></a>
-                        <a href="ModelFame1Transform.html" title="">ModelFame1Transform</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="package$$ModuleTransformer$.html" title="Generates a function transforming a circuit from a partial function describing how each module, if matched, is transformed."></a>
@@ -692,57 +676,6 @@ NoCircuitDedupAnnotation; however, this transform ignores the annotation to run
 dedup a single time after target transformation completes rather than several
 times as it would if enabled globally.
 </p></div></div>
-    </li><li name="midas.passes.Fame1Annotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Fame1AnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleName]withProductwithSerializable"></a><a id="Fame1Annotation:Fame1Annotation"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/Fame1Annotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="Fame1Annotation.html"><span class="name">Fame1Annotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span></span>, <span name="tFire">tFire: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleName">ModuleName</span>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      
-    </li><li name="midas.passes.Fame1ChiselAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="Fame1ChiselAnnotationextendsChiselAnnotationwithProductwithSerializable"></a><a id="Fame1ChiselAnnotation:Fame1ChiselAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/Fame1ChiselAnnotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="An annotation on a module indicating it should be fame1 tranformed using a Bool, whose name is indicated by tFire, used as the targetFire signal" href="Fame1ChiselAnnotation.html"><span class="name">Fame1ChiselAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="chisel3.RawModule">RawModule</span></span>, <span name="tFire">tFire: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;targetFire&quot;</span></span>)</span><span class="result"> extends <span class="extype" name="chisel3.experimental.ChiselAnnotation">ChiselAnnotation</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">An annotation on a module indicating it should be fame1 tranformed using
-a Bool, whose name is indicated by tFire, used as the targetFire signal</p><div class="fullcomment"><div class="comment cmt"><p>An annotation on a module indicating it should be fame1 tranformed using
-a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>This uses the legacy non-LI-BDN F1 transform
-</p></div></div>
-    </li><li name="midas.passes.Fame1Instances" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Fame1InstancesextendsTransform"></a><a id="Fame1Instances:Fame1Instances"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/Fame1Instances.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="Fame1Instances.html"><span class="name">Fame1Instances</span></a><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
-      </span>
-      
-      
     </li><li name="midas.passes.FindClockSourceAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FindClockSourceAnnotationextendsAnnotationwithProductwithSerializable"></a><a id="FindClockSourceAnnotation:FindClockSourceAnnotation"></a>
       <span class="permalink">
@@ -808,22 +741,6 @@ a Bool, whose name is indicated by tFire, used as the targetFire signal</p><p>Th
       </span>
       
       <p class="shortcomment cmt">Labels sinks that must be driven by the HostClock.</p>
-    </li><li name="midas.passes.ModelFame1Transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ModelFame1TransformextendsFame1Transform"></a><a id="ModelFame1Transform:ModelFame1Transform"></a>
-      <span class="permalink">
-      <a href="../../midas/passes/ModelFame1Transform.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="ModelFame1Transform.html"><span class="name">ModelFame1Transform</span></a><span class="result"> extends <span class="extype" name="midas.passes.Fame1Transform">Fame1Transform</span></span>
-      </span>
-      
-      
     </li><li name="midas.passes.NoAnalysisPass" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="NoAnalysisPassextendspackage.FunctionalPass[Unit]"></a><a id="NoAnalysisPass:NoAnalysisPass"></a>
       <span class="permalink">

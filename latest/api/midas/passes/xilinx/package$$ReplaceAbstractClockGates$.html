@@ -152,7 +152,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">ReplaceAbstractClockGates</span><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span> with <a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a></span>
+        <span class="name">ReplaceAbstractClockGates</span><span class="result"> extends <span class="extype" name="firrtl.Transform">Transform</span></span>
       </span>
       </h4>
 
@@ -161,7 +161,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a>, <a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a>], <span class="extype" name="firrtl.Transform">Transform</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.Transform">Transform</span>, <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>], <span class="extype" name="firrtl.options.TransformLike">TransformLike</span>[<span class="extype" name="firrtl.CircuitState">CircuitState</span>], <span class="extype" name="logger.LazyLogging">LazyLogging</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div></div>
         
 
@@ -187,7 +187,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.passes.xilinx.ReplaceAbstractClockGates"><span>ReplaceAbstractClockGates</span></li><li class="in" name="midas.passes.NoAnalysisPass"><span>NoAnalysisPass</span></li><li class="in" name="midas.passes.FunctionalPass"><span>FunctionalPass</span></li><li class="in" name="firrtl.Transform"><span>Transform</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.passes.xilinx.ReplaceAbstractClockGates"><span>ReplaceAbstractClockGates</span></li><li class="in" name="firrtl.Transform"><span>Transform</span></li><li class="in" name="firrtl.options.DependencyAPI"><span>DependencyAPI</span></li><li class="in" name="firrtl.options.TransformLike"><span>TransformLike</span></li><li class="in" name="logger.LazyLogging"><span>LazyLogging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -262,56 +262,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.NoAnalysisPass#analyze" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="analyze(cs:firrtl.CircuitState):Unit"></a><a id="analyze(CircuitState):Unit"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#analyze(cs:firrtl.CircuitState):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">analyze</span><span class="params">(<span name="cs">cs: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">Examine the circuit and store information in an analysis object
-</p><div class="fullcomment"><div class="comment cmt"><p>Examine the circuit and store information in an analysis object
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a> → <a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
-    </li><li name="midas.passes.NoAnalysisPass#annotater" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="annotater(analysis:Unit):firrtl.AnnotationSeq=&gt;firrtl.AnnotationSeq"></a><a id="annotater(Unit):(AnnotationSeq)⇒AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#annotater(analysis:Unit):firrtl.AnnotationSeq=&gt;firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">annotater</span><span class="params">(<span name="analysis">analysis: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: (<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>) ⇒ <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a> → <a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
-    </li><li name="midas.passes.NoAnalysisPass#annotater" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="annotater:firrtl.AnnotationSeq=&gt;firrtl.AnnotationSeq"></a><a id="annotater:(AnnotationSeq)⇒AnnotationSeq"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#annotater:firrtl.AnnotationSeq=&gt;firrtl.AnnotationSeq" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">annotater</span><span class="result">: (<span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span>) ⇒ <span class="extype" name="firrtl.AnnotationSeq">AnnotationSeq</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -386,22 +336,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.passes.FunctionalPass#execute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="execute(input:firrtl.CircuitState):firrtl.CircuitState"></a><a id="execute(CircuitState):CircuitState"></a>
+    </li><li name="midas.passes.xilinx.ReplaceAbstractClockGates#execute" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="execute(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="execute(CircuitState):CircuitState"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#execute(input:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
+      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#execute(state:firrtl.CircuitState):firrtl.CircuitState" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">execute</span><span class="params">(<span name="input">input: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
+        <span class="name">execute</span><span class="params">(<span name="state">state: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitState">CircuitState</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.xilinx.ReplaceAbstractClockGates">ReplaceAbstractClockGates</a> → Transform</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
@@ -460,10 +410,10 @@
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.passes.FunctionalPass#inputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="inputForm:firrtl.CircuitForm"></a><a id="inputForm:CircuitForm"></a>
+    </li><li name="midas.passes.xilinx.ReplaceAbstractClockGates#inputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="inputForm:firrtl.MidForm.type"></a><a id="inputForm:MidForm.type"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#inputForm:firrtl.CircuitForm" title="Permalink">
+      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#inputForm:firrtl.MidForm.type" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -472,10 +422,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">inputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
+        <span class="name">inputForm</span><span class="result">: <span class="extype" name="firrtl.MidForm">MidForm</span>.type</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.xilinx.ReplaceAbstractClockGates">ReplaceAbstractClockGates</a> → Transform</dd></dl></div>
     </li><li name="firrtl.Transform#invalidates" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="invalidates(a:firrtl.Transform):Boolean"></a><a id="invalidates(Transform):Boolean"></a>
       <span class="permalink">
@@ -524,7 +474,7 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>LazyLogging</dd></dl></div>
-    </li><li name="firrtl.Transform#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="midas.passes.xilinx.ReplaceAbstractClockGates#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="name:String"></a>
       <span class="permalink">
       <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#name:String" title="Permalink">
@@ -536,10 +486,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">name</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → TransformLike</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.xilinx.ReplaceAbstractClockGates">ReplaceAbstractClockGates</a> → Transform → TransformLike</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -630,10 +580,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → DependencyAPI</dd></dl></div>
-    </li><li name="midas.passes.FunctionalPass#outputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="outputForm:firrtl.CircuitForm"></a><a id="outputForm:CircuitForm"></a>
+    </li><li name="midas.passes.xilinx.ReplaceAbstractClockGates#outputForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="outputForm:firrtl.MidForm.type"></a><a id="outputForm:MidForm.type"></a>
       <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#outputForm:firrtl.CircuitForm" title="Permalink">
+      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#outputForm:firrtl.MidForm.type" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -642,10 +592,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">outputForm</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
+        <span class="name">outputForm</span><span class="result">: <span class="extype" name="firrtl.MidForm">MidForm</span>.type</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.xilinx.ReplaceAbstractClockGates">ReplaceAbstractClockGates</a> → Transform</dd></dl></div>
     </li><li name="firrtl.Transform#prerequisites" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prerequisites:Seq[firrtl.options.Dependency[firrtl.Transform]]"></a><a id="prerequisites:Seq[Dependency[Transform]]"></a>
       <span class="permalink">
@@ -662,38 +612,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → DependencyAPI</dd></dl></div>
-    </li><li name="midas.passes.NoAnalysisPass#renamer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="renamer:Option[firrtl.RenameMap]"></a><a id="renamer:Option[RenameMap]"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#renamer:Option[firrtl.RenameMap]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">renamer</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.RenameMap">RenameMap</span>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a></dd></dl></div>
-    </li><li name="midas.passes.NoAnalysisPass#renamer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="renamer(analysis:Unit):Option[firrtl.RenameMap]"></a><a id="renamer(Unit):Option[RenameMap]"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#renamer(analysis:Unit):Option[firrtl.RenameMap]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">renamer</span><span class="params">(<span name="analysis">analysis: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="firrtl.RenameMap">RenameMap</span>]</span>
-      </span>
-      
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">analysis</dt><dd class="cmt"><p>The results of the analysis pass</p></dd><dt>returns</dt><dd class="cmt"><p>Returns a RenameMap that, when applied, appropriately transforms targets</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a> → <a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
     </li><li name="firrtl.Transform#runTransform" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="runTransform(state:firrtl.CircuitState):firrtl.CircuitState"></a><a id="runTransform(CircuitState):CircuitState"></a>
       <span class="permalink">
@@ -758,54 +676,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Transform → TransformLike</dd></dl></div>
-    </li><li name="midas.passes.NoAnalysisPass#transformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformer(analysis:Unit):firrtl.ir.Circuit=&gt;firrtl.ir.Circuit"></a><a id="transformer(Unit):(Circuit)⇒Circuit"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#transformer(analysis:Unit):firrtl.ir.Circuit=&gt;firrtl.ir.Circuit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformer</span><span class="params">(<span name="analysis">analysis: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>)</span><span class="result">: (<span class="extype" name="firrtl.ir.Circuit">Circuit</span>) ⇒ <span class="extype" name="firrtl.ir.Circuit">Circuit</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a> → <a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
-    </li><li name="midas.passes.xilinx.ReplaceAbstractClockGates#transformer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="transformer:firrtl.ir.Circuit=&gt;firrtl.ir.Circuit"></a><a id="transformer:(Circuit)⇒Circuit"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#transformer:firrtl.ir.Circuit=&gt;firrtl.ir.Circuit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformer</span><span class="result">: (<span class="extype" name="firrtl.ir.Circuit">Circuit</span>) ⇒ <span class="extype" name="firrtl.ir.Circuit">Circuit</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.passes.xilinx.ReplaceAbstractClockGates">ReplaceAbstractClockGates</a> → <a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a></dd></dl></div>
-    </li><li name="midas.passes.FunctionalPass#updateForm" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="updateForm(i:firrtl.CircuitForm):firrtl.CircuitForm"></a><a id="updateForm(CircuitForm):CircuitForm"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/xilinx/package$$ReplaceAbstractClockGates$.html#updateForm(i:firrtl.CircuitForm):firrtl.CircuitForm" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">updateForm</span><span class="params">(<span name="i">i: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>)</span><span class="result">: <span class="extype" name="firrtl.CircuitForm">CircuitForm</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
@@ -932,11 +802,7 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="midas.passes.NoAnalysisPass">
-              <h3>Inherited from <a href="../package$$NoAnalysisPass.html" class="extype" name="midas.passes.NoAnalysisPass">NoAnalysisPass</a></h3>
-            </div><div class="parent" name="midas.passes.FunctionalPass">
-              <h3>Inherited from <a href="../package$$FunctionalPass.html" class="extype" name="midas.passes.FunctionalPass">FunctionalPass</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a>]</h3>
-            </div><div class="parent" name="firrtl.Transform">
+        <div class="parent" name="firrtl.Transform">
               <h3>Inherited from <span class="extype" name="firrtl.Transform">Transform</span></h3>
             </div><div class="parent" name="firrtl.options.DependencyAPI">
               <h3>Inherited from <span class="extype" name="firrtl.options.DependencyAPI">DependencyAPI</span>[<span class="extype" name="firrtl.Transform">Transform</span>]</h3>

@@ -215,10 +215,6 @@
                         <a href="FAME1OutputChannel.html" title="">FAME1OutputChannel</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
-                        <a class="object" href="FAME1Transform$.html" title="When tied to a target in a FAMETransformAnnotation, this specifies that the module should be transformed with the basic LI-BDN compliant FAME1 transform."></a>
-                        <a href="FAME1Transform$.html" title="When tied to a target in a FAMETransformAnnotation, this specifies that the module should be transformed with the basic LI-BDN compliant FAME1 transform.">FAME1Transform</a>
-                      </li><li class="current-entities indented3">
-                        <span class="separator"></span>
                         <a class="object" href="FAME5Info$.html" title=""></a>
                         <a href="FAME5Info$.html" title="">FAME5Info</a>
                       </li><li class="current-entities indented3">
@@ -265,10 +261,6 @@
                         <span class="separator"></span>
                         <a class="class" href="FAMETransformAnnotation.html" title="Indicates that a particular target module from the &quot;AQB&quot; canonical form should be transformed to a FAME model."></a>
                         <a href="FAMETransformAnnotation.html" title="Indicates that a particular target module from the &quot;AQB&quot; canonical form should be transformed to a FAME model.">FAMETransformAnnotation</a>
-                      </li><li class="current-entities indented3">
-                        <span class="separator"></span>
-                        <a class="class" href="FAMETransformType.html" title="Specifies what form of FAME transform should be applied when generated a simulation model from a target module."></a>
-                        <a href="FAMETransformType.html" title="Specifies what form of FAME transform should be applied when generated a simulation model from a target module.">FAMETransformType</a>
                       </li><li class="current-entities indented3">
                         <span class="separator"></span>
                         <a class="object" href="FindDefaultClocks$.html" title="In general, multi-clock Golden Gate simulations contain exactly one &quot;hub&quot; model that coordinates the clock domains and has a clock channel."></a>
@@ -964,34 +956,15 @@ model. This module must only be instantiated at the top level.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="Indicates that a particular target module from the &quot;AQB&quot; canonical form should be transformed to a FAME model." href="FAMETransformAnnotation.html"><span class="name">FAMETransformAnnotation</span></a><span class="params">(<span name="transformType">transformType: <a href="FAMETransformType.html" class="extype" name="midas.passes.fame.FAMETransformType">FAMETransformType</a></span>, <span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>] with <a href="../../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="Indicates that a particular target module from the &quot;AQB&quot; canonical form should be transformed to a FAME model." href="FAMETransformAnnotation.html"><span class="name">FAMETransformAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>] with <a href="../../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
       <p class="shortcomment cmt">Indicates that a particular target module from the &quot;AQB&quot; canonical
 form should be transformed to a FAME model.</p><div class="fullcomment"><div class="comment cmt"><p>Indicates that a particular target module from the &quot;AQB&quot; canonical
 form should be transformed to a FAME model.
-</p></div><dl class="paramcmts block"><dt class="param">transformType</dt><dd class="cmt"><p>Describes which variant of the FAME transform
- should be applied to the target module. Currently, the
- FAME1Transform object is the only value that this can take.</p></dd><dt class="param">target</dt><dd class="cmt"><p>Points to the target module to be transformed. Since
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>Points to the target module to be transformed. Since
  this is a ModuleTarget, all instances at the top level will be
  transformed identically.</p></dd></dl></div>
-    </li><li name="midas.passes.fame.FAMETransformType" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="FAMETransformTypeextendsAnyRef"></a><a id="FAMETransformType:FAMETransformType"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/FAMETransformType.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="Specifies what form of FAME transform should be applied when generated a simulation model from a target module." href="FAMETransformType.html"><span class="name">FAMETransformType</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">Specifies what form of FAME transform should be applied when
-generated a simulation model from a target module.</p>
     </li><li name="midas.passes.fame.HasModelPort" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="HasModelPortextendsAnyRef"></a><a id="HasModelPort:HasModelPort"></a>
       <span class="permalink">
@@ -1617,24 +1590,6 @@ references.
       </span>
       
       
-    </li><li name="midas.passes.fame.FAME1Transform" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FAME1Transform"></a><a id="FAME1Transform:FAME1Transform"></a>
-      <span class="permalink">
-      <a href="../../../midas/passes/fame/FAME1Transform$.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a title="When tied to a target in a FAMETransformAnnotation, this specifies that the module should be transformed with the basic LI-BDN compliant FAME1 transform." href="FAME1Transform$.html"><span class="name">FAME1Transform</span></a><span class="result"> extends <a href="FAMETransformType.html" class="extype" name="midas.passes.fame.FAMETransformType">FAMETransformType</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">When tied to a target in a FAMETransformAnnotation, this specifies
-that the module should be transformed with the basic LI-BDN
-compliant FAME1 transform.</p>
     </li><li name="midas.passes.fame.FAME5Info" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FAME5Info"></a><a id="FAME5Info:FAME5Info"></a>
       <span class="permalink">
