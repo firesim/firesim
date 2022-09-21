@@ -2,7 +2,7 @@
 
 package midas.widgets
 
-import midas.core.SimWrapperChannels
+import midas.core.{TargetChannelIO}
 
 import midas.passes.fame.{FAMEChannelInfo, FAMEChannelConnectionAnnotation}
 
@@ -131,14 +131,14 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
     }
   }
 
-  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simWrapper: SimWrapperChannels): Unit = {
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
     val local2globalName = bridgeAnno.channelMapping.toMap
     for ((_, channel, metadata) <- channels) {
       val localName = reverseElementMap(channel)
       if (metadata.bridgeSunk) {
-        channel <> simWrapper.wireOutputPortMap(local2globalName(localName))
+        channel <> targetIO.wireOutputPortMap(local2globalName(localName))
       } else {
-        simWrapper.wireInputPortMap(local2globalName(localName)) <> channel
+        targetIO.wireInputPortMap(local2globalName(localName)) <> channel
       }
     }
   }

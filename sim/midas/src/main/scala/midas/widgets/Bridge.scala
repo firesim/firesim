@@ -3,7 +3,7 @@
 package midas
 package widgets
 
-import midas.core.{SimWrapperChannels}
+import midas.core.{TargetChannelIO}
 
 import freechips.rocketchip.config.{Parameters, Field}
 
@@ -86,5 +86,5 @@ trait HasChannels {
   def allChannelNames(): Seq[String]
 
   // Called in FPGATop to connect the instantiated bridge to channel ports on the wrapper
-  private[midas] def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, channels: SimWrapperChannels): Unit
+  private[midas] def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, channels: TargetChannelIO): Unit
 }

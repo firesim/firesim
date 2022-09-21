@@ -2,7 +2,7 @@
 
 package midas.widgets
 
-import midas.core.{HostReadyValid, SimWrapperChannels}
+import midas.core.{HostReadyValid, TargetChannelIO}
 import midas.core.SimUtils
 import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
 
@@ -124,25 +124,25 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
   lazy val name2Wire = Map((ins ++ outs).map({ case (wire, name) => name -> wire }):_*)
   lazy val name2ReadyValid = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }):_*)
 
-  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, simIo: SimWrapperChannels): Unit = {
+  def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
     val local2globalName = bridgeAnno.channelMapping.toMap
     val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
 
     // Bind payloads to HostPort, and collect channels
     for ((field, localName) <- inputWireChannels) {
-      val tokenChannel = simIo.wireOutputPortMap(local2globalName(localName))
+      val tokenChannel = targetIO.wireOutputPortMap(local2globalName(localName))
       field := tokenChannel.bits
       toHostChannels += tokenChannel
     }
 
     for ((field, localName) <- outputWireChannels) {
-      val tokenChannel = simIo.wireInputPortMap(local2globalName(localName))
+      val tokenChannel = targetIO.wireInputPortMap(local2globalName(localName))
       tokenChannel.bits := field
       fromHostChannels += tokenChannel
     }
 
     for ((field, localName) <- inputRVChannels) {
-      val (fwdChPort, revChPort) = simIo.rvOutputPortMap(local2globalName(localName + "_fwd"))
+      val (fwdChPort, revChPort) = targetIO.rvOutputPortMap(local2globalName(localName + "_fwd"))
       field.valid := fwdChPort.bits.valid
       revChPort.bits := field.ready
 
@@ -154,7 +154,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
     }
 
     for ((field, localName) <- outputRVChannels) {
-      val (fwdChPort, revChPort) = simIo.rvInputPortMap(local2globalName(localName + "_fwd"))
+      val (fwdChPort, revChPort) = targetIO.rvInputPortMap(local2globalName(localName + "_fwd"))
       fwdChPort.bits.valid := field.valid
       field.ready := revChPort.bits
 
