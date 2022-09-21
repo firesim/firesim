@@ -102,6 +102,7 @@ jobs:
         uses: ./.github/actions/change-workflow-instance-states
         with:
           new-state: terminate
+          github-token: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
 
   setup-manager:
     name: setup-manager
@@ -127,6 +128,7 @@ jobs:
         uses: ./.github/actions/change-workflow-instance-states
         with:
           new-state: terminate
+          github-token: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
 
   build-default-workloads:
     # Conditionally build rootfs images only if deploying to FPGA to save CI resources
