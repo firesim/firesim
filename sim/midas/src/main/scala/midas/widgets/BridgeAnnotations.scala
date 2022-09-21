@@ -9,22 +9,14 @@ import freechips.rocketchip.config.Parameters
 
 import midas.targetutils.FAMEAnnotation
 
-trait BridgeAnnotation extends SingleTargetAnnotation[ModuleTarget] {
-  // A list of channel names that match the globalName emitted in the FCCAs
-  // associated with this bridge. We use these strings to look up those annotations
-  def channelNames: Seq[String]
-  // Invoked by BridgeExtraction to convert this ModuleTarget-based annotation into
-  // a ReferenceTarget based one that can be attached to newly created IO on the top-level
-  def toIOAnnotation(port: String): BridgeIOAnnotation
-}
 
 /**
-  * A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge
+  * A serializable annotation emitted by Chisel Modules that extend Bridge
   *
   * @param target  The module representing an Bridge. Typically a black box
   *
-  * @param channelNames  See BridgeAnnotation. A list of channelNames used
-  *  to find associated FCCAs for this bridge
+  * @param channelNames  A list of channel names that match the globalName emitted in the FCCAs
+  *   associated with this bridge. We use these strings to look up those annotations
   *
   * @param widgetClass  The full class name of the BridgeModule generator
   *
@@ -37,20 +29,17 @@ trait BridgeAnnotation extends SingleTargetAnnotation[ModuleTarget] {
   *   additional pertinent classes
   */
 
-case class SerializableBridgeAnnotation[T <: AnyRef](
+case class BridgeAnnotation(
     target: ModuleTarget,
     channelNames: Seq[String],
     widgetClass: String,
-    widgetConstructorKey: Option[T])
-  extends BridgeAnnotation with HasSerializationHints with FAMEAnnotation {
+    widgetConstructorKey: Option[_ <: AnyRef])
+  extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation with HasSerializationHints {
 
-  def typeHints() = widgetConstructorKey match {
-    // If the key has extra type hints too, grab them as well
-    case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
-    case Some(key) => Seq(key.getClass)
-    case None => Seq()
-  }
-  def duplicate(n: ModuleTarget) = this.copy(target)
+  /**
+    * Invoked by BridgeExtraction to convert this ModuleTarget-based annotation into
+    * a ReferenceTarget based one that can be attached to newly created IO on the top-level
+    */
   def toIOAnnotation(port: String): BridgeIOAnnotation = {
     val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
     BridgeIOAnnotation(target.copy(module = target.circuit).ref(port),
@@ -58,6 +47,15 @@ case class SerializableBridgeAnnotation[T <: AnyRef](
       widgetClass = widgetClass,
       widgetConstructorKey = widgetConstructorKey)
   }
+
+  def typeHints() = widgetConstructorKey match {
+    // If the key has extra type hints too, grab them as well
+    case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
+    case Some(key) => Seq(key.getClass)
+    case None => Seq()
+  }
+
+  def duplicate(n: ModuleTarget) = this.copy(target)
 }
 
 /**
@@ -72,7 +70,7 @@ case class SerializableBridgeAnnotation[T <: AnyRef](
   * @param clockInfo Contains information about the domain in which the bridge is instantiated. 
   *  This will always be nonEmpty for bridges instantiated in the input FIRRTL
   *
-  * @param widgetClass The BridgeModule's full class name. See SerializableBridgeAnnotation
+  * @param widgetClass The BridgeModule's full class name. See BridgeAnnotation
   *
   * @param widgetConstructorKey The BridgeModule's constructor argument.
   *

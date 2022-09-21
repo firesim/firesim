@@ -61,7 +61,7 @@ trait Bridge[HPType <: Record with HasChannels, WidgetType <: BridgeModule[HPTyp
 
     // Generate the bridge annotation
     annotate(new ChiselAnnotation { def toFirrtl = {
-        SerializableBridgeAnnotation(
+        BridgeAnnotation(
           self.toNamed.toTarget,
           bridgeIO.allChannelNames,
           widgetClass = widgetClassSymbol.fullName,

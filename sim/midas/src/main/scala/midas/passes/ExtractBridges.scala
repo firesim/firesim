@@ -2,7 +2,7 @@
 
 package midas.passes
 
-import midas.widgets.{BridgeAnnotation, ClockBridgeAnnotation}
+import midas.widgets.{BridgeAnnotation, ClockBridgeModule}
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation}
 
 import firrtl._
@@ -100,8 +100,9 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
     topModule.foreach(getBridgeConnectivity(portInstPairs, instList))
     val instMap = instList.toMap
 
-    val clockBridgeInsts = instList.map(inst => inst._1 -> bridgeAnnoMap(instMap(inst._1)))
-                              .collect({ case (inst, cb: ClockBridgeAnnotation) => inst })
+    val clockBridgeInsts = instList
+        .map(inst => inst._1 -> bridgeAnnoMap(instMap(inst._1)))
+        .collect({ case (inst, cb: BridgeAnnotation) if cb.widgetClass == classOf[ClockBridgeModule].getName => inst })
 
     val bridgeInstMessage = "You must use a single ClockBridge instance to generate clocks for your simulated system."
     assert(clockBridgeInsts.nonEmpty, s"No ClockBridge instances found. ${bridgeInstMessage}")
