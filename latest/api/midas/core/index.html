@@ -287,6 +287,10 @@
                         <a href="TargetBoxIO.html" title="">TargetBoxIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="trait" href="TargetChannelIO.html" title="Represents the interface of the target to which bridges connect."></a>
+                        <a href="TargetChannelIO.html" title="Represents the interface of the target to which bridges connect.">TargetChannelIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="object" href="TokenComparisonFunctions$.html" title=""></a>
                         <a href="TokenComparisonFunctions$.html" title="">TokenComparisonFunctions</a>
                       </li><li class="current-entities indented2">
@@ -505,7 +509,7 @@
       
       
     </li><li name="midas.core.ChannelizedWrapperIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="ChannelizedWrapperIOextendsRecordwithUnpackedWrapperConfig"></a><a id="ChannelizedWrapperIO:ChannelizedWrapperIO"></a>
+      <a id="ChannelizedWrapperIOextendsRecordwithUnpackedWrapperConfigwithTargetChannelIO"></a><a id="ChannelizedWrapperIO:ChannelizedWrapperIO"></a>
       <span class="permalink">
       <a href="../../midas/core/ChannelizedWrapperIO.html" title="Permalink">
         <i class="material-icons"></i>
@@ -516,7 +520,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations." href="ChannelizedWrapperIO.html"><span class="name">ChannelizedWrapperIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a></span>
+        <a title="Builds a Record of tokenized interfaces based on a set of FAMEChannelConnectionAnnotations." href="ChannelizedWrapperIO.html"><span class="name">ChannelizedWrapperIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Record">Record</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a> with <a href="TargetChannelIO.html" class="extype" name="midas.core.TargetChannelIO">TargetChannelIO</a></span>
       </span>
       
       <p class="shortcomment cmt">Builds a Record of tokenized interfaces based on a set of <span class="extype" name="FAMEChannelConnectionAnnotations">FAMEChannelConnectionAnnotations</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Builds a Record of tokenized interfaces based on a set of <span class="extype" name="FAMEChannelConnectionAnnotations">FAMEChannelConnectionAnnotations</span>.
@@ -561,7 +565,7 @@ name.
       <p class="shortcomment cmt">This is a stub to foreshadow the other implementation
 </p>
     </li><li name="midas.core.FPGATop" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FPGATopextendsLazyModulewithUnpackedWrapperConfigwithHasWidgets"></a><a id="FPGATop:FPGATop"></a>
+      <a id="FPGATopextendsLazyModulewithHasWidgets"></a><a id="FPGATop:FPGATop"></a>
       <span class="permalink">
       <a href="../../midas/core/FPGATop.html" title="Permalink">
         <i class="material-icons"></i>
@@ -572,7 +576,7 @@ name.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a title="" href="FPGATop.html"><span class="name">FPGATop</span></a><span class="result"> extends <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span> with <a href="UnpackedWrapperConfig.html" class="extype" name="midas.core.UnpackedWrapperConfig">UnpackedWrapperConfig</a> with <a href="../widgets/HasWidgets.html" class="extype" name="midas.widgets.HasWidgets">HasWidgets</a></span>
+        <a title="" href="FPGATop.html"><span class="name">FPGATop</span></a><span class="result"> extends <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span> with <a href="../widgets/HasWidgets.html" class="extype" name="midas.widgets.HasWidgets">HasWidgets</a></span>
       </span>
       
       
@@ -1025,6 +1029,22 @@ by the engine.</p>
       </span>
       
       
+    </li><li name="midas.core.TargetChannelIO" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TargetChannelIOextendsAnyRef"></a><a id="TargetChannelIO:TargetChannelIO"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a title="Represents the interface of the target to which bridges connect." href="TargetChannelIO.html"><span class="name">TargetChannelIO</span></a><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      
+      <p class="shortcomment cmt"> Represents the interface of the target to which bridges connect.</p>
     </li><li name="midas.core.UnpackedWrapperConfig" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="UnpackedWrapperConfigextendsAnyRef"></a><a id="UnpackedWrapperConfig:UnpackedWrapperConfig"></a>
       <span class="permalink">

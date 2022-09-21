@@ -243,8 +243,8 @@
                         <a href="SimWrapperChannels.html" title="">SimWrapperChannels</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title="The metadata required to generate the simulation wrapper."></a>
-                        <a href="" title="The metadata required to generate the simulation wrapper.">SimWrapperConfig</a>
+                        <a class="class" href="SimWrapperConfig.html" title="The metadata required to generate the simulation wrapper."></a>
+                        <a href="SimWrapperConfig.html" title="The metadata required to generate the simulation wrapper.">SimWrapperConfig</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="SimWrapperKey$.html" title=""></a>
@@ -287,8 +287,8 @@
                         <a href="TargetBoxIO.html" title="">TargetBoxIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="trait" href="TargetChannelIO.html" title="Represents the interface of the target to which bridges connect."></a>
-                        <a href="TargetChannelIO.html" title="Represents the interface of the target to which bridges connect.">TargetChannelIO</a>
+                        <a class="trait" href="" title="Represents the interface of the target to which bridges connect."></a>
+                        <a href="" title="Represents the interface of the target to which bridges connect.">TargetChannelIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="TokenComparisonFunctions$.html" title=""></a>
@@ -302,12 +302,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="class type">
+            <body class="trait type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <div class="big-circle trait">t</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.core">core</a></p>
-        <h1>SimWrapperConfig<span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html" title="Permalink">
+        <h1>TargetChannelIO<span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -317,24 +317,26 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">case class</span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">SimWrapperConfig</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>, <span name="leafTypeMap">leafTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">TargetChannelIO</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The metadata required to generate the simulation wrapper.
-</p></div><dl class="paramcmts block"><dt class="param">annotations</dt><dd class="cmt"><p>Notably <span class="extype" name="FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</span>,
-<span class="extype" name="FAMEChannelFanoutAnnotation">FAMEChannelFanoutAnnotation</span>, <span class="extype" name="BridgeIOAnnotation">BridgeIOAnnotation</span>s</p></dd><dt class="param">leafTypeMap</dt><dd class="cmt"><p>Provides the means to rebuild chisel-types that can
-&quot;link&quot; against the transformed RTL (FIRRTL), and associate specific
-annotations with those types..</p></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p> Represents the interface of the target to which bridges connect.
+</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
-        </div></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">
+              Known Subclasses
+            </span>
+            <div class="subClasses hiddenContent"><a href="ChannelizedWrapperIO.html" class="extype" name="midas.core.ChannelizedWrapperIO">ChannelizedWrapperIO</a>, <a href="SimWrapperChannels.html" class="extype" name="midas.core.SimWrapperChannels">SimWrapperChannels</a>, <a href="TargetBoxIO.html" class="extype" name="midas.core.TargetBoxIO">TargetBoxIO</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -359,7 +361,7 @@ annotations with those types..</p></dd></dl><div class="toggleContainer block">
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.core.SimWrapperConfig"><span>SimWrapperConfig</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.core.TargetChannelIO"><span>TargetChannelIO</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -377,41 +379,102 @@ annotations with those types..</p></dd></dl><div class="toggleContainer block">
 
       <div id="template">
         <div id="allMembers">
-        <div id="constructors" class="members">
-              <h3>Instance Constructors</h3>
-              <ol><li name="midas.core.SimWrapperConfig#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="&lt;init&gt;(annotations:Seq[firrtl.annotations.Annotation],leafTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port]):midas.core.SimWrapperConfig"></a><a id="&lt;init&gt;:SimWrapperConfig"></a>
-      <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#&lt;init&gt;(annotations:Seq[firrtl.annotations.Annotation],leafTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port]):midas.core.SimWrapperConfig" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SimWrapperConfig</span><span class="params">(<span name="annotations">annotations: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>, <span name="leafTypeMap">leafTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>)</span>
-      </span>
-      
-      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">annotations</dt><dd class="cmt"><p>Notably <span class="extype" name="FAMEChannelConnectionAnnotation">FAMEChannelConnectionAnnotation</span>,
-<span class="extype" name="FAMEChannelFanoutAnnotation">FAMEChannelFanoutAnnotation</span>, <span class="extype" name="BridgeIOAnnotation">BridgeIOAnnotation</span>s</p></dd><dt class="param">leafTypeMap</dt><dd class="cmt"><p>Provides the means to rebuild chisel-types that can
-&quot;link&quot; against the transformed RTL (FIRRTL), and associate specific
-annotations with those types..</p></dd></dl></div>
-    </li></ol>
-            </div>
-
         
 
         
 
         <div class="values members">
-              <h3>Value Members</h3>
+              <h3>Abstract Value Members</h3>
+              <ol><li name="midas.core.TargetChannelIO#clockElement" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="clockElement:(String,chisel3.util.DecoupledIO[chisel3.Data])"></a><a id="clockElement:(String,DecoupledIO[Data])"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#clockElement:(String,chisel3.util.DecoupledIO[chisel3.Data])" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clockElement</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.util.DecoupledIO">DecoupledIO</span>[<span class="extype" name="chisel3.Data">Data</span>])</span>
+      </span>
+      
+      <p class="shortcomment cmt">Channel carrying clock tokens to the target.</p>
+    </li><li name="midas.core.TargetChannelIO#rvInputPortMap" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="rvInputPortMap:Map[String,midas.core.SimUtils.TargetRVPortType]"></a><a id="rvInputPortMap:Map[String,TargetRVPortType]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#rvInputPortMap:Map[String,midas.core.SimUtils.TargetRVPortType]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rvInputPortMap</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="SimUtils$.html#TargetRVPortType=(chisel3.util.ReadyValidIO[chisel3.util.ValidIO[chisel3.Data]],chisel3.util.ReadyValidIO[chisel3.Bool])" class="extmbr" name="midas.core.SimUtils.TargetRVPortType">TargetRVPortType</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Mapping of input ready-valid channels.</p>
+    </li><li name="midas.core.TargetChannelIO#rvOutputPortMap" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="rvOutputPortMap:Map[String,midas.core.SimUtils.TargetRVPortType]"></a><a id="rvOutputPortMap:Map[String,TargetRVPortType]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#rvOutputPortMap:Map[String,midas.core.SimUtils.TargetRVPortType]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rvOutputPortMap</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="SimUtils$.html#TargetRVPortType=(chisel3.util.ReadyValidIO[chisel3.util.ValidIO[chisel3.Data]],chisel3.util.ReadyValidIO[chisel3.Bool])" class="extmbr" name="midas.core.SimUtils.TargetRVPortType">TargetRVPortType</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Mapping of output ready-valid channels.</p>
+    </li><li name="midas.core.TargetChannelIO#wireInputPortMap" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="wireInputPortMap:Map[String,chisel3.util.ReadyValidIO[chisel3.Data]]"></a><a id="wireInputPortMap:Map[String,ReadyValidIO[Data]]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#wireInputPortMap:Map[String,chisel3.util.ReadyValidIO[chisel3.Data]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wireInputPortMap</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Mapping of all input pipe channels.</p>
+    </li><li name="midas.core.TargetChannelIO#wireOutputPortMap" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="wireOutputPortMap:Map[String,chisel3.util.ReadyValidIO[chisel3.Data]]"></a><a id="wireOutputPortMap:Map[String,ReadyValidIO[Data]]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#wireOutputPortMap:Map[String,chisel3.util.ReadyValidIO[chisel3.Data]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wireOutputPortMap</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="chisel3.util.ReadyValidIO">ReadyValidIO</span>[<span class="extype" name="chisel3.Data">Data</span>]]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Mapping of all output pipe channels.</p>
+    </li></ol>
+            </div>
+
+        <div class="values members">
+              <h3>Concrete Value Members</h3>
               <ol>
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -427,7 +490,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html###():Int" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -443,7 +506,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -456,26 +519,10 @@ annotations with those types..</p></dd></dl></div>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="midas.core.SimWrapperConfig#annotations" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="annotations:Seq[firrtl.annotations.Annotation]"></a><a id="annotations:Seq[Annotation]"></a>
-      <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#annotations:Seq[firrtl.annotations.Annotation]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">annotations</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.Annotation">Annotation</span>]</span>
-      </span>
-      
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -491,7 +538,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#clone():Object" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -517,7 +564,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -530,10 +577,26 @@ annotations with those types..</p></dd></dl></div>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -551,10 +614,31 @@ annotations with those types..</p></dd></dl></div>
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+                <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -567,26 +651,10 @@ annotations with those types..</p></dd></dl></div>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.core.SimWrapperConfig#leafTypeMap" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="leafTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port]"></a><a id="leafTypeMap:Map[ReferenceTarget,Port]"></a>
-      <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#leafTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">leafTypeMap</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>
-      </span>
-      
-      
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -602,7 +670,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#notify():Unit" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -623,7 +691,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -644,7 +712,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -657,10 +725,26 @@ annotations with those types..</p></dd></dl></div>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../midas/core/TargetChannelIO.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -682,7 +766,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -706,7 +790,7 @@ annotations with those types..</p></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#wait():Unit" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -736,7 +820,7 @@ annotations with those types..</p></dd></dl></div>
               <ol><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimWrapperConfig.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/core/TargetChannelIO.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -764,15 +848,7 @@ annotations with those types..</p></dd></dl></div>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.Serializable">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
-            </div><div class="parent" name="java.io.Serializable">
-              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="scala.Product">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
-            </div><div class="parent" name="scala.Equals">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
-            </div><div class="parent" name="scala.AnyRef">
+        <div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></h3>
