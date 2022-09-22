@@ -106,6 +106,18 @@ This directory will contain:
         This contains reports, ``stdout`` from the build, and the final bitstream ``xclbin`` file produced by Vitis.
         This also contains a copy of the generated verilog (``FireSim-generated.sv``) used to produce this build.
 
+If this command is cancelled by a SIGINT, it will prompt for confirmation
+that you want to terminate the build instances.
+If you respond in the affirmative, it will move forward with the termination.
+If you do not want to have to confirm the termination (e.g. you are using this
+command in a script), you can give the command the ``--forceterminate`` command
+line argument. For example, the following will terminate all build instances in the
+build farm without prompting for confirmation if a SIGINT is received:
+
+::
+
+    firesim buildbitstream --forceterminate
+
 .. _firesim-builddriver:
 
 ``firesim builddriver``
