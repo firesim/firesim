@@ -14,7 +14,7 @@ class WithILADepth(depth: Int) extends Config((site, here, up) => {
 object BuildStrategies {
   trait IsBuildStrategy {
     def flowString: String
-    def emitTcl =  "set strategy \"" + flowString + "\"\n"
+    def emitSh = "strategy=\"" + flowString + "\"\n"
   }
   object Basic extends IsBuildStrategy { val flowString = "BASIC" }
   // Tries to minimize resource utilization. Notably passes directive
