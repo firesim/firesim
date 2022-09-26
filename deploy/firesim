@@ -283,18 +283,24 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     build_config_file.wait_on_build_host_initializations()
 
     @parallel
-    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> None:
+    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> bool:
         """Wrap parallel portion of ``build_bitstream``
 
         Args:
             config_file: BuildConfigFile
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
+
+        Returns:
+            Boolean indicating if the build passed or not.
         """
         build_config_file = config_file.get_build_by_ip(env.host_string)
-        build_config_file.bitbuilder.build_bitstream(bypass)
+        return build_config_file.bitbuilder.build_bitstream(bypass)
 
     # run builds, then terminate instances
-    execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
+    results = execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
+    if False in results.values():
+        rootLogger.critical("ERROR: A bitstream build failed.")
+        sys.exit(1)
 
 @register_task
 def builddriver(runtime_conf: RuntimeConfig) -> None:
