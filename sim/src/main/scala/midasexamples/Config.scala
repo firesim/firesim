@@ -20,7 +20,6 @@ class DefaultF1Config extends Config(new Config((site, here, up) => {
   case SynthPrints => true
   case EnableAutoCounter => true
 }) ++ new Config(
-  new firesim.configs.WithEC2F1Artefacts ++
   new WithDefaultMemModel ++
   new WithWiringTransform ++
   new midas.F1Config))

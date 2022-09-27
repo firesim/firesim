@@ -219,7 +219,7 @@ fpga_driver_dir:= $(fpga_work_dir)/driver
 
 # Enumerates the subset of generated files that must be copied over for FPGA compilation
 fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
-	.sv .defines.vh .env.sh \
+	.sv .defines.vh \
 	.synthesis.xdc .implementation.xdc)
 
 # Files used to run FPGA-level metasimulation

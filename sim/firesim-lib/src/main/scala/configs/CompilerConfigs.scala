@@ -54,12 +54,6 @@ class WithWiringTransform extends Config((site, here, up) => {
 // These run on the generated simulator(after all Golden Gate transformations:
 // host-decoupling is introduced, and BridgeModules are elaborated)
 
-// Generates additional TCL scripts requried by FireSim's EC2 F1 vivado flow
-class WithEC2F1Artefacts extends Config((site, here, up) => {
-    case HostTransforms => Dependency(firesim.passes.EC2F1Artefacts) +: up(HostTransforms, site)
-})
-
-
 // Tells ILATopWiringTransform to actually populate the ILA
 class WithAutoILA extends Config((site, here, up) => {
   case midas.EnableAutoILA => true
@@ -79,7 +73,6 @@ class WithAutoCounterPrintf extends Config((site, here, up) => {
 class BaseF1Config extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
-  new WithEC2F1Artefacts ++
   new midas.F1Config
 )
 

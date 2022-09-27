@@ -35,6 +35,8 @@ class BuildConfig:
     DESIGN: str
     TARGET_CONFIG: str
     deploytriplet: Optional[str]
+    frequency: Optional[int]
+    strategy: Optional[str]
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -59,6 +61,8 @@ class BuildConfig:
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
         self.deploytriplet = recipe_config_dict['deploy_triplet']
+        self.frequency = recipe_config_dict['frequency']
+        self.strategy = recipe_config_dict['strategy']
         self.launch_time = launch_time
 
         # run platform specific options
@@ -93,6 +97,27 @@ class BuildConfig:
             Chisel triplet
         """
         return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
+
+    def get_frequency(self) -> int:
+        """Get the build-specific frequency config.
+
+        Returns:
+            specified frequency (int)
+        """
+        if self.frequency is None:
+            return 75
+        return self.frequency
+
+    def get_strategy(self) -> str:
+        """Get the build-specific strategy config.
+
+        Returns:
+            specified strategy (str)
+        """
+        valid_strategies = ['BASIC', 'AREA', 'TIMING', 'EXPLORE', 'CONGESTION', 'NORETIMING', 'DEFAULT']
+        if self.strategy not in valid_strategies:
+            return 'TIMING'
+        return self.strategy
 
     def get_build_dir_name(self) -> str:
         """Get the name of the local build directory.
