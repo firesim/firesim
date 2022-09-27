@@ -88,7 +88,7 @@ def share_afi_with_users(afi_id, region, useridlist):
             FpgaImageId=afi_id,
             Attribute='loadPermission',
             OperationType='add',
-            UserIds=useridlist
+            UserIds=list(map(str, useridlist))
         )
     rootLogger.debug(result)
 
