@@ -35,37 +35,70 @@ extern "A" void tick
   input  reg [1:0]                 ctrl_b_resp,
   input  reg [`CTRL_ID_BITS-1:0]   ctrl_b_id,
 
-  output reg                       dma_ar_valid,
-  input  reg                       dma_ar_ready,
-  output reg [`DMA_ADDR_BITS-1:0]  dma_ar_addr,
-  output reg [`DMA_ID_BITS-1:0]    dma_ar_id,
-  output reg [2:0]                 dma_ar_size,
-  output reg [7:0]                 dma_ar_len,
+  output reg                       cpu_managed_axi4_ar_valid,
+  input  reg                       cpu_managed_axi4_ar_ready,
+  output reg [`CPU_MANAGED_AXI4_ADDR_BITS-1:0]  cpu_managed_axi4_ar_addr,
+  output reg [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_ar_id,
+  output reg [2:0]                 cpu_managed_axi4_ar_size,
+  output reg [7:0]                 cpu_managed_axi4_ar_len,
 
-  output reg                       dma_aw_valid,
-  input  reg                       dma_aw_ready,
-  output reg [`DMA_ADDR_BITS-1:0]  dma_aw_addr,
-  output reg [`DMA_ID_BITS-1:0]    dma_aw_id,
-  output reg [2:0]                 dma_aw_size,
-  output reg [7:0]                 dma_aw_len,
+  output reg                       cpu_managed_axi4_aw_valid,
+  input  reg                       cpu_managed_axi4_aw_ready,
+  output reg [`CPU_MANAGED_AXI4_ADDR_BITS-1:0]  cpu_managed_axi4_aw_addr,
+  output reg [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_aw_id,
+  output reg [2:0]                 cpu_managed_axi4_aw_size,
+  output reg [7:0]                 cpu_managed_axi4_aw_len,
 
-  output reg                       dma_w_valid,
-  input  reg                       dma_w_ready,
-  output reg [`DMA_STRB_BITS-1:0]  dma_w_strb,
-  output reg [`DMA_DATA_BITS-1:0]  dma_w_data,
-  output reg                       dma_w_last,
+  output reg                       cpu_managed_axi4_w_valid,
+  input  reg                       cpu_managed_axi4_w_ready,
+  output reg [`CPU_MANAGED_AXI4_STRB_BITS-1:0]  cpu_managed_axi4_w_strb,
+  output reg [`CPU_MANAGED_AXI4_DATA_BITS-1:0]  cpu_managed_axi4_w_data,
+  output reg                       cpu_managed_axi4_w_last,
 
-  input  reg                       dma_r_valid,
-  output reg                       dma_r_ready,
-  input  reg [1:0]                 dma_r_resp,
-  input  reg [`DMA_ID_BITS-1:0]    dma_r_id,
-  input  reg [`DMA_DATA_BITS-1:0]  dma_r_data,
-  input  reg                       dma_r_last,
+  input  reg                       cpu_managed_axi4_r_valid,
+  output reg                       cpu_managed_axi4_r_ready,
+  input  reg [1:0]                 cpu_managed_axi4_r_resp,
+  input  reg [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_r_id,
+  input  reg [`CPU_MANAGED_AXI4_DATA_BITS-1:0]  cpu_managed_axi4_r_data,
+  input  reg                       cpu_managed_axi4_r_last,
 
-  input  reg                       dma_b_valid,
-  output reg                       dma_b_ready,
-  input  reg [1:0]                 dma_b_resp,
-  input  reg [`DMA_ID_BITS-1:0]    dma_b_id,
+  input  reg                       cpu_managed_axi4_b_valid,
+  output reg                       cpu_managed_axi4_b_ready,
+  input  reg [1:0]                 cpu_managed_axi4_b_resp,
+  input  reg [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_b_id,
+
+  input  reg                                   fpga_managed_axi4_ar_valid,
+  output reg                                   fpga_managed_axi4_ar_ready,
+  input  reg [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fpga_managed_axi4_ar_addr,
+  input  reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_ar_id,
+  input  reg [2:0]                             fpga_managed_axi4_ar_size,
+  input  reg [7:0]                             fpga_managed_axi4_ar_len,
+
+  input  reg                                   fpga_managed_axi4_aw_valid,
+  output reg                                   fpga_managed_axi4_aw_ready,
+  input  reg [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fpga_managed_axi4_aw_addr,
+  input  reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_aw_id,
+  input  reg [2:0]                             fpga_managed_axi4_aw_size,
+  input  reg [7:0]                             fpga_managed_axi4_aw_len,
+
+  input  reg                                   fpga_managed_axi4_w_valid,
+  output reg                                   fpga_managed_axi4_w_ready,
+  input  reg [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fpga_managed_axi4_w_strb,
+  input  reg [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fpga_managed_axi4_w_data,
+  input  reg                                   fpga_managed_axi4_w_last,
+
+  output reg                                   fpga_managed_axi4_r_valid,
+  input  reg                                   fpga_managed_axi4_r_ready,
+  output reg [1:0]                             fpga_managed_axi4_r_resp,
+  output reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_r_id,
+  output reg [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fpga_managed_axi4_r_data,
+  output reg                                   fpga_managed_axi4_r_last,
+
+  output reg                                   fpga_managed_axi4_b_valid,
+  input  reg                                   fpga_managed_axi4_b_ready,
+  output reg [1:0]                             fpga_managed_axi4_b_resp,
+  output reg [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_b_id,
+
 
   input  reg                       mem_0_ar_valid,
   output reg                       mem_0_ar_ready,
@@ -262,37 +295,69 @@ module emul;
   wire [1:0]                 ctrl_b_resp;
   wire [`CTRL_ID_BITS-1:0]   ctrl_b_id;
 
-  reg                        dma_ar_valid;
-  wire                       dma_ar_ready;
-  reg  [`DMA_ADDR_BITS-1:0]  dma_ar_addr;
-  reg  [`DMA_ID_BITS-1:0]    dma_ar_id;
-  reg  [2:0]                 dma_ar_size;
-  reg  [7:0]                 dma_ar_len;
+  reg                        cpu_managed_axi4_ar_valid;
+  wire                       cpu_managed_axi4_ar_ready;
+  reg  [`CPU_MANAGED_AXI4_ADDR_BITS-1:0]  cpu_managed_axi4_ar_addr;
+  reg  [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_ar_id;
+  reg  [2:0]                 cpu_managed_axi4_ar_size;
+  reg  [7:0]                 cpu_managed_axi4_ar_len;
 
-  reg                        dma_aw_valid;
-  wire                       dma_aw_ready;
-  reg  [`DMA_ADDR_BITS-1:0]  dma_aw_addr;
-  reg  [`DMA_ID_BITS-1:0]    dma_aw_id;
-  reg  [2:0]                 dma_aw_size;
-  reg  [7:0]                 dma_aw_len;
+  reg                        cpu_managed_axi4_aw_valid;
+  wire                       cpu_managed_axi4_aw_ready;
+  reg  [`CPU_MANAGED_AXI4_ADDR_BITS-1:0]  cpu_managed_axi4_aw_addr;
+  reg  [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_aw_id;
+  reg  [2:0]                 cpu_managed_axi4_aw_size;
+  reg  [7:0]                 cpu_managed_axi4_aw_len;
 
-  reg                        dma_w_valid;
-  wire                       dma_w_ready;
-  reg  [`DMA_STRB_BITS-1:0]  dma_w_strb;
-  reg  [`DMA_DATA_BITS-1:0]  dma_w_data;
-  reg                        dma_w_last;
+  reg                        cpu_managed_axi4_w_valid;
+  wire                       cpu_managed_axi4_w_ready;
+  reg  [`CPU_MANAGED_AXI4_STRB_BITS-1:0]  cpu_managed_axi4_w_strb;
+  reg  [`CPU_MANAGED_AXI4_DATA_BITS-1:0]  cpu_managed_axi4_w_data;
+  reg                        cpu_managed_axi4_w_last;
 
-  wire                       dma_r_valid;
-  reg                        dma_r_ready;
-  wire [1:0]                 dma_r_resp;
-  wire [`DMA_ID_BITS-1:0]    dma_r_id;
-  wire [`DMA_DATA_BITS-1:0]  dma_r_data;
-  wire                       dma_r_last;
+  wire                       cpu_managed_axi4_r_valid;
+  reg                        cpu_managed_axi4_r_ready;
+  wire [1:0]                 cpu_managed_axi4_r_resp;
+  wire [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_r_id;
+  wire [`CPU_MANAGED_AXI4_DATA_BITS-1:0]  cpu_managed_axi4_r_data;
+  wire                       cpu_managed_axi4_r_last;
 
-  wire                       dma_b_valid;
-  reg                        dma_b_ready;
-  wire [1:0]                 dma_b_resp;
-  wire [`DMA_ID_BITS-1:0]    dma_b_id;
+  wire                       cpu_managed_axi4_b_valid;
+  reg                        cpu_managed_axi4_b_ready;
+  wire [1:0]                 cpu_managed_axi4_b_resp;
+  wire [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_b_id;
+
+  wire                                   fpga_managed_axi4_ar_valid;
+  reg                                    fpga_managed_axi4_ar_ready;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fpga_managed_axi4_ar_addr;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_ar_id;
+  wire [2:0]                             fpga_managed_axi4_ar_size;
+  wire [7:0]                             fpga_managed_axi4_ar_len;
+
+  wire                                   fpga_managed_axi4_aw_valid;
+  reg                                    fpga_managed_axi4_aw_ready;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fpga_managed_axi4_aw_addr;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_aw_id;
+  wire [2:0]                             fpga_managed_axi4_aw_size;
+  wire [7:0]                             fpga_managed_axi4_aw_len;
+
+  wire                                   fpga_managed_axi4_w_valid;
+  reg                                    fpga_managed_axi4_w_ready;
+  wire [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fpga_managed_axi4_w_strb;
+  wire [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fpga_managed_axi4_w_data;
+  wire                                   fpga_managed_axi4_w_last;
+
+  reg                                    fpga_managed_axi4_r_valid;
+  wire                                   fpga_managed_axi4_r_ready;
+  reg  [1:0]                             fpga_managed_axi4_r_resp;
+  reg  [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_r_id;
+  reg  [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fpga_managed_axi4_r_data;
+  reg                                    fpga_managed_axi4_r_last;
+
+  reg                                    fpga_managed_axi4_b_valid;
+  wire                                   fpga_managed_axi4_b_ready;
+  reg  [1:0]                             fpga_managed_axi4_b_resp;
+  reg  [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_b_id;
 
   wire                       mem_0_ar_valid;
   reg                        mem_0_ar_ready;
@@ -456,37 +521,69 @@ module emul;
   wire [1:0]                 ctrl_b_resp_delay;
   wire [`CTRL_ID_BITS-1:0]   ctrl_b_id_delay;
 
-  wire                       dma_ar_valid_delay;
-  wire                       dma_ar_ready_delay;
-  wire [`DMA_ADDR_BITS-1:0]  dma_ar_addr_delay;
-  wire [`DMA_ID_BITS-1:0]    dma_ar_id_delay;
-  wire [2:0]                 dma_ar_size_delay;
-  wire [7:0]                 dma_ar_len_delay;
+  wire                       cpu_managed_axi4_ar_valid_delay;
+  wire                       cpu_managed_axi4_ar_ready_delay;
+  wire [`CPU_MANAGED_AXI4_ADDR_BITS-1:0]  cpu_managed_axi4_ar_addr_delay;
+  wire [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_ar_id_delay;
+  wire [2:0]                 cpu_managed_axi4_ar_size_delay;
+  wire [7:0]                 cpu_managed_axi4_ar_len_delay;
 
-  wire                       dma_aw_valid_delay;
-  wire                       dma_aw_ready_delay;
-  wire [`DMA_ADDR_BITS-1:0]  dma_aw_addr_delay;
-  wire [`DMA_ID_BITS-1:0]    dma_aw_id_delay;
-  wire [2:0]                 dma_aw_size_delay;
-  wire [7:0]                 dma_aw_len_delay;
+  wire                       cpu_managed_axi4_aw_valid_delay;
+  wire                       cpu_managed_axi4_aw_ready_delay;
+  wire [`CPU_MANAGED_AXI4_ADDR_BITS-1:0]  cpu_managed_axi4_aw_addr_delay;
+  wire [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_aw_id_delay;
+  wire [2:0]                 cpu_managed_axi4_aw_size_delay;
+  wire [7:0]                 cpu_managed_axi4_aw_len_delay;
 
-  wire                       dma_w_valid_delay;
-  wire                       dma_w_ready_delay;
-  wire [`DMA_STRB_BITS-1:0]  dma_w_strb_delay;
-  wire [`DMA_DATA_BITS-1:0]  dma_w_data_delay;
-  wire                       dma_w_last_delay;
+  wire                       cpu_managed_axi4_w_valid_delay;
+  wire                       cpu_managed_axi4_w_ready_delay;
+  wire [`CPU_MANAGED_AXI4_STRB_BITS-1:0]  cpu_managed_axi4_w_strb_delay;
+  wire [`CPU_MANAGED_AXI4_DATA_BITS-1:0]  cpu_managed_axi4_w_data_delay;
+  wire                       cpu_managed_axi4_w_last_delay;
 
-  wire                       dma_r_valid_delay;
-  wire                       dma_r_ready_delay;
-  wire [1:0]                 dma_r_resp_delay;
-  wire [`DMA_ID_BITS-1:0]    dma_r_id_delay;
-  wire [`DMA_DATA_BITS-1:0]  dma_r_data_delay;
-  wire                       dma_r_last_delay;
+  wire                       cpu_managed_axi4_r_valid_delay;
+  wire                       cpu_managed_axi4_r_ready_delay;
+  wire [1:0]                 cpu_managed_axi4_r_resp_delay;
+  wire [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_r_id_delay;
+  wire [`CPU_MANAGED_AXI4_DATA_BITS-1:0]  cpu_managed_axi4_r_data_delay;
+  wire                       cpu_managed_axi4_r_last_delay;
 
-  wire                       dma_b_valid_delay;
-  wire                       dma_b_ready_delay;
-  wire [1:0]                 dma_b_resp_delay;
-  wire [`DMA_ID_BITS-1:0]    dma_b_id_delay;
+  wire                       cpu_managed_axi4_b_valid_delay;
+  wire                       cpu_managed_axi4_b_ready_delay;
+  wire [1:0]                 cpu_managed_axi4_b_resp_delay;
+  wire [`CPU_MANAGED_AXI4_ID_BITS-1:0]    cpu_managed_axi4_b_id_delay;
+
+  wire                                   fpga_managed_axi4_ar_valid_delay;
+  wire                                   fpga_managed_axi4_ar_ready_delay;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fpga_managed_axi4_ar_addr_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_ar_id_delay;
+  wire [2:0]                             fpga_managed_axi4_ar_size_delay;
+  wire [7:0]                             fpga_managed_axi4_ar_len_delay;
+
+  wire                                   fpga_managed_axi4_aw_valid_delay;
+  wire                                   fpga_managed_axi4_aw_ready_delay;
+  wire [`FPGA_MANAGED_AXI4_ADDR_BITS-1:0]      fpga_managed_axi4_aw_addr_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_aw_id_delay;
+  wire [2:0]                             fpga_managed_axi4_aw_size_delay;
+  wire [7:0]                             fpga_managed_axi4_aw_len_delay;
+
+  wire                                   fpga_managed_axi4_w_valid_delay;
+  wire                                   fpga_managed_axi4_w_ready_delay;
+  wire [(`FPGA_MANAGED_AXI4_DATA_BITS/8)-1:0]  fpga_managed_axi4_w_strb_delay;
+  wire [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fpga_managed_axi4_w_data_delay;
+  wire                                   fpga_managed_axi4_w_last_delay;
+
+  wire                                   fpga_managed_axi4_r_valid_delay;
+  wire                                   fpga_managed_axi4_r_ready_delay;
+  wire [1:0]                             fpga_managed_axi4_r_resp_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_r_id_delay;
+  wire [`FPGA_MANAGED_AXI4_DATA_BITS-1:0]      fpga_managed_axi4_r_data_delay;
+  wire                                   fpga_managed_axi4_r_last_delay;
+
+  wire                                   fpga_managed_axi4_b_valid_delay;
+  wire                                   fpga_managed_axi4_b_ready_delay;
+  wire [1:0]                             fpga_managed_axi4_b_resp_delay;
+  wire [`FPGA_MANAGED_AXI4_ID_BITS-1:0]        fpga_managed_axi4_b_id_delay;
 
   wire                       mem_0_ar_valid_delay;
   wire                       mem_0_ar_ready_delay;
@@ -648,37 +745,69 @@ module emul;
   assign #0.1 ctrl_b_resp = ctrl_b_resp_delay;
   assign #0.1 ctrl_b_id = ctrl_b_id_delay;
 
-  assign #0.1 dma_ar_valid_delay = dma_ar_valid;
-  assign #0.1 dma_ar_ready = dma_ar_ready_delay;
-  assign #0.1 dma_ar_addr_delay = dma_ar_addr;
-  assign #0.1 dma_ar_id_delay = dma_ar_id;
-  assign #0.1 dma_ar_size_delay = dma_ar_size;
-  assign #0.1 dma_ar_len_delay = dma_ar_len;
+  assign #0.1 cpu_managed_axi4_ar_valid_delay = cpu_managed_axi4_ar_valid;
+  assign #0.1 cpu_managed_axi4_ar_ready = cpu_managed_axi4_ar_ready_delay;
+  assign #0.1 cpu_managed_axi4_ar_addr_delay = cpu_managed_axi4_ar_addr;
+  assign #0.1 cpu_managed_axi4_ar_id_delay = cpu_managed_axi4_ar_id;
+  assign #0.1 cpu_managed_axi4_ar_size_delay = cpu_managed_axi4_ar_size;
+  assign #0.1 cpu_managed_axi4_ar_len_delay = cpu_managed_axi4_ar_len;
 
-  assign #0.1 dma_aw_valid_delay = dma_aw_valid;
-  assign #0.1 dma_aw_ready = dma_aw_ready_delay;
-  assign #0.1 dma_aw_addr_delay = dma_aw_addr;
-  assign #0.1 dma_aw_id_delay = dma_aw_id;
-  assign #0.1 dma_aw_size_delay = dma_aw_size;
-  assign #0.1 dma_aw_len_delay = dma_aw_len;
+  assign #0.1 cpu_managed_axi4_aw_valid_delay = cpu_managed_axi4_aw_valid;
+  assign #0.1 cpu_managed_axi4_aw_ready = cpu_managed_axi4_aw_ready_delay;
+  assign #0.1 cpu_managed_axi4_aw_addr_delay = cpu_managed_axi4_aw_addr;
+  assign #0.1 cpu_managed_axi4_aw_id_delay = cpu_managed_axi4_aw_id;
+  assign #0.1 cpu_managed_axi4_aw_size_delay = cpu_managed_axi4_aw_size;
+  assign #0.1 cpu_managed_axi4_aw_len_delay = cpu_managed_axi4_aw_len;
 
-  assign #0.1 dma_w_valid_delay = dma_w_valid;
-  assign #0.1 dma_w_ready = dma_w_ready_delay;
-  assign #0.1 dma_w_strb_delay = dma_w_strb;
-  assign #0.1 dma_w_data_delay = dma_w_data;
-  assign #0.1 dma_w_last_delay = dma_w_last;
+  assign #0.1 cpu_managed_axi4_w_valid_delay = cpu_managed_axi4_w_valid;
+  assign #0.1 cpu_managed_axi4_w_ready = cpu_managed_axi4_w_ready_delay;
+  assign #0.1 cpu_managed_axi4_w_strb_delay = cpu_managed_axi4_w_strb;
+  assign #0.1 cpu_managed_axi4_w_data_delay = cpu_managed_axi4_w_data;
+  assign #0.1 cpu_managed_axi4_w_last_delay = cpu_managed_axi4_w_last;
 
-  assign #0.1 dma_r_valid = dma_r_valid_delay;
-  assign #0.1 dma_r_ready_delay = dma_r_ready;
-  assign #0.1 dma_r_resp = dma_r_resp_delay;
-  assign #0.1 dma_r_id = dma_r_id_delay;
-  assign #0.1 dma_r_data = dma_r_data_delay;
-  assign #0.1 dma_r_last = dma_r_last_delay;
+  assign #0.1 cpu_managed_axi4_r_valid = cpu_managed_axi4_r_valid_delay;
+  assign #0.1 cpu_managed_axi4_r_ready_delay = cpu_managed_axi4_r_ready;
+  assign #0.1 cpu_managed_axi4_r_resp = cpu_managed_axi4_r_resp_delay;
+  assign #0.1 cpu_managed_axi4_r_id = cpu_managed_axi4_r_id_delay;
+  assign #0.1 cpu_managed_axi4_r_data = cpu_managed_axi4_r_data_delay;
+  assign #0.1 cpu_managed_axi4_r_last = cpu_managed_axi4_r_last_delay;
 
-  assign #0.1 dma_b_valid = dma_b_valid_delay;
-  assign #0.1 dma_b_ready_delay = dma_b_ready;
-  assign #0.1 dma_b_resp = dma_b_resp_delay;
-  assign #0.1 dma_b_id = dma_b_id_delay;
+  assign #0.1 cpu_managed_axi4_b_valid = cpu_managed_axi4_b_valid_delay;
+  assign #0.1 cpu_managed_axi4_b_ready_delay = cpu_managed_axi4_b_ready;
+  assign #0.1 cpu_managed_axi4_b_resp = cpu_managed_axi4_b_resp_delay;
+  assign #0.1 cpu_managed_axi4_b_id = cpu_managed_axi4_b_id_delay;
+
+  assign #0.1 fpga_managed_axi4_ar_valid = fpga_managed_axi4_ar_valid_delay;
+  assign #0.1 fpga_managed_axi4_ar_ready_delay = fpga_managed_axi4_ar_ready;
+  assign #0.1 fpga_managed_axi4_ar_addr = fpga_managed_axi4_ar_addr_delay;
+  assign #0.1 fpga_managed_axi4_ar_id = fpga_managed_axi4_ar_id_delay;
+  assign #0.1 fpga_managed_axi4_ar_size = fpga_managed_axi4_ar_size_delay;
+  assign #0.1 fpga_managed_axi4_ar_len = fpga_managed_axi4_ar_len_delay;
+
+  assign #0.1 fpga_managed_axi4_aw_valid = fpga_managed_axi4_aw_valid_delay;
+  assign #0.1 fpga_managed_axi4_aw_ready_delay = fpga_managed_axi4_aw_ready;
+  assign #0.1 fpga_managed_axi4_aw_addr = fpga_managed_axi4_aw_addr_delay;
+  assign #0.1 fpga_managed_axi4_aw_id = fpga_managed_axi4_aw_id_delay;
+  assign #0.1 fpga_managed_axi4_aw_size = fpga_managed_axi4_aw_size_delay;
+  assign #0.1 fpga_managed_axi4_aw_len = fpga_managed_axi4_aw_len_delay;
+
+  assign #0.1 fpga_managed_axi4_w_valid = fpga_managed_axi4_w_valid_delay;
+  assign #0.1 fpga_managed_axi4_w_ready_delay = fpga_managed_axi4_w_ready;
+  assign #0.1 fpga_managed_axi4_w_strb = fpga_managed_axi4_w_strb_delay;
+  assign #0.1 fpga_managed_axi4_w_data = fpga_managed_axi4_w_data_delay;
+  assign #0.1 fpga_managed_axi4_w_last = fpga_managed_axi4_w_last_delay;
+
+  assign #0.1 fpga_managed_axi4_r_valid_delay = fpga_managed_axi4_r_valid;
+  assign #0.1 fpga_managed_axi4_r_ready = fpga_managed_axi4_r_ready_delay;
+  assign #0.1 fpga_managed_axi4_r_resp_delay = fpga_managed_axi4_r_resp;
+  assign #0.1 fpga_managed_axi4_r_id_delay = fpga_managed_axi4_r_id;
+  assign #0.1 fpga_managed_axi4_r_data_delay = fpga_managed_axi4_r_data;
+  assign #0.1 fpga_managed_axi4_r_last_delay = fpga_managed_axi4_r_last;
+
+  assign #0.1 fpga_managed_axi4_b_valid_delay = fpga_managed_axi4_b_valid;
+  assign #0.1 fpga_managed_axi4_b_ready = fpga_managed_axi4_b_ready_delay;
+  assign #0.1 fpga_managed_axi4_b_resp_delay = fpga_managed_axi4_b_resp;
+  assign #0.1 fpga_managed_axi4_b_id_delay = fpga_managed_axi4_b_id;
 
   assign #0.1 mem_0_ar_valid = mem_0_ar_valid_delay;
   assign #0.1 mem_0_ar_ready_delay = mem_0_ar_ready;
@@ -843,38 +972,72 @@ module emul;
     .ctrl_b_ready(ctrl_b_ready_delay),
     .ctrl_b_bits_resp(ctrl_b_resp_delay),
     .ctrl_b_bits_id(ctrl_b_id_delay),
+`ifdef CPU_MANAGED_AXI4_PRESENT
+    .cpu_managed_axi4_ar_valid(cpu_managed_axi4_ar_valid_delay),
+    .cpu_managed_axi4_ar_ready(cpu_managed_axi4_ar_ready_delay),
+    .cpu_managed_axi4_ar_bits_addr(cpu_managed_axi4_ar_addr_delay),
+    .cpu_managed_axi4_ar_bits_id(cpu_managed_axi4_ar_id_delay),
+    .cpu_managed_axi4_ar_bits_size(cpu_managed_axi4_ar_size_delay),
+    .cpu_managed_axi4_ar_bits_len(cpu_managed_axi4_ar_len_delay),
 
-    .dma_ar_valid(dma_ar_valid_delay),
-    .dma_ar_ready(dma_ar_ready_delay),
-    .dma_ar_bits_addr(dma_ar_addr_delay),
-    .dma_ar_bits_id(dma_ar_id_delay),
-    .dma_ar_bits_size(dma_ar_size_delay),
-    .dma_ar_bits_len(dma_ar_len_delay),
+    .cpu_managed_axi4_aw_valid(cpu_managed_axi4_aw_valid_delay),
+    .cpu_managed_axi4_aw_ready(cpu_managed_axi4_aw_ready_delay),
+    .cpu_managed_axi4_aw_bits_addr(cpu_managed_axi4_aw_addr_delay),
+    .cpu_managed_axi4_aw_bits_id(cpu_managed_axi4_aw_id_delay),
+    .cpu_managed_axi4_aw_bits_size(cpu_managed_axi4_aw_size_delay),
+    .cpu_managed_axi4_aw_bits_len(cpu_managed_axi4_aw_len_delay),
 
-    .dma_aw_valid(dma_aw_valid_delay),
-    .dma_aw_ready(dma_aw_ready_delay),
-    .dma_aw_bits_addr(dma_aw_addr_delay),
-    .dma_aw_bits_id(dma_aw_id_delay),
-    .dma_aw_bits_size(dma_aw_size_delay),
-    .dma_aw_bits_len(dma_aw_len_delay),
+    .cpu_managed_axi4_w_valid(cpu_managed_axi4_w_valid_delay),
+    .cpu_managed_axi4_w_ready(cpu_managed_axi4_w_ready_delay),
+    .cpu_managed_axi4_w_bits_strb(cpu_managed_axi4_w_strb_delay),
+    .cpu_managed_axi4_w_bits_data(cpu_managed_axi4_w_data_delay),
+    .cpu_managed_axi4_w_bits_last(cpu_managed_axi4_w_last_delay),
 
-    .dma_w_valid(dma_w_valid_delay),
-    .dma_w_ready(dma_w_ready_delay),
-    .dma_w_bits_strb(dma_w_strb_delay),
-    .dma_w_bits_data(dma_w_data_delay),
-    .dma_w_bits_last(dma_w_last_delay),
+    .cpu_managed_axi4_r_valid(cpu_managed_axi4_r_valid_delay),
+    .cpu_managed_axi4_r_ready(cpu_managed_axi4_r_ready_delay),
+    .cpu_managed_axi4_r_bits_resp(cpu_managed_axi4_r_resp_delay),
+    .cpu_managed_axi4_r_bits_id(cpu_managed_axi4_r_id_delay),
+    .cpu_managed_axi4_r_bits_data(cpu_managed_axi4_r_data_delay),
+    .cpu_managed_axi4_r_bits_last(cpu_managed_axi4_r_last_delay),
 
-    .dma_r_valid(dma_r_valid_delay),
-    .dma_r_ready(dma_r_ready_delay),
-    .dma_r_bits_resp(dma_r_resp_delay),
-    .dma_r_bits_id(dma_r_id_delay),
-    .dma_r_bits_data(dma_r_data_delay),
-    .dma_r_bits_last(dma_r_last_delay),
+    .cpu_managed_axi4_b_valid(cpu_managed_axi4_b_valid_delay),
+    .cpu_managed_axi4_b_ready(cpu_managed_axi4_b_ready_delay),
+    .cpu_managed_axi4_b_bits_resp(cpu_managed_axi4_b_resp_delay),
+    .cpu_managed_axi4_b_bits_id(cpu_managed_axi4_b_id_delay),
+`endif
+`ifdef FPGA_MANAGED_AXI4_PRESENT
+    .fpga_managed_axi4_ar_valid(fpga_managed_axi4_ar_valid_delay),
+    .fpga_managed_axi4_ar_ready(fpga_managed_axi4_ar_ready_delay),
+    .fpga_managed_axi4_ar_bits_addr(fpga_managed_axi4_ar_addr_delay),
+    .fpga_managed_axi4_ar_bits_id(fpga_managed_axi4_ar_id_delay),
+    .fpga_managed_axi4_ar_bits_size(fpga_managed_axi4_ar_size_delay),
+    .fpga_managed_axi4_ar_bits_len(fpga_managed_axi4_ar_len_delay),
 
-    .dma_b_valid(dma_b_valid_delay),
-    .dma_b_ready(dma_b_ready_delay),
-    .dma_b_bits_resp(dma_b_resp_delay),
-    .dma_b_bits_id(dma_b_id_delay),
+    .fpga_managed_axi4_aw_valid(fpga_managed_axi4_aw_valid_delay),
+    .fpga_managed_axi4_aw_ready(fpga_managed_axi4_aw_ready_delay),
+    .fpga_managed_axi4_aw_bits_addr(fpga_managed_axi4_aw_addr_delay),
+    .fpga_managed_axi4_aw_bits_id(fpga_managed_axi4_aw_id_delay),
+    .fpga_managed_axi4_aw_bits_size(fpga_managed_axi4_aw_size_delay),
+    .fpga_managed_axi4_aw_bits_len(fpga_managed_axi4_aw_len_delay),
+
+    .fpga_managed_axi4_w_valid(fpga_managed_axi4_w_valid_delay),
+    .fpga_managed_axi4_w_ready(fpga_managed_axi4_w_ready_delay),
+    .fpga_managed_axi4_w_bits_strb(fpga_managed_axi4_w_strb_delay),
+    .fpga_managed_axi4_w_bits_data(fpga_managed_axi4_w_data_delay),
+    .fpga_managed_axi4_w_bits_last(fpga_managed_axi4_w_last_delay),
+
+    .fpga_managed_axi4_r_valid(fpga_managed_axi4_r_valid_delay),
+    .fpga_managed_axi4_r_ready(fpga_managed_axi4_r_ready_delay),
+    .fpga_managed_axi4_r_bits_resp(fpga_managed_axi4_r_resp_delay),
+    .fpga_managed_axi4_r_bits_id(fpga_managed_axi4_r_id_delay),
+    .fpga_managed_axi4_r_bits_data(fpga_managed_axi4_r_data_delay),
+    .fpga_managed_axi4_r_bits_last(fpga_managed_axi4_r_last_delay),
+
+    .fpga_managed_axi4_b_valid(fpga_managed_axi4_b_valid_delay),
+    .fpga_managed_axi4_b_ready(fpga_managed_axi4_b_ready_delay),
+    .fpga_managed_axi4_b_bits_resp(fpga_managed_axi4_b_resp_delay),
+    .fpga_managed_axi4_b_bits_id(fpga_managed_axi4_b_id_delay),
+`endif
 
     .mem_0_ar_valid(mem_0_ar_valid_delay),
     .mem_0_ar_ready(mem_0_ar_ready_delay),
@@ -907,7 +1070,6 @@ module emul;
     .mem_0_b_ready(mem_0_b_ready_delay),
     .mem_0_b_bits_resp(mem_0_b_resp_delay),
     .mem_0_b_bits_id(mem_0_b_id_delay),
-
 `ifdef MEM_HAS_CHANNEL1
     .mem_1_ar_valid(mem_1_ar_valid_delay),
     .mem_1_ar_ready(mem_1_ar_ready_delay),
@@ -1049,37 +1211,69 @@ module emul;
       ctrl_b_resp,
       ctrl_b_id,
 
-      dma_ar_valid,
-      dma_ar_ready,
-      dma_ar_addr,
-      dma_ar_id,
-      dma_ar_size,
-      dma_ar_len,
+      cpu_managed_axi4_ar_valid,
+      cpu_managed_axi4_ar_ready,
+      cpu_managed_axi4_ar_addr,
+      cpu_managed_axi4_ar_id,
+      cpu_managed_axi4_ar_size,
+      cpu_managed_axi4_ar_len,
 
-      dma_aw_valid,
-      dma_aw_ready,
-      dma_aw_addr,
-      dma_aw_id,
-      dma_aw_size,
-      dma_aw_len,
+      cpu_managed_axi4_aw_valid,
+      cpu_managed_axi4_aw_ready,
+      cpu_managed_axi4_aw_addr,
+      cpu_managed_axi4_aw_id,
+      cpu_managed_axi4_aw_size,
+      cpu_managed_axi4_aw_len,
 
-      dma_w_valid,
-      dma_w_ready,
-      dma_w_strb,
-      dma_w_data,
-      dma_w_last,
+      cpu_managed_axi4_w_valid,
+      cpu_managed_axi4_w_ready,
+      cpu_managed_axi4_w_strb,
+      cpu_managed_axi4_w_data,
+      cpu_managed_axi4_w_last,
 
-      dma_r_valid,
-      dma_r_ready,
-      dma_r_resp,
-      dma_r_id,
-      dma_r_data,
-      dma_r_last,
+      cpu_managed_axi4_r_valid,
+      cpu_managed_axi4_r_ready,
+      cpu_managed_axi4_r_resp,
+      cpu_managed_axi4_r_id,
+      cpu_managed_axi4_r_data,
+      cpu_managed_axi4_r_last,
 
-      dma_b_valid,
-      dma_b_ready,
-      dma_b_resp,
-      dma_b_id,
+      cpu_managed_axi4_b_valid,
+      cpu_managed_axi4_b_ready,
+      cpu_managed_axi4_b_resp,
+      cpu_managed_axi4_b_id,
+
+      fpga_managed_axi4_ar_valid,
+      fpga_managed_axi4_ar_ready,
+      fpga_managed_axi4_ar_addr,
+      fpga_managed_axi4_ar_id,
+      fpga_managed_axi4_ar_size,
+      fpga_managed_axi4_ar_len,
+
+      fpga_managed_axi4_aw_valid,
+      fpga_managed_axi4_aw_ready,
+      fpga_managed_axi4_aw_addr,
+      fpga_managed_axi4_aw_id,
+      fpga_managed_axi4_aw_size,
+      fpga_managed_axi4_aw_len,
+
+      fpga_managed_axi4_w_valid,
+      fpga_managed_axi4_w_ready,
+      fpga_managed_axi4_w_strb,
+      fpga_managed_axi4_w_data,
+      fpga_managed_axi4_w_last,
+
+      fpga_managed_axi4_r_valid,
+      fpga_managed_axi4_r_ready,
+      fpga_managed_axi4_r_resp,
+      fpga_managed_axi4_r_id,
+      fpga_managed_axi4_r_data,
+      fpga_managed_axi4_r_last,
+
+      fpga_managed_axi4_b_valid,
+      fpga_managed_axi4_b_ready,
+      fpga_managed_axi4_b_resp,
+      fpga_managed_axi4_b_id,
 
       mem_0_ar_valid,
       mem_0_ar_ready,

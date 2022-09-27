@@ -30,8 +30,10 @@ simif_f1_t::simif_f1_t(int argc, char **argv) {
 
   using namespace std::placeholders;
   auto mmio_read_func = std::bind(&simif_f1_t::read, this, _1);
-  auto pcis_read_func = std::bind(&simif_f1_t::pcis_read, this, _1, _2, _3);
-  auto pcis_write_func = std::bind(&simif_f1_t::pcis_write, this, _1, _2, _3);
+  auto cpu_managed_axi4_read_func =
+      std::bind(&simif_f1_t::cpu_managed_axi4_read, this, _1, _2, _3);
+  auto cpu_managed_axi4_write_func =
+      std::bind(&simif_f1_t::cpu_managed_axi4_write, this, _1, _2, _3);
 
   for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
     auto params = CPUManagedStreamParameters(
@@ -41,7 +43,7 @@ simif_f1_t::simif_f1_t(int argc, char **argv) {
         CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
 
     from_host_streams.push_back(
-        StreamFromCPU(params, mmio_read_func, pcis_write_func));
+        StreamFromCPU(params, mmio_read_func, cpu_managed_axi4_write_func));
   }
 
   for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
@@ -52,7 +54,7 @@ simif_f1_t::simif_f1_t(int argc, char **argv) {
         CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
 
     to_host_streams.push_back(
-        StreamToCPU(params, mmio_read_func, pcis_read_func));
+        StreamToCPU(params, mmio_read_func, cpu_managed_axi4_read_func));
   }
 }
 
@@ -227,7 +229,7 @@ uint32_t simif_f1_t::read(size_t addr) {
 #endif
 }
 
-size_t simif_f1_t::pcis_read(size_t addr, char *data, size_t size) {
+size_t simif_f1_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
 #ifdef SIMULATION_XSIM
   assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else
@@ -235,7 +237,8 @@ size_t simif_f1_t::pcis_read(size_t addr, char *data, size_t size) {
 #endif
 }
 
-size_t simif_f1_t::pcis_write(size_t addr, char *data, size_t size) {
+size_t
+simif_f1_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
 #ifdef SIMULATION_XSIM
   assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else

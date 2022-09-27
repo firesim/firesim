@@ -41,8 +41,8 @@ private:
   std::vector<StreamToCPU> to_host_streams;
   std::vector<StreamFromCPU> from_host_streams;
 
-  size_t pcis_write(size_t addr, char *data, size_t size);
-  size_t pcis_read(size_t addr, char *data, size_t size);
+  size_t cpu_managed_axi4_write(size_t addr, char *data, size_t size);
+  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size);
 
 #ifdef SIMULATION_XSIM
   char *driver_to_xsim = "/tmp/driver_to_xsim";
