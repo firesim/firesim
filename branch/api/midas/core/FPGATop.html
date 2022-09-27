@@ -111,6 +111,14 @@
                         <a href="AssertTokenIrrevocable$.html" title="">AssertTokenIrrevocable</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="object" href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1."></a>
+                        <a href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1.">CPUManagedAXI4Key</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="CPUManagedAXI4Params.html" title=""></a>
+                        <a href="CPUManagedAXI4Params.html" title="">CPUManagedAXI4Params</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="CPUManagedStreamEngine.html" title=""></a>
                         <a href="CPUManagedStreamEngine.html" title="">CPUManagedStreamEngine</a>
                       </li><li class="current-entities indented2">
@@ -123,12 +131,16 @@
                         <a href="ClockRecord.html" title="">ClockRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="DMANastiKey$.html" title="The following case objects define the widths of the three AXI4 bus types presented to a simulator."></a>
-                        <a href="DMANastiKey$.html" title="The following case objects define the widths of the three AXI4 bus types presented to a simulator.">DMANastiKey</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="object" href="DirectedLIBDNTestHelper$.html" title=""></a>
                         <a href="DirectedLIBDNTestHelper$.html" title="">DirectedLIBDNTestHelper</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="FPGAManagedAXI4Key$.html" title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1."></a>
+                        <a href="FPGAManagedAXI4Key$.html" title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1.">FPGAManagedAXI4Key</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA"></a>
+                        <a href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA">FPGAManagedAXI4Params</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGAManagedStreamEngine.html" title="This is a stub to foreshadow the other implementation"></a>
@@ -137,10 +149,6 @@
                         <span class="separator"></span>
                         <a class="class" href="" title=""></a>
                         <a href="" title="">FPGATop</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="FPGATopIO.html" title=""></a>
-                        <a href="FPGATopIO.html" title="">FPGATopIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGATopImp.html" title=""></a>
@@ -525,7 +533,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">bridgeModuleMap</span><span class="result">: <span class="extype" name="scala.collection.immutable.ListMap">ListMap</span>[<span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span>, <a href="../widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[_ &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="../widgets/HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>]]</span>
+        <span class="name">bridgeModuleMap</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/collection/immutable/ListMap.html#scala.collection.immutable.ListMap" class="extype" name="scala.collection.immutable.ListMap">ListMap</a>[<span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span>, <a href="../widgets/BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[_ &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="../widgets/HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>]]</span>
       </span>
       
       
@@ -667,6 +675,22 @@
       </span>
       
       
+    </li><li name="midas.core.FPGATop#cpuManagedAXI4NodeTuple" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="cpuManagedAXI4NodeTuple:Option[(freechips.rocketchip.amba.axi4.AXI4MasterNode,midas.core.CPUManagedAXI4Params)]"></a><a id="cpuManagedAXI4NodeTuple:Option[(AXI4MasterNode,CPUManagedAXI4Params)]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGATop.html#cpuManagedAXI4NodeTuple:Option[(freechips.rocketchip.amba.axi4.AXI4MasterNode,midas.core.CPUManagedAXI4Params)]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cpuManagedAXI4NodeTuple</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[(<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterNode">AXI4MasterNode</span>, <a href="CPUManagedAXI4Params.html" class="extype" name="midas.core.CPUManagedAXI4Params">CPUManagedAXI4Params</a>)]</span>
+      </span>
+      
+      
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#desiredName" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="desiredName:String"></a>
       <span class="permalink">
@@ -784,6 +808,22 @@ FASED, where plus args _must_ be provided.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.core.FPGATop#fpgaManagedAXI4NodeTuple" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fpgaManagedAXI4NodeTuple:Option[(freechips.rocketchip.amba.axi4.AXI4SlaveNode,midas.core.FPGAManagedAXI4Params)]"></a><a id="fpgaManagedAXI4NodeTuple:Option[(AXI4SlaveNode,FPGAManagedAXI4Params)]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGATop.html#fpgaManagedAXI4NodeTuple:Option[(freechips.rocketchip.amba.axi4.AXI4SlaveNode,midas.core.FPGAManagedAXI4Params)]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fpgaManagedAXI4NodeTuple</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[(<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4SlaveNode">AXI4SlaveNode</span>, <a href="FPGAManagedAXI4Params.html" class="extype" name="midas.core.FPGAManagedAXI4Params">FPGAManagedAXI4Params</a>)]</span>
+      </span>
+      
+      
     </li><li name="midas.core.FPGATop#fromCPUStreamParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="fromCPUStreamParams:Iterable[midas.core.StreamSinkParameters]"></a><a id="fromCPUStreamParams:Iterable[StreamSinkParameters]"></a>
       <span class="permalink">
@@ -1350,38 +1390,6 @@ called after bridge address assignment is complete.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyModule</dd></dl></div>
-    </li><li name="midas.core.FPGATop#pcisAXI4BundleParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="pcisAXI4BundleParams:freechips.rocketchip.amba.axi4.AXI4BundleParameters"></a><a id="pcisAXI4BundleParams:AXI4BundleParameters"></a>
-      <span class="permalink">
-      <a href="../../midas/core/FPGATop.html#pcisAXI4BundleParams:freechips.rocketchip.amba.axi4.AXI4BundleParameters" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pcisAXI4BundleParams</span><span class="result">: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4BundleParameters">AXI4BundleParameters</span></span>
-      </span>
-      
-      
-    </li><li name="midas.core.FPGATop#pcisNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="pcisNode:freechips.rocketchip.amba.axi4.AXI4MasterNode"></a><a id="pcisNode:AXI4MasterNode"></a>
-      <span class="permalink">
-      <a href="../../midas/core/FPGATop.html#pcisNode:freechips.rocketchip.amba.axi4.AXI4MasterNode" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pcisNode</span><span class="result">: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterNode">AXI4MasterNode</span></span>
-      </span>
-      
-      
     </li><li name="midas.core.FPGATop#printHostDRAMSummary" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="printHostDRAMSummary():Unit"></a>
       <span class="permalink">

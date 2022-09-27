@@ -111,6 +111,14 @@
                         <a href="AssertTokenIrrevocable$.html" title="">AssertTokenIrrevocable</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="object" href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1."></a>
+                        <a href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1.">CPUManagedAXI4Key</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="CPUManagedAXI4Params.html" title=""></a>
+                        <a href="CPUManagedAXI4Params.html" title="">CPUManagedAXI4Params</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="CPUManagedStreamEngine.html" title=""></a>
                         <a href="CPUManagedStreamEngine.html" title="">CPUManagedStreamEngine</a>
                       </li><li class="current-entities indented2">
@@ -123,12 +131,16 @@
                         <a href="ClockRecord.html" title="">ClockRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="DMANastiKey$.html" title="The following case objects define the widths of the three AXI4 bus types presented to a simulator."></a>
-                        <a href="DMANastiKey$.html" title="The following case objects define the widths of the three AXI4 bus types presented to a simulator.">DMANastiKey</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="object" href="DirectedLIBDNTestHelper$.html" title=""></a>
                         <a href="DirectedLIBDNTestHelper$.html" title="">DirectedLIBDNTestHelper</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="FPGAManagedAXI4Key$.html" title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1."></a>
+                        <a href="FPGAManagedAXI4Key$.html" title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1.">FPGAManagedAXI4Key</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA"></a>
+                        <a href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA">FPGAManagedAXI4Params</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGAManagedStreamEngine.html" title="This is a stub to foreshadow the other implementation"></a>
@@ -137,10 +149,6 @@
                         <span class="separator"></span>
                         <a class="class" href="FPGATop.html" title=""></a>
                         <a href="FPGATop.html" title="">FPGATop</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="FPGATopIO.html" title=""></a>
-                        <a href="FPGATopIO.html" title="">FPGATopIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGATopImp.html" title=""></a>
@@ -328,8 +336,8 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Base class for StreamEngine implementations. StreamEngines collect all
 streams from bridges, which drive two Vec[Decoupled[UInt]], and implement
 the transport using an AXI4 slave and / or AXI4 master port, which is
-presented by the host platform.</p><p>Implementations that require an AXI4 slave set pcisNodeOpt = Some(&lt;node graph&gt;)
-Implementations that require an AXI4 master set pcimNodeOpt = Some(&lt;node graph&gt;)</p></div><div class="toggleContainer block">
+presented by the host platform.</p><p>Implementations that require an AXI4 subordinate set cpuManagedAXI4NodeOpt = Some(&lt;node graph&gt;)
+Implementations that require an AXI4 manager set fpgaManagedAXI4NodeOpt  = Some(&lt;node graph&gt;)</p></div><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -407,7 +415,39 @@ Implementations that require an AXI4 master set pcimNodeOpt = Some(&lt;node grap
 
         <div class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="midas.widgets.Widget#module" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
+              <ol><li name="midas.core.StreamEngine#cpuManagedAXI4NodeOpt" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="cpuManagedAXI4NodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4InwardNode]"></a><a id="cpuManagedAXI4NodeOpt:Option[AXI4InwardNode]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/StreamEngine.html#cpuManagedAXI4NodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4InwardNode]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cpuManagedAXI4NodeOpt</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4InwardNode">AXI4InwardNode</span>]</span>
+      </span>
+      
+      
+    </li><li name="midas.core.StreamEngine#fpgaManagedAXI4NodeOpt" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="fpgaManagedAXI4NodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4OutwardNode]"></a><a id="fpgaManagedAXI4NodeOpt:Option[AXI4OutwardNode]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/StreamEngine.html#fpgaManagedAXI4NodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4OutwardNode]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fpgaManagedAXI4NodeOpt</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4OutwardNode">AXI4OutwardNode</span>]</span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.Widget#module" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="module:midas.widgets.WidgetImp"></a><a id="module:WidgetImp"></a>
       <span class="permalink">
       <a href="../../midas/core/StreamEngine.html#module:midas.widgets.WidgetImp" title="Permalink">
@@ -436,38 +476,6 @@ Implementations that require an AXI4 master set pcimNodeOpt = Some(&lt;node grap
       </span>
       <span class="symbol">
         <span class="name">params</span><span class="result">: <a href="StreamEngineParameters.html" class="extype" name="midas.core.StreamEngineParameters">StreamEngineParameters</a></span>
-      </span>
-      
-      
-    </li><li name="midas.core.StreamEngine#pcimNodeOpt" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="pcimNodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4OutwardNode]"></a><a id="pcimNodeOpt:Option[AXI4OutwardNode]"></a>
-      <span class="permalink">
-      <a href="../../midas/core/StreamEngine.html#pcimNodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4OutwardNode]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pcimNodeOpt</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4OutwardNode">AXI4OutwardNode</span>]</span>
-      </span>
-      
-      
-    </li><li name="midas.core.StreamEngine#pcisNodeOpt" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="pcisNodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4InwardNode]"></a><a id="pcisNodeOpt:Option[AXI4InwardNode]"></a>
-      <span class="permalink">
-      <a href="../../midas/core/StreamEngine.html#pcisNodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4InwardNode]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pcisNodeOpt</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4InwardNode">AXI4InwardNode</span>]</span>
       </span>
       
       
@@ -828,6 +836,22 @@ Implementations that require an AXI4 master set pcimNodeOpt = Some(&lt;node grap
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyModule</dd></dl></div>
+    </li><li name="midas.core.StreamEngine#hasStreams" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="hasStreams:Boolean"></a>
+      <span class="permalink">
+      <a href="../../midas/core/StreamEngine.html#hasStreams:Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasStreams</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">

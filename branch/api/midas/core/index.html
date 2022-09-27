@@ -111,6 +111,14 @@
                         <a href="AssertTokenIrrevocable$.html" title="">AssertTokenIrrevocable</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
+                        <a class="object" href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1."></a>
+                        <a href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1.">CPUManagedAXI4Key</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="CPUManagedAXI4Params.html" title=""></a>
+                        <a href="CPUManagedAXI4Params.html" title="">CPUManagedAXI4Params</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
                         <a class="class" href="CPUManagedStreamEngine.html" title=""></a>
                         <a href="CPUManagedStreamEngine.html" title="">CPUManagedStreamEngine</a>
                       </li><li class="current-entities indented2">
@@ -123,12 +131,16 @@
                         <a href="ClockRecord.html" title="">ClockRecord</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="DMANastiKey$.html" title="The following case objects define the widths of the three AXI4 bus types presented to a simulator."></a>
-                        <a href="DMANastiKey$.html" title="The following case objects define the widths of the three AXI4 bus types presented to a simulator.">DMANastiKey</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="object" href="DirectedLIBDNTestHelper$.html" title=""></a>
                         <a href="DirectedLIBDNTestHelper$.html" title="">DirectedLIBDNTestHelper</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="object" href="FPGAManagedAXI4Key$.html" title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1."></a>
+                        <a href="FPGAManagedAXI4Key$.html" title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1.">FPGAManagedAXI4Key</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA"></a>
+                        <a href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA">FPGAManagedAXI4Params</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGAManagedStreamEngine.html" title="This is a stub to foreshadow the other implementation"></a>
@@ -137,10 +149,6 @@
                         <span class="separator"></span>
                         <a class="class" href="FPGATop.html" title=""></a>
                         <a href="FPGATop.html" title="">FPGATop</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="FPGATopIO.html" title=""></a>
-                        <a href="FPGATopIO.html" title="">FPGATopIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGATopImp.html" title=""></a>
@@ -492,6 +500,22 @@
  as how many requests are issued per id. This generates hardware
  proportional to (2^idBits) * maxFlight.
 </p></div><dl class="paramcmts block"><dt class="param">idBits</dt><dd class="cmt"><p>The number of lower idBits of the host memory channel to use.</p></dd><dt class="param">maxFlight</dt><dd class="cmt"><p>A bound on the number of requests the simulator will make per id.</p></dd></dl></div>
+    </li><li name="midas.core.CPUManagedAXI4Params" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CPUManagedAXI4ParamsextendsProductwithSerializable"></a><a id="CPUManagedAXI4Params:CPUManagedAXI4Params"></a>
+      <span class="permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="CPUManagedAXI4Params.html"><span class="name">CPUManagedAXI4Params</span></a><span class="params">(<span name="addrBits">addrBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="dataBits">dataBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="idBits">idBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="maxFlight">maxFlight: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      
     </li><li name="midas.core.CPUManagedStreamEngine" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CPUManagedStreamEngineextendsStreamEngine"></a><a id="CPUManagedStreamEngine:CPUManagedStreamEngine"></a>
       <span class="permalink">
@@ -547,6 +571,26 @@ name.
       </span>
       
       
+    </li><li name="midas.core.FPGAManagedAXI4Params" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FPGAManagedAXI4ParamsextendsProductwithSerializable"></a><a id="FPGAManagedAXI4Params:FPGAManagedAXI4Params"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedAXI4Params.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Specifies the AXI4 interface for FPGA-driven DMA" href="FPGAManagedAXI4Params.html"><span class="name">FPGAManagedAXI4Params</span></a><span class="params">(<span name="size">size: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="dataBits">dataBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="idBits">idBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="writeTransferSizes">writeTransferSizes: <span class="extype" name="freechips.rocketchip.diplomacy.TransferSizes">TransferSizes</span></span>, <span name="readTransferSizes">readTransferSizes: <span class="extype" name="freechips.rocketchip.diplomacy.TransferSizes">TransferSizes</span></span>, <span name="interleavedId">interleavedId: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>] = <span class="symbol">Some(0)</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Specifies the AXI4 interface for FPGA-driven DMA
+</p><div class="fullcomment"><div class="comment cmt"><p>Specifies the AXI4 interface for FPGA-driven DMA
+</p></div><dl class="paramcmts block"><dt class="param">size</dt><dd class="cmt"><p>The size, in bytes, of the addressable region on the host CPU.
+The addressable region is assumed to span [0, size). Host-specific offsets
+should be handled by the FPGAShim.</p></dd><dt class="param">dataBits</dt><dd class="cmt"><p>The width of the interface in bits.</p></dd><dt class="param">idBits</dt><dd class="cmt"><p>The number of ID bits supported by the interface.</p></dd><dt class="param">writeTransferSizes</dt><dd class="cmt"><p>Supported write transfer sizes in bytes</p></dd><dt class="param">readTransferSizes</dt><dd class="cmt"><p>Supported read transfer sizes in bytes</p></dd><dt class="param">interleavedId</dt><dd class="cmt"><p>Set to indicate DMA responses may be interleaved.</p></dd></dl></div>
     </li><li name="midas.core.FPGAManagedStreamEngine" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FPGAManagedStreamEngineextendsStreamEngine"></a><a id="FPGAManagedStreamEngine:FPGAManagedStreamEngine"></a>
       <span class="permalink">
@@ -577,22 +621,6 @@ name.
       </span>
       <span class="symbol">
         <a title="" href="FPGATop.html"><span class="name">FPGATop</span></a><span class="result"> extends <span class="extype" name="freechips.rocketchip.diplomacy.LazyModule">LazyModule</span> with <a href="../widgets/HasWidgets.html" class="extype" name="midas.widgets.HasWidgets">HasWidgets</a></span>
-      </span>
-      
-      
-    </li><li name="midas.core.FPGATopIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FPGATopIOextendsWidgetIO"></a><a id="FPGATopIO:FPGATopIO"></a>
-      <span class="permalink">
-      <a href="../../midas/core/FPGATopIO.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a title="" href="FPGATopIO.html"><span class="name">FPGATopIO</span></a><span class="result"> extends <a href="../widgets/WidgetIO.html" class="extype" name="midas.widgets.WidgetIO">WidgetIO</a></span>
       </span>
       
       
@@ -930,8 +958,8 @@ currently somewhat redundant with the default header emission for widgets.
       <p class="shortcomment cmt">Base class for StreamEngine implementations.</p><div class="fullcomment"><div class="comment cmt"><p>Base class for StreamEngine implementations. StreamEngines collect all
 streams from bridges, which drive two Vec[Decoupled[UInt]], and implement
 the transport using an AXI4 slave and / or AXI4 master port, which is
-presented by the host platform.</p><p>Implementations that require an AXI4 slave set pcisNodeOpt = Some(&lt;node graph&gt;)
-Implementations that require an AXI4 master set pcimNodeOpt = Some(&lt;node graph&gt;)</p></div></div>
+presented by the host platform.</p><p>Implementations that require an AXI4 subordinate set cpuManagedAXI4NodeOpt = Some(&lt;node graph&gt;)
+Implementations that require an AXI4 manager set fpgaManagedAXI4NodeOpt  = Some(&lt;node graph&gt;)</p></div></div>
     </li><li name="midas.core.StreamEngineParameters" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="StreamEngineParametersextendsProductwithSerializable"></a><a id="StreamEngineParameters:StreamEngineParameters"></a>
       <span class="permalink">
@@ -1086,10 +1114,10 @@ by the engine.</p>
       </span>
       
       
-    </li><li name="midas.core.DMANastiKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DMANastiKey"></a><a id="DMANastiKey:DMANastiKey"></a>
+    </li><li name="midas.core.CPUManagedAXI4Key" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CPUManagedAXI4Key"></a><a id="CPUManagedAXI4Key:CPUManagedAXI4Key"></a>
       <span class="permalink">
-      <a href="../../midas/core/DMANastiKey$.html" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Key$.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1098,11 +1126,12 @@ by the engine.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a title="The following case objects define the widths of the three AXI4 bus types presented to a simulator." href="DMANastiKey$.html"><span class="name">DMANastiKey</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="../../junctions/NastiParameters.html" class="extype" name="junctions.NastiParameters">NastiParameters</a>] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <a title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1." href="CPUManagedAXI4Key$.html"><span class="name">CPUManagedAXI4Key</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="CPUManagedAXI4Params.html" class="extype" name="midas.core.CPUManagedAXI4Params">CPUManagedAXI4Params</a>]] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
-      <p class="shortcomment cmt">The following case objects define the widths of the three AXI4 bus types presented
-to a simulator.</p>
+      <p class="shortcomment cmt">CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1.</p><div class="fullcomment"><div class="comment cmt"><p>CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1. Used by the CPU to do DMA into fabric-controlled memories.
+ This could include in-fabric RAMs/FIFOs (for bridge streams) or (in the future) FPGA-attached DRAM channels.
+</p></div></div>
     </li><li name="midas.core.DirectedLIBDNTestHelper" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DirectedLIBDNTestHelper"></a><a id="DirectedLIBDNTestHelper:DirectedLIBDNTestHelper"></a>
       <span class="permalink">
@@ -1119,6 +1148,25 @@ to a simulator.</p>
       </span>
       
       
+    </li><li name="midas.core.FPGAManagedAXI4Key" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FPGAManagedAXI4Key"></a><a id="FPGAManagedAXI4Key:FPGAManagedAXI4Key"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedAXI4Key$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="FPGA-managed AXI4, aka &quot;pcim&quot; on F1." href="FPGAManagedAXI4Key$.html"><span class="name">FPGAManagedAXI4Key</span></a><span class="result"> extends <span class="extype" name="chipsalliance.rocketchip.config.Field">Field</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="FPGAManagedAXI4Params.html" class="extype" name="midas.core.FPGAManagedAXI4Params">FPGAManagedAXI4Params</a>]] with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">FPGA-managed AXI4, aka &quot;pcim&quot; on F1.</p><div class="fullcomment"><div class="comment cmt"><p>FPGA-managed AXI4, aka &quot;pcim&quot; on F1. Used by the fabric to do DMA into
+the host-CPU's memory. Used to implement bridge streams on platforms that lack a CPU-managed AXI4 interface.
+Set this to None if this interface is not present on the host.
+</p></div></div>
     </li><li name="midas.core.GenerateTokenIrrevocabilityAssertions" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GenerateTokenIrrevocabilityAssertions"></a><a id="GenerateTokenIrrevocabilityAssertions:GenerateTokenIrrevocabilityAssertions"></a>
       <span class="permalink">

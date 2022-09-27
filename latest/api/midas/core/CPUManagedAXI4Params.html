@@ -115,8 +115,8 @@
                         <a href="CPUManagedAXI4Key$.html" title="CPU-managed AXI4, aka &quot;pcis&quot; on EC2 F1.">CPUManagedAXI4Key</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="CPUManagedAXI4Params.html" title=""></a>
-                        <a href="CPUManagedAXI4Params.html" title="">CPUManagedAXI4Params</a>
+                        <a class="class" href="" title=""></a>
+                        <a href="" title="">CPUManagedAXI4Params</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="CPUManagedStreamEngine.html" title=""></a>
@@ -259,8 +259,8 @@
                         <a href="SimWrapperKey$.html" title="">SimWrapperKey</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title="A helper container to serialize per-stream constants to the header."></a>
-                        <a href="" title="A helper container to serialize per-stream constants to the header.">StreamDriverParameters</a>
+                        <a class="class" href="StreamDriverParameters.html" title="A helper container to serialize per-stream constants to the header."></a>
+                        <a href="StreamDriverParameters.html" title="A helper container to serialize per-stream constants to the header.">StreamDriverParameters</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="StreamEngine.html" title="Base class for StreamEngine implementations."></a>
@@ -314,8 +314,8 @@
       <div id="definition">
         <div class="big-circle class">c</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.core">core</a></p>
-        <h1>StreamDriverParameters<span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html" title="Permalink">
+        <h1>CPUManagedAXI4Params<span class="permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -328,14 +328,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamDriverParameters</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferBaseAddress">bufferBaseAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="countMMIOAddress">countMMIOAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="bufferCapacity">bufferCapacity: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">CPUManagedAXI4Params</span><span class="params">(<span name="addrBits">addrBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="dataBits">dataBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="idBits">idBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="maxFlight">maxFlight: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>] = <span class="symbol">None</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A helper container to serialize per-stream constants to the header. This is
-currently somewhat redundant with the default header emission for widgets.
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -365,7 +363,7 @@ currently somewhat redundant with the default header emission for widgets.
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.core.StreamDriverParameters"><span>StreamDriverParameters</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.core.CPUManagedAXI4Params"><span>CPUManagedAXI4Params</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -385,10 +383,10 @@ currently somewhat redundant with the default header emission for widgets.
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="midas.core.StreamDriverParameters#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(name:String,bufferBaseAddress:Int,countMMIOAddress:Int,bufferCapacity:Int):midas.core.StreamDriverParameters"></a><a id="&lt;init&gt;:StreamDriverParameters"></a>
+              <ol><li name="midas.core.CPUManagedAXI4Params#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(addrBits:Int,dataBits:Int,idBits:Int,maxFlight:Option[Int]):midas.core.CPUManagedAXI4Params"></a><a id="&lt;init&gt;:CPUManagedAXI4Params"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#&lt;init&gt;(name:String,bufferBaseAddress:Int,countMMIOAddress:Int,bufferCapacity:Int):midas.core.StreamDriverParameters" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#&lt;init&gt;(addrBits:Int,dataBits:Int,idBits:Int,maxFlight:Option[Int]):midas.core.CPUManagedAXI4Params" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -397,7 +395,7 @@ currently somewhat redundant with the default header emission for widgets.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">StreamDriverParameters</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="bufferBaseAddress">bufferBaseAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="countMMIOAddress">countMMIOAddress: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="bufferCapacity">bufferCapacity: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span>
+        <span class="name">CPUManagedAXI4Params</span><span class="params">(<span name="addrBits">addrBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="dataBits">dataBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="idBits">idBits: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>, <span name="maxFlight">maxFlight: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>] = <span class="symbol">None</span></span>)</span>
       </span>
       
       
@@ -414,7 +412,7 @@ currently somewhat redundant with the default header emission for widgets.
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -430,7 +428,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html###():Int" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -446,7 +444,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -459,10 +457,26 @@ currently somewhat redundant with the default header emission for widgets.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.core.CPUManagedAXI4Params#addrBits" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addrBits:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#addrBits:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addrBits</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -475,42 +489,26 @@ currently somewhat redundant with the default header emission for widgets.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.core.StreamDriverParameters#bufferBaseAddress" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bufferBaseAddress:Int"></a>
+    </li><li name="midas.core.CPUManagedAXI4Params#axi4BundleParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="axi4BundleParams:freechips.rocketchip.amba.axi4.AXI4BundleParameters"></a><a id="axi4BundleParams:AXI4BundleParameters"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#bufferBaseAddress:Int" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#axi4BundleParams:freechips.rocketchip.amba.axi4.AXI4BundleParameters" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">bufferBaseAddress</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      
-    </li><li name="midas.core.StreamDriverParameters#bufferCapacity" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bufferCapacity:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#bufferCapacity:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">bufferCapacity</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">axi4BundleParams</span><span class="result">: <span class="extype" name="freechips.rocketchip.amba.axi4.AXI4BundleParameters">AXI4BundleParameters</span></span>
       </span>
       
       
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#clone():Object" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -533,10 +531,10 @@ currently somewhat redundant with the default header emission for widgets.
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="midas.core.StreamDriverParameters#countMMIOAddress" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="countMMIOAddress:Int"></a>
+    </li><li name="midas.core.CPUManagedAXI4Params#dataBits" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="dataBits:Int"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#countMMIOAddress:Int" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#dataBits:Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -545,14 +543,14 @@ currently somewhat redundant with the default header emission for widgets.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">countMMIOAddress</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+        <span class="name">dataBits</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
       </span>
       
       
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -568,7 +566,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#getClass():Class[_]" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -586,10 +584,26 @@ currently somewhat redundant with the default header emission for widgets.
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.core.CPUManagedAXI4Params#idBits" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="idBits:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#idBits:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">idBits</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -602,10 +616,10 @@ currently somewhat redundant with the default header emission for widgets.
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="midas.core.StreamDriverParameters#name" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="name:String"></a>
+    </li><li name="midas.core.CPUManagedAXI4Params#maxFlight" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="maxFlight:Option[Int]"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#name:String" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#maxFlight:Option[Int]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -614,14 +628,14 @@ currently somewhat redundant with the default header emission for widgets.
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">maxFlight</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a>]</span>
       </span>
       
       
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -637,7 +651,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#notify():Unit" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -658,7 +672,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#notifyAll():Unit" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -679,7 +693,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -695,7 +709,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -717,7 +731,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -741,7 +755,7 @@ currently somewhat redundant with the default header emission for widgets.
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#wait():Unit" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -771,7 +785,7 @@ currently somewhat redundant with the default header emission for widgets.
               <ol><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../midas/core/StreamDriverParameters.html#finalize():Unit" title="Permalink">
+      <a href="../../midas/core/CPUManagedAXI4Params.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
