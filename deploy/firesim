@@ -444,6 +444,8 @@ def main(args: argparse.Namespace) -> None:
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
 
+    env.shell = "/bin/bash -c"
+
     if args.task == 'buildafi':
         rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitstream' and will be removed in a future version")
         args.task = 'buildbitstream'
