@@ -403,10 +403,6 @@
                         <a href="IdentityModule.html" title="">IdentityModule</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="InMemoryBridgeAnnotation.html" title="A form BridgeAnnotation that can be emitted by FIRRTL transforms that run during Golden Gate compilation."></a>
-                        <a href="InMemoryBridgeAnnotation.html" title="A form BridgeAnnotation that can be emitted by FIRRTL transforms that run during Golden Gate compilation.">InMemoryBridgeAnnotation</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="Int64.html" title=""></a>
                         <a href="Int64.html" title="">Int64</a>
                       </li><li class="current-entities indented2">
@@ -1344,26 +1340,6 @@ that clock domain will fire in the simulator time step that consumes this clock 
       </span>
       
       
-    </li><li name="midas.widgets.InMemoryBridgeAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="InMemoryBridgeAnnotationextendsBridgeAnnotationwithProductwithSerializable"></a><a id="InMemoryBridgeAnnotation:InMemoryBridgeAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/InMemoryBridgeAnnotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="A form BridgeAnnotation that can be emitted by FIRRTL transforms that run during Golden Gate compilation." href="InMemoryBridgeAnnotation.html"><span class="name">InMemoryBridgeAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widget">widget: (<span class="extype" name="chipsalliance.rocketchip.config.Parameters">Parameters</span>) ⇒ <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[_ &lt;: <span class="extype" name="chisel3.Record">Record</span> with <a href="HasChannels.html" class="extype" name="midas.widgets.HasChannels">HasChannels</a>]</span>)</span><span class="result"> extends <a href="BridgeAnnotation.html" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">A form BridgeAnnotation that can be emitted by FIRRTL transforms that
-run during Golden Gate compilation.</p><div class="fullcomment"><div class="comment cmt"><p>A form BridgeAnnotation that can be emitted by FIRRTL transforms that
-run during Golden Gate compilation. Since these do not need to be
-serialized, BridgeModule generation can be more flexibly captured in a lambda</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The module representing an Bridge. Typically a black box</p></dd><dt class="param">channelNames</dt><dd class="cmt"><p>See BridgeAnnotation. A list of channelNames used
- to find associated FCCAs for this bridge</p></dd><dt class="param">widget</dt><dd class="cmt"><p>A lambda to elaborate the host-land BridgeModule in FPGATop</p></dd></dl></div>
     </li><li name="midas.widgets.Int64" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Int64extendsIntLikeLiteralwithProductwithSerializable"></a><a id="Int64:Int64"></a>
       <span class="permalink">
