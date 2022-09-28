@@ -56,30 +56,6 @@ object FindScaledPeriodGCD {
 }
 
 /**
-  * A custom bridge annotation for the Clock Bridge. Unique so that we can
-  * trivially match against it in bridge extraction.
-  *
-  * @param target The target-side module for the CB
-  *
-  * @param clocks The associated clock information for each output clock
-  *
-  */
-
-case class ClockBridgeAnnotation(val target: ModuleTarget, clocks: Seq[RationalClock])
-    extends BridgeAnnotation with ClockBridgeConsts {
-  val channelNames = Seq(clockChannelName)
-  def duplicate(n: ModuleTarget) = this.copy(target)
-  def toIOAnnotation(port: String): BridgeIOAnnotation = {
-    val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
-    BridgeIOAnnotation(
-      target.copy(module = target.circuit).ref(port),
-      channelMapping.toMap,
-      widgetClass = classOf[ClockBridgeModule].getName,
-      widgetConstructorKey = Some(ClockParameters(clocks)))
-  }
-}
-
-/**
  * Parameters to construct a clock bridge from. Aggregates information about all the output clocks.
  *
  * @param clocks Clock information for each output clock.
@@ -108,7 +84,14 @@ class RationalClockBridge(val allClocks: Seq[RationalClock]) extends BlackBox wi
   val clockMFMRs = scaledPeriods.map { period => ((period + (minPeriod - 1)) / minPeriod).toInt }
 
   // Generate the bridge annotation
-  annotate(new ChiselAnnotation { def toFirrtl = ClockBridgeAnnotation(outer.toTarget, allClocks) })
+  annotate(new ChiselAnnotation { def toFirrtl =
+      BridgeAnnotation(
+        target = outer.toTarget,
+        channelNames = Seq(clockChannelName),
+        widgetClass = classOf[ClockBridgeModule].getName,
+        widgetConstructorKey = Some(ClockParameters(allClocks))
+      )
+  })
   annotate(new ChiselAnnotation { def toFirrtl =
       FAMEChannelConnectionAnnotation(
         clockChannelName,
