@@ -124,8 +124,8 @@ if [ "$IS_LIBRARY" = true ]; then
     fi
 else
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
-    LOCKFILE="$RDIR/conda-requirements-$TOOLCHAIN-linux-64.conda-lock.yml"
-    YAMLFILE="$RDIR/conda-requirements-$TOOLCHAIN.yaml"
+    LOCKFILE="$RDIR/conda-reqs.conda-lock.yml"
+    YAMLFILE="$RDIR/conda-reqs.yaml"
     if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
         conda-lock -f "$YAMLFILE" -p linux-64 --lockfile "$LOCKFILE"
