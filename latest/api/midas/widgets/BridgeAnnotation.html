@@ -155,8 +155,8 @@
                         <a href="Bridge.html" title="">Bridge</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="trait" href="" title=""></a>
-                        <a href="" title="">BridgeAnnotation</a>
+                        <a class="class" href="" title="A serializable annotation emitted by Chisel Modules that extend Bridge"></a>
+                        <a href="" title="A serializable annotation emitted by Chisel Modules that extend Bridge">BridgeAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="BridgeModule.html" title=""></a>
@@ -189,10 +189,6 @@
                         <span class="separator"></span>
                         <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
                         <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
-                        <a href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge.">ClockBridgeAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="trait" href="ClockBridgeConsts.html" title=""></a>
@@ -451,10 +447,6 @@
                         <a href="ScanRegister$.html" title="An object that is useful for measuring the QoR of a module on FPGA CAD tools; achieves two goals 1) Registers all inputs/outputs to properly measure intra-module timing 2) Inserts a scan chain across the elements - this reduces the total module I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths">ScanRegister</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="SerializableBridgeAnnotation.html" title="A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge"></a>
-                        <a href="SerializableBridgeAnnotation.html" title="A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge">SerializableBridgeAnnotation</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="object" href="SerializationUtils$.html" title=""></a>
                         <a href="SerializationUtils$.html" title="">SerializationUtils</a>
                       </li><li class="current-entities indented2">
@@ -546,9 +538,9 @@
             </div>
           </div>
           <div id="content">
-            <body class="trait type">
+            <body class="class type">
       <div id="definition">
-        <div class="big-circle trait">t</div>
+        <div class="big-circle class">c</div>
         <p id="owner"><a href="../index.html" class="extype" name="midas">midas</a>.<a href="index.html" class="extype" name="midas.widgets">widgets</a></p>
         <h1>BridgeAnnotation<span class="permalink">
       <a href="../../midas/widgets/BridgeAnnotation.html" title="Permalink">
@@ -561,25 +553,27 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">BridgeAnnotation</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>]</span>
+        <span class="name">BridgeAnnotation</span><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widgetClass">widgetClass: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="widgetConstructorKey">widgetConstructorKey: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[_ &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>] with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <span class="extype" name="firrtl.annotations.HasSerializationHints">HasSerializationHints</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A serializable annotation emitted by Chisel Modules that extend Bridge
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The module representing an Bridge. Typically a black box</p></dd><dt class="param">channelNames</dt><dd class="cmt"><p>A list of channel names that match the globalName emitted in the FCCAs
+  associated with this bridge. We use these strings to look up those annotations</p></dd><dt class="param">widgetClass</dt><dd class="cmt"><p>The full class name of the BridgeModule generator</p></dd><dt class="param">widgetConstructorKey</dt><dd class="cmt"><p>A optional, serializable object which will be passed
+  to the constructor of the BridgeModule. Consult https://github.com/json4s/json4s#serialization to
+  better understand what can and cannot be serialized.
+  To provide additional typeHints to the serilization/deserialization
+  protocol mix in HasSerializationHints into your ConstructorKey's class and return
+  additional pertinent classes</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>], <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
-        </div><div class="toggleContainer block">
-            <span class="toggle">
-              Known Subclasses
-            </span>
-            <div class="subClasses hiddenContent"><a href="ClockBridgeAnnotation.html" class="extype" name="midas.widgets.ClockBridgeAnnotation">ClockBridgeAnnotation</a>, <a href="SerializableBridgeAnnotation.html" class="extype" name="midas.widgets.SerializableBridgeAnnotation">SerializableBridgeAnnotation</a></div>
-          </div></div>
+          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="firrtl.annotations.HasSerializationHints">HasSerializationHints</span>, <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a>, <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>], <span class="extype" name="firrtl.annotations.Annotation">Annotation</span>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div></div>
         
 
       <div id="mbrsel">
@@ -604,7 +598,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="midas.widgets.BridgeAnnotation"><span>BridgeAnnotation</span></li><li class="in" name="firrtl.annotations.SingleTargetAnnotation"><span>SingleTargetAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="midas.widgets.BridgeAnnotation"><span>BridgeAnnotation</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="firrtl.annotations.HasSerializationHints"><span>HasSerializationHints</span></li><li class="in" name="midas.targetutils.FAMEAnnotation"><span>FAMEAnnotation</span></li><li class="in" name="firrtl.annotations.SingleTargetAnnotation"><span>SingleTargetAnnotation</span></li><li class="in" name="firrtl.annotations.Annotation"><span>Annotation</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
               <span class="filtertype"></span>
@@ -622,129 +616,39 @@
 
       <div id="template">
         <div id="allMembers">
-        
-
-        
-
-        <div class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="scala.Equals#canEqual" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="canEqual(that:Any):Boolean"></a><a id="canEqual(Any):Boolean"></a>
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="midas.widgets.BridgeAnnotation#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="&lt;init&gt;(target:firrtl.annotations.ModuleTarget,channelNames:Seq[String],widgetClass:String,widgetConstructorKey:Option[_&lt;:AnyRef]):midas.widgets.BridgeAnnotation"></a><a id="&lt;init&gt;:BridgeAnnotation"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#canEqual(that:Any):Boolean" title="Permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#&lt;init&gt;(target:firrtl.annotations.ModuleTarget,channelNames:Seq[String],widgetClass:String,widgetConstructorKey:Option[_&lt;:AnyRef]):midas.widgets.BridgeAnnotation" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
+        <span class="modifier"></span>
+        <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">canEqual</span><span class="params">(<span name="that">that: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+        <span class="name">BridgeAnnotation</span><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widgetClass">widgetClass: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="widgetConstructorKey">widgetConstructorKey: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[_ &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>]</span>)</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Equals</dd></dl></div>
-    </li><li name="midas.widgets.BridgeAnnotation#channelNames" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="channelNames:Seq[String]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#channelNames:Seq[String]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">channelNames</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      
-      
-    </li><li name="firrtl.annotations.SingleTargetAnnotation#duplicate" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="duplicate(n:T):firrtl.annotations.Annotation"></a><a id="duplicate(ModuleTarget):Annotation"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#duplicate(n:T):firrtl.annotations.Annotation" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">duplicate</span><span class="params">(<span name="n">n: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>)</span><span class="result">: <span class="extype" name="firrtl.annotations.Annotation">Annotation</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SingleTargetAnnotation</dd></dl></div>
-    </li><li name="scala.Product#productArity" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="productArity:Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#productArity:Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">productArity</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
-    </li><li name="scala.Product#productElement" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="productElement(n:Int):Any"></a><a id="productElement(Int):Any"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#productElement(n:Int):Any" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">productElement</span><span class="params">(<span name="n">n: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
-    </li><li name="firrtl.annotations.SingleTargetAnnotation#target" visbl="pub" class="indented0 " data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="target:T"></a><a id="target:ModuleTarget"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#target:T" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">target</span><span class="result">: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SingleTargetAnnotation</dd></dl></div>
-    </li><li name="midas.widgets.BridgeAnnotation#toIOAnnotation" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="toIOAnnotation(port:String):midas.widgets.BridgeIOAnnotation"></a><a id="toIOAnnotation(String):BridgeIOAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#toIOAnnotation(port:String):midas.widgets.BridgeIOAnnotation" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toIOAnnotation</span><span class="params">(<span name="port">port: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span></span>
-      </span>
-      
-      
+      <p class="shortcomment cmt"></p><div class="fullcomment"><div class="comment cmt"></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The module representing an Bridge. Typically a black box</p></dd><dt class="param">channelNames</dt><dd class="cmt"><p>A list of channel names that match the globalName emitted in the FCCAs
+  associated with this bridge. We use these strings to look up those annotations</p></dd><dt class="param">widgetClass</dt><dd class="cmt"><p>The full class name of the BridgeModule generator</p></dd><dt class="param">widgetConstructorKey</dt><dd class="cmt"><p>A optional, serializable object which will be passed
+  to the constructor of the BridgeModule. Consult https://github.com/json4s/json4s#serialization to
+  better understand what can and cannot be serialized.
+  To provide additional typeHints to the serilization/deserialization
+  protocol mix in HasSerializationHints into your ConstructorKey's class and return
+  additional pertinent classes</p></dd></dl></div>
     </li></ol>
             </div>
 
+        
+
+        
+
         <div class="values members">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol>
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
@@ -810,6 +714,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.widgets.BridgeAnnotation#channelNames" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="channelNames:Seq[String]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#channelNames:Seq[String]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">channelNames</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
@@ -836,6 +756,22 @@
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="midas.widgets.BridgeAnnotation#duplicate" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="duplicate(n:firrtl.annotations.ModuleTarget):midas.widgets.BridgeAnnotation"></a><a id="duplicate(ModuleTarget):BridgeAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#duplicate(n:firrtl.annotations.ModuleTarget):midas.widgets.BridgeAnnotation" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">duplicate</span><span class="params">(<span name="n">n: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>)</span><span class="result">: <a href="" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> → SingleTargetAnnotation</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -852,22 +788,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#equals(x$1:Any):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
@@ -905,27 +825,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SingleTargetAnnotation → Annotation</dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#hashCode():Int" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
-                <span class="name">@native</span><span class="args">()</span>
-              
-                <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
-              
-        </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
@@ -1000,38 +899,6 @@
                 <span class="name">@IntrinsicCandidate</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="scala.Product#productIterator" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="productIterator:Iterator[Any]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#productIterator:Iterator[Any]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">productIterator</span><span class="result">: <span class="extype" name="scala.Iterator">Iterator</span>[<a href="https://www.scala-lang.org/api/2.12.10/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
-    </li><li name="scala.Product#productPrefix" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="productPrefix:String"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#productPrefix:String" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">productPrefix</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
     </li><li name="firrtl.annotations.Annotation#serialize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="serialize:String"></a>
       <span class="permalink">
@@ -1064,10 +931,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
+    </li><li name="midas.widgets.BridgeAnnotation#target" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="target:firrtl.annotations.ModuleTarget"></a><a id="target:ModuleTarget"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BridgeAnnotation.html#toString():String" title="Permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#target:firrtl.annotations.ModuleTarget" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">target</span><span class="result">: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> → SingleTargetAnnotation</dd></dl></div>
+    </li><li name="midas.widgets.BridgeAnnotation#toIOAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toIOAnnotation(port:String):midas.widgets.BridgeIOAnnotation"></a><a id="toIOAnnotation(String):BridgeIOAnnotation"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#toIOAnnotation(port:String):midas.widgets.BridgeIOAnnotation" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1076,10 +959,28 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">toIOAnnotation</span><span class="params">(<span name="port">port: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="midas.widgets.BridgeIOAnnotation">BridgeIOAnnotation</span></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <p class="shortcomment cmt">Invoked by BridgeExtraction to convert this ModuleTarget-based annotation into
+a ReferenceTarget based one that can be attached to newly created IO on the top-level
+</p>
+    </li><li name="midas.widgets.BridgeAnnotation#typeHints" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="typeHints():Seq[Class[_]]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#typeHints():Seq[Class[_]]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">typeHints</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> → HasSerializationHints</dd></dl></div>
     </li><li name="firrtl.annotations.SingleTargetAnnotation#update" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="update(renames:firrtl.RenameMap):Seq[firrtl.annotations.Annotation]"></a><a id="update(RenameMap):Seq[Annotation]"></a>
       <span class="permalink">
@@ -1164,6 +1065,38 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="midas.widgets.BridgeAnnotation#widgetClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="widgetClass:String"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#widgetClass:String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">widgetClass</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      
+      
+    </li><li name="midas.widgets.BridgeAnnotation#widgetConstructorKey" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="widgetConstructorKey:Option[_&lt;:AnyRef]"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/BridgeAnnotation.html#widgetConstructorKey:Option[_&lt;:AnyRef]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">widgetConstructorKey</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[_ &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>]</span>
+      </span>
+      
+      
     </li>
               </ol>
             </div>
@@ -1203,7 +1136,15 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="firrtl.annotations.SingleTargetAnnotation">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="firrtl.annotations.HasSerializationHints">
+              <h3>Inherited from <span class="extype" name="firrtl.annotations.HasSerializationHints">HasSerializationHints</span></h3>
+            </div><div class="parent" name="midas.targetutils.FAMEAnnotation">
+              <h3>Inherited from <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a></h3>
+            </div><div class="parent" name="firrtl.annotations.SingleTargetAnnotation">
               <h3>Inherited from <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>]</h3>
             </div><div class="parent" name="firrtl.annotations.Annotation">
               <h3>Inherited from <span class="extype" name="firrtl.annotations.Annotation">Annotation</span></h3>

@@ -267,8 +267,8 @@
                         <a href="Bridge.html" title="">Bridge</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="trait" href="BridgeAnnotation.html" title=""></a>
-                        <a href="BridgeAnnotation.html" title="">BridgeAnnotation</a>
+                        <a class="class" href="BridgeAnnotation.html" title="A serializable annotation emitted by Chisel Modules that extend Bridge"></a>
+                        <a href="BridgeAnnotation.html" title="A serializable annotation emitted by Chisel Modules that extend Bridge">BridgeAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="BridgeModule.html" title=""></a>
@@ -301,10 +301,6 @@
                         <span class="separator"></span>
                         <a class="trait" href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO."></a>
                         <a href="ChannelizedHostPortIO.html" title="A host-side bridge interface trait that permits finer-grained control over channel definition versus HostPortIO.">ChannelizedHostPortIO</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge."></a>
-                        <a href="ClockBridgeAnnotation.html" title="A custom bridge annotation for the Clock Bridge.">ClockBridgeAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="trait" href="ClockBridgeConsts.html" title=""></a>
@@ -561,10 +557,6 @@
                         <span class="separator"></span>
                         <a class="object" href="ScanRegister$.html" title="An object that is useful for measuring the QoR of a module on FPGA CAD tools; achieves two goals 1) Registers all inputs/outputs to properly measure intra-module timing 2) Inserts a scan chain across the elements - this reduces the total module I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths"></a>
                         <a href="ScanRegister$.html" title="An object that is useful for measuring the QoR of a module on FPGA CAD tools; achieves two goals 1) Registers all inputs/outputs to properly measure intra-module timing 2) Inserts a scan chain across the elements - this reduces the total module I/O, and prevents the FPGA CAD tools from optimizing I/O driven paths">ScanRegister</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
-                        <a class="class" href="SerializableBridgeAnnotation.html" title="A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge"></a>
-                        <a href="SerializableBridgeAnnotation.html" title="A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge">SerializableBridgeAnnotation</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="object" href="SerializationUtils$.html" title=""></a>
@@ -908,8 +900,8 @@
       </span>
       
       
-    </li><li name="midas.widgets.BridgeAnnotation" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="BridgeAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleTarget]"></a><a id="BridgeAnnotation:BridgeAnnotation"></a>
+    </li><li name="midas.widgets.BridgeAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BridgeAnnotationextendsSingleTargetAnnotation[firrtl.annotations.ModuleTarget]withFAMEAnnotationwithHasSerializationHintswithProductwithSerializable"></a><a id="BridgeAnnotation:BridgeAnnotation"></a>
       <span class="permalink">
       <a href="../../midas/widgets/BridgeAnnotation.html" title="Permalink">
         <i class="material-icons"></i>
@@ -917,13 +909,21 @@
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a title="" href="BridgeAnnotation.html"><span class="name">BridgeAnnotation</span></a><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>]</span>
+        <a title="A serializable annotation emitted by Chisel Modules that extend Bridge" href="BridgeAnnotation.html"><span class="name">BridgeAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widgetClass">widgetClass: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="widgetConstructorKey">widgetConstructorKey: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[_ &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result"> extends <span class="extype" name="firrtl.annotations.SingleTargetAnnotation">SingleTargetAnnotation</span>[<span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span>] with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <span class="extype" name="firrtl.annotations.HasSerializationHints">HasSerializationHints</span> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
       </span>
       
-      
+      <p class="shortcomment cmt">A serializable annotation emitted by Chisel Modules that extend Bridge
+</p><div class="fullcomment"><div class="comment cmt"><p>A serializable annotation emitted by Chisel Modules that extend Bridge
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The module representing an Bridge. Typically a black box</p></dd><dt class="param">channelNames</dt><dd class="cmt"><p>A list of channel names that match the globalName emitted in the FCCAs
+  associated with this bridge. We use these strings to look up those annotations</p></dd><dt class="param">widgetClass</dt><dd class="cmt"><p>The full class name of the BridgeModule generator</p></dd><dt class="param">widgetConstructorKey</dt><dd class="cmt"><p>A optional, serializable object which will be passed
+  to the constructor of the BridgeModule. Consult https://github.com/json4s/json4s#serialization to
+  better understand what can and cannot be serialized.
+  To provide additional typeHints to the serilization/deserialization
+  protocol mix in HasSerializationHints into your ConstructorKey's class and return
+  additional pertinent classes</p></dd></dl></div>
     </li><li name="midas.widgets.BridgeModule" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="BridgeModule[HostPortType&lt;:chisel3.Recordwithmidas.widgets.HasChannels]extendsWidget"></a><a id="BridgeModule[HostPortType&lt;:RecordwithHasChannels]:BridgeModule[HostPortType]"></a>
       <span class="permalink">
@@ -1040,24 +1040,6 @@ This becomes more useful when there are channel types.</p>
 channel definition versus <a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A host-side bridge interface trait that permits finer-grained control over
 channel definition versus <a href="HostPortIO.html" class="extype" name="midas.widgets.HostPortIO">HostPortIO</a>. Required for describing bridges
 that are combinationally coupled to the target.</p></div></div>
-    </li><li name="midas.widgets.ClockBridgeAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ClockBridgeAnnotationextendsBridgeAnnotationwithClockBridgeConstswithProductwithSerializable"></a><a id="ClockBridgeAnnotation:ClockBridgeAnnotation"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/ClockBridgeAnnotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="A custom bridge annotation for the Clock Bridge." href="ClockBridgeAnnotation.html"><span class="name">ClockBridgeAnnotation</span></a><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="clocks">clocks: <span class="extype" name="scala.Seq">Seq</span>[<a href="RationalClock.html" class="extype" name="midas.widgets.RationalClock">RationalClock</a>]</span>)</span><span class="result"> extends <a href="BridgeAnnotation.html" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> with <a href="ClockBridgeConsts.html" class="extype" name="midas.widgets.ClockBridgeConsts">ClockBridgeConsts</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">A custom bridge annotation for the Clock Bridge.</p><div class="fullcomment"><div class="comment cmt"><p>A custom bridge annotation for the Clock Bridge. Unique so that we can
-trivially match against it in bridge extraction.
-</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The target-side module for the CB</p></dd><dt class="param">clocks</dt><dd class="cmt"><p>The associated clock information for each output clock</p></dd></dl></div>
     </li><li name="midas.widgets.ClockBridgeConsts" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ClockBridgeConstsextendsAnyRef"></a><a id="ClockBridgeConsts:ClockBridgeConsts"></a>
       <span class="permalink">
@@ -1953,30 +1935,6 @@ runtime-configurable number of cycles. These are its elaboration-time parameters
       </span>
       
       
-    </li><li name="midas.widgets.SerializableBridgeAnnotation" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="SerializableBridgeAnnotation[T&lt;:AnyRef]extendsBridgeAnnotationwithHasSerializationHintswithFAMEAnnotationwithProductwithSerializable"></a><a id="SerializableBridgeAnnotation[T&lt;:AnyRef]:SerializableBridgeAnnotation[T]"></a>
-      <span class="permalink">
-      <a href="../../midas/widgets/SerializableBridgeAnnotation.html" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a title="A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge" href="SerializableBridgeAnnotation.html"><span class="name">SerializableBridgeAnnotation</span></a><span class="tparams">[<span name="T">T &lt;: <a href="https://www.scala-lang.org/api/2.12.10/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></span>]</span><span class="params">(<span name="target">target: <span class="extype" name="firrtl.annotations.ModuleTarget">ModuleTarget</span></span>, <span name="channelNames">channelNames: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="widgetClass">widgetClass: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="widgetConstructorKey">widgetConstructorKey: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="midas.widgets.SerializableBridgeAnnotation.T">T</span>]</span>)</span><span class="result"> extends <a href="BridgeAnnotation.html" class="extype" name="midas.widgets.BridgeAnnotation">BridgeAnnotation</a> with <span class="extype" name="firrtl.annotations.HasSerializationHints">HasSerializationHints</span> with <a href="../targetutils/FAMEAnnotation.html" class="extype" name="midas.targetutils.FAMEAnnotation">FAMEAnnotation</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
-      </span>
-      
-      <p class="shortcomment cmt">A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge
-</p><div class="fullcomment"><div class="comment cmt"><p>A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge
-</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>The module representing an Bridge. Typically a black box</p></dd><dt class="param">channelNames</dt><dd class="cmt"><p>See BridgeAnnotation. A list of channelNames used
- to find associated FCCAs for this bridge</p></dd><dt class="param">widgetClass</dt><dd class="cmt"><p>The full class name of the BridgeModule generator</p></dd><dt class="param">widgetConstructorKey</dt><dd class="cmt"><p>A optional, serializable object which will be passed
-  to the constructor of the BridgeModule. Consult https://github.com/json4s/json4s#serialization to
-  better understand what can and cannot be serialized.
-  To provide additional typeHints to the serilization/deserialization
-  protocol mix in HasSerializationHints into your ConstructorKey's class and return
-  additional pertinent classes</p></dd></dl></div>
     </li><li name="midas.widgets.SimulationMaster" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SimulationMasterextendsWidget"></a><a id="SimulationMaster:SimulationMaster"></a>
       <span class="permalink">
