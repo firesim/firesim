@@ -240,8 +240,9 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
         val assertMessages = asserts.map(formattedMessages(_))
         val bridgeAnno = BridgeIOAnnotation(
           target = portRT,
-          widget = (p: Parameters) => new AssertBridgeModule(AssertBridgeParameters(assertPortName, resetPortName, assertMessages))(p),
-          channelNames = Seq(resetPortName, assertPortName)
+          channelNames = Seq(resetPortName, assertPortName),
+          widgetClass = classOf[AssertBridgeModule].getName,
+          widgetConstructorKey = AssertBridgeParameters(assertPortName, resetPortName, assertMessages)
         )
         assertAnnos ++= Seq(resetConditionAnno, assertFCCA, resetFCCA, bridgeAnno)
       }
