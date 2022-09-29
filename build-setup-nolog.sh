@@ -265,6 +265,7 @@ env_append "$NDEBUG_CHECK"
 echo "$env_string" > env.sh
 
 echo "Setup complete!"
-echo "To generate simulator RTL and run sw-RTL simulation, source env.sh"
+echo "To generate simulator RTL and run metasimulation simulation, source env.sh"
 echo "To use the manager to deploy builds/simulations on EC2, source sourceme-f1-manager.sh to setup your environment."
 echo "To run builds/simulations manually on this machine, source sourceme-f1-full.sh to setup your environment."
+echo "For more information, see docs at https://docs.fires.im/."
