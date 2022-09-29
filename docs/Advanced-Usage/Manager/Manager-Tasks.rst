@@ -83,7 +83,8 @@ For each config, the build process entails:
 
 This process happens in parallel for all of the builds you specify. The command
 will exit when all builds are completed (but you will get notified as
-INDIVIDUAL builds complete if on F1).
+INDIVIDUAL builds complete if on F1) and indicate whether all builds passed or a 
+build failed by the exit code.
 
 .. Note:: **It is highly recommended that you either run this command in a ``screen`` or use
     ``mosh`` to access the build instance. Builds will not finish if the manager is
