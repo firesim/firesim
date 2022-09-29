@@ -251,7 +251,7 @@ void simif_emul_t::push_flush(unsigned stream_idx) {
 }
 
 size_t simif_emul_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
-  ssize_t len = (size - 1) / DMA_BEAT_BYTES;
+  ssize_t len = (size - 1) / CPU_MANAGED_AXI4_BEAT_BYTES;
 
   while (len >= 0) {
     size_t part_len = len % (MAX_LEN + 1);
