@@ -4,6 +4,8 @@ This changelog follows the format defined here: https://keepachangelog.com/en/1.
 
 ## [1.15.0] - 2022-09-30
 
+Full migration to Conda-based environment/dependency management; Chipyard now also uses Conda. Bump Rocket Chip/Chisel/etc. Various bugfixes/feature improvements.
+
 ### Added
 * Refactor Conda + Bump Chipyard (which now uses Conda) #1206
 * Support FPGA-managed AXI4/DMA in metasimulation #1191
