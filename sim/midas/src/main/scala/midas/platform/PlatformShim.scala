@@ -40,4 +40,10 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
     top.module.headerConsts map { case (name, value) =>
       genMacro(name, UInt32(value)) } addString sb
   }
+
+  def genVHeader(sb: StringBuilder, target: String) {
+    def vMacro(arg: (String, Long)): String = s"`define ${arg._1} ${arg._2}\n"
+
+    top.module.headerConsts map vMacro foreach sb.append
+  }
 }
