@@ -8,7 +8,6 @@ import random
 import string
 import logging
 import os
-import re
 from fabric.api import prefix, local, run, env, lcd, parallel # type: ignore
 from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
@@ -218,8 +217,8 @@ class F1BitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap.stderr)
 
         # get the frequency and strategy
-        desired_frequency = self.build_config.get_frequency()
-        strategy = self.build_config.get_strategy()
+        desired_frequency = self.build_config.get_f1_frequency()
+        strategy = self.build_config.get_f1_strategy()
 
         vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir} {desired_frequency} {strategy}").return_code
 

@@ -232,8 +232,8 @@ compound Config instance.
     // Can specify undefined classes this way. ex: TARGET_CONFIG=Override2_Base
 
 With this scheme, you don't need to define a Config class for every instance you
-wish to generate. We use this scheme to specify FPGA frequencies (eg.
-"BaseF1Config_F90MHz") in manager build recipes, but it's also very useful for doing
+wish to generate. We use this scheme to specify FPGA frequencies for non-EC2 builds
+(eg. "BaseF1Config_F90MHz") in manager build recipes, but it's also very useful for doing
 sweeping over a parameterization space.
 
 **Note that the precedence of Configs decreases from left to right in a string**.  Appending a config to an existing one will only have an effect if it

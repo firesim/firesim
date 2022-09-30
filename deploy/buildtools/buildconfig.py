@@ -26,6 +26,8 @@ class BuildConfig:
         deploytriplet: Deploy triplet override.
         launch_time: Launch time of the manager.
         PLATFORM_CONFIG: Platform config to build.
+        frequency: Frequency for the FPGA build. 
+        strategy: Strategy for the FPGA build.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
     """
@@ -35,8 +37,8 @@ class BuildConfig:
     DESIGN: str
     TARGET_CONFIG: str
     deploytriplet: Optional[str]
-    frequency: Optional[int]
-    strategy: Optional[str]
+    frequency: int
+    strategy: str
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -61,13 +63,15 @@ class BuildConfig:
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
         self.deploytriplet = recipe_config_dict['deploy_triplet']
-        self.frequency = recipe_config_dict['frequency']
-        self.strategy = recipe_config_dict['strategy']
         self.launch_time = launch_time
 
         # run platform specific options
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
         self.post_build_hook = recipe_config_dict['post_build_hook']
+
+        # retrieve frequency and strategy selections (for AWS F1)
+        self.frequency = recipe_config_dict['platform_config_args']['fpga_frequency']
+        self.strategy = recipe_config_dict['platform_config_args']['build_strategy']
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -87,6 +91,19 @@ class BuildConfig:
         if not bitbuilder_type_name in bitbuilder_dispatch_dict:
             raise Exception(f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}")
 
+        # error if frequency/strategy are selected for Azure/Vitis
+        if (bitbuilder_type_name != "F1BitBuilder"):
+            if (self.frequency is not None) or (self.strategy is not None):
+                raise Exception(f"Your selection of frequency/strategy will not be used with the {bitbuilder_type_name}. Set to null and append to the PLATFORM_CONFIG")
+        else:
+            # validate the frequency
+            if (self.frequency is None) or not (0 < self.frequency <= 1000):
+                raise Exception(f"{self.frequency} is not a valid build frequency. Valid frequencies are between 0-1000 (MHz)")
+            # validate the strategy
+            valid_strategies = ['BASIC', 'AREA', 'TIMING', 'EXPLORE', 'CONGESTION', 'NORETIMING', 'DEFAULT']
+            if self.strategy not in valid_strategies:
+                raise Exception(f"{self.strategy} is not a valid build strategy. Valid build strategies are: {' '.join(valid_strategies)}")
+
         # create dispatcher object using class given and pass args to it
         self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
 
@@ -98,25 +115,20 @@ class BuildConfig:
         """
         return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
-    def get_frequency(self) -> int:
-        """Get the build-specific frequency config.
+    def get_f1_frequency(self) -> int:
+        """Get the AWS F1 build-specific frequency config.
 
         Returns:
-            specified frequency (int)
+            Specified frequency (int)
         """
-        if self.frequency is None:
-            return 75
         return self.frequency
 
-    def get_strategy(self) -> str:
-        """Get the build-specific strategy config.
+    def get_f1_strategy(self) -> str:
+        """Get the AWS F1 build-specific strategy config string.
 
         Returns:
-            specified strategy (str)
+            Specified strategy (str)
         """
-        valid_strategies = ['BASIC', 'AREA', 'TIMING', 'EXPLORE', 'CONGESTION', 'NORETIMING', 'DEFAULT']
-        if self.strategy not in valid_strategies:
-            return 'TIMING'
         return self.strategy
 
     def get_build_dir_name(self) -> str:

@@ -36,6 +36,9 @@ Bitstream Build
         TARGET_CONFIG: FireSimRocketConfig
         PLATFORM_CONFIG: BaseVitisConfig
         deploy_triplet: null
+        platform_config_args:
+            fpga_frequency: null
+            build_strategy: null
         post_build_hook: null
         metasim_customruntimeconfig: null
         bit_builder_recipe: bit-builder-recipes/vitis.yaml
