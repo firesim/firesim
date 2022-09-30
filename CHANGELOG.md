@@ -2,6 +2,53 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.15.0] - 2022-09-30
+
+Full migration to Conda-based environment/dependency management; Chipyard now also uses Conda. Bump Rocket Chip/Chisel/etc. Various bugfixes/feature improvements.
+
+### Added
+* Refactor Conda + Bump Chipyard (which now uses Conda) #1206
+* Support FPGA-managed AXI4/DMA in metasimulation #1191
+
+### Changed
+* Bump chipyard to 1.8.0 #1239
+* Bump Rocketchip/chipyard/chisel #1216
+* Metasimulation: remove dramsim2 and copy host memory model sources in-tree #1197
+* Metasimulation: remove dependency on fesvr for ucontext #1196
+* bridges: Remove references to DMA_X in driver sources #1184
+* refactor most of machine-launch-script.sh into build-setup.sh #1180
+* Backports go to stable branch, which should generally point to the la… #1176
+* obey umask and default group in results-workload #1163
+* Use libelf and libdwarf from conda #1160
+* Improve fabric logging #1159
+* Bump to Verilator 4.224 #1156
+* ci: support running under forks of firesim #1144
+* Allowed bridge parameters to be serialized #1141
+* Don't use tsnyder conda channel in production machine-launch-script.sh #1121
+* Make bug report system info copy pastable #1104
+
+### Fixed
+* manager: Cast AWS IDs to string in shareagfi #1227
+* Stable backport of 1.12.1 AMI bump #1188
+* Fix various VCS metasimulation breakages #1177
+* Change elfutils submodule URL to HTTPS #1153
+* Annotate Printf statements instead of intercepting parameters. #1151
+* Deinit Chipyard's FireSim submodule under FireSim-as-top #1146
+* add config_build_recipes.yaml to run_yamls pytest fixture #1143
+* Fix mount files ownership #1137
+* Add warn_only to vivado builds + Postpone error until all builds complete #1130
+* Added missing return in tracerv_t::process_tokens to fix undefined behavior #1129
+* correct doc for autocounter_csv_format #1126
+* Fixing instructions for external SSH into simulation #1119
+* docs: fix underlining in metasimulation configuration section #1106
+* Fixed shebang in build-libdwarf.sh and build-libelf.sh scripts (copy #1101) #1105
+* VitisShell: Use XPM xpm_cdc_sync_rst for reset synchronizer #1100
+
+### Removed
+* Removed the clock bridge annotation #1224
+* Removed the in-memory bridge annotation #1223
+* Removed the Fame1Instances transformation #1202
+
 ## [1.14.2] - 2022-08-30
 Bump to use AWS FPGA Developer AMI 1.12.1 as 1.11.1 has been de-listed. This also bumps Vivado to 2021.2.
 
