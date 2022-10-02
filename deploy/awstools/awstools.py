@@ -359,6 +359,20 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
 
     first_subnet_wraparound = None
 
+    # append the tags from the manager to the launched instance
+    extra_tags = get_localhost_instance_tags()
+    extra_tags.pop('Name', None)
+    # only for ci, avoid naming child launched instances "ci-manager"
+    # to avoid ci erroring on finding multiple "manager" instances
+    for k in extra_tags.keys():
+        if "ci-manager" in k:
+            del extra_tags[k]
+    if tags is None:
+        tags = extra_tags
+    else:
+        tags.update(extra_tags)
+    rootLogger.debug(tags)
+
     while len(instances) < count:
         chosensubnet = subnets[startsubnet].subnet_id
         try:
