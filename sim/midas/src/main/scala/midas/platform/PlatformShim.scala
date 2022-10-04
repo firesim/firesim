@@ -21,11 +21,8 @@ import midas.widgets.CppGenerationUtils._
   *
   */
 private [midas] object PlatformShim {
-  def apply(annotations: Seq[Annotation], portTypeMap: Map[ReferenceTarget, Port])
-           (implicit p: Parameters): PlatformShim = {
-    val simWrapperConfig = SimWrapperConfig(annotations, portTypeMap)
-    val completeParams = p.alterPartial({ case SimWrapperKey => simWrapperConfig })
-    p(Platform)(completeParams)
+  def apply(config: SimWrapperConfig)(implicit p: Parameters): PlatformShim = {
+    p(Platform)(p.alterPartial({ case SimWrapperKey => config }))
   }
 }
 

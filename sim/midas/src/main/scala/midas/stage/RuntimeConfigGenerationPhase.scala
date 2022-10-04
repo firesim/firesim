@@ -6,6 +6,7 @@ import midas.stage.phases.{CreateParametersInstancePhase, ConfigParametersAnnota
 import midas.widgets.{BridgeIOAnnotation}
 import midas.models.FASEDMemoryTimingModel
 import midas.platform.PlatformShim
+import midas.core.SimWrapperConfig
 
 import freechips.rocketchip.diplomacy.{LazyModule, ValName}
 
@@ -33,7 +34,7 @@ class RuntimeConfigGenerationPhase extends Phase {
     implicit val p = annotations.collectFirst({ case ConfigParametersAnnotation(p)  => p }).get
 
     val bridgeIOAnnotations = annotations.collect { case b: BridgeIOAnnotation if b.widgetClass.nonEmpty => b }
-    val shim = LazyModule(PlatformShim(bridgeIOAnnotations, Map[ReferenceTarget, Port]()))
+    val shim = LazyModule(PlatformShim(SimWrapperConfig(bridgeIOAnnotations, Map[ReferenceTarget, Port]())))
     // Collect only FASEDBridges since they are the only ones that provide
     // runtime configuration generation
     val fasedBridges = shim.top.bridgeModuleMap.values.collect { case f: FASEDMemoryTimingModel  => f }
