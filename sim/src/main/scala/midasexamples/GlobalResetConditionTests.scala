@@ -38,12 +38,12 @@ abstract class GlobalResetConditionTester(elaborator: (Bool) => Unit) extends Ra
 }
 
 class AssertGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
-  (inReset: Bool) => { assert(!inReset, s"This should not fire\n") }
+  (inReset: Bool) => { assert(!inReset, "This should not fire\n") }
 )
 
 class PrintfGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
   (inReset: Bool) => {
-    when(inReset) { SynthesizePrintf(printf(s"This should not print. %b\n", inReset)) }
+    when(inReset) { SynthesizePrintf(printf("This should not print. %b\n", inReset)) }
 })
 
 class AutoCounterGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(

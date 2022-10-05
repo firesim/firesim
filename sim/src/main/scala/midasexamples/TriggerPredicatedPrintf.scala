@@ -37,7 +37,8 @@ class TriggerPredicatedPrintfDUT(printfPrefix: String = "SYNTHESIZED_PRINT ")
     val sinkEnable = Wire(Bool())
     TriggerSink(sinkEnable)
     when (sinkEnable) {
-      SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d LFSR: %x\n", cycle, lfsr))
+      val printStr = s"${printfPrefix}CYCLE: %d LFSR: %x\n"
+      SynthesizePrintf(printf(printStr, cycle, lfsr))
     }
   }
 
@@ -56,7 +57,8 @@ class TriggerPredicatedPrintfDUT(printfPrefix: String = "SYNTHESIZED_PRINT ")
     *   when (sinkEnable) { <...> }
     */
   TriggerSink.whenEnabled(noSourceDefault = false.B) {
-    SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d\n", cycle))
+    val printStr = s"${printfPrefix}CYCLE: %d\n"
+    SynthesizePrintf(printf(printStr, cycle))
   }
   // DOC include end: TriggerSink.whenEnabled Usage
 

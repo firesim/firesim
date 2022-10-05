@@ -57,9 +57,9 @@ object AssertTokenIrrevocable {
     val bitsPrev  = RegNext(bits)
     val firePrev  = RegNext(valid && ready)
     assert(!validPrev || firePrev || valid,
-      s"${prefix}valid de-asserted without handshake, violating irrevocability")
+      cf"${prefix}valid de-asserted without handshake, violating irrevocability")
     assert(!validPrev || firePrev || bitsPrev.asUInt === bits.asUInt,
-      s"${prefix}bits changed without handshake, violating irrevocability")
+      cf"${prefix}bits changed without handshake, violating irrevocability")
   }
 
   def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String] = None): Unit =

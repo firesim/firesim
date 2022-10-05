@@ -13,7 +13,8 @@ object AXI4Printf {
     val cyclecount = RegInit(0.U(64.W))
     cyclecount := cyclecount + 1.U
     when (io.aw.fire) {
-      printf(s"[${name},awfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, id %x, user %x\n",
+      val printStr = s"[${name},awfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, id %x, user %x\n"
+      printf(printStr,
         cyclecount,
         io.aw.bits.addr,
         io.aw.bits.len,
@@ -29,7 +30,8 @@ object AXI4Printf {
     }
 
     when (io.w.fire) {
-      printf(s"[${name},wfire,%x] data %x, last %x, strb %x\n",
+      val printStr = s"[${name},wfire,%x] data %x, last %x, strb %x\n"
+      printf(printStr,
         cyclecount,
         io.w.bits.data,
         io.w.bits.last,
@@ -38,7 +40,8 @@ object AXI4Printf {
     }
 
     when (io.b.fire) {
-      printf(s"[${name},bfire,%x] resp %x, id %x, user %x\n",
+      val printStr = s"[${name},bfire,%x] resp %x, id %x, user %x\n"
+      printf(printStr,
         cyclecount,
         io.b.bits.resp,
         io.b.bits.id,
@@ -47,7 +50,8 @@ object AXI4Printf {
     }
 
     when (io.ar.fire) {
-      printf(s"[${name},arfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, id %x, user %x\n",
+      val printStr = s"[${name},arfire,%x] addr %x, len %x, size %x, burst %x, lock %x, cache %x, prot %x, qos %x, id %x, user %x\n"
+      printf(printStr,
         cyclecount,
         io.ar.bits.addr,
         io.ar.bits.len,
@@ -63,7 +67,8 @@ object AXI4Printf {
     }
 
     when (io.r.fire) {
-      printf(s"[${name},rfire,%x] resp %x, data %x, last %x, id %x, user %x\n",
+      val printStr = s"[${name},rfire,%x] resp %x, data %x, last %x, id %x, user %x\n"
+      printf(printStr,
         cyclecount,
         io.r.bits.resp,
         io.r.bits.data,

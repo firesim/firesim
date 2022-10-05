@@ -28,10 +28,10 @@ class AXI4AddressTranslation(offset: BigInt, bridgeAddressSets: Seq[AddressSet],
       // has less than < 2 GiB of host DRAM), hence %.
       out.aw.bits.addr := in.aw.bits.addr + (maxHostAddr + (offset % maxHostAddr)).U
       out.ar.bits.addr := in.ar.bits.addr + (maxHostAddr + (offset % maxHostAddr)).U
-      assert(~in.aw.valid || in.aw.bits.addr <= virtualBound.U, s"AW request address in memory region ${regionName} exceeds region bound.")
-      assert(~in.ar.valid || in.ar.bits.addr <= virtualBound.U, s"AR request address in memory region ${regionName} exceeds region bound.")
-      assert(~in.aw.valid || in.aw.bits.addr >= virtualBase.U,  s"AW request address in memory region ${regionName} is less than region base.")
-      assert(~in.ar.valid || in.ar.bits.addr >= virtualBase.U,  s"AR request address in memory region ${regionName} is less than region base.")
+      assert(~in.aw.valid || in.aw.bits.addr <= virtualBound.U, cf"AW request address in memory region ${regionName} exceeds region bound.")
+      assert(~in.ar.valid || in.ar.bits.addr <= virtualBound.U, cf"AR request address in memory region ${regionName} exceeds region bound.")
+      assert(~in.aw.valid || in.aw.bits.addr >= virtualBase.U,  cf"AW request address in memory region ${regionName} is less than region base.")
+      assert(~in.ar.valid || in.ar.bits.addr >= virtualBase.U,  cf"AR request address in memory region ${regionName} is less than region base.")
     }
   }
 }

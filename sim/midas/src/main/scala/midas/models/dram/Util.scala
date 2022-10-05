@@ -748,9 +748,9 @@ class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module
   val axi4 = IO(Input(new NastiIO))
 
   assert(!axi4.ar.fire || axi4.ar.bits.len < cfg.maxReadLength.U,
-    s"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+    cf"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength.toString}")
   assert(!axi4.aw.fire || axi4.aw.bits.len < cfg.maxWriteLength.U,
-    s"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength}")
+    cf"Write burst length exceeds memory-model maximum of ${cfg.maxReadLength.toString}")
 }
 
 /**

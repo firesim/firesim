@@ -73,9 +73,9 @@ case class OChannelDesc[T <: Data](
     refOutputs.io.enq.bits := reference
 
     assert(comparisonFunc(refOutputs.io.deq.bits, modelChannel),
-      s"${name} Channel: Output token traces did not match")
+      cf"${name} Channel: Output token traces did not match")
     assert(!hValidPrev || hFirePrev || modelChannel.valid,
-      s"${name} Channel: hValid de-asserted without handshake, violating output token irrevocability")
+      cf"${name} Channel: hValid de-asserted without handshake, violating output token irrevocability")
 
     val modelChannelDone = modelIdx === testLength.U
     when (modelChannel.fire) { modelIdx := modelIdx + 1.U }

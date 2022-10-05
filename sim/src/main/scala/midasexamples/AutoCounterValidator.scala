@@ -124,8 +124,10 @@ class AutoCounterValidator(
 
   // Creates a printf with the validation prefix so it can be extracted from
   // the simulators stdout.
-  private def prefixed_printf(fmtString: String, args: Bits*) =
-    printf(s"${printfPrefix}${fmtString}\n", args:_*)
+  private def prefixed_printf(fmtString: String, args: Bits*) = {
+    val printStr = s"${printfPrefix}${fmtString}\n"
+    printf(printStr, args:_*)
+  }
 
   // Emits a csv header row to match the expected output of the driver. Note:
   // columns may be swizzled.
