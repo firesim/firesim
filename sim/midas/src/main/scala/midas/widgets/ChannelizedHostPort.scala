@@ -20,27 +20,9 @@ import scala.collection.mutable
   * This becomes more useful when there are channel types.
   *
   */
-sealed trait ChannelMetadata {
-  def clockRT(): Option[ReferenceTarget]
-  def chInfo(): FAMEChannelInfo
-  def fieldRTs(): Seq[ReferenceTarget]
-  def bridgeSunk: Boolean
-  // Channel name is passed as an argument here because it is determined reflexively after the record
-  // is constructed -- it's not avaiable when the metadata instance is created
-  def generateAnnotations(chName: String): Seq[ChiselAnnotation] = {
-    Seq(new ChiselAnnotation { def toFirrtl =
-      if (bridgeSunk) {
-        FAMEChannelConnectionAnnotation.source(chName, chInfo, clockRT, fieldRTs)
-      } else {
-        FAMEChannelConnectionAnnotation.sink(chName, chInfo, clockRT, fieldRTs)
-      }
-    })
-  }
-}
-
-case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, latency: Int = 0) extends ChannelMetadata {
+case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, latency: Int = 0) {
   def fieldRTs = Seq(field.toTarget)
-  def clockRT = Some(clock.toTarget)
+  def clockRT = clock.toTarget
   def chInfo = midas.passes.fame.PipeChannel(latency)
 }
 
@@ -63,7 +45,7 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   //       of the target-side of the bridge) 
   // _2 -> The associated host-channel (an actual element in this aggregate, unlike above)
   // _3 -> Associated metadate which will encode for the FCCA
-  private val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], ChannelMetadata)]()
+  private val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], PipeChannelMetadata)]()
 
   // These will only be called after the record has been finalized.
   lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)):_*)
@@ -123,14 +105,6 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
     ch
   }
 
-  // Implement methods of HasChannels
-  def generateAnnotations(): Unit = {
-    for ((targetField, channelElement, metadata) <- channels) {
-      checkFieldDirection(targetField, metadata.bridgeSunk)
-      metadata.generateAnnotations(reverseElementMap(channelElement)).map(a => annotate(a))
-    }
-  }
-
   def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
     val local2globalName = bridgeAnno.channelMapping.toMap
     for ((_, channel, metadata) <- channels) {
@@ -143,5 +117,12 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
     }
   }
 
-  def allChannelNames() = channels.map(ch => reverseElementMap(ch._2))
+  def bridgeChannels = channels.map({ case (_, ch, meta) =>
+    val name = reverseElementMap(ch)
+    if (meta.bridgeSunk) {
+      PipeBridgeChannel(name, meta.clockRT, Seq(), meta.fieldRTs, 0)
+    } else {
+      PipeBridgeChannel(name, meta.clockRT, meta.fieldRTs, Seq(), 0)
+    }
+  })
 }
