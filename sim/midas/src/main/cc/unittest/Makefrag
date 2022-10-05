@@ -28,13 +28,17 @@ csrc := $(ROCKETCHIP_DIR)/src/main/resources/csrc
 src_path = src/main/scala
 scala_srcs := $(shell find $(BASE_DIR) -name "*.scala")
 
+# Rocket Chip stage requires a fully qualified classname for each fragment, whereas Chipyard's does not.
+# This retains a consistent TARGET_CONFIG naming convention across the different target projects.
+subst_prefix=,midas.unittest.
+
 $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	mkdir -p $(@D)
 	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); runMain freechips.rocketchip.system.Generator \
 		--target-dir $(GEN_DIR) \
 		--name $(DESIGN) \
 		--top-module freechips.rocketchip.unittest.TestHarness \
-		--configs midas.unittest.$(CONFIG)"
+		--configs midas.unittest.$(subst _,$(subst_prefix),$(CONFIG))"
 	touch $(GEN_DIR)/$(DESIGN).behav_srams.v
 
 $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
