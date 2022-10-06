@@ -406,13 +406,13 @@ Targets<generating-different-targets>`).
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Specifies the host FPGA frequency for AWS EC2 based builds. For other platforms we
-continue to use the PLATFORM_CONFIG for frequency selection as described above.
+continue to use the ``PLATFORM_CONFIG`` for frequency selection as described above.
 
 ``build_strategy``
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Specifies the sythesis and implemetation strategies employed by Xilinx tools for the AGFI build.
-For other platforms continue to use the PLATFORM_CONFIG for strategy selection.
+For other platforms continue to use the ``PLATFORM_CONFIG`` for strategy selection.
 
 ``deploy_triplet``
 """"""""""""""""""
