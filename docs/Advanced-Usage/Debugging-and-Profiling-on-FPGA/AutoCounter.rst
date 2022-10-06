@@ -72,20 +72,17 @@ selected modules will generate counters.
 
 The filtered modules can be indicated using one of two methods:
 
-1. A module selection annotation within the top-level configuration
-   implementation (when using Chipyard, this would usually be ``DigitalTop``, but can also be any other module).  To use this method, add the
-   ``AutoCounterCoverModuleAnnotation`` annotation with the name of the module
-   for which you want the cover functions to be turned into AutoCounters.  The
-   following example will generate counters from cover functions within the
-   ``StreamWriter`` module:
+1. An annotation attached to the module for which cover functions should be
+   turned into AutoCounters.  The annotation requires a ``ModuleTarget`` which
+   can be pointed to any module in the design.  Alternatively, the current
+   module can be annotated as follows:
 
 .. code-block:: scala
 
-  class DigitalTop(implicit p: Parameters) extends ChipyardSystem
+  class SomeModule(implicit p: Parameters) extends Module
   {
-    override lazy val module = new DigitalTopModule(this)
-
-    chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("StreamWriter"))
+    chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation(
+        Module.currentModule.get.toTarget))
   }
 
 2. An input file with a list of module names. This input file is named
