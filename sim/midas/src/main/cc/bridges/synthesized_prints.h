@@ -82,10 +82,11 @@ private:
   ClockInfo clock_info;
   const int printno;
 
-  // DMA batching parameters
+  // Stream batching parameters
   static constexpr size_t beat_bytes = BridgeConstants::STREAM_WIDTH_BYTES;
-  // The number of DMA beats to pull off the FPGA on each invocation of tick()
-  // This will be set based on the ratio of token_size : desired_batch_beats
+  // The number of stream beats to pull off the FPGA on each invocation of
+  // tick() This will be set based on the ratio of token_size :
+  // desired_batch_beats
   size_t batch_beats;
   // This will be modified to be a multiple of the token size
   const size_t desired_batch_beats = stream_depth / 2;

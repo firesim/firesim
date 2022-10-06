@@ -143,7 +143,8 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
       val fccaAnnos = resetFCCA +: printFCCAs
       val bridgeAnno = BridgeIOAnnotation(
         target = ModuleTarget(c.main, c.main).ref(topWiringPrefix.stripSuffix("_")),
-        widget = (p: Parameters) => new PrintBridgeModule(PrintBridgeParameters(resetPortName, portTuples))(p),
+        widgetClass = classOf[PrintBridgeModule].getName,
+        widgetConstructorKey = PrintBridgeParameters(resetPortName, portTuples),
         channelNames = fccaAnnos.map(_.globalName)
       )
       (resetConditionAnno +: bridgeAnno +: fccaAnnos, resetPort, resetPortConn)

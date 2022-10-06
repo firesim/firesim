@@ -47,10 +47,21 @@ void handle_sigterm(int sig) { finish(); }
 
 simif_emul_t::simif_emul_t() {
 
+#ifdef FPGA_MANAGED_AXI4_PRESENT
+  // The final parameter, line size, is not used under mm_magic_t
+  cpu_mem->init((1ULL << FPGA_MANAGED_AXI4_ADDR_BITS),
+                FPGA_MANAGED_AXI4_DATA_BITS / 8,
+                512);
+#endif
+
   using namespace std::placeholders;
   auto mmio_read_func = std::bind(&simif_emul_t::read, this, _1);
-  auto pcis_read_func = std::bind(&simif_emul_t::pcis_read, this, _1, _2, _3);
-  auto pcis_write_func = std::bind(&simif_emul_t::pcis_write, this, _1, _2, _3);
+
+#ifdef CPUMANAGEDSTREAMENGINE_0_PRESENT
+  auto cpu_managed_axi4_read_func =
+      std::bind(&simif_emul_t::cpu_managed_axi4_read, this, _1, _2, _3);
+  auto cpu_managed_axi4_write_func =
+      std::bind(&simif_emul_t::cpu_managed_axi4_write, this, _1, _2, _3);
 
   for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
     auto params = CPUManagedStreamParameters(
@@ -60,7 +71,7 @@ simif_emul_t::simif_emul_t() {
         CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
 
     from_host_streams.push_back(
-        StreamFromCPU(params, mmio_read_func, pcis_write_func));
+        StreamFromCPU(params, mmio_read_func, cpu_managed_axi4_write_func));
   }
 
   for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
@@ -71,8 +82,9 @@ simif_emul_t::simif_emul_t() {
         CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
 
     to_host_streams.push_back(
-        StreamToCPU(params, mmio_read_func, pcis_read_func));
+        StreamToCPU(params, mmio_read_func, cpu_managed_axi4_read_func));
   }
+#endif // CPUMANAGEDSTREAMENGINE_0_PRESENT
 }
 
 simif_emul_t::~simif_emul_t(){};
@@ -202,32 +214,35 @@ size_t simif_emul_t::push(unsigned stream_idx,
       src, num_bytes, threshold_bytes);
 }
 
-size_t simif_emul_t::pcis_read(size_t addr, char *data, size_t size) {
-  ssize_t len = (size - 1) / DMA_BEAT_BYTES;
+size_t
+simif_emul_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
+  ssize_t len = (size - 1) / CPU_MANAGED_AXI4_BEAT_BYTES;
 
   while (len >= 0) {
     size_t part_len = len % (MAX_LEN + 1);
 
-    dma->read_req(addr, DMA_SIZE, part_len);
-    wait_read(dma, data);
+    cpu_managed_axi4->read_req(
+        addr, log2(CPU_MANAGED_AXI4_BEAT_BYTES), part_len);
+    wait_read(cpu_managed_axi4, data);
 
     len -= (part_len + 1);
-    addr += (part_len + 1) * DMA_BEAT_BYTES;
-    data += (part_len + 1) * DMA_BEAT_BYTES;
+    addr += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
+    data += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
   }
   return size;
 }
 
-size_t simif_emul_t::pcis_write(size_t addr, char *data, size_t size) {
-  ssize_t len = (size - 1) / DMA_BEAT_BYTES;
-  size_t remaining = size - len * DMA_BEAT_BYTES;
+size_t
+simif_emul_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
+  ssize_t len = (size - 1) / CPU_MANAGED_AXI4_BEAT_BYTES;
+  size_t remaining = size - len * CPU_MANAGED_AXI4_BEAT_BYTES;
   size_t strb[len + 1];
   size_t *strb_ptr = &strb[0];
 
   for (int i = 0; i < len; i++)
-    strb[i] = (1LL << DMA_BEAT_BYTES) - 1;
+    strb[i] = (1LL << CPU_MANAGED_AXI4_BEAT_BYTES) - 1;
 
-  if (remaining == DMA_BEAT_BYTES)
+  if (remaining == CPU_MANAGED_AXI4_BEAT_BYTES)
     strb[len] = strb[0];
   else
     strb[len] = (1LL << remaining) - 1;
@@ -235,12 +250,13 @@ size_t simif_emul_t::pcis_write(size_t addr, char *data, size_t size) {
   while (len >= 0) {
     size_t part_len = len % (MAX_LEN + 1);
 
-    dma->write_req(addr, DMA_SIZE, part_len, data, strb_ptr);
-    wait_write(dma);
+    cpu_managed_axi4->write_req(
+        addr, log2(CPU_MANAGED_AXI4_BEAT_BYTES), part_len, data, strb_ptr);
+    wait_write(cpu_managed_axi4);
 
     len -= (part_len + 1);
-    addr += (part_len + 1) * DMA_BEAT_BYTES;
-    data += (part_len + 1) * DMA_BEAT_BYTES;
+    addr += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
+    data += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
     strb_ptr += (part_len + 1);
   }
 

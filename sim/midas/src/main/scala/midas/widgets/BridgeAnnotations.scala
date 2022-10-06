@@ -3,28 +3,83 @@
 package midas.widgets
 
 import chisel3._
+
+import firrtl.{RenameMap}
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, HasSerializationHints}
+import firrtl.annotations.{Annotation, ReferenceTarget, ModuleTarget, HasSerializationHints}
 import freechips.rocketchip.config.Parameters
 
+import midas.passes.fame.{RTRenamer}
 import midas.targetutils.FAMEAnnotation
 
-trait BridgeAnnotation extends SingleTargetAnnotation[ModuleTarget] {
-  // A list of channel names that match the globalName emitted in the FCCAs
-  // associated with this bridge. We use these strings to look up those annotations
-  def channelNames: Seq[String]
-  // Invoked by BridgeExtraction to convert this ModuleTarget-based annotation into
-  // a ReferenceTarget based one that can be attached to newly created IO on the top-level
-  def toIOAnnotation(port: String): BridgeIOAnnotation
+sealed trait BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel
 }
 
 /**
-  * A serializable form of BridgeAnnotation emitted by Chisel Modules that extend Bridge
+  * Descriptor for a pipe channel ending at the bridge.
+  */
+case class PipeBridgeChannel(
+    name: String,
+    clock: ReferenceTarget,
+    sinks: Seq[ReferenceTarget],
+    sources: Seq[ReferenceTarget],
+    latency: Int
+) extends BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel = {
+    val renamer = RTRenamer.exact(renames)
+    PipeBridgeChannel(name, renamer(clock), sinks.map(renamer), sources.map(renamer), latency)
+  }
+}
+
+/**
+  * Descriptor for a clock channel originating from a clock bridge.
+  */
+case class ClockBridgeChannel(
+    name: String,
+    sinks: Seq[ReferenceTarget],
+    clocks: Seq[RationalClock],
+    clockMFMRs: Seq[Int]
+) extends BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel = {
+    val renamer = RTRenamer.exact(renames)
+    ClockBridgeChannel(name, sinks.map(renamer), clocks, clockMFMRs)
+  }
+}
+
+/**
+  * Descriptor for a Ready-Valid channel originating from a bridge.
+  */
+case class ReadyValidBridgeChannel(
+    fwdName: String,
+    revName: String,
+    clock: ReferenceTarget,
+    sinks: Seq[ReferenceTarget],
+    sources: Seq[ReferenceTarget],
+    valid: ReferenceTarget,
+    ready: ReferenceTarget,
+) extends BridgeChannel {
+  def update(renames: RenameMap): BridgeChannel = {
+    val renamer = RTRenamer.exact(renames)
+    ReadyValidBridgeChannel(
+      fwdName,
+      revName,
+      renamer(clock),
+      sinks.map(renamer),
+      sources.map(renamer),
+      renamer(valid),
+      renamer(ready)
+    )
+  }
+}
+
+/**
+  * A serializable annotation emitted by Chisel Modules that extend Bridge
   *
   * @param target  The module representing an Bridge. Typically a black box
   *
-  * @param channelNames  See BridgeAnnotation. A list of channelNames used
-  *  to find associated FCCAs for this bridge
+  * @param bridgeChannels  A list of descriptors for the channels attached to the
+  *   bridge. FCCAs are materialized from these descriptors.
   *
   * @param widgetClass  The full class name of the BridgeModule generator
   *
@@ -37,63 +92,49 @@ trait BridgeAnnotation extends SingleTargetAnnotation[ModuleTarget] {
   *   additional pertinent classes
   */
 
-case class SerializableBridgeAnnotation[T <: AnyRef](
-    val target: ModuleTarget,
-    channelNames: Seq[String],
+case class BridgeAnnotation(
+    target: ModuleTarget,
+    bridgeChannels: Seq[BridgeChannel],
     widgetClass: String,
-    widgetConstructorKey: Option[T])
-  extends BridgeAnnotation with HasSerializationHints with FAMEAnnotation {
+    widgetConstructorKey: Option[_ <: AnyRef])
+  extends SingleTargetAnnotation[ModuleTarget] with FAMEAnnotation with HasSerializationHints {
 
-  def typeHints() = widgetConstructorKey match {
+  /**
+    * Invoked by BridgeExtraction to convert this ModuleTarget-based annotation into
+    * a ReferenceTarget based one that can be attached to newly created IO on the top-level
+    */
+  def toIOAnnotation(port: String): BridgeIOAnnotation = {
+    val channelNames = bridgeChannels.flatMap({
+      case ch: PipeBridgeChannel => Seq(ch.name)
+      case ch: ClockBridgeChannel => Seq(ch.name)
+      case ch: ReadyValidBridgeChannel => Seq(ch.fwdName, ch.revName)
+    })
+    val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
+    BridgeIOAnnotation(target.copy(module = target.circuit).ref(port),
+      channelMapping.toMap,
+      widgetClass = widgetClass,
+      widgetConstructorKey = widgetConstructorKey
+    )
+  }
+
+  def typeHints() = bridgeChannels.map(_.getClass) ++ (widgetConstructorKey match {
     // If the key has extra type hints too, grab them as well
     case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
     case Some(key) => Seq(key.getClass)
     case None => Seq()
-  }
-  def duplicate(n: ModuleTarget) = this.copy(target)
-  def toIOAnnotation(port: String): BridgeIOAnnotation = {
-    val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
-    BridgeIOAnnotation(target.copy(module = target.circuit).ref(port),
-      channelMapping.toMap,
-      widgetClass = Some(widgetClass),
-      widgetConstructorKey = widgetConstructorKey)
-  }
-}
+  })
 
-/**
-  * A form BridgeAnnotation that can be emitted by FIRRTL transforms that
-  * run during Golden Gate compilation. Since these do not need to be
-  * serialized, BridgeModule generation can be more flexibly captured in a lambda
-  *
-  *
-  * @param target  The module representing an Bridge. Typically a black box
-  *
-  * @param channelNames  See BridgeAnnotation. A list of channelNames used
-  *  to find associated FCCAs for this bridge
-  *
-  * @param widget  A lambda to elaborate the host-land BridgeModule in FPGATop
-  *
-  */
-
-case class InMemoryBridgeAnnotation(
-    val target: ModuleTarget,
-    channelNames: Seq[String],
-    widget: (Parameters) => BridgeModule[_ <: Record with HasChannels]) extends BridgeAnnotation {
   def duplicate(n: ModuleTarget) = this.copy(target)
-  def toIOAnnotation(port: String): BridgeIOAnnotation = {
-    val channelMapping = channelNames.map(oldName => oldName -> s"${port}_$oldName")
-    BridgeIOAnnotation(target.copy(module = target.circuit).ref(port),
-      channelMapping.toMap,
-      widget = Some(widget))
-   }
+
+  override def update(renames: RenameMap): Seq[Annotation] = {
+    val renamer = RTRenamer.exact(renames)
+    Seq(BridgeAnnotation(target, bridgeChannels.map(_.update(renames)), widgetClass, widgetConstructorKey))
+  }
 }
 
 /**
   * An BridgeAnnotation that references the IO created by BridgeExtraction after it has promoted and removed
   * all modules annotated with BridgeAnnotations.
-  *
-  * Annotations that originate from SerializableBridgeAnnotation will have widget = None
-  * Annotations taht originate from InMemoryBridgeAnnotation will set widgetClass, widgetConstructorKey = None
   *
   * @param target  The IO corresponding to and Bridge's interface
   *
@@ -103,20 +144,17 @@ case class InMemoryBridgeAnnotation(
   * @param clockInfo Contains information about the domain in which the bridge is instantiated. 
   *  This will always be nonEmpty for bridges instantiated in the input FIRRTL
   *
-  * @param widget An optional lambda to elaborate the host-land BridgeModule. See InMemoryBridgeAnnotation
-  *
-  * @param widgetClass The BridgeModule's full class name. See SerializableBridgeAnnotation
+  * @param widgetClass The BridgeModule's full class name. See BridgeAnnotation
   *
   * @param widgetConstructorKey The BridgeModule's constructor argument.
   *
   */
 
 private[midas] case class BridgeIOAnnotation(
-    val target: ReferenceTarget,
+    target: ReferenceTarget,
     channelMapping: Map[String, String],
     clockInfo: Option[RationalClock] = None,
-    widget: Option[(Parameters) => BridgeModule[_ <: Record with HasChannels]] = None,
-    widgetClass: Option[String] = None,
+    widgetClass: String,
     widgetConstructorKey: Option[_ <: AnyRef] = None)
     extends SingleTargetAnnotation[ReferenceTarget] with FAMEAnnotation with HasSerializationHints {
 
@@ -133,28 +171,28 @@ private[midas] case class BridgeIOAnnotation(
   // Otherwise, uses reflection to find the constructor for the class given by
   // widgetClass, passing it the widgetConstructorKey
   def elaborateWidget(implicit p: Parameters): BridgeModule[_ <: Record with HasChannels] = {
+    println(s"Instantiating bridge ${target.ref} of type ${widgetClass}")
+
     val px = p alterPartial { case TargetClockInfo => clockInfo }
-    widget match {
-      case Some(elaborator) => elaborator(px)
-      case None =>
-        println(s"Instantiating bridge ${target.ref} of type ${widgetClass.get}")
-        val constructor = Class.forName(widgetClass.get).getConstructors()(0)
-        (widgetConstructorKey match {
-          case Some(key) =>
-            println(s"  With constructor arguments: $key")
-            constructor.newInstance(key, px)
-          case None => constructor.newInstance(px)
-        }).asInstanceOf[BridgeModule[_ <: Record with HasChannels]]
-    }
+    val constructor = Class.forName(widgetClass).getConstructors()(0)
+    (widgetConstructorKey match {
+      case Some(key) =>
+        println(s"  With constructor arguments: $key")
+        constructor.newInstance(key, px)
+      case None => constructor.newInstance(px)
+    }).asInstanceOf[BridgeModule[_ <: Record with HasChannels]]
   }
 }
-
 
 private[midas] object BridgeIOAnnotation {
   // Useful when a pass emits these annotations directly; (they aren't promoted from BridgeAnnotation)
   def apply(target: ReferenceTarget,
-            widget: (Parameters) => BridgeModule[_ <: Record with HasChannels],
-            channelNames: Seq[String]): BridgeIOAnnotation =
-   BridgeIOAnnotation(target, channelNames.map(p => p -> p).toMap, widget = Some(widget))
+            channelNames: Seq[String],
+            widgetClass: String,
+            widgetConstructorKey: AnyRef): BridgeIOAnnotation =
+   BridgeIOAnnotation(
+      target,
+      channelNames.map(p => p -> p).toMap,
+      widgetClass = widgetClass,
+      widgetConstructorKey = Some(widgetConstructorKey))
 }
-

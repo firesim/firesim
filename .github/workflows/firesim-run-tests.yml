@@ -63,11 +63,11 @@ jobs:
 
             # If conda requirements was modified ensure the lock file is re-generated
             conda-reqs:
-                - 'conda-requirements-riscv-tools.yaml'
+                - 'conda-reqs.yaml'
 
             # If conda requirements was modified ensure the lock file is re-generated
             conda-lock:
-                - 'conda-requirements-riscv-tools-linux-64.conda-lock.yml'
+                - 'conda-reqs.conda-lock.yml'
 
   # Note: This doesn't check if the lock file is synced/faithful to the requirements file.
   # This just ensures that both were modified in the same PR (ideally the lock file was regenerated
@@ -81,7 +81,7 @@ jobs:
     steps:
       - name: Check conda lock file was regenerated with conda requirements file
         run: |
-          echo "ERROR: Either the conda-requirements-riscv-tools.yaml or conda-requirements-riscv-tools-linux-64.conda-lock.yml was not updated properly. See the developer docs for more information"
+          echo "ERROR: Either the conda-reqs.yaml or conda-reqs.conda-lock.yml was not updated properly. See the developer docs for more information"
           false
 
   setup-self-hosted-manager:
@@ -102,6 +102,7 @@ jobs:
         uses: ./.github/actions/change-workflow-instance-states
         with:
           new-state: terminate
+          github-token: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
 
   setup-manager:
     name: setup-manager
@@ -127,6 +128,7 @@ jobs:
         uses: ./.github/actions/change-workflow-instance-states
         with:
           new-state: terminate
+          github-token: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
 
   build-default-workloads:
     # Conditionally build rootfs images only if deploying to FPGA to save CI resources

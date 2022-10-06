@@ -53,8 +53,10 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DE
 ##########################
 
 # dromajo modifications
+DROMAJO_LIB_DIR ?= $(CONDA_PREFIX)/lib
+DROMAJO_INCLUDE_DIR ?= $(CONDA_PREFIX)/include
+
 DROMAJO_LIB_NAME = dromajo_cosim
-DROMAJO_LIB = $(CONDA_PREFIX)/lib/lib$(DROMAJO_LIB_NAME).a
 
 DROMAJO_H = $(GENERATED_DIR)/dromajo_params.h
 DROMAJO_LONG_H = $(GENERATED_DIR)/$(long_name).dromajo_params.h
@@ -94,12 +96,11 @@ DRIVER_CC = \
 		$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top systematic_scheduler firesim_$(PLATFORM))) \
 	    $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 	    $(RISCV)/lib/libfesvr.a \
-	    $(DROMAJO_LIB) \
 	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
 # Need __STDC_FORMAT_MACROS until usage of inttypes.h (i.e. printf formatting macros) is removed
-TARGET_CXX_FLAGS += -D__STDC_FORMAT_MACROS -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(CONDA_PREFIX)/include -I$(driver_dir)/firesim -I$(RISCV)/include -I$(GENERATED_DIR)
-TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so -lz -l$(DROMAJO_LIB_NAME)
+TARGET_CXX_FLAGS += -D__STDC_FORMAT_MACROS -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(DROMAJO_INCLUDE_DIR) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(GENERATED_DIR)
+TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -L$(DROMAJO_LIB_DIR) -l:libdwarf.so -l:libelf.so -lz -l$(DROMAJO_LIB_NAME)
 # DOC include end: Bridge Build System Changes
 
 #######################################

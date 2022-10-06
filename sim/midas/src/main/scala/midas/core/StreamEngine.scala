@@ -16,8 +16,7 @@ import midas.widgets._
   * that host.  e.g. F1 uses CPU-driven XDMA and so uses an engine that only
   * uses the AXI4M interface.
   */
-case object StreamEngineInstantiatorKey extends Field[(StreamEngineParameters, Parameters) => StreamEngine](
-  (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e))
+case object StreamEngineInstantiatorKey extends Field[(StreamEngineParameters, Parameters) => StreamEngine]
 
 
 /**
@@ -52,18 +51,20 @@ case class StreamEngineParameters(
   * the transport using an AXI4 slave and / or AXI4 master port, which is
   * presented by the host platform.
   *
-  * Implementations that require an AXI4 slave set pcisNodeOpt = Some(<node graph>)
-  * Implementations that require an AXI4 master set pcimNodeOpt = Some(<node graph>)
+  * Implementations that require an AXI4 subordinate set cpuManagedAXI4NodeOpt = Some(<node graph>)
+  * Implementations that require an AXI4 manager set fpgaManagedAXI4NodeOpt  = Some(<node graph>)
   *
   */
 abstract class StreamEngine(
     p: Parameters,
   ) extends Widget()(p) {
   def params: StreamEngineParameters
-  def pcisNodeOpt: Option[AXI4InwardNode]
-  def pcimNodeOpt: Option[AXI4OutwardNode]
+  def cpuManagedAXI4NodeOpt: Option[AXI4InwardNode]
+  def fpgaManagedAXI4NodeOpt: Option[AXI4OutwardNode]
+
 
   lazy val StreamEngineParameters(sourceParams, sinkParams) = params
+  def hasStreams: Boolean = sourceParams.nonEmpty || sinkParams.nonEmpty
 
   // Connections to bridges that drive streams
   val streamsToHostCPU = InModuleBody {

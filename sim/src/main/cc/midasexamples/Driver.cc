@@ -91,6 +91,8 @@
 #include "ResetPulseBridgeTest.h"
 #elif defined DESIGNNAME_TerminationModule
 #include "TerminationModule.h"
+#elif defined DESIGNNAME_CustomConstraints
+#include "CustomConstraints.h"
 #endif
 
 class dut_emul_t :

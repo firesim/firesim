@@ -98,7 +98,7 @@ def get_header(gh_token: str) -> Dict[str, str]:
 def get_runners(gh_token: str) -> List:
     r = requests.get(gha_runners_api_url, headers=get_header(gh_token))
     if r.status_code != 200:
-        raise Exception("Unable to retrieve count of GitHub Actions Runners")
+        raise Exception(f"Unable to retrieve count of GitHub Actions Runners\nFull Response Below:\n{r}")
     res_dict = r.json()
     runner_count = res_dict["total_count"]
 
@@ -106,7 +106,7 @@ def get_runners(gh_token: str) -> List:
     for page_idx in range(math.ceil(runner_count / 30)):
         r = requests.get(gha_runners_api_url, params={"per_page" : 30, "page" : page_idx + 1}, headers=get_header(gh_token))
         if r.status_code != 200:
-            raise Exception("Unable to retrieve (sub)list of GitHub Actions Runners")
+            raise Exception(f"Unable to retrieve (sub)list of GitHub Actions Runners\nFull Response Below\n{r}")
         res_dict = r.json()
         runners = runners + res_dict["runners"]
 
@@ -115,7 +115,7 @@ def get_runners(gh_token: str) -> List:
 def delete_runner(gh_token: str, runner: Dict[str, Any]) -> bool:
     r = requests.delete(f"""{gha_runners_api_url}/{runner["id"]}""", headers=get_header(gh_token))
     if r.status_code != 204:
-        print(f"""Unable to delete runner {runner["name"]} with id: {runner["id"]}""")
+        print(f"""Unable to delete runner {runner["name"]} with id: {runner["id"]}\nFull Response Below\n{r}""")
         return False
     return True
 

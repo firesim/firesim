@@ -10,6 +10,7 @@ import firrtl.stage.TransformManager.TransformDependency
 import junctions.{NastiKey, NastiParameters}
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import freechips.rocketchip.unittest.UnitTests
+import freechips.rocketchip.diplomacy.{TransferSizes}
 
 import java.io.{File}
 
@@ -79,9 +80,9 @@ class WithoutTLMonitors extends freechips.rocketchip.subsystem.WithoutTLMonitors
 class SimConfig extends Config (new Config((site, here, up) => {
   case SynthAsserts     => false
   case SynthPrints      => false
-  case DMANastiKey      => NastiParameters(512, 64, 6)
   case AXIDebugPrint    => false
-
+  // TODO remove
+  case HasDMAChannel    => site(CPUManagedAXI4Key).nonEmpty
   // Remove once AXI4 port is complete
   case MemNastiKey      => {
     NastiParameters(
@@ -94,6 +95,13 @@ class SimConfig extends Config (new Config((site, here, up) => {
 class F1Config extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+  case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
+    addrBits = 64,
+    dataBits = 512,
+    idBits = 6,
+  ))
+  case FPGAManagedAXI4Key   => None
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x400000000L, // 16 GiB
@@ -104,13 +112,33 @@ class F1Config extends Config(new Config((site, here, up) => {
 
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
-  case HasDMAChannel  => false
-  // ID Width = 1 to avoid any potential zero-width wire issues.
+  case CPUManagedAXI4Key => None
+  case FPGAManagedAXI4Key   =>
+    val dataBits = 512
+    Some(FPGAManagedAXI4Params(
+    // This value was chosen arbitrarily. Vitis makes it natural to
+    // request multiples of 1 GiB, and we may wish to expand this as after some
+    // performance analysis.
+    size = 4096 * 1024,
+    dataBits = dataBits,
+    // This was chosen to match the AXI4 recommendations and could change.
+    idBits = 4,
+    // Don't support narrow reads/writes, and cap at a page per the AXI5 spec
+    writeTransferSizes = TransferSizes(dataBits / 8, 4096),
+    readTransferSizes  = TransferSizes(dataBits / 8, 4096)
+  ))
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e)
+  // Notes on width selection for the control bus
+  // Address: This needs further investigation. 12 may not be sufficient when using many auto counters
+  // ID:      AXI4Lite does not use ID bits. Use one here since Nasti (which
+  //          lacks a native AXI4LITE implementation) can't handle 0-width wires.
   case CtrlNastiKey   => NastiParameters(32, 12, 1)
   case HostMemChannelKey => HostMemChannelParams(
     size      = 0x400000000L, // 16 GiB
     beatBytes = 8,
     idBits    = 16)
+  // This could be as many as four on a U250, but support for the other
+  // channels requires adding address offsets in the shim (TODO).
   case HostMemNumChannels => 1
 }) ++ new SimConfig)
 

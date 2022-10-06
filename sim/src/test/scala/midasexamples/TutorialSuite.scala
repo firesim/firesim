@@ -187,6 +187,11 @@ class ParityF1Test extends TutorialSuite("Parity") {
   runTest("verilator", true)
   runTest("vcs", true)
 }
+
+class ParityVitisTest extends TutorialSuite("Parity", platformConfigs = classOf[DefaultVitisConfig].getSimpleName) {
+  runTest("verilator", true)
+  runTest("vcs", true)
+}
 class ShiftRegisterF1Test extends TutorialSuite("ShiftRegister")
 class ResetShiftRegisterF1Test extends TutorialSuite("ResetShiftRegister")
 class EnableShiftRegisterF1Test extends TutorialSuite("EnableShiftRegister")
@@ -372,6 +377,23 @@ class TerminationF1Test extends TutorialSuite("TerminationModule") {
   1 to 10 foreach {x => runTest(backendSimulator, args = Seq("+termination-bridge-tick-rate=10", s"+seed=${x}"), shouldPass = true)}
 }
 
+class CustomConstraintsF1Test extends TutorialSuite("CustomConstraints") {
+  def readLines(filename: String): List[String] = {
+    val file = new File(genDir, s"/${filename}")
+    Source.fromFile(file).getLines.toList
+  }
+  it should s"generate synthesis XDC file" in {
+    val xdc = readLines("FireSim-generated.synthesis.xdc")
+    xdc should contain("constrain_synth1")
+    atLeast (1, xdc) should fullyMatch regex "constrain_synth2 \\[reg firesim_top/.*/dut/r0\\]".r
+  }
+  it should s"generate implementation XDC file" in {
+    val xdc = readLines("FireSim-generated.implementation.xdc")
+    xdc should contain("constrain_impl1")
+    atLeast (1, xdc) should fullyMatch regex "constrain_impl2 \\[reg WRAPPER_INST/CL/firesim_top/.*/dut/r1]".r
+  }
+}
+
 // Suite Collections
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
@@ -383,6 +405,7 @@ class ChiselExampleDesigns extends Suites(
   new RiscSRAMF1Test,
   new AccumulatorF1Test,
   new VerilogAccumulatorF1Test,
+  new CustomConstraintsF1Test,
   // This test is known to fail non-deterministically. See https://github.com/firesim/firesim/issues/1147
   // new TerminationF1Test
 )

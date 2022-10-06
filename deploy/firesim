@@ -260,7 +260,11 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     def release_build_hosts_handler(sig, frame) -> None:
         """ Handler that prompts to release build farm hosts if you press ctrl-c. """
         rootLogger.info("You pressed ctrl-c, so builds have been killed.")
-        userconfirm = firesim_input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
+
+        userconfirm = "yes"
+        if not build_config_file.forceterminate:
+            userconfirm = firesim_input("Do you also want to terminate your build hosts? Type 'yes' to do so.\n")
+
         if userconfirm == "yes":
             build_config_file.release_build_hosts()
             rootLogger.info("Build farm hosts released.")
@@ -279,18 +283,24 @@ def buildbitstream(build_config_file: BuildConfigFile) -> None:
     build_config_file.wait_on_build_host_initializations()
 
     @parallel
-    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> None:
+    def parallel_build_helper(config_file: BuildConfigFile, bypass: bool = False) -> bool:
         """Wrap parallel portion of ``build_bitstream``
 
         Args:
             config_file: BuildConfigFile
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
+
+        Returns:
+            Boolean indicating if the build passed or not.
         """
         build_config_file = config_file.get_build_by_ip(env.host_string)
-        build_config_file.bitbuilder.build_bitstream(bypass)
+        return build_config_file.bitbuilder.build_bitstream(bypass)
 
     # run builds, then terminate instances
-    execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
+    results = execute(parallel_build_helper, build_config_file, hosts=build_config_file.build_ip_set)
+    if False in results.values():
+        rootLogger.critical("ERROR: A bitstream build failed.")
+        sys.exit(1)
 
 @register_task
 def builddriver(runtime_conf: RuntimeConfig) -> None:
@@ -404,7 +414,7 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
     parser.add_argument('--terminatesome', action='append', type=terminatesomesplitter,
                         help='Only used by terminaterunfarm. Used to specify a restriction on how many instances to terminate. E.g., --terminatesome=f1.2xlarge:2 will terminate only 2 of the f1.2xlarge instances in the runfarm, regardless of what other instances are in the runfarm. This argument can be specified multiple times to terminate additional instance types/counts. Behavior when specifying the same instance type multiple times is undefined. This replaces the old --terminatesome{f116,f12,f14,m416} arguments. Behavior when specifying these old-style terminatesome flags and this new style flag at the same time is also undefined.')
     parser.add_argument('-q', '--forceterminate', action='store_true',
-                        help='For terminaterunfarm, force termination without prompting user for confirmation. Defaults to False')
+                        help='For terminaterunfarm and buildbitstream, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
     parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',

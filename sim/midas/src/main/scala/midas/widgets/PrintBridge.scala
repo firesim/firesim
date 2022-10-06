@@ -11,8 +11,6 @@ import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
-import midas.core.{DMANastiKey}
-
 class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
     case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)
@@ -188,7 +186,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets.map(UInt32(_)))
     val formatStrings   = printPort.printRecords.map(_._2.formatString).map(CStrLit)
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
