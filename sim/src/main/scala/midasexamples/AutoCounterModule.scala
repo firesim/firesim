@@ -87,7 +87,7 @@ class AutoCounterCoverModuleDUT(val instName: String = "dut")(implicit val v: Au
 
   cover(cycle8 , "CYCLES_DIV_8", "Count the number of times the cycle count is divisible by 8. Should be equal to number of cycles divided by 8")
 
-  chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation("AutoCounterCoverModuleDUT"))
+  chisel3.experimental.annotate(AutoCounterCoverModuleAnnotation(Module.currentModule.get.toTarget))
 
   //--------VALIDATION---------------
 
