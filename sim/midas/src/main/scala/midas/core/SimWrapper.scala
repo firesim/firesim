@@ -116,9 +116,8 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig)
 
   def regenTypes(refTargets: Seq[ReferenceTarget]): Seq[(String, ChLeafType)] = {
     val port = leafTypeMap(refTargets.head.copy(component = Seq()))
-    val fieldName = refTargets.head.component match {
-      case firrtl.annotations.TargetToken.Field(fName) :: Nil => fName
-      case firrtl.annotations.TargetToken.Field(fName) :: fields => fName
+    val fieldName = refTargets.head.component.headOption match {
+      case Some(firrtl.annotations.TargetToken.Field(fName)) => fName
       case _ => throw new RuntimeException("Expected only a bits field in ReferenceTarget's component.")
     }
 
