@@ -1,7 +1,7 @@
 */riscv-tools
 */target
 */firesim-software
-.conda-env/
+.conda-env
 deploy/results-build
 platforms/f1/aws-fpga/hdk/cl/developer_designs/cl_F*
 sw/qemu
