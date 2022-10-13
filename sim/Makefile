@@ -53,7 +53,9 @@ override SCALA_BUILDTOOL_DEPS += $(SBT_THIN_CLIENT_TIMESTAMP)
 SBT_CLIENT_FLAG = --client
 endif
 
-SBT_BIN ?= sbt
+# Use java -jar approach by default so that SBT thin-client sees the JAVA flags
+# Workaround for behavior reported here: https://github.com/sbt/sbt/issues/6468
+SBT_BIN ?= java -jar $(rocketchip_dir)/sbt-launch.jar
 SBT = $(SBT_BIN) $(SBT_CLIENT_FLAG)
 
 define run_scala_main
