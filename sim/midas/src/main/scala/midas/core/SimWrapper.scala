@@ -37,13 +37,6 @@ class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record 
   def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
 }
 
-// Regenerates the "bits" field of a target ready-valid interface from a list of flattened
-// elements that include the "bits_" prefix. This is stripped off.
-class PayloadRecord(elms: Seq[(String, Data)]) extends Record {
-  override val elements = ListMap((elms map { case (name, data) => name.stripPrefix("bits_") -> data.cloneType }):_*)
-  override def cloneType: this.type = new PayloadRecord(elms).asInstanceOf[this.type]
-}
-
 /**
   * The metadata required to generate the simulation wrapper.
   *
@@ -107,56 +100,19 @@ trait TargetChannelIO {
 abstract class ChannelizedWrapperIO(val config: SimWrapperConfig)
     extends Record with UnpackedWrapperConfig with TargetChannelIO {
 
-  def regenTypesFromField(name: String, tpe: firrtl.ir.Type): Seq[(String, ChLeafType)] = tpe match {
-    case firrtl.ir.BundleType(fields) => fields.flatMap(f => regenTypesFromField(prefixWith(name, f.name), f.tpe))
-    case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => Seq(name -> UInt(width.width.toInt.W))
-    case firrtl.ir.SIntType(width: firrtl.ir.IntWidth) => Seq(name -> SInt(width.width.toInt.W))
-    case _ => throw new RuntimeException(s"Unexpected type in token payload: ${tpe}.")
-  }
-
-  def regenTypes(refTargets: Seq[ReferenceTarget]): Seq[(String, ChLeafType)] = {
-    val port = leafTypeMap(refTargets.head.copy(component = Seq()))
-    val fieldName = refTargets.head.component.headOption match {
-      case Some(firrtl.annotations.TargetToken.Field(fName)) => fName
-      case _ => throw new RuntimeException("Expected only a bits field in ReferenceTarget's component.")
-    }
-
-    val bitsField = port.tpe match {
-      case a: firrtl.ir.BundleType => a.fields.filter(_.name == fieldName).head
-      case _ => throw new RuntimeException("ReferenceTargets should point at the channel's bundle.")
-    }
-
-    regenTypesFromField("", bitsField.tpe)
-  }
-
-  def regenPayloadType(refTargets: Seq[ReferenceTarget]): Data = {
-    require(!refTargets.isEmpty)
-    // Reject all (String -> Data) pairs not included in the refTargets
-    // Use this to remove target valid
-    val targetLeafNames = refTargets.map(_.component.reverse.head.value).toSet
-    val elements = regenTypes(refTargets).filter({ case (name, f)  => targetLeafNames(name) })
-    elements match {
-      case (name, field) :: Nil => field // If there's only a single field, just pass out the type
-      case elms => new PayloadRecord(elms)
-    }
-  }
-
-  def regenWireType(refTargets: Seq[ReferenceTarget]): ChLeafType = {
-    require(refTargets.size == 1, "FIXME: Handle aggregated wires")
-    regenTypes(refTargets).head._2
-  }
-
   val payloadTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
     // Target Decoupled Channels need to have their target-valid ReferenceTarget removed
     case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,Some(vsrc),_,_), _, Some(srcs),_) =>
-      ch -> regenPayloadType(srcs.filterNot(_ == vsrc))
+      ch -> buildChannelType(leafTypeMap, srcs.filterNot(_ == vsrc))
     case ch @ FAMEChannelConnectionAnnotation(_,DecoupledForwardChannel(_,_,_,Some(vsink)), _, _, Some(sinks)) =>
-      ch -> regenPayloadType(sinks.filterNot(_ == vsink))
+      ch -> buildChannelType(leafTypeMap, sinks.filterNot(_ == vsink))
   }).toMap
 
-  val wireTypeMap: Map[FAMEChannelConnectionAnnotation, ChLeafType] = chAnnos.collect({
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(srcs),_) => ch -> regenWireType(srcs)
-    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,_,Some(sinks)) => ch -> regenWireType(sinks)
+  val wireTypeMap: Map[FAMEChannelConnectionAnnotation, Data] = chAnnos.collect({
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,Some(srcs),_) =>
+      ch -> buildChannelType(leafTypeMap, srcs)
+    case ch @ FAMEChannelConnectionAnnotation(_,fame.PipeChannel(_),_,_,Some(sinks)) =>
+      ch -> buildChannelType(leafTypeMap, sinks)
   }).toMap
 
   val wireElements = mutable.ArrayBuffer[(String, ReadyValidIO[Data])]()
@@ -320,7 +276,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
   target.io.hostClock := clock
   import chisel3.ExplicitCompileOptions.NotStrict // FIXME
 
-  def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): ChLeafType = {
+  def getPipeChannelType(chAnno: FAMEChannelConnectionAnnotation): Data = {
     target.io.wireTypeMap(chAnno)
   }
 
@@ -335,7 +291,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
     *  the unique chname used to look up the bridge-side interface in channelPorts.
     */
   def genPipeChannel(chAnnos: Iterable[FAMEChannelConnectionAnnotation], primaryChannelName: String):
-      Iterable[PipeChannel[ChLeafType]] = {
+      Iterable[PipeChannel[Data]] = {
     // Generate a channel queue for each annotation, leaving enq disconnected
     val queues = for (chAnno <- chAnnos) yield {
       require(chAnno.sources == None || chAnno.sources.get.size == 1, "Can't aggregate wire-type channels yet")
