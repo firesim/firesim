@@ -181,8 +181,8 @@ class Builder:
             # # This is unfortunate but buildroot can't remove things from the
             # # image without rebuilding everything from scratch. It adds 20min
             # # to the unit tests and anyone who builds a custom buildroot.
-            wlutil.run(['rm', '-r', 'overlay/*'], cwd=br_dir, env=env)
-            wlutil.run(['rm', '-r', "buildroot/output/target/*"], cwd=br_dir , env=env)
+            wlutil.run(['rm', '-rf', 'overlay/*'], cwd=br_dir, env=env)
+            wlutil.run(['rm', '-rf', "buildroot/output/target/*"], cwd=br_dir , env=env)
             wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
             shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
 
