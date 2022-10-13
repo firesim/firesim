@@ -79,10 +79,9 @@ You'll see other parameters in the ``run_farm`` mapping, like ``run_instance_mar
 AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
-Now, let's change the ``target_config`` mapping to model the correct target design.
-By default, it is set to model an 8-node cluster with a cycle-accurate network.
-Instead, we want to model a single-node with no network. To do so, we will need
-to change a few items in this section:
+Now, let's verify that the ``target_config`` mapping will model the correct target design.
+By default, it is set to model a single-node with no network.
+It should look like the following:
 
 ::
 
@@ -100,13 +99,12 @@ to change a few items in this section:
         default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
 
-Note that we changed three of the parameters here: ``topology`` is now set to
+Note ``topology`` is set to
 ``no_net_config``, indicating that we do not want a network. Then,
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
-one node. Lastly, we changed ``default_hw_config`` from
-``firesim_rocket_quadcore_nic_l2_llc4mb_ddr3`` to
-``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.  Notice the subtle difference in this
-last option? All we did is switch to a hardware configuration that does not
+one node. Lastly, the ``default_hw_config`` is
+``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.  Notice the ``no_nic`` in this
+last option? This uses a hardware configuration that does not
 have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 

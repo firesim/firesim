@@ -66,7 +66,7 @@ you have not modified it):
    :code: yaml
 
 For the 8-node cluster simulation, the defaults in this file are close to what
-we want. Let's outline the important parameters:
+we want but require slight modification. Let's outline the important parameters:
 
 * ``f1.16xlarges: 1``: Change this parameter. This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
 * ``topology: example_8config``: This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
