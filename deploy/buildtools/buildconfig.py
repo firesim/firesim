@@ -26,7 +26,7 @@ class BuildConfig:
         deploytriplet: Deploy triplet override.
         launch_time: Launch time of the manager.
         PLATFORM_CONFIG: Platform config to build.
-        frequency: Frequency for the FPGA build. 
+        fpga_frequency: Frequency for the FPGA build. 
         strategy: Strategy for the FPGA build.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
@@ -37,7 +37,7 @@ class BuildConfig:
     DESIGN: str
     TARGET_CONFIG: str
     deploytriplet: Optional[str]
-    frequency: int
+    frequency: float
     strategy: str
     launch_time: str
     PLATFORM_CONFIG: str
@@ -98,7 +98,7 @@ class BuildConfig:
         else:
             # validate the frequency
             if (self.frequency is None) or not (0 < self.frequency <= 1000):
-                raise Exception(f"{self.frequency} is not a valid build frequency. Valid frequencies are between 0-1000 (MHz)")
+                raise Exception(f"{self.frequency} is not a valid build frequency. Valid frequencies are between 0.0-1000.0 (MHz)")
             # validate the strategy
             valid_strategies = ['BASIC', 'AREA', 'TIMING', 'EXPLORE', 'CONGESTION', 'NORETIMING', 'DEFAULT']
             if self.strategy not in valid_strategies:
@@ -115,11 +115,11 @@ class BuildConfig:
         """
         return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
-    def get_f1_frequency(self) -> int:
+    def get_f1_frequency(self) -> float:
         """Get the AWS F1 build-specific frequency config.
 
         Returns:
-            Specified frequency (int)
+            Specified frequency (float)
         """
         return self.frequency
 
