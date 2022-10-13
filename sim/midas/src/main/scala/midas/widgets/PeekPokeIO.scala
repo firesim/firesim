@@ -54,7 +54,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     // needs back pressure from reset queues
     io.idle := cycleHorizon === 0.U
 
-    def genWideReg(name: String, field: ChLeafType): Seq[UInt] = Seq.tabulate(
+    def genWideReg(name: String, field: Bits): Seq[UInt] = Seq.tabulate(
         (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
       val chunkWidth = math.min(ctrlWidth, field.getWidth - (i * ctrlWidth))
       Reg(UInt(chunkWidth.W)).suggestName(s"target_${name}_{i}")
@@ -65,7 +65,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val outputPrecisePeekableFlags = mutable.ArrayBuffer[Bool]()
     val channelPokes           = mutable.ArrayBuffer[(Seq[Int], Bool)]()
 
-    def bindInputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    def bindInputs(name: String, channel: DecoupledIO[Bits]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
       val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)
@@ -97,7 +97,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       regAddrs
     }
 
-    def bindOutputs(name: String, channel: DecoupledIO[ChLeafType]): Seq[Int] = {
+    def bindOutputs(name: String, channel: DecoupledIO[Bits]): Seq[Int] = {
       val reg = genWideReg(name, channel.bits)
       // Track local-channel decoupling
       val cyclesAhead = SatUpDownCounter(key.maxChannelDecoupling)

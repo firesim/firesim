@@ -11,19 +11,17 @@ import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
 import chisel3._
 import chisel3.util._
 
-import midas.core.SimUtils.{ChLeafType}
-
 // Generates stateful assertions on the ports of channels to check that token
 // irrevocability constraints aren't be violated. Bridges that don not produce
 // token streams irrevocably will introduce simulation non-determinism.
 case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 
-class PipeChannelIO[T <: ChLeafType](gen: T)(implicit p: Parameters) extends Bundle {
+class PipeChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
   val in    = Flipped(Decoupled(gen))
   val out   = Decoupled(gen)
 }
 
-class PipeChannel[T <: ChLeafType](
+class PipeChannel[T <: Data](
     val gen: T,
     latency: Int
   )(implicit p: Parameters) extends Module {
