@@ -22,10 +22,10 @@ Single tests may be run directly out of :gh-file-ref:`sim/` as follows::
    make test
 
    # Run all integration tests (very long running, not recommended)
-   make TARGET_PROJECT=midasexamples test
+   make test TARGET_PROJECT=midasexamples
 
    # Run a specific integration test (desired)
-   make TARGET_PROJECT=midasexamples testOnly=firesim.midasexamples.GCDF1Test
+   make testOnly TARGET_PROJECT=midasexamples SCALA_TEST=firesim.midasexamples.GCDF1Test
 
 These tests may be run from the SBT console continuously, and SBT will rerun
 them on Scala changes (but not driver changes). Out of :gh-file-ref:`sim/`::
