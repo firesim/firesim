@@ -29,7 +29,7 @@ env:
 jobs:
   change-filters:
     name: filter-jobs-on-changes
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     # Queried by downstream jobs to determine if they should run.
     outputs:
       needs-scala-doc: ${{ steps.filter.outputs.scala-docs }}
@@ -48,7 +48,7 @@ jobs:
     name: publish-scala-doc
     needs: change-filters
     if: needs.change-filters.outputs.needs-scala-doc == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     container:
       image: firesim/firesim-ci:v1.3
       options: --entrypoint /bin/bash
