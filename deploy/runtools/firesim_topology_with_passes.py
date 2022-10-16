@@ -7,6 +7,7 @@ import os
 import pprint
 import logging
 import datetime
+import sys
 from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 from functools import reduce
@@ -26,10 +27,22 @@ rootLogger = logging.getLogger()
 
 @parallel
 def instance_liveness() -> None:
-    """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
-    actual firesim-related commands on only some of the run farm machines."""
+    """ Confirm that all instances are accessible (are running and can be
+    ssh'ed into) first so that we don't run any actual firesim-related commands
+    on only some of the run farm machines.
+
+    Also confirm that the default shell in use is one that is known to handle
+    commands we pass to run in the manager.
+    """
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
     run("uname -a")
+    collect = run("echo $SHELL")
+
+    allowed_shells = ["bash"]
+    shell_info = collect.stdout.split("/")[-1]
+    if shell_info not in allowed_shells:
+        rootLogger.error(f"::ERROR:: Invalid default shell in use: {shell_info}. Allowed shells: {allowed_shells}.")
+        sys.exit(1)
 
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
