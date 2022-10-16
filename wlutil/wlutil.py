@@ -700,9 +700,9 @@ def getToolVersions():
         linuxMin = str((int(linuxHeaderVer) >> 8) & 0xFF)
 
         # Toolchain major version
-        toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "--version"],
+        toolVerStr = sp.run(["riscv64-unknown-linux-gnu-gcc", "-dumpfullversion"],
                             universal_newlines=True, stdout=sp.PIPE).stdout
-        toolVer = toolVerStr[36]
+        toolVer = toolVerStr.split('.')[0]
 
         _toolVersions = {'linuxMaj': linuxMaj,
                          'linuxMin': linuxMin,
