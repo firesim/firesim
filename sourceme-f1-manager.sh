@@ -2,6 +2,42 @@
 # you can also source it in your bashrc, but you must cd to this directory
 # first
 
+DO_SSH_SETUP=true
+
+function usage
+{
+    echo "usage: source sourceme-f1-manager.sh [OPTIONS]"
+    echo "options:"
+    echo "   --skip-ssh-setup: if set, skips ssh setup checks."
+}
+
+if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
+    usage
+    exit 3
+fi
+
+while test $# -gt 0
+do
+   case "$1" in
+        --skip-ssh-setup)
+            DO_SSH_SETUP=false;
+            ;;
+        -h | -H | --help)
+            usage
+            exit
+            ;;
+        --*) echo "ERROR: bad option $1"
+            usage
+            exit 1
+            ;;
+        *) echo "ERROR: bad argument $1"
+            usage
+            exit 2
+            ;;
+    esac
+    shift
+done
+
 unamestr=$(uname)
 RDIR=$(pwd)
 AWSFPGA=$RDIR/platforms/f1/aws-fpga
@@ -13,8 +49,10 @@ source ./env.sh
 # put the manager on the user path
 export PATH=$PATH:$(pwd)/deploy
 
-# setup ssh-agent
-source deploy/ssh-setup.sh
+if [ "$DO_SSH_SETUP" = true ]; then
+    # setup ssh-agent
+    source deploy/ssh-setup.sh
+fi
 
 # flag for scripts to check that this has been sourced
 export FIRESIM_SOURCED=1
