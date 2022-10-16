@@ -311,6 +311,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.metasimulation_only_plusargs = metasimulation_only_plusargs
         self.metasimulation_only_vcs_plusargs = metasimulation_only_vcs_plusargs
 
+        self.additional_required_files = []
+
     def get_boot_simulation_command(self,
             slotid: int,
             all_macs: Sequence[MacAddress],
