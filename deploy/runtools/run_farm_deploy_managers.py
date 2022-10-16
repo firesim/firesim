@@ -101,11 +101,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)
 
     def sim_node_qcow(self) -> None:
-        """ If NBD is available, install qemu-img management tools and copy NBD
-        infra to remote node. This assumes that the kernel module was already
-        built and exists in the directory on this machine.
-        """
-        if self.nbd_tracker is not None:
+        """ If NBD is available and qcow2 support is required, install qemu-img
+        management tools and copy NBD infra to remote node. This assumes that
+        the kernel module was already built and exists in the directory on this
+        machine. """
+        if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("""Setting up remote node for qcow2 disk images.""")
             # get qemu-nbd
             ### XXX Centos Specific
@@ -114,16 +114,18 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
 
     def load_nbd_module(self) -> None:
-        """ If NBD is available, load the nbd module. always unload the module
-        first to ensure it is in a clean state. """
-        if self.nbd_tracker is not None:
+        """ If NBD is available and qcow2 support is required, load the nbd
+        module. always unload the module first to ensure it is in a clean
+        state. """
+        if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("Loading NBD Kernel Module.")
             self.unload_nbd_module()
             run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.nbd_tracker.NBDS_MAX))
 
     def unload_nbd_module(self) -> None:
-        """ If NBD is available, unload the nbd module. """
-        if self.nbd_tracker is not None:
+        """ If NBD is available and qcow2 support is required, unload the nbd
+        module. """
+        if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("Unloading NBD Kernel Module.")
 
             # disconnect all /dev/nbdX devices before rmmod
@@ -132,8 +134,9 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 run('sudo rmmod nbd')
 
     def disconnect_all_nbds_instance(self) -> None:
-        """ If NBD is available, disconnect all nbds on the instance. """
-        if self.nbd_tracker is not None:
+        """ If NBD is available and qcow2 support is required, disconnect all
+        nbds on the instance. """
+        if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("Disconnecting all NBDs.")
 
             # warn_only, so we can call this even if there are no nbds

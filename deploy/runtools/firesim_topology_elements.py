@@ -253,7 +253,7 @@ class FireSimServerNode(FireSimNode):
 
     def allocate_nbds(self) -> None:
         """ called by the allocate nbds pass to assign an nbd to a qcow2 image. """
-        rootfses_list = [self.get_rootfs_name()]
+        rootfses_list = self.get_all_rootfs_names()
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
@@ -481,6 +481,15 @@ class FireSimServerNode(FireSimNode):
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
 
+    def get_all_rootfs_names(self) -> List[Optional[str]]:
+        """ Get all rootfs filenames as a list. """
+        return [self.get_rootfs_name()]
+
+    def qcow2_support_required(self) -> bool:
+        """ Return True iff any rootfses for this sim require QCOW2 support, as
+        determined by their filename ending (.qcow2). """
+        return any(map(lambda x: x is not None and x.endswith(".qcow2"), self.get_all_rootfs_names()))
+
     def get_bootbin_name(self) -> str:
         # prefix bootbin name with the job name to disambiguate in supernode
         # cases
@@ -513,21 +522,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             sib.assign_host_instance(super_server_host)
             sib.copy_back_job_results_from_run(slotno, sudo)
 
-    def allocate_nbds(self) -> None:
-        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
-        """
-        num_siblings = self.supernode_get_num_siblings_plus_one()
-
-        rootfses_list = [self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)]
-
-        for rootfsname in rootfses_list:
-            if rootfsname is not None and rootfsname.endswith(".qcow2"):
-                host_inst = self.get_host_instance()
-                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
-                assert nbd_tracker is not None
-                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
-
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
         plus one (because in most places, we use siblings + 1, not just siblings)
@@ -554,6 +548,11 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                 return node
         assert False, "Should return supernode sibling"
 
+    def get_all_rootfs_names(self) -> List[Optional[str]]:
+        """ Get all rootfs filenames as a list. """
+        num_siblings = self.supernode_get_num_siblings_plus_one()
+        return [self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)]
+
     def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
         """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located."""
@@ -570,7 +569,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         assert self.plusarg_passthrough is not None
 
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling(x).get_mac_address() for x in range(1, num_siblings)]
-        all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)])
+        all_rootfses = self.process_qcow2_rootfses(self.get_all_rootfs_names())
         all_bootbins = [self.get_bootbin_name()] + [self.supernode_get_sibling(x).get_bootbin_name() for x in range(1, num_siblings)]
         all_linklatencies = [self.server_link_latency]
         for x in range(1, num_siblings):

@@ -107,6 +107,10 @@ class Inst(metaclass=abc.ABCMeta):
         self.sim_slots.append(firesimservernode)
         firesimservernode.assign_host_instance(self)
 
+    def qcow2_support_required(self) -> bool:
+        """ Return True iff any simulation on this Inst requires qcow2. """
+        return any([x.qcow2_support_required() for x in self.sim_slots])
+
 class RunFarm(metaclass=abc.ABCMeta):
     """Abstract class to represent how to manage run farm hosts (similar to `BuildFarm`).
     In addition to having to implement how to spawn/terminate nodes, the child classes must
