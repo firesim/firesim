@@ -494,6 +494,11 @@ class FireSimTopologyWithPasses:
         rootLogger.debug("[localhost] " + str(localcap))
         rootLogger.debug("[localhost] " + str(localcap.stderr))
 
+        rootLogger.debug("""Creating the directory: {}""".format(self.workload.job_monitoring_dir))
+        localcap = local("""mkdir -p {}""".format(self.workload.job_monitoring_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
 
@@ -589,8 +594,8 @@ class FireSimTopologyWithPasses:
             def get_jobs_completed_local_info():
                 # this is a list of jobs completed, since any completed job will have
                 # a directory within this directory.
-                jobscompleted = os.listdir(self.workload.job_results_dir)
-                rootLogger.debug("dir based jobs completed: " + str(jobscompleted))
+                jobscompleted = os.listdir(self.workload.job_monitoring_dir)
+                rootLogger.debug("Monitoring dir jobs completed: " + str(jobscompleted))
                 return jobscompleted
 
             jobscompleted = get_jobs_completed_local_info()
