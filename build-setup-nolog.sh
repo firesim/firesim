@@ -2,8 +2,6 @@
 
 # FireSim initial setup script.
 
-# TODO: build FireSim linux distro here?
-
 # exit script if any command fails
 set -e
 set -o pipefail
