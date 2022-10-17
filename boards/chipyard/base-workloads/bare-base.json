@@ -1,0 +1,7 @@
+{
+    "name" : "bare-base",
+    "distro" : {
+        "name" : "bare",
+        "opts" : {}
+    }
+}

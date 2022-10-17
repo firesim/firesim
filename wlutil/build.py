@@ -407,8 +407,6 @@ def generateKConfig(kfrags, linuxSrc):
 def makeInitramfsKfrag(src, dst):
     with open(dst, 'w') as f:
         f.write("CONFIG_BLK_DEV_INITRD=y\n")
-        f.write('CONFIG_INITRAMFS_COMPRESSION=".lzo"\n')
-        f.write('CONFIG_INITRAMFS_COMPRESSION_LZO=y\n')
         f.write('CONFIG_INITRAMFS_SOURCE="' + str(src) + '"\n')
 
 
