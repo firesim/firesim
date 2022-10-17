@@ -70,8 +70,8 @@ class BuildConfig:
         self.post_build_hook = recipe_config_dict['post_build_hook']
 
         # retrieve frequency and strategy selections (for AWS F1)
-        self.frequency = recipe_config_dict['platform_config_args']['fpga_frequency']
-        self.strategy = recipe_config_dict['platform_config_args']['build_strategy']
+        self.fpga_frequency = recipe_config_dict['platform_config_args']['fpga_frequency']
+        self.build_strategy = recipe_config_dict['platform_config_args']['build_strategy']
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -93,16 +93,16 @@ class BuildConfig:
 
         # error if frequency/strategy are selected for Azure/Vitis
         if (bitbuilder_type_name != "F1BitBuilder"):
-            if (self.frequency is not None) or (self.strategy is not None):
+            if (self.fpga_frequency is not None) or (self.build_strategy is not None):
                 raise Exception(f"Your selection of frequency/strategy will not be used with the {bitbuilder_type_name}. Set to null and append to the PLATFORM_CONFIG")
         else:
             # validate the frequency
-            if (self.frequency is None) or not (0 < self.frequency <= 1000):
-                raise Exception(f"{self.frequency} is not a valid build frequency. Valid frequencies are between 0.0-1000.0 (MHz)")
+            if (self.fpga_frequency is None) or not (0 < self.fpga_frequency <= 1000):
+                raise Exception(f"{self.fpga_frequency} is not a valid build frequency. Valid frequencies are between 0.0-1000.0 (MHz)")
             # validate the strategy
             valid_strategies = ['BASIC', 'AREA', 'TIMING', 'EXPLORE', 'CONGESTION', 'NORETIMING', 'DEFAULT']
-            if self.strategy not in valid_strategies:
-                raise Exception(f"{self.strategy} is not a valid build strategy. Valid build strategies are: {' '.join(valid_strategies)}")
+            if self.build_strategy not in valid_strategies:
+                raise Exception(f"{self.build_strategy} is not a valid build strategy. Valid build strategies are: {' '.join(valid_strategies)}")
 
         # create dispatcher object using class given and pass args to it
         self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
@@ -119,17 +119,17 @@ class BuildConfig:
         """Get the AWS F1 build-specific frequency config.
 
         Returns:
-            Specified frequency (float)
+            Specified FPGA frequency (float)
         """
-        return self.frequency
+        return self.fpga_frequency
 
     def get_f1_strategy(self) -> str:
         """Get the AWS F1 build-specific strategy config string.
 
         Returns:
-            Specified strategy (str)
+            Specified build strategy (str)
         """
-        return self.strategy
+        return self.build_strategy
 
     def get_build_dir_name(self) -> str:
         """Get the name of the local build directory.

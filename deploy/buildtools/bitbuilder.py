@@ -223,11 +223,11 @@ class F1BitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap.stderr)
 
         # get the frequency and strategy
-        desired_frequency = self.build_config.get_f1_frequency()
-        strategy = self.build_config.get_f1_strategy()
+        fpga_frequency = self.build_config.get_f1_frequency()
+        build_strategy = self.build_config.get_f1_strategy()
 
         with settings(warn_only=True):
-            vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir} {desired_frequency} {strategy}").return_code
+            vivado_result = run(f"{cl_dir}/build-bitstream.sh {cl_dir} {fpga_frequency} {build_strategy}").return_code
 
         # put build results in the result-build area
 
