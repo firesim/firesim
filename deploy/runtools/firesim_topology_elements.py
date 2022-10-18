@@ -332,9 +332,8 @@ class FireSimServerNode(FireSimNode):
 
     def write_job_complete_file(self) -> None:
         """ Write file that signals to monitoring flow that job is complete. """
-        lfile = open(self.get_local_job_monitoring_file_path(), 'w')
-        lfile.write("Done\n")
-        lfile.close()
+        with open(self.get_local_job_monitoring_file_path(), 'w') as lfile:
+            lfile.write("Done\n")
 
     def mkdir_and_prep_local_job_results_dir(self) -> None:
         """ Mkdir local job results directory and write any pre-sim metadata.
