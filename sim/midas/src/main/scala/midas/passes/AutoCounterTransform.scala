@@ -183,7 +183,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         val eventWidth = portWidthMap(anno.topSink.ref)
         EventMetadata(
           anno.topSink.ref,
-          (pathlessLabel +: instPath).mkString("_"),
+          (instPath :+ pathlessLabel).mkString("_"),
           autoCounterAnno.description,
           eventWidth,
           autoCounterAnno.opType)
