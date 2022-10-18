@@ -20,6 +20,7 @@ from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
+from util.streamlogger import InfoStreamLogger
 from buildtools.bitbuilder import get_deploy_dir
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
@@ -248,7 +249,7 @@ class RuntimeHWConfig:
         platform_config = triplet_pieces[2]
         rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deploytriplet_for_config())}")
 
-        with prefix(f'cd {get_deploy_dir()}/../'), \
+        with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
