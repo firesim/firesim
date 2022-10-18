@@ -277,6 +277,9 @@ set -o pipefail
     fi
     "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
 
+    # emergency fix for buildroot open files limit issue on centos:
+    echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
+
 } 2>&1 | tee machine-launchstatus.log
 chmod ugo+r machine-launchstatus.log
 

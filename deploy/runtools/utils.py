@@ -7,14 +7,14 @@ import logging
 from os import fspath
 from os.path import realpath
 from pathlib import Path
-from fabric.api import run, warn_only # type: ignore
+from fabric.api import run, warn_only, hide # type: ignore
 
 from typing import List, Tuple, Type
 
 rootLogger = logging.getLogger()
 
 def has_sudo() -> bool:
-    with warn_only():
+    with warn_only(), hide('warnings'):
         return run("sudo -ln true").return_code == 0
 
 def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
