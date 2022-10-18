@@ -213,7 +213,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
-                run("bash sim-run.sh")
+                run("chmod +x sim-run.sh")
+                run("./sim-run.sh")
 
 
     def kill_switch_slot(self, switchslot: int) -> None:

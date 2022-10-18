@@ -377,12 +377,12 @@ class FireSimTopologyWithPasses:
         """ Build all simulation drivers. The method we're calling here won't actually
         repeat the build process more than once per run of the manager. """
 
-        def build_drivers(servers: List[FireSimServerNode]) -> None:
+        def build_drivers_helper(servers: List[FireSimServerNode]) -> None:
             for server in servers:
                 server.get_resolved_server_hardware_config().build_sim_driver()
 
         servers = self.firesimtopol.get_dfs_order_servers()
-        execute(build_drivers, servers, hosts=['localhost'])
+        execute(build_drivers_helper, servers, hosts=['localhost'])
 
     def pass_build_required_switches(self) -> None:
         """ Build all the switches required for this simulation. """

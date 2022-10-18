@@ -10,7 +10,7 @@ import logging
 import yaml
 import os
 import sys
-from fabric.api import prefix, settings, local, env, run # type: ignore
+from fabric.api import prefix, settings, local, run # type: ignore
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -254,7 +254,7 @@ class RuntimeHWConfig:
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} PLATFORM={} {}""" .format(design, target_config, platform_config, self.platform, self.driver_build_target)
+            driverbuildcommand = f"make DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} PLATFORM={self.platform} {self.driver_build_target}"
             buildresult = run(driverbuildcommand)
 
             if buildresult.failed:
