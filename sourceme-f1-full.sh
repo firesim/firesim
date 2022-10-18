@@ -10,11 +10,6 @@ function usage
     echo "   --skip-ssh-setup: if set, skips ssh setup checks."
 }
 
-if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
-    usage
-    exit 3
-fi
-
 while test $# -gt 0
 do
    case "$1" in

@@ -318,7 +318,7 @@ class FireSimServerNode(FireSimNode):
         """
         jobinfo = self.get_job()
         job_results_dir = self.get_job().parent_workload.job_results_dir
-        job_dir = """{}/{}/""".format(job_results_dir, jobinfo.jobname)
+        job_dir = f"{job_results_dir}/{jobinfo.jobname}/"
         return job_dir
 
     def get_local_job_monitoring_file_path(self) -> str:
@@ -332,9 +332,8 @@ class FireSimServerNode(FireSimNode):
 
     def write_job_complete_file(self) -> None:
         """ Write file that signals to monitoring flow that job is complete. """
-        lfile = open(self.get_local_job_monitoring_file_path(), 'w')
-        lfile.write("Done\n")
-        lfile.close()
+        with open(self.get_local_job_monitoring_file_path(), 'w') as lfile:
+            lfile.write("Done\n")
 
     def mkdir_and_prep_local_job_results_dir(self) -> None:
         """ Mkdir local job results directory and write any pre-sim metadata.
@@ -351,14 +350,14 @@ class FireSimServerNode(FireSimNode):
 
     def write_script(self, script_name, command) -> str:
         """ Write a script named script_name to the local job results dir with
-        contents command plus a newline. Return the full local path."""
+        shebang + command + newline. Return the full local path."""
         job_dir = self.get_local_job_results_dir_path()
         script_path = job_dir + script_name
 
-        lfile = open(script_path, 'w')
-        lfile.write(command)
-        lfile.write("\n")
-        lfile.close()
+        with open(script_path, 'w') as lfile:
+            lfile.write("#!/usr/bin/env bash\n")
+            lfile.write(command)
+            lfile.write("\n")
 
         return script_path
 
@@ -390,7 +389,7 @@ class FireSimServerNode(FireSimNode):
         self.write_job_complete_file()
 
         dest_sim_dir = self.get_host_instance().get_sim_dir()
-        dest_sim_slot_dir = """{}/sim_slot_{}/""".format(dest_sim_dir, slotno)
+        dest_sim_slot_dir = f"{dest_sim_dir}/sim_slot_{slotno}/"
 
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
             if sudo:
