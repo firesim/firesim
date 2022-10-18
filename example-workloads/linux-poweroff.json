@@ -1,0 +1,6 @@
+{
+    "name" : "linux-poweroff",
+    "base" : "br-base.json",
+    "overlay" : "overlay",
+    "command" : "/poweroff.sh"
+}
