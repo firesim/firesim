@@ -2,6 +2,25 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.15.1] - 2022-10-18
+
+Fixes to metasimulation, TracerV, and improved cross-platform support.
+
+### Added
+* sourceme-f1-manager.sh now has a --skip-ssh-setup argument for users who have pre-set ssh-agent config #1266
+
+### Changed
+* Instance liveness check now checks to see if login shell is reasonable #1266
+* Driver/Metasim build at runtime now executed via run() to avoid conda warnings #1266
+* Setup for QCOW2 on a run farm is only performed if the simulation needs it #1266
+* The sim launch command is now written to a file before being executed for easier debugging. #1266
+
+### Fixed
+* Fix missing code in RuntimeBuildRecipeConfig that broke metasims #1266
+* Hide warnings from sudo check, guestmount, etc. #1266
+* Open file limit increased by default in machine-launch-script to work around buildroot bug. #1266
+* TracerV: fix loop bounds in token processing #1249
+
 ## [1.15.0] - 2022-09-30
 
 Full migration to Conda-based environment/dependency management; Chipyard now also uses Conda. Bump Rocket Chip/Chisel/etc. Various bugfixes/feature improvements.
