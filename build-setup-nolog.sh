@@ -182,9 +182,7 @@ if [ "$IS_LIBRARY" = false ]; then
 
     env_append "export PATH=$RDIR/sw/firesim-software:\$PATH"
 
-    # emergency open files fix
     env_append "source $RDIR/scripts/fix-open-files.sh"
-
 else
     # FireMarshal setup
     target_chipyard_dir="$RDIR/../.."
