@@ -29,13 +29,13 @@ env:
 jobs:
   change-filters:
     name: filter-jobs-on-changes
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     # Queried by downstream jobs to determine if they should run.
     outputs:
       needs-scala-doc: ${{ steps.filter.outputs.scala-docs }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -48,7 +48,7 @@ jobs:
     name: publish-scala-doc
     needs: change-filters
     if: needs.change-filters.outputs.needs-scala-doc == 'true'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     container:
       image: firesim/firesim-ci:v1.3
       options: --entrypoint /bin/bash
@@ -59,7 +59,7 @@ jobs:
           sudo yum -y remove git git224 git224-core ius-release.noarch # remove any older git versions and collateral first from docker image
           sudo yum -y install https://repo.ius.io/ius-release-el7.rpm # re-install for now
           sudo yum -y install git236 # install working git version (must match machine-launch)
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/repo-setup
       - uses: ./.github/actions/build-scala-doc
       - name: "Push ScalaDoc to remote"
