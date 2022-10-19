@@ -103,8 +103,7 @@ Note ``topology`` is set to
 ``no_net_config``, indicating that we do not want a network. Then,
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
-``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.  Notice the ``no_nic`` in this
-last option? This uses a hardware configuration that does not
+``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``. This uses a hardware configuration that does not
 have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
 MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 

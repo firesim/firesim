@@ -69,6 +69,7 @@ For the 8-node cluster simulation, the defaults in this file are close to what
 we want but require slight modification. Let's outline the important parameters:
 
 * ``f1.16xlarges: 1``: Change this parameter. This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
+* ``f1.4xlarges: 0``: Change this parameter. This tells the manager to not launch any ``f1.4xlarge`` machines when we call the ``launchrunfarm`` command.
 * ``topology: example_8config``: This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
 * ``link_latency: 6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
 * ``switching_latency: 10``: This models switches with a minimum port-to-port latency of 10 cycles.

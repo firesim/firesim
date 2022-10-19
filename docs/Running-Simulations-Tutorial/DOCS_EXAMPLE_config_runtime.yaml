@@ -25,7 +25,7 @@ run_farm:
     run_farm_hosts_to_use:
       - f1.16xlarge: 0
       - f1.4xlarge: 0
-      - f1.2xlarge: 0
+      - f1.2xlarge: 1
       - m4.16xlarge: 0
       - z1d.3xlarge: 0
       - z1d.6xlarge: 0
