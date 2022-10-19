@@ -1,4 +1,4 @@
-PyTest CI Integration
+Manager Development
 =======================================================
 
 Writing PyTests
@@ -24,4 +24,4 @@ Adding PyTests To CI
 +++++++++++++++++++++++
 
 By default all PyTests are run by CI using the same command shown in the prior section.
-This can be seen in https://github.com/firesim/firesim/blob/d16969b984df6d0cb5cd3e8ed27d89d03095a180/.github/workflows/firesim-run-tests.yml#L147-L156 and https://github.com/firesim/firesim/blob/main/.github/scripts/run-manager-pytests.py.
+This can be seen in https://github.com/firesim/firesim/blob/d16969b984df6d0cb5cd3e8ed27d89d03095a180/.github/workflows/firesim-run-tests.yml#L147-L156 and :gh-file-ref:`.github/scripts/run-manager-pytests.py`.

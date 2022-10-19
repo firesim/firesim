@@ -53,7 +53,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Developer-Docs/Host-Platform-Debugging
    Developer-Docs/VSCode-Integration
    Developer-Docs/Managing-Conda-Lock-File
-   Developer-Docs/Pytest-CI-Integration
+   Developer-Docs/Manager-Development
 
 .. toctree::
    :maxdepth: 3
