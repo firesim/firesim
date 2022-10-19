@@ -2,8 +2,6 @@
 
 # FireSim initial setup script.
 
-# TODO: build FireSim linux distro here?
-
 # exit script if any command fails
 set -e
 set -o pipefail
@@ -184,6 +182,7 @@ if [ "$IS_LIBRARY" = false ]; then
 
     env_append "export PATH=$RDIR/sw/firesim-software:\$PATH"
 
+    env_append "source $RDIR/scripts/fix-open-files.sh"
 else
     # FireMarshal setup
     target_chipyard_dir="$RDIR/../.."

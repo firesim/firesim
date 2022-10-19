@@ -10,7 +10,7 @@ import logging
 import yaml
 import os
 import sys
-from fabric.api import prefix, settings, local # type: ignore
+from fabric.api import prefix, settings, local, run # type: ignore
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -20,6 +20,8 @@ from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
+from util.streamlogger import InfoStreamLogger
+from buildtools.bitbuilder import get_deploy_dir
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -246,25 +248,17 @@ class RuntimeHWConfig:
         target_config = triplet_pieces[1]
         platform_config = triplet_pieces[2]
         rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deploytriplet_for_config())}")
-        with prefix('cd ../'), \
-             prefix('export RISCV={}'.format(os.getenv('RISCV', ""))), \
-             prefix('export PATH={}'.format(os.getenv('PATH', ""))), \
-             prefix('export LD_LIBRARY_PATH={}'.format(os.getenv('LD_LIBRARY_PATH', ""))), \
-             prefix('source ./sourceme-f1-manager.sh'), \
-             prefix('cd sim/'), \
-             prefix('set -o pipefail'):
-            localcap = None
-            with settings(warn_only=True):
-                # the local driver dir must already exist for the tee to always
-                # work
-                local("""mkdir -p {}""".format(self.get_local_driver_dir()))
-                buildlogfile = """{}firesim-manager-make-{}-temp-output-log""".format(self.get_local_driver_dir(), self.driver_build_target)
-                driverbuildcommand = """make DESIGN={} TARGET_CONFIG={} PLATFORM_CONFIG={} PLATFORM={} {}""" .format(design, target_config, platform_config, self.platform, self.driver_build_target)
-                driverbuildcommand_full = driverbuildcommand + """ 2>&1 | tee {}""".format(buildlogfile)
-                localcap = local(driverbuildcommand_full)
-                logcapture = local("""cat {}""".format(buildlogfile), capture=True)
-            rootLogger.debug("[localhost] " + str(logcapture))
-            if localcap.failed:
+
+        with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}/../'), \
+            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
+            prefix(f'export PATH={os.getenv("PATH", "")}'), \
+            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('cd sim/'):
+            driverbuildcommand = f"make DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} PLATFORM={self.platform} {self.driver_build_target}"
+            buildresult = run(driverbuildcommand)
+
+            if buildresult.failed:
                 rootLogger.info(f"{self.driver_type_message} driver build failed. Exiting. See log for details.")
                 rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
                 sys.exit(1)
@@ -310,6 +304,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.metasimulation_only_plusargs = metasimulation_only_plusargs
         self.metasimulation_only_vcs_plusargs = metasimulation_only_vcs_plusargs
+
+        self.additional_required_files = []
 
     def get_boot_simulation_command(self,
             slotid: int,

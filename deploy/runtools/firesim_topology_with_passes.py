@@ -7,6 +7,7 @@ import os
 import pprint
 import logging
 import datetime
+import sys
 from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 from functools import reduce
@@ -26,10 +27,40 @@ rootLogger = logging.getLogger()
 
 @parallel
 def instance_liveness() -> None:
-    """ Confirm that all instances are accessible (are running and can be ssh'ed into) first so that we don't run any
-    actual firesim-related commands on only some of the run farm machines."""
+    """ Confirm that all instances are accessible (are running and can be
+    ssh'ed into) first so that we don't run any actual firesim-related commands
+    on only some of the run farm machines.
+
+    Also confirm that the default shell in use is one that is known to handle
+    commands we pass to run() in the manager. The default shell must be able to
+    handle our command strings because it is always the first to interpret the
+    command string, even if the command string starts with /bin/bash.
+
+    To my knowledge, it is not possible to specify a different shell for
+    a specific instance of ssh-ing into a machine. The only way to control what
+    shell the command is handed to is to set the default shell. As reported in:
+    https://serverfault.com/questions/162018/force-ssh-to-use-a-specific-shell
+
+    For shell handling, this function will do the following:
+    a) For known good shells (specified in "allowed_shells"), continue normally.
+    b) For known bad shells (specified in "disallowed_shells"), report error and
+        exit immediately.
+    c) For unknown shells, print a warning and continue normally.
+    """
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
     run("uname -a")
+    collect = run("echo $SHELL")
+
+    allowed_shells = ["bash"]
+    disallowed_shells = ["csh"]
+
+    shell_info = collect.stdout.split("/")[-1]
+    if shell_info in allowed_shells:
+        return
+    if shell_info in disallowed_shells:
+        rootLogger.error(f"::ERROR:: Invalid default shell in use: {shell_info}. Allowed shells: {allowed_shells}.")
+        sys.exit(1)
+    rootLogger.warning(f"::WARNING:: Unknown default shell in use: {shell_info}. Allowed shells: {allowed_shells}. You are using a default shell that has not yet been tested to correctly interpret the commands run by the FireSim manager. Proceed at your own risk. If you find that your shell works correctly, please file an issue on the FireSim repo (https://github.com/firesim/firesim/issues) so that we can add your shell to the list of known good shells.")
 
 class FireSimTopologyWithPasses:
     """ This class constructs a FireSimTopology, then performs a series of passes
@@ -363,10 +394,13 @@ class FireSimTopologyWithPasses:
     def pass_build_required_drivers(self) -> None:
         """ Build all simulation drivers. The method we're calling here won't actually
         repeat the build process more than once per run of the manager. """
-        servers = self.firesimtopol.get_dfs_order_servers()
 
-        for server in servers:
-            server.get_resolved_server_hardware_config().build_sim_driver()
+        def build_drivers_helper(servers: List[FireSimServerNode]) -> None:
+            for server in servers:
+                server.get_resolved_server_hardware_config().build_sim_driver()
+
+        servers = self.firesimtopol.get_dfs_order_servers()
+        execute(build_drivers_helper, servers, hosts=['localhost'])
 
     def pass_build_required_switches(self) -> None:
         """ Build all the switches required for this simulation. """
@@ -478,6 +512,11 @@ class FireSimTopologyWithPasses:
         rootLogger.debug("[localhost] " + str(localcap))
         rootLogger.debug("[localhost] " + str(localcap.stderr))
 
+        rootLogger.debug("""Creating the directory: {}""".format(self.workload.job_monitoring_dir))
+        localcap = local("""mkdir -p {}""".format(self.workload.job_monitoring_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
 
@@ -573,8 +612,8 @@ class FireSimTopologyWithPasses:
             def get_jobs_completed_local_info():
                 # this is a list of jobs completed, since any completed job will have
                 # a directory within this directory.
-                jobscompleted = os.listdir(self.workload.job_results_dir)
-                rootLogger.debug("dir based jobs completed: " + str(jobscompleted))
+                jobscompleted = os.listdir(self.workload.job_monitoring_dir)
+                rootLogger.debug("Monitoring dir jobs completed: " + str(jobscompleted))
                 return jobscompleted
 
             jobscompleted = get_jobs_completed_local_info()

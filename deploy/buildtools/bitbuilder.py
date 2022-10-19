@@ -115,7 +115,7 @@ class F1BitBuilder(BitBuilder):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
@@ -126,7 +126,7 @@ class F1BitBuilder(BitBuilder):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=f1 driver"))
 
@@ -373,7 +373,7 @@ class VitisBitBuilder(BitBuilder):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
 
@@ -384,7 +384,7 @@ class VitisBitBuilder(BitBuilder):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=vitis driver"))
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import abc
 from fabric.contrib.project import rsync_project # type: ignore
-from fabric.api import run, local, warn_only, get # type: ignore
+from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
@@ -253,7 +253,7 @@ class FireSimServerNode(FireSimNode):
 
     def allocate_nbds(self) -> None:
         """ called by the allocate nbds pass to assign an nbd to a qcow2 image. """
-        rootfses_list = [self.get_rootfs_name()]
+        rootfses_list = self.get_all_rootfs_names()
         for rootfsname in rootfses_list:
             if rootfsname is not None and rootfsname.endswith(".qcow2"):
                 host_inst = self.get_host_instance()
@@ -312,13 +312,66 @@ class FireSimServerNode(FireSimNode):
 
         return runcommand
 
+    def get_local_job_results_dir_path(self) -> str:
+        """ Return local job results directory path. e.g.:
+        results-workload/workloadname/jobname/
+        """
+        jobinfo = self.get_job()
+        job_results_dir = self.get_job().parent_workload.job_results_dir
+        job_dir = f"{job_results_dir}/{jobinfo.jobname}/"
+        return job_dir
+
+    def get_local_job_monitoring_file_path(self) -> str:
+        """ Return local job monitoring file path. e.g.:
+        results-workload/workloadname/.monitoring-dir/jobname
+        """
+        jobinfo = self.get_job()
+        job_monitoring_dir = self.get_job().parent_workload.job_monitoring_dir
+        job_monitoring_file = """{}/{}""".format(job_monitoring_dir, jobinfo.jobname)
+        return job_monitoring_file
+
+    def write_job_complete_file(self) -> None:
+        """ Write file that signals to monitoring flow that job is complete. """
+        with open(self.get_local_job_monitoring_file_path(), 'w') as lfile:
+            lfile.write("Done\n")
+
+    def mkdir_and_prep_local_job_results_dir(self) -> None:
+        """ Mkdir local job results directory and write any pre-sim metadata.
+        """
+        job_dir = self.get_local_job_results_dir_path()
+        localcap = local("""mkdir -p {}""".format(job_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        # add hw config summary per job
+        localcap = local("""echo "{}" > {}/HW_CFG_SUMMARY""".format(str(self.server_hardware_config), job_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+    def write_script(self, script_name, command) -> str:
+        """ Write a script named script_name to the local job results dir with
+        shebang + command + newline. Return the full local path."""
+        job_dir = self.get_local_job_results_dir_path()
+        script_path = job_dir + script_name
+
+        with open(script_path, 'w') as lfile:
+            lfile.write("#!/usr/bin/env bash\n")
+            lfile.write(command)
+            lfile.write("\n")
+
+        return script_path
+
+    def write_sim_start_script(self, slotno: int, sudo: bool) -> str:
+        """ Write sim-run.sh script to local job results dir and return its
+        path. """
+        start_cmd = self.get_sim_start_command(slotno, sudo)
+        sim_start_script_local_path = self.write_script("sim-run.sh", start_cmd)
+        return sim_start_script_local_path
+
     def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
         """
-        1) Make the local directory for this job's output
-        2) Copy back UART log
-        3) Mount rootfs on the remote node and copy back files
-
-        TODO: move this somewhere else, it's kinda in a weird place...
+        1) Copy back UART log
+        2) Mount rootfs on the remote node and copy back files
         """
         assert self.has_assigned_host_instance(), "copy requires assigned host instance"
 
@@ -331,20 +384,12 @@ class FireSimServerNode(FireSimNode):
         ])
 
         jobinfo = self.get_job()
-        simserverindex = slotno
-        job_results_dir = self.get_job().parent_workload.job_results_dir
-        job_dir = """{}/{}/""".format(job_results_dir, jobinfo.jobname)
-        
-        localcap = local("""mkdir -p {}""".format(job_dir), capture=True)
-        rootLogger.debug("[localhost] " + str(localcap))
-        rootLogger.debug("[localhost] " + str(localcap.stderr))
+        job_dir = self.get_local_job_results_dir_path()
 
-        # add hw config summary per job
-        localcap = local("""echo "{}" > {}/HW_CFG_SUMMARY""".format(str(self.server_hardware_config), job_dir), capture=True)
-        rootLogger.debug("[localhost] " + str(localcap))
-        rootLogger.debug("[localhost] " + str(localcap.stderr))
+        self.write_job_complete_file()
 
         dest_sim_dir = self.get_host_instance().get_sim_dir()
+        dest_sim_slot_dir = f"{dest_sim_dir}/sim_slot_{slotno}/"
 
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
             if sudo:
@@ -371,7 +416,7 @@ class FireSimServerNode(FireSimNode):
         rfsname = self.get_rootfs_name()
         if rfsname is not None:
             is_qcow2 = rfsname.endswith(".qcow2")
-            mountpoint = """{}/sim_slot_{}/mountpoint""".format(dest_sim_dir, simserverindex)
+            mountpoint = dest_sim_slot_dir + "mountpoint"
             
             run("""{} mkdir -p {}""".format("sudo" if sudo else "", mountpoint))
 
@@ -382,10 +427,10 @@ class FireSimServerNode(FireSimNode):
                 assert nbd_tracker is not None
                 rfsname = nbd_tracker.get_nbd_for_imagename(rfsname)
             else:
-                rfsname = """{}/sim_slot_{}/{}""".format(dest_sim_dir, simserverindex, rfsname)
+                rfsname = dest_sim_slot_dir + rfsname
 
-            mount(rfsname, mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
-            with warn_only():
+            mount(rfsname, mountpoint, dest_sim_slot_dir)
+            with warn_only(), hide('warnings'):
                 # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
                 run("""{} chattr -i {}/etc/sysconfig/nfs""".format("sudo" if sudo else "", mountpoint))
 
@@ -402,7 +447,7 @@ class FireSimServerNode(FireSimNode):
                     rootLogger.debug(rsync_cap.stderr)
 
             ## unmount
-            umount(mountpoint, f"{dest_sim_dir}/sim_slot_{simserverindex}")
+            umount(mountpoint, dest_sim_slot_dir)
 
             ## if qcow2, detach .qcow2 image from the device, we're done with it
             if is_qcow2:
@@ -411,7 +456,7 @@ class FireSimServerNode(FireSimNode):
 
         ## copy output files generated by the simulator that live on the host:
         ## e.g. uartlog, memory_stats.csv, etc
-        remote_sim_run_dir = """{}/sim_slot_{}/""".format(dest_sim_dir, simserverindex)
+        remote_sim_run_dir = dest_sim_slot_dir
         for simoutputfile in jobinfo.simoutputs:
             with warn_only():
                 rsync_cap = rsync_project(remote_dir=remote_sim_run_dir + simoutputfile,
@@ -481,6 +526,15 @@ class FireSimServerNode(FireSimNode):
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
 
+    def get_all_rootfs_names(self) -> List[Optional[str]]:
+        """ Get all rootfs filenames as a list. """
+        return [self.get_rootfs_name()]
+
+    def qcow2_support_required(self) -> bool:
+        """ Return True iff any rootfses for this sim require QCOW2 support, as
+        determined by their filename ending (.qcow2). """
+        return any(map(lambda x: x is not None and x.endswith(".qcow2"), self.get_all_rootfs_names()))
+
     def get_bootbin_name(self) -> str:
         # prefix bootbin name with the job name to disambiguate in supernode
         # cases
@@ -513,21 +567,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             sib.assign_host_instance(super_server_host)
             sib.copy_back_job_results_from_run(slotno, sudo)
 
-    def allocate_nbds(self) -> None:
-        """ called by the allocate nbds pass to assign an nbd to a qcow2 image.
-        """
-        num_siblings = self.supernode_get_num_siblings_plus_one()
-
-        rootfses_list = [self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)]
-
-        for rootfsname in rootfses_list:
-            if rootfsname is not None and rootfsname.endswith(".qcow2"):
-                host_inst = self.get_host_instance()
-                assert isinstance(host_inst.instance_deploy_manager, EC2InstanceDeployManager)
-                nbd_tracker = host_inst.instance_deploy_manager.nbd_tracker
-                assert nbd_tracker is not None
-                allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
-
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
         plus one (because in most places, we use siblings + 1, not just siblings)
@@ -554,6 +593,11 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                 return node
         assert False, "Should return supernode sibling"
 
+    def get_all_rootfs_names(self) -> List[Optional[str]]:
+        """ Get all rootfs filenames as a list. """
+        num_siblings = self.supernode_get_num_siblings_plus_one()
+        return [self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)]
+
     def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
         """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located."""
@@ -570,7 +614,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         assert self.plusarg_passthrough is not None
 
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling(x).get_mac_address() for x in range(1, num_siblings)]
-        all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)])
+        all_rootfses = self.process_qcow2_rootfses(self.get_all_rootfs_names())
         all_bootbins = [self.get_bootbin_name()] + [self.supernode_get_sibling(x).get_bootbin_name() for x in range(1, num_siblings)]
         all_linklatencies = [self.server_link_latency]
         for x in range(1, num_siblings):

@@ -98,6 +98,7 @@ class WorkloadConfig:
     jobs: List[JobConfig]
     post_run_hook: str
     job_results_dir: str
+    job_monitoring_dir: str
 
     def __init__(self, workloadfilename: str, launch_time: str, suffixtag: str) -> None:
         self.workloadfilename = self.workloadinputs + workloadfilename
@@ -140,6 +141,8 @@ class WorkloadConfig:
                                                             launch_time,
                                                             self.workload_name,
                                                             appendsuffix)
+        # hidden dir to keep job monitoring information
+        self.job_monitoring_dir = self.job_results_dir + ".monitoring-dir/"
 
         #import code
         #code.interact(local=locals())
