@@ -103,7 +103,7 @@ ifneq ($(CONFIG_OVERLAY),)
 ifneq ($(shell test -f $(CONFIG_OVERLAY); echo $$?),0)
 $(error Vitis config overlay at $(CONFIG_OVERLAY) does not exist)
 endif
-VPP_CONFIG_OVERLAYS := --config $(abspath $(CONFIG_OVERLAY))
+vpp_config_overlays := $(abspath $(CONFIG_OVERLAY))
 endif
 
 PROFILE := no
@@ -140,21 +140,22 @@ build_strategy_path = $(STRATEGIES_DIR)/strategy_$(STRATEGY).cfg
 ifneq ($(shell test -f $(build_strategy_path); echo $$?),0)
 $(error Build strategy config at $(build_strategy_path) does not exist)
 endif
-VPP_CONFIG_OVERLAYS += --config $(build_strategy_path)
+vpp_config_overlays += $(build_strategy_path)
+vpp_config_overlay_args = $(addprefix --config ,$(vpp_config_overlays))
 
 # link and package the xclbin
-%/$(PROJECT_NAME).link.xclbin: %/$(PROJECT_NAME).xo $(build_strategy_path)
+%/$(PROJECT_NAME).link.xclbin: %/$(PROJECT_NAME).xo $(vpp_config_overlays)
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
-	cd $(@D)/..; $(VPP) $(VPP_CONFIG_OVERLAYS) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) \
+	cd $(@D)/..; $(VPP) $(vpp_config_overlay_args) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) \
 	--connectivity.sp $(PROJECT_NAME)_1.host_mem_0:DDR[0] \
 	--link $(VPP_LDFLAGS) -o $@ $<
 
 
-%/$(BUILD_SUBDIR)/$(PROJECT_NAME).xclbin: %/$(TEMP_SUBDIR)/$(PROJECT_NAME).link.xclbin $(build_strategy_path)
+%/$(BUILD_SUBDIR)/$(PROJECT_NAME).xclbin: %/$(TEMP_SUBDIR)/$(PROJECT_NAME).link.xclbin $(vpp_config_overlays)
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
-	cd $(@D)/..; $(VPP) $(VPP_CONFIG_OVERLAYS) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
+	cd $(@D)/..; $(VPP) $(vpp_config_overlay_args) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
 
 # FPGA-level simulation support
 driver_bin = FireSim-vitis
