@@ -35,6 +35,10 @@ run-sim:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/s
 # current support on firesim1
 DEVICE ?= xilinx_u250_gen3x16_xdma_3_1_202020_1
 
+# Provide's the desired simulator frequency. This is generated from the clock
+# provided to the kernel using an internal MMCM.
+FREQUENCY ?= 90
+
 # Selects a vitis config, by looking in build-strategies, for an equivalently
 # named cfg file.
 STRATEGY ?= TIMING
@@ -133,7 +137,8 @@ ipgen_scripts = $(shell find design/ -iname "*.ipgen.tcl")
 %.xo: scripts/package_kernel.tcl scripts/gen_xo.tcl $(sv_processed) $(sv_defines) $(ipgen_scripts)
 	mkdir -p $(@D)
 	# Move into the simulation or bitstream-build directory
-	cd $(@D)/..; $(VIVADO) -mode batch -source $(buildroot)/scripts/gen_xo.tcl -tclargs $@ $(PROJECT_NAME) $(TARGET) $(DEVICE) $(XSA)
+	cd $(@D)/..; $(VIVADO) -mode batch -source $(buildroot)/scripts/gen_xo.tcl \
+		-tclargs $@ $(PROJECT_NAME) $(TARGET) $(DEVICE) $(XSA) $(FREQUENCY)
 
 build_strategy_path = $(STRATEGIES_DIR)/strategy_$(STRATEGY).cfg
 

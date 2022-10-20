@@ -25,6 +25,17 @@ set base_filename "FireSim-generated"
 set synth_xdc_path "${path_to_hdl}/${base_filename}.synthesis.xdc"
 set impl_xdc_path  "${path_to_hdl}/${base_filename}.implementation.xdc"
 
+# Establish reasonable bounds for the input frequency to catch gross errors.
+# These numbers are somewhat arbitrary.
+set min_frequency 1.0
+set max_frequency 300.0
+
+if {$frequency < ${min_frequency}  || $frequency > ${max_frequency}} {
+  puts "Provided simulator frequency must be within \[$min_frequency, $max_frequency\] MHz.\n"
+  puts "Provided value: $frequency MHz"
+  exit 1
+}
+
 create_project -force kernel_pack $path_to_tmp_project -part ${projPart}
 add_files -norecurse [ list \
     $path_to_hdl/defines.vh \
@@ -39,6 +50,7 @@ set_property USED_IN_IMPLEMENTATION true [get_files $impl_xdc_path]
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1
 
+# Note: The main MMCM generation script expects that frequency variable is defined
 set ipgen_scripts [glob $path_to_hdl/FireSim-generated.*.ipgen.tcl]
 foreach script $ipgen_scripts {
     source $script

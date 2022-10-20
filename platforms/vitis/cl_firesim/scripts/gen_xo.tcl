@@ -14,9 +14,10 @@
 # under the License.
 #
 
-if { $::argc != 5 } {
-    puts "ERROR: Program \"$::argv0\" requires 5 arguments!\n"
-    puts "Usage: $::argv0 <xoname> <krnl_name> <target> <xpfm_path> <device>\n"
+set expected_arg_count 6
+if { $::argc != $expected_arg_count } {
+    puts "ERROR: Program \"$::argv0\" requires $expected_arg_count arguments!\n"
+    puts "Usage: $::argv0 <xoname> <krnl_name> <target> <xpfm_path> <device> <frequency>\n"
     exit
 }
 
@@ -25,6 +26,8 @@ set krnl_name [lindex $::argv 1]
 set target    [lindex $::argv 2]
 set xpfm_path [lindex $::argv 3]
 set device    [lindex $::argv 4]
+# This is the frequency of the simulator's main clock
+set frequency [lindex $::argv 5]
 
 set suffix "${krnl_name}_${target}_${device}"
 set script_path [file dirname [file normalize [info script]]]
