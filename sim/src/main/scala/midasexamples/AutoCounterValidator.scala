@@ -54,7 +54,7 @@ case class PerfCounterInstance(
   }
 
   /* Adds a formatted path to the label to match the behavior of the transform */
-  def pathPrefixedLabel: String = (label +: (instPath.reverse)).mkString("_")
+  def pathPrefixedLabel: String = ((instPath.reverse) :+ label).mkString("_")
 
   /* Quotes the description escapes potentially troublesome characters */
   def quoteDescriptionForCSV: String =
