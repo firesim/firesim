@@ -8,7 +8,6 @@ import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 import freechips.rocketchip.rocket.TracedInstruction
-import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.tile.TileKey
 
 import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWidths}
