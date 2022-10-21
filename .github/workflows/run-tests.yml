@@ -62,11 +62,13 @@ jobs:
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
           conda env create -f ./conda-reqs.yaml -p ./.conda-env
+          source $${ env.REMOTE_WORK_DIR }}/.conda-env/etc/profile.d/conda.sh
           conda activate $${ env.REMOTE_WORK_DIR }}/.conda-env
           conda install -c ucb-bar riscv-tools
       - name: Install Spike
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
+          source $${ env.REMOTE_WORK_DIR }}/.conda-env/etc/profile.d/conda.sh
           conda activate $${ env.REMOTE_WORK_DIR }}/.conda-env
           git clone https://github.com/riscv-software-src/riscv-isa-sim.git
           cd riscv-isa-sim
@@ -78,6 +80,7 @@ jobs:
       - name: Init. all submodules
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
+          source $${ env.REMOTE_WORK_DIR }}/.conda-env/etc/profile.d/conda.sh
           conda activate $${ env.REMOTE_WORK_DIR }}/.conda-env
           ./init-submodules.sh
 
