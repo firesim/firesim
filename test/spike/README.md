@@ -24,7 +24,7 @@ The process goes as follows:
 cd riscv-isa-sim/
 mkdir build
 cd build
-../configure --with-fesvr=$RISCV --prefix=/local/spike/install/
+../configure --with-fesvr=$RISCV --prefix=/local/spike/install/ --with-boost=no --with-boost-asio=no --with-boost-regex=no
 make
 make install
 /local/spike/install/bin/spike specialProgram

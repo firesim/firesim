@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e
+
+set -ex
 
 SPIKE_INSTALL=$PWD/spike_local
 mkdir -p $SPIKE_INSTALL
@@ -8,7 +9,7 @@ mkdir -p $SPIKE_INSTALL
 if [ ! -d riscv-isa-sim ]; then
   git clone https://github.com/riscv/riscv-isa-sim.git
   pushd riscv-isa-sim
-  git checkout 2dbcb01ca1c026b867cf673203646d213f6e6b5c
+  git checkout 5a50590f25a932cc1f25fe78b9912e9661d37d30
   popd
 fi
 
@@ -18,7 +19,7 @@ rm -rf riscv-isa-sim/build
 pushd riscv-isa-sim
 mkdir build
 pushd build
-../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL
+../configure --with-fesvr=$RISCV --prefix=$SPIKE_INSTALL --with-boost=no --with-boost-asio=no --with-boost-regex=no
 popd
 popd
 
