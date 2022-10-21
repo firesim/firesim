@@ -103,6 +103,11 @@ jobs:
           eval "$(conda shell.bash hook)"
           conda activate $PWD/.conda-env
           ./scripts/fullTest.py
+      - name: Dump log
+        if: ${{ always() }}
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          cat ./scripts/testLogs/*.log
 
   cleanup:
     name: cleanup
