@@ -21,11 +21,11 @@ categories = ['baremetal', 'qemu', 'spike', 'smoke', 'special']
 
 # Arguments to (marshal, marshal CMD) per category
 categoryArgs = {
-        'baremetal': ([], ["--spike"]),
-        'qemu': ([], []),
-        'smoke': ([], []),
-        'spike': (['--no-disk'], ['--spike']),
-        'special': ([], [])
+        'baremetal': (['-v'], ["--spike"]),
+        'qemu': (['-v'], []),
+        'smoke': (['-v'], []),
+        'spike': (['-v', '--no-disk'], ['--spike']),
+        'special': (['-v'], [])
 }
 
 # lists of test names to run for each category, each name
