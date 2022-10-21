@@ -4,4 +4,6 @@ version := "1.0-SNAPSHOT"
 
 name := "midas"
 
-scalaVersion := "2.12.10"
+scalaVersion := "2.13.8"
+
+crossScalaVersions := Seq("2.12.10")
