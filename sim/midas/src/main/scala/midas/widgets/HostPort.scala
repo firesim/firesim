@@ -149,7 +149,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
         revChName,
         clock = getClock.toNamed.toTarget,
         sinks = Seq(),
-        sources = Seq(validTarget) ++ SimUtils.lowerAggregateIntoLeafTargets(field.bits),
+        sources = SimUtils.lowerAggregateIntoLeafTargets(field.bits) ++ Seq(validTarget),
         valid = validTarget,
         ready = field.ready.toNamed.toTarget
       )
@@ -161,7 +161,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
         fwdChName,
         revChName,
         clock = getClock.toNamed.toTarget,
-        sinks = Seq(validTarget) ++ SimUtils.lowerAggregateIntoLeafTargets(field.bits),
+        sinks = SimUtils.lowerAggregateIntoLeafTargets(field.bits) ++ Seq(validTarget),
         sources = Seq(),
         valid = validTarget,
         ready = field.ready.toNamed.toTarget
