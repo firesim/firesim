@@ -62,27 +62,35 @@ jobs:
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
           conda env create -f ./conda-reqs.yaml -p ./.conda-env
-          source $${ env.REMOTE_WORK_DIR }}/.conda-env/etc/profile.d/conda.sh
-          conda activate $${ env.REMOTE_WORK_DIR }}/.conda-env
-          conda install -c ucb-bar riscv-tools
+          eval "$(conda shell.bash hook)"
+          conda install -y -p $PWD/.conda-env -c ucb-bar riscv-tools
       - name: Install Spike
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          source $${ env.REMOTE_WORK_DIR }}/.conda-env/etc/profile.d/conda.sh
-          conda activate $${ env.REMOTE_WORK_DIR }}/.conda-env
+          eval "$(conda shell.bash hook)"
+          conda activate $PWD/.conda-env
           git clone https://github.com/riscv-software-src/riscv-isa-sim.git
           cd riscv-isa-sim
           mkdir build
           cd build
-          ../configure --prefix=$RISCV
-          make
+          ../configure --prefix=$RISCV --with-boost=no --with-boost-asio=no --with-boost-regex=no
+          make -j16
           make install
-      - name: Init. all submodules
+      - name: Initialize all submodules
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          source $${ env.REMOTE_WORK_DIR }}/.conda-env/etc/profile.d/conda.sh
-          conda activate $${ env.REMOTE_WORK_DIR }}/.conda-env
+          eval "$(conda shell.bash hook)"
+          conda activate $PWD/.conda-env
           ./init-submodules.sh
+      - name: Verify open file limits
+        run: |
+          HARD_LIMIT=$(ulimit -Hn)
+          REQUIRED_LIMIT=16384
+          if [ "$HARD_LIMIT" -lt "$REQUIRED_LIMIT" ]; then
+              echo "ERROR: Your system does not support an open files limit (the output of 'ulimit -Sn' and 'ulimit -Hn') of at least $REQUIRED_LIMIT, which is required to workaround a bug in buildroot. You will not be able to build a Linux distro with FireMarshal until this is addressed."
+              exit 1
+          fi
+          ulimit -Sn $(ulimit -Hn)
 
   run-tests:
     name: run-tests
@@ -92,7 +100,8 @@ jobs:
       - name: Run tests
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          conda activate -n ./conda-env
+          eval "$(conda shell.bash hook)"
+          conda activate $PWD/.conda-env
           ./scripts/fullTest.py
 
   cleanup:
@@ -101,7 +110,6 @@ jobs:
     runs-on: self-hosted
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
     steps:
-      - name: Delete repo copy (and env)
+      - name: Delete repo copy and conda env
         run: |
           rm -rf ${{ env.REMOTE_WORK_DIR }}
-
