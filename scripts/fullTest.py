@@ -5,8 +5,11 @@ import argparse
 import time
 import logging
 import subprocess as sp
+import os
 
-sys.path.append("..")
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+sys.path.append(script_dir + "/..")
 import wlutil  # NOQA
 
 rootDir = pathlib.Path(__file__).parent.resolve()
