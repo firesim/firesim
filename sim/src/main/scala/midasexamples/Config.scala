@@ -25,7 +25,6 @@ class BaseMidasExamplesConfig extends Config(
   })
 )
 class DefaultF1Config extends Config(
-  new firesim.configs.WithEC2F1Artefacts ++
   new BaseMidasExamplesConfig ++
   new midas.F1Config
 )

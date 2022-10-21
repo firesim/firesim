@@ -21,7 +21,6 @@ FPGA Build Files
 These are additional files passed to the FPGA build directory. 
 
 * **<BASE>.defines.vh**: Verilog macro definitions for FPGA synthesis.
-* **<BASE>.env.tcl**: Used a means to inject arbitrary TCL into the start of the build flow. Controls synthesis and implementation strategies, and sets the host_clock frequency before the clock generator (MCMM) is synthesized.
 * **<BASE>.ila_insert_vivado.tcl**: Synthesizes an ILA for the design. See :ref:`auto-ila` for more details about using ILAs in FireSim.
 * **<BASE>.ila_insert_{inst, ports, wires}.v**: Instantiated in the FPGA project via ```include`` directives to instantiate the generated ILA.
 * **<BASE>.synthesis.xdc**: Xilinx design constraints for synthesis derived from collected XDCAnnotations.

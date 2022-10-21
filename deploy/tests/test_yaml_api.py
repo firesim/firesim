@@ -246,6 +246,9 @@ class TestConfigBuildAPI:
                 TARGET_CONFIG: Config
                 deploy_triplet: null
                 PLATFORM_CONFIG: Config
+                platform_config_args:
+                    fpga_frequency: 123
+                    build_strategy: TIMING
                 post_build_hook: null
                 bit_builder_recipe: bit-builder-recipes/f1.yaml
             """))

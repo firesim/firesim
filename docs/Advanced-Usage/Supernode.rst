@@ -56,7 +56,7 @@ FPGA, you can use:
        new FireSimQuadRocketConfig)
 
 
-Next, when defining the build recipe, we must remmber to use the supernode
+Next, when defining the build recipe, we must remember to use the supernode
 configuration: The ``DESIGN`` parameter should always be set to
 ``FireSim``, while the ``TARGET_CONFIG`` parameter should be set to
 the wrapper configuration that was defined in
@@ -76,8 +76,8 @@ We currently provide a single pre-built AGFI for supernode of 4 quad-core
 RocketChips with DDR3 memory models. You can build your own AGFI, using the supplied samples in
 ``config_build_recipes.yaml``.  Importantly, in order to meet FPGA timing
 contraints, Supernode target may require lower host clock frequencies.
-host clock frequencies can be configured as parts of the PLATFORM_CONFIG in
-``config_build_recipes.yaml``.
+Host clock frequencies can be configured as parts of the ``platform_config_args`` 
+(this must be done using ``PLATFORM_CONFIG`` if not using F1) in ``config_build_recipes.yaml``.
 
 Running Supernode Simulations
 -----------------------------
