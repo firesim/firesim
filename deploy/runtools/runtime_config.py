@@ -307,6 +307,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.additional_required_files = []
 
+        if self.metasim_host_simulator in ["vcs", "vcs-debug"]:
+            self.additional_required_files.append((self.get_local_driver_path() + ".daidir", ""))
+
     def get_boot_simulation_command(self,
             slotid: int,
             all_macs: Sequence[MacAddress],
