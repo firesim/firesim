@@ -35,13 +35,22 @@ run-sim:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/s
 # current support on firesim1
 DEVICE ?= xilinx_u250_gen3x16_xdma_3_1_202020_1
 
+# Selects a vitis config, by looking in build-strategies, for an equivalently
+# named cfg file.
+STRATEGY ?= TIMING
+
+# If set, this will very first config file vitis sees.
+CONFIG_OVERLAY ?=
+
 #   device2xsa - create a filesystem friendly name from device name
 #   $(1) - full name of device
 device2xsa = $(strip $(patsubst %.xpfm, % , $(shell basename $(DEVICE))))
 
+
 XSA := $(call device2xsa, $(DEVICE))
 MSG_RULES      := $(buildroot)/msg.mrf
 DRIVER_DIR     := $(buildroot)/driver
+STRATEGIES_DIR := $(buildroot)/build-strategies
 
 # Keep the directory structure under $(SIM_DIR) and $(BITSTREAM_DIR) largely the same
 BUILD_SUBDIR   := build_dir.$(XSA)
@@ -89,6 +98,14 @@ VPP_COMMON_ARGS = \
 	$(VPP_OTHER_FLAGS) \
 	$(VPP_MSG_FLAGS)
 
+
+ifneq ($(CONFIG_OVERLAY),)
+ifneq ($(shell test -f $(CONFIG_OVERLAY); echo $$?),0)
+$(error Vitis config overlay at $(CONFIG_OVERLAY) does not exist)
+endif
+vpp_config_overlays := $(abspath $(CONFIG_OVERLAY))
+endif
+
 PROFILE := no
 ifeq ($(PROFILE), yes)
 	VPP_LDFLAGS += --profile.data all:all:all
@@ -118,18 +135,27 @@ ipgen_scripts = $(shell find design/ -iname "*.ipgen.tcl")
 	# Move into the simulation or bitstream-build directory
 	cd $(@D)/..; $(VIVADO) -mode batch -source $(buildroot)/scripts/gen_xo.tcl -tclargs $@ $(PROJECT_NAME) $(TARGET) $(DEVICE) $(XSA)
 
+build_strategy_path = $(STRATEGIES_DIR)/strategy_$(STRATEGY).cfg
+
+ifneq ($(shell test -f $(build_strategy_path); echo $$?),0)
+$(error Build strategy config at $(build_strategy_path) does not exist)
+endif
+vpp_config_overlays += $(build_strategy_path)
+vpp_config_overlay_args = $(addprefix --config ,$(vpp_config_overlays))
+
 # link and package the xclbin
-%/$(PROJECT_NAME).link.xclbin: %/$(PROJECT_NAME).xo
+%/$(PROJECT_NAME).link.xclbin: %/$(PROJECT_NAME).xo $(vpp_config_overlays)
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
-	cd $(@D)/..; $(VPP) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) \
+	cd $(@D)/..; $(VPP) $(vpp_config_overlay_args) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) \
 	--connectivity.sp $(PROJECT_NAME)_1.host_mem_0:DDR[0] \
 	--link $(VPP_LDFLAGS) -o $@ $<
 
-%/$(BUILD_SUBDIR)/$(PROJECT_NAME).xclbin: %/$(TEMP_SUBDIR)/$(PROJECT_NAME).link.xclbin
+
+%/$(BUILD_SUBDIR)/$(PROJECT_NAME).xclbin: %/$(TEMP_SUBDIR)/$(PROJECT_NAME).link.xclbin $(vpp_config_overlays)
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
-	cd $(@D)/..; $(VPP) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
+	cd $(@D)/..; $(VPP) $(vpp_config_overlay_args) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
 
 # FPGA-level simulation support
 driver_bin = FireSim-vitis
