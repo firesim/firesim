@@ -74,11 +74,14 @@ class BuildConfigFile:
         build_recipes = dict()
         for section_name, section_dict in build_recipes_config_file.items():
             if section_name in builds_to_run_list:
-                build_recipes[section_name] = BuildConfig(
-                    section_name,
-                    section_dict,
-                    self,
-                    launch_time)
+                try:
+                    build_recipes[section_name] = BuildConfig(
+                        section_name,
+                        section_dict,
+                        self,
+                        launch_time)
+                except Exception as e:
+                    raise Exception(f"Error constructing build recipe '{section_name}'") from e
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
