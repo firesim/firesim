@@ -199,6 +199,28 @@ jobs:
       - name: Runs compilation of F1 driver for the make-default tuple
         run: ./.github/scripts/build-f1-driver.py
 
+  run-targetutils-scala-tests:
+    name: run-targetutils-scala-tests
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run targetutils scala tests
+        run: ./.github/scripts/run-sbt-command.py midasexamples "'project targetutils; test' "
+
+  run-midas-scala-tests:
+    name: run-midas-scala-tests
+    needs: [setup-manager]
+    runs-on: ${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run targetutils scala tests
+        run: ./.github/scripts/run-sbt-command.py midasexamples "'project midas; test' "
+
   run-test-groupA:
     name: run-test-groupA
     needs: [build-f1-driver]
