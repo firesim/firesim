@@ -5,3 +5,8 @@ pyyaml
 requests
 mypy_boto3_ec2==1.21.9
 mypy_boto3_s3==1.21.0
+azure-mgmt-resource>=18.0.0
+azure-identity>=1.5.0
+azure-mgmt-compute
+azure-mgmt-network
+azure-mgmt-resourcegraph

@@ -4,7 +4,7 @@ from fabric.api import *
 
 from common import manager_home_dir, manager_fsim_dir, manager_marshal_dir, set_fabric_firesim_pem
 # This is expected to be launch from the ci container
-from ci_variables import *
+from ci_variables import ci_workdir
 
 def initialize_repo():
     """ Initializes firesim repo: clones, runs build-setup, and intializes marshal submodules """

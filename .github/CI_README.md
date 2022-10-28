@@ -46,6 +46,15 @@ GitHub Secrets
 * **AWS_ACCESS_KEY_ID**: Passed to `aws configure` on CI containers + manager instances
 * **AWS_DEFAULT_REGION**: Passed to `aws configure` on CI containers + manager instances
 * **AWS_SECRET_ACCESS_KEY**: Passed to `aws configure` on CI containers + manager instances
-* **FIRESIM_PEM**: Used by the manager on CI manager instances
+* **AZURE_CLIENT_ID**: Used to manage Azure resources
+* **AZURE_CLIENT_SECRET**: Used to manage Azure resources
+* **AZURE_TENANT_ID**: Used to manage Azure resources
+* **AZURE_SUBSCRIPTION_ID**: Subscription ID of Azure account to run CI on
+* **AZURE_DEFAULT_REGION**: Used to setup Azure region
+* **AZURE_RESOURCE_GROUP**: Resource group Azure is running in
+* **AZURE_CI_SUBNET_ID**: Subnet used by Azure VMs running CI
+* **AZURE_CI_NSG_ID**: Network Security Group used by Azure VMs running CI
+* **FIRESIM_PEM**: Used by the manager on CI manager instances and VMs
+* **FIRESIM_PEM_PUBLIC**: Public key of the above secret, used to setup the key in Azure
 * **FIRESIM_REPO_DEP_KEY**: Used to push scala doc to GH pages
 * **GH_A_PERSONAL_ACCESS_TOKEN**: Used to dynamically register and deregister GitHub Actions runners. See `https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token`, and enable the `workflow` (Update GitHub Action workflows) setting.

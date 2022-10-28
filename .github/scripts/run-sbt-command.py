@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
+import argparse
 
 from fabric.api import *
 
-from common import manager_fsim_dir, manager_hostname, set_fabric_firesim_pem
-from ci_variables import ci_workflow_run_id
+from common import manager_fsim_dir, set_fabric_firesim_pem
 
 def run_sbt_command(target_project, command):
     """ Runs a command in SBT shell for the default project specified by the target_project makefrag
@@ -20,4 +19,11 @@ def run_sbt_command(target_project, command):
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
-    execute(run_sbt_command, sys.argv[1], sys.argv[2], hosts=["localhost"])
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('target_project', 
+                        help='The make variable to select the desired target project makefrag')
+    parser.add_argument('command',
+                        help='The command to run')
+    args = parser.parse_args()        
+    execute(run_sbt_command, args.target_project, args.command, hosts=["localhost"])

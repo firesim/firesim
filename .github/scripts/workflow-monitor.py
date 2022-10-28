@@ -15,10 +15,11 @@
 
 import time
 import sys
+import argparse
 import requests
 
-from common import terminate_workflow_instances, stop_workflow_instances, gha_runs_api_url
-
+from common import get_platform_lib, gha_runs_api_url
+from platform_lib import Platform, get_platform_enum
 # Time between HTTPS requests to github
 POLLING_INTERVAL_SECONDS = 60
 # Number of failed requests before stopping the instances
@@ -30,14 +31,14 @@ TERMINATE_STATES = ["cancelled", "success", "skipped", "stale", "failure", "time
 # See discussion in: https://github.com/firesim/firesim/pull/1037
 STOP_STATES = []
 NOP_STATES = ["action_required"] # TODO: unsure when this happens
+    
+def main(platform: Platform, workflow_id: str, gha_ci_personal_token: str):
 
-def main(workflow_id, gha_ci_personal_token):
-
-    state = None
     consecutive_failures = 0
     headers = {'Authorization': "token {}".format(gha_ci_personal_token.strip())}
     gha_workflow_api_url = f"{gha_runs_api_url}/{workflow_id}"
 
+    platform_lib = get_platform_lib(platform)
     while True:
         time.sleep(POLLING_INTERVAL_SECONDS)
 
@@ -51,10 +52,10 @@ def main(workflow_id, gha_ci_personal_token):
             print("Workflow {} status: {} {}".format(workflow_id, state_status, state_concl))
             if state_status in ['completed']:
                 if state_concl in TERMINATE_STATES:
-                    terminate_workflow_instances(gha_ci_personal_token, workflow_id)
+                    platform_lib.terminate_instances(gha_ci_personal_token, workflow_id)
                     exit(0)
                 elif state_concl in STOP_STATES:
-                    stop_workflow_instances(gha_ci_personal_token, workflow_id)
+                    platform_lib.stop_instances(gha_ci_personal_token, workflow_id)
                     exit(0)
                 elif state_concl not in NOP_STATES:
                     print("Unexpected Workflow State On Completed: {}".format(state_concl))
@@ -67,8 +68,21 @@ def main(workflow_id, gha_ci_personal_token):
             print("HTTP GET error: {}. Retrying.".format(res.json()))
             consecutive_failures = consecutive_failures + 1
             if consecutive_failures == QUERY_FAILURE_THRESHOLD:
-                stop_workflow_instances(gha_ci_personal_token, workflow_id)
+                platform_lib.stop_instances(gha_ci_personal_token, workflow_id)
                 exit(1)
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser()
+    
+    platform_choices = [str(p) for p in Platform]
+    parser.add_argument('platform',
+                        choices = platform_choices,
+                        help = "The platform CI is being run on")
+    parser.add_argument('workflow_id',
+                        help='ID of the workflow that is used to query the CI instance')
+    parser.add_argument('gha_ci_personal_token',
+                        help="GitHub personal access token used to query GitHub REST API")
+    args = parser.parse_args()
+    platform = get_platform_enum(args.platform)
+
+    main(platform, args.workflow_id, args.gha_ci_personal_token)
