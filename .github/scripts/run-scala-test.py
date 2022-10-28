@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
+import argparse
 
 from fabric.api import *
 
@@ -21,4 +21,11 @@ def run_scala_test(target_project, test_name):
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
-    execute(run_scala_test, sys.argv[1], sys.argv[2], hosts = ["localhost"])
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('target_project', 
+                        help='The make variable to select the desired target project makefrag')
+    parser.add_argument('test_name',
+                        help=' the full classname of the test')
+    args = parser.parse_args()
+    execute(run_scala_test, args.target_project, args.test_name, hosts = ["localhost"])

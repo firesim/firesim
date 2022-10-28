@@ -8,6 +8,9 @@ inputs:
   github-token:
     description: "Personal Access Token on GitHub with workflow access"
     required: true
+  platform:
+    description: "The platform on which CI is running."
+    default: 'aws'
 
 runs:
   using: "composite"
@@ -17,5 +20,5 @@ runs:
           aws-access-key-id: ${{ env.AWS-ACCESS-KEY-ID }}
           aws-secret-access-key: ${{ env.AWS-SECRET-ACCESS-KEY }}
           aws-region: ${{ env.AWS-DEFAULT-REGION }}
-      - run: .github/scripts/change-workflow-instance-states.py ${{ github.run_id }} ${{ inputs.new-state }} ${{ inputs.github-token }}
+      - run: .github/scripts/change-workflow-instance-states.py ${{ inputs.platform }} ${{ github.run_id }} ${{ inputs.new-state }} ${{ inputs.github-token }}
         shell: bash

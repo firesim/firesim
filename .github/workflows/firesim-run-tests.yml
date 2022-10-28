@@ -13,7 +13,16 @@ env:
   AWS-ACCESS-KEY-ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS-SECRET-ACCESS-KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS-DEFAULT-REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_DEFAULT_REGION: ${{ secrets.AZURE_DEFAULT_REGION }}
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  AZURE_CI_SUBNET_ID : ${{ secrets.AZURE_CI_SUBNET_ID }}
+  AZURE_CI_NSG_ID : ${{ secrets.AZURE_CI_NSG_ID }}
   FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
   MANAGER_FIRESIM_LOCATION: "~/firesim"
   LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
   LANGUAGE: "en_US:en"
@@ -96,7 +105,7 @@ jobs:
       - name: Launch AWS instance used for the FireSim manager (instance info found here)
         run: ./.github/scripts/launch-manager-instance.py
       - name: Setup N Github Actions Runners on AWS instance
-        run: ./.github/scripts/setup-manager-self-hosted.py
+        run: ./.github/scripts/setup-manager-self-hosted.py aws
       - name: Catch potentially orphaned manager
         if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
         uses: ./.github/actions/change-workflow-instance-states
@@ -107,7 +116,7 @@ jobs:
   setup-manager:
     name: setup-manager
     needs: [setup-self-hosted-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v3
       - name: Install FireSim pem
@@ -136,7 +145,7 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: build-default-workloads
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -147,7 +156,7 @@ jobs:
   run-manager-pytests:
     name: run-manager-pytests
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -158,7 +167,7 @@ jobs:
   run-python-typecheck:
     name: run-python-typecheck
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -169,7 +178,7 @@ jobs:
   run-scalafmt-check:
     name: run-scalafmt-check
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -180,7 +189,7 @@ jobs:
   run-check-docs-generated-components:
     name: run-check-docs-generated-components
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -191,7 +200,7 @@ jobs:
   build-f1-driver:
     name: build-f1-driver
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -224,7 +233,7 @@ jobs:
   run-test-groupA:
     name: run-test-groupA
     needs: [build-f1-driver]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -237,7 +246,7 @@ jobs:
   run-test-groupB:
     name: run-test-groupB
     needs: [run-test-groupA]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -250,7 +259,7 @@ jobs:
   run-chipyard-tests:
     name: run-chipyard-tests
     needs: [run-test-groupB]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -266,7 +275,7 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff
     needs: [build-default-workloads]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -278,7 +287,7 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff-externally-provisioned
     needs: [build-default-workloads]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:

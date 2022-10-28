@@ -227,6 +227,10 @@ set -o pipefail
         boto3==1.20.21 \
         pytz \
         mypy-boto3-s3==1.21.0 \
+        azure-mgmt-resource==18.0.0 \
+        azure-identity==1.5.0 \
+        azure-mgmt-compute \
+        azure-mgmt-network \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
@@ -257,8 +261,9 @@ set -o pipefail
     # prefer creating the environment with a single invocation of
     # conda
     PIP_PKGS=( \
-        fab-classic \
-        mypy-boto3-ec2==1.12.9 \
+        fab-classic==1.19.1 \
+        mypy-boto3-ec2==1.21.9 \
+        azure-mgmt-resourcegraph \
     )
     if [[ -n "$PIP_PKGS[*]" ]]; then
         "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_PIP_EXE}" install "${PIP_PKGS[@]}"
