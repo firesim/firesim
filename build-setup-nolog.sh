@@ -114,6 +114,20 @@ echo "$bad_env" > env.sh
 env_append "export FIRESIM_ENV_SOURCED=1"
 
 # Conda Setup
+# Provide a sourceable snippet that can be used in subshells that may not have
+# inhereted conda functions that would be brought in under a login shell that
+# has run conda init (e.g., VSCode, CI)
+read -r -d '\0' CONDA_ACTIVATE_PREAMBLE <<'END_CONDA_ACTIVATE'
+if ! type conda >& /dev/null; then
+    echo "::ERROR:: you must have conda in your environment first"
+    return 1  # don't want to exit here because this file is sourced
+fi
+
+# if we're sourcing this in a sub process that has conda in the PATH but not as a function, init it again
+conda activate --help >& /dev/null || source $(conda info --base)/etc/profile.d/conda.sh
+\0
+END_CONDA_ACTIVATE
+
 if [ "$IS_LIBRARY" = true ]; then
     # the chipyard conda environment should be installed already and be sufficient
     if [ -z "${CONDA_DEFAULT_ENV+x}" ]; then
@@ -131,6 +145,7 @@ else
     conda-lock install -p $RDIR/.conda-env $LOCKFILE
     source $RDIR/.conda-env/etc/profile.d/conda.sh
     conda activate $RDIR/.conda-env
+    env_append "$CONDA_ACTIVATE_PREAMBLE"
     env_append "conda activate $RDIR/.conda-env"
 fi
 
