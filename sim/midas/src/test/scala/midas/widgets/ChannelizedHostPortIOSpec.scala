@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, annotate, ChiselAnnotation}
 
 import freechips.rocketchip.config.Parameters
 
@@ -56,9 +56,18 @@ class ChannelizedHostPortIOSpec extends AnyFlatSpec {
   }
 
   class BridgeMock[T <: Bundle with ChannelizedHostPortIO](gen: (BridgeTargetIO) => T) extends BlackBox {
+    outer =>
     val io = IO(new BridgeTargetIO)
     val bridgeIO = gen(io)
-    bridgeIO.generateAnnotations()
+    // Spoof annotation generation
+    annotate(new ChiselAnnotation { def toFirrtl = {
+        BridgeAnnotation(
+          outer.toTarget,
+          bridgeIO.bridgeChannels,
+          widgetClass = "NotARealBridge",
+          widgetConstructorKey = None)
+      }
+    })
   }
 
   def elaborateBlackBox(mod: =>BaseModule): Unit = ChiselStage.emitChirrtl(new BlackBoxWrapper(mod))
