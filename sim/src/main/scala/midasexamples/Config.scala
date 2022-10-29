@@ -15,7 +15,6 @@ class BaseMidasExamplesConfig extends Config(
   new WithDefaultMemModel ++
   new WithWiringTransform ++
   new Config((site, here, up) => {
-    case DesiredHostFrequency => 75
     case SynthAsserts => true
     case GenerateMultiCycleRamModels => true
     case EnableModelMultiThreading => true
