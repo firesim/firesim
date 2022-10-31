@@ -199,10 +199,6 @@
                         <a href="OChannelDesc.html" title="">OChannelDesc</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="PayloadRecord.html" title=""></a>
-                        <a href="PayloadRecord.html" title="">PayloadRecord</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="class" href="PipeChannel.html" title=""></a>
                         <a href="PipeChannel.html" title="">PipeChannel</a>
                       </li><li class="current-entities indented2">
@@ -385,10 +381,10 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="midas.core.SimUtils.ChLeafType" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ChLeafType=chisel3.Bits"></a><a id="ChLeafType:ChLeafType"></a>
+              <ol><li name="midas.core.SimUtils.ChTuple" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ChTuple=(chisel3.Bits,String)"></a><a id="ChTuple:ChTuple"></a>
       <span class="permalink">
-      <a href="../../midas/core/SimUtils$.html#ChLeafType=chisel3.Bits" title="Permalink">
+      <a href="../../midas/core/SimUtils$.html#ChTuple=(chisel3.Bits,String)" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -397,23 +393,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">ChLeafType</span><span class="result alias"> = <span class="extype" name="chisel3.Bits">Bits</span></span>
-      </span>
-      
-      
-    </li><li name="midas.core.SimUtils.ChTuple" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ChTuple=(midas.core.SimUtils.ChLeafType,String)"></a><a id="ChTuple:ChTuple"></a>
-      <span class="permalink">
-      <a href="../../midas/core/SimUtils$.html#ChTuple=(midas.core.SimUtils.ChLeafType,String)" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">type</span>
-      </span>
-      <span class="symbol">
-        <span class="name">ChTuple</span><span class="result alias"> = (<a href="#ChLeafType=chisel3.Bits" class="extmbr" name="midas.core.SimUtils.ChLeafType">ChLeafType</a>, <span class="extype" name="scala.Predef.String">String</span>)</span>
+        <span class="name">ChTuple</span><span class="result alias"> = (<span class="extype" name="chisel3.Bits">Bits</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>
       </span>
       
       
@@ -429,7 +409,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">ParsePortsTuple</span><span class="result alias"> = (<span class="extype" name="scala.List">List</span>[<a href="#ChTuple=(midas.core.SimUtils.ChLeafType,String)" class="extmbr" name="midas.core.SimUtils.ChTuple">ChTuple</a>], <span class="extype" name="scala.List">List</span>[<a href="#ChTuple=(midas.core.SimUtils.ChLeafType,String)" class="extmbr" name="midas.core.SimUtils.ChTuple">ChTuple</a>], <span class="extype" name="scala.List">List</span>[<a href="#RVChTuple=(chisel3.util.ReadyValidIO[chisel3.Data],String)" class="extmbr" name="midas.core.SimUtils.RVChTuple">RVChTuple</a>], <span class="extype" name="scala.List">List</span>[<a href="#RVChTuple=(chisel3.util.ReadyValidIO[chisel3.Data],String)" class="extmbr" name="midas.core.SimUtils.RVChTuple">RVChTuple</a>])</span>
+        <span class="name">ParsePortsTuple</span><span class="result alias"> = (<span class="extype" name="scala.List">List</span>[<a href="#ChTuple=(chisel3.Bits,String)" class="extmbr" name="midas.core.SimUtils.ChTuple">ChTuple</a>], <span class="extype" name="scala.List">List</span>[<a href="#ChTuple=(chisel3.Bits,String)" class="extmbr" name="midas.core.SimUtils.ChTuple">ChTuple</a>], <span class="extype" name="scala.List">List</span>[<a href="#RVChTuple=(chisel3.util.ReadyValidIO[chisel3.Data],String)" class="extmbr" name="midas.core.SimUtils.RVChTuple">RVChTuple</a>], <span class="extype" name="scala.List">List</span>[<a href="#RVChTuple=(chisel3.util.ReadyValidIO[chisel3.Data],String)" class="extmbr" name="midas.core.SimUtils.RVChTuple">RVChTuple</a>])</span>
       </span>
       
       
@@ -585,6 +565,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.core.SimUtils#buildChannelType" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="buildChannelType(portTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port],refTargets:Seq[firrtl.annotations.ReferenceTarget]):chisel3.Data"></a><a id="buildChannelType(Map[ReferenceTarget,Port],Seq[ReferenceTarget]):Data"></a>
+      <span class="permalink">
+      <a href="../../midas/core/SimUtils$.html#buildChannelType(portTypeMap:Map[firrtl.annotations.ReferenceTarget,firrtl.ir.Port],refTargets:Seq[firrtl.annotations.ReferenceTarget]):chisel3.Data" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">buildChannelType</span><span class="params">(<span name="portTypeMap">portTypeMap: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>, <span class="extype" name="firrtl.ir.Port">Port</span>]</span>, <span name="refTargets">refTargets: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span>]</span>)</span><span class="result">: <span class="extype" name="chisel3.Data">Data</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">Construct a type for a channel carrying the wires referenced by the list of targets.</p><div class="fullcomment"><div class="comment cmt"><p>Construct a type for a channel carrying the wires referenced by the list of targets.</p><p>The reference targets denote the set of fields of a port which should be included in a channel.
+A type is built including only those fields, which should be unidirectional. This is now used
+to remove the valid field of a ready-valid channel payload. The &quot;bits_&quot; suffix of fields is
+removed to improve readability, but this should be changed in the future.
+</p></div><dl class="paramcmts block"><dt class="param">portTypeMap</dt><dd class="cmt"><p>Mapping from port references to their types.</p></dd><dt class="param">refTargets</dt><dd class="cmt"><p>List of fields in the channel. Must all point to sub-fields or sub-indices of the port.</p></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
