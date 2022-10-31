@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum, auto
 
 from time import strftime, gmtime
 import pprint
@@ -14,6 +15,30 @@ from typing import Set, Any, Optional, Dict, TYPE_CHECKING
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
 
+class InvalidBuildConfigSetting(Exception):
+    pass
+
+# All known strategy strings. A given platform may not implement all of them.
+class BuildStrategy(Enum):
+    BASIC      = auto()
+    AREA       = auto()
+    TIMING     = auto()
+    EXPLORE    = auto()
+    CONGESTION = auto()
+    NORETIMING = auto()
+    DEFAULT    = auto()
+
+    @staticmethod
+    def from_string(input: str) -> BuildStrategy:
+        """ Constructs an instance of this enum from an input string """
+        try:
+            return BuildStrategy[input]
+        except KeyError:
+            all_names = [name for name, _ in BuildStrategy.__members__.items()]
+            raise InvalidBuildConfigSetting(f"Invalid buildstrategy name '{input}'. \n Valid options: {all_names}")
+
+
+
 class BuildConfig:
     """Represents a single build configuration used to build RTL, drivers, and bitstreams.
 
@@ -26,7 +51,7 @@ class BuildConfig:
         deploytriplet: Deploy triplet override.
         launch_time: Launch time of the manager.
         PLATFORM_CONFIG: Platform config to build.
-        fpga_frequency: Frequency for the FPGA build. 
+        fpga_frequency: Frequency for the FPGA build.
         strategy: Strategy for the FPGA build.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
@@ -38,7 +63,7 @@ class BuildConfig:
     TARGET_CONFIG: str
     deploytriplet: Optional[str]
     frequency: float
-    strategy: str
+    strategy: BuildStrategy
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -69,9 +94,10 @@ class BuildConfig:
         self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
         self.post_build_hook = recipe_config_dict['post_build_hook']
 
-        # retrieve frequency and strategy selections (for AWS F1)
-        self.fpga_frequency = recipe_config_dict['platform_config_args']['fpga_frequency']
-        self.build_strategy = recipe_config_dict['platform_config_args']['build_strategy']
+        # retrieve frequency and strategy selections
+        bitstream_build_args = recipe_config_dict['platform_config_args']
+        self.fpga_frequency = bitstream_build_args['fpga_frequency']
+        self.build_strategy = BuildStrategy.from_string(bitstream_build_args['build_strategy'])
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -91,18 +117,9 @@ class BuildConfig:
         if not bitbuilder_type_name in bitbuilder_dispatch_dict:
             raise Exception(f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}")
 
-        # error if frequency/strategy are selected for Azure/Vitis
-        if (bitbuilder_type_name != "F1BitBuilder"):
-            if (self.fpga_frequency is not None) or (self.build_strategy is not None):
-                raise Exception(f"Your selection of frequency/strategy will not be used with the {bitbuilder_type_name}. Set to null and append to the PLATFORM_CONFIG")
-        else:
-            # validate the frequency
-            if (self.fpga_frequency is None) or not (0 < self.fpga_frequency <= 1000):
-                raise Exception(f"{self.fpga_frequency} is not a valid build frequency. Valid frequencies are between 0.0-1000.0 (MHz)")
-            # validate the strategy
-            valid_strategies = ['BASIC', 'AREA', 'TIMING', 'EXPLORE', 'CONGESTION', 'NORETIMING', 'DEFAULT']
-            if self.build_strategy not in valid_strategies:
-                raise Exception(f"{self.build_strategy} is not a valid build strategy. Valid build strategies are: {' '.join(valid_strategies)}")
+        # validate the frequency
+        if (self.fpga_frequency is None) or not (0 < self.fpga_frequency <= 300.0):
+            raise Exception(f"{self.fpga_frequency} is not a valid build frequency. Valid frequencies are between 0.0-300.0 (MHz)")
 
         # create dispatcher object using class given and pass args to it
         self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
@@ -115,19 +132,19 @@ class BuildConfig:
         """
         return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
-    def get_f1_frequency(self) -> float:
-        """Get the AWS F1 build-specific frequency config.
+    def get_frequency(self) -> float:
+        """Get the desired fpga frequency.
 
         Returns:
             Specified FPGA frequency (float)
         """
         return self.fpga_frequency
 
-    def get_f1_strategy(self) -> str:
-        """Get the AWS F1 build-specific strategy config string.
+    def get_strategy(self) -> BuildStrategy:
+        """Get the strategy string.
 
         Returns:
-            Specified build strategy (str)
+            Specified build strategy
         """
         return self.build_strategy
 

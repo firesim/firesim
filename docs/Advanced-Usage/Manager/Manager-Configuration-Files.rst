@@ -389,30 +389,36 @@ Targets<generating-different-targets>`).
 ``PLATFORM_CONFIG``
 """""""""""""""""""""
 
-This specifies hardware parameters of the simulation environment - for example,
-selecting between a Latency-Bandwidth Pipe or DDR3 memory models.
-These are defined in :gh-file-ref:`sim/firesim-lib/src/main/scala/configs/CompilerConfigs.scala`.
-We specify the host FPGA frequency in the ``PLATFORM_CONFIG`` by appending a frequency
-``Config`` with an underscore (ex. BaseF1Config_F160MHz).
-We describe this in greater detail in :ref:`Generating Different
-Targets<generating-different-targets>`).
+This specifies parameters to pass to the compiler (Golden Gate). Notably,
+PLATFORM_CONFIG can be used to enable debugging tools like assertion synthesis,
+and resource optimizations like instance multithreading.  Critically, it also
+calls out the host-platform (e.g., F1 or Vitis) to compile against: this
+defines the widths of internal simulation interfaces and specifies resource
+limits (e.g., how much DRAM is available on the platform).
 
 ``platform_build_args``
 ''''''''''''''''''''''''
 
-.. Warning:: This is used only in the AWS EC2 case.
+These configure the bitstream build, and are host-platform-agnostic.
+Platform-specific arguments, like the Vitis platform ("DEVICE"), are captured
+as arguments to the bitbuilder.
 
 ``fpga_frequency``
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Specifies the host FPGA frequency for AWS EC2 based builds. For other platforms we
-continue to use the ``PLATFORM_CONFIG`` for frequency selection as described above.
+Specifies the host FPGA frequency for a bitstream build.
 
 ``build_strategy``
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Specifies the sythesis and implemetation strategies employed by Xilinx tools for the AGFI build.
-For other platforms continue to use the ``PLATFORM_CONFIG`` for strategy selection.
+Specifies a pre-canned set of strategies and directives to pass to the
+bitstream build. Note, these are implemented differently on different host
+platforms, but try to optimize for the same things. Strategies supported across both Vitis and EC2 F1 include:
+
+ - ``TIMING``: Optimize for improved fmax.
+ - ``AREA``: Optimize for reduced resource utilization.
+
+Names are derived AWS's strategy set.
 
 ``deploy_triplet``
 """"""""""""""""""
@@ -897,7 +903,10 @@ When enabled, this appends the current users AWS user ID and region to the ``s3_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This bit builder recipe configures a build farm host to build an Vitis U250 (FPGA bitstream called an ``xclbin``).
-This bit builder doesn't have any arguments associated with it.
+
+``device``
+""""""""""""""""""""""""""
+This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1``.
 
 Here is an example of this configuration file:
 

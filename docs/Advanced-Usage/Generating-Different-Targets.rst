@@ -232,16 +232,13 @@ compound Config instance.
     // Can specify undefined classes this way. ex: TARGET_CONFIG=Override2_Base
 
 With this scheme, you don't need to define a Config class for every instance you
-wish to generate. We use this scheme to specify FPGA frequencies for non-EC2 builds
-(eg. "BaseF1Config_F90MHz") in manager build recipes, but it's also very useful for doing
-sweeping over a parameterization space.
+wish to generate, making it very useful for sweeping over a parameterization space.
 
-**Note that the precedence of Configs decreases from left to right in a string**.  Appending a config to an existing one will only have an effect if it
-sets a field not already set in higher precendence Configs. For example, "BaseF1Config_F90MHz" is equivalent to
-"BaseF1Config_F90MHz_F80MHz" as ``DesiredHostFrequency`` resolves to 90 MHz,
-but "F90MHz_BaseF1Config" is distinct from "F80MHz_F90MHz_BaseF1Config" in
-that ``DesiredHostFrequency`` resolves to 90 and 80 MHz respectively.
-
+**Note that the precedence of Configs decreases from left to right in a
+string**.  Appending a config to an existing one will only have an effect if it
+sets a field not already set in higher precendence Configs. For example,
+"BaseF1Config_SetFieldAtoX" is equivalent to
+"BaseF1Config_SetFieldAtoX_SetFieldAtoY".
 
 How a particular Config resolves it's ``Field`` s can be unintuitive for complex
 compound ``Config`` s.  One precise way to check a config is doing what you

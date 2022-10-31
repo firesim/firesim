@@ -21,6 +21,9 @@ object VitisConstants {
 
   // This is wider than the addresses used in FPGATop
   val axi4MAddressBits = 64
+
+  /** The hardcoded TCL variable name used to specify the simulator's frequency */
+  val frequencyVariableName = "frequency"
 }
 
 class VitisShim(implicit p: Parameters) extends PlatformShim {
@@ -39,7 +42,13 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     val ap_rst = (!ap_rst_n.asBool)
 
     // Setup Internal Clocking
-    val firesimMMCM = Module(new MMCM(VitisConstants.kernelDefaultFreqMHz, p(DesiredHostFrequency), "firesim_clocking"))
+    val firesimMMCM = Module(
+      new MMCM(
+        FrequencySpec.Static(VitisConstants.kernelDefaultFreqMHz),
+        FrequencySpec.TCLVariable(VitisConstants.frequencyVariableName),
+        "firesim_clocking",
+      )
+    )
     firesimMMCM.io.clk_in1 := ap_clk
     firesimMMCM.io.reset   := ap_rst.asAsyncReset
 

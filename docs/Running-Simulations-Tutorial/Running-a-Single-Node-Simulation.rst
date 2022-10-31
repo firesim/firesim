@@ -228,7 +228,7 @@ For a complete run, you should expect output like the following:
 	FireSim Manager. Docs: http://docs.fires.im
 	Running: infrasetup
 
-	Building FPGA software driver for FireSim-FireSimQuadRocketConfig-F90MHz_BaseF1Config
+	Building FPGA software driver for FireSim-FireSimQuadRocketConfig-BaseF1Config
 	[172.30.2.174] Executing task 'instance_liveness'
 	[172.30.2.174] Checking if host instance is up...
 	[172.30.2.174] Executing task 'infrasetup_node_wrapper'

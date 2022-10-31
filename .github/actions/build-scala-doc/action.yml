@@ -5,6 +5,8 @@ runs:
   using: "composite"
   steps:
     - run: |
+        cat env.sh
         source env.sh
-        make -C sim scaladoc
+        which conda
+        source env.sh && make -C sim scaladoc
       shell: bash
