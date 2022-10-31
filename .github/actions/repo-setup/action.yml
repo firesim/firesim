@@ -6,4 +6,3 @@ runs:
   steps:
     - uses: ./.github/actions/machinelaunchscript
     - uses: ./.github/actions/buildsetup
-    - uses: ./.github/actions/scala-build
