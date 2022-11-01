@@ -152,7 +152,7 @@ class BuildConfigFile:
         for build in self.builds_list:
             if self.build_farm.get_build_host_ip(build) == nodeip:
                 return build
-        assert False, "Unable to find build config associated with {nodeip}"
+        assert False, f"Unable to find build config associated with {nodeip}"
 
     def __repr__(self) -> str:
         return f"< {type(self)}(file={self.args.buildconfigfile!r}, recipes={self.args.buildrecipesconfigfile!r}, build_farm={self.build_farm!r}) @{id(self)} >"
