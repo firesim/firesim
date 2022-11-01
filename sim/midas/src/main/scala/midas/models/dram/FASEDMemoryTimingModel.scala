@@ -49,6 +49,12 @@ case class BaseParams(
   maxWriteLength: Int = 256,
   maxWritesPerID: Option[Int] = None,
 
+  // Stalls transactions that reuse an ID of an inflight transaction. This is
+  // required for timing correctness for models that reorder (when maxFlight
+  // per ID > 1), but can safely be disabled to save resources for order
+  // preserving models like the LBP
+  timingModelCapIDReuse: Boolean = true,
+
   // DEBUG FEATURES
   // Check for collisions in pending reads and writes to the host memory system
   // May produce false positives in timing models that reorder requests
@@ -138,6 +144,9 @@ abstract class BaseConfig {
     case Some(e) => e.maxWriteTransfer
     case _ => params.maxWriteLength
   }
+
+  def maxReadXferBytes(implicit p: Parameters) = maxReadLength * p(NastiKey).dataBits/8
+  def maxWriteXferBytes(implicit p: Parameters) = maxWriteLength * p(NastiKey).dataBits/8
 
   def maxWritesPerID(implicit p: Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxWrites, params.maxWritesPerID)
   def maxReadsPerID(implicit p: Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)

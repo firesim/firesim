@@ -3,6 +3,7 @@ package models
 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.ParameterizedBundle
+import freechips.rocketchip.diplomacy.LazyModule
 import junctions._
 
 import chisel3._
@@ -83,8 +84,24 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   }
 
   /**************************** CHISEL BEGINS *********************************/
-  // Regulates the return of beats to the target memory system
-  val tNasti = io.tNasti
+
+  // Instantiate a flight capper to prevent multiple transactions with the same
+  // in flight IDs from being reordered by the downstream timing model.
+
+
+  val tNasti = if (cfg.params.timingModelCapIDReuse) {
+    val flightCapper = Module(LazyModule(new NastiFlightLimiter(
+        maxInputFlight = math.max(cfg.maxReadsPerID, cfg.maxWritesPerID),
+        maxReadXferBytes = cfg.maxReadXferBytes,
+        maxWriteXferBytes = cfg.maxWriteXferBytes,
+        p(NastiKey)))
+      .module)
+    flightCapper.in <> io.tNasti
+    flightCapper.out
+  } else {
+    io.tNasti
+  }
+
   // Request channels presented to DRAM models
   val nastiReqIden = Module(new IdentityModule(new NastiReqChannels))
   val nastiReq = nastiReqIden.io.out
