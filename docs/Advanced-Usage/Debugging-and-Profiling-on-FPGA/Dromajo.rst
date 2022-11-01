@@ -29,7 +29,7 @@ An example configuration with Dromajo is shown below:
       new WithFireSimConfigTweaks ++
       new chipyard.LargeBoomConfig)
 
-At this point, you should run the ``firesim buildafi`` command for the BOOM config wanted.
+At this point, you should run the ``firesim buildbitstream`` command for the BOOM config wanted.
 
 Running a FireSim Simulation
 ----------------------------

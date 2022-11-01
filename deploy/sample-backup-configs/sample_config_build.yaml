@@ -14,7 +14,7 @@ build_farm:
 
 builds_to_run:
     # this section references builds defined in config_build_recipes.yaml
-    # if you add a build here, it will be built when you run buildafi
+    # if you add a build here, it will be built when you run buildbitstream
 
     # Unnetworked designs use a three-domain configuration
     # Tiles: 1600 MHz

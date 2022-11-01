@@ -3,7 +3,7 @@
 
 # this file contains sections that describe hardware designs that /can/ be built.
 # edit config_build.yaml to actually "turn on" a config to be built when you run
-# buildafi
+# buildbitstream
 
 ###########
 # Schema:

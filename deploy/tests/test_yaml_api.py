@@ -266,7 +266,7 @@ class TestConfigBuildAPI:
                                     ])
     def test_config_existence(self, task_mocker, build_yamls, firesim_parse_args, task_name, opt, non_existent_file):
         # TODO: Remove after deprecation
-        if task_name == "buildafi":
+        if task_name == "buildbitstream":
             task_name = "buildbitstream"
 
         m = task_mocker.patch(task_name, wrap_config=True)

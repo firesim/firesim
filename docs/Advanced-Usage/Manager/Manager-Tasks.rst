@@ -36,13 +36,6 @@ If you run this command by accident and didn't mean to overwrite your
 configuration files, you'll find backed-up versions in
 ``firesim/deploy/sample-backup-configs/backup*``.
 
-.. _firesim-buildafi:
-
-``firesim buildafi``
-----------------------
-
-.. Warning:: DEPRECATION: ``buildafi`` has been renamed to ``buildbitstream`` and will be removed in a future version
-
 .. _firesim-buildbitstream:
 
 ``firesim buildbitstream``
