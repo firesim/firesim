@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 LOCAL_DRIVERS_BASE = "../sim/output/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
+REMOTE_XCLBIN_NAME = "firesim.xclbin"
 
 rootLogger = logging.getLogger()
 
@@ -87,6 +88,9 @@ class RuntimeHWConfig:
         self.driver_built = False
 
         self.additional_required_files = []
+
+        if self.xclbin is not None:
+            self.additional_required_files.append((self.xclbin, REMOTE_XCLBIN_NAME))
 
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
@@ -203,7 +207,7 @@ class RuntimeHWConfig:
 
         if self.platform == "vitis":
             assert self.xclbin is not None
-            vitis_bit = "+binary_file={}".format(self.xclbin)
+            vitis_bit = "+binary_file={}".format(REMOTE_XCLBIN_NAME)
         else:
             vitis_bit = ""
 
