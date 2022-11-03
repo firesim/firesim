@@ -133,8 +133,8 @@ def runTests(testNames, categoryName, marshalArgs=[], cmdArgs=[]):
 
         try:
             # These log at level DEBUG (go to log file but not stdout)
-            wlutil.run([marshalBin] + marshalArgs + ['clean', tPath], check=True, shell=True)
-            wlutil.run([marshalBin] + marshalArgs + ['test'] + cmdArgs + [tPath], check=True, shell=True)
+            wlutil.run([marshalBin] + marshalArgs + ['clean', tPath], check=True)
+            wlutil.run([marshalBin] + marshalArgs + ['test'] + cmdArgs + [tPath], check=True)
         except sp.CalledProcessError as e:
             log.log(logging.INFO, "FAIL")
             failures.append(("[{}]: {}".format(categoryName, tName), e))
