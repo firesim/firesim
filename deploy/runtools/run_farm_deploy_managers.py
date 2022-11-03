@@ -96,6 +96,13 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @property
+    @classmethod
+    @abc.abstractmethod
+    def sim_command_requires_sudo(self) -> bool:
+        """ Set when the sim start command must be launched with sudo. """
+        raise NotImplementedError
+
     def instance_logger(self, logstr: str) -> None:
         """ Log with this host's info as prefix. """
         rootLogger.info("""[{}] """.format(env.host_string) + logstr)
@@ -205,6 +212,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
             assert slotno < len(self.parent_node.sim_slots)
+            assert(not type(self).sim_command_requires_sudo or has_sudo())
             server = self.parent_node.sim_slots[slotno]
 
             # make the local job results dir for this sim slot
@@ -213,8 +221,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
+<<<<<<< HEAD
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
+=======
+                run(server.get_sim_start_command(slotno, type(self).sim_command_requires_sudo))
+>>>>>>> 64db37962 (manager: let deploy managers elide sudo if not required)
 
 
     def kill_switch_slot(self, switchslot: int) -> None:
@@ -437,6 +449,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     """
     boto3_instance_object: Optional[Union[EC2InstanceResource, MockBoto3Instance]]
 
+    sim_command_requires_sudo = True
+
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.boto3_instance_object = None
@@ -625,6 +639,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
 class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
+    sim_command_requires_sudo = False
+
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
 
