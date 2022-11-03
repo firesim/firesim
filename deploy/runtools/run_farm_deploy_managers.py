@@ -634,10 +634,11 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
             card_bdfs = []
             with settings(warn_only=True), hide('everything'):
-                temp_file = "/tmp/xbutil-examine-out.json"
-                collect = run(f"xbutil examine --format JSON -o {temp_file}")
-                with open(temp_file, "r") as f:
-                    json_dict = json.loads(f.read())
+                # Examine forcibly puts the JSON in an output file (on the remote); The stdout
+                # it produces is difficult to parse so use process substitution
+                # to pipe JSON to stdout instead.
+                xbutil_examine_json = run("xbutil examine --force --format JSON -o >(cat) > /dev/null")
+                json_dict = json.loads(xbutil_examine_json)
                 card_bdfs = [d["bdf"] for d in json_dict["system"]["host"]["devices"]]
 
             for card_bdf in card_bdfs:
