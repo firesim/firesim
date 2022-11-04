@@ -13,6 +13,8 @@
 #include "GCD.h"
 #elif defined DESIGNNAME_Parity
 #include "Parity.h"
+#elif defined DESIGNNAME_PlusargsModule
+#include "PlusargsModule.h"
 #elif defined DESIGNNAME_PointerChaser
 #include "PointerChaser.h"
 #elif defined DESIGNNAME_ResetShiftRegister
