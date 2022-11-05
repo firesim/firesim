@@ -97,7 +97,7 @@ jobs:
     needs: [setup-repo]
     runs-on: self-hosted
     steps:
-      - name: Run tests
+      - name: Run baremetal tests
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
           eval "$(conda shell.bash hook)"
@@ -117,4 +117,4 @@ jobs:
     steps:
       - name: Delete repo copy and conda env
         run: |
-            echo "Don't delete"
+           rm -rf ${{ env.REMOTE_WORK_DIR }}
