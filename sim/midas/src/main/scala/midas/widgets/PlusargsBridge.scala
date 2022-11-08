@@ -39,7 +39,7 @@ class PlusargsBridgeTargetIO(params: PlusargsBridgeParams) extends Bundle {
   val out   = Output(UInt((params.width).W))
 }
 
-/** The host-side interface. This bridge has single channel with the pluarg value.
+/** The host-side interface. This bridge has single channel with the plusarg value.
   *
   * @param targetIO
   *   A reference to the bound target-side interface.
