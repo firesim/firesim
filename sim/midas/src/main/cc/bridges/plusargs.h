@@ -27,7 +27,7 @@
  * @brief Plusargs Bridge Driver class
  *
  * This Bridge Driver talks to a plusargs Bridge. This class will determine
- * if the default, or overriden plusarg value shoud be driven.
+ * if the default, or overridden plusarg value shoud be driven.
  *
  * Arbitrary wide bit widths are supported via
  * MPFR.
