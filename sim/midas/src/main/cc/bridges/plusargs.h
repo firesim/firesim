@@ -29,7 +29,7 @@
  * This Bridge Driver talks to a plusargs Bridge. This class will determine
  * if the default, or overriden plusarg value shoud be driven.
  *
- * Arbirrary wide bit widths are supported via
+ * Arbitrary wide bit widths are supported via
  * MPFR.
  */
 class plusargs_t : public bridge_driver_t {
