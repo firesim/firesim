@@ -211,7 +211,7 @@ jobs:
   run-targetutils-scala-tests:
     name: run-targetutils-scala-tests
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
@@ -222,7 +222,7 @@ jobs:
   run-midas-scala-tests:
     name: run-midas-scala-tests
     needs: [setup-manager]
-    runs-on: ${{ github.run_id }}
+    runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
