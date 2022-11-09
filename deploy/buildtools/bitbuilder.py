@@ -12,6 +12,7 @@ from fabric.api import prefix, local, run, env, lcd, parallel, settings # type: 
 from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
+from util.streamlogger import InfoStreamLogger
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
 from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
 
