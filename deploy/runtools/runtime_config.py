@@ -52,6 +52,7 @@ class RuntimeHWConfig:
     local_driver_base_dir: str
     driver_build_target: str
     driver_type_message: str
+    driver_executable_uri: Optional[str]
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
@@ -61,6 +62,7 @@ class RuntimeHWConfig:
 
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
+        self.driver_executable_uri = hwconfig_dict.get('driver_executable_uri')
 
         if self.agfi is not None:
             self.platform = "f1"
