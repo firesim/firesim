@@ -12,6 +12,7 @@ from fabric.api import prefix, local, run, env, lcd, parallel, settings # type: 
 from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
+from util.streamlogger import InfoStreamLogger
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
 from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
 
@@ -111,18 +112,21 @@ class F1BitBuilder(BitBuilder):
     def replace_rtl(self) -> None:
         rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
 
-        with prefix(f'cd {get_deploy_dir()}/../'), \
+        with InfoStreamLogger('stdout'), \
+            prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            InfoStreamLogger('stdout'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
     def build_driver(self) -> None:
         rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_triplet()}")
 
-        with prefix(f'cd {get_deploy_dir()}/../'), \
+        with InfoStreamLogger('stdout'), \
+            prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
@@ -226,7 +230,7 @@ class F1BitBuilder(BitBuilder):
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
 
-        with settings(warn_only=True):
+        with InfoStreamLogger('stdout'), settings(warn_only=True):
             vivado_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
 
         # put build results in the result-build area
@@ -380,7 +384,8 @@ class VitisBitBuilder(BitBuilder):
     def replace_rtl(self):
         rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
 
-        with prefix(f'cd {get_deploy_dir()}/../'), \
+        with InfoStreamLogger('stdout'), \
+            prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
@@ -391,7 +396,8 @@ class VitisBitBuilder(BitBuilder):
     def build_driver(self):
         rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
 
-        with prefix(f'cd {get_deploy_dir()}/../'), \
+        with InfoStreamLogger('stdout'), \
+            prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
@@ -491,7 +497,7 @@ class VitisBitBuilder(BitBuilder):
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
 
-        with settings(warn_only=True):
+        with InfoStreamLogger('stdout'), settings(warn_only=True):
             vitis_result = run(f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
 
         # put build results in the result-build area
