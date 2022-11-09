@@ -22,6 +22,7 @@ from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
 from buildtools.bitbuilder import get_deploy_dir
+from base64 import b64encode
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -106,6 +107,10 @@ class RuntimeHWConfig:
         my_design = my_deploytriplet.split("-")[0]
         return my_design
 
+    def get_self_extract_args(self, dir: str) -> str:
+        """ Get arguments for the self-extracting script. Pass the directory to extract to"""
+        return f"--keep --target {dir}"
+
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
         return self.driver_name_prefix + self.get_design_name() + self.driver_name_suffix
@@ -153,6 +158,7 @@ class RuntimeHWConfig:
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
+            self_exe: Optional[str],
             extra_plusargs: str = "",
             extra_args: str = "") -> str:
         """ return the command used to boot the simulation. this has to have
@@ -228,7 +234,14 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
+        arg_string = f"""+permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args}"""
+
+        # The self extracting executable requires that the arguments be base64 encoded
+        if self_exe is not None:
+            driver = f"{self_exe} {self.get_self_extract_args('.')} ./{driver}"
+            arg_string = b64encode(arg_string.encode('ascii')).decode('ascii')
+
+        driver_call = f"""{"sudo" if sudo else ""} ./{driver} {arg_string} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
