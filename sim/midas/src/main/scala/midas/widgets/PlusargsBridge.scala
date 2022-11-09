@@ -167,9 +167,9 @@ class PlusargsBridgeModule(params: PlusargsBridgeParams)(implicit p: Parameters)
 
     // zip/map the widths to call genWOReg
     // reg names are out0, out1, ...
-    val slices = slicesWidths.zipWithIndex.map({ case (width, idx) =>
+    val slices = slicesWidths.zipWithIndex.map { case (width, idx) =>
       genWOReg(Wire(UInt(width.W)), s"out${idx}")
-    })
+    }
 
     // glue the slices together to get a single wide register
     val plusargValue = Cat(slices.reverse)
