@@ -293,8 +293,6 @@ class FireSimServerNode(FireSimNode):
         all_maxbws = [self.server_bw_max]
         all_bootbins = [self.get_bootbin_name()]
         all_shmemportnames = [shmemportname]
-        local_driver_exe = self.server_hardware_config.driver_executable_uri
-        remote_driver_exe = self.get_extracting_executable_name() if local_driver_exe is not None else None
 
         runcommand = self.get_resolved_server_hardware_config().get_boot_simulation_command(
             slotno,
@@ -310,7 +308,6 @@ class FireSimServerNode(FireSimNode):
             self.hostdebug_config,
             self.synthprint_config,
             sudo,
-            remote_driver_exe,
             self.plusarg_passthrough)
 
         return runcommand
@@ -529,9 +526,9 @@ class FireSimServerNode(FireSimNode):
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
 
-    def get_extracting_executable_name(self) -> str:
-        """ Get the name of the self extracting tarball on the run host"""
-        return "selfextract.sh"
+    def get_tar_name(self) -> str:
+        """ Get the name of the tarball on the run host"""
+        return "driver-bundle.tar.gz"
 
     def get_all_rootfs_names(self) -> List[Optional[str]]:
         """ Get all rootfs filenames as a list. """
