@@ -8,13 +8,14 @@ import chisel3.experimental.DataMirror
 
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import midas.core.SimUtils
 
 import firrtl.ir.{BundleType, Default, Field, IntWidth, NoInfo, Port, UIntType}
 import firrtl.annotations.{ReferenceTarget, TargetToken}
 
-class SimUtilsSpec extends AnyFlatSpec {
+class SimUtilsSpec extends AnyFlatSpec with Matchers {
   val portInt    = new Port(
     NoInfo,
     "port_int",
@@ -55,9 +56,15 @@ class SimUtilsSpec extends AnyFlatSpec {
     portBundleRef -> portBundle,
   )
 
-  def checkFields(ref: Data, src: Seq[(String, Data)]): Unit = {
-    val refRecord = ref.asInstanceOf[Record]
-    refRecord.elements should equal src
+  def checkFields(data: Data, ref: Seq[(String, Data)]): Unit = {
+    val elems = data.asInstanceOf[Record].elements.toSeq
+    elems.length should equal(ref.length)
+    elems.zip(ref).foreach {
+      case ((oname, oty), (rname, rty)) => {
+        require(DataMirror.checkTypeEquivalence(oty, rty))
+        oname should equal(rname)
+      }
+    }
   }
 
   "SimUtils" should "decode primitive port" in {
@@ -67,7 +74,7 @@ class SimUtilsSpec extends AnyFlatSpec {
         portIntRef.copy(component = Seq(TargetToken.Field("bits")))
       ),
     )
-    require(data.typeEquivalent(UInt(32.W)))
+    require(DataMirror.checkTypeEquivalence(data, UInt(32.W)))
   }
 
   "SimUtils" should "flatten bundle" in {
@@ -77,7 +84,7 @@ class SimUtilsSpec extends AnyFlatSpec {
         portBundleRef.copy(component = Seq(TargetToken.Field("bits"), TargetToken.Field("a")))
       ),
     )
-    require(data.typeEquivalent(UInt(32.W)))
+    require(DataMirror.checkTypeEquivalence(data, UInt(32.W)))
   }
 
   "SimUtils" should "filter ports" in {
