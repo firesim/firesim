@@ -59,10 +59,12 @@ class SimUtilsSpec extends AnyFlatSpec with Matchers {
   def checkFields(data: Data, ref: Seq[(String, Data)]): Unit = {
     val elems = data.asInstanceOf[Record].elements.toSeq
     elems.length should equal(ref.length)
-    elems.zip(ref).foreach { case ((oname, oty), (rname, rty)) => {
-      require(DataMirror.checkTypeEquivalence(oty, rty))
-      oname should equal(rname)
-    }}
+    elems.zip(ref).foreach {
+      case ((oname, oty), (rname, rty)) => {
+        require(DataMirror.checkTypeEquivalence(oty, rty))
+        oname should equal(rname)
+      }
+    }
   }
 
   "SimUtils" should "decode primitive port" in {
