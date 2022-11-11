@@ -11,6 +11,8 @@ import yaml
 import os
 import sys
 from fabric.api import prefix, settings, local, run # type: ignore
+from fabric.contrib.project import rsync_project # type: ignore
+from os.path import join as pjoin
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -46,6 +48,7 @@ class RuntimeHWConfig:
     deploytriplet: Optional[str]
     customruntimeconfig: str
     driver_built: bool
+    tarball_built: bool
     additional_required_files: List[Tuple[str, str]]
     driver_name_prefix: str
     driver_name_suffix: str
@@ -87,6 +90,7 @@ class RuntimeHWConfig:
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
+        self.tarball_built = False
 
         self.additional_required_files = []
 
@@ -271,6 +275,62 @@ class RuntimeHWConfig:
 
         self.driver_built = True
 
+    def build_sim_tarball(self, paths: List[Tuple[str, str]]) -> None:
+        if self.tarball_built:
+            # we already built it
+            return
+        
+        triplet = self.get_deploytriplet_for_config()
+        dirname = 'tarball'
+        builddir = f'{get_deploy_dir()}/../sim/output/f1/{triplet}/{dirname}'
+
+        with InfoStreamLogger('stdout'):
+            cmd = f"rm -rf {builddir}"
+
+            results = run(cmd)
+
+            if results.failed:
+                rootLogger.info(f"{self.driver_type_message} cleanup tarball folder failed. Exiting. See log for details.")
+                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(cmd))
+                sys.exit(1)
+
+        with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}'), \
+            prefix(f'mkdir -p {builddir}'):
+            for local_path, remote_path in paths:
+                # The `rsync_project()` function does not allow
+                # copying between two local directories.
+                # This uses the same option flags but operates rsync in local->local mode
+                options = '-pthrvz -L'
+                local_dir=local_path
+                remote_dir=pjoin(builddir, remote_path)
+                cmd = "rsync %s %s %s" % (options, local_dir, remote_dir)
+
+                results = run(cmd)
+
+                if results.failed:
+                    rootLogger.info(f"{self.driver_type_message} driver local rsync failed. Exiting. See log for details.")
+                    rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(cmd))
+                    sys.exit(1)
+
+        with InfoStreamLogger('stdout'), prefix(f'cd {builddir}'):
+            tarball_name = 'driver.tar.gz'
+            
+            # --ignore-failed-read is required because the glob for matching
+            # hidden files will throw if there are no hidden files
+            options = '--ignore-failed-read -czvf'
+
+            # The .!(|.) is required to include hidden files without also including . and ..
+            # Using .* here will actually include the parent folder
+            cmd = f"tar {options} ../{tarball_name} .!(|.) *"
+
+            results = run(cmd)
+
+            if results.failed:
+                rootLogger.info(f"{self.driver_type_message} driver tarball failed. Exiting. See log for details.")
+                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(cmd))
+                sys.exit(1)
+
+        self.tarball_built = True
 
     def __str__(self) -> str:
         return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
