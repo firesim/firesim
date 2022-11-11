@@ -474,8 +474,24 @@ class FireSimServerNode(FireSimNode):
         """
         return self.get_resolved_server_hardware_config().get_kill_simulation_command()
 
+    def get_tarball_files_paths(self) -> List[Tuple[str, str]]:
+        """ Return local and remote paths of all stuff destined for the driver tarball 
+        The returned paths in the tuple are [local_path, remote_path]. """
+        all_paths = []
+
+        driver_path = self.get_resolved_server_hardware_config().get_local_driver_path()
+        all_paths.append((driver_path, ''))
+        all_paths.append((self.get_resolved_server_hardware_config().get_local_runtime_conf_path(), ''))
+
+        # shared libraries
+        all_paths += get_local_shared_libraries(driver_path)
+        all_paths += self.get_resolved_server_hardware_config().get_additional_required_sim_files()
+
+        all_paths += self.get_job().get_siminputs()
+        return all_paths
+
     def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
-        """ Return local paths of all stuff needed to run this simulation as
+        """ Return local and remote paths of all stuff needed to run this simulation as
         an array. The returned paths in the tuple are [local_path, remote_path]. """
         all_paths = []
 
@@ -487,15 +503,8 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
-        driver_path = self.get_resolved_server_hardware_config().get_local_driver_path()
-        all_paths.append((driver_path, ''))
-        all_paths.append((self.get_resolved_server_hardware_config().get_local_runtime_conf_path(), ''))
+        all_paths += self.get_tarball_files_paths()
 
-        # shared libraries
-        all_paths += get_local_shared_libraries(driver_path)
-        all_paths += self.get_resolved_server_hardware_config().get_additional_required_sim_files()
-
-        all_paths += self.get_job().get_siminputs()
         return all_paths
 
     def get_agfi(self) -> str:
