@@ -47,26 +47,39 @@ class GoldenGateCompilerPhase extends Phase {
     logger.info(targetLoweringCompiler.prettyPrint("  "))
     val loweredTarget = targetLoweringCompiler.execute(state)
 
-    // Run Golden Gate transformations, introducing host-decoupling and generating additional imulator RTL
+    // Run Golden Gate transformations, introducing host-decoupling and generating additional simulator RTL
     val simulator = new Compiler(
       Forms.LowForm ++ Seq(Dependency[InferReadWrite], Dependency[MidasTransforms]),
       Forms.LowForm).execute(loweredTarget)
 
-    // Lower simulator RTL and run user-requested host-transforms
-    val hostLoweringCompiler = new Compiler(
+    // Note: the final lowering to Verilog is broken up into multiple firrtl.Compiler steps
+    // to avoid breakages that can emerge from "legal" but unsound pass orderings
+    // due to understpecified pass constraints + invalidations
+    // Shunt ILA passes to a seperate compiler to avoid invalidating downstream steps
+    val loweringCompiler = new Compiler(
       targets = Seq(
           Dependency(midas.passes.AutoILATransform),
-          Dependency(midas.passes.HostClockWiring),
-          Dependency[firrtl.passes.memlib.SeparateWriteClocks],
-          Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
-          Dependency[firrtl.transforms.SimplifyMems]
+          Dependency(midas.passes.HostClockWiring)
         ) ++
         Forms.LowForm ++
         p(HostTransforms),
       currentState = Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
-    logger.info(hostLoweringCompiler.prettyPrint("  "))
-    val loweredSimulator = hostLoweringCompiler.execute(simulator)
+    logger.info(loweringCompiler.prettyPrint("  "))
+    val loweredSimulator = loweringCompiler.execute(simulator)
+
+    // Ensure FPGA backend passes run after all user-provided + ILA transforms, but before final emission
+    val fpgaBackendCompiler = new Compiler(
+      targets = Seq(
+          Dependency[firrtl.passes.memlib.SeparateWriteClocks],
+          Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
+          Dependency[firrtl.transforms.SimplifyMems]
+        ) ++
+        Forms.LowForm,
+      currentState = Forms.LowForm)
+    logger.info("FPGA Backend Transformation Ordering\n")
+    logger.info(fpgaBackendCompiler.prettyPrint("  "))
+    val postLoweredSimulator = fpgaBackendCompiler.execute(simulator)
 
     // Workaround under-constrained transform dependencies by forcing the
     // emitter to run last in a separate compiler.
@@ -77,7 +90,7 @@ class GoldenGateCompilerPhase extends Phase {
     logger.info(emitter.prettyPrint("  "))
 
     emitter
-      .execute(loweredSimulator)
+      .execute(postLoweredSimulator)
       .annotations
   }
 }
