@@ -12,8 +12,8 @@ object ResetSynchronizer {
       extends BlackBox(
         Map(
           "DEST_SYNC_FF" -> stages,
-          "INIT"         -> { if (true) 1 else 0 },
-          "INIT_SYNC_FF" -> { if (true) 1 else 0 },
+          "INIT"         -> { if (initValue) 1 else 0 },
+          "INIT_SYNC_FF" -> { if (initValue) 1 else 0 },
         )
       ) {
     val io = IO(new Bundle {
