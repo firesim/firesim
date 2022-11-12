@@ -489,6 +489,18 @@ class FireSimServerNode(FireSimNode):
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
+    
+    def get_tarball_path_pair(self) -> List[Tuple[str, str]]:
+        """ Return local and remote paths of the actual driver tarball, not files inside"""
+        all_paths = []
+
+        if self.server_hardware_config.driver_tar_uri is not None:
+            all_paths.append((self.server_hardware_config.driver_tar_uri, self.get_tar_name()))
+        else:
+            all_paths.append(( self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name()), self.get_tar_name() ))
+
+        return all_paths
+
 
     def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
         """ Return local and remote paths of all stuff needed to run this simulation as
@@ -503,7 +515,7 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
-        all_paths += self.get_tarball_files_paths()
+        all_paths += self.get_tarball_path_pair()
 
         return all_paths
 

@@ -127,6 +127,22 @@ class RuntimeHWConfig:
         """ return relative local path of the driver used to run this sim. """
         return self.get_local_driver_dir() + self.get_local_driver_binaryname()
 
+    def tarball_creation_foldername(self) -> str:
+        """ return the name of the folder that the tarball is created from, no path """
+        return 'tarball'
+
+    def local_tarball_creation_path(self) -> str:
+        """ return the absolute path of the folder used to create the tarball """
+        triplet = self.get_deploytriplet_for_config()
+        dirname = self.tarball_creation_foldername()
+        return f'{get_deploy_dir()}/../sim/output/f1/{triplet}/{dirname}'
+
+    def local_tarball_path(self, name: str) -> str:
+        """ return the local path of the tarball """
+        triplet = self.get_deploytriplet_for_config()
+        dirname = self.tarball_creation_foldername()
+        return f'{get_deploy_dir()}/../sim/output/f1/{triplet}/{name}'
+
     def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
         return "FireSim-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
@@ -275,14 +291,14 @@ class RuntimeHWConfig:
 
         self.driver_built = True
 
-    def build_sim_tarball(self, paths: List[Tuple[str, str]]) -> None:
+    def build_sim_tarball(self, paths: List[Tuple[str, str]], tarball_name: str) -> None:
+        """ Take the simulation driver and tar it. build_sim_driver() 
+        must run before this function.  """
         if self.tarball_built:
             # we already built it
             return
-        
-        triplet = self.get_deploytriplet_for_config()
-        dirname = 'tarball'
-        builddir = f'{get_deploy_dir()}/../sim/output/f1/{triplet}/{dirname}'
+
+        builddir = self.local_tarball_creation_path()
 
         with InfoStreamLogger('stdout'):
             cmd = f"rm -rf {builddir}"
@@ -313,15 +329,14 @@ class RuntimeHWConfig:
                     sys.exit(1)
 
         with InfoStreamLogger('stdout'), prefix(f'cd {builddir}'):
-            tarball_name = 'driver.tar.gz'
-            
-            # --ignore-failed-read is required because the glob for matching
-            # hidden files will throw if there are no hidden files
-            options = '--ignore-failed-read -czvf'
+            findcmd = 'find . -mindepth 1 -maxdepth 1 -printf "%P\n"'
+            taroptions = '-czvf'
 
-            # The .!(|.) is required to include hidden files without also including . and ..
-            # Using .* here will actually include the parent folder
-            cmd = f"tar {options} ../{tarball_name} .!(|.) *"
+            # Running through find and xargs is the most simple way I've found to meet these requirements:
+            #   * create the tar with no leading ./ or foldername
+            #   * capture all types of hidden files (.a ..a .aa)
+            #   * avoid capturing the parent folder (..) with globs looking for hidden files
+            cmd = f"{findcmd} | xargs tar {taroptions} ../{tarball_name}"
 
             results = run(cmd)
 
