@@ -259,6 +259,12 @@ class RuntimeHWConfig:
         # Note that pkill only works for names <=15 characters
         return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
+    def handle_failure(self, buildresult, what: str, dir: str, cmd: str):
+        if buildresult.failed:
+            rootLogger.info(f"{self.driver_type_message} {what} failed. Exiting. See log for details.")
+            rootLogger.info(f"""You can also re-run '{cmd}' in the '{dir}' directory to debug this error.""")
+            sys.exit(1)
+
     def build_sim_driver(self) -> None:
         """ Build driver for running simulation """
         if self.driver_built:
@@ -279,11 +285,7 @@ class RuntimeHWConfig:
             prefix('cd sim/'):
             driverbuildcommand = f"make DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} PLATFORM={self.platform} {self.driver_build_target}"
             buildresult = run(driverbuildcommand)
-
-            if buildresult.failed:
-                rootLogger.info(f"{self.driver_type_message} driver build failed. Exiting. See log for details.")
-                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(driverbuildcommand))
-                sys.exit(1)
+            self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 
         self.driver_built = True
 
@@ -300,11 +302,7 @@ class RuntimeHWConfig:
             cmd = f"rm -rf {builddir}"
 
             results = run(cmd)
-
-            if results.failed:
-                rootLogger.info(f"{self.driver_type_message} cleanup tarball folder failed. Exiting. See log for details.")
-                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(cmd))
-                sys.exit(1)
+            self.handle_failure(results, 'cleanup tarball', builddir, cmd)
 
         with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}'), \
             prefix(f'mkdir -p {builddir}'):
@@ -318,11 +316,7 @@ class RuntimeHWConfig:
                 cmd = "rsync %s %s %s" % (options, local_dir, remote_dir)
 
                 results = run(cmd)
-
-                if results.failed:
-                    rootLogger.info(f"{self.driver_type_message} driver local rsync failed. Exiting. See log for details.")
-                    rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(cmd))
-                    sys.exit(1)
+                self.handle_failure(results, 'local rsync', get_deploy_dir(), cmd)
 
         with InfoStreamLogger('stdout'), prefix(f'cd {builddir}'):
             findcmd = 'find . -mindepth 1 -maxdepth 1 -printf "%P\n"'
@@ -335,11 +329,7 @@ class RuntimeHWConfig:
             cmd = f"{findcmd} | xargs tar {taroptions} ../{tarball_name}"
 
             results = run(cmd)
-
-            if results.failed:
-                rootLogger.info(f"{self.driver_type_message} driver tarball failed. Exiting. See log for details.")
-                rootLogger.info("""You can also re-run '{}' in the 'firesim/sim' directory to debug this error.""".format(cmd))
-                sys.exit(1)
+            self.handle_failure(results, 'tarball', builddir, cmd)
 
         self.tarball_built = True
 

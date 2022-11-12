@@ -398,6 +398,10 @@ class FireSimTopologyWithPasses:
         def build_drivers_helper(servers: List[FireSimServerNode]) -> None:
             for server in servers:
                 resolved_cfg = server.get_resolved_server_hardware_config()
+
+                if resolved_cfg.driver_tar_uri is not None:
+                    continue # skip building or tarballing if we have a prebuilt one
+
                 resolved_cfg.build_sim_driver()
                 resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), server.get_tar_name())
 
