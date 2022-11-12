@@ -110,10 +110,6 @@ class RuntimeHWConfig:
         my_design = my_deploytriplet.split("-")[0]
         return my_design
 
-    def get_self_extract_args(self, dir: str) -> str:
-        """ Get arguments for the self-extracting script. Pass the directory to extract to"""
-        return f"--keep --target {dir}"
-
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
         return self.driver_name_prefix + self.get_design_name() + self.driver_name_suffix
