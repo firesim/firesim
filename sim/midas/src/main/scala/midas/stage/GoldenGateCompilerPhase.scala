@@ -54,7 +54,7 @@ class GoldenGateCompilerPhase extends Phase {
 
     // Note: the final lowering to Verilog is broken up into multiple firrtl.Compiler steps
     // to avoid breakages that can emerge from "legal" but unsound pass orderings
-    // due to understpecified pass constraints + invalidations
+    // due to underspecified pass constraints + invalidations
     // Shunt ILA passes to a seperate compiler to avoid invalidating downstream steps
     val loweringCompiler = new Compiler(
       targets = Seq(
