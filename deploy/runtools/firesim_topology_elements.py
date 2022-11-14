@@ -494,7 +494,7 @@ class FireSimServerNode(FireSimNode):
         """ Return local and remote paths of the actual driver tarball, not files inside"""
         all_paths = []
 
-        if self.server_hardware_config.driver_tar_uri is not None:
+        if not isinstance(self.server_hardware_config, str) and self.server_hardware_config is not None and self.server_hardware_config.driver_tar_uri is not None:
             all_paths.append((self.server_hardware_config.driver_tar_uri, self.get_tar_name()))
         else:
             all_paths.append(( self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name()), self.get_tar_name() ))
