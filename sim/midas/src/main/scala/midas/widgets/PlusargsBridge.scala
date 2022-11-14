@@ -56,7 +56,7 @@ class PlusargsBridgeHostIO(
   val outChannel     = OutputChannel(targetIO.out)
 }
 
-/** The plusarg bridge.
+/** The target-side of the plusarg bridge.
   *
   * @param params
   *   Describes the name, width and default plusarg value
