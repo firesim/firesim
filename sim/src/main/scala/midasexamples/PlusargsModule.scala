@@ -13,14 +13,14 @@ import midas.widgets.ResetPulseBridge
 
 /** Defines a test group with the id of 0
   */
-class PlusargsModuleTestConfigGroup0
+class PlusargsModuleTestConfigGroup68Bit
     extends Config((site, here, up) => { case PlusargsTestNumber =>
       0
     })
 
 /** Defines a test group with the id of 1
   */
-class PlusargsModuleTestConfigGroup1
+class PlusargsModuleTestConfigGroup29Bit
     extends Config((site, here, up) => { case PlusargsTestNumber =>
       1
     })

@@ -203,7 +203,7 @@ trait PlusargsKey {
   }
 }
 
-class PlusargsGroup0 extends TutorialSuite("PlusargsModule", "PlusargsModuleTestConfigGroup0") with PlusargsKey {
+class PlusargsGroup68Bit extends TutorialSuite("PlusargsModule", "PlusargsModuleTestConfigGroup68Bit") with PlusargsKey {
   it should "provide the correct default value, 3 slice" in {
     assert(run("verilator", false, args = Seq(getKey(0,0))) == 0)
   }
@@ -219,7 +219,7 @@ class PlusargsGroup0 extends TutorialSuite("PlusargsModule", "PlusargsModuleTest
   }
 }
 
-class PlusargsGroup1 extends TutorialSuite("PlusargsModule", "PlusargsModuleTestConfigGroup1") with PlusargsKey {
+class PlusargsGroup29Bit extends TutorialSuite("PlusargsModule", "PlusargsModuleTestConfigGroup29Bit") with PlusargsKey {
   it should "provide the correct default value, 1 slice" in {
     assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
   }
@@ -437,8 +437,8 @@ class CustomConstraintsF1Test extends TutorialSuite("CustomConstraints") {
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
   new ParityF1Test,
-  new PlusargsGroup0,
-  new PlusargsGroup1,
+  new PlusargsGroup68Bit,
+  new PlusargsGroup29Bit,
   new ResetShiftRegisterF1Test,
   new EnableShiftRegisterF1Test,
   new StackF1Test,
