@@ -37,7 +37,6 @@ private:
   RESETPULSEBRIDGEMODULE_struct *mmio_addrs;
   const unsigned int max_pulse_length;
   const unsigned int default_pulse_length;
-  const int reset_index;
 
   unsigned int pulse_length = default_pulse_length;
 };

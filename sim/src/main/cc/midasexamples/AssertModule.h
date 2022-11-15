@@ -13,7 +13,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_0_substruct,
-                                     ASSERTBRIDGEMODULE_0_assert_count,
                                      ASSERTBRIDGEMODULE_0_assert_messages);
   };
   void run() {

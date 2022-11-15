@@ -30,6 +30,14 @@ double sc_time_stamp() { return (double)main_time; }
 extern void tick();
 #endif // VCS
 
+mmio_t *simif_emul_t::master = new mmio_t(CTRL_BEAT_BYTES);
+mmio_t *simif_emul_t::cpu_managed_axi4 =
+    new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
+
+mm_t *simif_emul_t::slave[MEM_NUM_CHANNELS] = {nullptr};
+
+mm_t *simif_emul_t::cpu_mem = new mm_magic_t;
+
 void finish() {
 #ifdef VCS
   vcs_fin = true;
@@ -239,8 +247,13 @@ simif_emul_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
   size_t strb[len + 1];
   size_t *strb_ptr = &strb[0];
 
-  for (int i = 0; i < len; i++)
+  for (int i = 0; i < len; i++) {
+#if CPU_MANAGED_AXI4_BEAT_BYTES == 64
+    strb[i] = -1;
+#else
     strb[i] = (1LL << CPU_MANAGED_AXI4_BEAT_BYTES) - 1;
+#endif
+  }
 
   if (remaining == CPU_MANAGED_AXI4_BEAT_BYTES)
     strb[len] = strb[0];

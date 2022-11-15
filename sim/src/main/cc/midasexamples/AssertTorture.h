@@ -15,7 +15,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_0_substruct,
-                                     ASSERTBRIDGEMODULE_0_assert_count,
                                      ASSERTBRIDGEMODULE_0_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_1_PRESENT
@@ -23,7 +22,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_1_substruct,
-                                     ASSERTBRIDGEMODULE_1_assert_count,
                                      ASSERTBRIDGEMODULE_1_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_2_PRESENT
@@ -31,7 +29,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_2_substruct,
-                                     ASSERTBRIDGEMODULE_2_assert_count,
                                      ASSERTBRIDGEMODULE_2_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_3_PRESENT
@@ -39,7 +36,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_3_substruct,
-                                     ASSERTBRIDGEMODULE_3_assert_count,
                                      ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
@@ -47,7 +43,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_4_substruct,
-                                     ASSERTBRIDGEMODULE_4_assert_count,
                                      ASSERTBRIDGEMODULE_4_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_5_PRESENT
@@ -55,7 +50,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_5_substruct,
-                                     ASSERTBRIDGEMODULE_5_assert_count,
                                      ASSERTBRIDGEMODULE_5_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_6_PRESENT
@@ -63,7 +57,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_6_substruct,
-                                     ASSERTBRIDGEMODULE_6_assert_count,
                                      ASSERTBRIDGEMODULE_6_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_7_PRESENT
@@ -71,7 +64,6 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_7_substruct,
-                                     ASSERTBRIDGEMODULE_7_assert_count,
                                      ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
   };

@@ -211,7 +211,7 @@ void tracerv_t::init() {
     write(this->mmio_addrs->triggerSelector, this->trigger_selector);
     printf("TracerV: No trigger selected. Trigger enabled from %lu to %lu "
            "cycles\n",
-           0,
+           0ul,
            ULONG_MAX);
   }
   write(this->mmio_addrs->initDone, true);

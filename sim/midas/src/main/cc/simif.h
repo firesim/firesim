@@ -53,8 +53,6 @@ public:
   virtual ~simif_t() {}
 
 private:
-  // simulation information
-  bool log;
   // random numbers
   uint64_t seed;
   std::mt19937_64 gen;

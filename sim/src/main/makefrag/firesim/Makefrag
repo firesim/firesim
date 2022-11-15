@@ -98,8 +98,15 @@ DRIVER_CC = \
 	    $(RISCV)/lib/libfesvr.a \
 	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
-# Need __STDC_FORMAT_MACROS until usage of inttypes.h (i.e. printf formatting macros) is removed
-TARGET_CXX_FLAGS += -D__STDC_FORMAT_MACROS -g -I$(TESTCHIPIP_CSRC_DIR) -I$(firesim_lib_dir) -I$(DROMAJO_INCLUDE_DIR) -I$(driver_dir)/firesim -I$(RISCV)/include -I$(GENERATED_DIR)
+# Disable missing override warning for testchipip.
+TARGET_CXX_FLAGS += -g \
+	-isystem $(RISCV)/include \
+	-isystem $(TESTCHIPIP_CSRC_DIR) \
+	-isystem $(DROMAJO_INCLUDE_DIR) \
+	-I$(driver_dir)/firesim \
+	-I$(firesim_lib_dir) \
+	-I$(GENERATED_DIR) \
+	-Wno-inconsistent-missing-override
 TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -L$(DROMAJO_LIB_DIR) -l:libdwarf.so -l:libelf.so -lz -l$(DROMAJO_LIB_NAME)
 # DOC include end: Bridge Build System Changes
 

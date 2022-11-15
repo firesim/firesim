@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+#include <cinttypes>
+
 #include "simif_peek_poke.h"
 
 simif_peek_poke_t::simif_peek_poke_t() {
@@ -13,14 +15,12 @@ void simif_peek_poke_t::target_reset(int pulse_length) {
   poke(reset, 0);
 }
 
-static const size_t uint32_t_chunks = sizeof(uint32_t) / sizeof(uint32_t);
-
 void simif_peek_poke_t::step(uint32_t n, bool blocking) {
   if (n == 0)
     return;
   // take steps
   if (log)
-    fprintf(stderr, "* STEP %d -> %llu *\n", n, (t + n));
+    fprintf(stderr, "* STEP %d -> %lu *\n", n, (t + n));
   take_steps(n, blocking);
   t += n;
 }
@@ -161,7 +161,7 @@ int simif_peek_poke_t::teardown() {
   record_end_times();
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) {
-    fprintf(stdout, " at cycle %llu", fail_t);
+    fprintf(stdout, " at cycle %" PRIu64, fail_t);
   }
   fprintf(stderr, "\nSEED: %ld\n", get_seed());
   this->print_simulation_performance_summary();

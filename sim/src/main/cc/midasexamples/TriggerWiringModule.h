@@ -14,13 +14,11 @@ public:
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_0_substruct,
-                                     ASSERTBRIDGEMODULE_0_assert_count,
                                      ASSERTBRIDGEMODULE_0_assert_messages));
     assert_endpoints.push_back(
         new synthesized_assertions_t(this,
                                      args,
                                      ASSERTBRIDGEMODULE_1_substruct,
-                                     ASSERTBRIDGEMODULE_1_assert_count,
                                      ASSERTBRIDGEMODULE_1_assert_messages));
   };
   bool simulation_complete() {

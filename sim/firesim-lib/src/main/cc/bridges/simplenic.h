@@ -41,7 +41,6 @@ public:
   virtual void finish(){};
 
 private:
-  simif_t *sim;
   uint64_t mac_lendian;
   char *pcis_read_bufs[2];
   char *pcis_write_bufs[2];
@@ -58,20 +57,11 @@ private:
   bool loopback;
 
   // checking for token loss
-  uint32_t next_token_from_fpga = 0x0;
-  uint32_t next_token_from_socket = 0x0;
-
-  uint64_t iter = 0;
-
   int currentround = 0;
 
   // only for TOKENVERIFY
-  uint64_t timeelapsed_cycles = 0;
-
   const int stream_to_cpu_idx;
-  const int stream_to_cpu_depth;
   const int stream_from_cpu_idx;
-  const int stream_from_cpu_depth;
 };
 #endif // SIMPLENICBRIDGEMODULE_struct_guard
 

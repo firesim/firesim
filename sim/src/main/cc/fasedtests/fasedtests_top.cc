@@ -128,7 +128,7 @@ int fasedtests_top_t::run() {
   record_end_times();
   fprintf(stderr, "\nSimulation complete.\n");
 
-  uint64_t end_cycle = actual_tcycle();
+  (void)actual_tcycle();
 
   int exitcode = exit_code();
 
