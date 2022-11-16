@@ -16,32 +16,36 @@ import chisel3.experimental.BaseModule
   */
 class PlusargsBridgeSpec extends AnyFlatSpec {
 
-  class PlusargsModuleIO(val params: PlusargsBridgeParams) extends Bundle {
-    val gotPlusargValue = Output(UInt((params.width).W))
+  class SimpleInstantiate extends Module {
+    val out = IO(Output(UInt(5.W)))
+    val cfg = PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("7"), width = 5)
+    out := PlusargsBridge.drive(cfg)
   }
 
-  // With the targetIO above, create a few simple misconfigurations by using
-  // only a subset of the IO
-  class CorrectInput(proto: PlusargsModuleIO) extends Bundle {}
-
-  class BridgeMock[T <: Bundle](gen: (PlusargsModuleIO) => T, params: PlusargsBridgeParams) extends BlackBox {
-    PlusargsBridge(params)
-    val io       = IO(new PlusargsModuleIO(params))
-    val bridgeIO = gen(io)
+  class SimpleInstantiateApplyObject extends Module {
+    val cfg = PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("7"), width = 6)
+    val ret = PlusargsBridge.apply(cfg)
+    assert(ret.io.out.getWidth == 6)
   }
 
-  def elaborateBlackBox(mod: => BaseModule): Unit =
-    ChiselStage.emitChirrtl(new BlackBoxWrapper(withClockAndReset(Input(Clock()), Input(Bool())) { mod }))
+  class SimpleInstantiateApplyParameters extends Module {
+    val ret = PlusargsBridge.apply(name = "plusar_v=%d", default = BigInt("7"), docstring = "doc", width = 33)
+    assert(ret.io.out.getWidth == 33)
+  }
 
-  def checkElaborationRequirement(mod: => BaseModule): Unit = {
-    assertThrows[java.lang.IllegalArgumentException] {
-      try {
-        elaborateBlackBox(mod)
-      } catch {
-        // Strip away the outer ChiselException and rethrow to get a more precise cause
-        case ce: ChiselException => println(ce.getCause); throw ce.getCause
-      }
-    }
+  def elaborateBlackBox(mod: => Module): Unit =
+    ChiselStage.emitChirrtl(mod)
+
+  "PlusargsBridge" should "normal instantiate" in {
+    elaborateBlackBox(new SimpleInstantiate)
+  }
+
+  "PlusargsBridge" should "apply with object" in {
+    elaborateBlackBox(new SimpleInstantiateApplyObject)
+  }
+
+  "PlusargsBridge" should "apply with parameters" in {
+    elaborateBlackBox(new SimpleInstantiateApplyParameters)
   }
 
   "PlusargsBridge" should "reject default value too large" in {
