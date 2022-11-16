@@ -27,7 +27,17 @@ case class PlusargsBridgeParams(
   default:   BigInt = 0,
   docstring: String = "",
   width:     Int    = 32,
-)
+) {
+  require(width > 0, "Width must be larger than zero")
+  require(
+    default.bitLength <= width,
+    s"The default value provided '${default}' is too large to fit in ${width} bits",
+  )
+  require(
+    name contains "=%d",
+    s"name passed to PlusargsBridge (${name}) must contain =%d. Currently only the format %d is supported",
+  )
+}
 
 /** The target IO. This drives the value (default, or overriden) that comes out of the plusarg bridge
   *
@@ -86,16 +96,6 @@ object PlusargsBridge {
     *   Describes the name, width and default plusarg value
     */
   private def annotatePlusargsBridge(clock: Clock, reset: Reset, params: PlusargsBridgeParams): PlusargsBridge = {
-    require(params.width > 0, "Width must be larger than zero")
-    require(
-      params.default.bitLength <= params.width,
-      s"The default value provided '${params.default}' is too large to fit in ${params.width} bits",
-    )
-    require(
-      params.name contains "=%d",
-      s"name passed to PlusargsBridge (${params.name}) must contain =%d. Currently only the format %d is supported",
-    )
-
     val target = Module(new PlusargsBridge(params))
     target.io.clock := clock
     target

@@ -45,17 +45,24 @@ class PlusargsBridgeSpec extends AnyFlatSpec {
   }
 
   "PlusargsBridge" should "reject default value too large" in {
-    val cfg = PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("4276993775"), width = 29)
-    checkElaborationRequirement(new BridgeMock({ new CorrectInput(_) }, cfg))
+    assertThrows[java.lang.IllegalArgumentException] {
+      PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("4276993775"), width = 29)
+    }
   }
 
   "PlusargsBridge" should "reject zero width" in {
-    val cfg = PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("0"), width = 0)
-    checkElaborationRequirement(new BridgeMock({ new CorrectInput(_) }, cfg))
+    assertThrows[java.lang.IllegalArgumentException] {
+      PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("0"), width = 0)
+    }
   }
 
   "PlusargsBridge" should "type must match" in {
-    val cfg = PlusargsBridgeParams(name = "plusar_v=%f", default = BigInt("1"), width = 32)
-    checkElaborationRequirement(new BridgeMock({ new CorrectInput(_) }, cfg))
+    assertThrows[java.lang.IllegalArgumentException] {
+      PlusargsBridgeParams(name = "plusar_v=%f", default = BigInt("1"), width = 32)
+    }
+  }
+
+  "PlusargsBridge" should "type must accept %d" in {
+    PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("1"), width = 32)
   }
 }
