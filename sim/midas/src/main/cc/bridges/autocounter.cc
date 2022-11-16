@@ -2,12 +2,12 @@
 
 #include "autocounter.h"
 
+#include <cinttypes>
 #include <iostream>
 #include <limits.h>
 #include <regex>
 #include <stdio.h>
 #include <string.h>
-#include <cinttypes>
 
 #include <fcntl.h>
 #include <sys/stat.h>
