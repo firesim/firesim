@@ -25,10 +25,10 @@
       PLUSARGSBRIDGEMODULE_##IDX##_slice_addrs));
 
 /**
- * @brief Plusargs Bridge Driver class
+ * @brief PlusArgs Bridge Driver class
  *
- * This Bridge Driver talks to a plusargs Bridge. This class will determine
- * if the default, or overridden plusarg value shoud be driven.
+ * This Bridge Driver talks to a PlusArgs Bridge. This class will determine
+ * if the default, or overridden PlusArg value shoud be driven.
  *
  * Arbitrary wide bit widths are supported via
  * MPFR.
@@ -54,8 +54,8 @@ public:
 
 private:
   PLUSARGSBRIDGEMODULE_struct *mmio_addrs;
-  mpz_t value;            // either the default or the plus arg value
-  bool overriden = false; // true if the plusarg was found and parsed
+  mpz_t value;            // either the default or the PlusArg value
+  bool overriden = false; // true if the PlusArg was found and parsed
   const uint32_t slice_count = 0;
   const std::vector<uint32_t> slice_addrs;
 };

@@ -9,12 +9,12 @@
 #include <string_view>
 
 /**
- * @brief Plusargs Bridge Driver Test
+ * @brief PlusArgs Bridge Driver Test
  *
  * This test parses `+plusargs_test_key` (given by TutorialSuite.scala)
  * and asserts for the correct values
  */
-class PlusargsModule_t : public simif_peek_poke_t {
+class PlusArgsModule_t : public simif_peek_poke_t {
 private:
   /**
    * Find the `+plusargs_test_key` and set the appropriate member variables
@@ -44,7 +44,7 @@ public:
    * @param [in] argc The standard argc from main()
    * @param [in] argv The standard argv from main()
    */
-  PlusargsModule_t(int argc, char **argv) {
+  PlusArgsModule_t(int argc, char **argv) {
 
     std::vector<std::string> args(argv + 1, argv + argc);
     parse_key(args);
@@ -61,7 +61,7 @@ public:
    * The correct assertion is made based on `test_key` (as driven by
    * `+plusargs_test_key=`). If no test key is provided, this function does
    * nothing. This check is required due to the way that TestSuiteCommon.scala
-   * will always instantiate and run a test with no plusargs.
+   * will always instantiate and run a test with no PlusArgs.
    */
   void validate() {
     if (!found_key) {
@@ -104,7 +104,7 @@ public:
       break;
     }
 
-    expect(io_gotPlusargValue, e0);
+    expect(io_gotPlusArgValue, e0);
 
     mpz_clear(e0);
   }

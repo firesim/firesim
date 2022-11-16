@@ -13,7 +13,7 @@
 #include "GCD.h"
 #elif defined DESIGNNAME_Parity
 #include "Parity.h"
-#elif defined DESIGNNAME_PlusargsModule
+#elif defined DESIGNNAME_PlusArgsModule
 #include "PlusargsModule.h"
 #elif defined DESIGNNAME_PointerChaser
 #include "PointerChaser.h"

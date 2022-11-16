@@ -196,14 +196,14 @@ class ParityVitisTest extends TutorialSuite("Parity", platformConfigs = classOf[
 
 /** Trait so that we have a uniform numbering scheme for the plusargs tests
   */
-trait PlusargsKey {
+trait PlusArgsKey {
   def getKey(groupNumber: Int, testNumber: Int): String = {
     val key = (groupNumber << 4 | testNumber)
     s"+plusargs_test_key=${key}"
   }
 }
 
-class PlusargsGroup68Bit extends TutorialSuite("PlusargsModule", "PlusargsModuleTestConfigGroup68Bit") with PlusargsKey {
+class PlusArgsGroup68Bit extends TutorialSuite("PlusArgsModule", "PlusArgsModuleTestConfigGroup68Bit") with PlusArgsKey {
   it should "provide the correct default value, 3 slice" in {
     assert(run("verilator", false, args = Seq(getKey(0,0))) == 0)
   }
@@ -219,7 +219,7 @@ class PlusargsGroup68Bit extends TutorialSuite("PlusargsModule", "PlusargsModule
   }
 }
 
-class PlusargsGroup29Bit extends TutorialSuite("PlusargsModule", "PlusargsModuleTestConfigGroup29Bit") with PlusargsKey {
+class PlusArgsGroup29Bit extends TutorialSuite("PlusArgsModule", "PlusArgsModuleTestConfigGroup29Bit") with PlusArgsKey {
   it should "provide the correct default value, 1 slice" in {
     assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
   }
@@ -437,8 +437,8 @@ class CustomConstraintsF1Test extends TutorialSuite("CustomConstraints") {
 class ChiselExampleDesigns extends Suites(
   new GCDF1Test,
   new ParityF1Test,
-  new PlusargsGroup68Bit,
-  new PlusargsGroup29Bit,
+  new PlusArgsGroup68Bit,
+  new PlusArgsGroup29Bit,
   new ResetShiftRegisterF1Test,
   new EnableShiftRegisterF1Test,
   new StackF1Test,

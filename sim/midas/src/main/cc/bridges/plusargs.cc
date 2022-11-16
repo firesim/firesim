@@ -8,14 +8,14 @@
  * The default value is passed here (via the FireSim-generated.const.h).
  * All macros should be passed to this constructor.
  *
- * The plusargs string is parsed out from the name. Then the argv are searched
+ * The PlusArgs string is parsed out from the name. Then the argv are searched
  * for any matches. The value of the first match is found, or else default.
  * The value is checked to reject any runtime values that are too big for the
  * bit_width
  * @param [in] args The argv as a vector
  * @param [in] mmio_addrs MMIO as provided by .h
- * @param [in] name_orig name string of the plusargs
- * @param [in] default_value The default value if no matching plusargs is
+ * @param [in] name_orig name string of the PlusArgs
+ * @param [in] default_value The default value if no matching PlusArg is
  * provided
  * @param [in] bit_width The number of bits
  * @param [in] slice_count The number of MMIO used to represent the value
@@ -45,7 +45,7 @@ plusargs_t::plusargs_t(simif_t *sim,
   auto found = name.find(delimiter);
   if (found == std::string::npos) {
     std::cerr << "delimiter '" << delimiter
-              << "' not found in the plusarg string '" << name_orig << "'\n";
+              << "' not found in the PlusArg string '" << name_orig << "'\n";
     exit(1);
   }
 
@@ -86,8 +86,8 @@ plusargs_t::~plusargs_t() { free(this->mmio_addrs); }
 
 /**
  * Check if the overriden value was driven.
- * @retval true The value was overridden (a plusargs matched)
- * @retval false The value was default (no plusargs matched)
+ * @retval true The value was overridden (a PlusArgs matched)
+ * @retval false The value was default (no PlusArgs matched)
  */
 bool plusargs_t::get_overridden() { return overriden; }
 
@@ -107,8 +107,8 @@ uint32_t plusargs_t::slice_address(const uint32_t idx) {
 
 /**
  * Check if the overriden value was driven.
- * @retval true The value was overridden (a plusargs matched)
- * @retval false The value was default (no plusargs matched)
+ * @retval true The value was overridden (a PlusArgs matched)
+ * @retval false The value was default (no PlusArgs matched)
  */
 void plusargs_t::init() {
   size_t size;

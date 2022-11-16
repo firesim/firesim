@@ -7,14 +7,14 @@ import midas.widgets._
 import midas.targetutils._
 import freechips.rocketchip.util.DecoupledHelper
 
-/** Defines a plusargs interface. The signature here was copied from
+/** Defines a PlusArgs interface. The signature here was copied from
   * chipyard/generators/rocket-chip/src/main/scala/util/PlusArg.scala
   *
   * @param name
   *   string identifier, should include "name=%d"
   *
   * @param default
-  *   The value of the register if no matching plusarg is provided
+  *   The value of the register if no matching PlusArg is provided
   *
   * @param docstring
   *   The doctring
@@ -22,7 +22,7 @@ import freechips.rocketchip.util.DecoupledHelper
   * @param width
   *   The width of the register, in bits
   */
-case class PlusargsBridgeParams(
+case class PlusArgsBridgeParams(
   name:      String,
   default:   BigInt = 0,
   docstring: String = "",
@@ -35,54 +35,54 @@ case class PlusargsBridgeParams(
   )
   require(
     name contains "=%d",
-    s"name passed to PlusargsBridge (${name}) must contain =%d. Currently only the format %d is supported",
+    s"name passed to PlusArgsBridge (${name}) must contain =%d. Currently only the format %d is supported",
   )
 }
 
-/** The target IO. This drives the value (default, or overriden) that comes out of the plusarg bridge
+/** The target IO. This drives the value (default, or overriden) that comes out of the PlusArgs bridge
   *
   * @param params
-  *   Describes the name, width and default plusarg value
+  *   Describes the name, width and default PlusArg value
   */
-class PlusargsBridgeTargetIO(params: PlusargsBridgeParams) extends Bundle {
+class PlusArgsBridgeTargetIO(params: PlusArgsBridgeParams) extends Bundle {
   val clock = Input(Clock())
   val out   = Output(UInt((params.width).W))
 }
 
-/** The host-side interface. This bridge has single channel with the plusarg value.
+/** The host-side interface. This bridge has single channel with the PlusArg value.
   *
   * @param targetIO
   *   A reference to the bound target-side interface.
   *
   * @param params
-  *   Describes the name, width and default plusarg value
+  *   Describes the name, width and default PlusArg value
   */
-class PlusargsBridgeHostIO(
-  params:               PlusargsBridgeParams
-)(private val targetIO: PlusargsBridgeTargetIO = new PlusargsBridgeTargetIO(params)
+class PlusArgsBridgeHostIO(
+  params:               PlusArgsBridgeParams
+)(private val targetIO: PlusArgsBridgeTargetIO = new PlusArgsBridgeTargetIO(params)
 ) extends Bundle
     with ChannelizedHostPortIO {
   def targetClockRef = targetIO.clock
   val outChannel     = OutputChannel(targetIO.out)
 }
 
-/** The target-side of the plusarg bridge.
+/** The target-side of the PlusArg bridge.
   *
   * @param params
-  *   Describes the name, width and default plusarg value
+  *   Describes the name, width and default PlusArg value
   */
-class PlusargsBridge(params: PlusargsBridgeParams)
+class PlusArgsBridge(params: PlusArgsBridgeParams)
     extends BlackBox
-    with Bridge[PlusargsBridgeHostIO, PlusargsBridgeModule] {
-  val io       = IO(new PlusargsBridgeTargetIO(params))
-  val bridgeIO = new PlusargsBridgeHostIO(params)(io)
+    with Bridge[PlusArgsBridgeHostIO, PlusArgsBridgeModule] {
+  val io       = IO(new PlusArgsBridgeTargetIO(params))
+  val bridgeIO = new PlusArgsBridgeHostIO(params)(io)
 
   val constructorArg = Some(params)
 
   generateAnnotations()
 }
 
-object PlusargsBridge {
+object PlusArgsBridge {
 
   /** Helper for creating the bridge. All parameter requirements are checked here
     *
@@ -93,10 +93,10 @@ object PlusargsBridge {
     *   The reset
     *
     * @param params
-    *   Describes the name, width and default plusarg value
+    *   Describes the name, width and default PlusArg value
     */
-  private def annotatePlusargsBridge(clock: Clock, reset: Reset, params: PlusargsBridgeParams): PlusargsBridge = {
-    val target = Module(new PlusargsBridge(params))
+  private def annotatePlusArgsBridge(clock: Clock, reset: Reset, params: PlusArgsBridgeParams): PlusArgsBridge = {
+    val target = Module(new PlusArgsBridge(params))
     target.io.clock := clock
     target
   }
@@ -108,7 +108,7 @@ object PlusargsBridge {
     *   string identifier, should include "name=%d"
     *
     * @param default
-    *   The value of the register if no matching plusarg is provided
+    *   The value of the register if no matching PlusArg is provided
     *
     * @param docstring
     *   The doctring
@@ -117,27 +117,27 @@ object PlusargsBridge {
     *   The width of the register, in bits
     */
   // Signature copied from chipyard/generators/rocket-chip/src/main/scala/util/PlusArg.scala
-  def apply(name: String, default: BigInt = 0, docstring: String = "", width: Int = 32): PlusargsBridge = {
-    val params = PlusargsBridgeParams(name, default, docstring, width)
-    annotatePlusargsBridge(Module.clock, Module.reset, params)
+  def apply(name: String, default: BigInt = 0, docstring: String = "", width: Int = 32): PlusArgsBridge = {
+    val params = PlusArgsBridgeParams(name, default, docstring, width)
+    annotatePlusArgsBridge(Module.clock, Module.reset, params)
   }
 
   /** apply overload which takes the parameters case class
     *
     * @param params
-    *   Describes the name, width and default plusarg value
+    *   Describes the name, width and default PlusArg value
     */
-  def apply(params: PlusargsBridgeParams): PlusargsBridge = {
-    annotatePlusargsBridge(Module.clock, Module.reset, params)
+  def apply(params: PlusArgsBridgeParams): PlusArgsBridge = {
+    annotatePlusArgsBridge(Module.clock, Module.reset, params)
   }
 
   /** similar to apply, but named drive. This overload returns the out value. This overload is probably the one you want
     *
     * @param params
-    *   Describes the name, width and default plusarg value
+    *   Describes the name, width and default PlusArg value
     */
-  def drive(params: PlusargsBridgeParams): UInt = {
-    val target = annotatePlusargsBridge(Module.clock, Module.reset, params)
+  def drive(params: PlusArgsBridgeParams): UInt = {
+    val target = annotatePlusArgsBridge(Module.clock, Module.reset, params)
     target.io.out
   }
 }
@@ -150,14 +150,14 @@ object PlusargsBridge {
   * is asserted
   *
   * @param params
-  *   Describes the name, width and default plusarg value
+  *   Describes the name, width and default PlusArg value
   */
-class PlusargsBridgeModule(params: PlusargsBridgeParams)(implicit p: Parameters)
-    extends BridgeModule[PlusargsBridgeHostIO]()(p) {
+class PlusArgsBridgeModule(params: PlusArgsBridgeParams)(implicit p: Parameters)
+    extends BridgeModule[PlusArgsBridgeHostIO]()(p) {
   lazy val module = new BridgeModuleImp(this) {
 
     val io    = IO(new WidgetIO())
-    val hPort = IO(new PlusargsBridgeHostIO(params)())
+    val hPort = IO(new PlusArgsBridgeHostIO(params)())
 
     // divide with a ceiling round, to get the total number of slices
     val sliceCount = (params.width + ctrlWidth - 1) / ctrlWidth;
@@ -172,19 +172,19 @@ class PlusargsBridgeModule(params: PlusargsBridgeParams)(implicit p: Parameters)
     }
 
     // glue the slices together to get a single wide register
-    val plusargValue = Cat(slices.reverse)
+    val plusArgValue = Cat(slices.reverse)
 
     // valid bit for the outChannel
     val initDone = genWOReg(Wire(Bool()), "initDone")
 
     hPort.outChannel.valid := initDone
-    hPort.outChannel.bits  := plusargValue
+    hPort.outChannel.bits  := plusArgValue
 
-    val plusargValueNext = RegNext(plusargValue)
+    val plusArgValueNext = RegNext(plusArgValue)
 
     // assert that the value never changes after initDone is set
     when(initDone === true.B) {
-      assert(plusargValueNext === plusargValue)
+      assert(plusArgValueNext === plusArgValue)
     }
 
     override def genHeader(base: BigInt, sb: StringBuilder) {

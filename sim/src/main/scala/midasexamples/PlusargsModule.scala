@@ -13,47 +13,47 @@ import midas.widgets.ResetPulseBridge
 
 /** Defines a test group with the id of 0
   */
-class PlusargsModuleTestConfigGroup68Bit
-    extends Config((site, here, up) => { case PlusargsTestNumber =>
+class PlusArgsModuleTestConfigGroup68Bit
+    extends Config((site, here, up) => { case PlusArgsTestNumber =>
       0
     })
 
 /** Defines a test group with the id of 1
   */
-class PlusargsModuleTestConfigGroup29Bit
-    extends Config((site, here, up) => { case PlusargsTestNumber =>
+class PlusArgsModuleTestConfigGroup29Bit
+    extends Config((site, here, up) => { case PlusArgsTestNumber =>
       1
     })
 
-case object PlusargsTestNumber extends Field[Int]
+case object PlusArgsTestNumber extends Field[Int]
 
-class PlusargsModuleIO(val params: PlusargsBridgeParams) extends Bundle {
-  // Output value that plusargs bridge gives us
-  val gotPlusargValue = Output(UInt((params.width).W))
+class PlusArgsModuleIO(val params: PlusArgsBridgeParams) extends Bundle {
+  // Output value that PlusArgs bridge gives us
+  val gotPlusArgValue = Output(UInt((params.width).W))
 }
 
-/** A DUT to demonstrate usage of a PlusargsBridge. Two test groups exist, which are referred to from
+/** A DUT to demonstrate usage of a PlusArgsBridge. Two test groups exist, which are referred to from
   * [[TutorialSuite.scala]]
   */
-class PlusargsDUT(implicit val p: Parameters) extends Module {
+class PlusArgsDUT(implicit val p: Parameters) extends Module {
 
-  def testGroup0(): PlusargsBridgeParams = {
-    PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("276783146634859761135"), width = 68)
+  def testGroup0(): PlusArgsBridgeParams = {
+    PlusArgsBridgeParams(name = "plusar_v=%d", default = BigInt("276783146634859761135"), width = 68)
   }
 
-  def testGroup1(): PlusargsBridgeParams = {
-    PlusargsBridgeParams(name = "plusar_v=%d", default = BigInt("4"), width = 29)
+  def testGroup1(): PlusArgsBridgeParams = {
+    PlusArgsBridgeParams(name = "plusar_v=%d", default = BigInt("4"), width = 29)
   }
 
-  val params = p(PlusargsTestNumber) match {
+  val params = p(PlusArgsTestNumber) match {
     case 0 => testGroup0()
     case 1 => testGroup1()
-    case _ => throw new RuntimeException(s"Test Group #{p(PlusargsTestNumber)} does not exist")
+    case _ => throw new RuntimeException(s"Test Group #{p(PlusArgsTestNumber)} does not exist")
   }
 
-  val io = IO(new PlusargsModuleIO(params))
+  val io = IO(new PlusArgsModuleIO(params))
 
-  io.gotPlusargValue := PlusargsBridge.drive(params)
+  io.gotPlusArgValue := PlusArgsBridge.drive(params)
 }
 
-class PlusargsModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PlusargsDUT)
+class PlusArgsModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PlusArgsDUT)
