@@ -14,7 +14,7 @@
 #elif defined DESIGNNAME_Parity
 #include "Parity.h"
 #elif defined DESIGNNAME_PlusArgsModule
-#include "PlusargsModule.h"
+#include "PlusArgsModule.h"
 #elif defined DESIGNNAME_PointerChaser
 #include "PointerChaser.h"
 #elif defined DESIGNNAME_ResetShiftRegister
