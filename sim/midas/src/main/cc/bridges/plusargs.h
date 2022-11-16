@@ -8,6 +8,7 @@
 #include "bridges/bridge_driver.h"
 #include <gmp.h>
 #include <string.h>
+#include <string_view>
 
 #define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
   FUNC(new plusargs_t(                                                         \
@@ -37,14 +38,14 @@ public:
   plusargs_t(simif_t *sim,
              std::vector<std::string> &args,
              PLUSARGSBRIDGEMODULE_struct *mmio_addrs,
-             const std::string name,
-             const std::string default_value,
+             const std::string_view name,
+             const char *default_value,
              const uint32_t bit_width,
              const uint32_t slice_count,
              const uint32_t *slice_addrs);
   ~plusargs_t();
   virtual void init();
-  virtual void tick();
+  virtual void tick(){};
   virtual void finish(){};
   virtual bool terminate() { return false; };
   virtual int exit_code() { return 0; };

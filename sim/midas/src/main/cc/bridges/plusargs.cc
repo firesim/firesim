@@ -24,38 +24,36 @@
 plusargs_t::plusargs_t(simif_t *sim,
                        std::vector<std::string> &args,
                        PLUSARGSBRIDGEMODULE_struct *mmio_addrs,
-                       const std::string name_orig,
-                       const std::string default_value,
+                       const std::string_view name_orig,
+                       const char *default_value,
                        const uint32_t bit_width,
                        const uint32_t slice_count,
                        const uint32_t *slice_addrs)
     : bridge_driver_t(sim), mmio_addrs(mmio_addrs), slice_count(slice_count),
       slice_addrs(slice_addrs, slice_addrs + slice_count) {
-  std::string name = name_orig;
+  std::string_view name = name_orig;
 
   // remove all leading white space
-  while (name.at(0) == ' ') {
-    name.erase(name.begin());
-  }
+  name = name.substr(name.find_first_not_of(' '));
 
   // remove one leading +, so we can add it back later
   if (name.at(0) == '+') {
-    name.erase(name.begin());
+    name = name.substr(1);
   }
 
-  const std::string delimiter = "=%d";
+  const std::string_view delimiter = "=%d";
   auto found = name.find(delimiter);
   if (found == std::string::npos) {
-    std::cout << "delimiter '" << delimiter
+    std::cerr << "delimiter '" << delimiter
               << "' not found in the plusarg string '" << name_orig << "'\n";
     exit(1);
   }
 
   // the name without =%d and without +
-  std::string base_name = name.substr(0, found);
+  std::string_view base_name = name.substr(0, found);
 
   // the string we search for in the arg list
-  std::string search = "+" + base_name + '=';
+  std::string search = "+" + std::string(base_name) + '=';
 
   std::string override_value;
 
@@ -73,13 +71,13 @@ plusargs_t::plusargs_t(simif_t *sim,
     mpz_set_str(value, override_value.c_str(), 10);
   } else {
     // use the default value from the .h
-    mpz_set_str(value, default_value.c_str(), 10);
+    mpz_set_str(value, default_value, 10);
   }
 
   // check if the given or default value can fit in the width
   const size_t found_width = mpz_sizeinbase(value, 2);
   if (found_width > bit_width) {
-    std::cout << "Value to wide for " << bit_width << " bits\n";
+    std::cerr << "Value to wide for " << bit_width << " bits\n";
     exit(1);
   }
 }
@@ -94,18 +92,13 @@ plusargs_t::~plusargs_t() { free(this->mmio_addrs); }
 bool plusargs_t::get_overridden() { return overriden; }
 
 /**
- * Empty tick. It doesn't need to be called for proper operation
- */
-void plusargs_t::tick() {}
-
-/**
  * Get a slice's MMIO address by index
  * @params [in] idx The index of the slice
  * @returns the MMIO address
  */
 uint32_t plusargs_t::slice_address(const uint32_t idx) {
   if (idx >= slice_count) {
-    std::cout << "Index " << idx << " is larger than the number of slices "
+    std::cerr << "Index " << idx << " is larger than the number of slices "
               << slice_count << "\n";
     exit(1);
   }

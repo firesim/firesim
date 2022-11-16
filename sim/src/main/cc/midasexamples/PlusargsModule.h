@@ -6,6 +6,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <string_view>
 
 /**
  * @brief Plusargs Bridge Driver Test
@@ -23,7 +24,7 @@ private:
    * @param [in] args The argv as a vector
    */
   void parse_key(const std::vector<std::string> &args) {
-    const std::string find_key = "+plusargs_test_key=";
+    constexpr std::string_view find_key = "+plusargs_test_key=";
 
     for (const auto &arg : args) {
       if (arg.find(find_key) == 0) {
@@ -98,7 +99,7 @@ public:
 
     default:
     case -1:
-      std::cout << "unknown test_key " << test_key << "\n";
+      std::cerr << "unknown test_key " << test_key << "\n";
       exit(1);
       break;
     }
