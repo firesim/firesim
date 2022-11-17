@@ -29,7 +29,7 @@ void heartbeat_t::tick() {
 
     time_t current_time;
     time(&current_time);
-    struct tm *tm_local = localtime(&current_time);
+    (void)localtime(&current_time);
     log << current_cycle << ", " << current_time - start_time << std::endl;
     last_cycle = current_cycle;
 

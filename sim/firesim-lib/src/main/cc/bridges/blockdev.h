@@ -56,18 +56,11 @@ public:
 
 private:
   BLOCKDEVBRIDGEMODULE_struct *mmio_addrs;
-  bool a_req_valid;
-  bool a_req_ready;
-  bool a_data_valid;
-  bool a_data_ready;
-  bool a_resp_valid;
-  bool a_resp_ready;
 
   // Set if, on the previous tick, we couldn't write back all of our response
   // data
   bool resp_data_pending = false;
 
-  simif_t *sim;
   uint32_t _ntags;
   uint32_t _nsectors;
   FILE *_file, *logfile;

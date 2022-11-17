@@ -29,7 +29,7 @@ public:
   void send_loadmem_word(uint32_t word);
 
 protected:
-  void idle();
+  void idle() override;
 
   void load_mem_write(addr_t addr, size_t nbytes, const void *src) override;
   void load_mem_read(addr_t addr, size_t nbytes, void *dst) override;

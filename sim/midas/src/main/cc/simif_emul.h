@@ -36,9 +36,8 @@ public:
    *
    * These have external linkage to enable VCS to easily access them.
    */
-  inline static mmio_t *master = new mmio_t(CTRL_BEAT_BYTES);
-  inline static mmio_t *cpu_managed_axi4 =
-      new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
+  static mmio_t *master;
+  static mmio_t *cpu_managed_axi4;
   /**
    * @brief Host DRAM models shared across the RTL simulator and driver
    * contexts.
@@ -48,7 +47,7 @@ public:
    * writes directly into the backing memory (0 cycles). See
    * simif_emul_t::load_mems.
    */
-  inline static mm_t *slave[MEM_NUM_CHANNELS] = {nullptr};
+  static mm_t *slave[MEM_NUM_CHANNELS];
   /**
    * @brief A model of FPGA-addressable CPU-host memory.
    *
@@ -56,7 +55,7 @@ public:
    * AXI4 memory subordinate as a proxy for writing into actual host-CPU DRAM.
    * The driver-side of FPGAManagedStreams inspect circular buffers hosted here.
    */
-  inline static mm_t *cpu_mem = new mm_magic_t;
+  static mm_t *cpu_mem;
 
 private:
   // The maximum number of cycles the RTL simulator can advance before

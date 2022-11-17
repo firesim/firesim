@@ -268,7 +268,6 @@ void blockdev_t::handle_data(struct blkdev_data &data) {
   }
 
   struct blkdev_write_tracker &tracker = write_trackers[data.tag];
-  struct blkdev_data resp;
 
   /* Copy data into the write tracker */
   tracker.data[tracker.count] = data.data;

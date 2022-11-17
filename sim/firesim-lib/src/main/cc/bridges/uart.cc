@@ -7,7 +7,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 

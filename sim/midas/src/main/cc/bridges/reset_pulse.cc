@@ -10,7 +10,7 @@ reset_pulse_t::reset_pulse_t(simif_t *sim,
                              int reset_index)
     : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
       max_pulse_length(max_pulse_length),
-      default_pulse_length(default_pulse_length), reset_index(reset_index) {
+      default_pulse_length(default_pulse_length) {
 
   std::string num_equals = std::to_string(reset_index) + std::string("=");
   std::string pulse_length_arg =
