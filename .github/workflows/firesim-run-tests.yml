@@ -274,7 +274,9 @@ jobs:
   run-basic-linux-poweroff:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff
-    needs: [build-default-workloads]
+    # Building the driver can cause concurrency issues with SBT, so serialize
+    # this behind the scalatest train. Remove once we're off SBT.
+    needs: [build-default-workloads, run-chipyard-tests]
     runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
