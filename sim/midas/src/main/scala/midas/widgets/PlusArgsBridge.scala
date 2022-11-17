@@ -8,7 +8,7 @@ import midas.targetutils._
 import freechips.rocketchip.util.DecoupledHelper
 
 /** Defines a PlusArgs interface. The signature here was copied from
-  * chipyard/generators/rocket-chip/src/main/scala/util/PlusArg.scala
+  * rocket-chip/src/main/scala/util/PlusArg.scala
   *
   * @param name
   *   string identifier, should include "name=%d"
@@ -102,7 +102,7 @@ object PlusArgsBridge {
   }
 
   /** apply overload which takes the parameters without the case class The signature was copied from
-    * chipyard/generators/rocket-chip/src/main/scala/util/PlusArg.scala
+    * rocket-chip/src/main/scala/util/PlusArg.scala
     *
     * @param name
     *   string identifier, should include "name=%d"
@@ -116,7 +116,7 @@ object PlusArgsBridge {
     * @param width
     *   The width of the register, in bits
     */
-  // Signature copied from chipyard/generators/rocket-chip/src/main/scala/util/PlusArg.scala
+  // Signature copied from rocket-chip/src/main/scala/util/PlusArg.scala
   def apply(name: String, default: BigInt = 0, docstring: String = "", width: Int = 32): PlusArgsBridge = {
     val params = PlusArgsBridgeParams(name, default, docstring, width)
     annotatePlusArgsBridge(Module.clock, Module.reset, params)

@@ -33,19 +33,19 @@ class PlusArgsBridgeSpec extends AnyFlatSpec {
     assert(ret.io.out.getWidth == 33)
   }
 
-  def elaborateBlackBox(mod: => Module): Unit =
+  def elaborateModule(mod: => Module): Unit =
     ChiselStage.emitChirrtl(mod)
 
   "PlusArgsBridge" should "normal instantiate" in {
-    elaborateBlackBox(new SimpleInstantiate)
+    elaborateModule(new SimpleInstantiate)
   }
 
   "PlusArgsBridge" should "apply with object" in {
-    elaborateBlackBox(new SimpleInstantiateApplyObject)
+    elaborateModule(new SimpleInstantiateApplyObject)
   }
 
   "PlusArgsBridge" should "apply with parameters" in {
-    elaborateBlackBox(new SimpleInstantiateApplyParameters)
+    elaborateModule(new SimpleInstantiateApplyParameters)
   }
 
   "PlusArgsBridge" should "reject default value too large" in {

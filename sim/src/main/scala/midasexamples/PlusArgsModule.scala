@@ -14,18 +14,18 @@ import midas.widgets.ResetPulseBridge
 /** Defines a test group with the id of 0
   */
 class PlusArgsModuleTestConfigGroup68Bit
-    extends Config((site, here, up) => { case PlusArgsTestNumber =>
+    extends Config((site, here, up) => { case PlusArgsTestNumberKey =>
       0
     })
 
 /** Defines a test group with the id of 1
   */
 class PlusArgsModuleTestConfigGroup29Bit
-    extends Config((site, here, up) => { case PlusArgsTestNumber =>
+    extends Config((site, here, up) => { case PlusArgsTestNumberKey =>
       1
     })
 
-case object PlusArgsTestNumber extends Field[Int]
+case object PlusArgsTestNumberKey extends Field[Int]
 
 class PlusArgsModuleIO(val params: PlusArgsBridgeParams) extends Bundle {
   // Output value that PlusArgs bridge gives us
@@ -45,10 +45,10 @@ class PlusArgsDUT(implicit val p: Parameters) extends Module {
     PlusArgsBridgeParams(name = "plusar_v=%d", default = BigInt("4"), width = 29)
   }
 
-  val params = p(PlusArgsTestNumber) match {
+  val params = p(PlusArgsTestNumberKey) match {
     case 0 => testGroup0()
     case 1 => testGroup1()
-    case _ => throw new RuntimeException(s"Test Group #{p(PlusArgsTestNumber)} does not exist")
+    case _ => throw new RuntimeException(s"Test Group #{p(PlusArgsTestNumberKey)} does not exist")
   }
 
   val io = IO(new PlusArgsModuleIO(params))
