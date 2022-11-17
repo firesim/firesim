@@ -160,10 +160,10 @@ class PlusArgsBridgeModule(params: PlusArgsBridgeParams)(implicit p: Parameters)
     val hPort = IO(new PlusArgsBridgeHostIO(params)())
 
     // divide with a ceiling round, to get the total number of slices
-    val sliceCount = (params.width + ctrlWidth - 1) / ctrlWidth;
+    val sliceCount = (params.width + ctrlWidth - 1) / ctrlWidth
 
     // create a seq of widths of each slice
-    val slicesWidths = (0 until sliceCount).map(x => math.min(params.width - (x * ctrlWidth), ctrlWidth))
+    val slicesWidths = Seq.tabulate(sliceCount).map(x => math.min(params.width - (x * ctrlWidth), ctrlWidth))
 
     // zip/map the widths to call genWOReg
     // reg names are out0, out1, ...
@@ -201,7 +201,7 @@ class PlusArgsBridgeModule(params: PlusArgsBridgeParams)(implicit p: Parameters)
       sb.append(
         genArray(
           s"${headerWidgetName}_slice_addrs",
-          (0 until sliceCount).map(x => UInt32(base + getCRAddr(s"out${x}"))),
+          Seq.tabulate(sliceCount).map(x => UInt32(base + getCRAddr(s"out${x}"))),
         )
       )
     }
