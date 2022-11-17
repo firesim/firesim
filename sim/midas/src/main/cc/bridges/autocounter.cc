@@ -2,6 +2,7 @@
 
 #include "autocounter.h"
 
+#include <cinttypes>
 #include <iostream>
 #include <limits.h>
 #include <regex>
