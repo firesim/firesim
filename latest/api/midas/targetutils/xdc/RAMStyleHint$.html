@@ -294,6 +294,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="midas.targetutils.xdc.RAMStyleHint#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(mem:=&gt;firrtl.annotations.ReferenceTarget,style:midas.targetutils.xdc.RAMStyle):Unit"></a><a id="apply(⇒ReferenceTarget,RAMStyle):Unit"></a>
+      <span class="permalink">
+      <a href="../../../midas/targetutils/xdc/RAMStyleHint$.html#apply(mem:=&gt;firrtl.annotations.ReferenceTarget,style:midas.targetutils.xdc.RAMStyle):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="mem">mem: ⇒ <span class="extype" name="firrtl.annotations.ReferenceTarget">ReferenceTarget</span></span>, <span name="style">style: <a href="RAMStyle.html" class="extype" name="midas.targetutils.xdc.RAMStyle">RAMStyle</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Annotates a FIRRTL ReferenceTarget indicating it should be implemented with a particular
+Xilinx RAM structure.</p><div class="fullcomment"><div class="comment cmt"><p>Annotates a FIRRTL ReferenceTarget indicating it should be implemented with a particular
+Xilinx RAM structure.</p><p>Note: the onus is on the user to ensure the RT points at a mem-like structure. In general,
+one should prefer using the apply method that accepts a chisel3.MemBase[_] to get compile-time errors.
+</p></div></div>
     </li><li name="midas.targetutils.xdc.RAMStyleHint#apply" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="apply(mem:chisel3.MemBase[_],style:midas.targetutils.xdc.RAMStyle):Unit"></a><a id="apply(MemBase[_],RAMStyle):Unit"></a>
       <span class="permalink">
