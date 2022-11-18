@@ -7,8 +7,7 @@ import midas.widgets._
 import midas.targetutils._
 import freechips.rocketchip.util.DecoupledHelper
 
-/** Defines a PlusArgs interface. The signature here was copied from
-  * rocket-chip/src/main/scala/util/PlusArg.scala
+/** Defines a PlusArgs interface. The signature here was copied from rocket-chip/src/main/scala/util/PlusArg.scala
   *
   * @param name
   *   string identifier, should include "name=%d"

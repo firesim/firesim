@@ -7,12 +7,12 @@
 #include "bridges/blockdev.h"
 #include "bridges/dromajo.h"
 #include "bridges/groundtest.h"
+#include "bridges/plusargs.h"
 #include "bridges/reset_pulse.h"
 #include "bridges/serial.h"
 #include "bridges/simplenic.h"
 #include "bridges/tracerv.h"
 #include "bridges/uart.h"
-#include "bridges/plusargs.h"
 
 // Golden Gate provided bridge drivers
 #include "bridges/fased_memory_timing_model.h"
@@ -588,92 +588,95 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 }
 
 bool firesim_top_t::simulation_complete() {
-  bool is_complete = false;
-  for (auto &e : bridges) {
-    is_complete |= e->terminate();
-  }
-  return is_complete;
+    bool is_complete = false;
+    for (auto &e : bridges) {
+      is_complete |= e->terminate();
+    }
+    return is_complete;
 }
 
 uint64_t firesim_top_t::profile_models() {
-  for (auto mod : fpga_models) {
-    mod->profile();
-  }
-  return profile_interval;
+    for (auto mod : fpga_models) {
+      mod->profile();
+    }
+    return profile_interval;
 }
 
 int firesim_top_t::exit_code() {
-  for (auto &e : bridges) {
-    if (e->exit_code())
-      return e->exit_code();
-  }
-  return 0;
+    for (auto &e : bridges) {
+      if (e->exit_code())
+        return e->exit_code();
+    }
+    return 0;
 }
 
 void firesim_top_t::run() {
-  for (auto &e : fpga_models) {
-    e->init();
-  }
-
-  for (auto &e : bridges) {
-    e->init();
-  }
-
-  if (do_zero_out_dram) {
-    fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few minutes...\n");
-    zero_out_dram();
-  }
-
-  fprintf(stderr, "Commencing simulation.\n");
-  record_start_times();
-
-  while (!simulation_complete() && !finished_scheduled_tasks()) {
-    run_scheduled_tasks();
-    take_steps(get_largest_stepsize(), false);
-    while (!done() && !simulation_complete()) {
-      for (auto &e : bridges)
-        e->tick();
+    for (auto &e : fpga_models) {
+      e->init();
     }
-  }
 
-  record_end_times();
-  fprintf(stderr, "\nSimulation complete.\n");
+    for (auto &e : bridges) {
+      e->init();
+    }
+
+    if (do_zero_out_dram) {
+      fprintf(stderr,
+              "Zeroing out FPGA DRAM. This will take a few minutes...\n");
+      zero_out_dram();
+    }
+
+    fprintf(stderr, "Commencing simulation.\n");
+    record_start_times();
+
+    while (!simulation_complete() && !finished_scheduled_tasks()) {
+      run_scheduled_tasks();
+      take_steps(get_largest_stepsize(), false);
+      while (!done() && !simulation_complete()) {
+        for (auto &e : bridges)
+          e->tick();
+      }
+    }
+
+    record_end_times();
+    fprintf(stderr, "\nSimulation complete.\n");
 }
 
 int firesim_top_t::teardown() {
-  int exitcode = exit_code();
+    int exitcode = exit_code();
 
-  // If the simulator is idle and we've gotten here without any bridge
-  // indicating doneness, we've advanced to the +max_cycles limit in the fastest
-  // target clock domain.
-  bool max_cycles_timeout =
-      !simulation_complete() && done() && finished_scheduled_tasks();
+    // If the simulator is idle and we've gotten here without any bridge
+    // indicating doneness, we've advanced to the +max_cycles limit in the
+    // fastest target clock domain.
+    bool max_cycles_timeout =
+        !simulation_complete() && done() && finished_scheduled_tasks();
 
-  if (exitcode != 0) {
-    fprintf(stderr,
-            "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
-            exitcode,
-            get_end_tcycle());
-  } else if (max_cycles_timeout) {
-    fprintf(stderr,
-            "*** FAILED *** +max_cycles specified timeout after %" PRIu64
-            " cycles\n",
-            get_end_tcycle());
-  } else {
-    fprintf(
-        stderr, "*** PASSED *** after %" PRIu64 " cycles\n", get_end_tcycle());
-  }
+    if (exitcode != 0) {
+      fprintf(stderr,
+              "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
+              exitcode,
+              get_end_tcycle());
+    } else if (max_cycles_timeout) {
+      fprintf(stderr,
+              "*** FAILED *** +max_cycles specified timeout after %" PRIu64
+              " cycles\n",
+              get_end_tcycle());
+    } else {
+      fprintf(stderr,
+              "*** PASSED *** after %" PRIu64 " cycles\n",
+              get_end_tcycle());
+    }
 
-  print_simulation_performance_summary();
+    print_simulation_performance_summary();
 
-  for (auto &e : fpga_models) {
-    e->finish();
-  }
+    for (auto &e : fpga_models) {
+      e->finish();
+    }
 
-  for (auto &e : bridges) {
-    e->finish();
-  }
+    for (auto &e : bridges) {
+      e->finish();
+    }
 
-  this->host_finish();
-  return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
+    this->host_finish();
+    return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE
+                                                   : EXIT_SUCCESS;
 }
