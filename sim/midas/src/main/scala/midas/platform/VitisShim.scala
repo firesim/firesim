@@ -13,7 +13,6 @@ import midas.core.HostMemChannelKey
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.platform.xilinx._
-import midas.targetutils.xdc._
 
 object VitisConstants {
   // Configurable through v++
@@ -109,9 +108,5 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
       fileSuffix = ".defines.vh",
     )
     GoldenGateOutputFileAnnotation.annotateFromChisel(s"# Currenty unused", ".env.tcl")
-    // We don't need to provide paths because
-    // 1) The Shim module is the top-level of the kernel
-    // 2) Implementation constraints are scoped to the kernel level in our vitis flow
-    SpecifyXDCCircuitPaths(None, None)
   }
 }
