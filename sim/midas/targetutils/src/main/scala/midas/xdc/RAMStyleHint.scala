@@ -77,7 +77,6 @@ object RAMStyleHint {
     * Note: the onus is on the user to ensure the RT points at a mem-like structure. In general, 
     * one should prefer using the apply method that accepts a chisel3.MemBase[_] to get compile-time errors.
     */
-    */
   def apply(mem: =>ReferenceTarget, style: RAMStyle): Unit = {
     annotate(style, mem)
   }
