@@ -69,4 +69,12 @@ object RAMStyleHint {
   def apply(mem: chisel3.MemBase[_], style: RAMStyle): Unit = {
     annotate(style, mem.toTarget)
   }
+
+  /**
+    * Annotates a FIRRTL ReferenceTarget indicating it should be implemented with a particular
+    * Xilinx RAM structure.
+    */
+  def apply(mem: =>ReferenceTarget, style: RAMStyle): Unit = {
+    annotate(style, mem)
+  }
 }
