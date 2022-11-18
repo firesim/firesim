@@ -254,6 +254,26 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 
 fi
 
+ON_AZURE='false'
+# See  https://docs.microsoft.com/en-us/azure/virtual-machines/linux/instance-metadata-service?tabs=linux
+if curl -s -H Metadata:true --noproxy "*" "http://169.254.169.254/metadata/instance?api-version=2021-02-01" | grep -q AzurePublicCloud; then
+    echo "Running on Azure"
+    ON_AZURE='true'
+fi
+
+if [[ "$ON_AZURE" == true ]]; then
+    (
+        # We build the azure driver with D_GLIBCXX_USE_CXX11_ABI disabled so
+        # that it can link correctly the system installed XRT, which uses the
+        # old string ABI. We rebuild spike here (really for FESVR + HTIF) so
+        # that it too can link correctly in the driver build.
+        # This can be removed once we've removed Serial / HTIF and are booting standalone.
+        cd "$FIRESIM_DIR/target-design/chipyard"
+        CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" ./scripts/build-toolchain-extra.sh
+    )
+fi
+
+
 cd "$RDIR"
 set +e
 ./gen-tags.sh
