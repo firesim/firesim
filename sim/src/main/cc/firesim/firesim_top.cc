@@ -12,6 +12,7 @@
 #include "bridges/simplenic.h"
 #include "bridges/tracerv.h"
 #include "bridges/uart.h"
+#include "bridges/plusargs.h"
 
 // Golden Gate provided bridge drivers
 #include "bridges/fased_memory_timing_model.h"
@@ -554,6 +555,32 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 #ifdef PRINTBRIDGEMODULE_7_PRESENT
     INSTANTIATE_PRINTF(add_bridge_driver,7)
 #endif
+
+#ifdef PLUSARGSBRIDGEMODULE_0_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 0)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_1_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 1)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_2_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 2)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_3_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 3)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_4_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 4)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_5_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 5)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_6_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 6)
+#endif
+#ifdef PLUSARGSBRIDGEMODULE_7_PRESENT
+    INSTANTIATE_PLUSARGS(add_bridge_driver, 7)
+#endif
+
     // Add functions you'd like to periodically invoke on a paused simulator here.
     if (profile_interval != -1) {
     register_task([this]() { return this->profile_models(); }, 0);
