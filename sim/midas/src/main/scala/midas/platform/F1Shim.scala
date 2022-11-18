@@ -50,7 +50,5 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
           |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
           |""".stripMargin,
       fileSuffix = ".defines.vh")
-
-    SpecifyXDCCircuitPaths(Some("firesim_top"), Some("WRAPPER_INST/CL/firesim_top"))
   }
 }
