@@ -7,6 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import firrtl.annotations.ModuleTarget
+import firrtl.annotations.ReferenceTarget
 
 class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
   import midas.targetutils.xdc._
@@ -25,9 +26,9 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     val dataBits = 64
     val addrBits = 16
     val io = IO(new MemoryModuleIO(addrBits, dataBits))
+    val ramStyle = style
 
     def mem: MemBase[_]
-    style.foreach { RAMStyleHint(mem, _) }
 
     def expectedAnnotation: XDCAnnotation =
       XDCAnnotation(
@@ -53,6 +54,16 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     when(io.writeEnable) { mem(io.writeAddress) := io.writeData }
   }
 
+  trait MemApplyMethod {
+    self: BaseMemoryModule =>
+      ramStyle.foreach { RAMStyleHint(mem, _) }
+  }
+
+  trait RTApplyMethod {
+    self: BaseMemoryModule =>
+      ramStyle.foreach { RAMStyleHint(mem.toTarget, _) }
+  }
+
   def checkSingleTargetModule(gen: =>BaseMemoryModule): Unit = {
     // Lazy, so that we may introspect on the elaborated module class
     lazy val mod = gen
@@ -65,24 +76,26 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
 
   // Sanity check that stuff passes through elaboration. 
   it should "correctly annotate a chisel3.SyncReadMem as BRAM" in {
-    checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.BRAM)))
+    checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.BRAM)) with MemApplyMethod)
   }
 
-  it should "correctly annotate a chisel3.SyncReadMem as URAM" in {
-    checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.ULTRA)))
+  it should "correctly annotate a chisel3.SyncReadMem as URAM (ReferenceTarget apply())" in {
+    checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.ULTRA)) with RTApplyMethod)
   }
 
   it should "correctly annotate a chisel3.Mem as URAM" in {
-    checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.ULTRA)))
+    checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.ULTRA)) with MemApplyMethod)
   }
 
-  it should "correctly annotate a chisel3.Mem as BRAM" in {
-    checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.BRAM)))
+  it should "correctly annotate a chisel3.Mem as BRAM (ReferenceTarget apply())" in {
+    checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.BRAM)) with RTApplyMethod)
   }
 
   class WrapperModule extends Module {
     val a = IO(new MemoryModuleIO(64, 16))
     val b = IO(new MemoryModuleIO(64, 16))
+    val c = IO(new MemoryModuleIO(64, 16))
+    val d = IO(new MemoryModuleIO(64, 16))
 
 //DOC include start: RAM Hint From Parent
     val modA = Module(new SyncReadMemModule(None))
@@ -90,8 +103,15 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     RAMStyleHint(modA.mem, RAMStyles.ULTRA)
     RAMStyleHint(modB.mem, RAMStyles.BRAM)
 //DOC include end: RAM Hint From Parent
+    val modC = Module(new SyncReadMemModule(None))
+    val modD = Module(new SyncReadMemModule(None))
+    RAMStyleHint(modC.mem.toTarget, RAMStyles.ULTRA)
+    RAMStyleHint(modD.mem.toTarget, RAMStyles.BRAM)
+
     modA.io <> a
     modB.io <> b
+    modC.io <> c
+    modD.io <> d
 
     private def expectedAnnotation(mod: SyncReadMemModule, style: RAMStyle) = XDCAnnotation(
         XDCFiles.Synthesis,
@@ -101,6 +121,8 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     def expectedAnnos = Seq(
       expectedAnnotation(modA, RAMStyles.ULTRA),
       expectedAnnotation(modB, RAMStyles.BRAM),
+      expectedAnnotation(modC, RAMStyles.ULTRA),
+      expectedAnnotation(modD, RAMStyles.BRAM)
     )
   }
 
@@ -109,10 +131,10 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     val annos = elaborateAndLower(mod)
 
     val dedupResultAnnos = annos.collect { case a: firrtl.transforms.DedupedResult => a }
-    assert(dedupResultAnnos.size == 2)
+    assert(dedupResultAnnos.size == 4)
 
     val xdcAnnos = annos.collect { case a: XDCAnnotation => a }
-    assert(xdcAnnos.size == 2)
+    assert(xdcAnnos.size == 4)
     mod.expectedAnnos.foreach {
       anno => assert(xdcAnnos.contains(anno))
     }
