@@ -490,6 +490,26 @@
                         <a class="class" href="PipeChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types."></a>
                         <a href="PipeChannelMetadata.html" title="A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are channel types.">PipeChannelMetadata</a>
                       </li><li class="current-entities indented2">
+                        <a class="object" href="PlusArgsBridge$.html" title=""></a>
+                        <a class="class" href="PlusArgsBridge.html" title="The target-side of the PlusArg bridge."></a>
+                        <a href="PlusArgsBridge.html" title="The target-side of the PlusArg bridge.">PlusArgsBridge</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PlusArgsBridgeHostIO.html" title="The host-side interface."></a>
+                        <a href="PlusArgsBridgeHostIO.html" title="The host-side interface.">PlusArgsBridgeHostIO</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PlusArgsBridgeModule.html" title="The host-side implementation."></a>
+                        <a href="PlusArgsBridgeModule.html" title="The host-side implementation.">PlusArgsBridgeModule</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PlusArgsBridgeParams.html" title="Defines a PlusArgs interface."></a>
+                        <a href="PlusArgsBridgeParams.html" title="Defines a PlusArgs interface.">PlusArgsBridgeParams</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="PlusArgsBridgeTargetIO.html" title="The target IO."></a>
+                        <a href="PlusArgsBridgeTargetIO.html" title="The target IO.">PlusArgsBridgeTargetIO</a>
+                      </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="PrintBridgeModule.html" title=""></a>
                         <a href="PrintBridgeModule.html" title="">PrintBridgeModule</a>
@@ -1726,6 +1746,97 @@ Key assumptions:
       
       <p class="shortcomment cmt">A utility trait for translating chisel references into unidirected FCCAs
 This becomes more useful when there are channel types.</p>
+    </li><li name="midas.widgets.PlusArgsBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PlusArgsBridgeextendsBlackBoxwithBridge[midas.widgets.PlusArgsBridgeHostIO,midas.widgets.PlusArgsBridgeModule]"></a><a id="PlusArgsBridge:PlusArgsBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PlusArgsBridge.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="The target-side of the PlusArg bridge." href="PlusArgsBridge.html"><span class="name">PlusArgsBridge</span></a><span class="result"> extends <span class="extype" name="chisel3.BlackBox">BlackBox</span> with <a href="Bridge.html" class="extype" name="midas.widgets.Bridge">Bridge</a>[<a href="PlusArgsBridgeHostIO.html" class="extype" name="midas.widgets.PlusArgsBridgeHostIO">PlusArgsBridgeHostIO</a>, <a href="PlusArgsBridgeModule.html" class="extype" name="midas.widgets.PlusArgsBridgeModule">PlusArgsBridgeModule</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">The target-side of the PlusArg bridge.</p>
+    </li><li name="midas.widgets.PlusArgsBridgeHostIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PlusArgsBridgeHostIOextendsBundlewithChannelizedHostPortIO"></a><a id="PlusArgsBridgeHostIO:PlusArgsBridgeHostIO"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PlusArgsBridgeHostIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="The host-side interface." href="PlusArgsBridgeHostIO.html"><span class="name">PlusArgsBridgeHostIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span> with <a href="ChannelizedHostPortIO.html" class="extype" name="midas.widgets.ChannelizedHostPortIO">ChannelizedHostPortIO</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">The host-side interface.</p><div class="fullcomment"><div class="comment cmt"><p>The host-side interface. This bridge has single channel with the PlusArg value.
+</p></div></div>
+    </li><li name="midas.widgets.PlusArgsBridgeModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PlusArgsBridgeModuleextendsBridgeModule[midas.widgets.PlusArgsBridgeHostIO]"></a><a id="PlusArgsBridgeModule:PlusArgsBridgeModule"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PlusArgsBridgeModule.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="The host-side implementation." href="PlusArgsBridgeModule.html"><span class="name">PlusArgsBridgeModule</span></a><span class="result"> extends <a href="BridgeModule.html" class="extype" name="midas.widgets.BridgeModule">BridgeModule</a>[<a href="PlusArgsBridgeHostIO.html" class="extype" name="midas.widgets.PlusArgsBridgeHostIO">PlusArgsBridgeHostIO</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">The host-side implementation.</p><div class="fullcomment"><div class="comment cmt"><p>The host-side implementation. Calculates widths and bundles multiple 32 bit MMIO to the exact width of
+<code>params.width</code>. If <code>params.width</code> does not evenly divide by 32 a MMIO with the remainder bits will be created. The
+remainders name will always be <code>outN</code> where <code>N</code> is the last MMIO</p><p><code>initDone</code> is used as valid for the outChannel. The C++ driver ensures that all <code>outN</code> are driven before <code>initDone</code>
+is asserted
+</p></div></div>
+    </li><li name="midas.widgets.PlusArgsBridgeParams" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PlusArgsBridgeParamsextendsProductwithSerializable"></a><a id="PlusArgsBridgeParams:PlusArgsBridgeParams"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PlusArgsBridgeParams.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a title="Defines a PlusArgs interface." href="PlusArgsBridgeParams.html"><span class="name">PlusArgsBridgeParams</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="default">default: <span class="extype" name="scala.BigInt">BigInt</span> = <span class="symbol">0</span></span>, <span name="docstring">docstring: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;&quot;</span></span>, <span name="width">width: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a> = <span class="symbol">32</span></span>)</span><span class="result"> extends <a href="https://www.scala-lang.org/api/2.12.10/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.10/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">Defines a PlusArgs interface.</p><div class="fullcomment"><div class="comment cmt"><p>Defines a PlusArgs interface. The signature here was copied from rocket-chip/src/main/scala/util/PlusArg.scala
+</p></div><dl class="paramcmts block"><dt class="param">name</dt><dd class="cmt"><p>
+  string identifier, should include &quot;name=%d&quot;</p></dd><dt class="param">default</dt><dd class="cmt"><p>
+  The value of the register if no matching PlusArg is provided</p></dd><dt class="param">docstring</dt><dd class="cmt"><p>
+  The doctring</p></dd><dt class="param">width</dt><dd class="cmt"><p>
+  The width of the register, in bits</p></dd></dl></div>
+    </li><li name="midas.widgets.PlusArgsBridgeTargetIO" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PlusArgsBridgeTargetIOextendsBundle"></a><a id="PlusArgsBridgeTargetIO:PlusArgsBridgeTargetIO"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PlusArgsBridgeTargetIO.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a title="The target IO." href="PlusArgsBridgeTargetIO.html"><span class="name">PlusArgsBridgeTargetIO</span></a><span class="result"> extends <span class="extype" name="chisel3.Bundle">Bundle</span></span>
+      </span>
+      
+      <p class="shortcomment cmt">The target IO.</p><div class="fullcomment"><div class="comment cmt"><p>The target IO. This drives the value (default, or overriden) that comes out of the PlusArgs bridge
+</p></div></div>
     </li><li name="midas.widgets.PrintBridgeModule" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PrintBridgeModuleextendsBridgeModule[midas.widgets.HostPortIO[midas.widgets.PrintRecordBag]]withStreamToHostCPU"></a><a id="PrintBridgeModule:PrintBridgeModule"></a>
       <span class="permalink">
@@ -2582,6 +2693,22 @@ Returns a Seq of the leaf nodes with their absolute direction.
       </span>
       <span class="symbol">
         <a title="" href="PeekPokeTokenizedIO$.html"><span class="name">PeekPokeTokenizedIO</span></a>
+      </span>
+      
+      
+    </li><li name="midas.widgets.PlusArgsBridge" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PlusArgsBridge"></a><a id="PlusArgsBridge:PlusArgsBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/PlusArgsBridge$.html" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a title="" href="PlusArgsBridge$.html"><span class="name">PlusArgsBridge</span></a>
       </span>
       
       
