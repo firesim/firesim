@@ -668,3 +668,17 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         """ VitisInstanceDeployManager machines cannot be terminated. """
         pass
 
+class AzureInstanceDeployManager(VitisInstanceDeployManager):
+    """ This class manages a Azure-enabled instance """
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+
+
+    def infrasetup_instance(self) -> None:
+        run("sudo yum install -y screen")
+        # Ensures that the default shell (thus all successive `run` commands) see XRT related tooling.
+        run("echo 'if [ -z ${XILINX_XRT+1} ]; then source /opt/xilinx/xrt/setup.sh &> /dev/null; fi' >> ~/.bash_profile")
+
+        super().infrasetup_instance()
+
+
