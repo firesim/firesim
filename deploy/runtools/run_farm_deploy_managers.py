@@ -221,12 +221,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
-<<<<<<< HEAD
-                run("chmod +x sim-run.sh")
-                run("./sim-run.sh")
-=======
                 run(server.get_sim_start_command(slotno, type(self).sim_command_requires_sudo))
->>>>>>> 64db37962 (manager: let deploy managers elide sudo if not required)
 
 
     def kill_switch_slot(self, switchslot: int) -> None:
