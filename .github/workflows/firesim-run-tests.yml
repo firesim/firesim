@@ -358,7 +358,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install clang-format-13 -y
-          update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-13 100
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-13 100
           # sudo ln -s /usr/bin/clang-format-13 /usr/bin/clang-format
           # sudo ln -s /usr/bin/clang-format-diff-13 /usr/bin/clang-format-diff
           sudo ln -s /usr/bin/git-clang-format-13 /usr/bin/git-clang-format
