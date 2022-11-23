@@ -11,10 +11,11 @@ public:
   // Define a dummy function so we can use the instantiation macro
   void register_rb(reset_pulse_t *new_rb) { rb = new_rb; }
 
-  ResetPulseBridgeTest_t(int argc, char **argv) {
-    std::vector<std::string> args(argv + 1, argv + argc);
+  ResetPulseBridgeTest_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
     INSTANTIATE_RESET_PULSE(register_rb, 0)
   }
+
   // Since we rely on an assertion firing to catch a failure, just run a
   // similation that is at least the length of the expected pulse.
   void run() {

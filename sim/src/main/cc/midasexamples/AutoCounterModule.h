@@ -8,16 +8,16 @@
 class autocounter_module_t : public simif_peek_poke_t {
 public:
   std::vector<autocounter_t *> autocounter_endpoints;
-  autocounter_module_t(int argc, char **argv) {
-    std::vector<std::string> args(argv + 1, argv + argc);
-    INSTANTIATE_AUTOCOUNTER(autocounter_endpoints.push_back, 0)
+  autocounter_module_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create){
+            INSTANTIATE_AUTOCOUNTER(autocounter_endpoints.push_back, 0)
 #ifdef AUTOCOUNTERBRIDGEMODULE_1_PRESENT
-    INSTANTIATE_AUTOCOUNTER(autocounter_endpoints.push_back, 1)
+                INSTANTIATE_AUTOCOUNTER(autocounter_endpoints.push_back, 1)
 #endif
-  };
+        };
   void run_and_collect(int cycles) {
     step(cycles, false);
-    while (!done()) {
+    while (!simif->done()) {
       for (auto &autocounter_endpoint : autocounter_endpoints) {
         autocounter_endpoint->tick();
       }
@@ -31,8 +31,8 @@ public:
 #ifdef DESIGNNAME_AutoCounterModule
 class AutoCounterModule_t : public autocounter_module_t {
 public:
-  AutoCounterModule_t(int argc, char **argv)
-      : autocounter_module_t(argc, argv){};
+  AutoCounterModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : autocounter_module_t(args, simif) {}
   virtual void run() {
     for (auto &autocounter_endpoint : autocounter_endpoints) {
       autocounter_endpoint->init();
@@ -51,8 +51,8 @@ public:
 #ifdef DESIGNNAME_AutoCounter32bRollover
 class AutoCounter32bRollover_t : public autocounter_module_t {
 public:
-  AutoCounter32bRollover_t(int argc, char **argv)
-      : autocounter_module_t(argc, argv){};
+  AutoCounter32bRollover_t(const std::vector<std::string> &args, simif_t *simif)
+      : autocounter_module_t(args, simif) {}
   virtual void run() {
     for (auto &autocounter_endpoint : autocounter_endpoints) {
       autocounter_endpoint->init();
@@ -71,8 +71,9 @@ public:
 #ifdef DESIGNNAME_AutoCounterGlobalResetCondition
 class AutoCounterGlobalResetCondition_t : public autocounter_module_t {
 public:
-  AutoCounterGlobalResetCondition_t(int argc, char **argv)
-      : autocounter_module_t(argc, argv){};
+  AutoCounterGlobalResetCondition_t(const std::vector<std::string> &args,
+                                    simif_t *simif)
+      : autocounter_module_t(args, simif) {}
   virtual void run() {
     for (auto &autocounter_endpoint : autocounter_endpoints) {
       autocounter_endpoint->init();

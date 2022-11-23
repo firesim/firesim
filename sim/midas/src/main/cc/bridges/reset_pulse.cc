@@ -3,7 +3,7 @@
 #include "reset_pulse.h"
 
 reset_pulse_t::reset_pulse_t(simif_t *sim,
-                             std::vector<std::string> &args,
+                             const std::vector<std::string> &args,
                              const RESETPULSEBRIDGEMODULE_struct &mmio_addrs,
                              unsigned int max_pulse_length,
                              unsigned int default_pulse_length,

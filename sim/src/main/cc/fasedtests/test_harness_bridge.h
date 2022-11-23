@@ -16,12 +16,17 @@ class test_harness_bridge_t : public bridge_driver_t {
 private:
   int error = 0;
   bool done = false;
-  simif_peek_poke_t *sim;
+  simif_t *simif;
+  simif_peek_poke_t *peek_poke;
   AddressMap addr_map;
   std::unordered_map<std::string, uint32_t> expected_uarchevent_values;
 
 public:
-  test_harness_bridge_t(simif_peek_poke_t *sim,
+  /**
+   * @param addr_map This matches the addr map pass to the FASED timing model
+   */
+  test_harness_bridge_t(simif_t *simif,
+                        simif_peek_poke_t *peek_poke,
                         AddressMap addr_map,
                         const std::vector<std::string> &args);
   virtual ~test_harness_bridge_t(){};

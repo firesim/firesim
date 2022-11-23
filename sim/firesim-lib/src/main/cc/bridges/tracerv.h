@@ -12,7 +12,7 @@
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
-  FUNC(new tracerv_t(this,                                                     \
+  FUNC(new tracerv_t(simif,                                                    \
                      args,                                                     \
                      TRACERVBRIDGEMODULE_##IDX##_substruct_create,             \
                      TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_idx,            \
@@ -28,7 +28,7 @@ class tracerv_t : public bridge_driver_t
 {
 public:
   tracerv_t(simif_t *sim,
-            std::vector<std::string> &args,
+            const std::vector<std::string> &args,
             const TRACERVBRIDGEMODULE_struct &mmio_addrs,
             const int stream_idx,
             const int stream_depth,

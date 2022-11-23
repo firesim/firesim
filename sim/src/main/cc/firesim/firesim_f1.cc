@@ -1,35 +1,27 @@
 // See LICENSE for license details
 #ifndef RTLSIM
 #include "simif_f1.h"
+#define SIMIF simif_f1_t
 #else
 #include "simif_emul.h"
+#define SIMIF simif_emul_t
 #endif
+
 #include "firesim_top.h"
 #include <exception>
 #include <stdio.h>
 
 // top for RTL sim
-class firesim_f1_t :
-#ifdef RTLSIM
-    public simif_emul_t,
-    public firesim_top_t
-#else
-    public simif_f1_t,
-    public firesim_top_t
-#endif
-{
+class firesim_f1_t : public SIMIF, public firesim_top_t {
 public:
-#ifdef RTLSIM
-  firesim_f1_t(int argc, char **argv) : firesim_top_t(argc, argv){};
-#else
-  firesim_f1_t(int argc, char **argv)
-      : simif_f1_t(argc, argv), firesim_top_t(argc, argv){};
-#endif
+  firesim_f1_t(const std::vector<std::string> &args)
+      : SIMIF(args), firesim_top_t(args, this) {}
 };
 
 int main(int argc, char **argv) {
   try {
-    firesim_f1_t firesim(argc, argv);
+    std::vector<std::string> args(argv + 1, argv + argc);
+    firesim_f1_t firesim(args);
     firesim.init(argc, argv);
     firesim.run();
     return firesim.teardown();

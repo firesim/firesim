@@ -2,5 +2,6 @@
 
 class MultiSRAMFMR_t : public MultiRegfileFMR_t {
 public:
-  MultiSRAMFMR_t(int argc, char **argv) : MultiRegfileFMR_t(argc, argv) {}
+  MultiSRAMFMR_t(const std::vector<std::string> &args, simif_t *simif)
+      : MultiRegfileFMR_t(args, simif) {}
 };

@@ -7,9 +7,9 @@
 #include "experimental/xrt_ip.h"
 #include "experimental/xrt_kernel.h"
 
-class simif_vitis_t : public virtual simif_t {
+class simif_vitis_t : public simif_t {
 public:
-  simif_vitis_t(int argc, char **argv);
+  simif_vitis_t(const std::vector<std::string> &args);
   virtual ~simif_vitis_t(){};
   // Unused by Vitis since initialization / deinitization is done in the
   // constructor

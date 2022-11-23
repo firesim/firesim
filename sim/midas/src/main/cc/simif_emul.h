@@ -12,9 +12,9 @@
 
 // simif_emul_t is a concrete simif_t implementation for Software RTL simulators
 // The basis for MIDAS-level simulation
-class simif_emul_t : public virtual simif_t {
+class simif_emul_t : public simif_t {
 public:
-  simif_emul_t();
+  simif_emul_t(const std::vector<std::string> &args);
   virtual ~simif_emul_t();
   virtual void host_init(int argc, char **argv);
   virtual int host_finish();

@@ -3,11 +3,12 @@
 #include "test_harness_bridge.h"
 
 test_harness_bridge_t::test_harness_bridge_t(
-    simif_peek_poke_t *sim,
-    AddressMap
-        addr_map, // This matches the addr map pass to the FASED timing model
+    simif_t *simif,
+    simif_peek_poke_t *peek_poke,
+    AddressMap addr_map,
     const std::vector<std::string> &args)
-    : bridge_driver_t(sim), sim(sim), addr_map(addr_map) {
+    : bridge_driver_t(simif), simif(simif), peek_poke(peek_poke),
+      addr_map(addr_map) {
 
   for (auto &arg : args) {
     // Record all uarch events we want to validate
@@ -26,10 +27,10 @@ test_harness_bridge_t::test_harness_bridge_t(
 // against expected values
 void test_harness_bridge_t::tick() {
   // Wait for reset to complete.
-  if (sim->actual_tcycle() < 100)
+  if (simif->actual_tcycle() < 100)
     return;
 
-  this->done = sim->sample_value(
+  this->done = peek_poke->sample_value(
       done); // use a non-blocking sample since this signal is monotonic
   if (done) {
     this->error = 0;

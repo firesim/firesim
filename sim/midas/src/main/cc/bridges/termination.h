@@ -11,7 +11,7 @@ class termination_t : public bridge_driver_t {
 public:
   termination_t(simif_t *sim,
                 std::vector<std::string> &args,
-                TERMINATIONBRIDGEMODULE_struct *mmio_addrs,
+                const TERMINATIONBRIDGEMODULE_struct &mmio_addrs,
                 unsigned int num_messages,
                 unsigned int *is_err,
                 const char *const *msgs);
@@ -25,7 +25,7 @@ public:
   int cycle_count();
 
 private:
-  TERMINATIONBRIDGEMODULE_struct *mmio_addrs;
+  const TERMINATIONBRIDGEMODULE_struct mmio_addrs;
   bool test_done = false;
   int fail = 0;
   int tick_rate = 10;

@@ -21,15 +21,14 @@
 // Casts are required for now since the emitted type can change
 #define INSTANTIATE_FASED(FUNC, IDX)                                           \
   FUNC(new FASEDMemoryTimingModel(                                             \
-      this,                                                                    \
+      simif,                                                                   \
       AddressMap(FASEDMEMORYTIMINGMODEL_##IDX##_R_num_registers,               \
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_R_addrs, \
                  (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_R_names,  \
                  FASEDMEMORYTIMINGMODEL_##IDX##_W_num_registers,               \
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_W_addrs, \
                  (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_W_names), \
-      argc,                                                                    \
-      argv,                                                                    \
+      args,                                                                    \
       "memory_stats" #IDX ".csv",                                              \
       1L << FASEDMEMORYTIMINGMODEL_##IDX##_target_addr_bits,                   \
       "_" #IDX));
@@ -83,8 +82,7 @@ class FASEDMemoryTimingModel : public FpgaModel {
 public:
   FASEDMemoryTimingModel(simif_t *s,
                          AddressMap addr_map,
-                         int argc,
-                         char **argv,
+                         const std::vector<std::string> &args,
                          std::string stats_file_name,
                          size_t mem_size,
                          std::string suffix);

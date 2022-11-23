@@ -41,7 +41,9 @@ public:
 
 class TrivialMulticlock_t : public simif_peek_poke_t {
 public:
-  TrivialMulticlock_t(int argc, char **argv) {}
+  TrivialMulticlock_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+
   void run() {
     uint64_t limit = 256;
     std::vector<MulticlockChecker *> checkers;

@@ -6,7 +6,9 @@
 
 class PointerChaser_t : public simif_peek_poke_t {
 public:
-  PointerChaser_t(int argc, char **argv) {
+  PointerChaser_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
+
     max_cycles = 20000L;
     mpz_inits(address, result, NULL);
     mpz_set_ui(address, 64L);
@@ -27,7 +29,7 @@ public:
 #ifdef FASEDMEMORYTIMINGMODEL_0_PRESENT
     uint64_t host_mem_offset = 0x00000000LL;
     fpga_models.push_back(new FASEDMemoryTimingModel(
-        this,
+        simif,
         // Casts are required for now since the emitted type can change...
         AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
                    (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_R_addrs,

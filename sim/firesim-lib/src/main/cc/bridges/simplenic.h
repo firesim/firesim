@@ -12,7 +12,7 @@
 #ifdef SIMPLENICBRIDGEMODULE_struct_guard
 
 #define INSTANTIATE_SIMPLENIC(FUNC, IDX)                                       \
-  FUNC(new simplenic_t(this,                                                   \
+  FUNC(new simplenic_t(simif,                                                  \
                        args,                                                   \
                        SIMPLENICBRIDGEMODULE_##IDX##_substruct_create,         \
                        IDX,                                                    \
@@ -24,7 +24,7 @@
 class simplenic_t : public bridge_driver_t {
 public:
   simplenic_t(simif_t *sim,
-              std::vector<std::string> &args,
+              const std::vector<std::string> &args,
               const SIMPLENICBRIDGEMODULE_struct &addrs,
               int simplenicno,
               const int stream_to_cpu_idx,

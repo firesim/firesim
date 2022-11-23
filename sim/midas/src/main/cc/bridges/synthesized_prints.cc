@@ -7,7 +7,7 @@
 
 synthesized_prints_t::synthesized_prints_t(
     simif_t *sim,
-    std::vector<std::string> &args,
+    const std::vector<std::string> &args,
     const PRINTBRIDGEMODULE_struct &mmio_addrs,
     unsigned int print_count,
     unsigned int token_bytes,

@@ -9,9 +9,9 @@
 #include <fpga_pci.h>
 #endif
 
-class simif_f1_t : public virtual simif_t {
+class simif_f1_t : public simif_t {
 public:
-  simif_f1_t(int argc, char **argv);
+  simif_f1_t(const std::vector<std::string> &args);
   virtual ~simif_f1_t();
 
   // Unused by F1 since initialization / deinitization is done in the

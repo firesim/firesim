@@ -4,8 +4,9 @@
 
 #include "simif_peek_poke.h"
 
-simif_peek_poke_t::simif_peek_poke_t()
-    : defaultiowidget_mmio_addrs(PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+simif_peek_poke_t::simif_peek_poke_t(
+    simif_t *simif, const PEEKPOKEBRIDGEMODULE_struct &mmio_addrs)
+    : simif(simif), mmio_addrs(mmio_addrs) {}
 
 void simif_peek_poke_t::target_reset(int pulse_length) {
   poke(reset, 1);
@@ -19,7 +20,7 @@ void simif_peek_poke_t::step(uint32_t n, bool blocking) {
   // take steps
   if (log)
     fprintf(stderr, "* STEP %d -> %lu *\n", n, (t + n));
-  take_steps(n, blocking);
+  simif->take_steps(n, blocking);
   t += n;
 }
 
@@ -41,7 +42,7 @@ void simif_peek_poke_t::poke(size_t id, uint32_t value, bool blocking) {
             TARGET_NAME,
             INPUT_NAMES[id],
             value);
-  write(INPUT_ADDRS[id], value);
+  simif->write(INPUT_ADDRS[id], value);
 }
 
 uint32_t simif_peek_poke_t::peek(size_t id, bool blocking) {
@@ -61,7 +62,7 @@ uint32_t simif_peek_poke_t::peek(size_t id, bool blocking) {
   if (log && peek_may_be_unstable)
     fprintf(stderr,
             "* WARNING : The following peek is on an unstable value!\n");
-  uint32_t value = read(((unsigned int *)OUTPUT_ADDRS)[id]);
+  uint32_t value = simif->read(((unsigned int *)OUTPUT_ADDRS)[id]);
   if (log)
     fprintf(stderr,
             "* PEEK %s.%s -> 0x%x *\n",
@@ -111,7 +112,8 @@ void simif_peek_poke_t::poke(size_t id, mpz_t &value) {
   uint32_t *data =
       (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
   for (size_t i = 0; i < INPUT_CHUNKS[id]; i++) {
-    write(INPUT_ADDRS[id] + (i * sizeof(uint32_t)), i < size ? data[i] : 0);
+    simif->write(INPUT_ADDRS[id] + (i * sizeof(uint32_t)),
+                 i < size ? data[i] : 0);
   }
 }
 
@@ -119,7 +121,7 @@ void simif_peek_poke_t::peek(size_t id, mpz_t &value) {
   const size_t size = (const size_t)OUTPUT_CHUNKS[id];
   uint32_t data[size];
   for (size_t i = 0; i < size; i++) {
-    data[i] = read((size_t)OUTPUT_ADDRS[id] + (i * sizeof(uint32_t)));
+    data[i] = simif->read((size_t)OUTPUT_ADDRS[id] + (i * sizeof(uint32_t)));
   }
   mpz_import(value, size, -1, sizeof(uint32_t), 0, 0, data);
   if (log) {
@@ -156,15 +158,15 @@ bool simif_peek_poke_t::expect(size_t id, mpz_t &expected) {
 }
 
 int simif_peek_poke_t::teardown() {
-  record_end_times();
+  simif->record_end_times();
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) {
     fprintf(stdout, " at cycle %" PRIu64, fail_t);
   }
-  fprintf(stderr, "\nSEED: %ld\n", get_seed());
-  this->print_simulation_performance_summary();
+  fprintf(stderr, "\nSEED: %ld\n", simif->get_seed());
+  simif->print_simulation_performance_summary();
 
-  this->host_finish();
+  simif->host_finish();
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -17,7 +17,7 @@
 #include <sys/mman.h>
 
 autocounter_t::autocounter_t(simif_t *sim,
-                             std::vector<std::string> &args,
+                             const std::vector<std::string> &args,
                              const AUTOCOUNTERBRIDGEMODULE_struct &mmio_addrs,
                              AddressMap addr_map,
                              const uint32_t event_count,

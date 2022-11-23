@@ -8,9 +8,10 @@
 class TerminationModule_t : public simif_peek_poke_t {
 public:
   termination_t *terminator;
-  TerminationModule_t(int argc, char **argv) {
+  TerminationModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
     std::vector<std::string> args(argv + 1, argv + argc);
-    terminator = new termination_t(this,
+    terminator = new termination_t(simif,
                                    args,
                                    TERMINATIONBRIDGEMODULE_0_substruct_create,
                                    TERMINATIONBRIDGEMODULE_0_message_count,
@@ -27,9 +28,9 @@ public:
     int reset_length = 1;
     std::string failure_msg_list[3] = {"success 1", "success 2", "failure 3"};
     int failure_cond_list[3] = {0, 0, 1};
-    validinCycle = rand_next(100);
-    msginCycle = rand_next(100);
-    int termination_code = rand_next(8);
+    validinCycle = simif->rand_next(100);
+    msginCycle = simif->rand_next(100);
+    int termination_code = simif->rand_next(8);
     lv_validinCycle = lv_validinCycle + validinCycle;
     lv_msginCycle = lv_msginCycle + msginCycle;
     poke(io_validInCycle, lv_validinCycle);

@@ -11,10 +11,10 @@
 
 #include "bridges/synthesized_prints.h"
 
-class fasedtests_top_t : virtual public simif_peek_poke_t,
+class fasedtests_top_t : public simif_peek_poke_t,
                          public systematic_scheduler_t {
 public:
-  fasedtests_top_t(int argc, char **argv);
+  fasedtests_top_t(const std::vector<std::string> &args, simif_t *simif);
   ~fasedtests_top_t() {}
   int run();
 

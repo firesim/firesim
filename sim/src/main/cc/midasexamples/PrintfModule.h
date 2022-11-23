@@ -8,18 +8,18 @@
 class print_module_t : public simif_peek_poke_t {
 public:
   std::vector<synthesized_prints_t *> print_endpoints;
-  print_module_t(int argc, char **argv) {
-    std::vector<std::string> args(argv + 1, argv + argc);
+  print_module_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create){
 #ifdef PRINTBRIDGEMODULE_0_PRESENT
-    INSTANTIATE_PRINTF(print_endpoints.push_back, 0)
+            INSTANTIATE_PRINTF(print_endpoints.push_back, 0)
 #endif
 #ifdef PRINTBRIDGEMODULE_1_PRESENT
-    INSTANTIATE_PRINTF(print_endpoints.push_back, 1)
+                INSTANTIATE_PRINTF(print_endpoints.push_back, 1)
 #endif
-  };
+        };
   void run_and_collect_prints(int cycles) {
     step(cycles, false);
-    while (!done()) {
+    while (!simif->done()) {
       for (auto &print_endpoint : print_endpoints) {
         print_endpoint->tick();
       }
@@ -33,7 +33,8 @@ public:
 #ifdef DESIGNNAME_PrintfModule
 class PrintfModule_t : public print_module_t {
 public:
-  PrintfModule_t(int argc, char **argv) : print_module_t(argc, argv){};
+  PrintfModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : print_module_t(args, simif) {}
   virtual void run() {
     for (auto &print_endpoint : print_endpoints) {
       print_endpoint->init();
@@ -54,8 +55,9 @@ public:
 #ifdef DESIGNNAME_AutoCounterPrintfModule
 class AutoCounterPrintfModule_t : public print_module_t {
 public:
-  AutoCounterPrintfModule_t(int argc, char **argv)
-      : print_module_t(argc, argv){};
+  AutoCounterPrintfModule_t(const std::vector<std::string> &args,
+                            simif_t *simif)
+      : print_module_t(args, simif) {}
   virtual void run() {
     for (auto &print_endpoint : print_endpoints) {
       print_endpoint->init();
@@ -74,8 +76,9 @@ public:
 #ifdef DESIGNNAME_TriggerPredicatedPrintf
 class TriggerPredicatedPrintf_t : public print_module_t {
 public:
-  TriggerPredicatedPrintf_t(int argc, char **argv)
-      : print_module_t(argc, argv){};
+  TriggerPredicatedPrintf_t(const std::vector<std::string> &args,
+                            simif_t *simif)
+      : print_module_t(args, simif) {}
   virtual void run() {
     for (auto &print_endpoint : print_endpoints) {
       print_endpoint->init();
@@ -88,8 +91,9 @@ public:
 #ifdef DESIGNNAME_PrintfGlobalResetCondition
 class PrintfGlobalResetCondition_t : public print_module_t {
 public:
-  PrintfGlobalResetCondition_t(int argc, char **argv)
-      : print_module_t(argc, argv){};
+  PrintfGlobalResetCondition_t(const std::vector<std::string> &args,
+                               simif_t *simif)
+      : print_module_t(args, simif) {}
   virtual void run() {
     poke(reset, 1);
     // To be safe, must be at least the length of the number of pipeine

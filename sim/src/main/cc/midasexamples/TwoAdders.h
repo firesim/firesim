@@ -7,7 +7,9 @@
 
 class TwoAdders_t : public simif_peek_poke_t {
 public:
-  TwoAdders_t(int argc, char **argv) {}
+  TwoAdders_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+
   uint32_t i0[NTESTS] = {4, 8, 13, 26, 19, 0};
   uint32_t i1[NTESTS] = {31, 11, 99, 27, 43, 0};
   uint32_t i2[NTESTS] = {28, 7, 30, 2, 88, 0};

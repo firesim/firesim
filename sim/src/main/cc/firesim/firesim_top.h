@@ -11,9 +11,9 @@
 
 #include "bridges/synthesized_prints.h"
 
-class firesim_top_t : virtual simif_t, public systematic_scheduler_t {
+class firesim_top_t : public systematic_scheduler_t {
 public:
-  firesim_top_t(int argc, char **argv);
+  firesim_top_t(const std::vector<std::string> &args, simif_t *simif);
   ~firesim_top_t() {}
 
   virtual void run();
@@ -25,6 +25,9 @@ protected:
   }
 
 private:
+  // Simulator interface.
+  simif_t *simif;
+
   // A registry of all bridge drivers in the simulator
   std::vector<std::unique_ptr<bridge_driver_t>> bridges;
   // FPGA-hosted models with programmable registers & instrumentation

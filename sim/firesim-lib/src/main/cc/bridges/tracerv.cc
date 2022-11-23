@@ -22,7 +22,7 @@
 constexpr uint64_t valid_mask = (1ULL << 40);
 
 tracerv_t::tracerv_t(simif_t *sim,
-                     std::vector<std::string> &args,
+                     const std::vector<std::string> &args,
                      const TRACERVBRIDGEMODULE_struct &mmio_addrs,
                      int stream_idx,
                      int stream_depth,

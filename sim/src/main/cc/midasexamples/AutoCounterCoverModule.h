@@ -8,8 +8,9 @@
 #ifdef DESIGNNAME_AutoCounterCoverModule
 class AutoCounterCoverModule_t : public autocounter_module_t {
 public:
-  AutoCounterCoverModule_t(int argc, char **argv)
-      : autocounter_module_t(argc, argv){};
+  AutoCounterCoverModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : autocounter_module_t(args, simif) {}
+
   virtual void run() {
     for (auto &autocounter_endpoint : autocounter_endpoints) {
       autocounter_endpoint->init();
