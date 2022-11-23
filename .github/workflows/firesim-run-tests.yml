@@ -362,7 +362,7 @@ jobs:
       # Check clang-format version
       - name: clang-format version
         run: |
-          clang-format --version
+          clang-format-13 --version
 
       # Run 'clang-format', comparing against the base commit hash.
       # If anything got reformatted, fail and output a patch.
