@@ -358,11 +358,14 @@ jobs:
         run: |
           sudo apt update
           sudo apt install clang-format-13 -y
+          sudo ln -s /usr/bin/clang-format-13 /usr/bin/clang-format
+          sudo ln -s /usr/bin/clang-format-diff-13 /usr/bin/clang-format-diff
+          sudo ln -s /usr/bin/git-clang-format-13 /usr/bin/git-clang-format
 
       # Check clang-format version
       - name: clang-format version
         run: |
-          clang-format-13 --version
+          clang-format --version
 
       # Run 'clang-format', comparing against the base commit hash.
       # If anything got reformatted, fail and output a patch.
