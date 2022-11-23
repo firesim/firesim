@@ -359,6 +359,11 @@ jobs:
           sudo apt update
           sudo apt install clang-format -y
 
+      # CHECK VERSION
+      - name: clang-format version
+        run: |
+          clang-format --version
+
       # Run 'clang-format', comparing against the base commit hash.
       # If anything got reformatted, fail and output a patch.
       - name: Run clang-format

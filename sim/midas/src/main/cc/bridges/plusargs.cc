@@ -45,7 +45,7 @@ plusargs_t::plusargs_t(simif_t *sim,
   auto found = name.find(delimiter);
   if (found == std::string::npos) {
     std::cerr << "delimiter '" << delimiter
-              << "' not found in the PlusArg string '" << name_orig << "'\n";
+              << "' not found in the PlusArg str ing '" << name_orig << "'\n";
     exit(1);
   }
 
