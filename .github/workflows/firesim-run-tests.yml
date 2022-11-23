@@ -344,7 +344,7 @@ jobs:
 
   clang-format:
     name: clang-format
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       # Clone the repository (shallow to save time).
       - name: Checkout sources
@@ -357,9 +357,9 @@ jobs:
       - name: Install clang-format
         run: |
           sudo apt update
-          sudo apt install clang-format -y
+          sudo apt install clang-format-13 -y
 
-      # CHECK VERSION
+      # Check clang-format version
       - name: clang-format version
         run: |
           clang-format --version
