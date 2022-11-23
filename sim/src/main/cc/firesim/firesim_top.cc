@@ -50,43 +50,33 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
   // Golden Gate emits a <BridgeModuleClassName>_<id>_PRESENT macro for each
   // instance which you may use to conditionally instantiate your driver
 #ifdef UARTBRIDGEMODULE_0_PRESENT
-  // Create an instance of the constructor argument (this has all of
-  // addresses of the BridgeModule's memory mapped registers)
-  UARTBRIDGEMODULE_0_substruct_create;
   // Instantiate the driver; register it in the main simulation class
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_0_substruct, 0));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_0_substruct_create, 0));
 #endif
 
 // Repeat the code above with modified indices as many times as necessary
 // to support the maximum expected number of bridge instances
 #ifdef UARTBRIDGEMODULE_1_PRESENT
-  UARTBRIDGEMODULE_1_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_1_substruct, 1));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_1_substruct_create, 1));
 #endif
   // DOC include end: UART Bridge Driver Registration
 #ifdef UARTBRIDGEMODULE_2_PRESENT
-  UARTBRIDGEMODULE_2_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_2_substruct, 2));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_2_substruct_create, 2));
 #endif
 #ifdef UARTBRIDGEMODULE_3_PRESENT
-  UARTBRIDGEMODULE_3_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_3_substruct, 3));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_3_substruct_create, 3));
 #endif
 #ifdef UARTBRIDGEMODULE_4_PRESENT
-  UARTBRIDGEMODULE_4_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_4_substruct, 4));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_4_substruct_create, 4));
 #endif
 #ifdef UARTBRIDGEMODULE_5_PRESENT
-  UARTBRIDGEMODULE_5_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_5_substruct, 5));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_5_substruct_create, 5));
 #endif
 #ifdef UARTBRIDGEMODULE_6_PRESENT
-  UARTBRIDGEMODULE_6_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_6_substruct, 6));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_6_substruct_create, 6));
 #endif
 #ifdef UARTBRIDGEMODULE_7_PRESENT
-  UARTBRIDGEMODULE_7_substruct_create;
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_7_substruct, 7));
+  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_7_substruct_create, 7));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_0
@@ -189,75 +179,67 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 
 #ifdef BLOCKDEVBRIDGEMODULE_struct_guard
 #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
-  BLOCKDEVBRIDGEMODULE_0_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_0_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_0_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_0_substruct,
+                                   BLOCKDEVBRIDGEMODULE_0_substruct_create,
                                    0));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_1_PRESENT
-  BLOCKDEVBRIDGEMODULE_1_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_1_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_1_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_1_substruct,
+                                   BLOCKDEVBRIDGEMODULE_1_substruct_create,
                                    1));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_2_PRESENT
-  BLOCKDEVBRIDGEMODULE_2_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_2_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_2_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_2_substruct,
+                                   BLOCKDEVBRIDGEMODULE_2_substruct_create,
                                    2));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_3_PRESENT
-  BLOCKDEVBRIDGEMODULE_3_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_3_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_3_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_3_substruct,
+                                   BLOCKDEVBRIDGEMODULE_3_substruct_create,
                                    3));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_4_PRESENT
-  BLOCKDEVBRIDGEMODULE_4_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_4_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_4_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_4_substruct,
+                                   BLOCKDEVBRIDGEMODULE_4_substruct_create,
                                    4));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_5_PRESENT
-  BLOCKDEVBRIDGEMODULE_5_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_5_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_5_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_5_substruct,
+                                   BLOCKDEVBRIDGEMODULE_5_substruct_create,
                                    5));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_6_PRESENT
-  BLOCKDEVBRIDGEMODULE_6_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_6_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_6_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_6_substruct,
+                                   BLOCKDEVBRIDGEMODULE_6_substruct_create,
                                    6));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_7_PRESENT
-  BLOCKDEVBRIDGEMODULE_7_substruct_create;
   add_bridge_driver(new blockdev_t(this,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_7_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_7_latency_bits,
-                                   BLOCKDEVBRIDGEMODULE_7_substruct,
+                                   BLOCKDEVBRIDGEMODULE_7_substruct_create,
                                    7));
 #endif
 #endif
@@ -390,7 +372,6 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 
 #ifdef DROMAJOBRIDGEMODULE_struct_guard
 #ifdef DROMAJOBRIDGEMODULE_0_PRESENT
-  DROMAJOBRIDGEMODULE_0_substruct_create;
     add_bridge_driver(new dromajo_t(
             this, args,
             DROMAJOBRIDGEMODULE_0_iaddr_width,
@@ -399,7 +380,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
             DROMAJOBRIDGEMODULE_0_cause_width,
             DROMAJOBRIDGEMODULE_0_tval_width,
             DROMAJOBRIDGEMODULE_0_num_traces,
-            DROMAJOBRIDGEMODULE_0_substruct,
+            DROMAJOBRIDGEMODULE_0_substruct_create,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_dma_address,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_count_address,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_full_address)
@@ -408,44 +389,36 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 
 #ifdef GROUNDTESTBRIDGEMODULE_struct_guard
 #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
-    GROUNDTESTBRIDGEMODULE_0_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_0_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_1_PRESENT
-    GROUNDTESTBRIDGEMODULE_1_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_1_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_1_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_2_PRESENT
-    GROUNDTESTBRIDGEMODULE_2_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_2_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_2_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_3_PRESENT
-    GROUNDTESTBRIDGEMODULE_3_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_3_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_3_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_4_PRESENT
-    GROUNDTESTBRIDGEMODULE_4_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_4_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_4_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_5_PRESENT
-    GROUNDTESTBRIDGEMODULE_5_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_5_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_5_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_6_PRESENT
-    GROUNDTESTBRIDGEMODULE_6_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_6_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_6_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_7_PRESENT
-    GROUNDTESTBRIDGEMODULE_7_substruct_create;
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_7_substruct));
+            this, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
 #endif
 #endif
 
@@ -475,51 +448,43 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 #endif
 
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
-    ASSERTBRIDGEMODULE_0_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_0_substruct,
+                                                   ASSERTBRIDGEMODULE_0_substruct_create,
                                                    ASSERTBRIDGEMODULE_0_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_1_PRESENT
-    ASSERTBRIDGEMODULE_1_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_1_substruct,
+                                                   ASSERTBRIDGEMODULE_1_substruct_create,
                                                    ASSERTBRIDGEMODULE_1_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_2_PRESENT
-    ASSERTBRIDGEMODULE_2_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_2_substruct,
+                                                   ASSERTBRIDGEMODULE_2_substruct_create,
                                                    ASSERTBRIDGEMODULE_2_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_3_PRESENT
-    ASSERTBRIDGEMODULE_3_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_3_substruct,
+                                                   ASSERTBRIDGEMODULE_3_substruct_create,
                                                    ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
-    ASSERTBRIDGEMODULE_4_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_4_substruct,
+                                                   ASSERTBRIDGEMODULE_4_substruct_create,
                                                    ASSERTBRIDGEMODULE_4_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_5_PRESENT
-    ASSERTBRIDGEMODULE_5_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_5_substruct,
+                                                   ASSERTBRIDGEMODULE_5_substruct_create,
                                                    ASSERTBRIDGEMODULE_5_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_6_PRESENT
-    ASSERTBRIDGEMODULE_6_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_6_substruct,
+                                                   ASSERTBRIDGEMODULE_6_substruct_create,
                                                    ASSERTBRIDGEMODULE_6_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_7_PRESENT
-    ASSERTBRIDGEMODULE_7_substruct_create
     add_bridge_driver(new synthesized_assertions_t(this, args,
-                                                   ASSERTBRIDGEMODULE_7_substruct,
+                                                   ASSERTBRIDGEMODULE_7_substruct_create,
                                                    ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
 

@@ -24,10 +24,9 @@ struct serial_data_t {
 // Bridge Driver Instantiation Template
 // Casts are required for now since the emitted type can change
 #define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
-  SERIALBRIDGEMODULE_##IDX##_substruct_create;                                 \
   FUNC(new serial_t(this,                                                      \
                     args,                                                      \
-                    SERIALBRIDGEMODULE_##IDX##_substruct,                      \
+                    SERIALBRIDGEMODULE_##IDX##_substruct_create,               \
                     IDX,                                                       \
                     SERIALBRIDGEMODULE_##IDX##_has_memory,                     \
                     SERIALBRIDGEMODULE_##IDX##_memory_offset));
@@ -37,7 +36,7 @@ class serial_t : public bridge_driver_t {
 public:
   serial_t(simif_t *sim,
            const std::vector<std::string> &args,
-           SERIALBRIDGEMODULE_struct *mmio_addrs,
+           const SERIALBRIDGEMODULE_struct &mmio_addrs,
            int serialno,
            bool has_mem,
            int64_t mem_host_offset);
@@ -49,7 +48,7 @@ public:
   virtual void finish(){};
 
 private:
-  SERIALBRIDGEMODULE_struct *mmio_addrs;
+  const SERIALBRIDGEMODULE_struct mmio_addrs;
   simif_t *sim;
   firesim_tsi_t *fesvr;
   bool has_mem;

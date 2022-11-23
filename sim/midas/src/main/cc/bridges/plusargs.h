@@ -11,18 +11,14 @@
 #include <string_view>
 
 #define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
-  FUNC(new plusargs_t(                                                         \
-      this,                                                                    \
-      args,                                                                    \
-      []() {                                                                   \
-        PLUSARGSBRIDGEMODULE_##IDX##_substruct_create;                         \
-        return PLUSARGSBRIDGEMODULE_##IDX##_substruct;                         \
-      }(),                                                                     \
-      PLUSARGSBRIDGEMODULE_##IDX##_name,                                       \
-      PLUSARGSBRIDGEMODULE_##IDX##_default,                                    \
-      PLUSARGSBRIDGEMODULE_##IDX##_width,                                      \
-      PLUSARGSBRIDGEMODULE_##IDX##_slice_count,                                \
-      PLUSARGSBRIDGEMODULE_##IDX##_slice_addrs));
+  FUNC(new plusargs_t(this,                                                    \
+                      args,                                                    \
+                      PLUSARGSBRIDGEMODULE_##IDX##_substruct_create,           \
+                      PLUSARGSBRIDGEMODULE_##IDX##_name,                       \
+                      PLUSARGSBRIDGEMODULE_##IDX##_default,                    \
+                      PLUSARGSBRIDGEMODULE_##IDX##_width,                      \
+                      PLUSARGSBRIDGEMODULE_##IDX##_slice_count,                \
+                      PLUSARGSBRIDGEMODULE_##IDX##_slice_addrs));
 
 /**
  * @brief PlusArgs Bridge Driver class
@@ -37,7 +33,7 @@ class plusargs_t : public bridge_driver_t {
 public:
   plusargs_t(simif_t *sim,
              std::vector<std::string> &args,
-             PLUSARGSBRIDGEMODULE_struct *mmio_addrs,
+             const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
              const std::string_view name,
              const char *default_value,
              const uint32_t bit_width,
@@ -53,7 +49,7 @@ public:
   bool get_overridden();
 
 private:
-  PLUSARGSBRIDGEMODULE_struct *mmio_addrs;
+  const PLUSARGSBRIDGEMODULE_struct mmio_addrs;
   mpz_t value;            // either the default or the PlusArg value
   bool overriden = false; // true if the PlusArg was found and parsed
   const uint32_t slice_count = 0;

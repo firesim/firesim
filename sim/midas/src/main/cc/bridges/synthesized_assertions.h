@@ -9,7 +9,7 @@ class synthesized_assertions_t : public bridge_driver_t {
 public:
   synthesized_assertions_t(simif_t *sim,
                            std::vector<std::string> &args,
-                           ASSERTBRIDGEMODULE_struct *mmio_addrs,
+                           const ASSERTBRIDGEMODULE_struct &mmio_addrs,
                            const char *const *msgs);
   ~synthesized_assertions_t();
   virtual void init();
@@ -25,7 +25,7 @@ private:
   bool enable = true;
   int assert_id;
   uint64_t assert_cycle;
-  ASSERTBRIDGEMODULE_struct *mmio_addrs;
+  const ASSERTBRIDGEMODULE_struct mmio_addrs;
   const char *const *msgs;
 };
 

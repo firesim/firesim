@@ -248,14 +248,11 @@ class MCRFileMap(bytesPerAddress: Int) {
     sb append s"#define ${prefix}_PRESENT\n"
 
     // emit macro to create a version of this struct with values filled in
-    sb append s"#define ${prefix}_substruct_create \\\n"
-    // assume the widget destructor will free this
-    sb append s"${prefix_no_num}_struct * ${prefix}_substruct = (${prefix_no_num}_struct *) malloc(sizeof(${prefix_no_num}_struct)); \\\n"
+    sb append s"#define ${prefix}_substruct_create (${prefix_no_num}_struct{ \\\n"
     filteredRegs foreach { case (regName, localAddress) =>
-      val address = base + localAddress
-      sb append s"${prefix}_substruct->${regName} = ${address}; \\\n"
+      sb append s"${base + localAddress}, \\\n"
     }
-    sb append s"\n"
+    sb append s"})\n"
   }
 
   // A variation of above which dumps the register map as a series of arrays

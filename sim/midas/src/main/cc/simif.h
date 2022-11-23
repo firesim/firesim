@@ -56,9 +56,9 @@ private:
   // random numbers
   uint64_t seed;
   std::mt19937_64 gen;
-  SIMULATIONMASTER_struct *master_mmio_addrs;
-  LOADMEMWIDGET_struct *loadmem_mmio_addrs;
-  CLOCKBRIDGEMODULE_struct *clock_bridge_mmio_addrs;
+  const SIMULATIONMASTER_struct master_mmio_addrs;
+  const LOADMEMWIDGET_struct loadmem_mmio_addrs;
+  const CLOCKBRIDGEMODULE_struct clock_bridge_mmio_addrs;
   midas_time_t start_time, end_time;
   uint64_t start_hcycle = -1;
   uint64_t end_hcycle = 0;
@@ -69,9 +69,9 @@ private:
 public:
   // Simulation APIs
   virtual void init(int argc, char **argv);
-  inline bool done() { return read(this->master_mmio_addrs->DONE); }
+  inline bool done() { return read(master_mmio_addrs.DONE); }
   inline void take_steps(size_t n, bool blocking) {
-    write(this->master_mmio_addrs->STEP, n);
+    write(master_mmio_addrs.STEP, n);
     if (blocking)
       while (!done())
         ;

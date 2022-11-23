@@ -5,22 +5,23 @@
 
 #include "synthesized_prints.h"
 
-synthesized_prints_t::synthesized_prints_t(simif_t *sim,
-                                           std::vector<std::string> &args,
-                                           PRINTBRIDGEMODULE_struct *mmio_addrs,
-                                           unsigned int print_count,
-                                           unsigned int token_bytes,
-                                           unsigned int idle_cycles_mask,
-                                           const unsigned int *print_offsets,
-                                           const char *const *format_strings,
-                                           const unsigned int *argument_counts,
-                                           const unsigned int *argument_widths,
-                                           unsigned int stream_idx,
-                                           unsigned int stream_depth,
-                                           const char *const clock_domain_name,
-                                           const unsigned int clock_multiplier,
-                                           const unsigned int clock_divisor,
-                                           int printno)
+synthesized_prints_t::synthesized_prints_t(
+    simif_t *sim,
+    std::vector<std::string> &args,
+    const PRINTBRIDGEMODULE_struct &mmio_addrs,
+    unsigned int print_count,
+    unsigned int token_bytes,
+    unsigned int idle_cycles_mask,
+    const unsigned int *print_offsets,
+    const char *const *format_strings,
+    const unsigned int *argument_counts,
+    const unsigned int *argument_widths,
+    unsigned int stream_idx,
+    unsigned int stream_depth,
+    const char *const clock_domain_name,
+    const unsigned int clock_multiplier,
+    const unsigned int clock_divisor,
+    int printno)
     : bridge_driver_t(sim), mmio_addrs(mmio_addrs), print_count(print_count),
       token_bytes(token_bytes), idle_cycles_mask(idle_cycles_mask),
       print_offsets(print_offsets), format_strings(format_strings),
@@ -138,7 +139,6 @@ synthesized_prints_t::synthesized_prints_t(simif_t *sim,
 };
 
 synthesized_prints_t::~synthesized_prints_t() {
-  free(this->mmio_addrs);
   for (size_t i = 0; i < print_count; i++) {
     delete masks[i];
   }
@@ -146,11 +146,11 @@ synthesized_prints_t::~synthesized_prints_t() {
 
 void synthesized_prints_t::init() {
   // Set the bounds in the widget
-  write(this->mmio_addrs->startCycleL, this->start_cycle);
-  write(this->mmio_addrs->startCycleH, this->start_cycle >> 32);
-  write(this->mmio_addrs->endCycleL, this->end_cycle);
-  write(this->mmio_addrs->endCycleH, this->end_cycle >> 32);
-  write(this->mmio_addrs->doneInit, 1);
+  write(mmio_addrs.startCycleL, this->start_cycle);
+  write(mmio_addrs.startCycleH, this->start_cycle >> 32);
+  write(mmio_addrs.endCycleL, this->end_cycle);
+  write(mmio_addrs.endCycleH, this->end_cycle >> 32);
+  write(mmio_addrs.doneInit, 1);
 }
 
 // Accepts the format string, and the masked arguments, and emits the formatted
@@ -313,7 +313,7 @@ void synthesized_prints_t::flush() {
   // If multiple tokens are being packed into a single stream beat, force the
   // widget to write out any incomplete beat
   if (token_bytes < beat_bytes) {
-    write(mmio_addrs->flushNarrowPacket, 1);
+    write(mmio_addrs.flushNarrowPacket, 1);
 
     // On an FPGA reading from the stream will have enough latency that
     // process_tokens will return non-zero on the first attempt, introducing no

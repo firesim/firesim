@@ -9,10 +9,9 @@
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_RESET_PULSE(FUNC, IDX)                                     \
-  RESETPULSEBRIDGEMODULE_##IDX##_substruct_create;                             \
   FUNC(new reset_pulse_t(this,                                                 \
                          args,                                                 \
-                         RESETPULSEBRIDGEMODULE_##IDX##_substruct,             \
+                         RESETPULSEBRIDGEMODULE_##IDX##_substruct_create,      \
                          RESETPULSEBRIDGEMODULE_##IDX##_max_pulse_length,      \
                          RESETPULSEBRIDGEMODULE_##IDX##_default_pulse_length,  \
                          IDX));
@@ -22,7 +21,7 @@ class reset_pulse_t : public bridge_driver_t {
 public:
   reset_pulse_t(simif_t *sim,
                 std::vector<std::string> &args,
-                RESETPULSEBRIDGEMODULE_struct *mmio_addrs,
+                const RESETPULSEBRIDGEMODULE_struct &mmio_addrs,
                 unsigned int max_pulse_length,
                 unsigned int default_pulse_length,
                 int reset_index);
@@ -34,7 +33,7 @@ public:
   virtual void finish(){};
 
 private:
-  RESETPULSEBRIDGEMODULE_struct *mmio_addrs;
+  const RESETPULSEBRIDGEMODULE_struct mmio_addrs;
   const unsigned int max_pulse_length;
   const unsigned int default_pulse_length;
 

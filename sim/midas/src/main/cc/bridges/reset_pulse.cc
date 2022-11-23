@@ -4,7 +4,7 @@
 
 reset_pulse_t::reset_pulse_t(simif_t *sim,
                              std::vector<std::string> &args,
-                             RESETPULSEBRIDGEMODULE_struct *mmio_addrs,
+                             const RESETPULSEBRIDGEMODULE_struct &mmio_addrs,
                              unsigned int max_pulse_length,
                              unsigned int default_pulse_length,
                              int reset_index)
@@ -33,8 +33,8 @@ reset_pulse_t::reset_pulse_t(simif_t *sim,
 }
 
 void reset_pulse_t::init() {
-  write(this->mmio_addrs->pulseLength, this->pulse_length);
-  write(this->mmio_addrs->doneInit, 1);
+  write(mmio_addrs.pulseLength, this->pulse_length);
+  write(mmio_addrs.doneInit, 1);
 }
 
 #endif // RESETPULSEBRIDGEMODULE_struct_guard

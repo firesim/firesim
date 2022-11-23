@@ -23,7 +23,7 @@ constexpr uint64_t valid_mask = (1ULL << 40);
 
 tracerv_t::tracerv_t(simif_t *sim,
                      std::vector<std::string> &args,
-                     TRACERVBRIDGEMODULE_struct *mmio_addrs,
+                     const TRACERVBRIDGEMODULE_struct &mmio_addrs,
                      int stream_idx,
                      int stream_depth,
                      const unsigned int max_core_ipc,
@@ -155,51 +155,47 @@ tracerv_t::~tracerv_t() {
   if (this->tracefile) {
     fclose(this->tracefile);
   }
-  free(this->mmio_addrs);
 }
 
 void tracerv_t::init() {
   if (!this->trace_enabled) {
     // Explicitly disable token collection in the bridge if no tracefile was
     // provided to improve FMR
-    write(this->mmio_addrs->traceEnable, 0);
+    write(mmio_addrs.traceEnable, 0);
   }
 
   // Configure the trigger even if tracing is disabled, as other
   // instrumentation, like autocounter, may use tracerv-hosted trigger sources.
   if (this->trigger_selector == 1) {
-    write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-    write(this->mmio_addrs->hostTriggerCycleCountStartHigh,
+    write(mmio_addrs.triggerSelector, this->trigger_selector);
+    write(mmio_addrs.hostTriggerCycleCountStartHigh,
           this->trace_trigger_start >> 32);
-    write(this->mmio_addrs->hostTriggerCycleCountStartLow,
+    write(mmio_addrs.hostTriggerCycleCountStartLow,
           this->trace_trigger_start & ((1ULL << 32) - 1));
-    write(this->mmio_addrs->hostTriggerCycleCountEndHigh,
+    write(mmio_addrs.hostTriggerCycleCountEndHigh,
           this->trace_trigger_end >> 32);
-    write(this->mmio_addrs->hostTriggerCycleCountEndLow,
+    write(mmio_addrs.hostTriggerCycleCountEndLow,
           this->trace_trigger_end & ((1ULL << 32) - 1));
     printf("TracerV: Trigger enabled from %lu to %lu cycles\n",
            trace_trigger_start,
            trace_trigger_end);
   } else if (this->trigger_selector == 2) {
-    write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-    write(this->mmio_addrs->hostTriggerPCStartHigh,
-          this->trigger_start_pc >> 32);
-    write(this->mmio_addrs->hostTriggerPCStartLow,
+    write(mmio_addrs.triggerSelector, this->trigger_selector);
+    write(mmio_addrs.hostTriggerPCStartHigh, this->trigger_start_pc >> 32);
+    write(mmio_addrs.hostTriggerPCStartLow,
           this->trigger_start_pc & ((1ULL << 32) - 1));
-    write(this->mmio_addrs->hostTriggerPCEndHigh, this->trigger_stop_pc >> 32);
-    write(this->mmio_addrs->hostTriggerPCEndLow,
+    write(mmio_addrs.hostTriggerPCEndHigh, this->trigger_stop_pc >> 32);
+    write(mmio_addrs.hostTriggerPCEndLow,
           this->trigger_stop_pc & ((1ULL << 32) - 1));
     printf("TracerV: Trigger enabled from instruction address %lx to %lx\n",
            trigger_start_pc,
            trigger_stop_pc);
   } else if (this->trigger_selector == 3) {
-    write(this->mmio_addrs->triggerSelector, this->trigger_selector);
-    write(this->mmio_addrs->hostTriggerStartInst, this->trigger_start_insn);
-    write(this->mmio_addrs->hostTriggerStartInstMask,
-          this->trigger_start_insn_mask);
-    write(this->mmio_addrs->hostTriggerEndInst, this->trigger_stop_insn);
-    write(this->mmio_addrs->hostTriggerEndInstMask,
-          this->trigger_stop_insn_mask);
+    write(mmio_addrs.triggerSelector, this->trigger_selector);
+    write(mmio_addrs.hostTriggerStartInst, this->trigger_start_insn);
+    write(mmio_addrs.hostTriggerStartInstMask, this->trigger_start_insn_mask);
+    write(mmio_addrs.hostTriggerEndInst, this->trigger_stop_insn);
+    write(mmio_addrs.hostTriggerEndInstMask, this->trigger_stop_insn_mask);
     printf("TracerV: Trigger enabled from start trigger instruction %x masked "
            "with %x, to end trigger instruction %x masked with %x\n",
            this->trigger_start_insn,
@@ -208,13 +204,13 @@ void tracerv_t::init() {
            this->trigger_stop_insn_mask);
   } else {
     // Writing 0 to triggerSelector permanently enables the trigger
-    write(this->mmio_addrs->triggerSelector, this->trigger_selector);
+    write(mmio_addrs.triggerSelector, this->trigger_selector);
     printf("TracerV: No trigger selected. Trigger enabled from %lu to %lu "
            "cycles\n",
            0ul,
            ULONG_MAX);
   }
-  write(this->mmio_addrs->initDone, true);
+  write(mmio_addrs.initDone, true);
 }
 
 size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
