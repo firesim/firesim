@@ -11,7 +11,7 @@
 #include <dirent.h>
 
 #define PCI_DEV_FMT "%04x:%02x:%02x.%d"
-int bar0_size = 0x2000000; // 32 MB
+int bar0_size = 0x800000; // 8MB
 
 static int
 fpga_pci_check_file_id(char *path, uint16_t id)
@@ -121,76 +121,26 @@ void simif_u250_t::fpga_shutdown() {
 
 void simif_u250_t::fpga_setup(int slot_id) {
 #ifndef SIMULATION_XSIM
-    int domain = 0;
-    int device_id = 0;
-    int pf_id = 0;
-    int bar_id = 0;
 
-
-    uint16_t pci_vendor_id = 0x10ee; /* Xilinx PCI Vendor ID */
-    uint16_t pci_device_id = 0x903f; /* PCI Device ID preassigned by Xilinx for XDMA */
 
     int fd = -1;
-    char sysfs_name[256];
     int ret;
-
-    // check vendor id
-    ret = snprintf(sysfs_name, sizeof(sysfs_name),
-                   "/sys/bus/pci/devices/" PCI_DEV_FMT "/vendor",
-                   domain, slot_id, device_id, pf_id);
-    assert(ret>=0);
-    fpga_pci_check_file_id(sysfs_name, pci_vendor_id);
-
-    // check device id
-    ret = snprintf(sysfs_name, sizeof(sysfs_name),
-                   "/sys/bus/pci/devices/" PCI_DEV_FMT "/device",
-                   domain, slot_id, device_id, pf_id);
-    assert(ret>=0);
-    fpga_pci_check_file_id(sysfs_name, pci_device_id);
-
-    // open and memory map
-    snprintf(sysfs_name, sizeof(sysfs_name),
-             "/sys/bus/pci/devices/" PCI_DEV_FMT "/resource%u",
-             domain, slot_id, device_id, pf_id, bar_id);
-
-    fd = open(sysfs_name, O_RDWR | O_SYNC);
-    assert(fd!=-1);
-
-    bar0_base = mmap(0, bar0_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    assert(bar0_base != MAP_FAILED);
-    close(fd);
-    fd = -1;
 
     // XDMA setup
     char device_file_name[256];
     char device_file_name2[256];
+    char device_file_name3[256];
 
-    ret = snprintf(sysfs_name, sizeof(sysfs_name),
-            "/sys/bus/pci/devices/" PCI_DEV_FMT "/xdma",
-            domain, slot_id, device_id, pf_id);
-    assert(ret>=0);
-    DIR *d;
-    struct dirent *dir;
     int xdma_id = -1;
 
-    d = opendir(sysfs_name);
-    if (d) {
-      while((dir = readdir(d)) != NULL) {
-        printf("examining xdma/%s\n", dir->d_name);
-        if(strstr(dir->d_name, "xdma")){
-            xdma_id = strtol(dir->d_name + 4, NULL, 10);
-            break;
-        }
-      }
-      closedir(d);
-    }
+    xdma_id = slot_id >> 2;
+    engine_id = slot_id & 0x3;
 
-    assert(xdma_id!=-1);
+    //maxoffset = 0;
 
-
-    sprintf(device_file_name, "/dev/xdma%d_h2c_0", xdma_id);
+    sprintf(device_file_name, "/dev/xdma%d_h2c_%d", xdma_id,engine_id);
     printf("Using xdma write queue: %s\n", device_file_name);
-    sprintf(device_file_name2, "/dev/xdma%d_c2h_0", xdma_id);
+    sprintf(device_file_name2, "/dev/xdma%d_c2h_%d", xdma_id,engine_id);
     printf("Using xdma read queue: %s\n", device_file_name2);
 
 
@@ -198,6 +148,22 @@ void simif_u250_t::fpga_setup(int slot_id) {
     edma_read_fd = open(device_file_name2, O_RDONLY);
     assert(edma_write_fd >= 0);
     assert(edma_read_fd >= 0);
+
+    // Reserve lower 40bits of DMA space
+    dma_offset = 0x10000000000;
+    //printf("dma_offset: %" PRIu64 "\n", dma_offset);
+
+    sprintf(device_file_name3, "/dev/xdma%d_bypass", xdma_id);
+    printf("Using user mmap: %s\n", device_file_name3);
+    fd = open(device_file_name3, O_RDWR | O_SYNC);
+    assert(fd!=-1);
+
+    bar0_base = mmap(0, bar0_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    assert(bar0_base != MAP_FAILED);
+
+    close(fd);
+    fd = -1;
+
 #endif
 }
 
@@ -262,7 +228,7 @@ size_t simif_u250_t::pcis_read(size_t addr, char* data, size_t size) {
 #ifdef SIMULATION_XSIM
   assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else
-  return ::pread(edma_read_fd, data, size, addr);
+  return ::pread(edma_read_fd, data, size, addr|dma_offset);
 #endif
 }
 
@@ -270,7 +236,7 @@ size_t simif_u250_t::pcis_write(size_t addr, char* data, size_t size) {
 #ifdef SIMULATION_XSIM
   assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else
-  return ::pwrite(edma_write_fd, data, size, addr);
+  return ::pwrite(edma_write_fd, data, size, addr|dma_offset);
 #endif
 }
 

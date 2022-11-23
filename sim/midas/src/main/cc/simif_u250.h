@@ -47,6 +47,8 @@ class simif_u250_t: public virtual simif_t
     int edma_write_fd;
     int edma_read_fd;
     void* bar0_base;
+    uint64_t dma_offset;
+    int engine_id;
 #endif
 
 };
