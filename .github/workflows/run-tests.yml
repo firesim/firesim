@@ -1,0 +1,120 @@
+name: run-tests
+
+on:
+  # run ci when pring to following branches (note: ci runs on the merge commit of the pr!)
+  pull_request:
+    branches:
+      - master
+
+env:
+  REMOTE_WORK_DIR: /scratch/buildbot/firemarshal-ci-shared/firemarshal-${{ github.sha }}
+
+jobs:
+  cancel-prior-workflows:
+    name: cancel-prior-workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Cancel previous workflow runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-20.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      run-core: ${{ steps.filter.outputs.all_count != steps.filter.outputs.non-core-files_count }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # Check for if docs files changed
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # Check for non-FireMarshal core file changes
+            non-core-files:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+
+  setup-repo:
+    name: setup-repo
+    needs: change-filters
+    if: needs.change-filters.outputs.run-core == 'true'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup repo copy
+        run: |
+          git clone $GITHUB_WORKSPACE ${{ env.REMOTE_WORK_DIR }}
+      - name: Setup conda (install all deps)
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          conda env create -f ./conda-reqs.yaml -p ./.conda-env
+          eval "$(conda shell.bash hook)"
+          conda install -y -p $PWD/.conda-env -c ucb-bar riscv-tools
+      - name: Install Spike
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          eval "$(conda shell.bash hook)"
+          conda activate $PWD/.conda-env
+          git clone https://github.com/riscv-software-src/riscv-isa-sim.git
+          cd riscv-isa-sim
+          mkdir build
+          cd build
+          ../configure --prefix=$RISCV --with-boost=no --with-boost-asio=no --with-boost-regex=no
+          make -j16
+          make install
+      - name: Initialize all submodules
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          eval "$(conda shell.bash hook)"
+          conda activate $PWD/.conda-env
+          ./init-submodules.sh
+      - name: Verify open file limits
+        run: |
+          HARD_LIMIT=$(ulimit -Hn)
+          REQUIRED_LIMIT=16384
+          if [ "$HARD_LIMIT" -lt "$REQUIRED_LIMIT" ]; then
+              echo "ERROR: Your system does not support an open files limit (the output of 'ulimit -Sn' and 'ulimit -Hn') of at least $REQUIRED_LIMIT, which is required to workaround a bug in buildroot. You will not be able to build a Linux distro with FireMarshal until this is addressed."
+              exit 1
+          fi
+          ulimit -Sn $(ulimit -Hn)
+
+  run-tests:
+    name: run-tests
+    needs: [setup-repo]
+    runs-on: self-hosted
+    steps:
+      - name: Run baremetal tests
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          eval "$(conda shell.bash hook)"
+          conda activate $PWD/.conda-env
+          ./scripts/fullTest.py -c baremetal
+      - name: Dump log
+        if: ${{ always() }}
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          cat ./scripts/testLogs/*.log
+
+  cleanup:
+    name: cleanup
+    needs: [setup-repo, run-tests]
+    runs-on: self-hosted
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    steps:
+      - name: Delete repo copy and conda env
+        run: |
+           rm -rf ${{ env.REMOTE_WORK_DIR }}

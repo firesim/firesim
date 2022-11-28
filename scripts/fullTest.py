@@ -5,8 +5,11 @@ import argparse
 import time
 import logging
 import subprocess as sp
+import os
 
-sys.path.append("..")
+script_dir = os.path.dirname(os.path.realpath(__file__))
+
+sys.path.append(script_dir + "/..")
 import wlutil  # NOQA
 
 rootDir = pathlib.Path(__file__).parent.resolve()
@@ -18,11 +21,11 @@ categories = ['baremetal', 'qemu', 'spike', 'smoke', 'special']
 
 # Arguments to (marshal, marshal CMD) per category
 categoryArgs = {
-        'baremetal': ([], ["--spike"]),
-        'qemu': ([], []),
-        'smoke': ([], []),
-        'spike': (['--no-disk'], ['--spike']),
-        'special': ([], [])
+        'baremetal': (['-v'], ["--spike"]),
+        'qemu': (['-v'], []),
+        'smoke': (['-v'], []),
+        'spike': (['-v', '--no-disk'], ['--spike']),
+        'special': (['-v'], [])
 }
 
 # lists of test names to run for each category, each name
@@ -158,7 +161,7 @@ def runSpecial(testNames, categoryName):
         tPath = testDir / tName
 
         try:
-            wlutil.run(["python3", tPath / "test.py", marshalBin], check=True)
+            wlutil.run(["python3", tPath / "test.py", marshalBin], check=True, shell=True)
         except sp.CalledProcessError as e:
             log.log(logging.INFO, "FAIL")
             failures.append(("[{}]: {}".format(categoryName, tName), e))
