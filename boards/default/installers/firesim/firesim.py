@@ -2,6 +2,7 @@ import json
 import logging
 import pathlib
 import os
+import wlutil
 
 moduleDir = pathlib.Path(__file__).resolve().parent
 
@@ -20,11 +21,11 @@ def install(targetCfg, opts):
 
     fsDir = opts['firesim-dir']
     if fsDir is None:
-        raise ConfigurationError("No firesim-dir option is set. Please configure the location of firesim in your config.yaml.")
+        raise wlutil.ConfigurationError("No firesim-dir option is set. Please configure the location of firesim in your config.yaml.")
 
     fsWork = opts['firesim-dir'] / "deploy/workloads"
     if not fsWork.exists():
-        raise ConfigurationError("Configured firesim-dir (" + str(fsDir) + ") does not appear to be a valid firesim installation")
+        raise wlutil.ConfigurationError("Configured firesim-dir (" + str(fsDir) + ") does not appear to be a valid firesim installation")
 
     if targetCfg['nodisk'] == True:
         raise NotImplementedError("nodisk builds not currently supported by the install command")

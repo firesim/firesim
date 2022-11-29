@@ -11,7 +11,6 @@ from . import launch as wllaunch
 
 taskLoader = None
 
-
 class doitLoader(doit.cmd_base.TaskLoader2):
     workloads = []
 
@@ -27,6 +26,16 @@ class doitLoader(doit.cmd_base.TaskLoader2):
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
         return task_list
 
+# taken from: https://github.com/pydoit/doit/issues/329
+def dep_tracker(task, changed):
+    log = logging.getLogger()
+    for t in task.targets:
+        if not os.path.exists(t):
+            log.debug(f"Running task {task.name} because one of its targets does not exist anymore: {t}")
+            return
+
+    if changed:
+        log.debug(f"Running task {task.name} because the following changed: {changed}")
 
 def buildBusybox(config):
     """Builds the local copy of busybox (needed by linux initramfs).
@@ -81,7 +90,7 @@ def submoduleDepsTask(submodules, name=""):
         return {'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(sub)) for sub in submodules]}
 
     return {'name': name,
-            'actions': [(submoduleDeps, [submodules])]}
+            'actions': [dep_tracker, (submoduleDeps, [submodules])]}
 
 
 def kmodDepsTask(cfg, taskDeps=None, name=""):
@@ -112,7 +121,7 @@ def kmodDepsTask(cfg, taskDeps=None, name=""):
         return {'uptodate': [checkMods(cfg)]}
 
     task = {'name': name,
-            'actions': [(calcModsAction, [cfg])]}
+            'actions': [dep_tracker, (calcModsAction, [cfg])]}
 
     if taskDeps is not None:
         task['task_dep'] = taskDeps
@@ -144,7 +153,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
         return {'file_dep': [str(f) for f in deps if not f.is_dir()]}
 
     task = {'name': 'calc_' + name + '_dep',
-            'actions': [(fileDeps, [overlay, files])]}
+            'actions': [dep_tracker, (fileDeps, [overlay, files])]}
 
     if taskDeps is not None:
         task['task_dep'] = taskDeps
@@ -157,8 +166,8 @@ def addDep(loader, config):
 
     # Linux-based workloads depend on this task
     loader.addTask({
-        'name': 'BuildBusybox',
-        'actions': [(buildBusybox, [config])],
+        'name': 'build_busybox',
+        'actions': [dep_tracker, (buildBusybox, [config])],
         'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
         'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(wlutil.getOpt('busybox-dir'))),
                      wlutil.config_changed(wlutil.getToolVersions())]
@@ -170,7 +179,7 @@ def addDep(loader, config):
     if 'host-init' in config:
         loader.addTask({
             'name': str(config['host-init']),
-            'actions': [(handleHostInit, [config])],
+            'actions': [dep_tracker, (handleHostInit, [config])],
         })
         hostInit = [str(config['host-init'])]
 
@@ -180,7 +189,7 @@ def addDep(loader, config):
     bin_targets = []
     if 'linux' in config:
         bin_file_deps += config['linux']['config']
-        bin_task_deps.append('BuildBusybox')
+        bin_task_deps.append('busybox_build')
         bin_targets.append(config['dwarf'])
 
     if config['use-parent-bin']:
@@ -210,7 +219,7 @@ def addDep(loader, config):
 
         loader.addTask({
                 'name': str(config['bin']),
-                'actions': [(makeBin, [config])],
+                'actions': [dep_tracker, (makeBin, [config])],
                 'targets': targets,
                 'file_dep': bin_file_deps,
                 'task_dep': bin_task_deps,
@@ -240,7 +249,7 @@ def addDep(loader, config):
 
         loader.addTask({
                 'name': str(wlutil.noDiskPath(config['bin'])),
-                'actions': [(makeBin, [config], {'nodisk': True})],
+                'actions': [dep_tracker, (makeBin, [config], {'nodisk': True})],
                 'targets': targets,
                 'file_dep': nodisk_file_deps,
                 'task_dep': nodisk_task_deps,
@@ -255,7 +264,7 @@ def addDep(loader, config):
     if 'post-bin' in config:
         loader.addTask({
             'name': str(config['post-bin']),
-            'actions': [(handlePostBin, [config, post_bin_task_deps[0]])],
+            'actions': [dep_tracker, (handlePostBin, [config, post_bin_task_deps[0]])],
             'task_dep': post_bin_task_deps,
         })
         postBin = [str(config['post-bin'])]
@@ -292,7 +301,7 @@ def addDep(loader, config):
 
         loader.addTask({
             'name': str(config['img']),
-            'actions': [(makeImage, [config])],
+            'actions': [dep_tracker, (makeImage, [config])],
             'targets': [config['img']],
             'file_dep': img_file_deps,
             'task_dep': img_task_deps,
@@ -314,7 +323,7 @@ def buildDepGraph(cfgs):
         if config['isDistro'] and 'img' in config:
             loader.addTask({
                     'name': str(config['img']),
-                    'actions': [(config['builder'].buildBaseImage, [])],
+                    'actions': [dep_tracker, (config['builder'].buildBaseImage, [])],
                     'targets': [config['img']],
                     'file_dep': config['builder'].fileDeps(),
                     'uptodate': (config['builder'].upToDate() +
