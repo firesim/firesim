@@ -176,11 +176,15 @@ class Builder:
             env = {**env, **self.opts['environment']}
 
             self.configure(env)
-
-            # This is unfortunate but buildroot can't remove things from the
-            # image without rebuilding everything from scratch. It adds 20min
-            # to the unit tests and anyone who builds a custom buildroot.
-            wlutil.run(['make', 'clean'], cwd=br_dir / "buildroot", env=env)
+            # The following comments are not true, you do need to specifically
+            # remove things from run dir, but don't need to rebuild everything
+            # the find -delete is from https://stackoverflow.com/questions/47320800
+            # # This is unfortunate but buildroot can't remove things from the
+            # # image without rebuilding everything from scratch. It adds 20min
+            # # to the unit tests and anyone who builds a custom buildroot.
+            wlutil.run(['rm', '-rf', 'overlay/*'], cwd=br_dir, env=env)
+            wlutil.run(['rm', '-rf', "buildroot/output/target/*"], cwd=br_dir, env=env)
+            wlutil.run(['find', 'buildroot/output/', '-name', '".stamp_target_installed"', '-delete'], cwd=br_dir, env=env)
             wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
             shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
 
