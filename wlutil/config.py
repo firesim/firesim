@@ -95,6 +95,7 @@ configDeprecated = [
 # This is a comprehensive list of all options set during config parsing
 # (but not explicitly provided by the user)
 configDerived = [
+        'out-dir', # Path to outputs (filesystem images, binaries, extra metadata)
         'img',  # Path to output filesystem image
         'img-sz',  # Desired size of image in bytes (optional)
         'bin',  # Path to output binary (e.g. bbl-vmlinux)
@@ -132,6 +133,7 @@ configInherit = [
         'spike',
         'qemu',
         'launch',
+        'out-dir',
         'bin',
         'img',
         'img-hardcoded',
@@ -472,6 +474,11 @@ class Config(collections.abc.MutableMapping):
         if 'outputs' in self.cfg:
             self.cfg['outputs'] = [pathlib.Path(f) for f in self.cfg['outputs']]
 
+        if 'out-dir' in self.cfg:
+            self.cfg['out-dir'] = wlutil.getOpt('image-dir') / self.cfg['out-dir']
+        else:
+            self.cfg['out-dir'] = wlutil.getOpt('image-dir') / self.cfg['name']
+
         # This object handles setting up the 'run' and 'command' options
         if 'run' in self.cfg:
             self.cfg['runSpec'] = RunSpec.fromString(
@@ -535,7 +542,7 @@ class Config(collections.abc.MutableMapping):
         if 'img' in baseCfg:
             self.cfg['base-img'] = baseCfg['img']
             self.cfg['base-deps'].append(str(self.cfg['base-img']))
-            self.cfg['img'] = wlutil.getOpt('image-dir') / (self.cfg['name'] + ".img")
+            self.cfg['img'] = self.cfg['out-dir'] / (self.cfg['name'] + ".img")
 
         if 'bin' in baseCfg:
             self.cfg['base-bin'] = baseCfg['bin']
@@ -552,8 +559,8 @@ class Config(collections.abc.MutableMapping):
         if 'linux' in self.cfg:
             # Linux workloads get their own binary, whether from scratch or a
             # copy of their parent's
-            self.cfg['bin'] = wlutil.getOpt('image-dir') / (self.cfg['name'] + "-bin")
-            self.cfg['dwarf'] = wlutil.getOpt('image-dir') / (self.cfg['name'] + "-bin-dwarf")
+            self.cfg['bin'] = self.cfg['out-dir'] / (self.cfg['name'] + "-bin")
+            self.cfg['dwarf'] = self.cfg['out-dir'] / (self.cfg['name'] + "-bin-dwarf")
 
             # To avoid needlessly recompiling kernels, we check if the child has
             # the exact same binary-related configuration. If 'use-parent-bin'

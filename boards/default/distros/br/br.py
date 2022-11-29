@@ -121,7 +121,8 @@ class Builder:
         else:
             self.name = 'br'
 
-        self.outputImg = wlutil.getOpt('image-dir') / (self.name + ".img")
+        self.outputDir = wlutil.getOpt('image-dir') / self.name
+        self.outputImg = self.outputDir / (self.name + ".img")
 
     def getWorkload(self):
         return {
@@ -176,6 +177,8 @@ class Builder:
             env = {**env, **self.opts['environment']}
 
             self.configure(env)
+
+            # Less invasive "make clean":
             # The following comments are not true, you do need to specifically
             # remove things from run dir, but don't need to rebuild everything
             # the find -delete is from https://stackoverflow.com/questions/47320800
@@ -185,8 +188,14 @@ class Builder:
             wlutil.run(['rm', '-rf', 'overlay/*'], cwd=br_dir, env=env)
             wlutil.run(['rm', '-rf', "buildroot/output/target/*"], cwd=br_dir, env=env)
             wlutil.run(['find', 'buildroot/output/', '-name', '".stamp_target_installed"', '-delete'], cwd=br_dir, env=env)
+
             wlutil.run(['make'], cwd=br_dir / "buildroot", env=env)
+
+            self.outputImg.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(img_dir / 'rootfs.ext2', self.outputImg)
+
+            self.outputDir.mkdir(parents=True, exist_ok=True)
+            shutil.copy(br_dir / 'buildroot' / '.config', self.outputDir / 'buildroot_config')
 
         except wlutil.SubmoduleError as e:
             return doit.exceptions.TaskFailed(e)
