@@ -12,6 +12,8 @@ import midas.core._
 import midas.passes.fame.{FAMEChannelConnectionAnnotation}
 import midas.widgets.{CStrLit, UInt32, BridgeIOAnnotation}
 import midas.widgets.CppGenerationUtils._
+import midas.targetutils.xdc.SpecifyXDCCircuitPaths
+import midas.{PreLinkCircuitPath, PostLinkCircuitPath}
 
 /**
   * Generates the platform wrapper (which includes most of the chisel-generated
@@ -43,4 +45,9 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
 
     top.module.headerConsts map vMacro foreach sb.append
   }
+
+  // Emit a `XDCPathToCircuitAnnotation` with the pre- and post-link circuit
+  // paths provided in the configuration. These locate the design within the
+  // context of the larger FPGA design.
+  SpecifyXDCCircuitPaths(p(PreLinkCircuitPath), p(PostLinkCircuitPath))
 }

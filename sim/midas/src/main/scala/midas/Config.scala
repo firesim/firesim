@@ -74,6 +74,12 @@ case object HostTransforms extends Field[Seq[TransformDependency]](Seq())
 // Directory into which output files are dumped. Set by -td when invoking the Stage
 case object OutputDir extends Field[File]
 
+// Provides the absolute paths to firrtl-emitted module in the context of the
+// FPGA project before and after linking. If the firrtl-emitted module is the
+// top-level, set the path to None.
+case object PreLinkCircuitPath extends Field[Option[String]](None)
+case object PostLinkCircuitPath extends Field[Option[String]](None)
+
 // Alias WithoutTLMonitors into this package so that it can be used in config strings
 class WithoutTLMonitors extends freechips.rocketchip.subsystem.WithoutTLMonitors
 
@@ -108,6 +114,8 @@ class F1Config extends Config(new Config((site, here, up) => {
     beatBytes = 8,
     idBits    = 16)
   case HostMemNumChannels => 4
+  case PreLinkCircuitPath => Some("firesim_top")
+  case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
 }) ++ new SimConfig)
 
 class VitisConfig extends Config(new Config((site, here, up) => {
@@ -140,6 +148,11 @@ class VitisConfig extends Config(new Config((site, here, up) => {
   // This could be as many as four on a U250, but support for the other
   // channels requires adding address offsets in the shim (TODO).
   case HostMemNumChannels => 1
+  // We don't need to provide circuit paths because
+  // 1) The Shim module is the top-level of the kernel
+  // 2) Implementation constraints are scoped to the kernel level in our vitis flow
+  case PreLinkCircuitPath => None
+  case PostLinkCircuitPath => None
 }) ++ new SimConfig)
 
 // Turns on all additional synthesizable debug features for checking the
