@@ -9,11 +9,10 @@ class TerminationModule_t : public simif_peek_poke_t {
 public:
   termination_t *terminator;
   TerminationModule_t(int argc, char **argv) {
-    TERMINATIONBRIDGEMODULE_0_substruct_create;
     std::vector<std::string> args(argv + 1, argv + argc);
     terminator = new termination_t(this,
                                    args,
-                                   TERMINATIONBRIDGEMODULE_0_substruct,
+                                   TERMINATIONBRIDGEMODULE_0_substruct_create,
                                    TERMINATIONBRIDGEMODULE_0_message_count,
                                    TERMINATIONBRIDGEMODULE_0_message_type,
                                    TERMINATIONBRIDGEMODULE_0_message);

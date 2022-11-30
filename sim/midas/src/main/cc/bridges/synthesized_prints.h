@@ -13,10 +13,9 @@
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_PRINTF(FUNC, IDX)                                          \
-  PRINTBRIDGEMODULE_##IDX##_substruct_create;                                  \
   FUNC(new synthesized_prints_t(this,                                          \
                                 args,                                          \
-                                PRINTBRIDGEMODULE_##IDX##_substruct,           \
+                                PRINTBRIDGEMODULE_##IDX##_substruct_create,    \
                                 PRINTBRIDGEMODULE_##IDX##_print_count,         \
                                 PRINTBRIDGEMODULE_##IDX##_token_bytes,         \
                                 PRINTBRIDGEMODULE_##IDX##_idle_cycles_mask,    \
@@ -46,7 +45,7 @@ class synthesized_prints_t : public bridge_driver_t {
 public:
   synthesized_prints_t(simif_t *sim,
                        std::vector<std::string> &args,
-                       PRINTBRIDGEMODULE_struct *mmio_addrs,
+                       const PRINTBRIDGEMODULE_struct &mmio_addrs,
                        unsigned int print_count,
                        unsigned int token_bytes,
                        unsigned int idle_cycles_mask,
@@ -69,7 +68,7 @@ public:
   void finish() { flush(); };
 
 private:
-  PRINTBRIDGEMODULE_struct *mmio_addrs;
+  const PRINTBRIDGEMODULE_struct mmio_addrs;
   const unsigned int print_count;
   const unsigned int token_bytes;
   const unsigned int idle_cycles_mask;

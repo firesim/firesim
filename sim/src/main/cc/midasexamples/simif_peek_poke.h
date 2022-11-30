@@ -53,7 +53,7 @@ private:
   uint64_t t = 0;
   uint64_t fail_t = 0;
 
-  PEEKPOKEBRIDGEMODULE_struct *defaultiowidget_mmio_addrs;
+  const PEEKPOKEBRIDGEMODULE_struct defaultiowidget_mmio_addrs;
 
   bool wait_on(size_t flag_addr, double timeout) {
     midas_time_t start = timestamp();
@@ -64,11 +64,11 @@ private:
   }
 
   bool wait_on_ready(double timeout) {
-    return wait_on(this->defaultiowidget_mmio_addrs->READY, timeout);
+    return wait_on(defaultiowidget_mmio_addrs.READY, timeout);
   }
 
   bool wait_on_stable_peeks(double timeout) {
-    return wait_on(this->defaultiowidget_mmio_addrs->PRECISE_PEEKABLE, timeout);
+    return wait_on(defaultiowidget_mmio_addrs.PRECISE_PEEKABLE, timeout);
   }
 
   std::string blocking_fail = "The test environment has starved the simulator, "

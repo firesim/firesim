@@ -23,7 +23,7 @@
  */
 plusargs_t::plusargs_t(simif_t *sim,
                        std::vector<std::string> &args,
-                       PLUSARGSBRIDGEMODULE_struct *mmio_addrs,
+                       const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
                        const std::string_view name_orig,
                        const char *default_value,
                        const uint32_t bit_width,
@@ -82,7 +82,7 @@ plusargs_t::plusargs_t(simif_t *sim,
   }
 }
 
-plusargs_t::~plusargs_t() { free(this->mmio_addrs); }
+plusargs_t::~plusargs_t() { }
 
 /**
  * Check if the overriden value was driven.
@@ -126,7 +126,7 @@ void plusargs_t::init() {
   }
 
   // after all registers are handled, set this
-  write(this->mmio_addrs->initDone, 1);
+  write(mmio_addrs.initDone, 1);
 }
 
 #endif

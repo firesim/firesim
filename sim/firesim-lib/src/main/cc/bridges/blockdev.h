@@ -39,7 +39,7 @@ public:
              const std::vector<std::string> &args,
              uint32_t num_trackers,
              uint32_t latency_bits,
-             BLOCKDEVBRIDGEMODULE_struct *mmio_addrs,
+             const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
              int blkdevno);
   ~blockdev_t();
 
@@ -55,7 +55,7 @@ public:
   virtual void finish(){};
 
 private:
-  BLOCKDEVBRIDGEMODULE_struct *mmio_addrs;
+  const BLOCKDEVBRIDGEMODULE_struct mmio_addrs;
 
   // Set if, on the previous tick, we couldn't write back all of our response
   // data

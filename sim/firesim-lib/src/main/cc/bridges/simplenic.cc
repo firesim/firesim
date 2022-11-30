@@ -50,16 +50,15 @@ static void simplify_frac(int n, int d, int *nn, int *dd) {
 
 simplenic_t::simplenic_t(simif_t *sim,
                          std::vector<std::string> &args,
-                         SIMPLENICBRIDGEMODULE_struct *mmio_addrs,
+                         const SIMPLENICBRIDGEMODULE_struct &mmio_addrs,
                          int simplenicno,
                          const int stream_to_cpu_idx,
                          const int stream_to_cpu_depth,
                          const int stream_from_cpu_idx,
                          const int stream_from_cpu_depth)
-    : bridge_driver_t(sim), stream_to_cpu_idx(stream_to_cpu_idx),
+    : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
+      stream_to_cpu_idx(stream_to_cpu_idx),
       stream_from_cpu_idx(stream_from_cpu_idx) {
-  this->mmio_addrs = mmio_addrs;
-
   const char *niclogfile = NULL;
   const char *shmemportname = NULL;
   int netbw = MAX_BANDWIDTH, netburst = 8;
@@ -220,18 +219,17 @@ simplenic_t::~simplenic_t() {
       munmap(pcis_write_bufs[j], BUFBYTES + EXTRABYTES);
     }
   }
-  free(this->mmio_addrs);
 }
 
 #define ceil_div(n, d) (((n)-1) / (d) + 1)
 
 void simplenic_t::init() {
-  write(mmio_addrs->macaddr_upper, (mac_lendian >> 32) & 0xFFFF);
-  write(mmio_addrs->macaddr_lower, mac_lendian & 0xFFFFFFFF);
-  write(mmio_addrs->rlimit_settings,
+  write(mmio_addrs.macaddr_upper, (mac_lendian >> 32) & 0xFFFF);
+  write(mmio_addrs.macaddr_lower, mac_lendian & 0xFFFFFFFF);
+  write(mmio_addrs.rlimit_settings,
         (rlimit_inc << 16) | ((rlimit_period - 1) << 8) | rlimit_size);
-  write(mmio_addrs->pause_threshold, pause_threshold);
-  write(mmio_addrs->pause_times,
+  write(mmio_addrs.pause_threshold, pause_threshold);
+  write(mmio_addrs.pause_times,
         (pause_refresh << 16) | (pause_quanta & 0xffff));
 
   // In lieu of reading "count", check that the stream is empty by doing a pull.

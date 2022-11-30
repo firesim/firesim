@@ -38,10 +38,9 @@ blockdev_t::blockdev_t(simif_t *sim,
                        const std::vector<std::string> &args,
                        uint32_t num_trackers,
                        uint32_t latency_bits,
-                       BLOCKDEVBRIDGEMODULE_struct *mmio_addrs,
+                       const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
                        int blkdevno)
-    : bridge_driver_t(sim) {
-  this->mmio_addrs = mmio_addrs;
+    : bridge_driver_t(sim), mmio_addrs(mmio_addrs) {
   this->_file = NULL;
   this->logfile = NULL;
   _ntags = num_trackers;
@@ -138,7 +137,6 @@ blockdev_t::blockdev_t(simif_t *sim,
 }
 
 blockdev_t::~blockdev_t() {
-  free(this->mmio_addrs);
   if (filename) {
     fclose(_file);
   }
@@ -151,10 +149,10 @@ blockdev_t::~blockdev_t() {
  * at boot */
 void blockdev_t::init() {
   // setup blk dev widget
-  write(this->mmio_addrs->bdev_nsectors, nsectors());
-  write(this->mmio_addrs->bdev_max_req_len, max_request_length());
-  write(this->mmio_addrs->read_latency, read_latency);
-  write(this->mmio_addrs->write_latency, write_latency);
+  write(mmio_addrs.bdev_nsectors, nsectors());
+  write(mmio_addrs.bdev_max_req_len, max_request_length());
+  write(mmio_addrs.read_latency, read_latency);
+  write(mmio_addrs.write_latency, write_latency);
 }
 
 /* Take a read request, get data from the disk file, and fill the beats
@@ -305,14 +303,14 @@ void blockdev_t::handle_data(struct blkdev_data &data) {
 /* Read all pending request data from the widget */
 void blockdev_t::recv() {
   /* Read all pending requests from the widget */
-  while (read(this->mmio_addrs->bdev_req_valid)) {
+  while (read(mmio_addrs.bdev_req_valid)) {
     /* Take a request from the FPGA and put it in SW processing queues */
     struct blkdev_request req;
-    req.write = read(this->mmio_addrs->bdev_req_write);
-    req.offset = read(this->mmio_addrs->bdev_req_offset);
-    req.len = read(this->mmio_addrs->bdev_req_len);
-    req.tag = read(this->mmio_addrs->bdev_req_tag);
-    write(this->mmio_addrs->bdev_req_ready, true);
+    req.write = read(mmio_addrs.bdev_req_write);
+    req.offset = read(mmio_addrs.bdev_req_offset);
+    req.len = read(mmio_addrs.bdev_req_len);
+    req.tag = read(mmio_addrs.bdev_req_tag);
+    write(mmio_addrs.bdev_req_ready, true);
     requests.push(req);
     blkdev_printf("[disk] got req. write %x, offset %x, len %x, tag %x\n",
                   req.write,
@@ -322,14 +320,13 @@ void blockdev_t::recv() {
   }
 
   /* Read all pending data beats from the widget */
-  while (read(this->mmio_addrs->bdev_data_valid)) {
+  while (read(mmio_addrs.bdev_data_valid)) {
     /* Take a data chunk from the FPGA and put it in SW processing queues */
     struct blkdev_data data;
-    data.data =
-        (((uint64_t)read(this->mmio_addrs->bdev_data_data_upper)) << 32) |
-        (read(this->mmio_addrs->bdev_data_data_lower) & 0xFFFFFFFF);
-    data.tag = read(this->mmio_addrs->bdev_data_tag);
-    write(this->mmio_addrs->bdev_data_ready, true);
+    data.data = (((uint64_t)read(mmio_addrs.bdev_data_data_upper)) << 32) |
+                (read(mmio_addrs.bdev_data_data_lower) & 0xFFFFFFFF);
+    data.tag = read(mmio_addrs.bdev_data_tag);
+    write(mmio_addrs.bdev_data_ready, true);
     req_data.push(data);
     blkdev_printf("[disk] got data. data %llx, tag %x\n", data.data, data.tag);
   }
@@ -340,23 +337,22 @@ void blockdev_t::recv() {
  * indicating that we must try again on the next tick() invocation */
 void blockdev_t::send() {
   /* Return as many write acknowledgements as the blockdev widget can accept */
-  while (!write_acks.empty() && read(this->mmio_addrs->bdev_wack_ready)) {
+  while (!write_acks.empty() && read(mmio_addrs.bdev_wack_ready)) {
     uint32_t tag = write_acks.front();
-    write(this->mmio_addrs->bdev_wack_tag, tag);
-    write(this->mmio_addrs->bdev_wack_valid, true);
+    write(mmio_addrs.bdev_wack_tag, tag);
+    write(mmio_addrs.bdev_wack_valid, true);
     blkdev_printf("[disk] sending W ack. tag %x\n", tag);
     write_acks.pop();
   }
 
   /* Send as much read reponse data as as the blockdev widget will accept */
-  while (!read_responses.empty() && read(this->mmio_addrs->bdev_rresp_ready)) {
+  while (!read_responses.empty() && read(mmio_addrs.bdev_rresp_ready)) {
     struct blkdev_data resp;
     resp = read_responses.front();
-    write(this->mmio_addrs->bdev_rresp_data_upper,
-          (resp.data >> 32) & 0xFFFFFFFF);
-    write(this->mmio_addrs->bdev_rresp_data_lower, resp.data & 0xFFFFFFFF);
-    write(this->mmio_addrs->bdev_rresp_tag, resp.tag);
-    write(this->mmio_addrs->bdev_rresp_valid, true);
+    write(mmio_addrs.bdev_rresp_data_upper, (resp.data >> 32) & 0xFFFFFFFF);
+    write(mmio_addrs.bdev_rresp_data_lower, resp.data & 0xFFFFFFFF);
+    write(mmio_addrs.bdev_rresp_tag, resp.tag);
+    write(mmio_addrs.bdev_rresp_valid, true);
     blkdev_printf(
         "[disk] sending R resp. data %llx, tag %x\n", resp.data, resp.tag);
     read_responses.pop();
@@ -367,7 +363,7 @@ void blockdev_t::send() {
 }
 
 bool blockdev_t::idle() {
-  return !resp_data_pending && !read(this->mmio_addrs->bdev_reqs_pending);
+  return !resp_data_pending && !read(mmio_addrs.bdev_reqs_pending);
 }
 
 /* This method is called to service functional requests made by the widget.

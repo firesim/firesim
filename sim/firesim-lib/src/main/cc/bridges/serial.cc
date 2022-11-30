@@ -6,14 +6,12 @@
 
 serial_t::serial_t(simif_t *sim,
                    const std::vector<std::string> &args,
-                   SERIALBRIDGEMODULE_struct *mmio_addrs,
+                   const SERIALBRIDGEMODULE_struct &mmio_addrs,
                    int serialno,
                    bool has_mem,
                    int64_t mem_host_offset)
-    : bridge_driver_t(sim), sim(sim), has_mem(has_mem),
+    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), sim(sim), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
-
-  this->mmio_addrs = mmio_addrs;
 
   std::string num_equals = std::to_string(serialno) + std::string("=");
   std::string prog_arg = std::string("+prog") + num_equals;
@@ -62,29 +60,26 @@ serial_t::serial_t(simif_t *sim,
   fesvr = new firesim_tsi_t(argc_count + 1, argv_arr, has_mem);
 }
 
-serial_t::~serial_t() {
-  free(this->mmio_addrs);
-  delete fesvr;
-}
+serial_t::~serial_t() { delete fesvr; }
 
 void serial_t::init() {
-  write(this->mmio_addrs->step_size, step_size);
+  write(mmio_addrs.step_size, step_size);
   go();
 }
 
-void serial_t::go() { write(this->mmio_addrs->start, 1); }
+void serial_t::go() { write(mmio_addrs.start, 1); }
 
 void serial_t::send() {
-  while (fesvr->data_available() && read(this->mmio_addrs->in_ready)) {
-    write(this->mmio_addrs->in_bits, fesvr->recv_word());
-    write(this->mmio_addrs->in_valid, 1);
+  while (fesvr->data_available() && read(mmio_addrs.in_ready)) {
+    write(mmio_addrs.in_bits, fesvr->recv_word());
+    write(mmio_addrs.in_valid, 1);
   }
 }
 
 void serial_t::recv() {
-  while (read(this->mmio_addrs->out_valid)) {
-    fesvr->send_word(read(this->mmio_addrs->out_bits));
-    write(this->mmio_addrs->out_ready, 1);
+  while (read(mmio_addrs.out_valid)) {
+    fesvr->send_word(read(mmio_addrs.out_bits));
+    write(mmio_addrs.out_ready, 1);
   }
 }
 
@@ -150,7 +145,7 @@ void serial_t::serial_bypass_via_loadmem() {
 
 void serial_t::tick() {
   // First, check to see step_size tokens have been enqueued
-  if (!read(this->mmio_addrs->done))
+  if (!read(mmio_addrs.done))
     return;
   // Collect all the responses from the target
   this->recv();

@@ -17,7 +17,7 @@
 #ifdef UARTBRIDGEMODULE_struct_guard
 class uart_t : public bridge_driver_t {
 public:
-  uart_t(simif_t *sim, UARTBRIDGEMODULE_struct *mmio_addrs, int uartno);
+  uart_t(simif_t *sim, const UARTBRIDGEMODULE_struct &mmio_addrs, int uartno);
   ~uart_t();
   virtual void tick();
   // Our UART bridge's initialzation and teardown procedures don't
@@ -32,7 +32,7 @@ public:
   virtual int exit_code() { return 0; }
 
 private:
-  UARTBRIDGEMODULE_struct *mmio_addrs;
+  const UARTBRIDGEMODULE_struct &mmio_addrs;
   serial_data_t<char> data;
   int inputfd;
   int outputfd;

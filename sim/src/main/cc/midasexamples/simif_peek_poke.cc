@@ -4,10 +4,8 @@
 
 #include "simif_peek_poke.h"
 
-simif_peek_poke_t::simif_peek_poke_t() {
-  PEEKPOKEBRIDGEMODULE_0_substruct_create;
-  this->defaultiowidget_mmio_addrs = PEEKPOKEBRIDGEMODULE_0_substruct;
-}
+simif_peek_poke_t::simif_peek_poke_t()
+    : defaultiowidget_mmio_addrs(PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
 
 void simif_peek_poke_t::target_reset(int pulse_length) {
   poke(reset, 1);

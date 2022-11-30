@@ -12,11 +12,10 @@ constexpr int autocounter_csv_format_version = 1;
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_AUTOCOUNTER(FUNC, IDX)                                     \
-  AUTOCOUNTERBRIDGEMODULE_##IDX##_substruct_create;                            \
   FUNC(new autocounter_t(                                                      \
       this,                                                                    \
       args,                                                                    \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_substruct,                               \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_substruct_create,                        \
       AddressMap(                                                              \
           AUTOCOUNTERBRIDGEMODULE_##IDX##_R_num_registers,                     \
           (const unsigned int *)AUTOCOUNTERBRIDGEMODULE_##IDX##_R_addrs,       \
@@ -42,7 +41,7 @@ class autocounter_t : public bridge_driver_t {
 public:
   autocounter_t(simif_t *sim,
                 std::vector<std::string> &args,
-                AUTOCOUNTERBRIDGEMODULE_struct *mmio_addrs,
+                const AUTOCOUNTERBRIDGEMODULE_struct &mmio_addrs,
                 AddressMap addr_map,
                 const uint32_t event_count,
                 const char *const *event_types,
@@ -65,8 +64,7 @@ public:
   virtual void finish();
 
 private:
-  simif_t *sim;
-  AUTOCOUNTERBRIDGEMODULE_struct *mmio_addrs;
+  const AUTOCOUNTERBRIDGEMODULE_struct mmio_addrs;
   AddressMap addr_map;
   const uint32_t event_count;
   std::vector<std::string> event_types;
