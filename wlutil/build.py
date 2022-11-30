@@ -32,7 +32,7 @@ class doitLoader(doit.cmd_base.TaskLoader2):
     def addTask(self, tsk):
         if not any(t['name'] == tsk['name'] for t in self.workloads):
             # add dep. tracker to each task
-            tsk['actions'] = tsk['actions'] + [print_deps]
+            tsk['actions'] = [print_deps] + tsk['actions']
             self.workloads.append(tsk)
 
     def load_doit_config(self):
@@ -58,8 +58,6 @@ def buildBusybox(config):
     wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=wlutil.getOpt('busybox-dir'))
     shutil.copy(wlutil.getOpt('busybox-dir') / 'busybox', wlutil.getOpt('initramfs-dir') / 'disk' / 'bin/')
 
-    config['out-dir'].mkdir(parents=True, exist_ok=True)
-    shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
     return True
 
 
@@ -564,8 +562,10 @@ def makeBin(config, nodisk=False):
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
             generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
             wlutil.run(['make'] + wlutil.getOpt('linux-make-args') + ['vmlinux', 'Image', '-j' + str(wlutil.getOpt('jlevel'))], cwd=config['linux']['source'])
+            # copy files needed to build linux (busybox copying is put here so that it is shown per linux build)
             config['out-dir'].mkdir(parents=True, exist_ok=True)
             shutil.copy(config['linux']['source'] / '.config', config['out-dir'] / 'linux_config')
+            shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
 
         if 'use-bbl' in config.get('firmware', {}) and config['firmware']['use-bbl']:
             fw = makeBBL(config, nodisk)
