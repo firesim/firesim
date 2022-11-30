@@ -11,23 +11,9 @@ from . import launch as wllaunch
 
 taskLoader = None
 
-class doitLoader(doit.cmd_base.TaskLoader2):
-    workloads = []
-
-    # Idempotent add (no duplicates)
-    def addTask(self, tsk):
-        if not any(t['name'] == tsk['name'] for t in self.workloads):
-            self.workloads.append(tsk)
-
-    def load_doit_config(self):
-        return {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}
-
-    def load_tasks(self, cmd, pos_args):
-        task_list = [doit.task.dict_to_task(w) for w in self.workloads]
-        return task_list
-
-# taken from: https://github.com/pydoit/doit/issues/329
-def dep_tracker(task, changed):
+# Print task target or file dep changes
+# Taken from: https://github.com/pydoit/doit/issues/329
+def print_deps(task, changed):
     log = logging.getLogger()
     for t in task.targets:
         if not os.path.exists(t):
@@ -36,6 +22,23 @@ def dep_tracker(task, changed):
 
     if changed:
         log.debug(f"Running task {task.name} because the following changed: {changed}")
+
+class doitLoader(doit.cmd_base.TaskLoader2):
+    workloads = []
+
+    # Idempotent add (no duplicates)
+    def addTask(self, tsk):
+        if not any(t['name'] == tsk['name'] for t in self.workloads):
+            # add dep. tracker to each task
+            tsk['actions'] = tsk['actions'] + [print_deps]
+            self.workloads.append(tsk)
+
+    def load_doit_config(self):
+        return {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}
+
+    def load_tasks(self, cmd, pos_args):
+        task_list = [doit.task.dict_to_task(w) for w in self.workloads]
+        return task_list
 
 def buildBusybox(config):
     """Builds the local copy of busybox (needed by linux initramfs).
@@ -52,6 +55,7 @@ def buildBusybox(config):
     wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=wlutil.getOpt('busybox-dir'))
     shutil.copy(wlutil.getOpt('busybox-dir') / 'busybox', wlutil.getOpt('initramfs-dir') / 'disk' / 'bin/')
 
+    config['out-dir'].mkdir(parents=True, exist_ok=True)
     shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
     return True
 
@@ -90,7 +94,7 @@ def submoduleDepsTask(submodules, name=""):
         return {'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(sub)) for sub in submodules]}
 
     return {'name': name,
-            'actions': [dep_tracker, (submoduleDeps, [submodules])]}
+            'actions': [(submoduleDeps, [submodules])]}
 
 
 def kmodDepsTask(cfg, taskDeps=None, name=""):
@@ -121,7 +125,7 @@ def kmodDepsTask(cfg, taskDeps=None, name=""):
         return {'uptodate': [checkMods(cfg)]}
 
     task = {'name': name,
-            'actions': [dep_tracker, (calcModsAction, [cfg])]}
+            'actions': [(calcModsAction, [cfg])]}
 
     if taskDeps is not None:
         task['task_dep'] = taskDeps
@@ -153,7 +157,7 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
         return {'file_dep': [str(f) for f in deps if not f.is_dir()]}
 
     task = {'name': 'calc_' + name + '_dep',
-            'actions': [dep_tracker, (fileDeps, [overlay, files])]}
+            'actions': [(fileDeps, [overlay, files])]}
 
     if taskDeps is not None:
         task['task_dep'] = taskDeps
@@ -167,7 +171,7 @@ def addDep(loader, config):
     # Linux-based workloads depend on this task
     loader.addTask({
         'name': 'build_busybox',
-        'actions': [dep_tracker, (buildBusybox, [config])],
+        'actions': [(buildBusybox, [config])],
         'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
         'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(wlutil.getOpt('busybox-dir'))),
                      wlutil.config_changed(wlutil.getToolVersions())]
@@ -179,7 +183,7 @@ def addDep(loader, config):
     if 'host-init' in config:
         loader.addTask({
             'name': str(config['host-init']),
-            'actions': [dep_tracker, (handleHostInit, [config])],
+            'actions': [(handleHostInit, [config])],
         })
         hostInit = [str(config['host-init'])]
 
@@ -189,7 +193,7 @@ def addDep(loader, config):
     bin_targets = []
     if 'linux' in config:
         bin_file_deps += config['linux']['config']
-        bin_task_deps.append('busybox_build')
+        bin_task_deps.append('build_busybox')
         bin_targets.append(config['dwarf'])
 
     if config['use-parent-bin']:
@@ -219,7 +223,7 @@ def addDep(loader, config):
 
         loader.addTask({
                 'name': str(config['bin']),
-                'actions': [dep_tracker, (makeBin, [config])],
+                'actions': [(makeBin, [config])],
                 'targets': targets,
                 'file_dep': bin_file_deps,
                 'task_dep': bin_task_deps,
@@ -249,7 +253,7 @@ def addDep(loader, config):
 
         loader.addTask({
                 'name': str(wlutil.noDiskPath(config['bin'])),
-                'actions': [dep_tracker, (makeBin, [config], {'nodisk': True})],
+                'actions': [(makeBin, [config], {'nodisk': True})],
                 'targets': targets,
                 'file_dep': nodisk_file_deps,
                 'task_dep': nodisk_task_deps,
@@ -264,7 +268,7 @@ def addDep(loader, config):
     if 'post-bin' in config:
         loader.addTask({
             'name': str(config['post-bin']),
-            'actions': [dep_tracker, (handlePostBin, [config, post_bin_task_deps[0]])],
+            'actions': [(handlePostBin, [config, post_bin_task_deps[0]])],
             'task_dep': post_bin_task_deps,
         })
         postBin = [str(config['post-bin'])]
@@ -276,10 +280,7 @@ def addDep(loader, config):
     img_uptodate = []
     if 'img' in config:
         if 'base-img' in config:
-            #print(f"""O.G.: {config['img']} Base:{config['base-img']}""")
             img_file_deps.append(config['base-img'])
-        #else:
-        #    print(f"""O.G.: {config['img']}""")
 
         if 'files' in config or 'overlay' in config:
             # We delay calculation of files and overlay dependencies to runtime
@@ -301,7 +302,7 @@ def addDep(loader, config):
 
         loader.addTask({
             'name': str(config['img']),
-            'actions': [dep_tracker, (makeImage, [config])],
+            'actions': [(makeImage, [config])],
             'targets': [config['img']],
             'file_dep': img_file_deps,
             'task_dep': img_task_deps,
@@ -323,7 +324,7 @@ def buildDepGraph(cfgs):
         if config['isDistro'] and 'img' in config:
             loader.addTask({
                     'name': str(config['img']),
-                    'actions': [dep_tracker, (config['builder'].buildBaseImage, [])],
+                    'actions': [(config['builder'].buildBaseImage, [])],
                     'targets': [config['img']],
                     'file_dep': config['builder'].fileDeps(),
                     'uptodate': (config['builder'].upToDate() +
@@ -582,12 +583,7 @@ def makeBin(config, nodisk=False):
 def makeImage(config):
     log = logging.getLogger()
 
-    #if not config['img'].exists():
-    #    print(f"""NOT EXISTS: {config['img']}""")
-    #else:
-    #    print(f"""EXISTS: {config['img']}""")
-
-    # Remove old image so that you reapply the overlay/files/etc
+    # Remove old image so that you re-apply the overlay/files/etc
     with contextlib.suppress(FileNotFoundError):
         os.remove(config['img'])
 
