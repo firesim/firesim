@@ -173,6 +173,7 @@ def addDep(loader, config):
         'name': 'build_busybox',
         'actions': [(buildBusybox, [config])],
         'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
+        'file_dep': [wlutil.getOpt('wlutil-dir') / 'busybox-config'],
         'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(wlutil.getOpt('busybox-dir'))),
                      wlutil.config_changed(wlutil.getToolVersions())]
         })
