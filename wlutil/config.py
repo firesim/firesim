@@ -95,7 +95,7 @@ configDeprecated = [
 # This is a comprehensive list of all options set during config parsing
 # (but not explicitly provided by the user)
 configDerived = [
-        'out-dir', # Path to outputs (filesystem images, binaries, extra metadata)
+        'out-dir',  # Path to outputs (filesystem images, binaries, extra metadata)
         'img',  # Path to output filesystem image
         'img-sz',  # Desired size of image in bytes (optional)
         'bin',  # Path to output binary (e.g. bbl-vmlinux)
@@ -425,10 +425,10 @@ class Config(collections.abc.MutableMapping):
         if 'workdir' in self.cfg:
             self.cfg['workdir'] = pathlib.Path(self.cfg['workdir'])
             if not self.cfg['workdir'].is_absolute():
-                assert('cfg-file' in self.cfg), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
+                assert ('cfg-file' in self.cfg), "'workdir' must be absolute for hard-coded configurations (i.e. those without a config file)"
                 self.cfg['workdir'] = cfgDir / self.cfg['workdir']
         else:
-            assert('cfg-file' in self.cfg), "No workdir or cfg-file provided"
+            assert ('cfg-file' in self.cfg), "No workdir or cfg-file provided"
             self.cfg['workdir'] = cfgDir / self.cfg['name']
 
         # Convert stuff to absolute paths (this should happen as early as

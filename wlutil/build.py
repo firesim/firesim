@@ -11,6 +11,7 @@ from . import launch as wllaunch
 
 taskLoader = None
 
+
 # Print task target or file dep changes
 # Taken from: https://github.com/pydoit/doit/issues/329
 def print_deps(task, changed):
@@ -22,6 +23,7 @@ def print_deps(task, changed):
 
     if changed:
         log.debug(f"Running task {task.name} because the following changed: {changed}")
+
 
 class doitLoader(doit.cmd_base.TaskLoader2):
     workloads = []
@@ -39,6 +41,7 @@ class doitLoader(doit.cmd_base.TaskLoader2):
     def load_tasks(self, cmd, pos_args):
         task_list = [doit.task.dict_to_task(w) for w in self.workloads]
         return task_list
+
 
 def buildBusybox(config):
     """Builds the local copy of busybox (needed by linux initramfs).

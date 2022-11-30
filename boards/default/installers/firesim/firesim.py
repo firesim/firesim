@@ -6,15 +6,17 @@ import wlutil
 
 moduleDir = pathlib.Path(__file__).resolve().parent
 
-readmeTxt="""This workload was generated using FireMarshal. See the following config
+readmeTxt = """This workload was generated using FireMarshal. See the following config
 and workload directory for details:
 """
+
 
 # Create a relative path from base to target. Pathlib.path.relative_to doesn't work.
 # Assumes that wlDir and target are absolute paths (either string or pathlib.Path)
 # Returns a string
 def fullRel(base, target):
     return os.path.relpath(str(target), start=str(base))
+
 
 def install(targetCfg, opts):
     log = logging.getLogger()
@@ -27,7 +29,7 @@ def install(targetCfg, opts):
     if not fsWork.exists():
         raise wlutil.ConfigurationError("Configured firesim-dir (" + str(fsDir) + ") does not appear to be a valid firesim installation")
 
-    if targetCfg['nodisk'] == True:
+    if targetCfg['nodisk']:
         raise NotImplementedError("nodisk builds not currently supported by the install command")
 
     fsTargetDir = fsWork / targetCfg['name']
@@ -40,8 +42,8 @@ def install(targetCfg, opts):
 
     # Firesim config
     fsCfg = {
-            "benchmark_name" : targetCfg['name'],
-            "common_simulation_outputs" : ["uartlog"]
+            "benchmark_name": targetCfg['name'],
+            "common_simulation_outputs": ["uartlog"]
             }
 
     if 'post_run_hook' in targetCfg:
@@ -52,8 +54,8 @@ def install(targetCfg, opts):
         wls = [None]*len(targetCfg['jobs'])
         for slot, jCfg in enumerate(targetCfg['jobs'].values()):
             wls[slot] = {
-                    'name' : jCfg['name'],
-                    'bootbinary' : fullRel(fsTargetDir, jCfg['bin'])
+                    'name': jCfg['name'],
+                    'bootbinary': fullRel(fsTargetDir, jCfg['bin'])
                     }
             if 'img' in jCfg:
                 wls[slot]["rootfs"] = fullRel(fsTargetDir, jCfg['img'])
@@ -61,7 +63,7 @@ def install(targetCfg, opts):
                 wls[slot]["rootfs"] = dummyPath
 
             if 'outputs' in jCfg:
-                wls[slot]["outputs"] = [ f.as_posix() for f in jCfg['outputs'] ]
+                wls[slot]["outputs"] = [f.as_posix() for f in jCfg['outputs']]
         fsCfg['workloads'] = wls
     else:
         # Single-node run
@@ -73,7 +75,7 @@ def install(targetCfg, opts):
             fsCfg["common_rootfs"] = dummyPath
 
         if 'outputs' in targetCfg:
-            fsCfg["common_outputs"] = [ f.as_posix() for f in targetCfg['outputs'] ]
+            fsCfg["common_outputs"] = [f.as_posix() for f in targetCfg['outputs']]
 
     with open(str(fsTargetDir / "README"), 'w') as readme:
         readme.write(readmeTxt)
