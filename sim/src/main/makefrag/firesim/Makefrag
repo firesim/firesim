@@ -30,18 +30,20 @@ FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:${chipyard_dir}}firechip
+	firesim_sbt_project := {file:$(firesim_base_dir)/}firesim
+	target_sbt_project := {file:${chipyard_dir}}firechip
 
 	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print 2> /dev/null)
 	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
 	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
+	target_sbt_project := firechip
 	firesim_sbt_project := firechip
 endif
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
 	mkdir -p $(@D)
-	$(call run_scala_main,$(firesim_sbt_project),chipyard.Generator,\
+	$(call run_scala_main,$(target_sbt_project),chipyard.Generator,\
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
