@@ -1,6 +1,5 @@
 {
     "name" : "linux-poweroff",
     "base" : "br-base.json",
-    "overlay" : "overlay",
-    "command" : "/poweroff.sh"
+    "command" : "echo 'Example linux-poweroff workload\nShutting down the system\n'"
 }
