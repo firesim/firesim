@@ -97,12 +97,12 @@ jobs:
     needs: [setup-repo]
     runs-on: self-hosted
     steps:
-      - name: Run baremetal tests
+      - name: Run tests (- spike tests)
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
           eval "$(conda shell.bash hook)"
           conda activate $PWD/.conda-env
-          ./scripts/fullTest.py -c baremetal
+          ./scripts/fullTest.py -c baremetal -c qemu -c smoke -c special
       - name: Dump log
         if: ${{ always() }}
         run: |
