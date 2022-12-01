@@ -573,7 +573,7 @@ def waitpid(pid):
         time.sleep(0.25)
 
 
-if sp.run(['/usr/bin/sudo', '-ln', 'true'], stdout=sp.DEVNULL).returncode == 0:
+if sp.run(['/usr/bin/sudo', '-ln', 'true'], stderr=sp.DEVNULL, stdout=sp.DEVNULL).returncode == 0:
     # User has passwordless sudo available, use the mount command (much faster)
     sudoCmd = ["/usr/bin/sudo"]
 
@@ -728,7 +728,7 @@ def checkGitStatus(submodule):
     'rebuild' : A random number if the repo should be considered not up to date
         for any reason (e.g. dirty==True or init==False). 0 otherwised.
 
-    This is primarily useful as an input to doit's config_changed() updtodate
+    This is primarily useful as an input to doit's config_changed() uptodate
     helper which considers a workload not uptodate if some string or dictionary
     has changed since the last time it ran. The 'sha' or 'rebuild' fields will
     change if the repo has changed (or we can't tell if it's changed)."""

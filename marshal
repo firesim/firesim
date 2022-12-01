@@ -13,11 +13,9 @@ if not shutil.which('riscv64-unknown-linux-gnu-gcc'):
     sys.exit("No riscv toolchain detected. Please install riscv-tools.")
 
 
-# Delete a file but don't throw an exception if it doesn't exist
+# Delete a directory but don't throw an exception if it doesn't exist
 def deleteSafe(pth):
-    with contextlib.suppress(FileNotFoundError):
-        os.remove(pth)
-
+    shutil.rmtree(pth, ignore_errors=True)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -194,14 +192,7 @@ def main():
 
         elif args.command == 'clean':
             def cleanCfg(cfg):
-                if 'bin' in cfg:
-                    deleteSafe(cfg['bin'])
-                    deleteSafe(wlutil.noDiskPath(cfg['bin']))
-                if 'dwarf' in cfg:
-                    deleteSafe(cfg['dwarf'])
-                    deleteSafe(wlutil.noDiskPath(cfg['dwarf']))
-                if 'img' in cfg:
-                    deleteSafe(cfg['img'])
+                deleteSafe(cfg['out-dir'])
 
             cleanCfg(targetCfg)
             if 'jobs' in targetCfg:

@@ -5,10 +5,24 @@ import logging
 import os
 import subprocess as sp
 import pathlib
+import contextlib
 from . import wlutil
 from . import launch as wllaunch
 
 taskLoader = None
+
+
+# Print task target or file dep changes
+# Taken from: https://github.com/pydoit/doit/issues/329
+def print_deps(task, changed):
+    log = logging.getLogger()
+    for t in task.targets:
+        if not os.path.exists(t):
+            log.debug(f"Running task {task.name} because one of its targets does not exist anymore: {t}")
+            return
+
+    if changed:
+        log.debug(f"Running task {task.name} because the following changed: {changed}")
 
 
 class doitLoader(doit.cmd_base.TaskLoader2):
@@ -17,10 +31,11 @@ class doitLoader(doit.cmd_base.TaskLoader2):
     # Idempotent add (no duplicates)
     def addTask(self, tsk):
         if not any(t['name'] == tsk['name'] for t in self.workloads):
+            # add dep. tracker to each task
+            tsk['actions'] = [print_deps] + tsk['actions']
             self.workloads.append(tsk)
 
     def load_doit_config(self):
-        # return {'run': {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}}
         return {**wlutil.getOpt('doitOpts'), **{'check_file_uptodate': wlutil.WithMetadataChecker}}
 
     def load_tasks(self, cmd, pos_args):
@@ -28,7 +43,7 @@ class doitLoader(doit.cmd_base.TaskLoader2):
         return task_list
 
 
-def buildBusybox():
+def buildBusybox(config):
     """Builds the local copy of busybox (needed by linux initramfs).
 
     This is called as a doit task (added to the graph in buildDepGraph())
@@ -42,13 +57,14 @@ def buildBusybox():
     shutil.copy(wlutil.getOpt('wlutil-dir') / 'busybox-config', wlutil.getOpt('busybox-dir') / '.config')
     wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=wlutil.getOpt('busybox-dir'))
     shutil.copy(wlutil.getOpt('busybox-dir') / 'busybox', wlutil.getOpt('initramfs-dir') / 'disk' / 'bin/')
+
     return True
 
 
 def handleHostInit(config):
     log = logging.getLogger()
     if 'host-init' in config:
-        log.info("Applying host-init: " + str(config['host-init']))
+        log.debug("Applying host-init: " + str(config['host-init']))
         if not config['host-init'].path.exists():
             raise ValueError("host-init script " + str(config['host-init']) + " not found.")
 
@@ -58,7 +74,7 @@ def handleHostInit(config):
 def handlePostBin(config, linuxBin):
     log = logging.getLogger()
     if 'post-bin' in config:
-        log.info("Applying post-bin: " + str(config['post-bin']))
+        log.debug("Applying post-bin: " + str(config['post-bin']))
         if not config['post-bin'].path.exists():
             raise ValueError("post-bin script " + str(config['post-bin']) + " not found.")
 
@@ -120,7 +136,7 @@ def kmodDepsTask(cfg, taskDeps=None, name=""):
 
 def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
     """Returns a task dict for a calc_dep task that calculates the file
-    dependencies representd by an overlay and/or a list of FileSpec objects.
+    dependencies represented by an overlay and/or a list of FileSpec objects.
     Either can be None.
 
     taskDeps should be a list of names of tasks that must run before
@@ -153,6 +169,16 @@ def fileDepsTask(name, taskDeps=None, overlay=None, files=None):
 def addDep(loader, config):
     """Adds 'config' to the doit dependency graph ('loader')"""
 
+    # Linux-based workloads depend on this task
+    loader.addTask({
+        'name': 'build_busybox',
+        'actions': [(buildBusybox, [config])],
+        'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
+        'file_dep': [wlutil.getOpt('wlutil-dir') / 'busybox-config'],
+        'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(wlutil.getOpt('busybox-dir'))),
+                     wlutil.config_changed(wlutil.getToolVersions())]
+        })
+
     hostInit = []
     # Host-init task always runs because we can't tell if its uptodate and we
     # don't know its inputs/outputs.
@@ -169,7 +195,7 @@ def addDep(loader, config):
     bin_targets = []
     if 'linux' in config:
         bin_file_deps += config['linux']['config']
-        bin_task_deps.append('BuildBusybox')
+        bin_task_deps.append('build_busybox')
         bin_targets.append(config['dwarf'])
 
     if config['use-parent-bin']:
@@ -255,6 +281,9 @@ def addDep(loader, config):
     img_calc_deps = []
     img_uptodate = []
     if 'img' in config:
+        if 'base-img' in config:
+            img_file_deps.append(config['base-img'])
+
         if 'files' in config or 'overlay' in config:
             # We delay calculation of files and overlay dependencies to runtime
             # in order to catch any generated inputs
@@ -291,21 +320,11 @@ def addDep(loader, config):
 def buildDepGraph(cfgs):
     loader = doitLoader()
 
-    # Linux-based workloads depend on this task
-    loader.workloads.append({
-        'name': 'BuildBusybox',
-        'actions': [(buildBusybox, [])],
-        'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
-        'file_dep': [wlutil.getOpt('wlutil-dir') / 'busybox-config'],
-        'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(wlutil.getOpt('busybox-dir'))),
-                     wlutil.config_changed(wlutil.getToolVersions())]
-        })
-
     for cfgPath in cfgs.keys():
         config = cfgs[cfgPath]
 
         if config['isDistro'] and 'img' in config:
-            loader.workloads.append({
+            loader.addTask({
                     'name': str(config['img']),
                     'actions': [(config['builder'].buildBaseImage, [])],
                     'targets': [config['img']],
@@ -422,6 +441,8 @@ def makeModules(cfg):
 
     # Prepare the linux source with the proper config
     generateKConfig(linCfg['config'], linCfg['source'])
+    cfg['out-dir'].mkdir(parents=True, exist_ok=True)
+    shutil.copy(linCfg['source'] / '.config', cfg['out-dir'] / 'linux_module_config')
 
     # Build modules (if they exist)
     if ('modules' in linCfg) and (len(linCfg['modules']) != 0):
@@ -504,8 +525,10 @@ def makeBin(config, nodisk=False):
     This is called as a doit task (see buildDepGraph() and addDep())
     """
     if config['use-parent-bin'] and not nodisk:
+        config['bin'].parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(config['base-bin'], config['bin'])
         if 'dwarf' in config:
+            config['dwarf'].parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(config['base-dwarf'], config['dwarf'])
         return True
 
@@ -539,12 +562,18 @@ def makeBin(config, nodisk=False):
             makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
             generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
             wlutil.run(['make'] + wlutil.getOpt('linux-make-args') + ['vmlinux', 'Image', '-j' + str(wlutil.getOpt('jlevel'))], cwd=config['linux']['source'])
+            # copy files needed to build linux (busybox copying is put here so that it is shown per linux build)
+            config['out-dir'].mkdir(parents=True, exist_ok=True)
+            shutil.copy(config['linux']['source'] / '.config', config['out-dir'] / 'linux_config')
+            shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
 
         if 'use-bbl' in config.get('firmware', {}) and config['firmware']['use-bbl']:
             fw = makeBBL(config, nodisk)
         else:
             fw = makeOpenSBI(config, nodisk)
 
+        config['bin'].parent.mkdir(parents=True, exist_ok=True)
+        config['dwarf'].parent.mkdir(parents=True, exist_ok=True)
         if nodisk:
             shutil.copy(fw, wlutil.noDiskPath(config['bin']))
             shutil.copy(config['linux']['source'] / 'vmlinux', wlutil.noDiskPath(config['dwarf']))
@@ -558,25 +587,29 @@ def makeBin(config, nodisk=False):
 def makeImage(config):
     log = logging.getLogger()
 
-    # Incremental builds
-    if not config['img'].exists():
-        if 'base-img' in config:
-            shutil.copy(config['base-img'], config['img'])
+    # Remove old image so that you re-apply the overlay/files/etc
+    with contextlib.suppress(FileNotFoundError):
+        os.remove(config['img'])
+
+    # Create new image from a copy of the base
+    if 'base-img' in config:
+        config['img'].parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(config['base-img'], config['img'])
 
     # Resize if needed
     if config['img-sz'] != 0:
         wlutil.resizeFS(config['img'], config['img-sz'])
 
     if 'overlay' in config:
-        log.info("Applying Overlay: " + str(config['overlay']))
+        log.debug("Applying overlay: " + str(config['overlay']))
         wlutil.applyOverlay(config['img'], config['overlay'])
 
     if 'files' in config:
-        log.info("Applying file list: " + str(config['files']))
+        log.debug("Applying file list: " + str(config['files']))
         wlutil.copyImgFiles(config['img'], config['files'], 'in')
 
     if 'guest-init' in config:
-        log.info("Applying init script: " + str(config['guest-init'].path))
+        log.debug("Applying init script: " + str(config['guest-init'].path))
         if not config['guest-init'].path.exists():
             raise ValueError("Init script " + str(config['guest-init'].path) + " not found.")
 
@@ -593,10 +626,10 @@ def makeImage(config):
     if 'runSpec' in config:
         spec = config['runSpec']
         if spec.command is not None:
-            log.info("Applying run command: " + str(spec.command))
+            log.debug("Applying run command: " + str(spec.command))
             scriptPath = wlutil.genRunScript(spec.command)
         else:
-            log.info("Applying run script: " + str(spec.path))
+            log.debug("Applying run script: " + str(spec.path))
             scriptPath = spec.path
 
         if not scriptPath.exists():
