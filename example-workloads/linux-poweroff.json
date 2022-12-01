@@ -1,0 +1,5 @@
+{
+    "name" : "linux-poweroff",
+    "base" : "br-base.json",
+    "command" : "echo 'Example linux-poweroff workload\nShutting down the system\n'"
+}
