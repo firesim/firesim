@@ -4,7 +4,7 @@ from fabric.api import *
 
 from common import manager_home_dir, manager_fsim_dir, manager_marshal_dir, set_fabric_firesim_pem
 # This is expected to be launch from the ci container
-from ci_variables import ci_workdir
+from ci_variables import ci_env
 
 def initialize_repo():
     """ Initializes firesim repo: clones, runs build-setup, and intializes marshal submodules """
@@ -12,7 +12,7 @@ def initialize_repo():
     with cd(manager_home_dir):
         run("rm -rf {}".format(manager_fsim_dir))
         # copy ci version of the repo into the new globally accessible location
-        run("git clone {} {}".format(ci_workdir, manager_fsim_dir))
+        run("git clone {} {}".format(ci_env['GITHUB_WORKSPACE'], manager_fsim_dir))
 
     with cd(manager_fsim_dir):
         run("./build-setup.sh --skip-validate")

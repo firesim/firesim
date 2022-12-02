@@ -9,9 +9,10 @@ from fabric.api import *
 import fabric
 
 from platform_lib import Platform, PlatformLib, get_platform_enum
-from common import deregister_runners, manager_home_dir, gha_runners_api_url, get_header, get_platform_lib
+from common import manager_home_dir, get_platform_lib
+from github_common import deregister_runners, gha_runners_api_url, get_header
 # This is expected to be launch from the ci container
-from ci_variables import ci_personal_api_token, ci_workflow_run_id, ci_repo_name
+from ci_variables import ci_env
 
 def wait_machine_launch_complete():
     # Catch any exception that occurs so that we can gracefully teardown
@@ -37,7 +38,7 @@ def setup_self_hosted_runners(platform_lib: PlatformLib):
         with settings(warn_only=True):
             for runner_idx in range(NUM_RUNNERS):
                 run(f"screen -XS gh-a-runner-{runner_idx} quit")
-        deregister_runners(ci_personal_api_token, f"{platform}-{ci_workflow_run_id}")
+        deregister_runners(ci_env['PERSONAL_ACCESS_TOKEN'], f"{platform}-{ci_env['GITHUB_RUN_ID']}")
 
         # spawn runners
         for runner_idx in range(NUM_RUNNERS):
@@ -52,7 +53,7 @@ def setup_self_hosted_runners(platform_lib: PlatformLib):
                 run("sudo ./bin/installdependencies.sh")
 
                 # get registration token from API
-                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=get_header(ci_personal_api_token))
+                r = requests.post(f"{gha_runners_api_url}/registration-token", headers=get_header(ci_env['PERSONAL_ACCESS_TOKEN']))
                 if r.status_code != 201:
                     raise Exception("HTTPS error: {} {}".format(r.status_code, r.json()))
 
@@ -62,9 +63,9 @@ def setup_self_hosted_runners(platform_lib: PlatformLib):
                 # config runner
                 put(".github/scripts/gh-a-runner.expect", actions_dir)
                 run("chmod +x gh-a-runner.expect")
-                runner_name = f"{platform_lib.get_platform_enum()}-{ci_workflow_run_id}-{runner_idx}" # used to teardown runner
-                unique_label = f"{platform_lib.get_platform_enum()}-{ci_workflow_run_id}" # used within the yaml to choose a runner
-                run(f"./gh-a-runner.expect {reg_token} {runner_name} {unique_label} {ci_repo_name}")
+                runner_name = f"{platform_lib.get_platform_enum()}-{ci_env['GITHUB_RUN_ID']}-{runner_idx}" # used to teardown runner
+                unique_label = f"{platform_lib.get_platform_enum()}-{ci_env['GITHUB_RUN_ID']}" # used within the yaml to choose a runner
+                run(f"./gh-a-runner.expect {reg_token} {runner_name} {unique_label} {ci_env['GITHUB_REPOSITORY']}")
 
                 # start runner
                 # Setting pty=False is required to stop the screen from being
@@ -80,7 +81,7 @@ def setup_self_hosted_runners(platform_lib: PlatformLib):
 
     except BaseException as e:
         traceback.print_exc(file=sys.stdout)
-        platform_lib.terminate_instances(ci_personal_api_token, ci_workflow_run_id)
+        platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
         sys.exit(1)
 
 if __name__ == "__main__":
@@ -97,7 +98,7 @@ if __name__ == "__main__":
     platform = get_platform_enum(args.platform)
     platform_lib = get_platform_lib(platform)
 
-    execute(wait_machine_launch_complete, hosts=[platform_lib.get_manager_hostname(ci_workflow_run_id)])
+    execute(wait_machine_launch_complete, hosts=[platform_lib.get_manager_hostname(ci_env['GITHUB_RUN_ID'])])
     # after we know machine-launch-script.sh is done, we need to logout and log back in
     fabric.network.disconnect_all()
-    execute(setup_self_hosted_runners, platform_lib, hosts=[platform_lib.get_manager_hostname(ci_workflow_run_id)])
+    execute(setup_self_hosted_runners, platform_lib, hosts=[platform_lib.get_manager_hostname(ci_env['GITHUB_RUN_ID'])])

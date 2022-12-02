@@ -3,59 +3,87 @@ import os
 # This package contains utilities that rely on environment variable
 # definitions present only on the CI container instance.
 
+# Create a env. dict that is populated from the environment or from defaults
+ci_env = {}
+
 # If not running under a CI pipeline defaults are provided that
 # will suffice to run scripts that do not use GHA API calls.
 # To manually provide environment variable settings, export GITHUB_ACTIONS=true, and provide
 # values for all of the environment variables below.
-RUN_LOCAL = not os.environ.get('GITHUB_ACTIONS', False)
-RUN_AZURE_CREDITED_ENV = bool(os.environ.get('AZURE_CREDITED_ENV', False))
+ci_env['GITHUB_ACTIONS'] = os.environ.get('GITHUB_ACTIONS', "false")
+RUN_LOCAL = ci_env['GITHUB_ACTIONS'] == 'false'
 # When running locally (not in a CI pipeline) run commands out of the clone hosting this file.
 local_fsim_dir = os.path.normpath((os.path.realpath(__file__)) + "/../../..")
 
+# Add list of env. variables to the ci_env dict
+def add_env_vars(env_vars, default_value = ""):
+    for k, v in os.environ.items():
+        if k in env_vars:
+            ci_env[k] = v if not RUN_LOCAL else default_value
+
 # CI instance environment variables
 
-# This is used as a unique tag for all instances launched in a workflow
-ci_workflow_run_id = os.environ['GITHUB_RUN_ID'] if not RUN_LOCAL else 0
-ci_commit_sha1 = os.environ['GITHUB_SHA'] if not RUN_LOCAL else 0
+gh_env_vars = {
+    # This is used as a unique tag for all instances launched in a workflow
+    'GITHUB_RUN_ID',
+    'GITHUB_SHA',
+    }
+add_env_vars(gh_env_vars, 0)
 
 # Multiple clones of the FireSim repository exists on manager. We expect state
 # to persist between jobs in a workflow and faciliate that by having jobs run
-# out of a centralized clone (ci_firesim_dir)-- not the default clones setup by
-# the GHA runners (ci_workdir)
+# out of a centralized clone (MANAGER_FIRESIM_LOCATION)-- not the default clones setup by
+# the GHA runners (GITHUB_WORKSPACE)
 
 # This is the location of the clone setup by the GHA runner infrastructure by default
 # expanduser to replace the ~ present in the default, for portability
-ci_workdir = os.path.expanduser(os.environ['GITHUB_WORKSPACE']) if not RUN_LOCAL else local_fsim_dir
+ci_env['GITHUB_WORKSPACE'] = os.path.expanduser(os.environ['GITHUB_WORKSPACE']) if not RUN_LOCAL else local_fsim_dir
 
 # This is the location of the reused clone. CI scripts should refer variables
 # derived from this path so that they may be reused across workflows that may
 # initialize the FireSim repository differently (e.g., as a submodule of a
 # larger project.)
-ci_firesim_dir = os.path.expanduser(os.environ['MANAGER_FIRESIM_LOCATION']) if not RUN_LOCAL else local_fsim_dir
+ci_env['MANAGER_FIRESIM_LOCATION'] = os.path.expanduser(os.environ['MANAGER_FIRESIM_LOCATION']) if not RUN_LOCAL else local_fsim_dir
 
-ci_api_token = os.environ['GITHUB_TOKEN'] if not RUN_LOCAL else 0
-ci_personal_api_token = os.environ['PERSONAL_ACCESS_TOKEN'] if not RUN_LOCAL else 0
+gh_env_vars = {
+    'GITHUB_TOKEN',
+    'PERSONAL_ACCESS_TOKEN',
+    }
+add_env_vars(gh_env_vars, 0)
 
-ci_gha_api_url = os.environ['GITHUB_API_URL'] if not RUN_LOCAL else ""
-# We look this up, instead of hardcoding "firesim/firesim", to support running
-# this CI pipeline under forks.
-ci_repo_name   = os.environ['GITHUB_REPOSITORY'] if not RUN_LOCAL else ""
+gh_env_vars = {
+    'GITHUB_API_URL',
+    # We look this up, instead of hardcoding "firesim/firesim", to support running
+    # this CI pipeline under forks.
+    'GITHUB_REPOSITORY',
+    'GITHUB_EVENT_PATH',
+    }
+add_env_vars(gh_env_vars)
 
 # The following are environment variables used by AWS and AZURE to setup the corresponding
 # self-hosted Github Actions Runners
 
-ci_aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID'] if not RUN_LOCAL else ""
-ci_aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY'] if not RUN_LOCAL else ""
-ci_aws_default_region = os.environ['AWS_DEFAULT_REGION'] if not RUN_LOCAL else ""
+aws_env_vars = {
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_DEFAULT_REGION',
+    }
+add_env_vars(aws_env_vars)
 
-ci_azure_client_id = os.environ['AZURE_CLIENT_ID'] if (not RUN_LOCAL) or RUN_AZURE_CREDITED_ENV else ""
-ci_azure_client_secret = os.environ['AZURE_CLIENT_SECRET'] if (not RUN_LOCAL) or RUN_AZURE_CREDITED_ENV else ""
-ci_azure_tenant_id = os.environ['AZURE_TENANT_ID'] if (not RUN_LOCAL) or RUN_AZURE_CREDITED_ENV else ""
-ci_azure_sub_id = os.environ['AZURE_SUBSCRIPTION_ID'] if (not RUN_LOCAL) or RUN_AZURE_CREDITED_ENV else ""
-ci_azure_default_region = os.environ['AZURE_DEFAULT_REGION'] if not RUN_LOCAL else ""
-ci_azure_resource_group = os.environ['AZURE_RESOURCE_GROUP'] if not RUN_LOCAL else ""
-ci_azure_subnet_id = os.environ['AZURE_CI_SUBNET_ID'] if not RUN_LOCAL else ""
-ci_azure_nsg_id = os.environ['AZURE_CI_NSG_ID'] if not RUN_LOCAL else ""
+azure_env_vars = {
+    'AZURE_CLIENT_ID',
+    'AZURE_CLIENT_SECRET',
+    'AZURE_TENANT_ID',
+    'AZURE_SUBSCRIPTION_ID',
+    'AZURE_DEFAULT_REGION',
+    'AZURE_RESOURCE_GROUP',
+    'AZURE_CI_SUBNET_ID',
+    'AZURE_CI_NSG_ID',
+    }
+add_env_vars(azure_env_vars)
 
-ci_firesim_pem = os.environ['FIRESIM_PEM'] if not RUN_LOCAL else ""
-ci_firesim_pem_public = os.environ['FIRESIM_PEM_PUBLIC'] if not RUN_LOCAL else ""
+pem_env_vars = {
+    'FIRESIM_PEM',
+    'FIRESIM_PEM_PUBLIC',
+    }
+add_env_vars(pem_env_vars)

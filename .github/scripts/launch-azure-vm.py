@@ -5,8 +5,7 @@
 import sys
 
 # This must run in the CI container
-from ci_variables import ci_workflow_run_id, ci_azure_sub_id, ci_azure_resource_group, ci_workdir, \
-    ci_commit_sha1, ci_azure_default_region, ci_azure_subnet_id, ci_azure_nsg_id, ci_firesim_pem_public
+from ci_variables import ci_env
 from common import azure_platform_lib
 
 from azure.mgmt.resource import ResourceManagementClient
@@ -20,24 +19,24 @@ import base64
 def main():
     """ Spins up a new manager vm for our CI run """
 
-    if azure_platform_lib.check_manager_exists(ci_workflow_run_id):
+    if azure_platform_lib.check_manager_exists(ci_env['GITHUB_RUN_ID']):
         print("There is an existing manager vm for this CI workflow:")
-        print(azure_platform_lib.get_manager_metadata_string(ci_workflow_run_id))
+        print(azure_platform_lib.get_manager_metadata_string(ci_env['GITHUB_RUN_ID']))
         sys.exit(0)
 
     credential = DefaultAzureCredential()
 
-    resource_client = ResourceManagementClient(credential, ci_azure_sub_id)
-    rg_result = resource_client.resource_groups.get(ci_azure_resource_group)
+    resource_client = ResourceManagementClient(credential, ci_env['AZURE_SUBSCRIPTION_ID'])
+    rg_result = resource_client.resource_groups.get(ci_env['AZURE_RESOURCE_GROUP'])
     print(f"Provisioned resource group {rg_result.name} in the {rg_result.location} region")
 
-    with open(ci_workdir + "/scripts/machine-launch-script.sh", "r") as file:
+    with open(ci_env['GITHUB_WORKSPACE'] + "/scripts/machine-launch-script.sh", "r") as file:
         ml_file_raw = file.read().encode('utf-8')
         ml_file_encoded = base64.b64encode(ml_file_raw).decode('latin-1')
 
-    workflow_id = ci_workflow_run_id
+    workflow_id = ci_env['GITHUB_RUN_ID']
 
-    # Networking related variables
+    # Netowrking related variables
     ip_name = workflow_id + "-ip"
     ip_config_name = ip_name + "-config"
     nic_name = workflow_id + "-nic"
@@ -48,13 +47,13 @@ def main():
     image_name = "xilinx_alveo_u250_deployment_vm_centos78_032321"
     vm_size = "Standard_E8ds_v5" #8 vcpus, 64 gb should be sufficient for CI purposes
 
-    tags = azure_platform_lib.get_manager_tag_dict(ci_commit_sha1, ci_workflow_run_id)
+    tags = azure_platform_lib.get_manager_tag_dict(ci_env['GITHUB_SHA'], ci_env['GITHUB_RUN_ID'])
 
-    network_client = NetworkManagementClient(credential, ci_azure_sub_id)
-    poller = network_client.public_ip_addresses.begin_create_or_update(ci_azure_resource_group,
+    network_client = NetworkManagementClient(credential, ci_env['AZURE_SUBSCRIPTION_ID'])
+    poller = network_client.public_ip_addresses.begin_create_or_update(ci_env['AZURE_RESOURCE_GROUP'],
         ip_name,
         {
-            "location": ci_azure_default_region,
+            "location": ci_env['AZURE_DEFAULT_REGION'],
             "tags": tags,
             "sku": {"name": "Standard"},
             "public_ip_allocation_method": "Static",
@@ -63,14 +62,14 @@ def main():
     )
     ip_address_result = poller.result()
     print(f"Provisioned public IP address {ip_address_result.name} with address {ip_address_result.ip_address}")
-    poller = network_client.network_interfaces.begin_create_or_update(ci_azure_resource_group,
+    poller = network_client.network_interfaces.begin_create_or_update(ci_env['AZURE_RESOURCE_GROUP'],
         nic_name,
         {
-            "location": ci_azure_default_region,
+            "location": ci_env['AZURE_DEFAULT_REGION'],
             "tags": tags,
             "ip_configurations": [ {
                 "name": ip_config_name,
-                "subnet": { "id": ci_azure_subnet_id },
+                "subnet": { "id": ci_env['AZURE_CI_SUBNET_ID'] },
                 "properties" : {
                     "publicIPAddress" : {
                         "id" : ip_address_result.id,
@@ -81,7 +80,7 @@ def main():
                 }
             }],
             "networkSecurityGroup": {
-                "id": ci_azure_nsg_id
+                "id": ci_env['AZURE_CI_NSG_ID']
             }
         }
     )
@@ -89,10 +88,10 @@ def main():
     print(f"Provisioned network interface client {nic_result.name}")
 
     print(f"Provisioning virtual machine {vm_name}; this operation might take a few minutes.")
-    compute_client = ComputeManagementClient(credential, ci_azure_sub_id)
-    poller = compute_client.virtual_machines.begin_create_or_update(ci_azure_resource_group, vm_name,
+    compute_client = ComputeManagementClient(credential, ci_env['AZURE_SUBSCRIPTION_ID'])
+    poller = compute_client.virtual_machines.begin_create_or_update(ci_env['AZURE_RESOURCE_GROUP'], vm_name,
         {
-            "location": ci_azure_default_region,
+            "location": ci_env['AZURE_DEFAULT_REGION'],
             "tags": tags,
             "plan": {
                 "name": image_name,
@@ -123,7 +122,7 @@ def main():
                     "ssh": {
                         "public_keys": [{
                             "path": f"/home/{username}/.ssh/authorized_keys",
-                            "key_data": ci_firesim_pem_public # use some public key, like firesim.pem, from github secrets
+                            "key_data": ci_env['FIRESIM_PEM_PUBLIC'] # use some public key, like firesim.pem, from github secrets
                         }]
                     }
                 },

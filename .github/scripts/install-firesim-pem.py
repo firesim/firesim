@@ -3,7 +3,7 @@
 from fabric.api import *
 import os
 
-from ci_variables import ci_firesim_pem
+from ci_variables import ci_env
 from common import manager_home_dir, manager_fsim_pem, set_fabric_firesim_pem
 
 def install_firesim_pem():
@@ -12,7 +12,7 @@ def install_firesim_pem():
     with cd(manager_home_dir):
         # add firesim.pem
         with open(manager_fsim_pem, "w") as pem_file:
-            pem_file.write(ci_firesim_pem)
+            pem_file.write(ci_env['FIRESIM_PEM'])
         local("chmod 600 {}".format(manager_fsim_pem))
 
 if __name__ == "__main__":

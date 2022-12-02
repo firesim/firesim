@@ -5,9 +5,12 @@ import boto3
 import os
 from enum import Enum
 from fabric.api import *
-from ci_variables import local_fsim_dir, ci_azure_sub_id
-import datetime
 import pytz
+import datetime
+import requests
+
+from ci_variables import ci_env
+from github_common import issue_post
 
 from azure.mgmt.resource import ResourceManagementClient
 from azure.identity import DefaultAzureCredential
@@ -17,8 +20,8 @@ import azure.mgmt.resourcegraph as arg
 from typing import Any, Callable, Dict, List
 
 # Reuse manager utilities
-# Note: ci_firesim_dir must not be used here because the persistent clone my not be initialized yet.
-sys.path.append(local_fsim_dir + "/deploy")
+# Note: GITHUB_WORKSPACE must not be used here because the persistent clone my not be initialized yet.
+sys.path.append(ci_env['GITHUB_WORKSPACE'] + "/deploy")
 from awstools.awstools import get_instances_with_filter
 
 # This tag is common to all instances launched as part of a given workflow
@@ -85,6 +88,11 @@ class PlatformLib(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
+        """ Grabs a list of select instances across all CI using the CI unique tag key"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_manager_ip(self, workflow_tag: str) -> str:
         """ Returns ip of the manager specified by the tag """
         raise NotImplementedError
@@ -120,6 +128,12 @@ class PlatformLib(metaclass=abc.ABCMeta):
     def get_manager_hostname(self, workflow_tag: str) -> str:
         """ Returns the hostname of the ci manager specified """
         return f"centos@{self.get_manager_ip(workflow_tag)}"
+
+    @abc.abstractmethod
+    def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
+        """ Check if platform-specific instances are running past a `timeout` minutes designated time. If so, then terminate them. """
+        raise NotImplementedError
+
 
 class AWSPlatformLib(PlatformLib):
 
@@ -167,6 +181,15 @@ class AWSPlatformLib(PlatformLib):
         all_ci_instances_filter = self.get_filter('*')
         all_ci_instances = get_instances_with_filter([all_ci_instances_filter], allowed_states=['*'])
         return all_ci_instances
+
+    def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
+        """ Grabs a list of select instances across all CI using the CI unique tag key"""
+        instances_filter = [
+                self.get_filter(workflow_tag),
+                {'Name': 'instance-type', 'Values': ['f1.2xlarge', 'f1.16xlarge']},
+                ]
+        ci_instances = get_instances_with_filter(instances_filter, allowed_states=['*'])
+        return ci_instances
 
     def get_manager_ip(self, workflow_tag: str) -> str:
         """
@@ -241,13 +264,32 @@ class AWSPlatformLib(PlatformLib):
 
         return static_md + dynamic_md
 
+    def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
+        # terminate f1.{2,16}xlarge instances after timeout minutes of running (extra backup)
+        instances = self.find_select_ci_instances(workflow_tag)
+        terminated_insts = False
+        for inst in instances:
+            if (datetime.datetime.now() - inst.launch_time) >= datetime.timedelta(minutes=timeout):
+                print("Uncaught FPGA instance shutdown detected")
+
+                instids = [ inst.instance_id ]
+                terminate_instances(instids, False)
+
+                print(f"Terminated FPGA instance {instids}")
+                terminated_insts = True
+
+        # post comment after instances are terminated just in case there is an issue with posting
+        if terminated_insts:
+            issue_post(ci_env['PERSONAL_ACCESS_TOKEN'],
+                    f"Uncaught FPGA instance shutdown detected for CI run: {ci_env['GITHUB_RUN_ID']}. Verify CI state before submitting PR.")
+
 
 class AzurePlatformLib(PlatformLib):
     def __init__(self, deregister_runners: Callable[[str, str], None]):
         self.credential = DefaultAzureCredential()
-        self.resource_client = ResourceManagementClient(self.credential, ci_azure_sub_id)
+        self.resource_client = ResourceManagementClient(self.credential, ci_env['AZURE_SUBSCRIPTION_ID'])
         self.arg_client = arg.ResourceGraphClient(self.credential)
-        self.compute_client = ComputeManagementClient(self.credential, ci_azure_sub_id)
+        self.compute_client = ComputeManagementClient(self.credential, ci_env['AZURE_SUBSCRIPTION_ID'])
 
         self.deregister_runners = deregister_runners
         # This is a dictionary that's used to translate between simpler terms and
@@ -363,7 +405,7 @@ class AzurePlatformLib(PlatformLib):
             query += f"tags.{key}=~'{tag_dict[key]}' and "
         query = query[:-4]
 
-        arg_query = arg.models.QueryRequest(subscriptions=[ci_azure_sub_id], query=query, options=arg_query_options)
+        arg_query = arg.models.QueryRequest(subscriptions=[ci_env['AZURE_SUBSCRIPTION_ID']], query=query, options=arg_query_options)
 
         return self.arg_client.resources(arg_query).data
 
@@ -385,3 +427,9 @@ class AzurePlatformLib(PlatformLib):
                 print(f"Failed to delete VM {vm['name']}, expected 'None' and got result {deletion_result}")
             else:
                 print(f"Succeeded in deleting VM {vm['name']}")
+
+    def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
+        return
+
+    def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
+        return

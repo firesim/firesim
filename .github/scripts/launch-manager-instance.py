@@ -5,19 +5,19 @@
 import sys
 
 # This must run in the CI container
-from ci_variables import ci_workflow_run_id, ci_commit_sha1, ci_workdir
+from ci_variables import ci_env
 from common import aws_platform_lib
 
 # Reuse manager utilities
-sys.path.append(ci_workdir + "/deploy")
+sys.path.append(ci_env['GITHUB_WORKSPACE'] + "/deploy")
 import awstools.awstools
 
 def main():
     """ Spins up a new manager instance for our CI run """
 
-    if aws_platform_lib.check_manager_exists(ci_workflow_run_id):
+    if aws_platform_lib.check_manager_exists(ci_env['GITHUB_RUN_ID']):
         print("There is an existing manager instance for this CI workflow:")
-        print(aws_platform_lib.get_manager_metadata_string(ci_workflow_run_id))
+        print(aws_platform_lib.get_manager_metadata_string(ci_env['GITHUB_RUN_ID']))
         sys.exit(0)
 
     print("Launching a fresh manager instance. This will take a couple minutes")
@@ -27,12 +27,12 @@ def main():
         '--market', 'spot',
         '--int_behavior', 'terminate',
         '--block_devices', str([{'DeviceName':'/dev/sda1','Ebs':{'VolumeSize':300,'VolumeType':'gp2'}}]),
-        '--tags', str(aws_platform_lib.get_manager_tag_dict(ci_commit_sha1, ci_workflow_run_id)),
-        '--user_data_file', ci_workdir + "/scripts/machine-launch-script.sh"
+        '--tags', str(aws_platform_lib.get_manager_tag_dict(ci_env['GITHUB_SHA'], ci_env['GITHUB_RUN_ID'])),
+        '--user_data_file', ci_env['GITHUB_WORKSPACE'] + "/scripts/machine-launch-script.sh"
     ])
 
     print("Instance ready.")
-    print(aws_platform_lib.get_manager_metadata_string(ci_workflow_run_id))
+    print(aws_platform_lib.get_manager_metadata_string(ci_env['GITHUB_RUN_ID']))
     sys.stdout.flush()
 
 if __name__ == "__main__":
