@@ -27,16 +27,6 @@ private[midas] case class TargetBoxAnnotation(target: IsModule) extends SingleTa
   def duplicate(rt: IsModule): TargetBoxAnnotation = TargetBoxAnnotation(rt)
 }
 
-class SimReadyValidRecord(es: Seq[(String, ReadyValidIO[Data])]) extends Record {
-  val elements = ListMap() ++ (es map { case (name, rv) =>
-    (directionOf(rv.valid): @unchecked) match {
-      case Direction.Input => name -> Flipped(SimReadyValid(rv.bits.cloneType))
-      case Direction.Output => name -> SimReadyValid(rv.bits.cloneType)
-    }
-  })
-  def cloneType = new SimReadyValidRecord(es).asInstanceOf[this.type]
-}
-
 /**
   * The metadata required to generate the simulation wrapper.
   *
