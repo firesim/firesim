@@ -3,6 +3,14 @@
 #include <sched.h>
 #include <stdlib.h>
 
+// Define this variable if compiling for use with Valgrind.
+// Valgrind should be detected and enabled using a configuration
+// option in the future.
+
+#ifdef USE_VALGRIND
+#include <valgrind/valgrind.h>
+#endif
+
 static __thread context_t *cur;
 
 context_t::context_t()
@@ -37,6 +45,8 @@ void *context_t::wrapper(void *a) {
 }
 #endif
 
+constexpr size_t STACK_SIZE = 8 * 1024 * 1024;
+
 void context_t::init(void (*f)(void *), void *a) {
   func = f;
   arg = a;
@@ -48,9 +58,13 @@ void context_t::init(void (*f)(void *), void *a) {
   // Note this is larger than what was historically upstream in spike to support
   // using VCS as a child context. 8 MiB was chosen as it is a typical linux max
   // stack size.
-  context->uc_stack.ss_size = 8 * 1024 * 1024;
-  context->uc_stack.ss_sp =
-      new void *[context->uc_stack.ss_size / sizeof(void *)];
+  char *stack = new char[STACK_SIZE];
+#ifdef USE_VALGRIND
+  VALGRIND_STACK_REGISTER(stack, stack + STACK_SIZE);
+#endif
+  context->uc_stack.ss_size = STACK_SIZE;
+  context->uc_stack.ss_sp = stack;
+
 #ifndef GLIBC_64BIT_PTR_BUG
   makecontext(context.get(), (void (*)(void)) & context_t::wrapper, 1, this);
 #else
@@ -73,7 +87,15 @@ void context_t::init(void (*f)(void *), void *a) {
 #endif
 }
 
-context_t::~context_t() { assert(this != cur); }
+context_t::~context_t() {
+  // TODO: de-register the stack with Valgrind. This cannot be done now since
+  // the header cannot be extended to carry a Valgrind ID, as this class is
+  // used in Spike and the layout of the class in memory must match.
+#ifdef USE_UCONTEXT
+  delete[] static_cast<char *>(context->uc_stack.ss_sp);
+#endif
+  assert(this != cur);
+}
 
 void context_t::switch_to() {
   assert(this != cur);

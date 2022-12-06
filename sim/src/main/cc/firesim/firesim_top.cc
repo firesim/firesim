@@ -80,52 +80,52 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_0
-  INSTANTIATE_FASED(fpga_models.push_back, 0)
+  INSTANTIATE_FASED(add_fpga_model, 0)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_1
-  INSTANTIATE_FASED(fpga_models.push_back, 1)
+  INSTANTIATE_FASED(add_fpga_model, 1)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_2
-  INSTANTIATE_FASED(fpga_models.push_back, 2)
+  INSTANTIATE_FASED(add_fpga_model, 2)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_3
-  INSTANTIATE_FASED(fpga_models.push_back, 3)
+  INSTANTIATE_FASED(add_fpga_model, 3)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_4
-  INSTANTIATE_FASED(fpga_models.push_back, 4)
+  INSTANTIATE_FASED(add_fpga_model, 4)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_5
-  INSTANTIATE_FASED(fpga_models.push_back, 5)
+  INSTANTIATE_FASED(add_fpga_model, 5)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_6
-  INSTANTIATE_FASED(fpga_models.push_back, 6)
+  INSTANTIATE_FASED(add_fpga_model, 6)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_7
-  INSTANTIATE_FASED(fpga_models.push_back, 7)
+  INSTANTIATE_FASED(add_fpga_model, 7)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_8
-  INSTANTIATE_FASED(fpga_models.push_back, 8)
+  INSTANTIATE_FASED(add_fpga_model, 8)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_9
-  INSTANTIATE_FASED(fpga_models.push_back, 9)
+  INSTANTIATE_FASED(add_fpga_model, 9)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_10
-  INSTANTIATE_FASED(fpga_models.push_back, 10)
+  INSTANTIATE_FASED(add_fpga_model, 10)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_11
-  INSTANTIATE_FASED(fpga_models.push_back, 11)
+  INSTANTIATE_FASED(add_fpga_model, 11)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_12
-  INSTANTIATE_FASED(fpga_models.push_back, 12)
+  INSTANTIATE_FASED(add_fpga_model, 12)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_13
-  INSTANTIATE_FASED(fpga_models.push_back, 13)
+  INSTANTIATE_FASED(add_fpga_model, 13)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_14
-  INSTANTIATE_FASED(fpga_models.push_back, 14)
+  INSTANTIATE_FASED(add_fpga_model, 14)
 #endif
 #ifdef FASEDMEMORYTIMINGMODEL_15
-  INSTANTIATE_FASED(fpga_models.push_back, 15)
+  INSTANTIATE_FASED(add_fpga_model, 15)
 #endif
 
 #ifdef SERIALBRIDGEMODULE_0_PRESENT
@@ -553,7 +553,7 @@ bool firesim_top_t::simulation_complete() {
 }
 
 uint64_t firesim_top_t::profile_models() {
-  for (auto mod : fpga_models) {
+  for (auto &mod : fpga_models) {
     mod->profile();
   }
   return profile_interval;

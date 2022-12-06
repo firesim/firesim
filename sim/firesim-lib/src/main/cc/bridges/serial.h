@@ -56,6 +56,11 @@ private:
   int64_t mem_host_offset;
   // Number of target cycles between fesvr interactions
   uint32_t step_size;
+
+  // Arguments passed to firesim_tsi.
+  char **tsi_argv = nullptr;
+  int tsi_argc;
+
   // Tell the widget to start enqueuing tokens
   void go();
   // Moves data to and from the widget and fesvr

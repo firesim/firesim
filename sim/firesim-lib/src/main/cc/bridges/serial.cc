@@ -12,13 +12,11 @@ serial_t::serial_t(simif_t *sim,
                    int64_t mem_host_offset)
     : bridge_driver_t(sim), mmio_addrs(mmio_addrs), sim(sim), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
-
   std::string num_equals = std::to_string(serialno) + std::string("=");
   std::string prog_arg = std::string("+prog") + num_equals;
+
   std::vector<std::string> args_vec;
   args_vec.push_back("firesim_tsi");
-  char **argv_arr;
-  int argc_count = 0;
 
   // This particular selection is vestigial. You may change it freely.
   step_size = 2004765L;
@@ -34,33 +32,42 @@ serial_t::serial_t(simif_t *sim,
       std::string token;
       while (std::getline(ss, token, ' ')) {
         args_vec.push_back(token);
-        argc_count = argc_count + 1;
       }
     } else if (arg.find(std::string("+prog")) == 0) {
       // Eliminate arguments for other fesvrs
     } else {
       args_vec.push_back(arg);
-      argc_count = argc_count + 1;
     }
   }
 
-  argv_arr = new char *[args_vec.size()];
+  int argc_count = args_vec.size() - 1;
+  tsi_argv = new char *[args_vec.size()];
   for (size_t i = 0; i < args_vec.size(); ++i) {
-    (argv_arr)[i] = new char[(args_vec)[i].size() + 1];
-    std::strcpy((argv_arr)[i], (args_vec)[i].c_str());
+    (tsi_argv)[i] = new char[(args_vec)[i].size() + 1];
+    std::strcpy((tsi_argv)[i], (args_vec)[i].c_str());
   }
 
   // debug for command line arguments
   printf("command line for program %d. argc=%d:\n", serialno, argc_count);
   for (int i = 0; i < argc_count; i++) {
-    printf("%s ", (argv_arr)[i + 1]);
+    printf("%s ", (tsi_argv)[i + 1]);
   }
   printf("\n");
 
-  fesvr = new firesim_tsi_t(argc_count + 1, argv_arr, has_mem);
+  tsi_argc = argc_count + 1;
+  fesvr = new firesim_tsi_t(tsi_argc, tsi_argv, has_mem);
 }
 
-serial_t::~serial_t() { delete fesvr; }
+serial_t::~serial_t() {
+  delete fesvr;
+
+  if (tsi_argv) {
+    for (int i = 0; i < tsi_argc; ++i) {
+      delete[] tsi_argv[i];
+    }
+    delete[] tsi_argv;
+  }
+}
 
 void serial_t::init() {
   write(mmio_addrs.step_size, step_size);

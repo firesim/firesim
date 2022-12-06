@@ -214,7 +214,9 @@ void tracerv_t::init() {
 }
 
 size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
-  size_t maximum_batch_bytes = num_beats * BridgeConstants::STREAM_WIDTH_BYTES;
+  size_t maximum_batch_bytes =
+      std::min((uint64_t)num_beats, this->stream_depth * sizeof(uint64_t)) *
+      BridgeConstants::STREAM_WIDTH_BYTES;
   size_t minimum_batch_bytes =
       minimum_batch_beats * BridgeConstants::STREAM_WIDTH_BYTES;
   // TODO. as opt can mmap file and just load directly into it.

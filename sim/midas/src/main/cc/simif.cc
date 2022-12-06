@@ -130,6 +130,7 @@ void simif_t::write_mem_chunk(size_t addr, mpz_t &value, size_t bytes) {
   for (size_t i = 0; i < num_beats * MEM_DATA_CHUNK; i++) {
     write(loadmem_mmio_addrs.W_DATA, i < size ? data[i] : 0);
   }
+  free(data);
 }
 
 void simif_t::zero_out_dram() {

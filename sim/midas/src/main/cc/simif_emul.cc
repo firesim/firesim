@@ -22,7 +22,7 @@ context_t target;
 bool vcs_rst = false;
 bool vcs_fin = false;
 #else
-Vverilator_top *top = NULL;
+Vverilator_top *top = nullptr;
 #if VM_TRACE
 VerilatedVcdC *tfp = NULL;
 #endif // VM_TRACE
@@ -30,19 +30,22 @@ double sc_time_stamp() { return (double)main_time; }
 extern void tick();
 #endif // VCS
 
-mmio_t *simif_emul_t::master = new mmio_t(CTRL_BEAT_BYTES);
-mmio_t *simif_emul_t::cpu_managed_axi4 =
-    new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
+std::unique_ptr<mmio_t> simif_emul_t::master =
+    std::make_unique<mmio_t>(CTRL_BEAT_BYTES);
+std::unique_ptr<mmio_t> simif_emul_t::cpu_managed_axi4 =
+    std::make_unique<mmio_t>(CPU_MANAGED_AXI4_BEAT_BYTES);
 
-mm_t *simif_emul_t::slave[MEM_NUM_CHANNELS] = {nullptr};
+std::unique_ptr<mm_t> simif_emul_t::slave[MEM_NUM_CHANNELS] = {nullptr};
 
-mm_t *simif_emul_t::cpu_mem = new mm_magic_t;
+std::unique_ptr<mm_t> simif_emul_t::cpu_mem = std::make_unique<mm_magic_t>();
 
 void finish() {
 #ifdef VCS
   vcs_fin = true;
   target.switch_to();
 #else
+  if (top)
+    delete top;
 #if VM_TRACE
   if (tfp)
     tfp->close();
@@ -124,7 +127,7 @@ void simif_emul_t::host_init(int argc, char **argv) {
 
   for (int mem_channel_index = 0; mem_channel_index < MEM_NUM_CHANNELS;
        mem_channel_index++) {
-    slave[mem_channel_index] = (mm_t *)new mm_magic_t;
+    slave[mem_channel_index].reset(new mm_magic_t);
     slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
   }
 
@@ -177,13 +180,13 @@ void simif_emul_t::advance_target() {
   }
 }
 
-void simif_emul_t::wait_write(mmio_t *mmio) {
-  while (!mmio->write_resp())
+void simif_emul_t::wait_write(mmio_t &mmio) {
+  while (!mmio.write_resp())
     advance_target();
 }
 
-void simif_emul_t::wait_read(mmio_t *mmio, void *data) {
-  while (!mmio->read_resp(data))
+void simif_emul_t::wait_read(mmio_t &mmio, void *data) {
+  while (!mmio.read_resp(data))
     advance_target();
 }
 
@@ -192,13 +195,13 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
   static_assert(CTRL_AXI4_SIZE == 2,
                 "AXI4-lite control interface has unexpected size");
   master->write_req(addr, CTRL_AXI4_SIZE, 0, &data, &strb);
-  wait_write(master);
+  wait_write(*master);
 }
 
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
   master->read_req(addr, CTRL_AXI4_SIZE, 0);
-  wait_read(master, &data);
+  wait_read(*master, &data);
   return data;
 }
 
@@ -231,7 +234,7 @@ simif_emul_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
 
     cpu_managed_axi4->read_req(
         addr, log2(CPU_MANAGED_AXI4_BEAT_BYTES), part_len);
-    wait_read(cpu_managed_axi4, data);
+    wait_read(*cpu_managed_axi4, data);
 
     len -= (part_len + 1);
     addr += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
@@ -265,7 +268,7 @@ simif_emul_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
 
     cpu_managed_axi4->write_req(
         addr, log2(CPU_MANAGED_AXI4_BEAT_BYTES), part_len, data, strb_ptr);
-    wait_write(cpu_managed_axi4);
+    wait_write(*cpu_managed_axi4);
 
     len -= (part_len + 1);
     addr += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;

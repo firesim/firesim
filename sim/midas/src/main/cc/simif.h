@@ -54,7 +54,7 @@ public:
 
 private:
   // random numbers
-  uint64_t seed;
+  uint64_t seed = 0;
   std::mt19937_64 gen;
   const SIMULATIONMASTER_struct master_mmio_addrs;
   const LOADMEMWIDGET_struct loadmem_mmio_addrs;

@@ -137,7 +137,7 @@ blockdev_t::blockdev_t(simif_t *sim,
 }
 
 blockdev_t::~blockdev_t() {
-  if (filename) {
+  if (_file) {
     fclose(_file);
   }
   if (logfile)
