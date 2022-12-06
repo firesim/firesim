@@ -184,10 +184,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             serv = self.parent_node.sim_slots[slotno]
 
             remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
-
             options = "-zxf"
-            cmd = f"cd {remote_sim_dir} && tar {options} {serv.get_tar_name()}"
-            run(cmd)
+
+            with cd(remote_sim_dir):
+                run(f"tar {options} {serv.get_tar_name()}")
 
     def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
         """ copy all the switch infrastructure to the remote node. """
