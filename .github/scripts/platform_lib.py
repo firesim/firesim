@@ -31,7 +31,7 @@ class Platform(Enum):
     ALL = 'all'
     AWS = 'aws'
     AZURE = 'azure'
-    
+
     def __str__(self):
         return self.value
 
@@ -61,9 +61,9 @@ class PlatformLib(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_filter(self, workflow_tag: str) -> Dict:
-        """ Returns a filter that returns all instances associated with workflow """        
+        """ Returns a filter that returns all instances associated with workflow """
         raise NotImplementedError
-    
+
     @abc.abstractmethod
     def get_manager_tag_dict(self, sha: str, workflow_tag: str) -> Dict[str, str]:
         """ Returns the tag dictionary for launching the manager """
@@ -98,7 +98,7 @@ class PlatformLib(metaclass=abc.ABCMeta):
     def change_workflow_instance_states(self, gh_token: str, workflow_tag: str, state_change: str, dryrun: bool=False) -> None:
         """ Changes the state of the instances specified by 'workflow_tag' to 'state_change' """
         raise NotImplementedError
-    
+
     @abc.abstractmethod
     def get_platform_enum(self) -> Platform:
         """ Returns the enum associated with the platform implemented by the PlatformLib """
@@ -112,11 +112,11 @@ class PlatformLib(metaclass=abc.ABCMeta):
     def stop_instances(self, gh_token: str, workflow_tag: str) -> None:
         """ Stops the instances specified by 'workflow_tag' """
         self.change_workflow_instance_states(gh_token, workflow_tag, 'stop')
-    
+
     def terminate_instances(self, gh_token: str, workflow_tag: str) -> None:
         """ Stops the instances specified by 'workflow_tag' """
         self.change_workflow_instance_states(gh_token, workflow_tag, 'terminate')
-    
+
     def get_manager_hostname(self, workflow_tag: str) -> str:
         """ Returns the hostname of the ci manager specified """
         return f"centos@{self.get_manager_ip(workflow_tag)}"
@@ -131,14 +131,14 @@ class AWSPlatformLib(PlatformLib):
 
         self.manager_filter = {'Name': 'tag:ci_manager', 'Values' : ['']}
         self.deregister_runners = deregister_runners
-    
+
     def get_filter(self, workflow_tag: str) -> Dict[str, Any]:
         return {'Name': 'tag:' + workflow_tag_key, 'Values' : [workflow_tag]}
 
     def get_manager_tag_dict(self, sha, workflow_tag):
         """ Populates a set of tags for the manager of our CI run """
         # Note: At one point these tags had hyphens instead of underscores.
-        # Since hyphens are interpreted as a subtraction operation in 
+        # Since hyphens are interpreted as a subtraction operation in
         # Kusto Query Langauge (KQL) used by Azure Resource Graphs,
         # these have been chnaged to underscores as a result.
         return {
@@ -149,7 +149,7 @@ class AWSPlatformLib(PlatformLib):
     def check_manager_exists(self, workflow_tag: str) -> bool:
         inst = self.find_manager(workflow_tag)
         return not (inst is None)
-    
+
     def find_manager(self, workflow_tag: str):
         instances = get_instances_with_filter([self.get_filter(workflow_tag), manager_filter])
         if instances:
@@ -175,17 +175,17 @@ class AWSPlatformLib(PlatformLib):
         aws_manager = self.find_manager(workflow_tag)
         if aws_manager is None:
             raise Exception("No AWS manager instance running with tag matching the assigned workflow id\n")
-    
+
         return aws_manager['PublicIpAddress']
-    
+
     def get_manager_workflow_id(self, workflow_tag: str) -> str:
         return f"aws-{workflow_tag}"
 
     def change_workflow_instance_states(self, gh_token: str, workflow_tag: str, state_change: str, dryrun: bool = False) -> None:
         """ Change the state of all instances sharing the same CI workflow run's tag. """
-        
+
         # We need this in case terminate is called in setup-self-hosted-workflow before aws-configure is run
-        if self.client is None: 
+        if self.client is None:
             self.client = boto3.client('ec2')
 
         all_instances = self.find_all_workflow_instances(workflow_tag)
@@ -263,11 +263,11 @@ class AzurePlatformLib(PlatformLib):
 
     def get_filter(self, workflow_tag: str) -> Dict[str, str]:
         return {workflow_tag_key: workflow_tag}
-    
+
     def get_manager_tag_dict(self, sha, workflow_tag):
         """ Populates a set of tags for the manager of our CI run """
         # Note: At one point these tags had hyphens instead of underscores.
-        # Since hyphens are interpreted as a subtraction operation in 
+        # Since hyphens are interpreted as a subtraction operation in
         # Kusto Query Langauge (KQL) used by Azure Resource Graphs,
         # these have been chnaged to underscores as a result.
         return {
@@ -280,7 +280,7 @@ class AzurePlatformLib(PlatformLib):
     def check_manager_exists(self, workflow_tag: str):
         # Note: Right now, Azure workflow does not spawn new instances
         return len(self.find_all_workflow_instances(workflow_tag)) == 1
-    
+
     def find_all_workflow_instances(self, workflow_tag : str) -> List:
         tag_filter = self.get_filter(workflow_tag)
         all_ci_resources = self.get_azure_resources_with_tags(tag_filter)
@@ -300,7 +300,7 @@ class AzurePlatformLib(PlatformLib):
 
         if not azure_ip: #if an empty list is returned
             raise Exception("No Azure IP found associated with tag matching the assigned workflow id\n")
-        
+
         azure_ip = azure_ip[0] #assume only 1 ip in list
         return azure_ip['properties']['ipAddress']
 
@@ -316,12 +316,12 @@ class AzurePlatformLib(PlatformLib):
 
         if not instances: #if an empty list is returned
             raise Exception(f"Couldn't find an active vm associated with tags {self.get_filter(workflow_tag)}")
-        
+
         if state_change == 'stop':
             self.deregister_runners(gh_token, self.get_manager_workflow_id(workflow_tag))
             for inst in instances:
                 print(f"Flagged VM {inst['name']} for shutdown")
-                poller = self.compute_client.virtual_machines.begin_power_off(inst['resourceGroup'], inst['name']) 
+                poller = self.compute_client.virtual_machines.begin_power_off(inst['resourceGroup'], inst['name'])
                 print(f"Successfully stopped VM {inst['name']}")
         elif state_change == 'terminate':
             self.deregister_runners(gh_token, self.get_manager_workflow_id(workflow_tag))
@@ -330,12 +330,12 @@ class AzurePlatformLib(PlatformLib):
             raise  NotImplementedError
         else:
             raise ValueError(f"Unrecognized transition type: {state_change}")
-    
+
     def get_platform_enum(self) -> Platform:
         return Platform.AZURE
-    
+
     def get_manager_metadata_string(self, workflow_tag: str) -> str:
-        inst_list = self.find_all_workflow_instances(workflow_tag) 
+        inst_list = self.find_all_workflow_instances(workflow_tag)
         assert len(inst_list) == 1
         manager = inst_list[0]
         return str(manager)
@@ -344,7 +344,7 @@ class AzurePlatformLib(PlatformLib):
         return self.azure_translation_dict[type_name]
 
     def get_type_from_resource_list(self, resource_list: List, type_name: str):
-        """ 
+        """
             Gets specific type of resource from a resource list obtained from one of the query
         """
         type_key = self.get_azure_type_key(type_name)
@@ -352,11 +352,11 @@ class AzurePlatformLib(PlatformLib):
         for resource in resource_list:
             if type_key.casefold() in resource['type'].casefold():
                 return_list.append(resource)
-        
+
         return return_list
 
     def get_azure_resources_with_tags(self, tag_dict: Dict[str, str]) -> List:
-        arg_query_options = arg.models.QueryRequestOptions(result_format="objectArray") 
+        arg_query_options = arg.models.QueryRequestOptions(result_format="objectArray")
 
         query = "Resources | where "
         for key in tag_dict.keys():
@@ -366,7 +366,7 @@ class AzurePlatformLib(PlatformLib):
         arg_query = arg.models.QueryRequest(subscriptions=[ci_azure_sub_id], query=query, options=arg_query_options)
 
         return self.arg_client.resources(arg_query).data
-    
+
     def terminate_azure_vms(self, resource_list: List) -> None:
         vms_to_delete = []
         for resource in resource_list:
@@ -378,7 +378,7 @@ class AzurePlatformLib(PlatformLib):
             poller = self.resource_client.resources.begin_delete_by_id(vm['id'], self.resource_client.DEFAULT_API_VERSION)
             print(f"VM {vm['name']} flagged for deletion")
             vm_pollers.append((vm, poller))
-        
+
         for vm, poller in vm_pollers:
             deletion_result = poller.result()
             if deletion_result:

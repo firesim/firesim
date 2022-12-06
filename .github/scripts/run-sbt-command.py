@@ -19,11 +19,11 @@ def run_sbt_command(target_project, command):
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
-    
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('target_project', 
+    parser.add_argument('target_project',
                         help='The make variable to select the desired target project makefrag')
     parser.add_argument('command',
                         help='The command to run')
-    args = parser.parse_args()        
+    args = parser.parse_args()
     execute(run_sbt_command, args.target_project, args.command, hosts=["localhost"])

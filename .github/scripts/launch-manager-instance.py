@@ -30,7 +30,7 @@ def main():
         '--tags', str(aws_platform_lib.get_manager_tag_dict(ci_commit_sha1, ci_workflow_run_id)),
         '--user_data_file', ci_workdir + "/scripts/machine-launch-script.sh"
     ])
-    
+
     print("Instance ready.")
     print(aws_platform_lib.get_manager_metadata_string(ci_workflow_run_id))
     sys.stdout.flush()
