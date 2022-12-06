@@ -44,9 +44,9 @@ ci_repo_name   = os.environ['GITHUB_REPOSITORY'] if not RUN_LOCAL else ""
 # The following are environment variables used by AWS and AZURE to setup the corresponding
 # self-hosted Github Actions Runners
 
-ci_aws_access_key_id = os.environ['AWS-ACCESS-KEY-ID'] if not RUN_LOCAL else ""
-ci_aws_secret_access_key = os.environ['AWS-SECRET-ACCESS-KEY'] if not RUN_LOCAL else ""
-ci_aws_default_region = os.environ['AWS-DEFAULT-REGION'] if not RUN_LOCAL else ""
+ci_aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID'] if not RUN_LOCAL else ""
+ci_aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY'] if not RUN_LOCAL else ""
+ci_aws_default_region = os.environ['AWS_DEFAULT_REGION'] if not RUN_LOCAL else ""
 
 ci_azure_client_id = os.environ['AZURE_CLIENT_ID'] if (not RUN_LOCAL) or RUN_AZURE_CREDITED_ENV else ""
 ci_azure_client_secret = os.environ['AZURE_CLIENT_SECRET'] if (not RUN_LOCAL) or RUN_AZURE_CREDITED_ENV else ""
