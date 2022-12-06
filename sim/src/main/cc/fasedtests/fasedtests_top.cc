@@ -1,13 +1,11 @@
 // See LICENSE for license details.
 
-#include <inttypes.h>
+// MIDAS-defined bridges
+#include <cinttypes>
 
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/reset_pulse.h"
-#include "bridges/synthesized_assertions.h"
-#include "bridges/synthesized_prints.h"
 #include "fasedtests_top.h"
-#include "simif.h"
 #include "test_harness_bridge.h"
 
 fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,

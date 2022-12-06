@@ -1,5 +1,4 @@
 // See LICENSE for license details
-#ifdef TRACERVBRIDGEMODULE_struct_guard
 
 #include "tracerv.h"
 
@@ -296,4 +295,3 @@ void tracerv_t::flush() {
   while (this->trace_enabled && (process_tokens(this->stream_depth, 0) > 0))
     ;
 }
-#endif // TRACERVBRIDGEMODULE_struct_guard

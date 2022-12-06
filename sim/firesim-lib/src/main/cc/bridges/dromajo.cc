@@ -1,5 +1,4 @@
 // See LICENSE for license details
-#ifdef DROMAJOBRIDGEMODULE_struct_guard
 
 #include "dromajo.h"
 
@@ -9,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "dromajo_params.h"
+#ifdef DROMAJOBRIDGEMODULE_0_PRESENT
 
 // The maximum number of beats available in the FPGA-side FIFO
 #define STREAM_WIDTH_B BridgeConstants::STREAM_WIDTH_BYTES;
@@ -31,10 +30,11 @@ dromajo_t::dromajo_t(simif_t *sim,
                      int cause_width,
                      int tval_width,
                      int num_traces,
-                     DROMAJOBRIDGEMODULE_struct *mmio_addrs,
+                     const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
                      int stream_idx,
                      int stream_depth)
-    : bridge_driver_t(sim), stream_idx(stream_idx), stream_depth(stream_depth) {
+    : bridge_driver_t(sim), stream_idx(stream_idx), stream_depth(stream_depth),
+      mmio_addrs(mmio_addrs) {
   // setup max constants given from the RTL
   this->_num_traces = num_traces;
 
@@ -59,7 +59,6 @@ dromajo_t::dromajo_t(simif_t *sim,
   this->_tval_offset = this->_cause_offset + this->_cause_width;
 
   // setup misc. state variables
-  this->_mmio_addrs = mmio_addrs;
   this->_dma_addr = dma_addr;
   this->_trace_idx = 0;
   this->dromajo_failed = false;
@@ -112,8 +111,6 @@ dromajo_t::dromajo_t(simif_t *sim,
  * Destructor for Dromajo
  */
 dromajo_t::~dromajo_t() {
-  free(this->_mmio_addrs);
-
   if (this->dromajo_state != NULL)
     dromajo_cosim_fini(this->dromajo_state);
 }
@@ -315,4 +312,4 @@ void dromajo_t::flush() {
     ;
 }
 
-#endif // DROMAJOBRIDGEMODULE_struct_guard
+#endif

@@ -8,7 +8,27 @@
 #include "bridges/tracerv/tracerv_processing.h"
 #include <vector>
 
-#ifdef TRACERVBRIDGEMODULE_struct_guard
+typedef struct TRACERVBRIDGEMODULE_struct {
+  uint64_t initDone;
+  uint64_t traceEnable;
+  uint64_t hostTriggerPCStartHigh;
+  uint64_t hostTriggerPCStartLow;
+  uint64_t hostTriggerPCEndHigh;
+  uint64_t hostTriggerPCEndLow;
+  uint64_t hostTriggerCycleCountStartHigh;
+  uint64_t hostTriggerCycleCountStartLow;
+  uint64_t hostTriggerCycleCountEndHigh;
+  uint64_t hostTriggerCycleCountEndLow;
+  uint64_t hostTriggerStartInst;
+  uint64_t hostTriggerStartInstMask;
+  uint64_t hostTriggerEndInst;
+  uint64_t hostTriggerEndInstMask;
+  uint64_t triggerSelector;
+} TRACERVBRIDGEMODULE_struct;
+
+#ifdef TRACERVBRIDGEMODULE_checks
+TRACERVBRIDGEMODULE_checks;
+#endif // TRACERVBRIDGEMODULE_checks
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
@@ -83,6 +103,5 @@ private:
   int beats_available_stable();
   void flush();
 };
-#endif // TRACERVBRIDGEMODULE_struct_guard
 
 #endif // __TRACERV_H

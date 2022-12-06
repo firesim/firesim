@@ -6,6 +6,13 @@
 #include "simif.h"
 #include <gmp.h>
 
+typedef struct PEEKPOKEBRIDGEMODULE_struct {
+  uint64_t PRECISE_PEEKABLE;
+  uint64_t READY;
+} PEEKPOKEBRIDGEMODULE_struct;
+
+PEEKPOKEBRIDGEMODULE_checks;
+
 // This derivation of simif_t is used to implement small integration
 // tests where the test writer wants fine grained control over individual
 // token channels. In these tests, the peek poke bridge drives all IO of the

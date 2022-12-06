@@ -68,6 +68,37 @@ protected:
   const std::vector<std::string> args;
 };
 
+typedef struct SIMULATIONMASTER_struct {
+  uint64_t STEP;
+  uint64_t DONE;
+  uint64_t INIT_DONE;
+} SIMULATIONMASTER_struct;
+
+typedef struct LOADMEMWIDGET_struct {
+  uint64_t W_ADDRESS_H;
+  uint64_t W_ADDRESS_L;
+  uint64_t W_LENGTH;
+  uint64_t ZERO_OUT_DRAM;
+  uint64_t W_DATA;
+  uint64_t ZERO_FINISHED;
+  uint64_t R_ADDRESS_H;
+  uint64_t R_ADDRESS_L;
+  uint64_t R_DATA;
+} LOADMEMWIDGET_struct;
+
+typedef struct CLOCKBRIDGEMODULE_struct {
+  uint64_t hCycle_0;
+  uint64_t hCycle_1;
+  uint64_t hCycle_latch;
+  uint64_t tCycle_0;
+  uint64_t tCycle_1;
+  uint64_t tCycle_latch;
+} CLOCKBRIDGEMODULE_struct;
+
+SIMULATIONMASTER_checks;
+LOADMEMWIDGET_checks;
+CLOCKBRIDGEMODULE_checks;
+
 /** \class simif_t
  *
  *  @brief FireSim's main simulation class.

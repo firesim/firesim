@@ -1,7 +1,14 @@
 #ifndef __RESET_PULSE_H
 #define __RESET_PULSE_H
 
-#ifdef RESETPULSEBRIDGEMODULE_struct_guard
+typedef struct RESETPULSEBRIDGEMODULE_struct {
+  unsigned long pulseLength;
+  unsigned long doneInit;
+} RESETPULSEBRIDGEMODULE_struct;
+
+#ifdef RESETPULSEBRIDGEMODULE_checks
+RESETPULSEBRIDGEMODULE_checks;
+#endif // RESETPULSEBRIDGEMODULE_checks
 
 #include <vector>
 
@@ -39,7 +46,5 @@ private:
 
   unsigned int pulse_length = default_pulse_length;
 };
-
-#endif // RESETPULSEBRIDGEMODULE_struct_guard
 
 #endif //__RESET_PULSE_H

@@ -1,8 +1,5 @@
 // See LICENSE for license details
 
-// Note: struct_guards just as in the headers
-#ifdef UARTBRIDGEMODULE_struct_guard
-
 #include "uart.h"
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -165,5 +162,3 @@ void uart_t::tick() {
     data.in.valid = false;
   } while (data.in.fire() || data.out.fire());
 }
-
-#endif // UARTBRIDGEMODULE_struct_guard

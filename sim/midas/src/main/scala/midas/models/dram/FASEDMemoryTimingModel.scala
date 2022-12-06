@@ -550,8 +550,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Generate the configuration registers and tie them to the ctrl bus
     attachIO(model.io.mmReg)
     attachIO(funcModelRegs)
-    attach(rrespError, "rrespError", ReadOnly)
-    attach(brespError, "brespError", ReadOnly)
+    attach(rrespError, "rrespError", ReadOnly, substruct = false)
+    attach(brespError, "brespError", ReadOnly, substruct = false)
 
     genCRFile()
 

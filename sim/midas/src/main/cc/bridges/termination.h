@@ -3,8 +3,6 @@
 #define __TERMINATION_H
 // See LICENSE for license details.
 
-#ifdef TERMINATIONBRIDGEMODULE_struct_guard
-
 #include "bridge_driver.h"
 
 // Bridge Driver Instantiation Template
@@ -15,6 +13,18 @@
                          TERMINATIONBRIDGEMODULE_##IDX##_message_count,        \
                          TERMINATIONBRIDGEMODULE_##IDX##_message_type,         \
                          TERMINATIONBRIDGEMODULE_##IDX##_message));
+
+typedef struct TERMINATIONBRIDGEMODULE_struct {
+  uint64_t out_counter_0;
+  uint64_t out_counter_1;
+  uint64_t out_counter_latch;
+  uint64_t out_status;
+  uint64_t out_terminationCode;
+} TERMINATIONBRIDGEMODULE_struct;
+
+#ifdef TERMINATIONBRIDGEMODULE_checks
+TERMINATIONBRIDGEMODULE_checks;
+#endif // TERMINATIONBRIDGEMODULE_checks
 
 class termination_t : public bridge_driver_t {
 public:
@@ -43,5 +53,5 @@ private:
   unsigned int *is_err;
   const char *const *msgs;
 };
-#endif // TerminationBridgeModule_struct_guard
+
 #endif //__TERMINATION_H

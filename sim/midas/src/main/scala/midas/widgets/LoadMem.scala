@@ -175,12 +175,8 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   rDataQ.io.in.bits := memNasti.r.bits.data
 
   genCRFile()
+  }
 
-  override def genHeader(base: BigInt, sb: StringBuilder) {
-    super.genHeader(base, sb)
-    import CppGenerationUtils._
-    sb.append(genMacro("MEM_DATA_CHUNK", UInt64(
-      ((hKey.dataBits - 1) / p(CtrlNastiKey).dataBits) + 1)))
-  }
-  }
+  def memDataChunk: Long =
+    ((module.hKey.dataBits - 1) / p(CtrlNastiKey).dataBits) + 1
 }

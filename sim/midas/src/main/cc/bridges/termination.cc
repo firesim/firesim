@@ -1,5 +1,3 @@
-#ifdef TERMINATIONBRIDGEMODULE_struct_guard
-
 #include "termination.h"
 #include <iostream>
 
@@ -52,5 +50,3 @@ int termination_t::cycle_count() {
   uint32_t cycle_h = read(mmio_addrs.out_counter_1);
   return (((uint64_t)cycle_h) << 32) | cycle_l;
 }
-
-#endif

@@ -1,5 +1,3 @@
-#ifdef PRINTBRIDGEMODULE_struct_guard
-
 #include <iomanip>
 #include <iostream>
 
@@ -334,5 +332,3 @@ void synthesized_prints_t::flush() {
   }
   this->printstream->flush();
 }
-
-#endif // PRINTBRIDGEMODULE_struct_guard

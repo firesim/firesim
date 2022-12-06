@@ -3,12 +3,18 @@
 #define __PLUSARGS_H
 // See LICENSE for license details.
 
-#ifdef PLUSARGSBRIDGEMODULE_struct_guard
-
 #include "bridges/bridge_driver.h"
 #include <gmp.h>
 #include <string.h>
 #include <string_view>
+
+typedef struct PLUSARGSBRIDGEMODULE_struct {
+  uint64_t initDone;
+} PLUSARGSBRIDGEMODULE_struct;
+
+#ifdef PLUSARGSBRIDGEMODULE_checks
+PLUSARGSBRIDGEMODULE_checks;
+#endif // PLUSARGSBRIDGEMODULE_checks
 
 #define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
   FUNC(new plusargs_t(simif,                                                   \
@@ -55,5 +61,5 @@ private:
   const uint32_t slice_count = 0;
   const std::vector<uint32_t> slice_addrs;
 };
-#endif // PLUSARGSBRIDGEMODULE_struct_guard
+
 #endif //__PLUSARGS_H

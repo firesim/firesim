@@ -1,5 +1,4 @@
 // See LICENSE for license details
-#ifdef SERIALBRIDGEMODULE_struct_guard
 
 #include "serial.h"
 #include <assert.h>
@@ -162,5 +161,3 @@ void serial_t::tick() {
     go();
   }
 }
-
-#endif // SERIALBRIDGEMODULE_struct_guard

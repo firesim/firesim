@@ -1,5 +1,3 @@
-#ifdef ASSERTBRIDGEMODULE_struct_guard
-
 #include "synthesized_assertions.h"
 #include <fstream>
 #include <iostream>
@@ -41,5 +39,3 @@ void synthesized_assertions_t::resume() {
   assert_fired = false;
   write(mmio_addrs.resume, 1);
 }
-
-#endif // ASSERTBRIDGEMODULE_struct_guard

@@ -1,4 +1,5 @@
 // See LICENSE for license details
+
 #ifndef __UART_H
 #define __UART_H
 
@@ -7,16 +8,24 @@
 
 #include "serial.h"
 
-// The definition of the primary constructor argument for a bridge is generated
-// by Golden Gate at compile time _iff_ the bridge is instantiated in the
-// target. As a result, all bridge driver definitions conditionally remove
-// their sources if the constructor class has been defined (the
-// <cname>_struct_guard macros are generated along side the class definition.)
-//
-// The name of this class and its guards are always BridgeModule class name, in
-// all-caps, suffixed with "_struct" and "_struct_guard" respectively.
+/**
+ * Structure carrying the addresses of all fixed MMIO ports.
+ *
+ * This structure is instantiated when all bridges are populated based on
+ * the target configuration.
+ */
+typedef struct UARTBRIDGEMODULE_struct {
+  uint64_t out_bits;
+  uint64_t out_valid;
+  uint64_t out_ready;
+  uint64_t in_bits;
+  uint64_t in_valid;
+  uint64_t in_ready;
+} UARTBRIDGEMODULE_struct;
 
-#ifdef UARTBRIDGEMODULE_struct_guard
+#ifdef UARTBRIDGEMODULE_checks
+UARTBRIDGEMODULE_checks;
+#endif // UARTBRIDGEMODULE_checks
 
 /**
  * Base class for callbacks handling data coming in and out a UART stream.
@@ -82,6 +91,5 @@ private:
   void send();
   void recv();
 };
-#endif // UARTBRIDGEMODULE_struct_guard
 
 #endif // __UART_H

@@ -36,7 +36,20 @@ constexpr int autocounter_csv_format_version = 1;
       AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_divisor,                           \
       IDX));
 
-#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
+typedef struct AUTOCOUNTERBRIDGEMODULE_struct {
+  uint64_t cycles_low;
+  uint64_t cycles_high;
+  uint64_t readrate_low;
+  uint64_t readrate_high;
+  uint64_t init_done;
+  uint64_t countersready;
+  uint64_t readdone;
+} AUTOCOUNTERBRIDGEMODULE_struct;
+
+#ifdef AUTOCOUNTERBRIDGEMODULE_checks
+AUTOCOUNTERBRIDGEMODULE_checks;
+#endif // AUTOCOUNTERBRIDGEMODULE_checks
+
 class autocounter_t : public bridge_driver_t {
 public:
   autocounter_t(simif_t *sim,
@@ -89,6 +102,5 @@ private:
   // Writes event autocounter metadata to the first lines of the output csv.
   void emit_autocounter_header();
 };
-#endif // AUTOCOUNTERWIDGET_struct_guard
 
 #endif // __AUROCOUNTER_H

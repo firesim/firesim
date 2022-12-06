@@ -1,9 +1,20 @@
 #ifndef __SYNTHESIZED_ASSERTIONS_H
 #define __SYNTHESIZED_ASSERTIONS_H
 
-#ifdef ASSERTBRIDGEMODULE_struct_guard
-
 #include "bridge_driver.h"
+
+typedef struct ASSERTBRIDGEMODULE_struct {
+  uint64_t id;
+  uint64_t fire;
+  uint64_t cycle_low;
+  uint64_t cycle_high;
+  uint64_t resume;
+  uint64_t enable;
+} ASSERTBRIDGEMODULE_struct;
+
+#ifdef ASSERTBRIDGEMODULE_checks
+ASSERTBRIDGEMODULE_checks;
+#endif // ASSERTBRIDGEMODULE_checks
 
 class synthesized_assertions_t : public bridge_driver_t {
 public:
@@ -28,7 +39,5 @@ private:
   const ASSERTBRIDGEMODULE_struct mmio_addrs;
   const char *const *msgs;
 };
-
-#endif // ASSERTBRIDGEMODULE_struct_guard
 
 #endif //__SYNTHESIZED_ASSERTIONS_H

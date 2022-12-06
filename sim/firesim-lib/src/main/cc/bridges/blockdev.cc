@@ -1,5 +1,4 @@
 // See LICENSE for license details
-#ifdef BLOCKDEVBRIDGEMODULE_struct_guard
 
 #include "blockdev.h"
 #include <inttypes.h>
@@ -414,5 +413,3 @@ void blockdev_t::tick() {
   /* Write state back to block device widget */
   this->send();
 }
-
-#endif // BLOCKDEVBRIDGEMODULE_struct_guard

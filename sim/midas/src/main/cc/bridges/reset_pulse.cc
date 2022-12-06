@@ -1,4 +1,3 @@
-#ifdef RESETPULSEBRIDGEMODULE_struct_guard
 
 #include "reset_pulse.h"
 
@@ -36,5 +35,3 @@ void reset_pulse_t::init() {
   write(mmio_addrs.pulseLength, this->pulse_length);
   write(mmio_addrs.doneInit, 1);
 }
-
-#endif // RESETPULSEBRIDGEMODULE_struct_guard

@@ -9,7 +9,18 @@
 // TODO this should not be hardcoded here.
 #define MAX_BANDWIDTH 200
 
-#ifdef SIMPLENICBRIDGEMODULE_struct_guard
+typedef struct SIMPLENICBRIDGEMODULE_struct {
+  uint64_t macaddr_upper;
+  uint64_t macaddr_lower;
+  uint64_t rlimit_settings;
+  uint64_t pause_threshold;
+  uint64_t pause_times;
+  uint64_t done;
+} SIMPLENICBRIDGEMODULE_struct;
+
+#ifdef SIMPLENICBRIDGEMODULE_checks
+SIMPLENICBRIDGEMODULE_checks;
+#endif // SIMPLENICBRIDGEMODULE_checks
 
 #define INSTANTIATE_SIMPLENIC(FUNC, IDX)                                       \
   FUNC(new simplenic_t(simif,                                                  \
@@ -62,6 +73,5 @@ private:
   const int stream_to_cpu_idx;
   const int stream_from_cpu_idx;
 };
-#endif // SIMPLENICBRIDGEMODULE_struct_guard
 
 #endif // __SIMPLENIC_H

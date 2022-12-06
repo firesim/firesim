@@ -1,8 +1,6 @@
 #ifndef __SYNTHESIZED_PRINTS_H
 #define __SYNTHESIZED_PRINTS_H
 
-#ifdef PRINTBRIDGEMODULE_struct_guard
-
 #include <fstream>
 #include <gmp.h>
 #include <iostream>
@@ -39,6 +37,19 @@ struct print_vars_t {
     }
   }
 };
+
+typedef struct PRINTBRIDGEMODULE_struct {
+  uint64_t startCycleL;
+  uint64_t startCycleH;
+  uint64_t endCycleL;
+  uint64_t endCycleH;
+  uint64_t doneInit;
+  uint64_t flushNarrowPacket;
+} PRINTBRIDGEMODULE_struct;
+
+#ifdef PRINTBRIDGEMODULE_checks
+PRINTBRIDGEMODULE_checks;
+#endif // PRINTBRIDGEMODULE_checks
 
 class synthesized_prints_t : public bridge_driver_t {
 
@@ -121,7 +132,5 @@ private:
   // same value
   int beats_avaliable_stable();
 };
-
-#endif // PRINTBRIDGEMODULE_struct_guard
 
 #endif //__SYNTHESIZED_PRINTS_H
