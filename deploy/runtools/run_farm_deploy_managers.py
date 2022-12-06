@@ -149,6 +149,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 run("; ".join(fullcmd))
 
     def get_remote_sim_dir_for_slot(self, slotno: int) -> str:
+        """ Returns the path on the remote for a given slot number. This function
+        must return a path that includes the trailing slash."""
         remote_home_dir = self.parent_node.get_sim_dir()
         remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
         return remote_sim_dir

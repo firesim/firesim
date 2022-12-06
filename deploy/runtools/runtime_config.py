@@ -260,6 +260,7 @@ class RuntimeHWConfig:
         return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
     def handle_failure(self, buildresult, what: str, dir: str, cmd: str):
+        """ A helper function for a nice error message when used in conjunction with the run() function"""
         if buildresult.failed:
             rootLogger.info(f"{self.driver_type_message} {what} failed. Exiting. See log for details.")
             rootLogger.info(f"""You can also re-run '{cmd}' in the '{dir}' directory to debug this error.""")
@@ -291,7 +292,10 @@ class RuntimeHWConfig:
 
     def build_sim_tarball(self, paths: List[Tuple[str, str]], tarball_name: str) -> None:
         """ Take the simulation driver and tar it. build_sim_driver() 
-        must run before this function.  """
+        must run before this function.  Rsync is used in a mode where it's copying 
+        from local paths to a local folder. This is confusing as rsync traditionaly is 
+        used for copying from local folders to a remote folder. The variable local_remote_dir is
+        named as a reminder that it's actually pointing at this local machine"""
         if self.tarball_built:
             # we already built it
             return
@@ -312,8 +316,8 @@ class RuntimeHWConfig:
                 # This uses the same option flags but operates rsync in local->local mode
                 options = '-pthrvz -L'
                 local_dir=local_path
-                remote_dir=pjoin(builddir, remote_path)
-                cmd = f"rsync {options} {local_dir} {remote_dir}"
+                local_remote_dir=pjoin(builddir, remote_path)
+                cmd = f"rsync {options} {local_dir} {local_remote_dir}"
 
                 results = run(cmd)
                 self.handle_failure(results, 'local rsync', get_deploy_dir(), cmd)

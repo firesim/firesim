@@ -476,7 +476,8 @@ class FireSimServerNode(FireSimNode):
 
     def get_tarball_files_paths(self) -> List[Tuple[str, str]]:
         """ Return local and remote paths of all stuff destined for the driver tarball 
-        The returned paths in the tuple are [local_path, remote_path]. """
+        The returned paths in the tuple are [local_path, remote_path]. When remote_path 
+        is an empty string the local filename is used."""
         all_paths = []
 
         driver_path = self.get_resolved_server_hardware_config().get_local_driver_path()
