@@ -36,12 +36,12 @@ def main():
         ml_file_encoded = base64.b64encode(ml_file_raw).decode('latin-1')
 
     workflow_id = ci_workflow_run_id
-    
-    # Netowrking related variables 
+
+    # Netowrking related variables
     ip_name = workflow_id + "-ip"
     ip_config_name = ip_name + "-config"
     nic_name = workflow_id + "-nic"
-    
+
     # VM-relate
     vm_name = workflow_id + "-vm"
     username = "centos"
@@ -49,7 +49,7 @@ def main():
     vm_size = "Standard_E8ds_v5" #8 vcpus, 64 gb should be sufficient for CI purposes
 
     tags = azure_platform_lib.get_manager_tag_dict(ci_commit_sha1, ci_workflow_run_id)
-    
+
     network_client = NetworkManagementClient(credential, ci_azure_sub_id)
     poller = network_client.public_ip_addresses.begin_create_or_update(ci_azure_resource_group,
         ip_name,
@@ -64,14 +64,14 @@ def main():
     ip_address_result = poller.result()
     print(f"Provisioned public IP address {ip_address_result.name} with address {ip_address_result.ip_address}")
     poller = network_client.network_interfaces.begin_create_or_update(ci_azure_resource_group,
-        nic_name, 
+        nic_name,
         {
             "location": ci_azure_default_region,
             "tags": tags,
             "ip_configurations": [ {
                 "name": ip_config_name,
                 "subnet": { "id": ci_azure_subnet_id },
-                "properties" : { 
+                "properties" : {
                     "publicIPAddress" : {
                         "id" : ip_address_result.id,
                         "properties" : {
@@ -80,7 +80,7 @@ def main():
                     }
                 }
             }],
-            "networkSecurityGroup": { 
+            "networkSecurityGroup": {
                 "id": ci_azure_nsg_id
             }
         }
@@ -134,11 +134,11 @@ def main():
                     "id": nic_result.id,
                      "properties": { "deleteOption": "Delete" } # deletes NIC when VM is deleted
                 }]
-            }        
+            }
         }
     )
     vm_result = poller.result()
     print(f"Provisioned virtual machine {vm_result.name}")
-    
+
 if __name__ == "__main__":
     main()

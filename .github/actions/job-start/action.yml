@@ -20,5 +20,5 @@ runs:
         restore-keys: ${{ github.run_id }}-${{ github.job }}
     - name: Set run_result to default or use cached value
       id: run_result
-      run: echo "::set-output name=run_result::$(cat run_result 2>/dev/null || echo 'default')"
+      run: echo "run_result=$(cat run_result 2>/dev/null || echo 'default')" >> $GITHUB_OUTPUT
       shell: bash

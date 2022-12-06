@@ -86,7 +86,7 @@ def setup_self_hosted_runners(platform_lib: PlatformLib):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    
+
     # Remove the all option, since we only perform setup a single platform at a time
     platform_choices = [str(p) for p in Platform]
     platform_choices.remove('all')

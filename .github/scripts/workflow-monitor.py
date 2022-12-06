@@ -31,7 +31,7 @@ TERMINATE_STATES = ["cancelled", "success", "skipped", "stale", "failure", "time
 # See discussion in: https://github.com/firesim/firesim/pull/1037
 STOP_STATES = []
 NOP_STATES = ["action_required"] # TODO: unsure when this happens
-    
+
 def main(platform: Platform, workflow_id: str, gha_ci_personal_token: str):
 
     consecutive_failures = 0
@@ -73,7 +73,7 @@ def main(platform: Platform, workflow_id: str, gha_ci_personal_token: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    
+
     platform_choices = [str(p) for p in Platform]
     parser.add_argument('platform',
                         choices = platform_choices,
