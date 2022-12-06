@@ -11,7 +11,7 @@ from common import get_platform_lib
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    
+
     platform_choices = [str(p) for p in Platform]
     parser.add_argument('platform',
                         choices = platform_choices,
@@ -27,5 +27,5 @@ if __name__ == "__main__":
     platform = get_platform_enum(args.platform)
     if platform == Platform.AWS or platform == Platform.ALL:
         get_platform_lib(Platform.AWS).change_workflow_instance_states(args.github_api_token, args.workflow_tag, args.state_change)
-    if platform == Platform.AZURE or platform == Platform.ALL:        
+    if platform == Platform.AZURE or platform == Platform.ALL:
         get_platform_lib(Platform.AZURE).change_workflow_instance_states(args.github_api_token, args.workflow_tag, args.state_change)
