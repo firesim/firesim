@@ -313,7 +313,7 @@ class RuntimeHWConfig:
                 options = '-pthrvz -L'
                 local_dir=local_path
                 remote_dir=pjoin(builddir, remote_path)
-                cmd = "rsync %s %s %s" % (options, local_dir, remote_dir)
+                cmd = f"rsync {options} {local_dir} {remote_dir}"
 
                 results = run(cmd)
                 self.handle_failure(results, 'local rsync', get_deploy_dir(), cmd)
