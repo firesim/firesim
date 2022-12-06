@@ -37,7 +37,7 @@ def main():
 
     workflow_id = ci_workflow_run_id
 
-    # Netowrking related variables
+    # Networking related variables
     ip_name = workflow_id + "-ip"
     ip_config_name = ip_name + "-config"
     nic_name = workflow_id + "-nic"
