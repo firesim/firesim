@@ -404,6 +404,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   def genHeader(sb: StringBuilder, target: String)(implicit p: Parameters) = {
     outer.genHeader(sb)
 
+    sb.append("#ifdef GET_METASIM_INTERFACE_CONFIG\n")
+
     def printConfig(conf: (Int, Int, Int)) : Unit = {
       val (idBits, addrBits, dataBits) = conf
       sb.append("AXI4Config{")
@@ -432,6 +434,9 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     }
     sb.append(s",\n.target_name = ${CStrLit(target).toC}")
     sb.append("\n};\n")
+
+    sb.append("#undef GET_METASIM_INTERFACE_CONFIG\n")
+    sb.append("#endif // GET_METASIM_INTERFACE_CONFIG\n")
   }
 
   def genVHeader(sb: StringBuilder)(implicit p: Parameters) = {

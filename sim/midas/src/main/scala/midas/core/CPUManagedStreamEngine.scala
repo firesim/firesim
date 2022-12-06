@@ -13,7 +13,6 @@ import freechips.rocketchip.util.DecoupledHelper
 
 import midas.targetutils.xdc
 import midas.widgets._
-import midas.widgets.CppGenerationUtils._
 
 /**
   * A helper container to serialize per-stream constants to the header. This is
@@ -87,7 +86,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
 
       // check to see if axi4 is ready to accept data instead of forcing writes
       val countAddr =
-        attach(incomingQueue.io.count, s"${chParams.name}_count", ReadOnly)
+        attach(incomingQueue.io.count, s"${chParams.name}_count", ReadOnly, substruct = false)
 
       val writeHelper = DecoupledHelper(
         axi4.aw.valid,
@@ -144,7 +143,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
 
       // check to see if axi4 has valid output instead of waiting for timeouts
       val countAddr =
-        attach(outgoingQueue.io.count, s"${chParams.name}_count", ReadOnly)
+        attach(outgoingQueue.io.count, s"${chParams.name}_count", ReadOnly, substruct = false)
 
       val readHelper = DecoupledHelper(
         axi4.ar.valid,
@@ -201,33 +200,32 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
-      val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
 
-      def serializeStreamParameters(prefix: String, params: Seq[StreamDriverParameters]): Unit = {
+      genInclude(sb, "cpu_managed_stream")
+
+      def serializeStreamParameters(name: String, params: Seq[StreamDriverParameters]): Unit = {
         val numStreams = params.size
-        sb.append(genConstStatic(s"${headerWidgetName}_${prefix}_stream_count", UInt32(numStreams)))
-
-        // Hack: avoid emitting a zero-sized array by providing a dummy set of
-        // parameters when no streams are generated. This is a limitation of the
-        // current C emission strategy. Note, the actual number of streams is still reported above.
-        val placeholder = StreamDriverParameters("UNUSED", 0, 0, 0)
-        val nonEmptyParams = if (numStreams == 0) Seq(placeholder) else params
-
-        val arraysToEmit = Seq(
-          "names"         -> nonEmptyParams.map { p => CStrLit(p.name) },
-          "dma_addrs"     -> nonEmptyParams.map { p => UInt64(p.bufferBaseAddress) },
-          "count_addrs"   -> nonEmptyParams.map { p => UInt64(base + p.countMMIOAddress) },
-          "buffer_sizes"  -> nonEmptyParams.map { p => UInt32(p.bufferCapacity) },
-        )
-
-        for ((name, values) <- arraysToEmit) {
-          sb.append(genArray(s"${headerWidgetName}_${prefix}_${name}", values))
+        sb.append(s"std::vector<CPUManagedStreams::StreamParameters>{\n")
+        for (p <- params) {
+          sb.append(s"CPUManagedStreams::StreamParameters(")
+          sb.append(s"std::string(${CStrLit(p.name).toC}), ")
+          sb.append(s"${UInt64(p.bufferBaseAddress).toC}, ")
+          sb.append(s"${UInt64(base + p.countMMIOAddress).toC}, ")
+          sb.append(s"${UInt32(p.bufferCapacity).toC}")
+          sb.append(s"),\n")
         }
+        sb.append(s"}\n")
       }
 
-      serializeStreamParameters("to_cpu",   sourceDriverParameters)
+      sb.append(s"#ifdef GET_MANAGED_STREAM_CONSTRUCTOR\n")
+      sb.append(s"registry.add_widget(new CPUManagedStreamWidget(\n")
+      sb.append(s"  simif.get_cpu_managed_stream_io(),\n")
       serializeStreamParameters("from_cpu", sinkDriverParameters)
+      sb.append(s",\n  ")
+      serializeStreamParameters("to_cpu",   sourceDriverParameters)
+      sb.append(s"));\n")
+      sb.append(s"#endif // GET_MANAGED_STREAM_CONSTRUCTOR\n")
     }
   }
 }

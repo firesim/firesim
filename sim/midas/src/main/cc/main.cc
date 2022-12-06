@@ -6,44 +6,15 @@
 #include "core/simif.h"
 #include "core/simulation.h"
 
-#include "bridges/autocounter.h"
-#include "bridges/clock.h"
-#include "bridges/cpu_managed_stream.h"
-#include "bridges/fased_memory_timing_model.h"
-#include "bridges/fpga_managed_stream.h"
-#include "bridges/fpga_model.h"
-#include "bridges/loadmem.h"
-#include "bridges/master.h"
-#include "bridges/plusargs.h"
-#include "bridges/reset_pulse.h"
-#include "bridges/synthesized_assertions.h"
-#include "bridges/synthesized_prints.h"
-#include "bridges/termination.h"
+#define GET_INCLUDES
+#include "FireSim-generated.const.h"
+#undef GET_INCLUDES
 
-#ifdef PEEKPOKEBRIDGEMODULE_0_PRESENT
-#include "bridges/peek_poke.h"
-#endif
-#ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
-#include "bridges/blockdev.h"
-#endif
-#ifdef DROMAJOBRIDGEMODULE_0_PRESENT
-#include "bridges/dromajo.h"
-#endif
-#ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
-#include "bridges/groundtest.h"
-#endif
-#ifdef SERIALBRIDGEMODULE_0_PRESENT
-#include "bridges/serial.h"
-#endif
-#ifdef SIMPLENICBRIDGEMODULE_0_PRESENT
-#include "bridges/simplenic.h"
-#endif
-#ifdef TRACERVBRIDGEMODULE_0_PRESENT
-#include "bridges/tracerv.h"
-#endif
-#ifdef UARTBRIDGEMODULE_0_PRESENT
-#include "bridges/uart.h"
-#endif
+#define GET_METASIM_INTERFACE_CONFIG
+#define GET_MEMORY_OFFSET
+#define GET_SUBSTRUCT_CHECKS
+#include "FireSim-generated.const.h"
+#undef GET_SUBSTRUCT_CHECKS
 
 // The user-defined part of the driver implements this method to return
 // a simulation instance implementing all simulation-specific logic.
@@ -73,7 +44,20 @@ int main(int argc, char **argv) {
     // This file can be included in the setup method of any top-level to pass
     // an instance of each driver to the `add_bridge_driver` method. Drivers can
     // be distinguished by overloading the method with the appropriate type.
-    #include "constructor.h"
+
+    // The different macros ensure that widgets that are required by other
+    // bridges are initialized in the correct order: the master, clock and
+    // loadmem widgets are built first, followed by stream engines and the
+    // rest of the bridges of the design, which can make use of widgets.
+    #define GET_CORE_CONSTRUCTOR
+    #include "FireSim-generated.const.h"
+    #undef GET_CORE_CONSTRUCTOR
+    #define GET_MANAGED_STREAM_CONSTRUCTOR
+    #include "FireSim-generated.const.h"
+    #undef GET_MANAGED_STREAM_CONSTRUCTOR
+    #define GET_BRIDGE_CONSTRUCTOR
+    #include "FireSim-generated.const.h"
+    #undef GET_BRIDGE_CONSTRUCTOR
     // DOC include end: Bridge Driver Registration
   }
 

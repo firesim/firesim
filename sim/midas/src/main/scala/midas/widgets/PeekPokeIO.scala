@@ -150,26 +150,28 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     })
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      import CppGenerationUtils._
-
-      val name = getWName.toUpperCase
-      def genOffsets(signals: Seq[String]): Unit = (signals.zipWithIndex) foreach {
-        case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
-
       super.genHeader(base, sb)
-      sb.append(genComment("Pokeable target inputs"))
-      sb.append(genMacro("POKE_SIZE", UInt64(hPort.ins.size)))
-      genOffsets(hPort.ins.unzip._1)
-      sb.append(genArray("INPUT_ADDRS", inputAddrs.map(off => UInt32(base + off.head)).toSeq))
-      sb.append(genArray("INPUT_NAMES", hPort.ins.unzip._1 map CStrLit))
-      sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
 
-      sb.append(genComment("Peekable target outputs"))
-      sb.append(genMacro("PEEK_SIZE", UInt64(hPort.outs.size)))
-      genOffsets(hPort.outs.unzip._1)
-      sb.append(genArray("OUTPUT_ADDRS", outputAddrs.map(off => UInt32(base + off.head)).toSeq))
-      sb.append(genArray("OUTPUT_NAMES", hPort.outs.unzip._1 map CStrLit))
-      sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
+      def genPortLists(names: Seq[String], addrs: Seq[Seq[Int]]): CPPLiteral = {
+        StdMap("peek_poke_t::Port", names.zip(addrs).map({ case (name, addr) =>
+          name -> CppStruct("peek_poke_t::Port", Seq(
+            "address" -> UInt64(base + addr.head),
+            "chunks" -> UInt32(addr.size)
+          ))
+        }))
+      }
+
+      genInclude(sb, "peek_poke")
+      genConstructor(
+          base,
+          sb,
+          "peek_poke_t",
+          "PEEKPOKEBRIDGEMODULE",
+          Seq(
+            genPortLists(hPort.ins.unzip._1, inputAddrs),
+            genPortLists(hPort.outs.unzip._1, outputAddrs)
+          )
+      )
     }
   }
 }

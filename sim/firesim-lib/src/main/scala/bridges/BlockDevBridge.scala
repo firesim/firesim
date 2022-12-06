@@ -253,8 +253,15 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       super.genHeader(base, sb)
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_latency_bits", UInt32(latencyBits)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_trackers", UInt32(nTrackers)))
+
+      genInclude(sb, "blockdev")
+      genConstructor(
+          base,
+          sb,
+          "blockdev_t",
+          "BLOCKDEVBRIDGEMODULE",
+          Seq(UInt32(nTrackers), UInt32(latencyBits))
+      )
     }
   }
 }

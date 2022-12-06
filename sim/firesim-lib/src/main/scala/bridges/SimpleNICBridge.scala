@@ -256,5 +256,24 @@ class SimpleNICBridgeModule(implicit p: Parameters)
     genROReg(!tFire, "done")
 
     genCRFile()
+
+    override def genHeader(base: BigInt, sb: StringBuilder) {
+      super.genHeader(base, sb)
+
+      genInclude(sb, "simplenic")
+      genConstructor(
+          base,
+          sb,
+          "simplenic_t",
+          "SIMPLENICBRIDGEMODULE",
+          Seq(
+            UInt32(toHostStreamIdx),
+            UInt32(toHostCPUQueueDepth),
+            UInt32(fromHostStreamIdx),
+            UInt32(fromHostCPUQueueDepth),
+          ),
+          hasStreamEngine = true
+      )
+    }
   }
 }

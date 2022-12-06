@@ -11,7 +11,6 @@ import chisel3.experimental.DataMirror
 import freechips.rocketchip.config.Parameters
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
-import CppGenerationUtils._
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()).
   * Returns a Seq of the leaf nodes with their absolute direction.
   */
@@ -236,51 +235,52 @@ class MCRFileMap(bytesPerAddress: Int) {
       entry.substruct && !addrsToExclude.contains(localAddress)
     }
 
-    // define to mark that a particular instantiation of a widget is present
-    // (e.g. UARTWIDGET_0_PRESENT)
-    sb append s"#define ${prefix}_PRESENT\n"
-
-    // Emit a macro which verifies the structure of the library-defined type.
-    // The macro should be instantiated after the struct definition in the
-    // header of the corresponding bridge.
+    // emit generic struct for this widget type. guarded so it only gets
+    // defined once
     if (regs.nonEmpty) {
-      sb append s"#ifndef ${prefix_no_num}_checks\n"
-      sb append s"#define ${prefix_no_num}_checks \\\n"
+      sb.append("#ifdef GET_SUBSTRUCT_CHECKS\n")
       regs.zipWithIndex foreach { case (entry, i) =>
-        sb append s"static_assert("
-        sb append s"offsetof(${prefix_no_num}_struct, ${entry.name}) == ${i} * sizeof(uint64_t), "
-        sb append s"${'\"'}invalid ${entry.name}${'\"'});\\\n"
+        sb.append(s"static_assert(")
+        sb.append(s"offsetof(${prefix_no_num}_struct, ${entry.name}) == ${i} * sizeof(uint64_t), ")
+        sb.append(s"${'\"'}invalid ${entry.name}${'\"'});\\\n")
       }
-      sb append s"static_assert("
-      sb append s"sizeof(${prefix_no_num}_struct) == ${regs.length} * sizeof(uint64_t), "
-      sb append s"${'\"'}invalid structure${'\"'}); \\\n\n"
-      sb append s"#endif // ${prefix_no_num}_checks\n"
+      sb.append(s"static_assert(")
+      sb.append(s"sizeof(${prefix_no_num}_struct) == ${regs.length} * sizeof(uint64_t), ")
+      sb.append(s"${'\"'}invalid structure${'\"'}); \\\n\n")
+      sb.append(s"#endif // ${prefix_no_num}_checks\n")
     }
-
-    // emit macro to create a version of this struct with values filled in
-    sb append s"#define ${prefix}_substruct_create (${prefix_no_num}_struct{ \\\n"
-    regs foreach { entry =>
-      val localAddress = name2addr(entry.name)
-      if (entry.substruct && !addrsToExclude.contains(localAddress)) {
-        sb append s".${entry.name} = ${base + localAddress}, \\\n"
-      }
-    }
-    sb append s"})\n"
   }
 
-  // A variation of above which dumps the register map as a series of arrays
-  def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
-    def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String): Unit = {
-      sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(regs.size)))
-      sb.append(genArray(s"${prefix}_names", regs.unzip._1 map { reg => CStrLit(reg.name)}))
-      sb.append(genArray(s"${prefix}_addrs", regs.unzip._2 map { addr => UInt32(addr)}))
+  def genSubstructCreate(base: BigInt, sb: StringBuilder, name: String) {
+    sb.append(s"${name}_struct{\n")
+    regList foreach { entry =>
+      val localAddress = name2addr(entry.name)
+      if (entry.substruct) {
+        sb.append(s".${entry.name} = ${base + localAddress},\n")
+      }
+    }
+    sb.append(s"}")
+  }
+
+  def genAddressMap(base: BigInt, sb: StringBuilder): Unit = {
+    def emitArrays(regs: Seq[(MCRMapEntry, BigInt)]): Unit = {
+      regs foreach { case (reg, addr) =>
+        sb.append(s"      { ${CStrLit(reg.name).toC}, ${addr} },\\\n")
+      }
     }
 
     val regAddrs = regList map (reg => reg -> (base + lookupAddress(reg.name).get))
     val readRegs = regAddrs filter (_._1.permissions.readable)
     val writeRegs = regAddrs filter (_._1.permissions.writeable)
-    emitArrays(readRegs.toSeq, prefix + "_R")
-    emitArrays(writeRegs.toSeq, prefix + "_W")
+
+    sb.append(s"  AddressMap{\n")
+    sb.append(s"    std::vector<std::pair<std::string, uint32_t>>{\n")
+    emitArrays(readRegs)
+    sb.append(s"    },\n")
+    sb.append(s"    std::vector<std::pair<std::string, uint32_t>>{\n")
+    emitArrays(writeRegs)
+    sb.append(s"    }\n")
+    sb.append(s"  }")
   }
 
   // Returns a copy of the current register map

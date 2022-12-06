@@ -45,7 +45,6 @@ public:
   using TestHarness::TestHarness;
 
   void run_test() override {
-    uint64_t limit = 256;
     std::vector<MulticlockChecker *> checkers;
     checkers.push_back(new MulticlockChecker(this, "halfOut", 1, 2));
     checkers.push_back(new MulticlockChecker(this, "thirdOut", 1, 3));

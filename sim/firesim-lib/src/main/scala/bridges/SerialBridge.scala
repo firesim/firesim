@@ -89,13 +89,23 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
+
       val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
       val offsetConstName = memoryRegionNameOpt.map(GetMemoryRegionOffsetConstName(_)).getOrElse("0")
-      sb.append(genMacro(s"${headerWidgetName}_has_memory", memoryRegionNameOpt.isDefined.toString))
-      sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
+
+      genInclude(sb, "serial")
+      genConstructor(
+          base,
+          sb,
+          "serial_t",
+          "SERIALBRIDGEMODULE",
+          Seq(
+              CppBoolean(serialBridgeParams.memoryRegionNameOpt.isDefined),
+              Verbatim(offsetConstName)
+          ),
+          hasLoadMem = true
+      )
     }
   }
 }

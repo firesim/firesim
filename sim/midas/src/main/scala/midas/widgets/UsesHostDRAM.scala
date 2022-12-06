@@ -2,7 +2,6 @@
 
 package midas.widgets
 
-import midas.widgets.CppGenerationUtils._
 import freechips.rocketchip.amba.axi4.AXI4OutwardNode
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
 
@@ -73,8 +72,11 @@ trait UsesHostDRAM extends HostDramHeaderConsts {
 
 private[midas] case class HostMemoryMapping(memoryRegionName: String, hostOffset: BigInt) extends HostDramHeaderConsts {
   def serializeToHeader(sb: StringBuilder): Unit = {
-    sb.append(genComment(s"Host FPGA memory mapping for region: ${memoryRegionName}"))
-    sb.append(genConstStatic(offsetConstName, Int64(hostOffset)))
+    sb.append("#ifdef GET_MEMORY_OFFSET\n")
+    sb.append(s"// Host FPGA memory mapping for region: ${memoryRegionName}\n")
+    sb.append(s"const static int64_t ${offsetConstName} = ${Int64(hostOffset).toC}\n")
+    sb.append("#undef GET_MEMORY_OFFSET\n")
+    sb.append("#endif // GET_MEMORY_OFFSET\n")
   }
 }
 

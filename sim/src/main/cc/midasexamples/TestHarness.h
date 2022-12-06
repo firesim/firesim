@@ -93,4 +93,5 @@ protected:
       const std::vector<std::string> &args, simif_t &sim) {                    \
     return std::make_unique<CLASS_NAME>(args, sim);                            \
   }
+
 #endif // MIDAEXAMPLES_TESTHARNESS_H

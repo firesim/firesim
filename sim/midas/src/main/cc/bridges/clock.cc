@@ -7,8 +7,12 @@
 char clockmodule_t::KIND;
 
 clockmodule_t::clockmodule_t(simif_t &simif,
-                             const CLOCKBRIDGEMODULE_struct &mmio_addrs)
-    : widget_t(simif, &KIND), mmio_addrs(mmio_addrs) {}
+                             const CLOCKBRIDGEMODULE_struct &mmio_addrs,
+                             unsigned index,
+                             const std::vector<std::string> &args)
+    : widget_t(simif, &KIND), mmio_addrs(mmio_addrs) {
+  assert(index == 0 && "only one clock bridge is allowed");
+}
 
 uint64_t clockmodule_t::tcycle() {
   simif.write(mmio_addrs.tCycle_latch, 1);

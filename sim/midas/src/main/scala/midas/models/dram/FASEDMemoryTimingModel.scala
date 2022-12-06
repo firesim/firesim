@@ -555,12 +555,21 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
-        val prefix = s"const std::map<std::string, int> $mapName = {\n"
-        map.foldLeft(prefix)((str, kvp) => str + s""" {\"${kvp._1}\", ${kvp._2}},\n""") + "};\n"
-      }
       super.genHeader(base, sb)
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
+
+      genInclude(sb, "fased_memory_timing_model")
+      genConstructor(
+          base,
+          sb,
+          "FASEDMemoryTimingModel",
+          "FASEDMEMORYTIMINGMODEL",
+          Seq(
+            CStrLit(s"memory_stats${getWId}.csv"),
+            Verbatim(s"1L << ${UInt32(p(NastiKey).addrBits).toC}")
+          ),
+          hasMMIO = false,
+          hasAddrMap = true
+      )
     }
 
     // Prints out key elaboration time settings

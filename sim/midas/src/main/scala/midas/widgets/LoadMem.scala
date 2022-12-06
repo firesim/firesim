@@ -181,8 +181,16 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
 
   override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
     super.genHeader(base, sb)
-    import CppGenerationUtils._
-    sb.append(genConstStatic(s"${getWName.toUpperCase}_mem_data_chunk", UInt32(memDataChunk)))
+
+    genInclude(sb, "loadmem")
+    genConstructor(
+        base,
+        sb,
+        "loadmem_t",
+        "LOADMEMWIDGET",
+        Seq(Verbatim("conf_target.mem"), UInt32(memDataChunk)),
+        "GET_CORE_CONSTRUCTOR"
+    )
   }
   }
 }

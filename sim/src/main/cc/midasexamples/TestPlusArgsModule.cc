@@ -105,7 +105,6 @@ public:
    * These extra assertion make sure that the value does not change or glitch.
    */
   void run_test() override {
-
     if (!found_key) {
       std::cout << "No test key found, will not assert\n";
     }

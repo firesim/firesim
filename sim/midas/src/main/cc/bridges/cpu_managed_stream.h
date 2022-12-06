@@ -86,7 +86,7 @@ public:
   virtual ~CPUManagedDriver() = default;
 
 private:
-  StreamParameters params;
+  const StreamParameters params;
   CPUManagedStreamIO &io;
 
 public:

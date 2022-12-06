@@ -13,6 +13,11 @@ struct TERMINATIONBRIDGEMODULE_struct {
   uint64_t out_terminationCode;
 };
 
+struct termination_message_t {
+  const bool is_err;
+  const std::string msg;
+};
+
 class termination_t : public bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.
@@ -21,15 +26,15 @@ public:
   termination_t(simif_t &sim,
                 const std::vector<std::string> &args,
                 const TERMINATIONBRIDGEMODULE_struct &mmio_addrs,
-                unsigned int num_messages,
-                unsigned int *is_err,
-                const char *const *msgs);
+                const std::vector<termination_message_t> &messages);
+
   ~termination_t() override;
   void init() override {}
   void tick() override;
   void finish() override {}
-  bool terminate() override { return test_done; };
-  int exit_code() override { return fail; };
+  bool terminate() override { return test_done; }
+  int exit_code() override { return fail; }
+
   const char *exit_message();
   int cycle_count();
 
@@ -39,9 +44,7 @@ private:
   int fail = 0;
   int tick_rate = 10;
   int tick_counter = 0;
-  unsigned int num_messages;
-  unsigned int *is_err;
-  const char *const *msgs;
+  std::vector<termination_message_t> messages;
 };
 
 #endif //__TERMINATION_H

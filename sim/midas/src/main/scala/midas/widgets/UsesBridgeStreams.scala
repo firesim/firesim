@@ -69,12 +69,6 @@ trait StreamFromHostCPU { self: Widget =>
   // This hides some diplomacy complexity from the user in cases where the
   // implicit conversion from the wrapped value to the decoupled does not work.
   def streamDeq = _streamDeq.getWrappedValue
-
-  appendHeaderFragment { _ => Seq(
-      CppGenerationUtils.genConstStatic(s"${fromHostStreamName}_idx", UInt32(fromHostStreamIdx)),
-      CppGenerationUtils.genConstStatic(s"${fromHostStreamName}_depth", UInt32(fromHostCPUQueueDepth))
-    )
-  }
 }
 
 /**
@@ -95,12 +89,6 @@ trait StreamToHostCPU { self: Widget =>
     val streamToHostCPU = IO(BridgeStreamConstants.streamChiselType)
 
     streamToHostCPU
-  }
-
-  appendHeaderFragment { _ => Seq(
-      CppGenerationUtils.genConstStatic(s"${toHostStreamName}_idx", UInt32(toHostStreamIdx)),
-      CppGenerationUtils.genConstStatic(s"${toHostStreamName}_depth", UInt32(toHostCPUQueueDepth))
-    )
   }
 
   // This hides some diplomacy complexity from the user in cases where the

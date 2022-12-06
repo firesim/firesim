@@ -67,11 +67,11 @@ public:
   static char KIND;
 
   blockdev_t(simif_t &sim,
+             const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
+             int blkdevno,
              const std::vector<std::string> &args,
              uint32_t num_trackers,
-             uint32_t latency_bits,
-             const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
-             int blkdevno);
+             uint32_t latency_bits);
   ~blockdev_t() override;
 
   uint32_t nsectors(void) { return _nsectors; }

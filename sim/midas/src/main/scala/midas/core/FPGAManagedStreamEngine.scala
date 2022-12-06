@@ -9,7 +9,6 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 
 import midas.widgets._
-import midas.widgets.CppGenerationUtils._
 
 class WriteMetadata(val numBeatsWidth: Int) extends Bundle {
   val numBeats = Output(UInt(numBeatsWidth.W))
@@ -224,13 +223,13 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       ToCPUStreamDriverParameters(
         chParams.name,
         cpuBufferSizeBytes,
-        attach(toHostPhysAddrHigh, s"${chParams.name}_toHostPhysAddrHigh"),
-        attach(toHostPhysAddrLow, s"${chParams.name}_toHostPhysAddrLow"),
-        attach(readCredits, s"${chParams.name}_bytesAvailable", ReadOnly),
-        attach(bytesConsumedByCPU, s"${chParams.name}_bytesConsumed"),
-        attach(doneInit, s"${chParams.name}_toHostStreamDoneInit"),
-        attach(doFlush, s"${chParams.name}_toHostStreamFlush"),
-        attach(!(doFlush || inFlush), s"${chParams.name}_toHostStreamFlushDone", ReadOnly),
+        attach(toHostPhysAddrHigh, s"${chParams.name}_toHostPhysAddrHigh", substruct                 = false),
+        attach(toHostPhysAddrLow, s"${chParams.name}_toHostPhysAddrLow", substruct                   = false),
+        attach(readCredits, s"${chParams.name}_bytesAvailable", ReadOnly, substruct                  = false),
+        attach(bytesConsumedByCPU, s"${chParams.name}_bytesConsumed", substruct                      = false),
+        attach(doneInit, s"${chParams.name}_toHostStreamDoneInit", substruct                         = false),
+        attach(doFlush, s"${chParams.name}_toHostStreamFlush", substruct                             = false),
+        attach(!(doFlush || inFlush), s"${chParams.name}_toHostStreamFlushDone", ReadOnly, substruct = false),
       )
     }
 
@@ -248,37 +247,36 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
     genCRFile()
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
-      val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
 
-      def serializeStreamParameters(prefix: String, params: Seq[ToCPUStreamDriverParameters]): Unit = {
+      genInclude(sb, "fpga_managed_stream")
+
+      def serializeStreamParameters(name: String, params: Seq[ToCPUStreamDriverParameters]): Unit = {
         val numStreams = params.size
-        sb.append(genConstStatic(s"${headerWidgetName}_${prefix}_stream_count", UInt32(numStreams)))
-
-        // Hack: avoid emitting a zero-sized array by providing a dummy set of
-        // parameters when no streams are generated. This is a limitation of the
-        // current C emission strategy. Note, the actual number of streams is still reported above.
-        val placeholder    = ToCPUStreamDriverParameters("UNUSED", 0, 0, 0, 0, 0, 0, 0, 0)
-        val nonEmptyParams = if (numStreams == 0) Seq(placeholder) else params
-
-        val arraysToEmit = Seq(
-          "names"                      -> nonEmptyParams.map { p => CStrLit(p.name) },
-          "fpgaBufferDepth"            -> nonEmptyParams.map { p => UInt32(p.fpgaBufferDepth) },
-          "toHostPhysAddrHighAddrs"    -> nonEmptyParams.map { p => UInt64(base + p.toHostPhysAddrHighAddr) },
-          "toHostPhysAddrLowAddrs"     -> nonEmptyParams.map { p => UInt64(base + p.toHostPhysAddrLowAddr) },
-          "bytesAvailableAddrs"        -> nonEmptyParams.map { p => UInt64(base + p.bytesAvailableAddr) },
-          "bytesConsumedAddrs"         -> nonEmptyParams.map { p => UInt64(base + p.bytesConsumedAddr) },
-          "toHostStreamDoneInitAddrs"  -> nonEmptyParams.map { p => UInt64(base + p.toHostStreamDoneInitAddr) },
-          "toHostStreamFlushAddrs"     -> nonEmptyParams.map { p => UInt64(base + p.toHostStreamFlushAddr) },
-          "toHostStreamFlushDoneAddrs" -> nonEmptyParams.map { p => UInt64(base + p.toHostStreamFlushDoneAddr) },
-        )
-
-        for ((name, values) <- arraysToEmit) {
-          sb.append(genArray(s"${headerWidgetName}_${prefix}_${name}", values))
+        sb.append(s"std::vector<FPGAManagedStreams::StreamParameters>{\n")
+        for (p <- params) {
+          sb.append(s"FPGAManagedStreams::StreamParameters(")
+          sb.append(s"std::string(${CStrLit(p.name).toC}), ")
+          sb.append(s"${UInt32(p.fpgaBufferDepth).toC}, ")
+          sb.append(s"${UInt64(base + p.toHostPhysAddrHighAddr).toC}, ")
+          sb.append(s"${UInt64(base + p.toHostPhysAddrLowAddr).toC}, ")
+          sb.append(s"${UInt64(base + p.bytesAvailableAddr).toC}, ")
+          sb.append(s"${UInt64(base + p.bytesConsumedAddr).toC}, ")
+          sb.append(s"${UInt64(base + p.toHostStreamDoneInitAddr).toC}, ")
+          sb.append(s"${UInt64(base + p.toHostStreamFlushAddr).toC}, ")
+          sb.append(s"${UInt64(base + p.toHostStreamFlushDoneAddr).toC}")
+          sb.append(s"),\n")
         }
+        sb.append(s"}\n")
       }
 
+      sb.append(s"#ifdef GET_MANAGED_STREAM_CONSTRUCTOR\n")
+      sb.append(s"registry.add_widget(new FPGAManagedStreamWidget(\n")
+      sb.append(s"  simif.get_fpga_managed_stream_io(),\n")
       serializeStreamParameters("to_cpu", sourceDriverParameters)
+      sb.append(s"));\n")
+      sb.append(s"#endif // GET_MANAGED_STREAM_CONSTRUCTOR\n")
+
     }
   }
 }

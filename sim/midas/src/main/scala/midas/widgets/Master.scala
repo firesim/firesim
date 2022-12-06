@@ -19,5 +19,19 @@ class SimulationMaster(implicit p: Parameters) extends Widget()(p) {
     genRORegInit(initDelay === 0.U, "INIT_DONE", 0.U)
 
     genCRFile()
+
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+      super.genHeader(base, sb)
+
+      genInclude(sb, "master")
+      genConstructor(
+          base,
+          sb,
+          "master_t",
+          "SIMULATIONMASTER",
+          Seq(),
+          "GET_CORE_CONSTRUCTOR"
+      )
+    }
   }
 }

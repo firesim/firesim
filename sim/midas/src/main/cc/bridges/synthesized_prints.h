@@ -9,6 +9,7 @@
 #include "core/bridge_driver.h"
 #include "core/clock_info.h"
 
+// Bridge Driver Instantiation Template
 struct print_vars_t {
   std::vector<mpz_t *> data;
   ~print_vars_t() {
@@ -28,45 +29,42 @@ struct PRINTBRIDGEMODULE_struct {
   uint64_t flushNarrowPacket;
 };
 
-class synthesized_prints_t : public streaming_bridge_driver_t {
+class synthesized_prints_t final : public streaming_bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.
   static char KIND;
 
+  struct Print {
+    unsigned int print_offset;
+    const char *format_string;
+    std::vector<unsigned> argument_widths;
+  };
+
   synthesized_prints_t(simif_t &sim,
                        StreamEngine &stream,
-                       const std::vector<std::string> &args,
                        const PRINTBRIDGEMODULE_struct &mmio_addrs,
-                       unsigned int print_count,
+                       unsigned printno,
+                       const std::vector<std::string> &args,
+                       const std::vector<Print> &prints,
                        unsigned int token_bytes,
                        unsigned int idle_cycles_mask,
-                       const unsigned int *print_offsets,
-                       const char *const *format_strings,
-                       const unsigned int *argument_counts,
-                       const unsigned int *argument_widths,
                        unsigned int stream_idx,
                        unsigned int stream_depth,
-                       const char *clock_domain_name,
-                       unsigned int clock_multiplier,
-                       unsigned int clock_divisor,
-                       int printno);
+                       const ClockInfo &clock_info);
   ~synthesized_prints_t() override;
+
   void init() override;
   void tick() override;
-  bool terminate() override { return false; };
-  int exit_code() override { return 0; };
+  bool terminate() override { return false; }
+  int exit_code() override { return 0; }
   void flush();
-  void finish() override { flush(); };
+  void finish() override { flush(); }
 
 private:
   const PRINTBRIDGEMODULE_struct mmio_addrs;
-  const unsigned int print_count;
-  const unsigned int token_bytes;
-  const unsigned int idle_cycles_mask;
-  const unsigned int *print_offsets;
-  const char *const *format_strings;
-  const unsigned int *argument_counts;
-  const unsigned int *argument_widths;
+  const std::vector<Print> prints;
+  unsigned int token_bytes;
+  unsigned int idle_cycles_mask;
   const unsigned int stream_idx;
   const unsigned int stream_depth;
   ClockInfo clock_info;

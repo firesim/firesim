@@ -197,5 +197,17 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     // the simulation control bus (AXI4-lite)
     genCRFile()
     // DOC include end: UART Bridge Footer
+
+    override def genHeader(base: BigInt, sb: StringBuilder) {
+      super.genHeader(base, sb)
+
+      genInclude(sb, "uart")
+      genConstructor(
+          base,
+          sb,
+          "uart_t",
+          "UARTBRIDGEMODULE"
+      )
+    }
   }
 }

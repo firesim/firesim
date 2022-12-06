@@ -95,16 +95,12 @@ public:
    * The target cycle is based on the number of clock tokens enqueued
    * (will report a larger number).
    */
-  uint64_t actual_tcycle() {
-    return registry.get_widget<clockmodule_t>().tcycle();
-  }
+  uint64_t actual_tcycle();
 
   /**
    * Provides the current host cycle.
    */
-  uint64_t actual_hcycle() {
-    return registry.get_widget<clockmodule_t>().hcycle();
-  }
+  uint64_t actual_hcycle();
 
   /**
    * Return the name of the simulated target.

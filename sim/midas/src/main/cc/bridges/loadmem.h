@@ -31,6 +31,8 @@ public:
 
   loadmem_t(simif_t &simif,
             const LOADMEMWIDGET_struct &mmio_addrs,
+            unsigned index,
+            const std::vector<std::string> &args,
             const AXI4Config &mem_conf,
             unsigned mem_data_chunk);
 

@@ -31,6 +31,10 @@ case class RationalClock(name: String, multiplier: Int, divisor: Int) {
   def equalFrequency(that: RationalClock): Boolean =
     this.simplify.multiplier == that.simplify.multiplier &&
     this.simplify.divisor == that.simplify.divisor
+
+  def toC(): String = {
+    s"ClockInfo{${CStrLit(name).toC}, ${UInt32(multiplier).toC}, ${UInt32(divisor).toC}}"
+  }
 }
 
 sealed trait ClockBridgeConsts {
@@ -166,6 +170,12 @@ class ClockBridgeModule(params: ClockParameters)(implicit p: Parameters)
     tCycleFastest := tCycleFastest + 1.U
   }
   genCRFile()
+
+  override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+    super.genHeader(base, sb)
+    genInclude(sb, "clock")
+    genConstructor(base, sb, "clockmodule_t", "CLOCKBRIDGEMODULE", Seq(), "GET_CORE_CONSTRUCTOR")
+  }
 }
 
 /**

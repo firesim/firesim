@@ -18,7 +18,7 @@ char blockdev_t::KIND;
 
 /* Uncomment to get DEBUG printing
  * TODO: better logging mechanism so that we don't need this */
-//#define BLKDEV_DEBUG
+// #define BLKDEV_DEBUG
 
 #ifdef BLKDEV_DEBUG
 #define blkdev_printf(...)                                                     \
@@ -36,11 +36,11 @@ char blockdev_t::KIND;
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
 blockdev_t::blockdev_t(simif_t &sim,
+                       const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
+                       int blkdevno,
                        const std::vector<std::string> &args,
                        uint32_t num_trackers,
-                       uint32_t latency_bits,
-                       const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
-                       int blkdevno)
+                       uint32_t latency_bits)
     : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs) {
   this->_file = nullptr;
   this->logfile = nullptr;

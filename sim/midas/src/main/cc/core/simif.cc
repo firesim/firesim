@@ -63,3 +63,11 @@ int simif_t::run(simulation_t &sim) {
   target_init();
   return sim.execute_simulation_flow();
 }
+
+uint64_t simif_t::actual_tcycle() {
+  return registry.get_widget<clockmodule_t>().tcycle();
+}
+
+uint64_t simif_t::actual_hcycle() {
+  return registry.get_widget<clockmodule_t>().hcycle();
+}

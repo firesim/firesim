@@ -2,7 +2,8 @@
 #include "core/simif.h"
 
 #include <cassert>
-#include <iostream>
+
+using namespace CPUManagedStreams;
 
 /**
  * @brief Enqueues as much as num_bytes of data into the associated stream

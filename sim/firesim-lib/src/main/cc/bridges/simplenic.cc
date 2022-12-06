@@ -53,9 +53,9 @@ static void simplify_frac(int n, int d, int *nn, int *dd) {
 
 simplenic_t::simplenic_t(simif_t &sim,
                          StreamEngine &stream,
-                         const std::vector<std::string> &args,
                          const SIMPLENICBRIDGEMODULE_struct &mmio_addrs,
                          int simplenicno,
+                         const std::vector<std::string> &args,
                          const int stream_to_cpu_idx,
                          const int stream_to_cpu_depth,
                          const int stream_from_cpu_idx,

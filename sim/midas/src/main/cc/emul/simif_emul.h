@@ -26,7 +26,6 @@ class simif_emul_t : public simif_t {
 public:
   simif_emul_t(const TargetConfig &config,
                const std::vector<std::string> &args);
-
   virtual ~simif_emul_t();
 
   /**
