@@ -2,7 +2,8 @@
 #include "core/simif.h"
 
 #include <cassert>
-#include <iostream>
+
+using namespace CPUManagedStreams;
 
 /**
  * @brief Enqueues as much as num_bytes of data into the associated stream
@@ -89,9 +90,14 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
 }
 
 CPUManagedStreamWidget::CPUManagedStreamWidget(
-    CPUManagedStreamIO &io,
+    simif_t &simif,
+    unsigned index,
+    const std::vector<std::string> &args,
     std::vector<CPUManagedStreams::StreamParameters> &&from_cpu,
     std::vector<CPUManagedStreams::StreamParameters> &&to_cpu) {
+  assert(index == 0 && "only one managed stream engine is allowed");
+
+  auto &io = simif.get_cpu_managed_stream_io();
   for (auto &&params : from_cpu) {
     cpu_to_fpga_streams.push_back(
         std::make_unique<CPUManagedStreams::CPUToFPGADriver>(std::move(params),

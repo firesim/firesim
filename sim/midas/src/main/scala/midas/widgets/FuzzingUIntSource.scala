@@ -31,5 +31,7 @@ class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Param
     hPort.fromHost.hValid := true.B
     hPort.toHost.hReady := true.B
     hPort.hBits.uint := chisel3.util.random.LFSR(key.width, hPort.fromHost.hReady)
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {}
   }
 }

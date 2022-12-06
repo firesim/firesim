@@ -27,13 +27,13 @@ public:
   static char KIND;
 
   plusargs_t(simif_t &sim,
-             const std::vector<std::string> &args,
              const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
+             unsigned index,
+             const std::vector<std::string> &args,
              std::string_view name,
              const char *default_value,
              uint32_t bit_width,
-             uint32_t slice_count,
-             const uint32_t *slice_addrs);
+             const std::vector<uint32_t> &slice_addrs);
   ~plusargs_t() override;
   void init() override;
   void tick() override {}
@@ -41,13 +41,13 @@ public:
   bool terminate() override { return false; };
   int exit_code() override { return 0; };
   uint32_t slice_address(uint32_t idx);
+
   bool get_overridden();
 
 private:
   const PLUSARGSBRIDGEMODULE_struct mmio_addrs;
   mpz_t value;            // either the default or the PlusArg value
   bool overriden = false; // true if the PlusArg was found and parsed
-  const uint32_t slice_count = 0;
   const std::vector<uint32_t> slice_addrs;
 };
 

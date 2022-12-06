@@ -211,12 +211,21 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
     }
 
     genCRFile()
+
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, memoryRegions, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_max_core_ipc", UInt32(traces.size)))
-      emitClockDomainInfo(headerWidgetName, sb)
+      genConstructor(
+          base,
+          sb,
+          "tracerv_t",
+          "tracerv",
+          Seq(
+              UInt32(toHostStreamIdx),
+              UInt32(toHostCPUQueueDepth),
+              UInt32(traces.size),
+              Verbatim(clockDomainInfo.toC)
+          ),
+          hasStreams = true
+      )
     }
   }
 }

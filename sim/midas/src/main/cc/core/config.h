@@ -1,5 +1,5 @@
-#ifndef __EMUL_AXI4
-#define __EMUL_AXI4
+#ifndef __CORE_CONFIG_H
+#define __CORE_CONFIG_H
 
 #include <cmath>
 #include <cstdint>
@@ -50,4 +50,4 @@ struct TargetConfig {
   const char *target_name;
 };
 
-#endif // __EMUL_AXI4
+#endif // __CORE_CONFIG_H

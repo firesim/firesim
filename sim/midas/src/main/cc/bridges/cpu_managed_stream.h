@@ -8,6 +8,8 @@
 
 #include "core/stream_engine.h"
 
+class simif_t;
+
 /**
  * An abstraction over the low-level hardware interface on which streams rely.
  *
@@ -86,7 +88,7 @@ public:
   virtual ~CPUManagedDriver() = default;
 
 private:
-  StreamParameters params;
+  const StreamParameters params;
   CPUManagedStreamIO &io;
 
 public:
@@ -160,7 +162,9 @@ public:
    * @param io Reference to a functor implementing low-level IO.
    */
   CPUManagedStreamWidget(
-      CPUManagedStreamIO &io,
+      simif_t &simif,
+      unsigned index,
+      const std::vector<std::string> &args,
       std::vector<CPUManagedStreams::StreamParameters> &&from_cpu,
       std::vector<CPUManagedStreams::StreamParameters> &&to_cpu);
 };

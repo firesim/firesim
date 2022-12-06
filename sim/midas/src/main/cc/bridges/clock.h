@@ -6,6 +6,8 @@
 #include "core/widget.h"
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 class simif_t;
 
@@ -23,7 +25,10 @@ public:
   /// The identifier for the bridge type.
   static char KIND;
 
-  clockmodule_t(simif_t &simif, const CLOCKBRIDGEMODULE_struct &mmio_addrs);
+  clockmodule_t(simif_t &simif,
+                const CLOCKBRIDGEMODULE_struct &mmio_addrs,
+                unsigned index,
+                const std::vector<std::string> &args);
 
   /**
    * Provides the current target cycle of the fastest clock.

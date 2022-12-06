@@ -10,17 +10,18 @@ struct RESETPULSEBRIDGEMODULE_struct {
 
 #include "core/bridge_driver.h"
 
-class reset_pulse_t : public bridge_driver_t {
+class reset_pulse_t final : public bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.
   static char KIND;
 
   reset_pulse_t(simif_t &sim,
-                const std::vector<std::string> &args,
                 const RESETPULSEBRIDGEMODULE_struct &mmio_addrs,
+                unsigned index,
+                const std::vector<std::string> &args,
                 unsigned int max_pulse_length,
-                unsigned int default_pulse_length,
-                int reset_index);
+                unsigned int default_pulse_length);
+
   // Bridge interface
   void init() override;
   void tick() override {}

@@ -3,8 +3,6 @@
 #include "TestHarness.h"
 #include "bridges/reset_pulse.h"
 
-#include <vector>
-
 class TestResetPulseBridge final : public TestHarness {
 public:
   using TestHarness::TestHarness;

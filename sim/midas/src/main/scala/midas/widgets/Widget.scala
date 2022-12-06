@@ -39,8 +39,8 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   val (wName, wId) = Widget.assignName(this)
   this.suggestName(wName)
 
-  def getWId = wId
   def getWName = wName
+  def getWId = wId
 
   // Returns widget-relative word address
   def getCRAddr(name: String): Int = {
@@ -48,28 +48,10 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
       throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
-  def headerComment(sb: StringBuilder): Unit = {
-    val name = getWName.toUpperCase
-    sb.append("\n// Widget: %s\n".format(getWName))
-    sb.append(CppGenerationUtils.genMacro(s"${name}(x)", s"${name}_ ## x"))
-  }
-
   val customSize: Option[BigInt] = None
   def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.ctrlWidth/8))))
 
   def printCRs = module.crRegistry.printCRs
-
-  /**
-    * Provides a mechanism for mixins to register additional collateral
-    */
-  private val _headerFragmentFuncs = new mutable.ArrayBuffer[(BigInt) => Seq[String]]()
-  def appendHeaderFragment(f: (BigInt) => Seq[String]): Unit = {
-    _headerFragmentFuncs += f
-  }
-  def getHeaderFragments(base: BigInt): Seq[String] =
-    _headerFragmentFuncs.map { f => f(base) }
-    .flatten
-    .toSeq
 }
 
 abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
@@ -155,10 +137,10 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   def genROReg[T <: Data](wire: T, name: String, substruct: Boolean = true): T =
     genAndAttachReg(wire, name, masterDriven = false, substruct = substruct)
 
-  def genWORegInit[T <: Data](wire: T, name: String, default: T): T =
-    genAndAttachReg(wire, name, Some(default))
-  def genRORegInit[T <: Data](wire: T, name: String, default: T): T =
-    genAndAttachReg(wire, name, Some(default), false)
+  def genWORegInit[T <: Data](wire: T, name: String, default: T, substruct: Boolean = true): T =
+    genAndAttachReg(wire, name, Some(default), true, substruct = substruct)
+  def genRORegInit[T <: Data](wire: T, name: String, default: T, substruct: Boolean = true): T =
+    genAndAttachReg(wire, name, Some(default), false, substruct = substruct)
 
 
   def genWideRORegInit[T <: Bits](default: T, name: String, substruct: Boolean = true): T = {
@@ -187,6 +169,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     crFile
   }
 
+
   /** Emits a header snippet for this widget.
     * @param base
     *    The base address of the MMIO region allocated to the widget.
@@ -194,11 +177,89 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     *    A mapping of names to allocated FPGA-DRAM regions. This is one mechanism
     *    for establishing side-channels between two otherwise unconnected bridges or widgets.
     */
-  def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
-    wrapper.headerComment(sb)
-    crRegistry.genHeader(wrapper.getWName.toUpperCase, base, sb)
-    crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
-    wrapper.getHeaderFragments(base).foreach { sb.append(_) }
+  def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit
+
+  /** Emits a call to the construction into the generated header.
+    * @param base
+    *    The base address of the MMIO region allocated to the widget.
+    * @param sb
+    *    The string builder to append to.
+    * @param bridgeDriverClassName
+    *    Name of the bridge driver class.
+    * @param bridgeDriverHeaderName
+    *    Name of the header to get the driver from.
+    * @param args
+    *    List of C++ literals to pass as arguments.
+    * @param guard
+    *    Name of the header guard, used to order constructor calls.
+    * @param hasStreams
+    *    Flag indicating that a stream engine reference should be provided.
+    * @param hasLoadMem
+    *    Flag indicating that a loadmem widget reference should be provided.
+    * @param hasMMIOAddrMap
+    *    Flag indicating that an address map should be provided.
+    */
+  def genConstructor(
+      base: BigInt,
+      sb: StringBuilder,
+      bridgeDriverClassName: String,
+      bridgeDriverHeaderName: String,
+      args: Seq[CPPLiteral] = Seq(),
+      guard: String = "GET_BRIDGE_CONSTRUCTOR",
+      hasStreams: Boolean = false,
+      hasLoadMem: Boolean = false,
+      hasMMIOAddrMap: Boolean = false,
+  ): Unit = {
+    val mmioName = wrapper.getWName.toUpperCase.split("_").head
+    val regs = crRegistry.getSubstructRegs
+
+    sb.append(s"""|#ifdef GET_INCLUDES
+                  |#include "bridges/${bridgeDriverHeaderName}.h"
+                  |#endif // GET_INCLUDES
+                  |""".stripMargin)
+
+    // If the widget has fixed MMIO registers, generate checks to ensure
+    // that the structure defined in C++ matches the widget registers.
+    if (regs.nonEmpty) {
+      sb.append("#ifdef GET_SUBSTRUCT_CHECKS\n")
+      regs.zipWithIndex foreach { case ((regName, _), i) =>
+        sb.append(s"static_assert(")
+        sb.append(s"offsetof(${mmioName}_struct, ${regName}) == ${i} * sizeof(uint64_t), ")
+        sb.append(s"${'\"'}invalid ${regName}${'\"'});\\\n")
+      }
+      sb.append(s"static_assert(")
+      sb.append(s"sizeof(${mmioName}_struct) == ${regs.length} * sizeof(uint64_t), ")
+      sb.append(s"${'\"'}invalid structure${'\"'}); \\\n\n")
+      sb.append(s"#endif // ${mmioName}_checks\n")
+    }
+
+    sb.append(s"#ifdef ${guard}\n")
+    sb.append(s"registry.add_widget(new ${bridgeDriverClassName}(\n")
+    sb.append(s"  simif,\n")
+    if (hasStreams) {
+      sb.append("  *registry.get_stream_engine(),\n")
+    }
+    if (hasLoadMem) {
+      sb.append("  registry.get_widget<loadmem_t>(),\n")
+    }
+    if (hasMMIOAddrMap) {
+      crRegistry.genAddressMap(base, sb)
+      sb.append(",\n")
+    }
+    if (regs.nonEmpty) {
+      sb.append(s"${mmioName}_struct{\n")
+      for ((regName, regAddr) <- regs) {
+        sb.append(s"    .${regName} = ${base + regAddr},\n")
+      }
+      sb.append("},\n")
+    }
+    sb.append(s"  ${wrapper.getWId},\n")
+    sb.append(s"  args\n  ")
+    for (arg <- args) {
+      sb.append(s",  ${arg.toC}\n")
+    }
+    sb.append(s"));\n")
+    sb.append(s"#endif // ${guard}\n")
   }
 }
 

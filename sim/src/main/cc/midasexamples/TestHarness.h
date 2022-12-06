@@ -99,4 +99,5 @@ protected:
     return std::make_unique<CLASS_NAME>(                                       \
         registry, args, simif.get_target_name());                              \
   }
+
 #endif // MIDAEXAMPLES_TESTHARNESS_H

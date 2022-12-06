@@ -9,6 +9,8 @@
 #include <queue>
 #include <stdint.h>
 
+#include "core/config.h"
+
 class mm_t {
 public:
   mm_t(const AXI4Config conf)

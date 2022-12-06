@@ -180,9 +180,14 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
     ((hKey.dataBits - 1) / p(CtrlNastiKey).dataBits) + 1
 
   override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
-    super.genHeader(base, memoryRegions, sb)
-    import CppGenerationUtils._
-    sb.append(genConstStatic(s"${getWName.toUpperCase}_mem_data_chunk", UInt32(memDataChunk)))
+    genConstructor(
+        base,
+        sb,
+        "loadmem_t",
+        "loadmem",
+        Seq(Verbatim("conf_target.mem"), UInt32(memDataChunk)),
+        "GET_CORE_CONSTRUCTOR"
+    )
   }
   }
 }

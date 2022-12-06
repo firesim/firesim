@@ -27,18 +27,7 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
   val top = LazyModule(new midas.core.FPGATop)
 
   def genHeader(sb: StringBuilder, target: String): Unit = {
-    sb.append("#ifdef __cplusplus\n")
-
-    sb.append("#include <cstddef>\n")
-    sb.append("#include <cstdint>\n")
-    sb.append("#include <cstdbool>\n")
-    sb.append("#include <vector>\n")
-    sb.append("#include <optional>\n")
-    sb.append("#include \"core/config.h\"\n")
-
     top.module.genHeader(sb, target)
-
-    sb.append("#endif // __cplusplus\n")
   }
 
   def genVHeader(sb: StringBuilder, target: String): Unit = {

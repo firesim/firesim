@@ -29,23 +29,19 @@ public:
   /// The identifier for the bridge type.
   static char KIND;
 
-  struct port {
+  struct Port {
     uint64_t address;
     uint32_t chunks;
   };
 
-  using port_map = std::map<std::string, port, std::less<>>;
+  using PortMap = std::map<std::string, Port, std::less<>>;
 
   peek_poke_t(simif_t &simif,
               const PEEKPOKEBRIDGEMODULE_struct &mmio_addrs,
-              unsigned poke_size,
-              const uint32_t *input_addrs,
-              const char *const *input_names,
-              const uint32_t *input_chunks,
-              unsigned peek_size,
-              const uint32_t *output_addrs,
-              const char *const *output_names,
-              const uint32_t *output_chunks);
+              unsigned index,
+              const std::vector<std::string> &args,
+              PortMap &&inputs,
+              PortMap &&outputs);
   ~peek_poke_t() override = default;
 
   void poke(std::string_view id, uint32_t value, bool blocking);
@@ -83,9 +79,9 @@ private:
   /// Flag to indicate whether the last request timed out.
   bool req_timeout;
   /// Addresses of input ports.
-  port_map inputs;
+  const PortMap inputs;
   /// Addresses of output ports.
-  port_map outputs;
+  const PortMap outputs;
 
   bool wait_on(size_t flag_addr, double timeout) {
     midas_time_t start = timestamp();

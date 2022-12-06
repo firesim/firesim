@@ -9,7 +9,7 @@ public:
 
   void run_test() override {
     assert(assert_endpoints.size() == 1 && "expected one assert");
-    auto *assert_endpoint = assert_endpoints[0];
+    auto &assert_endpoint = *assert_endpoints[0];
 
     int assertions_thrown = 0;
     poke("reset", 1);

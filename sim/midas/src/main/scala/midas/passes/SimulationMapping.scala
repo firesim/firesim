@@ -32,10 +32,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
         |// and encodes all required bridge metadata to instantiate bridge drivers.
         |""".stripMargin,
       fileSuffix = ".const.h")
-    csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
-    csb append "#define __%s_H\n".format(targetName.toUpperCase)
     c.genHeader(csb.getBuilder, targetName)
-    csb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
     val vsb = new OutputFileBuilder(
       """// Golden Gate-generated Verilog Header
