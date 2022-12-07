@@ -45,9 +45,6 @@ def main(platform: Platform):
     platform_lib = get_platform_lib(platform)
 
     try:
-        print("Sending startup message")
-        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], f"Workflow monitor started for CI run: {ci_env['GITHUB_RUN_ID']}")
-
         print("Beginning polling loop")
         while True:
             time.sleep(POLLING_INTERVAL_SECONDS)
@@ -72,19 +69,16 @@ def main(platform: Platform):
                         platform_lib.stop_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl not in NOP_STATES:
-                        print(f"Unexpected Workflow State On Completed: {state_concl}")
-                        raise ValueError
+                        raise Exception(f"Unexpected Workflow State On Completed: {state_concl}")
                 elif state_status not in ['in_progress', 'queued', 'waiting', 'requested']:
-                    print(f"Unexpected Workflow State: {state_status}")
-                    raise ValueError
+                    raise Exception(f"Unexpected Workflow State: {state_status}")
 
             else:
                 print(f"HTTP GET error: {res.json()}. Retrying.")
                 consecutive_failures = consecutive_failures + 1
                 if consecutive_failures == QUERY_FAILURE_THRESHOLD:
-                    print("Consecutive HTTP GET errors. Terminating and exiting.")
                     platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
-                    raise ValueError
+                    raise Exception("Consecutive HTTP GET errors. Terminating and exiting.")
     except BaseException as e:
         post_str  = f"Something went wrong in the workflow monitor for CI run {ci_env['GITHUB_RUN_ID']}. Verify CI instances are terminated properly. Must be checked before submitting the PR.\n\n"
         post_str += f"**Exception Message:**{wrap_in_code(e)}\n"

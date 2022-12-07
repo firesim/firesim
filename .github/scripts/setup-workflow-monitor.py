@@ -27,7 +27,7 @@ def setup_workflow_monitor(platform: Platform, max_runtime: int) -> None:
 
         workflow_log = f"{manager_ci_dir}/workflow-monitor-screen.log"
 
-        run("echo 'zombie kr' >> ~/.screenrc") # for testing purposes, keep the screen on even after it dies
+        #run("echo 'zombie kr' >> ~/.screenrc") # for testing purposes, keep the screen on even after it dies
         with shell_env(**ci_env):
             # Put a baseline time-to-live bound on the manager.
             # Instances will be terminated (since they are spot requests) or will cleaned up in a nightly job.
