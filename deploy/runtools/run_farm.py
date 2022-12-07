@@ -18,8 +18,8 @@ from util.io import firesim_input
 from runtools.run_farm_deploy_managers import InstanceDeployManager, EC2InstanceDeployManager
 
 from typing import Any, Dict, Optional, List, Union, Set, Type, Tuple, TYPE_CHECKING
+from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 if TYPE_CHECKING:
-    from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
     from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
 
 rootLogger = logging.getLogger()
@@ -28,6 +28,7 @@ class Inst(metaclass=abc.ABCMeta):
     """Run farm hosts that can hold simulations or switches.
 
     Attributes:
+        run_farm: handle to run farm this instance is a part of
         MAX_SWITCH_SLOTS_ALLOWED: max switch slots allowed (hardcoded)
         switch_slots: switch node slots
         _next_switch_port: next switch port to assign
@@ -38,6 +39,8 @@ class Inst(metaclass=abc.ABCMeta):
         host: hostname or ip address of the instance
         metasimulation_enabled: true if this instance will be running metasimulations
     """
+
+    run_farm: RunFarm
 
     # switch variables
     # restricted by default security group network model port alloc (10000 to 11000)
@@ -58,8 +61,11 @@ class Inst(metaclass=abc.ABCMeta):
 
     metasimulation_enabled: bool
 
-    def __init__(self, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None, metasimulation_enabled: bool = False) -> None:
+    def __init__(self, run_farm: RunFarm, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None, metasimulation_enabled: bool = False) -> None:
         super().__init__()
+
+        self.run_farm = run_farm
+
         self.switch_slots = []
         self._next_switch_port = 10000 # track ports to allocate for server switch model ports
 
@@ -110,6 +116,10 @@ class Inst(metaclass=abc.ABCMeta):
     def qcow2_support_required(self) -> bool:
         """ Return True iff any simulation on this Inst requires qcow2. """
         return any([x.qcow2_support_required() for x in self.sim_slots])
+
+    def terminate_self(self) -> None:
+        """ Terminate the current host for the Inst. """
+        self.run_farm.terminate_by_inst(self)
 
 class RunFarm(metaclass=abc.ABCMeta):
     """Abstract class to represent how to manage run farm hosts (similar to `BuildFarm`).
@@ -250,6 +260,11 @@ class RunFarm(metaclass=abc.ABCMeta):
         """Return run farm host based on host."""
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def terminate_by_inst(self, inst: Inst) -> None:
+        """Terminate run farm host based on Inst object."""
+        raise NotImplementedError
+
 def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
     """Take a dict, convert to list of pairs, flip key and value,
     remove all keys equal to zero, then sort on the new key."""
@@ -350,7 +365,7 @@ class AWSEC2F1(RunFarm):
 
             insts: List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]] = []
             for _ in range(num_insts):
-                insts.append((Inst(num_sim_slots, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled), None))
+                insts.append((Inst(self, num_sim_slots, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled), None))
             self.run_farm_hosts_dict[inst_handle] = insts
             self.mapper_consumed[inst_handle] = 0
 
@@ -496,6 +511,18 @@ class AWSEC2F1(RunFarm):
                 return host_node
         assert False, f"Unable to find host node by {host}"
 
+    def terminate_by_inst(self, inst: Inst) -> None:
+        """Terminate run farm host based on host."""
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
+            inst_list = self.run_farm_hosts_dict[sim_host_handle]
+            for inner_inst, boto in inst_list:
+                if inner_inst.get_host() == inst.get_host():
+                    # EC2InstanceResource can only be used for typing checks
+                    # preventing its use for the isinstance() check
+                    assert boto is not None and not isinstance(boto, MockBoto3Instance)
+                    instanceids = get_instance_ids_for_instances([boto])
+                    terminate_instances(instanceids, dryrun=False)
+
 class ExternallyProvisioned(RunFarm):
     """This manages the set of externally provisioned instances. This class doesn't manage
     launch/terminating instances. It is assumed that the instances are "ready to use".
@@ -552,7 +579,7 @@ class ExternallyProvisioned(RunFarm):
             platform = host_spec.get("override_platform", default_platform)
             simulation_dir = host_spec.get("override_simulation_dir", self.default_simulation_dir)
 
-            inst = Inst(num_sims, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled)
+            inst = Inst(self, num_sims, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled)
             inst.set_host(ip_addr)
             assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
             self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
@@ -586,3 +613,7 @@ class ExternallyProvisioned(RunFarm):
             if host_node.get_host() == host:
                 return host_node
         assert False, f"Unable to find host node by {host} host name"
+
+    def terminate_by_inst(self, inst: Inst) -> None:
+        rootLogger.info(f"WARNING: Skipping terminate_by_inst since run hosts are externally provisioned.")
+        return

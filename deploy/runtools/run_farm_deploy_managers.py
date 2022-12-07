@@ -11,11 +11,9 @@ from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
 
-from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
 from typing import List, Dict, Optional, Union, TYPE_CHECKING
-from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 if TYPE_CHECKING:
     from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
     from runtools.run_farm import Inst
@@ -96,9 +94,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    def instance_logger(self, logstr: str) -> None:
+    def instance_logger(self, logstr: str, debug: bool = False) -> None:
         """ Log with this host's info as prefix. """
-        rootLogger.info("""[{}] """.format(env.host_string) + logstr)
+        if debug:
+            rootLogger.debug("""[{}] """.format(env.host_string) + logstr)
+        else:
+            rootLogger.info("""[{}] """.format(env.host_string) + logstr)
 
     def sim_node_qcow(self) -> None:
         """ If NBD is available and qcow2 support is required, install qemu-img
@@ -305,120 +306,123 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                         switches.append(line_stripped)
         return {'switches': switches, 'simdrivers': simdrivers}
 
-    def monitor_jobs_instance(self, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool,
+    def monitor_jobs_instance(self,
+            prior_completed_jobs: List[str],
+            is_final_loop: bool,
+            is_networked: bool,
+            terminateoncompletion: bool,
             job_results_dir: str) -> Dict[str, Dict[str, bool]]:
         """ Job monitoring for this host. """
-        # make a local copy of completed_jobs, so that we can update it
-        completed_jobs = list(completed_jobs)
+        self.instance_logger(f"Final loop?: {is_final_loop} Is networked?: {is_networked} Terminateoncomplete: {terminateoncompletion}", debug=True)
+        self.instance_logger(f"Prior completed jobs: {prior_completed_jobs}", debug=True)
 
-        rootLogger.debug("completed jobs " + str(completed_jobs))
+        def do_terminate():
+            if (not is_networked) or (is_networked and is_final_loop):
+                if terminateoncompletion:
+                    self.terminate_instance()
+
 
         if not self.instance_assigned_simulations() and self.instance_assigned_switches():
-            # this node hosts ONLY switches and not sims
-            #
+            self.instance_logger(f"Polling switch-only node", debug=True)
+
             # just confirm that our switches are still running
             # switches will never trigger shutdown in the cycle-accurate -
             # they should run forever until torn down
-            if teardown:
-                # handle the case where we're just tearing down nodes that have
-                # ONLY switches
+            if is_final_loop:
+                self.instance_logger(f"Completing copies for switch-only node", debug=True)
+
                 for counter in range(len(self.parent_node.switch_slots)):
                     switchsim = self.parent_node.switch_slots[counter]
                     switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
 
-                if terminateoncompletion:
-                    # terminate the instance since teardown is called and instance
-                    # termination is enabled
-                    self.terminate_instance()
+                do_terminate()
 
-                # don't really care about the return val in the teardown case
-                return {'switches': dict(), 'sims': dict()}
-
-            # not teardown - just get the status of the switch sims
-            switchescompleteddict = {k: False for k in self.running_simulations()['switches']}
-            for switchsim in self.parent_node.switch_slots:
-                swname = switchsim.switch_builder.switch_binary_name()
-                if swname not in switchescompleteddict.keys():
-                    switchescompleteddict[swname] = True
-            return {'switches': switchescompleteddict, 'sims': dict()}
-
-        if self.instance_assigned_simulations():
-            # this node has sims attached
-
-            # first, figure out which jobs belong to this instance.
-            # if they are all completed already. RETURN, DON'T TRY TO DO ANYTHING
-            # ON THE INSTNACE.
-            parentslots = self.parent_node.sim_slots
-            rootLogger.debug("parentslots " + str(parentslots))
-            jobnames = [slot.get_job_name() for slot in parentslots if slot is not None]
-            rootLogger.debug("jobnames " + str(jobnames))
-            already_done = all([job in completed_jobs for job in jobnames])
-            rootLogger.debug("already done? " + str(already_done))
-            if already_done:
-                # in this case, all of the nodes jobs have already completed. do nothing.
-                # this can never happen in the cycle-accurate case at a point where we care
-                # about switch status, so don't bother to populate it
-                jobnames_to_completed = {jname: True for jname in jobnames}
-                return {'sims': jobnames_to_completed, 'switches': dict()}
-
-            # at this point, all jobs are NOT completed. so, see how they're doing now:
-            instance_screen_status = self.running_simulations()
-            switchescompleteddict = {k: False for k in instance_screen_status['switches']}
-
-            if self.instance_assigned_switches():
-                # fill in whether switches have terminated for some reason
+                return {'switches': {}, 'sims': {}}
+            else:
+                # get the status of the switch sims
+                switchescompleteddict = {k: False for k in self.running_simulations()['switches']}
                 for switchsim in self.parent_node.switch_slots:
                     swname = switchsim.switch_builder.switch_binary_name()
                     if swname not in switchescompleteddict.keys():
                         switchescompleteddict[swname] = True
 
-            slotsrunning = [x for x in instance_screen_status['simdrivers']]
+                return {'switches': switchescompleteddict, 'sims': {}}
 
-            rootLogger.debug("slots running")
-            rootLogger.debug(slotsrunning)
+        if self.instance_assigned_simulations():
+            # this node has sims attached
+            self.instance_logger(f"Polling node with simulations (and potentially switches)", debug=True)
+
+
+            sim_slots = self.parent_node.sim_slots
+            jobnames = [slot.get_job_name() for slot in sim_slots]
+            all_jobs_completed = all([(job in prior_completed_jobs) for job in jobnames])
+
+            self.instance_logger(f"jobnames: {jobnames}", debug=True)
+            self.instance_logger(f"All jobs completed?: {all_jobs_completed}", debug=True)
+
+            if all_jobs_completed:
+                do_terminate()
+
+                # in this case, all of the nodes jobs have already completed. do nothing.
+                # this can never happen in the cycle-accurate case at a point where we care
+                # about switch status, so don't bother to populate it
+                jobnames_to_completed = {jname: True for jname in jobnames}
+                return {'sims': jobnames_to_completed, 'switches': {}}
+
+            # at this point, all jobs are NOT completed. so, see how they're doing now:
+            instance_screen_status = self.running_simulations()
+
+            switchescompleteddict = {k: False for k in instance_screen_status['switches']}
+            slotsrunning = [x for x in instance_screen_status['simdrivers']]
+            self.instance_logger(f"Switch Slots running: {switchescompleteddict}", debug=True)
+            self.instance_logger(f"Sim Slots running: {slotsrunning}", debug=True)
+
+            if self.instance_assigned_switches():
+                # fill in whether switches have terminated
+                for switchsim in self.parent_node.switch_slots:
+                    sw_name = switchsim.switch_builder.switch_binary_name()
+                    if sw_name not in switchescompleteddict.keys():
+                        switchescompleteddict[sw_name] = True
+
+            # fill in whether sims have terminated
+            completed_jobs = prior_completed_jobs.copy() # create local copy to append to
             for slotno, jobname in enumerate(jobnames):
-                if str(slotno) not in slotsrunning and jobname not in completed_jobs:
-                    self.instance_logger("Slot " + str(slotno) + " completed! copying results.")
-                    # NOW, we must copy off the results of this sim, since it just exited
-                    parent = parentslots[slotno]
-                    parent.copy_back_job_results_from_run(slotno, has_sudo())
-                    # add our job to our copy of completed_jobs, so that next,
-                    # we can test again to see if this instance is "done" and
-                    # can be terminated
+                if (str(slotno) not in slotsrunning) and (jobname not in completed_jobs):
+                    self.instance_logger(f"Slot {slotno}, Job {jobname} completed!")
                     completed_jobs.append(jobname)
 
-            # determine if we're done now.
-            jobs_done_q = {job: job in completed_jobs for job in jobnames}
-            now_done = all(jobs_done_q.values())
-            rootLogger.debug("now done: " + str(now_done))
-            if now_done and self.instance_assigned_switches():
-                # we're done AND we have switches running here, so kill them,
-                # then copy off their logs. this handles the case where you
-                # have a node with one simulation and some switches, to make
-                # sure the switch logs are copied off.
-                #
-                # the other cases are when you have multiple sims and a cycle-acc network,
-                # in which case the all() will never actually happen (unless someone builds
-                # a workload where two sims exit at exactly the same time, which we should
-                # advise users not to do)
-                #
-                # a last use case is when there's no network, in which case
-                # instance_assigned_switches won't be true, so this won't be called
+                    # this writes the job monitoring file
+                    sim_slots[slotno].copy_back_job_results_from_run(slotno, has_sudo())
 
-                self.kill_switches_instance()
+            jobs_complete_dict = {job: job in completed_jobs for job in jobnames}
+            now_all_jobs_complete = all(jobs_complete_dict.values())
+            self.instance_logger(f"Now done?: {now_all_jobs_complete}", debug=True)
 
-                for counter, switchsim in enumerate(self.parent_node.switch_slots):
-                    switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
+            if now_all_jobs_complete:
+                if self.instance_assigned_switches():
+                    # we have switches running here, so kill them,
+                    # then copy off their logs. this handles the case where you
+                    # have a node with one simulation and some switches, to make
+                    # sure the switch logs are copied off.
+                    #
+                    # the other cases are when you have multiple sims and a cycle-acc network,
+                    # in which case the all() will never actually happen (unless someone builds
+                    # a workload where two sims exit at exactly the same time, which we should
+                    # advise users not to do)
+                    #
+                    # a last use case is when there's no network, in which case
+                    # instance_assigned_switches won't be true, so this won't be called
 
-            if now_done and terminateoncompletion:
-                # terminate the instance since everything is done and instance
-                # termination is enabled
-                self.terminate_instance()
+                    self.kill_switches_instance()
 
-            return {'switches': switchescompleteddict, 'sims': jobs_done_q}
+                    for counter, switch_slot in enumerate(self.parent_node.switch_slots):
+                        switch_slot.copy_back_switchlog_from_run(job_results_dir, counter)
+
+                do_terminate()
+
+            return {'switches': switchescompleteddict, 'sims': jobs_complete_dict}
 
         assert False
-
 
 
 def remote_kmsg(message: str) -> None:
@@ -435,11 +439,9 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     This is in charge of managing the locations of stuff on remote nodes.
     """
-    boto3_instance_object: Optional[Union[EC2InstanceResource, MockBoto3Instance]]
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
-        self.boto3_instance_object = None
         self.nbd_tracker = NBDTracker()
 
     def get_and_install_aws_fpga_sdk(self) -> None:
@@ -618,10 +620,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 self.copy_switch_slot_infrastructure(slotno)
 
     def terminate_instance(self) -> None:
-        assert isinstance(self.boto3_instance_object, EC2InstanceResource)
-        instanceids = get_instance_ids_for_instances([self.boto3_instance_object])
-        terminate_instances(instanceids, dryrun=False)
-
+        self.instance_logger("Terminating instance", debug=True)
+        self.parent_node.terminate_self()
 
 class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
@@ -665,5 +665,4 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
     def terminate_instance(self) -> None:
         """ VitisInstanceDeployManager machines cannot be terminated. """
-        pass
-
+        return
