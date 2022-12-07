@@ -13,6 +13,7 @@ import sys
 from fabric.api import prefix, settings, local, run # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
+from pathlib import Path
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -127,17 +128,17 @@ class RuntimeHWConfig:
         """ return the name of the folder that the tarball is created from, no path """
         return 'tarball'
 
-    def local_tarball_creation_path(self) -> str:
+    def local_tarball_creation_path(self) -> Path:
         """ return the absolute path of the folder used to create the tarball """
         triplet = self.get_deploytriplet_for_config()
         dirname = self.tarball_creation_foldername()
-        return f'{get_deploy_dir()}/../sim/output/f1/{triplet}/{dirname}'
+        return Path(get_deploy_dir()) / '../sim/output' / self.platform / triplet / dirname
 
-    def local_tarball_path(self, name: str) -> str:
+    def local_tarball_path(self, name: str) -> Path:
         """ return the local path of the tarball """
         triplet = self.get_deploytriplet_for_config()
         dirname = self.tarball_creation_foldername()
-        return f'{get_deploy_dir()}/../sim/output/f1/{triplet}/{name}'
+        return Path(get_deploy_dir()) / '../sim/output' / self.platform / triplet / name
 
     def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
@@ -300,7 +301,7 @@ class RuntimeHWConfig:
             # we already built it
             return
 
-        builddir = self.local_tarball_creation_path()
+        builddir: Path = self.local_tarball_creation_path()
 
         with InfoStreamLogger('stdout'):
             cmd = f"rm -rf {builddir}"
