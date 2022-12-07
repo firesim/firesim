@@ -1,0 +1,110 @@
+# See LICENSE for license details.
+
+# These point at the main class of the target's Chisel generator
+DESIGN_PACKAGE ?= firesim.bridges
+DESIGN ?= GCD
+
+TARGET_CONFIG_PACKAGE ?= firesim.bridges
+TARGET_CONFIG ?= NoConfig
+
+PLATFORM_CONFIG_PACKAGE ?= firesim.bridges
+PLATFORM_CONFIG ?= DefaultF1Config
+
+name_tuple    := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+GENERATED_DIR := $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR    := $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
+
+# This is prefix is currently assumed by the fpga build flow
+BASE_FILE_NAME := FireSim-generated
+
+##########################
+# RTL Generation         #
+##########################
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
+ifdef FIRESIM_STANDALONE
+	firesim_sbt_project := firesim
+else
+	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
+endif
+
+chisel_src_dirs = \
+		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
+		$(addprefix $(chipyard_dir)/generators/, rocket-chip/src, rocket-chip/api-config-chipsalliance)
+
+chisel_srcs = $(foreach submodule,$(chisel_src_dirs),\
+	$(shell find $(submodule)/ -iname "[!.]*.scala" -print 2> /dev/null | grep 'src/main/scala'))
+
+SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
+mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
+COMMON_SIM_ARGS ?= $(mem_model_args)
+vcs_args = +vcs+initreg+0 +vcs+initmem+0
+
+# Rocket Chip stage requires a fully qualified classname for each fragment, whereas Chipyard's does not.
+# This retains a consistent TARGET_CONFIG naming convention across the different target projects.
+subst_prefix=,$(TARGET_CONFIG_PACKAGE).
+
+$(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
+	mkdir -p $(@D)
+	$(call run_scala_main,$(firesim_sbt_project),freechips.rocketchip.system.Generator, \
+		--target-dir $(GENERATED_DIR) \
+		--name $(long_name) \
+		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
+		--configs $(TARGET_CONFIG_PACKAGE).$(subst _,$(subst_prefix),$(TARGET_CONFIG)))
+
+##########################
+# Driver Sources & Flags #
+##########################
+
+TESTCHIPIP_CSRC_DIR = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
+
+DRIVER_DIR = $(firesim_base_dir)/src/main/cc
+FIRESIM_LIB_DIR = $(firesim_base_dir)/firesim-lib/src/main/cc/
+
+DRIVER_H = $(shell find $(DRIVER_DIR) -name "*.h")
+
+DRIVER_CC := \
+		$(DRIVER_DIR)/midasexamples/simif_peek_poke.cc \
+		$(DRIVER_DIR)/bridges/$(DESIGN).cc \
+		$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc \
+		$(wildcard $(addprefix $(FIRESIM_LIB_DIR)/, \
+			bridges/uart.cc \
+			bridges/serial.cc \
+			fesvr/firesim_tsi.cc \
+		))
+
+TARGET_CXX_FLAGS := \
+		-isystem $(TESTCHIPIP_CSRC_DIR) \
+		-I$(DRIVER_DIR)/midasexamples \
+		-I$(FIRESIM_LIB_DIR) \
+		-I$(DRIVER_DIR) \
+		-I$(DRIVER_DIR)/bridges \
+		-g
+
+TARGET_LD_FLAGS := \
+		-L$(RISCV)/lib \
+		-lfesvr
+
+##########################
+# Midas-Level Sim Recipes#
+##########################
+
+# These are from MIDAS examples
+loadmem = $(if $(LOADMEM),+loadmem=$(abspath $(LOADMEM)),)
+benchmark = $(notdir $(basename $(if $(LOADMEM),$(notdir $(LOADMEM)),$(DESIGN))))
+logfile = $(if $(LOGFILE),$(abspath $(LOGFILE)),$(OUTPUT_DIR)/$(benchmark).$1.out)
+waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$(benchmark).$1.$2)
+
+run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)% $(LOADMEM)
+	mkdir -p $(OUTPUT_DIR)
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(COMMON_SIM_ARGS) $(ARGS) \
+	$(loadmem) \
+	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
+
+run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
+	mkdir -p $(OUTPUT_DIR)
+	cd $(GENERATED_DIR) && ./$(notdir $<) $(vcs_args) $(COMMON_SIM_ARGS) $(ARGS) \
+	$(loadmem) \
+	+waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)

@@ -267,9 +267,22 @@ jobs:
         with:
           test-name: "CIGroupB"
 
+  run-test-firesim-lib:
+    name: run-test-firesim-lib
+    needs: [run-test-groupB]
+    runs-on: aws-${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run firesim-lib Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          test-name: "BridgeTests"
+
   run-chipyard-tests:
     name: run-chipyard-tests
-    needs: [run-test-groupB]
+    needs: [run-test-firesim-lib]
     runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
