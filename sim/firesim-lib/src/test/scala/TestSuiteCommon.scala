@@ -22,8 +22,8 @@ abstract class TestSuiteCommon extends org.scalatest.flatspec.AnyFlatSpec {
 
   def targetTuple: String
   def commonMakeArgs: Seq[String]
+  def platformName: String = "f1"
 
-  val platformName = "f1"
   val replayBackends = Seq("rtl")
   val platformMakeArgs = Seq(s"PLATFORM=$platformName")
 
