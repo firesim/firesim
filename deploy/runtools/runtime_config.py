@@ -4,7 +4,7 @@ simulation tasks. """
 from __future__ import annotations
 
 from datetime import timedelta
-from time import strftime, gmtime
+from time import strftime, gmtime, time
 import pprint
 import logging
 import yaml
@@ -14,6 +14,7 @@ from fabric.api import prefix, settings, local, run # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
 from pathlib import Path
+from uuid import uuid1
 
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
@@ -57,6 +58,7 @@ class RuntimeHWConfig:
     driver_build_target: str
     driver_type_message: str
     driver_tar_uri: Optional[str]
+    driver_build_random_name: str
 
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
@@ -92,6 +94,7 @@ class RuntimeHWConfig:
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
         self.tarball_built = False
+        self.driver_build_random_name = f"{int(time())}_{str(uuid1())[0:8]}"
 
         self.additional_required_files = []
 
@@ -125,8 +128,11 @@ class RuntimeHWConfig:
         return self.get_local_driver_dir() + self.get_local_driver_binaryname()
 
     def tarball_creation_foldername(self) -> str:
-        """ return the name of the folder that the tarball is created from, no path """
-        return 'tarball'
+        """ return the name of the folder that the tarball is created from, no path.
+        This name is randomized to include the epoc and a short uuid. The randomization is done
+        at the creation of RuntimeHWConfig class, so multiple calls to tarball_creation_foldername()
+        will return the same value. """
+        return f'tarball_{self.driver_build_random_name}'
 
     def local_tarball_creation_path(self) -> Path:
         """ return the absolute path of the folder used to create the tarball """
@@ -137,7 +143,6 @@ class RuntimeHWConfig:
     def local_tarball_path(self, name: str) -> Path:
         """ return the local path of the tarball """
         triplet = self.get_deploytriplet_for_config()
-        dirname = self.tarball_creation_foldername()
         return Path(get_deploy_dir()) / '../sim/output' / self.platform / triplet / name
 
     def get_local_runtimeconf_binaryname(self) -> str:
@@ -301,13 +306,9 @@ class RuntimeHWConfig:
             # we already built it
             return
 
+        # This folder has a random postfix attached
+        # this allows new, clean tarballs to be created without having to run rm -rf
         builddir: Path = self.local_tarball_creation_path()
-
-        with InfoStreamLogger('stdout'):
-            cmd = f"rm -rf {builddir}"
-
-            results = run(cmd)
-            self.handle_failure(results, 'cleanup tarball', builddir, cmd)
 
         with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}'), \
             prefix(f'mkdir -p {builddir}'):
