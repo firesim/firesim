@@ -35,7 +35,7 @@ TERMINATE_STATES = ["cancelled", "success", "skipped", "stale", "failure", "time
 STOP_STATES = []
 NOP_STATES = ["action_required"] # TODO: unsure when this happens
 
-def wrap_in_code(wrap: str):
+def wrap_in_code(wrap: str) -> str:
     return f"\n```\n{wrap}\n```"
 
 def main(platform: Platform):
@@ -59,13 +59,16 @@ def main(platform: Platform):
                 print(f"Workflow {ci_env['GITHUB_RUN_ID']} status: {state_status} {state_concl}")
 
                 # check that select instances are terminated on time
-                platform_lib.check_and_terminate_select_instances(45, ci_env['GITHUB_RUN_ID'])
+                platform_lib.check_and_terminate_run_farm_instances(45, ci_env['GITHUB_RUN_ID'])
 
                 if state_status in ['completed']:
                     if state_concl in TERMINATE_STATES:
+                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'])
                         platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl in STOP_STATES:
+                        # if we stop then we should terminate the run farm instances
+                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'])
                         platform_lib.stop_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl not in NOP_STATES:
@@ -86,7 +89,7 @@ def main(platform: Platform):
 
         issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], post_str)
 
-        platform_lib.check_and_terminate_select_instances(0, ci_env['GITHUB_RUN_ID'])
+        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'])
         platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
 
         post_str = f"Instances for CI run {ci_env['GITHUB_RUN_ID']} were supposedly terminated. Verify termination manually.\n"

@@ -40,11 +40,11 @@ def cull_aws_instances(current_time: DateTime) -> None:
     # Grab all instances with a CI-generated tag
     aws_platform_lib = get_platform_lib(Platform.AWS)
     all_ci_instances = aws_platform_lib.find_all_ci_instances()
-    select_ci_instances = aws_platform_lib.find_select_ci_instances()
+    run_farm_ci_instances = aws_platform_lib.find_run_farm_ci_instances()
 
     client = boto3.client('ec2')
 
-    instances_to_terminate = find_timed_out_resources(FPGA_INSTANCE_LIFETIME_LIMIT_HOURS, current_time, map(lambda x: (x, x['LaunchTime']), select_ci_instances))
+    instances_to_terminate = find_timed_out_resources(FPGA_INSTANCE_LIFETIME_LIMIT_HOURS, current_time, map(lambda x: (x, x['LaunchTime']), run_farm_ci_instances))
     instances_to_terminate += find_timed_out_resources(INSTANCE_LIFETIME_LIMIT_HOURS, current_time, map(lambda x: (x, x['LaunchTime']), all_ci_instances))
     instances_to_terminate = list(set(instances_to_terminate))
 
@@ -60,10 +60,10 @@ def cull_aws_instances(current_time: DateTime) -> None:
 def cull_azure_resources(current_time: DateTime) -> None:
     azure_platform_lib = get_platform_lib(Platform.AZURE)
     all_azure_ci_vms = azure_platform_lib.find_all_ci_instances()
-    select_azure_ci_vms = azure_platform_lib.find_select_ci_instances()
+    run_farm_azure_ci_vms = azure_platform_lib.find_run_farm_ci_instances()
 
     vms_to_terminate = find_timed_out_resources(FPGA_INSTANCE_LIFETIME_LIMIT_HOURS, current_time, \
-        map(lambda x: (x, datetime.datetime.strptime(x['LaunchTime'],'%Y-%m-%d %H:%M:%S.%f%z')), select_azure_ci_vms))
+        map(lambda x: (x, datetime.datetime.strptime(x['LaunchTime'],'%Y-%m-%d %H:%M:%S.%f%z')), run_farm_azure_ci_vms))
     vms_to_terminate += find_timed_out_resources(INSTANCE_LIFETIME_LIMIT_HOURS, current_time, \
         map(lambda x: (x, datetime.datetime.strptime(x['LaunchTime'],'%Y-%m-%d %H:%M:%S.%f%z')), all_azure_ci_vms))
     vms_to_terminate = list(set(vms_to_terminate))

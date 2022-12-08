@@ -79,17 +79,20 @@ class PlatformLib(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def find_all_workflow_instances(self, workflow_tag: str) -> List:
-        """ Returns all instances in this workflow (including manager) """
+        """ Returns all manager instances in this workflow """
         raise NotImplementedError
 
     @abc.abstractmethod
     def find_all_ci_instances(self) -> List:
-        """ Returns all instances across CI workflows """
+        """ Returns all manager instances across all CI workflows """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
-        """ Grabs a list of select instances across all CI using the CI unique tag key"""
+    def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        """
+        Returns all run farm instance types (normally FPGA instances) that have the
+        `workflow_tag` in the cluster name.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -130,8 +133,8 @@ class PlatformLib(metaclass=abc.ABCMeta):
         return f"centos@{self.get_manager_ip(workflow_tag)}"
 
     @abc.abstractmethod
-    def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
-        """ Check if platform-specific instances are running past a `timeout` minutes designated time. If so, then terminate them. """
+    def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str) -> None:
+        """ Check if run farm instances are running past a `timeout` minutes designated time. If so, then terminate them. """
         raise NotImplementedError
 
 
@@ -182,11 +185,11 @@ class AWSPlatformLib(PlatformLib):
         all_ci_instances = get_instances_with_filter([all_ci_instances_filter], allowed_states=['*'])
         return all_ci_instances
 
-    def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
-        """ Grabs a list of select instances across all CI using the CI unique tag key"""
+    def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        # on AWS run farm instances are marked with 'fsimcluster'
         instances_filter = [
-                self.get_filter(workflow_tag),
-                {'Name': 'instance-type', 'Values': ['f1.2xlarge', 'f1.16xlarge']},
+                {'Name': 'tag:fsimcluster', 'Values': f'*{workflow_tag}*'},
+                {'Name': 'instance-type', 'Values': ['f1.2xlarge', 'f1.4xlarge', 'f1.16xlarge']},
                 ]
         ci_instances = get_instances_with_filter(instances_filter, allowed_states=['*'])
         return ci_instances
@@ -245,7 +248,7 @@ class AWSPlatformLib(PlatformLib):
         else:
             raise ValueError(f"Unrecognized transition type: {state_change}")
 
-    def get_platform_enum(self) -> None:
+    def get_platform_enum(self) -> Platform:
         return Platform.AWS
 
     def get_manager_metadata_string(self, workflow_tag: str) -> str:
@@ -264,18 +267,21 @@ class AWSPlatformLib(PlatformLib):
 
         return static_md + dynamic_md
 
-    def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
-        # terminate f1.{2,16}xlarge instances after timeout minutes of running (extra backup)
-        instances = self.find_select_ci_instances(workflow_tag)
+    def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str) -> None:
+        # We need this in case terminate is called in setup-self-hosted-workflow before aws-configure is run
+        if self.client is None:
+            self.client = boto3.client('ec2')
+
+        instances = self.find_run_farm_ci_instances(workflow_tag)
         terminated_insts = False
         for inst in instances:
             if (datetime.datetime.now() - inst.launch_time) >= datetime.timedelta(minutes=timeout):
-                print("Uncaught FPGA instance shutdown detected")
+                print("Uncaught run farm instance shutdown detected")
 
                 instids = [ inst.instance_id ]
-                terminate_instances(instids, False)
+                self.client.terminate_instances(InstanceIds=instids, DryRun=False)
 
-                print(f"Terminated FPGA instance {instids}")
+                print(f"Terminated run farm instance {instids}")
                 terminated_insts = True
 
         # post comment after instances are terminated just in case there is an issue with posting
@@ -428,8 +434,8 @@ class AzurePlatformLib(PlatformLib):
             else:
                 print(f"Succeeded in deleting VM {vm['name']}")
 
-    def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
+    def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str) -> None:
         raise NotImplementedError
 
-    def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
+    def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
         raise NotImplementedError
