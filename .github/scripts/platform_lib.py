@@ -429,7 +429,7 @@ class AzurePlatformLib(PlatformLib):
                 print(f"Succeeded in deleting VM {vm['name']}")
 
     def check_and_terminate_select_instances(self, timeout: int, workflow_tag: str) -> None:
-        return
+        raise NotImplementedError
 
     def find_select_ci_instances(self, workflow_tag: str = '*') -> List:
-        return
+        raise NotImplementedError
