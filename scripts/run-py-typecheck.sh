@@ -3,6 +3,13 @@
 # Run type checking on manager Python files
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-DEPLOY_DIR=$SCRIPT_DIR/../deploy
+FSIM_DIR=$SCRIPT_DIR/..
 
-mypy --no-incremental $DEPLOY_DIR/awstools/ $DEPLOY_DIR/buildtools/ $DEPLOY_DIR/runtools/ $DEPLOY_DIR/util/ $DEPLOY_DIR/firesim
+mypy --no-incremental \
+    $FSIM_DIR/deploy/awstools/ \
+    $FSIM_DIR/deploy/buildtools/ \
+    $FSIM_DIR/deploy/runtools/ \
+    $FSIM_DIR/deploy/util/ \
+    $FSIM_DIR/deploy/firesim \
+    $FSIM_DIR/.github/scripts/ci_variables.py
+
