@@ -63,10 +63,14 @@ firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 DRIVER_CC := \
 		$(driver_dir)/midasexamples/simif_peek_poke.cc \
-		$(driver_dir)/midasexamples/Driver.cc \
+		$(driver_dir)/midasexamples/Test$(DESIGN).cc \
 		$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* )))
 
-TARGET_CXX_FLAGS := -DDESIGNDRIVERCLASS=$(DESIGN)_t -DDESIGNNAME_$(DESIGN) -I$(driver_dir) -I$(RISCV)/include -I$(driver_dir)/midasexamples -g
+TARGET_CXX_FLAGS := \
+		-I$(driver_dir) \
+		-I$(driver_dir)/midasexamples \
+		-g
+
 TARGET_LD_FLAGS :=
 
 ##########################

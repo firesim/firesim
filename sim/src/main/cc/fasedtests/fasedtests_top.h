@@ -19,15 +19,18 @@ public:
   int run();
 
 protected:
-  void add_bridge_driver(bridge_driver_t *bridge_driver) {
-    bridges.push_back(std::unique_ptr<bridge_driver_t>(bridge_driver));
+  void add_bridge_driver(bridge_driver_t *bridge) {
+    bridges.emplace_back(bridge);
+  }
+  void add_bridge_driver(FpgaModel *bridge) {
+    fpga_models.emplace_back(bridge);
   }
 
 private:
   // Memory mapped bridges bound to software models
   std::vector<std::unique_ptr<bridge_driver_t>> bridges;
   // FPGA-hosted models with programmable registers & instrumentation
-  std::vector<FpgaModel *> fpga_models;
+  std::vector<std::unique_ptr<FpgaModel>> fpga_models;
 
 #ifdef PRINTBRIDGEMODULE_struct_guard
   synthesized_prints_t *print_bridge;

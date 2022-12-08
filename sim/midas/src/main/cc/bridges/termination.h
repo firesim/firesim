@@ -10,7 +10,7 @@
 class termination_t : public bridge_driver_t {
 public:
   termination_t(simif_t *sim,
-                std::vector<std::string> &args,
+                const std::vector<std::string> &args,
                 const TERMINATIONBRIDGEMODULE_struct &mmio_addrs,
                 unsigned int num_messages,
                 unsigned int *is_err,

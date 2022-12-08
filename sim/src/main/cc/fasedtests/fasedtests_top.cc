@@ -33,37 +33,7 @@ fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,
     }
   }
 
-#ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
-  INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
-#endif
-
-#ifdef FASEDMEMORYTIMINGMODEL_0
-  INSTANTIATE_FASED(fpga_models.push_back, 0)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_1
-  INSTANTIATE_FASED(fpga_models.push_back, 1)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_2
-  INSTANTIATE_FASED(fpga_models.push_back, 2)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_3
-  INSTANTIATE_FASED(fpga_models.push_back, 3)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_4
-  INSTANTIATE_FASED(fpga_models.push_back, 4)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_5
-  INSTANTIATE_FASED(fpga_models.push_back, 5)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_6
-  INSTANTIATE_FASED(fpga_models.push_back, 6)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_7
-  INSTANTIATE_FASED(fpga_models.push_back, 7)
-#endif
-#ifdef FASEDMEMORYTIMINGMODEL_8
-  INSTANTIATE_FASED(fpga_models.push_back, 8)
-#endif
+#include "constructor.h"
 
   // Add functions you'd like to periodically invoke on a paused simulator here.
   if (profile_interval != -1) {
@@ -90,7 +60,7 @@ bool fasedtests_top_t::simulation_complete() {
 }
 
 uint64_t fasedtests_top_t::profile_models() {
-  for (auto mod : fpga_models) {
+  for (auto &mod : fpga_models) {
     mod->profile();
   }
   return profile_interval;
@@ -160,7 +130,7 @@ int fasedtests_top_t::run() {
 
   simif->print_simulation_performance_summary();
 
-  for (auto e : fpga_models) {
+  for (auto &e : fpga_models) {
     e->finish();
   }
 
