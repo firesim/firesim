@@ -188,7 +188,7 @@ class AWSPlatformLib(PlatformLib):
     def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
         # on AWS run farm instances are marked with 'fsimcluster'
         instances_filter = [
-                {'Name': 'tag:fsimcluster', 'Values': f'*{workflow_tag}*'},
+                {'Name': 'tag:fsimcluster', 'Values': [f'*{workflow_tag}*']},
                 {'Name': 'instance-type', 'Values': ['f1.2xlarge', 'f1.4xlarge', 'f1.16xlarge']},
                 ]
         ci_instances = get_instances_with_filter(instances_filter, allowed_states=['*'])
