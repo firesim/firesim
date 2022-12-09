@@ -8,6 +8,7 @@ from fabric.api import *
 import pytz
 import datetime
 import requests
+from xmlrpc.client import DateTime
 
 from ci_variables import ci_env
 from github_common import issue_post
@@ -17,7 +18,7 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.compute import ComputeManagementClient
 import azure.mgmt.resourcegraph as arg
 
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Iterable, Tuple
 
 # Reuse manager utilities
 # Note: GITHUB_WORKSPACE must not be used here because the persistent clone my not be initialized yet.
@@ -50,6 +51,19 @@ def get_platform_enum(platform_string: str) -> Platform:
         return Platform.ALL
     else:
         raise Exception(f"Invalid platform string: '{platform_string}'")
+
+def find_timed_out_resources(min_timeout: int, current_time: DateTime, resource_list: Iterable[Tuple]) -> list:
+    """
+    Because of the differences in how AWS and Azure store time tags, the resource_list
+    in this case is a list of tuples with the 0 index being the instance/vm and the 1 index
+    a datetime object corresponding to the time
+    """
+    timed_out = []
+    for resource_tuple in resource_list:
+        lifetime_secs = (current_time - resource_tuple[1]).total_seconds()
+        if lifetime_secs > (min_timeout * 60):
+            timed_out.append(resource_tuple[0])
+    return timed_out
 
 class PlatformLib(metaclass=abc.ABCMeta):
     """
@@ -273,21 +287,20 @@ class AWSPlatformLib(PlatformLib):
             self.client = boto3.client('ec2')
 
         instances = self.find_run_farm_ci_instances(workflow_tag)
-        terminated_insts = False
-        for inst in instances:
-            if (datetime.datetime.now() - inst['LaunchTime']) >= datetime.timedelta(minutes=timeout):
-                print("Uncaught run farm instance shutdown detected")
+        instances_to_terminate = find_timed_out_resources(
+                timeout,
+                datetime.datetime.utcnow().replace(tzinfo=pytz.UTC),
+                map(lambda x: (x, x['LaunchTime']), instances))
 
-                instids = [ inst.instance_id ]
-                self.client.terminate_instances(InstanceIds=instids, DryRun=False)
-
-                print(f"Terminated run farm instance {instids}")
-                terminated_insts = True
+        for inst in instances_to_terminate:
+            print("Uncaught run farm instance shutdown detected")
+            self.client.terminate_instances(InstanceIds=[inst['InstanceId']])
+            print(f"Terminated run farm instance {inst['InstanceId']}")
 
         # post comment after instances are terminated just in case there is an issue with posting
-        if terminated_insts:
+        if len(instances_to_terminate) > 0:
             issue_post(ci_env['PERSONAL_ACCESS_TOKEN'],
-                    f"Uncaught FPGA instance shutdown detected for CI run: {ci_env['GITHUB_RUN_ID']}. Verify CI state before submitting PR.")
+                    f"Uncaught {len(instances_to_terminate)} FPGA instance shutdown(s) detected for CI run: {ci_env['GITHUB_RUN_ID']}. Verify CI state before submitting PR.")
 
 
 class AzurePlatformLib(PlatformLib):
