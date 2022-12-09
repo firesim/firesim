@@ -32,7 +32,7 @@ public:
   virtual int exit_code() { return 0; }
 
 private:
-  const UARTBRIDGEMODULE_struct &mmio_addrs;
+  const UARTBRIDGEMODULE_struct mmio_addrs;
   serial_data_t<char> data;
   int inputfd;
   int outputfd;
