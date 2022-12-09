@@ -2,7 +2,7 @@
 
 package midas.targetutils
 
-import chisel3.dontTouch
+import chisel3._
 import chisel3.experimental.{ChiselAnnotation, annotate}
 
 import firrtl.annotations._
@@ -69,4 +69,21 @@ object GlobalResetCondition {
   def sink(target: chisel3.Bool): Unit = annotate(new ChiselAnnotation {
     def toFirrtl = GlobalResetConditionSink(target.toTarget)
   })
+
+  /**
+    * Generates a bool that will be driven by the global reset condition.
+    *
+    * Due to pecularities with when GG can run the wiring transform, this method
+    * must be used to produce a wire if a port cannot be annotated.
+    */
+  def produceSink(): chisel3.Bool = {
+    val globalResetConditionSinkModule = Module(new Module {
+      val in  = IO(Input(Bool()))
+      val out = IO(Output(Bool()))
+      out := in
+      GlobalResetCondition.sink(out)
+    })
+    globalResetConditionSinkModule.in := false.B
+    globalResetConditionSinkModule.out
+  }
 }

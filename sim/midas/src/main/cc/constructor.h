@@ -492,19 +492,50 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
 #endif
 
 #ifdef TERMINATIONBRIDGEMODULE_0_PRESENT
-    add_bridge_driver(new termination_t(simif,
-                                         args,
-                                         TERMINATIONBRIDGEMODULE_0_substruct_create,
-                                         TERMINATIONBRIDGEMODULE_0_message_count,
-                                         TERMINATIONBRIDGEMODULE_0_message_type,
-                                         TERMINATIONBRIDGEMODULE_0_message));
+  INSTANTIATE_TERMINATION(add_bridge_driver, 0)
 #endif
-
 #ifdef TERMINATIONBRIDGEMODULE_1_PRESENT
-    add_bridge_driver(new termination_t(simif,
-                                         args,
-                                         TERMINATIONBRIDGEMODULE_1_substruct_create,
-                                         TERMINATIONBRIDGEMODULE_1_message_count,
-                                         TERMINATIONBRIDGEMODULE_1_message_type,
-                                         TERMINATIONBRIDGEMODULE_1_message));
+  INSTANTIATE_TERMINATION(add_bridge_driver, 1)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_2_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 2)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_3_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 3)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_4_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 4)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_5_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 5)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_6_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 6)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_7_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 7)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_8_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 8)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_9_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 9)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_10_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 10)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_11_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 11)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_12_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 12)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_13_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 13)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_14_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 14)
+#endif
+#ifdef TERMINATIONBRIDGEMODULE_15_PRESENT
+  INSTANTIATE_TERMINATION(add_bridge_driver, 15)
 #endif

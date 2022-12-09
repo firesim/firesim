@@ -32,8 +32,8 @@ void termination_t::tick() { // reads the MMIOs at tick-rate
       this->fail = this->is_err[msg_id];
       test_done = true;
       std::cerr << "Termination Bridge detected exit on cycle "
-                << this->cycle_count() << " with message " << this->msgs[msg_id]
-                << std::endl;
+                << this->cycle_count() << " with message:" << std::endl
+                << this->msgs[msg_id] << std::endl;
     }
     tick_counter = 0;
   } else {

@@ -416,6 +416,8 @@ class TerminationF1Test extends TutorialSuite("TerminationModule") {
   1 to 10 foreach {x => runTest(backendSimulator, args = Seq("+termination-bridge-tick-rate=10", s"+seed=${x}"), shouldPass = true)}
 }
 
+class TerminationAssertF1Test extends TutorialSuite("TerminationModuleAssert")
+
 class CustomConstraintsF1Test extends TutorialSuite("CustomConstraints") {
   def readLines(filename: String): List[String] = {
     val file = new File(genDir, s"/${filename}")
@@ -449,6 +451,7 @@ class ChiselExampleDesigns extends Suites(
   new CustomConstraintsF1Test,
   // This test is known to fail non-deterministically. See https://github.com/firesim/firesim/issues/1147
   // new TerminationF1Test
+  new TerminationAssertF1Test,
 )
 
 class PrintfSynthesisCITests extends Suites(

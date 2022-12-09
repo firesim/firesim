@@ -7,6 +7,7 @@ import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
 import midas.widgets._
+import midas.targetutils.GlobalResetCondition
 
 class TerminationModuleIO(val params: TerminationBridgeParams) extends Bundle {
   val msgInCycle = Input(UInt(16.W))  //Cycle when error is valid
@@ -28,4 +29,17 @@ class TerminationModuleDUT extends Module {
 
 }
 
-class TerminationModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new TerminationModuleDUT)
+object TerminationModuleConstants {
+  val assertMessage = "TerminationBridge-implemented assertion failed"
+}
+
+class TerminationModuleAssertDUT extends Module {
+  val io = IO(new Bundle {
+    val shouldBeTrue = Input(Bool())
+    val globalResetCondition = Input(Bool())
+  })
+  GlobalResetCondition(io.globalResetCondition)
+  TerminationBridge.assert(io.shouldBeTrue, TerminationModuleConstants.assertMessage)
+}
+
+class TerminationModuleAssert(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new TerminationModuleAssertDUT)
