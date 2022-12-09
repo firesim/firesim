@@ -6,10 +6,12 @@
 class AssertModule_t : public simif_peek_poke_t {
 public:
   synthesized_assertions_t *assert_endpoint;
-  AssertModule_t(int argc, char **argv) {
-    std::vector<std::string> args(argv + 1, argv + argc);
+
+  AssertModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
+
     assert_endpoint =
-        new synthesized_assertions_t(this,
+        new synthesized_assertions_t(simif,
                                      args,
                                      ASSERTBRIDGEMODULE_0_substruct_create,
                                      ASSERTBRIDGEMODULE_0_assert_messages);
@@ -48,7 +50,7 @@ public:
                                      std::to_string(test_case));
         break;
       }
-      while (!done()) {
+      while (!simif->done()) {
         assert_endpoint->tick();
         if (assert_endpoint->terminate()) {
           assert_endpoint->resume();

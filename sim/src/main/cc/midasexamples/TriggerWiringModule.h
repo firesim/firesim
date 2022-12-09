@@ -6,15 +6,15 @@
 class TriggerWiringModule_t : public simif_peek_poke_t {
 public:
   std::vector<synthesized_assertions_t *> assert_endpoints;
-  TriggerWiringModule_t(int argc, char **argv) {
-    std::vector<std::string> args(argv + 1, argv + argc);
+  TriggerWiringModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
     assert_endpoints.push_back(
-        new synthesized_assertions_t(this,
+        new synthesized_assertions_t(simif,
                                      args,
                                      ASSERTBRIDGEMODULE_0_substruct_create,
                                      ASSERTBRIDGEMODULE_0_assert_messages));
     assert_endpoints.push_back(
-        new synthesized_assertions_t(this,
+        new synthesized_assertions_t(simif,
                                      args,
                                      ASSERTBRIDGEMODULE_1_substruct_create,
                                      ASSERTBRIDGEMODULE_1_assert_messages));
@@ -43,7 +43,7 @@ public:
     step(1);
     poke(reset, 0);
     step(10000, false);
-    while (!done() && !simulation_complete()) {
+    while (!simif->done() && !simulation_complete()) {
       for (auto ep : assert_endpoints) {
         ep->tick();
       }

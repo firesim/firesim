@@ -22,9 +22,10 @@
 // Note: This presents the same set of methods legacy simif_t used prior to
 // FireSim 1.13.
 
-class simif_peek_poke_t : public virtual simif_t {
+class simif_peek_poke_t {
 public:
-  simif_peek_poke_t();
+  simif_peek_poke_t(simif_t *simif,
+                    const PEEKPOKEBRIDGEMODULE_struct &mmio_addrs);
   virtual ~simif_peek_poke_t() {}
 
   void step(uint32_t n, bool blocking = true);
@@ -46,6 +47,10 @@ public:
 
   int teardown();
 
+protected:
+  // simulation interface
+  simif_t *simif;
+
 private:
   // simulation information
   bool log = true;
@@ -53,22 +58,22 @@ private:
   uint64_t t = 0;
   uint64_t fail_t = 0;
 
-  const PEEKPOKEBRIDGEMODULE_struct defaultiowidget_mmio_addrs;
+  const PEEKPOKEBRIDGEMODULE_struct mmio_addrs;
 
   bool wait_on(size_t flag_addr, double timeout) {
     midas_time_t start = timestamp();
-    while (!read(flag_addr))
+    while (!simif->read(flag_addr))
       if (diff_secs(timestamp(), start) > timeout)
         return false;
     return true;
   }
 
   bool wait_on_ready(double timeout) {
-    return wait_on(defaultiowidget_mmio_addrs.READY, timeout);
+    return wait_on(mmio_addrs.READY, timeout);
   }
 
   bool wait_on_stable_peeks(double timeout) {
-    return wait_on(defaultiowidget_mmio_addrs.PRECISE_PEEKABLE, timeout);
+    return wait_on(mmio_addrs.PRECISE_PEEKABLE, timeout);
   }
 
   std::string blocking_fail = "The test environment has starved the simulator, "

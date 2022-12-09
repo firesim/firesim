@@ -11,7 +11,7 @@
 #include <string_view>
 
 #define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
-  FUNC(new plusargs_t(this,                                                    \
+  FUNC(new plusargs_t(simif,                                                   \
                       args,                                                    \
                       PLUSARGSBRIDGEMODULE_##IDX##_substruct_create,           \
                       PLUSARGSBRIDGEMODULE_##IDX##_name,                       \
@@ -32,7 +32,7 @@
 class plusargs_t : public bridge_driver_t {
 public:
   plusargs_t(simif_t *sim,
-             std::vector<std::string> &args,
+             const std::vector<std::string> &args,
              const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
              const std::string_view name,
              const char *default_value,

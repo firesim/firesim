@@ -8,7 +8,9 @@ class Risc_t : public simif_peek_poke_t {
 public:
   uint32_t expected = 4;
   uint64_t timeout = 10;
-  Risc_t(int argc, char **argv) {}
+  Risc_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+
   void run() {
     app_t app;
     init_app(app);

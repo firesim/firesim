@@ -2,8 +2,10 @@
 
 #ifndef RTLSIM
 #include "simif_f1.h"
+#define SIMIF simif_f1_t
 #else
 #include "simif_emul.h"
+#define SIMIF simif_emul_t
 #endif
 
 // This is heinous i'm sorry...
@@ -97,24 +99,15 @@
 #include "CustomConstraints.h"
 #endif
 
-class dut_emul_t :
-#ifdef RTLSIM
-    public simif_emul_t,
-#else
-    public simif_f1_t,
-#endif
-    public DESIGNDRIVERCLASS {
+class dut_emul_t : public SIMIF, public DESIGNDRIVERCLASS {
 public:
-#ifdef RTLSIM
-  dut_emul_t(int argc, char **argv) : DESIGNDRIVERCLASS(argc, argv) {}
-#else
-  dut_emul_t(int argc, char **argv)
-      : simif_f1_t(argc, argv), DESIGNDRIVERCLASS(argc, argv) {}
-#endif
+  dut_emul_t(const std::vector<std::string> &args)
+      : SIMIF(args), DESIGNDRIVERCLASS(args, this) {}
 };
 
 int main(int argc, char **argv) {
-  dut_emul_t dut(argc, argv);
+  std::vector<std::string> args(argv + 1, argv + argc);
+  dut_emul_t dut(args);
   dut.init(argc, argv);
   dut.run();
   return dut.teardown();

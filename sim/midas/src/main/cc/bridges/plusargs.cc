@@ -22,7 +22,7 @@
  * @param [in] slice_addrs The MMIO addresses of the slices
  */
 plusargs_t::plusargs_t(simif_t *sim,
-                       std::vector<std::string> &args,
+                       const std::vector<std::string> &args,
                        const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
                        const std::string_view name_orig,
                        const char *default_value,
@@ -82,7 +82,7 @@ plusargs_t::plusargs_t(simif_t *sim,
   }
 }
 
-plusargs_t::~plusargs_t() { }
+plusargs_t::~plusargs_t() {}
 
 /**
  * Check if the overriden value was driven.

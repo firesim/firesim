@@ -4,7 +4,9 @@
 
 class GCD_t : public simif_peek_poke_t {
 public:
-  GCD_t(int argc, char **argv) {}
+  GCD_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+
   void run() {
     uint32_t a = 64, b = 48, z = 16; // test vectors
     target_reset();

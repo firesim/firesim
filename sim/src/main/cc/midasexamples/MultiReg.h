@@ -20,7 +20,8 @@ uint32_t inputs[] = {45, 9, 11, 13, 99, 2, 8, 15, 16, 12, 1};
 
 class MultiReg_t : public simif_peek_poke_t {
 public:
-  MultiReg_t(int argc, char **argv) {}
+  MultiReg_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
 
   void run() {
     target_reset();

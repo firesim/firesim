@@ -1,8 +1,10 @@
 // See LICENSE for license details.
 #ifndef RTLSIM
 #include "simif_f1.h"
+#define SIMIF simif_f1_t
 #else
 #include "simif_emul.h"
+#define SIMIF simif_emul_t
 #endif
 
 #include "fasedtests_top.h"
@@ -13,8 +15,9 @@
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 
-fasedtests_top_t::fasedtests_top_t(int argc, char **argv) {
-  std::vector<std::string> args(argv + 1, argv + argc);
+fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,
+                                   simif_t *simif)
+    : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -74,7 +77,8 @@ fasedtests_top_t::fasedtests_top_t(int argc, char **argv) {
                  FASEDMEMORYTIMINGMODEL_0_W_num_registers,
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_W_addrs,
                  (const char *const *)FASEDMEMORYTIMINGMODEL_0_W_names);
-  add_bridge_driver(new test_harness_bridge_t(this, fased_addr_map, args));
+  add_bridge_driver(
+      new test_harness_bridge_t(simif, this, fased_addr_map, args));
 }
 
 bool fasedtests_top_t::simulation_complete() {
@@ -111,24 +115,24 @@ int fasedtests_top_t::run() {
 
   if (do_zero_out_dram) {
     fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
-    zero_out_dram();
+    simif->zero_out_dram();
   }
   fprintf(stderr, "Commencing simulation.\n");
-  record_start_times();
+  simif->record_start_times();
 
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
     step(get_largest_stepsize(), false);
-    while (!done() && !simulation_complete()) {
+    while (!simif->done() && !simulation_complete()) {
       for (auto &e : bridges)
         e->tick();
     }
   }
 
-  record_end_times();
+  simif->record_end_times();
   fprintf(stderr, "\nSimulation complete.\n");
 
-  (void)actual_tcycle();
+  (void)simif->actual_tcycle();
 
   int exitcode = exit_code();
 
@@ -136,24 +140,25 @@ int fasedtests_top_t::run() {
   // indicating doneness, we've advanced to the +max_cycles limit in the fastest
   // target clock domain.
   bool max_cycles_timeout =
-      !simulation_complete() && done() && finished_scheduled_tasks();
+      !simulation_complete() && simif->done() && finished_scheduled_tasks();
 
   if (exitcode != 0) {
     fprintf(stderr,
             "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
             exitcode,
-            get_end_tcycle());
+            simif->get_end_tcycle());
   } else if (max_cycles_timeout) {
     fprintf(stderr,
             "*** FAILED *** +max_cycles specified timeout after %" PRIu64
             " cycles\n",
-            get_end_tcycle());
+            simif->get_end_tcycle());
   } else {
-    fprintf(
-        stderr, "*** PASSED *** after %" PRIu64 " cycles\n", get_end_tcycle());
+    fprintf(stderr,
+            "*** PASSED *** after %" PRIu64 " cycles\n",
+            simif->get_end_tcycle());
   }
 
-  print_simulation_performance_summary();
+  simif->print_simulation_performance_summary();
 
   for (auto e : fpga_models) {
     e->finish();
@@ -162,31 +167,20 @@ int fasedtests_top_t::run() {
   for (auto &e : bridges) {
     e->finish();
   }
-  this->host_finish();
+  simif->host_finish();
   return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 // top for RTL sim
-class fasedtests_driver_t :
-#ifdef RTLSIM
-    public simif_emul_t,
-    public fasedtests_top_t
-#else
-    public simif_f1_t,
-    public fasedtests_top_t
-#endif
-{
+class fasedtests_driver_t : public SIMIF, public fasedtests_top_t {
 public:
-#ifdef RTLSIM
-  fasedtests_driver_t(int argc, char **argv) : fasedtests_top_t(argc, argv){};
-#else
-  fasedtests_driver_t(int argc, char **argv)
-      : simif_f1_t(argc, argv), fasedtests_top_t(argc, argv){};
-#endif
+  fasedtests_driver_t(const std::vector<std::string> &args)
+      : SIMIF(args), fasedtests_top_t(args, this) {}
 };
 
 int main(int argc, char **argv) {
-  fasedtests_driver_t driver(argc, argv);
+  std::vector<std::string> args(argv + 1, argv + argc);
+  fasedtests_driver_t driver(args);
   driver.init(argc, argv);
   return driver.run();
 }

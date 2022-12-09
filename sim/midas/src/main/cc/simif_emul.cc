@@ -53,7 +53,7 @@ void finish() {
 
 void handle_sigterm(int sig) { finish(); }
 
-simif_emul_t::simif_emul_t() {
+simif_emul_t::simif_emul_t(const std::vector<std::string> &args) {
 
 #ifdef FPGA_MANAGED_AXI4_PRESENT
   // The final parameter, line size, is not used under mm_magic_t

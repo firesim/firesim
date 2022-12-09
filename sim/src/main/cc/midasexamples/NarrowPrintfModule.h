@@ -3,7 +3,9 @@
 #include "PrintfModule.h"
 class NarrowPrintfModule_t : public print_module_t {
 public:
-  NarrowPrintfModule_t(int argc, char **argv) : print_module_t(argc, argv){};
+  NarrowPrintfModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : print_module_t(args, simif) {}
+
   virtual void run() {
     for (auto &print_endpoint : print_endpoints) {
       print_endpoint->init();

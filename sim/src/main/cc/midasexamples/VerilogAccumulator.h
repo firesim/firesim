@@ -4,7 +4,8 @@
 
 class VerilogAccumulator_t : public simif_peek_poke_t {
 public:
-  VerilogAccumulator_t(int argc, char **argv) {}
+  VerilogAccumulator_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
   void run() {
     uint32_t inputs[] = {4, 18, 9, 77, 5, 3};
     uint32_t i, total = 0;

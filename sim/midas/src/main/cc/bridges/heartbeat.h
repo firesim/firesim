@@ -16,7 +16,7 @@
 class heartbeat_t : public bridge_driver_t {
 
 public:
-  heartbeat_t(simif_t *sim, std::vector<std::string> &args);
+  heartbeat_t(simif_t *sim, const std::vector<std::string> &args);
   virtual void init(){};
   virtual void tick();
   virtual bool terminate() { return has_timed_out; };

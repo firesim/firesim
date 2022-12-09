@@ -22,7 +22,8 @@ const size_t reg_r_data_ios[reg_n_reads] = {io_reads_0_data, io_reads_1_data};
 
 struct Regfile_t : public simif_peek_poke_t {
 
-  Regfile_t(int argc, char **argv) {}
+  Regfile_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
 
   void run() {
     target_reset();

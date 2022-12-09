@@ -49,7 +49,8 @@ const size_t multireg_r_data_ios[multireg_n_copies][multireg_n_reads] = {
 
 class MultiRegfile_t : public simif_peek_poke_t {
 public:
-  MultiRegfile_t(int argc, char **argv) {}
+  MultiRegfile_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
 
   void run() {
     target_reset();

@@ -8,7 +8,9 @@ uint32_t i1[] = {9, 1, 2, 6, 5, 3, 5, 2, 1, 7, 6, 5, 4, 3, 2, 1};
 
 class NestedModels_t : public simif_peek_poke_t {
 public:
-  NestedModels_t(int argc, char **argv) {}
+  NestedModels_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+
   int ntests = sizeof(i0) / sizeof(i0[0]);
   int latency = 3;
   void run() {

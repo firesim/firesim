@@ -2,7 +2,7 @@
 
 #include <inttypes.h>
 
-heartbeat_t::heartbeat_t(simif_t *sim, std::vector<std::string> &args)
+heartbeat_t::heartbeat_t(simif_t *sim, const std::vector<std::string> &args)
     : bridge_driver_t(sim), sim(sim) {
   auto interval_arg = std::string("+heartbeat-polling-interval=");
   for (auto arg : args) {

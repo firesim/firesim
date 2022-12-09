@@ -6,7 +6,7 @@
 
 synthesized_assertions_t::synthesized_assertions_t(
     simif_t *sim,
-    std::vector<std::string> &args,
+    const std::vector<std::string> &args,
     const ASSERTBRIDGEMODULE_struct &mmio_addrs,
     const char *const *msgs)
     : bridge_driver_t(sim), mmio_addrs(mmio_addrs), msgs(msgs) {

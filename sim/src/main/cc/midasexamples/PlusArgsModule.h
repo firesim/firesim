@@ -44,9 +44,8 @@ public:
    * @param [in] argc The standard argc from main()
    * @param [in] argv The standard argv from main()
    */
-  PlusArgsModule_t(int argc, char **argv) {
-
-    std::vector<std::string> args(argv + 1, argv + argc);
+  PlusArgsModule_t(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create) {
     parse_key(args);
 
     // this macro nominally goes in firesim_top.cc

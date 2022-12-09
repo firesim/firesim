@@ -8,7 +8,7 @@
 class synthesized_assertions_t : public bridge_driver_t {
 public:
   synthesized_assertions_t(simif_t *sim,
-                           std::vector<std::string> &args,
+                           const std::vector<std::string> &args,
                            const ASSERTBRIDGEMODULE_struct &mmio_addrs,
                            const char *const *msgs);
   ~synthesized_assertions_t();

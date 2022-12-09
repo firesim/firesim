@@ -49,7 +49,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd) {
   }
 
 simplenic_t::simplenic_t(simif_t *sim,
-                         std::vector<std::string> &args,
+                         const std::vector<std::string> &args,
                          const SIMPLENICBRIDGEMODULE_struct &mmio_addrs,
                          int simplenicno,
                          const int stream_to_cpu_idx,

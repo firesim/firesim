@@ -24,7 +24,7 @@ struct serial_data_t {
 // Bridge Driver Instantiation Template
 // Casts are required for now since the emitted type can change
 #define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
-  FUNC(new serial_t(this,                                                      \
+  FUNC(new serial_t(simif,                                                     \
                     args,                                                      \
                     SERIALBRIDGEMODULE_##IDX##_substruct_create,               \
                     IDX,                                                       \

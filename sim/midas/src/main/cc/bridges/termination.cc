@@ -5,7 +5,7 @@
 
 termination_t::termination_t(simif_t *sim,
                              std::vector<std::string> &args,
-                             TERMINATIONBRIDGEMODULE_struct *mmio_addrs,
+                             const TERMINATIONBRIDGEMODULE_struct &mmio_addrs,
                              unsigned int num_messages,
                              unsigned int *is_err,
                              const char *const *msgs)
@@ -22,12 +22,12 @@ termination_t::termination_t(simif_t *sim,
   }
 }
 
-termination_t::~termination_t() { free(this->mmio_addrs); }
+termination_t::~termination_t() {}
 
 void termination_t::tick() { // reads the MMIOs at tick-rate
   if (tick_counter == tick_rate) {
-    if (read(this->mmio_addrs->out_status)) {
-      int msg_id = read(this->mmio_addrs->out_terminationCode);
+    if (read(mmio_addrs.out_status)) {
+      int msg_id = read(mmio_addrs.out_terminationCode);
       assert(msg_id < this->num_messages);
       this->fail = this->is_err[msg_id];
       test_done = true;
@@ -42,14 +42,14 @@ void termination_t::tick() { // reads the MMIOs at tick-rate
 }
 
 const char *termination_t::exit_message() {
-  int msg_id = read(this->mmio_addrs->out_terminationCode);
+  int msg_id = read(mmio_addrs.out_terminationCode);
   return this->msgs[msg_id];
 }
 
 int termination_t::cycle_count() {
-  write(this->mmio_addrs->out_counter_latch, 1);
-  uint32_t cycle_l = read(this->mmio_addrs->out_counter_0);
-  uint32_t cycle_h = read(this->mmio_addrs->out_counter_1);
+  write(mmio_addrs.out_counter_latch, 1);
+  uint32_t cycle_l = read(mmio_addrs.out_counter_0);
+  uint32_t cycle_h = read(mmio_addrs.out_counter_1);
   return (((uint64_t)cycle_h) << 32) | cycle_l;
 }
 

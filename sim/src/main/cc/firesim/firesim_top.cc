@@ -21,9 +21,9 @@
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 
-firesim_top_t::firesim_top_t(int argc, char **argv) {
-  std::vector<std::string> args(argv + 1, argv + argc);
-
+firesim_top_t::firesim_top_t(const std::vector<std::string> &args,
+                             simif_t *simif)
+    : simif(simif) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -39,7 +39,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
     }
   }
 
-  add_bridge_driver(new heartbeat_t(this, args));
+  add_bridge_driver(new heartbeat_t(simif, args));
 
 #ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
   INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
@@ -51,7 +51,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
   // instance which you may use to conditionally instantiate your driver
 #ifdef UARTBRIDGEMODULE_0_PRESENT
   // Instantiate the driver; register it in the main simulation class
-  add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_0_substruct_create, 0));
+  add_bridge_driver(new uart_t(simif, UARTBRIDGEMODULE_0_substruct_create, 0));
 #endif
 
 // Repeat the code above with modified indices as many times as necessary
@@ -179,7 +179,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 
 #ifdef BLOCKDEVBRIDGEMODULE_struct_guard
 #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_0_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_0_latency_bits,
@@ -187,7 +187,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    0));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_1_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_1_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_1_latency_bits,
@@ -195,7 +195,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    1));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_2_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_2_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_2_latency_bits,
@@ -203,7 +203,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    2));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_3_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_3_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_3_latency_bits,
@@ -211,7 +211,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    3));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_4_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_4_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_4_latency_bits,
@@ -219,7 +219,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    4));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_5_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_5_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_5_latency_bits,
@@ -227,7 +227,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    5));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_6_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_6_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_6_latency_bits,
@@ -235,7 +235,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
                                    6));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_7_PRESENT
-  add_bridge_driver(new blockdev_t(this,
+  add_bridge_driver(new blockdev_t(simif,
                                    args,
                                    BLOCKDEVBRIDGEMODULE_7_num_trackers,
                                    BLOCKDEVBRIDGEMODULE_7_latency_bits,
@@ -373,7 +373,7 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 #ifdef DROMAJOBRIDGEMODULE_struct_guard
 #ifdef DROMAJOBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new dromajo_t(
-            this, args,
+            simif, args,
             DROMAJOBRIDGEMODULE_0_iaddr_width,
             DROMAJOBRIDGEMODULE_0_insn_width,
             DROMAJOBRIDGEMODULE_0_wdata_width,
@@ -390,35 +390,35 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 #ifdef GROUNDTESTBRIDGEMODULE_struct_guard
 #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_1_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_1_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_1_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_2_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_2_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_2_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_3_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_3_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_3_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_4_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_4_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_4_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_5_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_5_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_5_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_6_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_6_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_6_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_7_PRESENT
     add_bridge_driver(new groundtest_t(
-            this, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
+            simif, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
 #endif
 #endif
 
@@ -448,42 +448,42 @@ firesim_top_t::firesim_top_t(int argc, char **argv) {
 #endif
 
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_0_substruct_create,
                                                    ASSERTBRIDGEMODULE_0_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_1_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_1_substruct_create,
                                                    ASSERTBRIDGEMODULE_1_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_2_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_2_substruct_create,
                                                    ASSERTBRIDGEMODULE_2_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_3_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_3_substruct_create,
                                                    ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_4_substruct_create,
                                                    ASSERTBRIDGEMODULE_4_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_5_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_5_substruct_create,
                                                    ASSERTBRIDGEMODULE_5_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_6_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_6_substruct_create,
                                                    ASSERTBRIDGEMODULE_6_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_7_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(this, args,
+    add_bridge_driver(new synthesized_assertions_t(simif, args,
                                                    ASSERTBRIDGEMODULE_7_substruct_create,
                                                    ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
@@ -578,22 +578,22 @@ void firesim_top_t::run() {
 
   if (do_zero_out_dram) {
     fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few minutes...\n");
-    zero_out_dram();
+    simif->zero_out_dram();
   }
 
   fprintf(stderr, "Commencing simulation.\n");
-  record_start_times();
+  simif->record_start_times();
 
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
-    take_steps(get_largest_stepsize(), false);
-    while (!done() && !simulation_complete()) {
+    simif->take_steps(get_largest_stepsize(), false);
+    while (!simif->done() && !simulation_complete()) {
       for (auto &e : bridges)
         e->tick();
     }
   }
 
-  record_end_times();
+  simif->record_end_times();
   fprintf(stderr, "\nSimulation complete.\n");
 }
 
@@ -604,24 +604,25 @@ int firesim_top_t::teardown() {
   // indicating doneness, we've advanced to the +max_cycles limit in the
   // fastest target clock domain.
   bool max_cycles_timeout =
-      !simulation_complete() && done() && finished_scheduled_tasks();
+      !simulation_complete() && simif->done() && finished_scheduled_tasks();
 
   if (exitcode != 0) {
     fprintf(stderr,
             "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
             exitcode,
-            get_end_tcycle());
+            simif->get_end_tcycle());
   } else if (max_cycles_timeout) {
     fprintf(stderr,
             "*** FAILED *** +max_cycles specified timeout after %" PRIu64
             " cycles\n",
-            get_end_tcycle());
+            simif->get_end_tcycle());
   } else {
-    fprintf(
-        stderr, "*** PASSED *** after %" PRIu64 " cycles\n", get_end_tcycle());
+    fprintf(stderr,
+            "*** PASSED *** after %" PRIu64 " cycles\n",
+            simif->get_end_tcycle());
   }
 
-  print_simulation_performance_summary();
+  simif->print_simulation_performance_summary();
 
   for (auto &e : fpga_models) {
     e->finish();
@@ -631,6 +632,6 @@ int firesim_top_t::teardown() {
     e->finish();
   }
 
-  this->host_finish();
+  simif->host_finish();
   return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
