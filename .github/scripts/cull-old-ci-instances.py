@@ -54,7 +54,7 @@ def cull_aws_instances(current_time: DateTime) -> None:
         client.terminate_instances(InstanceIds=[inst['InstanceId']])
         print("  " + inst['InstanceId'])
 
-    if len(instances_to_terminate > 0):
+    if len(instances_to_terminate) > 0:
         exit(1)
 
 def cull_azure_resources(current_time: DateTime) -> None:
@@ -73,7 +73,7 @@ def cull_azure_resources(current_time: DateTime) -> None:
         deregister_runners(ci_env['PERSONAL_ACCESS_TOKEN'], f"azure-{ci_env['GITHUB_RUN_ID']}")
         azure_platform_lib.terminate_azure_vms([vm]) #prints are handled in here
 
-    if len(vms_to_terminate > 0):
+    if len(vms_to_terminate) > 0:
         exit(1)
 
 def main():

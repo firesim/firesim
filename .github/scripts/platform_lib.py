@@ -275,7 +275,7 @@ class AWSPlatformLib(PlatformLib):
         instances = self.find_run_farm_ci_instances(workflow_tag)
         terminated_insts = False
         for inst in instances:
-            if (datetime.datetime.now() - inst.launch_time) >= datetime.timedelta(minutes=timeout):
+            if (datetime.datetime.now() - inst['LaunchTime']) >= datetime.timedelta(minutes=timeout):
                 print("Uncaught run farm instance shutdown detected")
 
                 instids = [ inst.instance_id ]
