@@ -62,7 +62,7 @@ emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 verilator_conf := rtlsim/ml-verilator-conf.vlt
 verilator_wrapper_v := $(v_dir)/verilator_top.sv
-verilator_harness := emul/verilator-harness.cc
+verilator_harness := simif_emul_verilator.cc
 top_module := verilator_top
 include rtlsim/Makefrag-verilator
 
@@ -71,7 +71,7 @@ verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug
 
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/vcs_top.v
-vcs_harness := emul/vcs-harness.cc
+vcs_harness := emul/vcs-harness.cc simif_emul_vcs.cc
 TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs

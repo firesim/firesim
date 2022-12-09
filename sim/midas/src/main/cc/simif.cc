@@ -15,19 +15,14 @@ double diff_secs(midas_time_t end, midas_time_t start) {
   return ((double)(end - start)) / TIME_DIV_CONST;
 }
 
-simif_t::simif_t()
-    : master_mmio_addrs(SIMULATIONMASTER_0_substruct_create),
-      loadmem_mmio_addrs(LOADMEMWIDGET_0_substruct_create),
-      clock_bridge_mmio_addrs(CLOCKBRIDGEMODULE_0_substruct_create) {}
+extern std::unique_ptr<simulation_t>
+create_simulation(const std::vector<std::string> &args, simif_t *simif);
 
-void simif_t::init(int argc, char **argv) {
-  // Do any post-constructor initialization required before requesting MMIO
-  this->host_init(argc, argv);
-  while (!read(master_mmio_addrs.INIT_DONE))
-    ;
-  std::vector<std::string> args(argv + 1, argv + argc);
-  std::string loadmem;
-  bool fastloadmem = false;
+simif_t::simif_t(const std::vector<std::string> &args)
+    : sim(create_simulation(args, this)),
+      master_mmio_addrs(SIMULATIONMASTER_0_substruct_create),
+      loadmem_mmio_addrs(LOADMEMWIDGET_0_substruct_create),
+      clock_bridge_mmio_addrs(CLOCKBRIDGEMODULE_0_substruct_create) {
   for (auto &arg : args) {
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
@@ -39,17 +34,45 @@ void simif_t::init(int argc, char **argv) {
       seed = strtoll(arg.c_str() + 6, NULL, 10);
       fprintf(stderr, "Using custom SEED: %ld\n", seed);
     }
+    if (arg.find("+zero-out-dram") == 0) {
+      do_zero_out_dram = true;
+    }
   }
+
   gen.seed(seed);
   fprintf(stderr,
           "random min: 0x%" PRIx64 ", random max: 0x%" PRIx64 "\n",
           gen.min(),
           gen.max());
+}
+
+void simif_t::target_init() {
+  // Do any post-constructor initialization required before requesting MMIO
+  while (!read(master_mmio_addrs.INIT_DONE))
+    ;
   if (!fastloadmem && !loadmem.empty()) {
     load_mem(loadmem.c_str());
   }
-  // This can be called again if a later start time is desired
+}
+
+int simif_t::simulation_run() {
+  target_init();
+
+  if (do_zero_out_dram) {
+    fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
+    zero_out_dram();
+  }
+
+  sim->simulation_init();
+
   record_start_times();
+  int exitcode = sim->simulation_run();
+  record_end_times();
+
+  sim->simulation_finish();
+
+  print_simulation_performance_summary();
+  return exitcode;
 }
 
 uint64_t simif_t::actual_tcycle() {
@@ -148,6 +171,7 @@ void simif_t::record_end_times() {
   this->end_tcycle = actual_tcycle();
   this->end_hcycle = hcycle();
 }
+
 void simif_t::print_simulation_performance_summary() {
   // Must call record_start_times and record_end_times before invoking this
   // function

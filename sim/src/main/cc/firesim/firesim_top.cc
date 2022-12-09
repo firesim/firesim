@@ -23,7 +23,7 @@
 
 firesim_top_t::firesim_top_t(const std::vector<std::string> &args,
                              simif_t *simif)
-    : simif(simif) {
+    : simulation_t(args), simif(simif) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -34,26 +34,6 @@ firesim_top_t::firesim_top_t(const std::vector<std::string> &args,
     if (arg.find("+profile-interval=") == 0) {
       profile_interval = atoi(arg.c_str() + 18);
     }
-    if (arg.find("+zero-out-dram") == 0) {
-      do_zero_out_dram = true;
-    }
-  }
-
-  add_bridge_driver(new heartbeat_t(simif, args));
-
-  // DOC include start: Bridge Driver Registration
-  // Here we instantiate our driver once for each bridge in the target
-  // Golden Gate emits a <BridgeModuleClassName>_<id>_PRESENT macro for each
-  // instance which you may use to conditionally instantiate your driver.
-  // This file can be included in the setup method of any top-level to pass
-  // an instance of each driver to the `add_bridge_driver` method. Drivers can
-  // be distinguished by overloading the method with the appropriate type.
-#include "constructor.h"
-  // DOC include end: Bridge Driver Registration
-
-  // Add functions you'd like to periodically invoke on a paused simulator here.
-  if (profile_interval != -1) {
-    register_task([this]() { return this->profile_models(); }, 0);
   }
 }
 
@@ -80,7 +60,24 @@ int firesim_top_t::exit_code() {
   return 0;
 }
 
-void firesim_top_t::run() {
+void firesim_top_t::simulation_init() {
+  add_bridge_driver(new heartbeat_t(simif, args));
+
+  // DOC include start: Bridge Driver Registration
+  // Here we instantiate our driver once for each bridge in the target
+  // Golden Gate emits a <BridgeModuleClassName>_<id>_PRESENT macro for each
+  // instance which you may use to conditionally instantiate your driver.
+  // This file can be included in the setup method of any top-level to pass
+  // an instance of each driver to the `add_bridge_driver` method. Drivers can
+  // be distinguished by overloading the method with the appropriate type.
+#include "constructor.h"
+  // DOC include end: Bridge Driver Registration
+
+  // Add functions you'd like to periodically invoke on a paused simulator here.
+  if (profile_interval != -1) {
+    register_task([this]() { return this->profile_models(); }, 0);
+  }
+
   for (auto &e : fpga_models) {
     e->init();
   }
@@ -88,14 +85,10 @@ void firesim_top_t::run() {
   for (auto &e : bridges) {
     e->init();
   }
+}
 
-  if (do_zero_out_dram) {
-    fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few minutes...\n");
-    simif->zero_out_dram();
-  }
-
+int firesim_top_t::simulation_run() {
   fprintf(stderr, "Commencing simulation.\n");
-  simif->record_start_times();
 
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
@@ -106,13 +99,9 @@ void firesim_top_t::run() {
     }
   }
 
-  simif->record_end_times();
   fprintf(stderr, "\nSimulation complete.\n");
-}
 
-int firesim_top_t::teardown() {
   int exitcode = exit_code();
-
   // If the simulator is idle and we've gotten here without any bridge
   // indicating doneness, we've advanced to the +max_cycles limit in the
   // fastest target clock domain.
@@ -123,20 +112,22 @@ int firesim_top_t::teardown() {
     fprintf(stderr,
             "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
             exitcode,
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   } else if (max_cycles_timeout) {
     fprintf(stderr,
             "*** FAILED *** +max_cycles specified timeout after %" PRIu64
             " cycles\n",
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   } else {
     fprintf(stderr,
             "*** PASSED *** after %" PRIu64 " cycles\n",
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   }
 
-  simif->print_simulation_performance_summary();
+  return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
+}
 
+void firesim_top_t::simulation_finish() {
   for (auto &e : fpga_models) {
     e->finish();
   }
@@ -144,7 +135,9 @@ int firesim_top_t::teardown() {
   for (auto &e : bridges) {
     e->finish();
   }
+}
 
-  simif->host_finish();
-  return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
+std::unique_ptr<simulation_t>
+create_simulation(const std::vector<std::string> &args, simif_t *simif) {
+  return std::make_unique<firesim_top_t>(args, simif);
 }

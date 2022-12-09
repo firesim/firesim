@@ -11,13 +11,14 @@
 
 #include "bridges/synthesized_prints.h"
 
-class firesim_top_t : public systematic_scheduler_t {
+class firesim_top_t : public systematic_scheduler_t, public simulation_t {
 public:
   firesim_top_t(const std::vector<std::string> &args, simif_t *simif);
   ~firesim_top_t() {}
 
-  virtual void run();
-  int teardown();
+  void simulation_init();
+  void simulation_finish();
+  int simulation_run();
 
 protected:
   void add_bridge_driver(bridge_driver_t *bridge) {
@@ -41,9 +42,6 @@ private:
   // registers in models
   uint64_t profile_interval = -1;
   uint64_t profile_models();
-
-  // If set, will write all zeros to fpga dram before commencing simulation
-  bool do_zero_out_dram = false;
 
   // Returns true if any bridge has signaled for simulation termination
   bool simulation_complete();

@@ -1,59 +1,38 @@
 // See LICENSE for license details.
 
 #include "simif_emul.h"
-#ifdef VCS
-#include "emul/vcs_main.h"
-#include <emul/context.h>
-#else
-#include <verilated.h>
-#if VM_TRACE
-#include <verilated_vcd_c.h>
-#endif
-#endif
-#include <signal.h>
 
 #include "bridges/cpu_managed_stream.h"
 
-uint64_t main_time = 0;
+simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
+    : simif_t(args) {
 
-#ifdef VCS
-context_t *host;
-context_t target;
-bool vcs_rst = false;
-bool vcs_fin = false;
-#else
-Vverilator_top *top = NULL;
-#if VM_TRACE
-VerilatedVcdC *tfp = NULL;
-#endif // VM_TRACE
-double sc_time_stamp() { return (double)main_time; }
-extern void tick();
-#endif // VCS
+  for (auto arg : args) {
+    if (arg.find("+waveform=") == 0) {
+      waveform = arg.c_str() + 10;
+    }
+    if (arg.find("+loadmem=") == 0) {
+      loadmem = arg.c_str() + 9;
+    }
+    if (arg.find("+fastloadmem") == 0) {
+      fastloadmem = true;
+    }
+    if (arg.find("+memsize=") == 0) {
+      memsize = strtoll(arg.c_str() + 9, NULL, 10);
+    }
+    if (arg.find("+fuzz-host-timing=") == 0) {
+      maximum_host_delay = atoi(arg.c_str() + 18);
+    }
+  }
 
-mmio_t *simif_emul_t::master = new mmio_t(CTRL_BEAT_BYTES);
-mmio_t *simif_emul_t::cpu_managed_axi4 =
-    new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
-
-mm_t *simif_emul_t::slave[MEM_NUM_CHANNELS] = {nullptr};
-
-mm_t *simif_emul_t::cpu_mem = new mm_magic_t;
-
-void finish() {
-#ifdef VCS
-  vcs_fin = true;
-  target.switch_to();
-#else
-#if VM_TRACE
-  if (tfp)
-    tfp->close();
-  delete tfp;
-#endif // VM_TRACE
-#endif // VCS
-}
-
-void handle_sigterm(int sig) { finish(); }
-
-simif_emul_t::simif_emul_t(const std::vector<std::string> &args) {
+  master = new mmio_t(CTRL_BEAT_BYTES);
+  cpu_managed_axi4 = new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
+  slave = new mm_t *[MEM_NUM_CHANNELS];
+  cpu_mem = new mm_magic_t;
+  for (int i = 0; i < MEM_NUM_CHANNELS; i++) {
+    slave[i] = (mm_t *)new mm_magic_t;
+    slave[i]->init(memsize, MEM_BEAT_BYTES, 64);
+  }
 
 #ifdef FPGA_MANAGED_AXI4_PRESENT
   // The final parameter, line size, is not used under mm_magic_t
@@ -97,84 +76,19 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args) {
 
 simif_emul_t::~simif_emul_t(){};
 
-void simif_emul_t::host_init(int argc, char **argv) {
-  // Parse args
-  std::vector<std::string> args(argv + 1, argv + argc);
-  std::string waveform = "dump.vcd";
-  std::string loadmem;
-  bool fastloadmem = false;
-  uint64_t memsize = 1L << MEM_ADDR_BITS;
-  for (auto arg : args) {
-    if (arg.find("+waveform=") == 0) {
-      waveform = arg.c_str() + 10;
-    }
-    if (arg.find("+loadmem=") == 0) {
-      loadmem = arg.c_str() + 9;
-    }
-    if (arg.find("+fastloadmem") == 0) {
-      fastloadmem = true;
-    }
-    if (arg.find("+memsize=") == 0) {
-      memsize = strtoll(arg.c_str() + 9, NULL, 10);
-    }
-    if (arg.find("+fuzz-host-timing=") == 0) {
-      maximum_host_delay = atoi(arg.c_str() + 18);
-    }
-  }
-
-  for (int mem_channel_index = 0; mem_channel_index < MEM_NUM_CHANNELS;
-       mem_channel_index++) {
-    slave[mem_channel_index] = (mm_t *)new mm_magic_t;
-    slave[mem_channel_index]->init(memsize, MEM_BEAT_BYTES, 64);
-  }
-
+int simif_emul_t::run() {
   if (fastloadmem && !loadmem.empty()) {
     fprintf(stdout, "[fast loadmem] %s\n", loadmem.c_str());
     load_mems(loadmem.c_str());
   }
 
-  signal(SIGTERM, handle_sigterm);
-#ifdef VCS
-  host = context_t::current();
-  target_args_t *targs = new target_args_t(argc, argv);
-  target.init(target_thread, targs);
-  vcs_rst = true;
-  for (size_t i = 0; i < 10; i++)
-    target.switch_to();
-  vcs_rst = false;
-#else
-  Verilated::commandArgs(argc, argv); // Remember args
+  sim_init();
 
-  top = new Vverilator_top;
-#if VM_TRACE // If emul was invoked with --trace
-  tfp = new VerilatedVcdC;
-  Verilated::traceEverOn(true); // Verilator must compute traced signals
-  VL_PRINTF("Enabling waves: %s\n", waveform.c_str());
-  top->trace(tfp, 99);         // Trace 99 levels of hierarchy
-  tfp->open(waveform.c_str()); // Open the dump file
-#endif       // VM_TRACE
+  int exit_code = simulation_run();
 
-  top->reset = 1;
-  for (size_t i = 0; i < 10; i++)
-    ::tick();
-  top->reset = 0;
-#endif
-}
+  finish();
 
-int simif_emul_t::host_finish() {
-  ::finish();
-  return 0;
-}
-
-void simif_emul_t::advance_target() {
-  int cycles_to_wait = rand_next(maximum_host_delay) + 1;
-  for (int i = 0; i < cycles_to_wait; i++) {
-#ifdef VCS
-    target.switch_to();
-#else
-    ::tick();
-#endif
-  }
+  return exit_code;
 }
 
 void simif_emul_t::wait_write(mmio_t *mmio) {

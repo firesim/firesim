@@ -44,10 +44,10 @@ public:
   /**
    * Constructor.
    *
-   * @param [in] argc The standard argc from main()
-   * @param [in] argv The standard argv from main()
+   * @param [in] args The argument list from main
    */
-  TestPlusArgsModule(const std::vector<std::string> &args) : TestHarness(args) {
+  TestPlusArgsModule(const std::vector<std::string> &args, simif_t *simif)
+      : TestHarness(args, simif) {
     parse_key(args);
   }
 

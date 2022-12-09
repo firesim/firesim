@@ -95,10 +95,10 @@ DRIVER_H = \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
 
 DRIVER_CC = \
-		$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top systematic_scheduler firesim_$(PLATFORM))) \
-	    $(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
-	    $(RISCV)/lib/libfesvr.a \
-	    $(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
+	$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top systematic_scheduler)) \
+	$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
+	$(RISCV)/lib/libfesvr.a \
+	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
 # Disable missing override warning for testchipip.
 TARGET_CXX_FLAGS += -g \

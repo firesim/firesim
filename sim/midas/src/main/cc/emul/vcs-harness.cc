@@ -1,15 +1,14 @@
-#include "simif_emul.h"
+
 #include <DirectC.h>
 #include <cassert>
 #include <cmath>
 #include <exception>
-#include <fesvr/context.h>
 #include <stdio.h>
 
-extern context_t *host;
-extern bool vcs_fin;
-extern bool vcs_rst;
-extern uint64_t main_time;
+#include "context.h"
+#include "simif_emul_vcs.h"
+
+extern simif_emul_vcs_t *emulator;
 
 constexpr size_t CTRL_DATA_SIZE = CTRL_BEAT_BYTES / sizeof(uint32_t);
 constexpr size_t CPU_MANAGED_AXI4_DATA_SIZE =
@@ -294,8 +293,8 @@ void tick(vc_handle reset,
   try {
     // The driver ucontext is initialized before spawning the VCS
     // context, so these pointers should be initialized.
-    assert(simif_emul_t::cpu_managed_axi4 != nullptr);
-    assert(simif_emul_t::master != nullptr);
+    assert(emulator->cpu_managed_axi4 != nullptr);
+    assert(emulator->master != nullptr);
 
     static_assert(CPU_MANAGED_AXI4_STRB_SIZE <= 2);
 
@@ -304,16 +303,16 @@ void tick(vc_handle reset,
       ctrl_r_data[i] = vc_4stVectorRef(ctrl_r_bits_data)[i].d;
     }
 
-    simif_emul_t::master->tick(vcs_rst,
-                               vc_getScalar(ctrl_ar_ready),
-                               vc_getScalar(ctrl_aw_ready),
-                               vc_getScalar(ctrl_w_ready),
-                               getScalarOrVector(ctrl_r_bits_id, CTRL_ID_BITS),
-                               ctrl_r_data,
-                               vc_getScalar(ctrl_r_bits_last),
-                               vc_getScalar(ctrl_r_valid),
-                               getScalarOrVector(ctrl_b_bits_id, CTRL_ID_BITS),
-                               vc_getScalar(ctrl_b_valid));
+    emulator->master->tick(emulator->vcs_rst,
+                           vc_getScalar(ctrl_ar_ready),
+                           vc_getScalar(ctrl_aw_ready),
+                           vc_getScalar(ctrl_w_ready),
+                           getScalarOrVector(ctrl_r_bits_id, CTRL_ID_BITS),
+                           ctrl_r_data,
+                           vc_getScalar(ctrl_r_bits_last),
+                           vc_getScalar(ctrl_r_valid),
+                           getScalarOrVector(ctrl_b_bits_id, CTRL_ID_BITS),
+                           vc_getScalar(ctrl_b_valid));
 
 #ifdef CPU_MANAGED_AXI4_PRESENT
     assert(CPU_MANAGED_AXI4_STRB_SIZE <= 2);
@@ -323,8 +322,8 @@ void tick(vc_handle reset,
           vc_4stVectorRef(cpu_managed_axi4_r_bits_data)[i].d;
     }
 
-    simif_emul_t::cpu_managed_axi4->tick(
-        vcs_rst,
+    emulator->cpu_managed_axi4->tick(
+        emulator->vcs_rst,
         vc_getScalar(cpu_managed_axi4_ar_ready),
         vc_getScalar(cpu_managed_axi4_aw_ready),
         vc_getScalar(cpu_managed_axi4_w_ready),
@@ -350,29 +349,28 @@ void tick(vc_handle reset,
           vc_4stVectorRef(fpga_managed_axi4_w_bits_strb)[i].d;
     }
 
-    simif_emul_t::cpu_mem->tick(
-        vcs_rst,
-        vc_getScalar(fpga_managed_axi4_ar_valid),
-        vc_4stVectorRef(fpga_managed_axi4_ar_bits_addr)->d,
-        getScalarOrVector(fpga_managed_axi4_ar_bits_id,
-                          FPGA_MANAGED_AXI4_ID_BITS),
-        vc_4stVectorRef(fpga_managed_axi4_ar_bits_size)->d,
-        vc_4stVectorRef(fpga_managed_axi4_ar_bits_len)->d,
+    emulator->cpu_mem->tick(emulator->vcs_rst,
+                            vc_getScalar(fpga_managed_axi4_ar_valid),
+                            vc_4stVectorRef(fpga_managed_axi4_ar_bits_addr)->d,
+                            getScalarOrVector(fpga_managed_axi4_ar_bits_id,
+                                              FPGA_MANAGED_AXI4_ID_BITS),
+                            vc_4stVectorRef(fpga_managed_axi4_ar_bits_size)->d,
+                            vc_4stVectorRef(fpga_managed_axi4_ar_bits_len)->d,
 
-        vc_getScalar(fpga_managed_axi4_aw_valid),
-        vc_4stVectorRef(fpga_managed_axi4_aw_bits_addr)->d,
-        getScalarOrVector(fpga_managed_axi4_aw_bits_id,
-                          FPGA_MANAGED_AXI4_ID_BITS),
-        vc_4stVectorRef(fpga_managed_axi4_aw_bits_size)->d,
-        vc_4stVectorRef(fpga_managed_axi4_aw_bits_len)->d,
+                            vc_getScalar(fpga_managed_axi4_aw_valid),
+                            vc_4stVectorRef(fpga_managed_axi4_aw_bits_addr)->d,
+                            getScalarOrVector(fpga_managed_axi4_aw_bits_id,
+                                              FPGA_MANAGED_AXI4_ID_BITS),
+                            vc_4stVectorRef(fpga_managed_axi4_aw_bits_size)->d,
+                            vc_4stVectorRef(fpga_managed_axi4_aw_bits_len)->d,
 
-        vc_getScalar(fpga_managed_axi4_w_valid),
-        fpga_managed_axi4_w_strb,
-        fpga_managed_axi4_w_data,
-        vc_getScalar(fpga_managed_axi4_w_bits_last),
+                            vc_getScalar(fpga_managed_axi4_w_valid),
+                            fpga_managed_axi4_w_strb,
+                            fpga_managed_axi4_w_data,
+                            vc_getScalar(fpga_managed_axi4_w_bits_last),
 
-        vc_getScalar(fpga_managed_axi4_r_ready),
-        vc_getScalar(fpga_managed_axi4_b_ready));
+                            vc_getScalar(fpga_managed_axi4_r_ready),
+                            vc_getScalar(fpga_managed_axi4_b_ready));
 #endif // FPGA_MANAGED_AXI4_PRESENT
 
 #define MEMORY_CHANNEL_TICK(IDX)                                               \
@@ -381,26 +379,26 @@ void tick(vc_handle reset,
     mem_##IDX##_w_data[i] = vc_4stVectorRef(mem_##IDX##_w_bits_data)[i].d;     \
   }                                                                            \
                                                                                \
-  simif_emul_t::slave[IDX]->tick(vcs_rst,                                      \
-                                 vc_getScalar(mem_##IDX##_ar_valid),           \
-                                 vc_4stVectorRef(mem_##IDX##_ar_bits_addr)->d, \
-                                 vc_4stVectorRef(mem_##IDX##_ar_bits_id)->d,   \
-                                 vc_4stVectorRef(mem_##IDX##_ar_bits_size)->d, \
-                                 vc_4stVectorRef(mem_##IDX##_ar_bits_len)->d,  \
+  emulator->slave[IDX]->tick(emulator->vcs_rst,                                \
+                             vc_getScalar(mem_##IDX##_ar_valid),               \
+                             vc_4stVectorRef(mem_##IDX##_ar_bits_addr)->d,     \
+                             vc_4stVectorRef(mem_##IDX##_ar_bits_id)->d,       \
+                             vc_4stVectorRef(mem_##IDX##_ar_bits_size)->d,     \
+                             vc_4stVectorRef(mem_##IDX##_ar_bits_len)->d,      \
                                                                                \
-                                 vc_getScalar(mem_##IDX##_aw_valid),           \
-                                 vc_4stVectorRef(mem_##IDX##_aw_bits_addr)->d, \
-                                 vc_4stVectorRef(mem_##IDX##_aw_bits_id)->d,   \
-                                 vc_4stVectorRef(mem_##IDX##_aw_bits_size)->d, \
-                                 vc_4stVectorRef(mem_##IDX##_aw_bits_len)->d,  \
+                             vc_getScalar(mem_##IDX##_aw_valid),               \
+                             vc_4stVectorRef(mem_##IDX##_aw_bits_addr)->d,     \
+                             vc_4stVectorRef(mem_##IDX##_aw_bits_id)->d,       \
+                             vc_4stVectorRef(mem_##IDX##_aw_bits_size)->d,     \
+                             vc_4stVectorRef(mem_##IDX##_aw_bits_len)->d,      \
                                                                                \
-                                 vc_getScalar(mem_##IDX##_w_valid),            \
-                                 vc_4stVectorRef(mem_##IDX##_w_bits_strb)->d,  \
-                                 mem_##IDX##_w_data,                           \
-                                 vc_getScalar(mem_##IDX##_w_bits_last),        \
+                             vc_getScalar(mem_##IDX##_w_valid),                \
+                             vc_4stVectorRef(mem_##IDX##_w_bits_strb)->d,      \
+                             mem_##IDX##_w_data,                               \
+                             vc_getScalar(mem_##IDX##_w_bits_last),            \
                                                                                \
-                                 vc_getScalar(mem_##IDX##_r_ready),            \
-                                 vc_getScalar(mem_##IDX##_b_ready));
+                             vc_getScalar(mem_##IDX##_r_ready),                \
+                             vc_getScalar(mem_##IDX##_b_ready));
 
     MEMORY_CHANNEL_TICK(0)
 #ifdef MEM_HAS_CHANNEL1
@@ -413,97 +411,95 @@ void tick(vc_handle reset,
     MEMORY_CHANNEL_TICK(3)
 #endif
 
-    if (!vcs_fin)
-      host->switch_to();
+    if (!emulator->vcs_fin)
+      emulator->host->switch_to();
     else
-      vcs_fin = false;
+      emulator->vcs_fin = false;
 
-    vc_putScalar(ctrl_aw_valid, simif_emul_t::master->aw_valid());
-    vc_putScalar(ctrl_ar_valid, simif_emul_t::master->ar_valid());
-    vc_putScalar(ctrl_w_valid, simif_emul_t::master->w_valid());
-    vc_putScalar(ctrl_w_bits_last, simif_emul_t::master->w_last());
-    vc_putScalar(ctrl_r_ready, simif_emul_t::master->r_ready());
-    vc_putScalar(ctrl_b_ready, simif_emul_t::master->b_ready());
+    vc_putScalar(ctrl_aw_valid, emulator->master->aw_valid());
+    vc_putScalar(ctrl_ar_valid, emulator->master->ar_valid());
+    vc_putScalar(ctrl_w_valid, emulator->master->w_valid());
+    vc_putScalar(ctrl_w_bits_last, emulator->master->w_last());
+    vc_putScalar(ctrl_r_ready, emulator->master->r_ready());
+    vc_putScalar(ctrl_b_ready, emulator->master->b_ready());
 
     vec32 md[CTRL_DATA_SIZE];
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->aw_addr();
+    md[0].d = emulator->master->aw_addr();
     vc_put4stVector(ctrl_aw_bits_addr, md);
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->aw_size();
+    md[0].d = emulator->master->aw_size();
     vc_put4stVector(ctrl_aw_bits_size, md);
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->aw_len();
+    md[0].d = emulator->master->aw_len();
     vc_put4stVector(ctrl_aw_bits_len, md);
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->ar_addr();
+    md[0].d = emulator->master->ar_addr();
     vc_put4stVector(ctrl_ar_bits_addr, md);
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->ar_size();
+    md[0].d = emulator->master->ar_size();
     vc_put4stVector(ctrl_ar_bits_size, md);
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->ar_len();
+    md[0].d = emulator->master->ar_len();
     vc_put4stVector(ctrl_ar_bits_len, md);
     md[0].c = 0;
-    md[0].d = simif_emul_t::master->w_strb();
+    md[0].d = emulator->master->w_strb();
     vc_put4stVector(ctrl_w_bits_strb, md);
 
     for (size_t i = 0; i < CTRL_DATA_SIZE; i++) {
       md[i].c = 0;
-      md[i].d = ((uint32_t *)simif_emul_t::master->w_data())[i];
+      md[i].d = ((uint32_t *)emulator->master->w_data())[i];
     }
     vc_put4stVector(ctrl_w_bits_data, md);
 
-    putScalarOrVector(
-        ctrl_aw_bits_id, simif_emul_t::master->aw_id(), CTRL_ID_BITS);
-    putScalarOrVector(
-        ctrl_ar_bits_id, simif_emul_t::master->ar_id(), CTRL_ID_BITS);
+    putScalarOrVector(ctrl_aw_bits_id, emulator->master->aw_id(), CTRL_ID_BITS);
+    putScalarOrVector(ctrl_ar_bits_id, emulator->master->ar_id(), CTRL_ID_BITS);
 
 #ifdef CPU_MANAGED_AXI4_PRESENT
     vc_putScalar(cpu_managed_axi4_aw_valid,
-                 simif_emul_t::cpu_managed_axi4->aw_valid());
+                 emulator->cpu_managed_axi4->aw_valid());
     vc_putScalar(cpu_managed_axi4_ar_valid,
-                 simif_emul_t::cpu_managed_axi4->ar_valid());
+                 emulator->cpu_managed_axi4->ar_valid());
     vc_putScalar(cpu_managed_axi4_w_valid,
-                 simif_emul_t::cpu_managed_axi4->w_valid());
+                 emulator->cpu_managed_axi4->w_valid());
     vc_putScalar(cpu_managed_axi4_w_bits_last,
-                 simif_emul_t::cpu_managed_axi4->w_last());
+                 emulator->cpu_managed_axi4->w_last());
     vc_putScalar(cpu_managed_axi4_r_ready,
-                 simif_emul_t::cpu_managed_axi4->r_ready());
+                 emulator->cpu_managed_axi4->r_ready());
     vc_putScalar(cpu_managed_axi4_b_ready,
-                 simif_emul_t::cpu_managed_axi4->b_ready());
+                 emulator->cpu_managed_axi4->b_ready());
 
     vec32 dd[CPU_MANAGED_AXI4_DATA_SIZE];
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->aw_id();
+    dd[0].d = emulator->cpu_managed_axi4->aw_id();
     vc_put4stVector(cpu_managed_axi4_aw_bits_id, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->aw_addr();
+    dd[0].d = emulator->cpu_managed_axi4->aw_addr();
     dd[1].c = 0;
-    dd[1].d = simif_emul_t::cpu_managed_axi4->aw_addr() >> 32;
+    dd[1].d = emulator->cpu_managed_axi4->aw_addr() >> 32;
     vc_put4stVector(cpu_managed_axi4_aw_bits_addr, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->aw_size();
+    dd[0].d = emulator->cpu_managed_axi4->aw_size();
     vc_put4stVector(cpu_managed_axi4_aw_bits_size, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->aw_len();
+    dd[0].d = emulator->cpu_managed_axi4->aw_len();
     vc_put4stVector(cpu_managed_axi4_aw_bits_len, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->ar_id();
+    dd[0].d = emulator->cpu_managed_axi4->ar_id();
     vc_put4stVector(cpu_managed_axi4_ar_bits_id, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->ar_addr();
+    dd[0].d = emulator->cpu_managed_axi4->ar_addr();
     dd[1].c = 0;
-    dd[1].d = simif_emul_t::cpu_managed_axi4->ar_addr() >> 32;
+    dd[1].d = emulator->cpu_managed_axi4->ar_addr() >> 32;
     vc_put4stVector(cpu_managed_axi4_ar_bits_addr, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->ar_size();
+    dd[0].d = emulator->cpu_managed_axi4->ar_size();
     vc_put4stVector(cpu_managed_axi4_ar_bits_size, dd);
     dd[0].c = 0;
-    dd[0].d = simif_emul_t::cpu_managed_axi4->ar_len();
+    dd[0].d = emulator->cpu_managed_axi4->ar_len();
     vc_put4stVector(cpu_managed_axi4_ar_bits_len, dd);
 
-    auto strb = simif_emul_t::cpu_managed_axi4->w_strb();
+    auto strb = emulator->cpu_managed_axi4->w_strb();
     for (size_t i = 0; i < CPU_MANAGED_AXI4_STRB_SIZE; i++) {
       dd[i].c = 0;
       dd[i].d = ((uint32_t *)(&strb))[i];
@@ -512,68 +508,66 @@ void tick(vc_handle reset,
 
     for (size_t i = 0; i < CPU_MANAGED_AXI4_DATA_SIZE; i++) {
       dd[i].c = 0;
-      dd[i].d = ((uint32_t *)simif_emul_t::cpu_managed_axi4->w_data())[i];
+      dd[i].d = ((uint32_t *)emulator->cpu_managed_axi4->w_data())[i];
     }
     vc_put4stVector(cpu_managed_axi4_w_bits_data, dd);
 #endif // CPU_MANAGED_AXI4_PRESENT
 
 #ifdef FPGA_MANAGED_AXI4_PRESENT
-    vc_putScalar(fpga_managed_axi4_aw_ready, simif_emul_t::cpu_mem->aw_ready());
-    vc_putScalar(fpga_managed_axi4_ar_ready, simif_emul_t::cpu_mem->ar_ready());
-    vc_putScalar(fpga_managed_axi4_w_ready, simif_emul_t::cpu_mem->w_ready());
-    vc_putScalar(fpga_managed_axi4_b_valid, simif_emul_t::cpu_mem->b_valid());
-    vc_putScalar(fpga_managed_axi4_r_valid, simif_emul_t::cpu_mem->r_valid());
-    vc_putScalar(fpga_managed_axi4_r_bits_last,
-                 simif_emul_t::cpu_mem->r_last());
+    vc_putScalar(fpga_managed_axi4_aw_ready, emulator->cpu_mem->aw_ready());
+    vc_putScalar(fpga_managed_axi4_ar_ready, emulator->cpu_mem->ar_ready());
+    vc_putScalar(fpga_managed_axi4_w_ready, emulator->cpu_mem->w_ready());
+    vc_putScalar(fpga_managed_axi4_b_valid, emulator->cpu_mem->b_valid());
+    vc_putScalar(fpga_managed_axi4_r_valid, emulator->cpu_mem->r_valid());
+    vc_putScalar(fpga_managed_axi4_r_bits_last, emulator->cpu_mem->r_last());
 
     vec32 fpga_managed_axi4d[FPGA_MANAGED_AXI4_DATA_SIZE];
     fpga_managed_axi4d[0].c = 0;
-    fpga_managed_axi4d[0].d = simif_emul_t::cpu_mem->b_resp();
+    fpga_managed_axi4d[0].d = emulator->cpu_mem->b_resp();
     vc_put4stVector(fpga_managed_axi4_b_bits_resp, fpga_managed_axi4d);
     fpga_managed_axi4d[0].c = 0;
-    fpga_managed_axi4d[0].d = simif_emul_t::cpu_mem->r_resp();
+    fpga_managed_axi4d[0].d = emulator->cpu_mem->r_resp();
     vc_put4stVector(fpga_managed_axi4_r_bits_resp, fpga_managed_axi4d);
 
     for (size_t i = 0; i < FPGA_MANAGED_AXI4_DATA_SIZE; i++) {
       fpga_managed_axi4d[i].c = 0;
-      fpga_managed_axi4d[i].d =
-          ((uint32_t *)simif_emul_t::cpu_mem->r_data())[i];
+      fpga_managed_axi4d[i].d = ((uint32_t *)emulator->cpu_mem->r_data())[i];
     }
     vc_put4stVector(fpga_managed_axi4_r_bits_data, fpga_managed_axi4d);
 
     putScalarOrVector(fpga_managed_axi4_b_bits_id,
-                      simif_emul_t::cpu_mem->b_id(),
+                      emulator->cpu_mem->b_id(),
                       FPGA_MANAGED_AXI4_ID_BITS);
     putScalarOrVector(fpga_managed_axi4_r_bits_id,
-                      simif_emul_t::cpu_mem->r_id(),
+                      emulator->cpu_mem->r_id(),
                       FPGA_MANAGED_AXI4_ID_BITS);
 #endif // FPGA_MANAGED_AXI4_PRESENT
 
 #define MEMORY_CHANNEL_PROP(IDX)                                               \
-  vc_putScalar(mem_##IDX##_aw_ready, simif_emul_t::slave[IDX]->aw_ready());    \
-  vc_putScalar(mem_##IDX##_ar_ready, simif_emul_t::slave[IDX]->ar_ready());    \
-  vc_putScalar(mem_##IDX##_w_ready, simif_emul_t::slave[IDX]->w_ready());      \
-  vc_putScalar(mem_##IDX##_b_valid, simif_emul_t::slave[IDX]->b_valid());      \
-  vc_putScalar(mem_##IDX##_r_valid, simif_emul_t::slave[IDX]->r_valid());      \
-  vc_putScalar(mem_##IDX##_r_bits_last, simif_emul_t::slave[IDX]->r_last());   \
+  vc_putScalar(mem_##IDX##_aw_ready, emulator->slave[IDX]->aw_ready());        \
+  vc_putScalar(mem_##IDX##_ar_ready, emulator->slave[IDX]->ar_ready());        \
+  vc_putScalar(mem_##IDX##_w_ready, emulator->slave[IDX]->w_ready());          \
+  vc_putScalar(mem_##IDX##_b_valid, emulator->slave[IDX]->b_valid());          \
+  vc_putScalar(mem_##IDX##_r_valid, emulator->slave[IDX]->r_valid());          \
+  vc_putScalar(mem_##IDX##_r_bits_last, emulator->slave[IDX]->r_last());       \
                                                                                \
   vec32 sd_##IDX[MEM_DATA_SIZE];                                               \
   sd_##IDX[0].c = 0;                                                           \
-  sd_##IDX[0].d = simif_emul_t::slave[IDX]->b_id();                            \
+  sd_##IDX[0].d = emulator->slave[IDX]->b_id();                                \
   vc_put4stVector(mem_##IDX##_b_bits_id, sd_##IDX);                            \
   sd_##IDX[0].c = 0;                                                           \
-  sd_##IDX[0].d = simif_emul_t::slave[IDX]->b_resp();                          \
+  sd_##IDX[0].d = emulator->slave[IDX]->b_resp();                              \
   vc_put4stVector(mem_##IDX##_b_bits_resp, sd_##IDX);                          \
   sd_##IDX[0].c = 0;                                                           \
-  sd_##IDX[0].d = simif_emul_t::slave[IDX]->r_id();                            \
+  sd_##IDX[0].d = emulator->slave[IDX]->r_id();                                \
   vc_put4stVector(mem_##IDX##_r_bits_id, sd_##IDX);                            \
   sd_##IDX[0].c = 0;                                                           \
-  sd_##IDX[0].d = simif_emul_t::slave[IDX]->r_resp();                          \
+  sd_##IDX[0].d = emulator->slave[IDX]->r_resp();                              \
   vc_put4stVector(mem_##IDX##_r_bits_resp, sd_##IDX);                          \
                                                                                \
   for (size_t i = 0; i < MEM_DATA_SIZE; i++) {                                 \
     sd_##IDX[i].c = 0;                                                         \
-    sd_##IDX[i].d = ((uint32_t *)simif_emul_t::slave[IDX]->r_data())[i];       \
+    sd_##IDX[i].d = ((uint32_t *)emulator->slave[IDX]->r_data())[i];           \
   }                                                                            \
   vc_put4stVector(mem_##IDX##_r_bits_data, sd_##IDX);
 
@@ -588,10 +582,10 @@ void tick(vc_handle reset,
     MEMORY_CHANNEL_PROP(3)
 #endif
 
-    vc_putScalar(reset, vcs_rst);
-    vc_putScalar(fin, vcs_fin);
+    vc_putScalar(reset, emulator->vcs_rst);
+    vc_putScalar(fin, emulator->vcs_fin);
 
-    main_time++;
+    emulator->main_time++;
   } catch (std::exception &e) {
     fprintf(stderr, "Caught Exception headed for VCS: %s.\n", e.what());
     abort();
