@@ -38,7 +38,7 @@ NOP_STATES = ["action_required"] # TODO: unsure when this happens
 def wrap_in_code(wrap: str) -> str:
     return f"\n```\n{wrap}\n```"
 
-def main(platform: Platform):
+def main(platform: Platform, issue_id: int):
     consecutive_failures = 0
 
     print("Workflow monitor started")
@@ -59,16 +59,16 @@ def main(platform: Platform):
                 print(f"Workflow {ci_env['GITHUB_RUN_ID']} status: {state_status} {state_concl}")
 
                 # check that select instances are terminated on time
-                platform_lib.check_and_terminate_run_farm_instances(45, ci_env['GITHUB_RUN_ID'])
+                platform_lib.check_and_terminate_run_farm_instances(45, ci_env['GITHUB_RUN_ID'], issue_id)
 
                 if state_status in ['completed']:
                     if state_concl in TERMINATE_STATES:
-                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'])
+                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
                         platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl in STOP_STATES:
                         # if we stop then we should terminate the run farm instances
-                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'])
+                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
                         platform_lib.stop_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl not in NOP_STATES:
@@ -87,14 +87,16 @@ def main(platform: Platform):
         post_str += f"**Exception Message:**{wrap_in_code(e)}\n"
         post_str += f"**Traceback Message:**{wrap_in_code(traceback.format_exc())}"
 
-        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], post_str)
+        print(post_str)
+        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id, post_str)
 
-        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'])
+        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
         platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
 
         post_str = f"Instances for CI run {ci_env['GITHUB_RUN_ID']} were supposedly terminated. Verify termination manually.\n"
 
-        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], post_str)
+        print(post_str)
+        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id, post_str)
 
         exit(1)
 
@@ -105,7 +107,9 @@ if __name__ == "__main__":
     parser.add_argument('platform',
                         choices = platform_choices,
                         help = "The platform CI is being run on")
+    parser.add_argument('issue_id',
+                        help="Issue ID that is used for posting messages")
     args = parser.parse_args()
     platform = get_platform_enum(args.platform)
 
-    main(platform)
+    main(platform, args.issue_id)

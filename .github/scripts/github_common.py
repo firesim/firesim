@@ -53,12 +53,17 @@ def deregister_runners(gh_token: str, runner_name: str) -> None:
         if runner_name in runner["name"]:
             delete_runner(gh_token, runner)
 
-def issue_post(gh_token: str, body: str) -> None:
+# obtain issue number separately since workflow-monitor shouldn't query the GH-A runner area
+# since it's separate from it
+def get_issue_number() -> int:
     with open(ci_env['GITHUB_EVENT_PATH']) as f:
         event_payload = json.load(f)
         gh_issue_id = event_payload["number"]
+        return gh_issue_id
+    raise Exception(f"Unable to return an issue number using {ci_env['GITHUB_EVENT_PATH']}")
 
-    res = requests.post(f"{gh_issues_api_url}/{gh_issue_id}/comments",
+def issue_post(gh_token: str, issue_num: int, body: str) -> None:
+    res = requests.post(f"{gh_issues_api_url}/{issue_num}/comments",
             json={"body": body}, headers=get_header(gh_token))
     if res.status_code != 201:
         raise Exception(f"HTTP POST error: {res} {res.json()}\nUnable to post GitHub PR comment.")

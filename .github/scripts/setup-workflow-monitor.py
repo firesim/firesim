@@ -7,6 +7,7 @@ import os
 
 from common import manager_ci_dir, set_fabric_firesim_pem
 from platform_lib import Platform, get_platform_enum
+from github_common import get_issue_number
 from ci_variables import RUN_LOCAL, ci_env
 
 def setup_workflow_monitor(platform: Platform, max_runtime: int) -> None:
@@ -36,7 +37,7 @@ def setup_workflow_monitor(platform: Platform, max_runtime: int) -> None:
             run((f"screen -S ttl -dm bash -c \'sleep {int(max_runtime) * 3600};"
                 f"./change-workflow-instance-states.py {platform} {ci_env['GITHUB_RUN_ID']} terminate {ci_env['PERSONAL_ACCESS_TOKEN']}\'")
                 , pty=False)
-            run((f"screen -S workflow-monitor -L -Logfile {workflow_log} -dm bash -c \'./workflow-monitor.py {platform}\'")
+            run((f"screen -S workflow-monitor -L -Logfile {workflow_log} -dm bash -c \'./workflow-monitor.py {platform} {get_issue_number()}\'")
                 , pty=False)
 
         time.sleep(30)
