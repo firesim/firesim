@@ -14,12 +14,15 @@
 # Other states to consider: not_run, on_hold, unauthorized
 
 import time
-import sys
 import argparse
 import requests
+import traceback
 
-from common import get_platform_lib, gha_runs_api_url
+from common import get_platform_lib
+from github_common import gha_runs_api_url, issue_post, get_header, gha_workflow_api_url
 from platform_lib import Platform, get_platform_enum
+from ci_variables import ci_env
+
 # Time between HTTPS requests to github
 POLLING_INTERVAL_SECONDS = 60
 # Number of failed requests before stopping the instances
@@ -32,44 +35,70 @@ TERMINATE_STATES = ["cancelled", "success", "skipped", "stale", "failure", "time
 STOP_STATES = []
 NOP_STATES = ["action_required"] # TODO: unsure when this happens
 
-def main(platform: Platform, workflow_id: str, gha_ci_personal_token: str):
+def wrap_in_code(wrap: str) -> str:
+    return f"\n```\n{wrap}\n```"
 
+def main(platform: Platform, issue_id: int):
     consecutive_failures = 0
-    headers = {'Authorization': "token {}".format(gha_ci_personal_token.strip())}
-    gha_workflow_api_url = f"{gha_runs_api_url}/{workflow_id}"
 
+    print("Workflow monitor started")
     platform_lib = get_platform_lib(platform)
-    while True:
-        time.sleep(POLLING_INTERVAL_SECONDS)
 
-        res = requests.get(gha_workflow_api_url, headers=headers)
-        if res.status_code == 200:
-            consecutive_failures = 0
-            res_dict = res.json()
-            state_status = res_dict["status"]
-            state_concl = res_dict["conclusion"]
+    try:
+        print("Beginning polling loop")
+        while True:
+            time.sleep(POLLING_INTERVAL_SECONDS)
 
-            print("Workflow {} status: {} {}".format(workflow_id, state_status, state_concl))
-            if state_status in ['completed']:
-                if state_concl in TERMINATE_STATES:
-                    platform_lib.terminate_instances(gha_ci_personal_token, workflow_id)
-                    exit(0)
-                elif state_concl in STOP_STATES:
-                    platform_lib.stop_instances(gha_ci_personal_token, workflow_id)
-                    exit(0)
-                elif state_concl not in NOP_STATES:
-                    print("Unexpected Workflow State On Completed: {}".format(state_concl))
-                    raise ValueError
-            elif state_status not in ['in_progress', 'queued', 'waiting', 'requested']:
-                print("Unexpected Workflow State: {}".format(state_status))
-                raise ValueError
+            res = requests.get(gha_workflow_api_url, headers=get_header(ci_env['PERSONAL_ACCESS_TOKEN']))
+            if res.status_code == 200:
+                consecutive_failures = 0
+                res_dict = res.json()
+                state_status = res_dict["status"]
+                state_concl = res_dict["conclusion"]
 
-        else:
-            print("HTTP GET error: {}. Retrying.".format(res.json()))
-            consecutive_failures = consecutive_failures + 1
-            if consecutive_failures == QUERY_FAILURE_THRESHOLD:
-                platform_lib.stop_instances(gha_ci_personal_token, workflow_id)
-                exit(1)
+                print(f"Workflow {ci_env['GITHUB_RUN_ID']} status: {state_status} {state_concl}")
+
+                # check that select instances are terminated on time
+                platform_lib.check_and_terminate_run_farm_instances(45, ci_env['GITHUB_RUN_ID'], issue_id)
+
+                if state_status in ['completed']:
+                    if state_concl in TERMINATE_STATES:
+                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
+                        platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
+                        return
+                    elif state_concl in STOP_STATES:
+                        # if we stop then we should terminate the run farm instances
+                        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
+                        platform_lib.stop_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
+                        return
+                    elif state_concl not in NOP_STATES:
+                        raise Exception(f"Unexpected Workflow State On Completed: {state_concl}")
+                elif state_status not in ['in_progress', 'queued', 'waiting', 'requested']:
+                    raise Exception(f"Unexpected Workflow State: {state_status}")
+
+            else:
+                print(f"HTTP GET error: {res.json()}. Retrying.")
+                consecutive_failures = consecutive_failures + 1
+                if consecutive_failures == QUERY_FAILURE_THRESHOLD:
+                    platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
+                    raise Exception("Consecutive HTTP GET errors. Terminating and exiting.")
+    except BaseException as e:
+        post_str  = f"Something went wrong in the workflow monitor for CI run {ci_env['GITHUB_RUN_ID']}. Verify CI instances are terminated properly. Must be checked before submitting the PR.\n\n"
+        post_str += f"**Exception Message:**{wrap_in_code(e)}\n"
+        post_str += f"**Traceback Message:**{wrap_in_code(traceback.format_exc())}"
+
+        print(post_str)
+        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id, post_str)
+
+        platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
+        platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
+
+        post_str = f"Instances for CI run {ci_env['GITHUB_RUN_ID']} were supposedly terminated. Verify termination manually.\n"
+
+        print(post_str)
+        issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id, post_str)
+
+        exit(1)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -78,11 +107,9 @@ if __name__ == "__main__":
     parser.add_argument('platform',
                         choices = platform_choices,
                         help = "The platform CI is being run on")
-    parser.add_argument('workflow_id',
-                        help='ID of the workflow that is used to query the CI instance')
-    parser.add_argument('gha_ci_personal_token',
-                        help="GitHub personal access token used to query GitHub REST API")
+    parser.add_argument('issue_id',
+                        help="Issue ID that is used for posting messages")
     args = parser.parse_args()
     platform = get_platform_enum(args.platform)
 
-    main(platform, args.workflow_id, args.gha_ci_personal_token)
+    main(platform, args.issue_id)

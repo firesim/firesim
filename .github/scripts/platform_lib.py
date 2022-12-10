@@ -5,20 +5,24 @@ import boto3
 import os
 from enum import Enum
 from fabric.api import *
-from ci_variables import local_fsim_dir, ci_azure_sub_id
-import datetime
 import pytz
+import datetime
+import requests
+from xmlrpc.client import DateTime
+
+from ci_variables import ci_env
+from github_common import issue_post, get_issue_number
 
 from azure.mgmt.resource import ResourceManagementClient
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.compute import ComputeManagementClient
 import azure.mgmt.resourcegraph as arg
 
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Iterable, Tuple
 
 # Reuse manager utilities
-# Note: ci_firesim_dir must not be used here because the persistent clone my not be initialized yet.
-sys.path.append(local_fsim_dir + "/deploy")
+# Note: GITHUB_WORKSPACE must not be used here because the persistent clone my not be initialized yet.
+sys.path.append(ci_env['GITHUB_WORKSPACE'] + "/deploy")
 from awstools.awstools import get_instances_with_filter
 
 # This tag is common to all instances launched as part of a given workflow
@@ -48,6 +52,19 @@ def get_platform_enum(platform_string: str) -> Platform:
     else:
         raise Exception(f"Invalid platform string: '{platform_string}'")
 
+def find_timed_out_resources(min_timeout: int, current_time: DateTime, resource_list: Iterable[Tuple]) -> list:
+    """
+    Because of the differences in how AWS and Azure store time tags, the resource_list
+    in this case is a list of tuples with the 0 index being the instance/vm and the 1 index
+    a datetime object corresponding to the time
+    """
+    timed_out = []
+    for resource_tuple in resource_list:
+        lifetime_secs = (current_time - resource_tuple[1]).total_seconds()
+        if lifetime_secs > (min_timeout * 60):
+            timed_out.append(resource_tuple[0])
+    return timed_out
+
 class PlatformLib(metaclass=abc.ABCMeta):
     """
     This is a class hierarchy to support multiple platforms in FireSim CI
@@ -76,12 +93,20 @@ class PlatformLib(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def find_all_workflow_instances(self, workflow_tag: str) -> List:
-        """ Returns all instances in this workflow (including manager) """
+        """ Returns all manager instances in this workflow """
         raise NotImplementedError
 
     @abc.abstractmethod
     def find_all_ci_instances(self) -> List:
-        """ Returns all instances across CI workflows """
+        """ Returns all manager instances across all CI workflows """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        """
+        Returns all run farm instance types (normally FPGA instances) that have the
+        `workflow_tag` in the cluster name.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -121,6 +146,12 @@ class PlatformLib(metaclass=abc.ABCMeta):
         """ Returns the hostname of the ci manager specified """
         return f"centos@{self.get_manager_ip(workflow_tag)}"
 
+    @abc.abstractmethod
+    def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
+        """ Check if run farm instances are running past a `timeout` minutes designated time. If so, then terminate them. """
+        raise NotImplementedError
+
+
 class AWSPlatformLib(PlatformLib):
 
     def __init__(self, deregister_runners: Callable[[str, str], None]):
@@ -151,7 +182,7 @@ class AWSPlatformLib(PlatformLib):
         return not (inst is None)
 
     def find_manager(self, workflow_tag: str):
-        instances = get_instances_with_filter([self.get_filter(workflow_tag), manager_filter])
+        instances = get_instances_with_filter([self.get_filter(workflow_tag), manager_filter], allowed_states = ['pending', 'running', 'stopping', 'stopped'])
         if instances:
             assert len(instances) == 1 # this must be called before any new instances are launched by workflow
             return instances[0]
@@ -160,13 +191,22 @@ class AWSPlatformLib(PlatformLib):
 
     def find_all_workflow_instances(self, workflow_tag: str) -> List:
         """ Grabs a list of all instance dicts sharing the CI workflow run's unique tag """
-        return get_instances_with_filter([self.get_filter(workflow_tag)])
+        return get_instances_with_filter([self.get_filter(workflow_tag)], allowed_states = ['pending', 'running', 'stopping', 'stopped'])
 
     def find_all_ci_instances(self) -> List:
         """ Grabs a list of all instances across all CI using the CI unique tag key"""
         all_ci_instances_filter = self.get_filter('*')
-        all_ci_instances = get_instances_with_filter([all_ci_instances_filter], allowed_states=['*'])
+        all_ci_instances = get_instances_with_filter([all_ci_instances_filter], allowed_states = ['pending', 'running', 'stopping', 'stopped'])
         return all_ci_instances
+
+    def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        # on AWS run farm instances are marked with 'fsimcluster'
+        instances_filter = [
+                {'Name': 'tag:fsimcluster', 'Values': [f'*{workflow_tag}*']},
+                {'Name': 'instance-type', 'Values': ['f1.2xlarge', 'f1.4xlarge', 'f1.16xlarge']},
+                ]
+        ci_instances = get_instances_with_filter(instances_filter, allowed_states = ['pending', 'running', 'stopping', 'stopped'])
+        return ci_instances
 
     def get_manager_ip(self, workflow_tag: str) -> str:
         """
@@ -222,7 +262,7 @@ class AWSPlatformLib(PlatformLib):
         else:
             raise ValueError(f"Unrecognized transition type: {state_change}")
 
-    def get_platform_enum(self) -> None:
+    def get_platform_enum(self) -> Platform:
         return Platform.AWS
 
     def get_manager_metadata_string(self, workflow_tag: str) -> str:
@@ -241,13 +281,34 @@ class AWSPlatformLib(PlatformLib):
 
         return static_md + dynamic_md
 
+    def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
+        # We need this in case terminate is called in setup-self-hosted-workflow before aws-configure is run
+        if self.client is None:
+            self.client = boto3.client('ec2')
+
+        instances = self.find_run_farm_ci_instances(workflow_tag)
+        instances_to_terminate = find_timed_out_resources(
+                timeout,
+                datetime.datetime.utcnow().replace(tzinfo=pytz.UTC),
+                map(lambda x: (x, x['LaunchTime']), instances))
+
+        for inst in instances_to_terminate:
+            print(f"Uncaught run farm instance shutdown detected for inst: {inst}")
+            self.client.terminate_instances(InstanceIds=[inst['InstanceId']])
+            print(f"Terminated run farm instance {inst['InstanceId']}")
+
+        # post comment after instances are terminated just in case there is an issue with posting
+        if len(instances_to_terminate) > 0:
+            issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id,
+                    f"Uncaught {len(instances_to_terminate)} FPGA instance shutdown(s) detected for CI run: {ci_env['GITHUB_RUN_ID']}. Verify CI state before submitting PR.")
+
 
 class AzurePlatformLib(PlatformLib):
     def __init__(self, deregister_runners: Callable[[str, str], None]):
         self.credential = DefaultAzureCredential()
-        self.resource_client = ResourceManagementClient(self.credential, ci_azure_sub_id)
+        self.resource_client = ResourceManagementClient(self.credential, ci_env['AZURE_SUBSCRIPTION_ID'])
         self.arg_client = arg.ResourceGraphClient(self.credential)
-        self.compute_client = ComputeManagementClient(self.credential, ci_azure_sub_id)
+        self.compute_client = ComputeManagementClient(self.credential, ci_env['AZURE_SUBSCRIPTION_ID'])
 
         self.deregister_runners = deregister_runners
         # This is a dictionary that's used to translate between simpler terms and
@@ -363,7 +424,7 @@ class AzurePlatformLib(PlatformLib):
             query += f"tags.{key}=~'{tag_dict[key]}' and "
         query = query[:-4]
 
-        arg_query = arg.models.QueryRequest(subscriptions=[ci_azure_sub_id], query=query, options=arg_query_options)
+        arg_query = arg.models.QueryRequest(subscriptions=[ci_env['AZURE_SUBSCRIPTION_ID']], query=query, options=arg_query_options)
 
         return self.arg_client.resources(arg_query).data
 
@@ -385,3 +446,9 @@ class AzurePlatformLib(PlatformLib):
                 print(f"Failed to delete VM {vm['name']}, expected 'None' and got result {deletion_result}")
             else:
                 print(f"Succeeded in deleting VM {vm['name']}")
+
+    def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
+        raise NotImplementedError
+
+    def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        raise NotImplementedError

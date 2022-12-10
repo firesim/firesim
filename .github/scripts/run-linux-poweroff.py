@@ -6,7 +6,7 @@ from pathlib import Path
 from fabric.api import *
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
-from ci_variables import ci_workflow_run_id
+from ci_variables import ci_env
 
 def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
@@ -22,13 +22,13 @@ def run_linux_poweroff():
             # unique tag based on the ci workflow and filename is needed to ensure
             # run farm is unique to each linux-poweroff test
             script_name = Path(__file__).stem
-            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_workflow_run_id}-{script_name}"):
+            with prefix(f"export FIRESIM_RUNFARM_PREFIX={ci_env['GITHUB_RUN_ID']}-{script_name}"):
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
                     rc = run(f"timeout {timeout} ./deploy/workloads/run-workload.sh {workload} --withlaunch &> {workload}.log", pty=False).return_code
-                    print(f" Printing last {log_tail_length} lines of log. See {workload}.log for full info.")
+                    print(f"Printing last {log_tail_length} lines of log. See {workload}.log for full info.")
                     run(f"tail -n {log_tail_length} {workload}.log")
 
                     # This is a janky solution to the fact the manager does not

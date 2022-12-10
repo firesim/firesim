@@ -2,18 +2,13 @@
 
 from fabric.api import *
 import argparse
+import time
+import os
 
 from common import manager_ci_dir, set_fabric_firesim_pem
 from platform_lib import Platform, get_platform_enum
-from ci_variables import ci_azure_sub_id, ci_azure_client_id, ci_azure_tenant_id, ci_azure_client_secret, \
-    ci_workflow_run_id, ci_personal_api_token
-
-def generate_azure_credited_env():
-    run(f"echo 'export AZURE_CREDITED_ENV=true' >> ~/azure_env.sh")
-    run(f"echo 'export AZURE_SUBSCRIPTION_ID={ci_azure_sub_id}' >> ~/azure_env.sh")
-    run(f"echo 'export AZURE_CLIENT_ID={ci_azure_client_id}' >> ~/azure_env.sh")
-    run(f"echo 'export AZURE_TENANT_ID={ci_azure_tenant_id}' >> ~/azure_env.sh")
-    run(f"echo 'export AZURE_CLIENT_SECRET={ci_azure_client_secret}' >> ~/azure_env.sh")
+from github_common import get_issue_number
+from ci_variables import RUN_LOCAL, ci_env
 
 def setup_workflow_monitor(platform: Platform, max_runtime: int) -> None:
     """ Performs the prerequisite tasks for all CI jobs that will run on the manager instance
@@ -29,27 +24,39 @@ def setup_workflow_monitor(platform: Platform, max_runtime: int) -> None:
         # This generates a file that can be sourced to get all the right keys / ids to run any of the
         # Azure jobs. On testing, the environment variables did not correctly pass themselves to the
         # screen job on
+        assert not RUN_LOCAL, "Workflow monitor setup only works running under GH-A"
 
-        if platform == Platform.AZURE:
-            generate_azure_credited_env()
-            azure_source_string = 'source azure_env.sh;'
-        else:
-            azure_source_string = ''
+        workflow_log = f"{manager_ci_dir}/workflow-monitor-screen.log"
 
-        # Put a baseline time-to-live bound on the manager.
-        # Instances will be terminated (since they are spot requests) and cleaned up in a nightly job.
+        #run("echo 'zombie kr' >> ~/.screenrc") # for testing purposes, keep the screen on even after it dies
+        with shell_env(**ci_env):
+            # Put a baseline time-to-live bound on the manager.
+            # Instances will be terminated (since they are spot requests) or will cleaned up in a nightly job.
+            # Setting pty=False is required to stop the screen from being
+            # culled when the SSH session associated with the run command ends.
+            run((f"screen -S ttl -dm bash -c \'sleep {int(max_runtime) * 3600};"
+                f"./change-workflow-instance-states.py {platform} {ci_env['GITHUB_RUN_ID']} terminate {ci_env['PERSONAL_ACCESS_TOKEN']}\'")
+                , pty=False)
+            run((f"screen -S workflow-monitor -L -Logfile {workflow_log} -dm bash -c \'./workflow-monitor.py {platform} {get_issue_number()}\'")
+                , pty=False)
 
-        # Setting pty=False is required to stop the screen from being
-        # culled when the SSH session associated with the run command ends.
+        time.sleep(30)
 
+        # verify the screen sessions are running
+        ls_out = run("screen -ls")
+        if not ("ttl" in ls_out and "workflow-monitor" in ls_out):
+            print("Error: Unable to find 'ttl' or 'workflow-monitor' screen sessions in 'screen -ls' after spawn.")
+            print("'screen -ls' output:")
+            print(ls_out)
+            exit(1)
 
-        run("echo 'zombie kr' >> ~/.screenrc") # for testing purposes, keep the screen on even after it dies
-        run((f"screen -S ttl -dm bash -c \'{azure_source_string}sleep {int(max_runtime) * 3600};"
-            f"./change-workflow-instance-states.py {platform} {ci_workflow_run_id} terminate {ci_personal_api_token}\'")
-            , pty=False)
-        run((f"screen -S workflow-monitor -L -dm bash -c"
-            f"\'{azure_source_string}./workflow-monitor.py {platform} {ci_workflow_run_id} {ci_personal_api_token}\'")
-            , pty=False)
+        # verify the workflow monitor started correctly
+        log_out = run(f"cat {workflow_log}")
+        if not "Workflow monitor started" in log_out:
+            print("Error: Workflow monitor not started properly.")
+            print("Workflow monitor log output:")
+            print(log_out)
+            exit(1)
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()

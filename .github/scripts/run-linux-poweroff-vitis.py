@@ -3,7 +3,7 @@
 import sys
 
 from fabric.api import *
-from ci_variables import ci_workdir
+from ci_variables import ci_env
 
 def run_linux_poweroff_vitis():
     """ Runs Base Vitis Build """
@@ -14,9 +14,9 @@ def run_linux_poweroff_vitis():
 
     # repo should already be checked out
 
-    with prefix(f'cd {ci_workdir}'):
+    with prefix(f"cd {ci_env['GITHUB_WORKSPACE']}"):
         run("./build-setup.sh --skip-validate")
-        with prefix('source sourceme-f1-manager.sh'):
+        with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
             # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
             with prefix('cd sw/firesim-software'):
                 run("./init-submodules.sh")
@@ -56,7 +56,7 @@ def run_linux_poweroff_vitis():
                 else:
                     print(f"Workload {workload} successful.")
 
-            run_w_timeout(f"{ci_workdir}/.github/scripts/vitis-test", "linux-poweroff-singlenode", "30m")
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/.github/scripts/vitis-test", "linux-poweroff-singlenode", "30m")
 
 if __name__ == "__main__":
     execute(run_linux_poweroff_vitis, hosts=["localhost"])
