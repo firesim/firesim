@@ -9,7 +9,10 @@
 
 #include "mm.h"
 
-void mm_t::write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size) {
+void mm_t::write(uint64_t addr,
+                 const uint8_t *data,
+                 uint64_t strb,
+                 uint64_t size) {
   auto max_strb_bytes = sizeof(uint64_t) * 8;
   assert(size <= max_strb_bytes); // Ensure the strb is wide enough to support
                                   // the desired transaction
@@ -74,7 +77,7 @@ void mm_magic_t::tick(bool reset,
 
                       bool w_valid,
                       uint64_t w_strb,
-                      void *w_data,
+                      const std::vector<uint32_t> &w_data,
                       bool w_last,
 
                       bool r_ready,
@@ -102,7 +105,7 @@ void mm_magic_t::tick(bool reset,
   }
 
   if (w_fire) {
-    write(store_addr, (uint8_t *)w_data, w_strb, store_size);
+    write(store_addr, (const uint8_t *)w_data.data(), w_strb, store_size);
     store_addr += store_size;
     store_count--;
 

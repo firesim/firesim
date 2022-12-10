@@ -3,7 +3,6 @@
 #ifndef __MMIO_H
 #define __MMIO_H
 
-#include "mmio.h"
 #include <cstring>
 #include <queue>
 #include <stddef.h>
@@ -78,7 +77,7 @@ public:
             bool aw_ready,
             bool w_ready,
             size_t r_id,
-            void *r_data,
+            const std::vector<uint32_t> &r_data,
             bool r_last,
             bool r_valid,
             size_t b_id,

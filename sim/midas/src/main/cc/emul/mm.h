@@ -41,7 +41,7 @@ public:
 
                     bool w_valid,
                     uint64_t w_strb,
-                    void *w_data,
+                    const std::vector<uint32_t> &w_data,
                     bool w_last,
 
                     bool r_ready,
@@ -52,7 +52,7 @@ public:
   virtual size_t get_word_size() { return word_size; }
   virtual size_t get_line_size() { return line_size; }
 
-  void write(uint64_t addr, uint8_t *data, uint64_t strb, uint64_t size);
+  void write(uint64_t addr, const uint8_t *data, uint64_t strb, uint64_t size);
   std::vector<char> read(uint64_t addr);
 
   virtual ~mm_t();
@@ -83,7 +83,7 @@ struct mm_rresp_t {
   }
 };
 
-class mm_magic_t final: public mm_t {
+class mm_magic_t final : public mm_t {
 public:
   mm_magic_t() : store_inflight(false){};
 
@@ -119,7 +119,7 @@ public:
 
                     bool w_valid,
                     uint64_t w_strb,
-                    void *w_data,
+                    const std::vector<uint32_t> &w_data,
                     bool w_last,
 
                     bool r_ready,

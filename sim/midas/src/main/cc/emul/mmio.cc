@@ -25,7 +25,7 @@ void mmio_t::tick(bool reset,
                   bool aw_ready,
                   bool w_ready,
                   size_t r_id,
-                  void *r_data,
+                  const std::vector<uint32_t> &r_data,
                   bool r_last,
                   bool r_valid,
                   size_t b_id,
@@ -44,7 +44,7 @@ void mmio_t::tick(bool reset,
     this->w.pop();
   if (r_fire) {
     char *dat = (char *)malloc(dummy_data.size());
-    memcpy(dat, (char *)r_data, dummy_data.size());
+    memcpy(dat, (const uint8_t *)r_data.data(), dummy_data.size());
     mmio_resp_data_t r(r_id, dat, r_last);
     this->r.push(r);
   }
