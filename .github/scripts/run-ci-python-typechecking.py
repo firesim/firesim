@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from fabric.api import *
+from fabric.api import cd, prefix, run, execute # type: ignore
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 
 def run_typecheck():
-    """Runs mypy typecheck."""
+    """Runs CI python typecheck."""
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("./scripts/run-py-typecheck.sh")
+        run("./scripts/run-ci-python-typecheck.sh")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()

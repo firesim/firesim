@@ -4,7 +4,6 @@
 # instances that have exceeded a lifetime limit
 
 import datetime
-from xmlrpc.client import DateTime
 import pytz
 import boto3
 import sys
@@ -22,7 +21,7 @@ INSTANCE_LIFETIME_LIMIT_HOURS = 8
 # The number of hours a fpga instance may exist since its initial launch time
 FPGA_INSTANCE_LIFETIME_LIMIT_HOURS = 1
 
-def cull_aws_instances(current_time: DateTime) -> None:
+def cull_aws_instances(current_time: datetime.datetime) -> None:
     # Grab all instances with a CI-generated tag
     aws_platform_lib = get_platform_lib(Platform.AWS)
 
@@ -42,13 +41,13 @@ def cull_aws_instances(current_time: DateTime) -> None:
     print("Terminated Manager Instances:")
     for inst in manager_instances_to_terminate:
         deregister_runners(ci_env['PERSONAL_ACCESS_TOKEN'], f"aws-{ci_env['GITHUB_RUN_ID']}")
-        client.terminate_instances(InstanceIds=[inst['InstanceId']])
+        aws_platform_lib.platform_terminate_instances([inst['InstanceId']])
         print("  " + inst['InstanceId'])
 
     if len(manager_instances_to_terminate) > 0 or len(run_farm_instances_to_terminate) > 0:
         exit(1)
 
-def cull_azure_resources(current_time: DateTime) -> None:
+def cull_azure_resources(current_time: datetime.datetime) -> None:
     azure_platform_lib = get_platform_lib(Platform.AZURE)
     all_azure_ci_vms = azure_platform_lib.find_all_ci_instances()
     run_farm_azure_ci_vms = azure_platform_lib.find_run_farm_ci_instances()
@@ -62,7 +61,7 @@ def cull_azure_resources(current_time: DateTime) -> None:
     print("Terminated VMs:")
     for vm in vms_to_terminate:
         deregister_runners(ci_env['PERSONAL_ACCESS_TOKEN'], f"azure-{ci_env['GITHUB_RUN_ID']}")
-        azure_platform_lib.terminate_azure_vms([vm]) #prints are handled in here
+        azure_platform_lib.platform_terminate_instances([vm]) # prints are handled in here
 
     if len(vms_to_terminate) > 0:
         exit(1)

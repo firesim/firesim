@@ -6,7 +6,8 @@ import sys
 
 # This must run in the CI container
 from ci_variables import ci_env
-from common import aws_platform_lib
+from platform_lib import Platform
+from common import get_platform_lib
 
 # Reuse manager utilities
 sys.path.append(ci_env['GITHUB_WORKSPACE'] + "/deploy")
@@ -14,6 +15,7 @@ import awstools.awstools
 
 def main():
     """ Spins up a new manager instance for our CI run """
+    aws_platform_lib = get_platform_lib(Platform.AWS)
 
     if aws_platform_lib.check_manager_exists(ci_env['GITHUB_RUN_ID']):
         print("There is an existing manager instance for this CI workflow:")

@@ -4,12 +4,12 @@ from fabric.api import cd, prefix, run, execute # type: ignore
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 
-def run_scalafmt_check():
-    """Runs scalafmtCheckAll on FireSim subprojects."""
+def run_typecheck():
+    """Runs manager python typecheck."""
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("make -C sim scalafmtCheckAll")
+        run("./scripts/run-manager-python-typecheck.sh")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
-    execute(run_scalafmt_check, hosts=["localhost"])
+    execute(run_typecheck, hosts=["localhost"])

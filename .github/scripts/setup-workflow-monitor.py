@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from fabric.api import *
+from fabric.api import cd, shell_env, run, execute # type: ignore
 import argparse
 import time
 import os

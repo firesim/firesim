@@ -4,7 +4,7 @@ import sys
 import time
 from pathlib import Path
 
-from fabric.api import *
+from fabric.api import prefix, settings, run, execute # type: ignore
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 from ci_variables import ci_env

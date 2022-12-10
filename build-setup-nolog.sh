@@ -140,7 +140,7 @@ else
     YAMLFILE="$RDIR/conda-reqs.yaml"
     if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
-        conda-lock -f "$YAMLFILE" -p linux-64 --lockfile "$LOCKFILE"
+        conda-lock -f "$YAMLFILE" --lockfile "$LOCKFILE"
     fi
     conda-lock install -p $RDIR/.conda-env $LOCKFILE
     source $RDIR/.conda-env/etc/profile.d/conda.sh

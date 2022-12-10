@@ -23,17 +23,19 @@ from github_common import gha_runs_api_url, issue_post, get_header, gha_workflow
 from platform_lib import Platform, get_platform_enum
 from ci_variables import ci_env
 
+from typing import List
+
 # Time between HTTPS requests to github
 POLLING_INTERVAL_SECONDS = 60
 # Number of failed requests before stopping the instances
 QUERY_FAILURE_THRESHOLD = 10
 
-TERMINATE_STATES = ["cancelled", "success", "skipped", "stale", "failure", "timed_out"]
+TERMINATE_STATES: List[str] = ["cancelled", "success", "skipped", "stale", "failure", "timed_out"]
 # In the past we'd stop instances on failure or time-out conditions so that
 # they could be restarted and debugged in-situ. This was mostly useful for CI dev.
 # See discussion in: https://github.com/firesim/firesim/pull/1037
-STOP_STATES = []
-NOP_STATES = ["action_required"] # TODO: unsure when this happens
+STOP_STATES: List[str] = []
+NOP_STATES: List[str] = ["action_required"] # TODO: unsure when this happens
 
 def wrap_in_code(wrap: str) -> str:
     return f"\n```\n{wrap}\n```"
@@ -84,7 +86,7 @@ def main(platform: Platform, issue_id: int):
                     raise Exception("Consecutive HTTP GET errors. Terminating and exiting.")
     except BaseException as e:
         post_str  = f"Something went wrong in the workflow monitor for CI run {ci_env['GITHUB_RUN_ID']}. Verify CI instances are terminated properly. Must be checked before submitting the PR.\n\n"
-        post_str += f"**Exception Message:**{wrap_in_code(e)}\n"
+        post_str += f"**Exception Message:**{wrap_in_code(str(e))}\n"
         post_str += f"**Traceback Message:**{wrap_in_code(traceback.format_exc())}"
 
         print(post_str)
