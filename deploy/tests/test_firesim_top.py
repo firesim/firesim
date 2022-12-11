@@ -112,10 +112,6 @@ def test_main_dispatching(mocker: MockerFixture, task_mocker, tn: str):
     mocker.patch.dict('os.environ', {'FIRESIM_SOURCED': '1'})
     parser = firesim.construct_firesim_argparser()
 
-    # TODO: Remove after deprecation
-    if tn == 'buildafi':
-        tn = 'buildbitstream'
-
     task_mocker.patch(tn)
 
     args = parser.parse_args([tn])

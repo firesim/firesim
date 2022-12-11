@@ -16,7 +16,7 @@ To get the new default AGFI's you must run the manager initialization again by d
 Is there a good way to keep track of what AGFI corresponds to what FireSim commit?
 ----------------------------------------------------------------------------------
 
-When building an AGFI during ``firesim buildafi``, FireSim keeps track of what FireSim repository commit was used to build the AGFI.
+When building an AGFI during ``firesim buildbitstream``, FireSim keeps track of what FireSim repository commit was used to build the AGFI.
 To view a list of AGFI's that you have built and what you have access to, you can run the following command:
 
 ::

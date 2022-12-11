@@ -243,13 +243,8 @@ def runworkload(runtime_conf: RuntimeConfig) -> None:
     runtime_conf.run_workload()
 
 @register_task
-def buildafi(build_config_file: BuildConfigFile) -> None:
-    # shouldn't ever be able to get here because main() implements logging and redirecting to builtbitstream
-    raise NotImplementedError
-
-@register_task
 def buildbitstream(build_config_file: BuildConfigFile) -> None:
-    """ Starting from local Chisel, build an AFI for all of the specified
+    """ Starting from local Chisel, build a bitstream for all of the specified
     hardware configs. """
 
     # forced to build locally
@@ -416,7 +411,7 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
     parser.add_argument('-q', '--forceterminate', action='store_true',
                         help='For terminaterunfarm and buildbitstream, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
-                        help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildafi')
+                        help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildbitstream')
     parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',
                         help='Required argument for "managerinit" to specify which platform you will be using')
 
@@ -443,10 +438,6 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
-
-    if args.task == 'buildafi':
-        rootLogger.warning("From v1.14.0, 'buildafi' is renamed to 'buildbitstream' and will be removed in a future version")
-        args.task = 'buildbitstream'
 
     rootLogger.info("FireSim Manager. Docs: https://docs.fires.im\nRunning: %s\n", str(args.task))
 

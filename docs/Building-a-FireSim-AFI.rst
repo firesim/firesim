@@ -55,7 +55,7 @@ end up with something like this (a line beginning with a ``#`` is a comment):
 
    builds_to_run:
        # this section references builds defined in config_build_recipes.ini
-       # if you add a build here, it will be built when you run buildafi
+       # if you add a build here, it will be built when you run buildbitstream
        - firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
 
