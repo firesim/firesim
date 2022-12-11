@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import sys
+from fabric.api import prefix, run, settings, execute # type: ignore
 
-from fabric.api import *
 from ci_variables import ci_env
 
 def run_linux_poweroff_vitis():

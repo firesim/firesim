@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from fabric.api import *
+from fabric.api import prefix, settings, run, execute # type: ignore
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 

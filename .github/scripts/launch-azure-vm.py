@@ -3,21 +3,23 @@
 # Used to launch a fresh manager instance from the CI container.
 
 import sys
+import base64
+
+from azure.mgmt.resource import ResourceManagementClient # type: ignore
+from azure.identity import DefaultAzureCredential # type: ignore
+from azure.mgmt.network import NetworkManagementClient # type: ignore
+from azure.mgmt.compute import ComputeManagementClient # type: ignore
 
 # This must run in the CI container
 from ci_variables import ci_env
-from common import azure_platform_lib
-
-from azure.mgmt.resource import ResourceManagementClient
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.network import NetworkManagementClient
-from azure.mgmt.compute import ComputeManagementClient
-
-import base64
+from platform_lib import Platform
+from common import get_platform_lib
 
 #get this from ci_variables normally will be github secret
 def main():
     """ Spins up a new manager vm for our CI run """
+
+    azure_platform_lib = get_platform_lib(Platform.AZURE)
 
     if azure_platform_lib.check_manager_exists(ci_env['GITHUB_RUN_ID']):
         print("There is an existing manager vm for this CI workflow:")

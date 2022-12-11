@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from fabric.api import *
+from fabric.api import cd, run, execute # type: ignore
 
 from common import manager_home_dir, manager_fsim_dir, manager_marshal_dir, set_fabric_firesim_pem
 # This is expected to be launch from the ci container

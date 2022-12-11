@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from fabric.api import *
+from fabric.api import cd, prefix, run, execute # type: ignore
 import os
 
 from ci_variables import ci_env

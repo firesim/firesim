@@ -1,8 +1,8 @@
 import math
-from fabric.api import *
 import requests
-from ci_variables import ci_env
 import json
+
+from ci_variables import ci_env
 
 from typing import Dict, List, Any
 
@@ -17,14 +17,14 @@ gha_workflow_api_url = f"{gha_runs_api_url}/{ci_env['GITHUB_RUN_ID']}"
 def get_header(gh_token: str) -> Dict[str, str]:
     return {"Authorization": f"token {gh_token.strip()}", "Accept": "application/vnd.github+json"}
 
-def get_runners(gh_token: str) -> List:
+def get_runners(gh_token: str) -> List[Dict[str, Any]]:
     r = requests.get(gha_runners_api_url, headers=get_header(gh_token))
     if r.status_code != 200:
         raise Exception(f"Unable to retrieve count of GitHub Actions Runners\nFull Response Below:\n{r}")
     res_dict = r.json()
     runner_count = res_dict["total_count"]
 
-    runners = []
+    runners: List[Dict[str, Any]] = []
     for page_idx in range(math.ceil(runner_count / 30)):
         r = requests.get(gha_runners_api_url, params={"per_page" : 30, "page" : page_idx + 1}, headers=get_header(gh_token))
         if r.status_code != 200:

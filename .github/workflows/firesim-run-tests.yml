@@ -164,16 +164,27 @@ jobs:
       - name: Run pytests
         run: .github/scripts/run-manager-pytests.py
 
-  run-python-typecheck:
-    name: run-python-typecheck
+  run-manager-python-typecheck:
+    name: run-manager-python-typecheck
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
-      - name: Run mypy type checker
-        run: .github/scripts/run-mypy-typechecker.py
+      - name: Run manager Python type checker
+        run: .github/scripts/run-manager-python-typechecking.py
+
+  run-ci-python-typecheck:
+      name: run-ci-python-typecheck
+      needs: [setup-manager]
+      runs-on: aws-${{ github.run_id }}
+      env:
+        TERM: xterm-256-color
+      steps:
+      - uses: actions/checkout@v3
+      - name: Run CI Python type checker
+        run: .github/scripts/run-ci-python-typechecking.py
 
   run-scalafmt-check:
     name: run-scalafmt-check

@@ -5,8 +5,8 @@ import requests
 import sys
 import argparse
 
-from fabric.api import *
-import fabric
+from fabric.api import settings, run, cd, execute, local, put # type: ignore
+import fabric # type: ignore
 
 from platform_lib import Platform, PlatformLib, get_platform_enum
 from common import manager_home_dir, get_platform_lib

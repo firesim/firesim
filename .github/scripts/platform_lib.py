@@ -3,22 +3,20 @@ import abc
 import sys
 import boto3
 import os
-from enum import Enum
-from fabric.api import *
 import pytz
 import datetime
-import requests
-from xmlrpc.client import DateTime
+from enum import Enum
+
+from azure.mgmt.resource import ResourceManagementClient # type: ignore
+from azure.identity import DefaultAzureCredential # type: ignore
+from azure.mgmt.compute import ComputeManagementClient # type: ignore
+import azure.mgmt.resourcegraph as arg # type: ignore
 
 from ci_variables import ci_env
 from github_common import issue_post, get_issue_number
 
-from azure.mgmt.resource import ResourceManagementClient
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.compute import ComputeManagementClient
-import azure.mgmt.resourcegraph as arg
-
-from typing import Any, Callable, Dict, List, Iterable, Tuple
+from mypy_boto3_ec2.client import EC2Client
+from typing import Any, Callable, Dict, List, Optional, Iterable, Tuple
 
 # Reuse manager utilities
 # Note: GITHUB_WORKSPACE must not be used here because the persistent clone my not be initialized yet.
@@ -52,7 +50,7 @@ def get_platform_enum(platform_string: str) -> Platform:
     else:
         raise Exception(f"Invalid platform string: '{platform_string}'")
 
-def find_timed_out_resources(min_timeout: int, current_time: DateTime, resource_list: Iterable[Tuple]) -> list:
+def find_timed_out_resources(min_timeout: int, current_time: datetime.datetime, resource_list: Iterable[Tuple]) -> list:
     """
     Because of the differences in how AWS and Azure store time tags, the resource_list
     in this case is a list of tuples with the 0 index being the instance/vm and the 1 index
@@ -142,6 +140,11 @@ class PlatformLib(metaclass=abc.ABCMeta):
         """ Stops the instances specified by 'workflow_tag' """
         self.change_workflow_instance_states(gh_token, workflow_tag, 'terminate')
 
+    @abc.abstractmethod
+    def platform_terminate_instances(self, platform_list: List[Any]) -> None:
+        """ Terminates the instances given the platform list """
+        raise NotImplementedError
+
     def get_manager_hostname(self, workflow_tag: str) -> str:
         """ Returns the hostname of the ci manager specified """
         return f"centos@{self.get_manager_ip(workflow_tag)}"
@@ -153,6 +156,7 @@ class PlatformLib(metaclass=abc.ABCMeta):
 
 
 class AWSPlatformLib(PlatformLib):
+    client: Optional[EC2Client]
 
     def __init__(self, deregister_runners: Callable[[str, str], None]):
         if os.path.exists(os.path.expanduser('~/.aws/config')): # only set client if this exists
@@ -258,9 +262,16 @@ class AWSPlatformLib(PlatformLib):
         elif state_change == 'terminate':
             print(f"Terminating instances: {', '.join(instance_ids)}")
             self.deregister_runners(gh_token, f"aws-{workflow_tag}")
-            self.client.terminate_instances(InstanceIds=instance_ids, DryRun=dryrun)
+            self.platform_terminate_instances(instance_ids, dryrun)
         else:
             raise ValueError(f"Unrecognized transition type: {state_change}")
+
+    def platform_terminate_instances(self, platform_list: List[Any], dryrun: bool = False) -> None:
+        # We need this in case terminate is called in setup-self-hosted-workflow before aws-configure is run
+        if self.client is None:
+            self.client = boto3.client('ec2')
+
+        self.client.terminate_instances(InstanceIds=platform_list, DryRun=dryrun)
 
     def get_platform_enum(self) -> Platform:
         return Platform.AWS
@@ -427,6 +438,9 @@ class AzurePlatformLib(PlatformLib):
         arg_query = arg.models.QueryRequest(subscriptions=[ci_env['AZURE_SUBSCRIPTION_ID']], query=query, options=arg_query_options)
 
         return self.arg_client.resources(arg_query).data
+
+    def platform_terminate_instances(self, platform_list: List[Any], dryrun: bool = False) -> None:
+        self.terminate_azure_vms(platform_list)
 
     def terminate_azure_vms(self, resource_list: List) -> None:
         vms_to_delete = []

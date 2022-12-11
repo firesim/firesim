@@ -2,7 +2,7 @@
 
 import argparse
 
-from fabric.api import *
+from fabric.api import cd, prefix, run, execute # type: ignore
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 
