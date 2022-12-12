@@ -184,7 +184,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             serv = self.parent_node.sim_slots[slotno]
 
             remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
-            options = "-zxf"
+            options = "-xf"
 
             with cd(remote_sim_dir):
                 run(f"tar {options} {serv.get_tar_name()}")
