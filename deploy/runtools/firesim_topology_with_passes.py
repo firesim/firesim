@@ -400,6 +400,7 @@ class FireSimTopologyWithPasses:
                 resolved_cfg = server.get_resolved_server_hardware_config()
 
                 if resolved_cfg.driver_tar_uri is not None:
+                    rootLogger.debug(f"skipping driver build because we're using {resolved_cfg.driver_tar_uri}")
                     continue # skip building or tarballing if we have a prebuilt one
 
                 resolved_cfg.build_sim_driver()
