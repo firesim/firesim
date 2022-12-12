@@ -265,7 +265,7 @@ class RuntimeHWConfig:
         # Note that pkill only works for names <=15 characters
         return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
-    def handle_failure(self, buildresult, what: str, dir: str, cmd: str):
+    def handle_failure(self, buildresult, what: str, dir: Path|str, cmd: str):
         """ A helper function for a nice error message when used in conjunction with the run() function"""
         if buildresult.failed:
             rootLogger.info(f"{self.driver_type_message} {what} failed. Exiting. See log for details.")
