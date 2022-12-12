@@ -52,9 +52,7 @@ Key Files & Locations
    Extension of TestSuiteCommon for most integration tests + concrete subclasses
 - :gh-file-ref:`sim/src/main/cc/midasexamples/`
    C++ sources for target-specific drivers
-- :gh-file-ref:`sim/src/main/cc/midasexamples/Driver.cc`
-   driver main; where target-specific drivers are registered
-- :gh-file-ref:`sim/src/main/cc/midasexamples/simif_peek_poke.h`
+- :gh-file-ref:`sim/src/main/cc/midasexamples/TestHarness.h`
    A common driver to extend for simple tests
 - :gh-file-ref:`sim/src/main/scala/midasexamples/`
    Where top-level Chisel modules (targets) are defined
@@ -66,8 +64,7 @@ Defining a New Test
 #. Define a driver by extending ``simif_t`` or another child class under ``src/main/cc/midasexamples``. Tests
    sequenced with the Peek Poke bridge may extend ``simif_peek_poke_t``.
 
-#. Register the driver's header in ``midasexamples/src/main/cc/Driver.cc``. The
-   CPP macro ``DESIGNNAME_<Module Name>`` will be set using the top-level module's name specified in your ScalaTest.
+#. Create a test in ``src/main/cc/midasexamples``. Register bridges and add override the ``run`` method.
 
 #. Define a ScalaTest class for your design by extending ``TutorialSuite``. Parameters will
    define define the tuple (``DESIGN``, ``TARGET_CONFIG``, ``PLATFORM_CONFIG``), and call

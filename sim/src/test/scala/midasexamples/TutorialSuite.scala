@@ -488,6 +488,14 @@ class GoldenGateMiscCITests extends Suites(
   new MultiRegF1Test
 )
 
+class FMRCITests extends Suites(
+  new MultiRegfileFMRF1Test,
+  new MultiSRAMFMRF1Test,
+  new PassthroughModelTest,
+  new PassthroughModelNestedTest,
+  new PassthroughModelBridgeSourceTest,
+)
+
 // These groups are vestigial from CircleCI container limits
 class CIGroupA extends Suites(
   new ChiselExampleDesigns,
@@ -503,5 +511,6 @@ class CIGroupB extends Suites(
   new GoldenGateMiscCITests,
   new firesim.fasedtests.CIGroupB,
   new firesim.AllMidasUnitTests,
-  new firesim.FailingUnitTests
+  new firesim.FailingUnitTests,
+  new FMRCITests
 )

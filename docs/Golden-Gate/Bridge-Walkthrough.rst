@@ -134,8 +134,8 @@ the corresponding BridgeModule is present:
 
 .. literalinclude:: ../../sim/src/main/cc/firesim/firesim_top.cc
     :language: c++
-    :start-after: DOC include start: UART Bridge Driver Registration
-    :end-before: DOC include end: UART Bridge Driver Registration
+    :start-after: DOC include start: Bridge Driver Registration
+    :end-before: DOC include end: Bridge Driver Registration
 
 Build-System Modifications
 ++++++++++++++++++++++++++

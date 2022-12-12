@@ -20,8 +20,11 @@ public:
   int teardown();
 
 protected:
-  void add_bridge_driver(bridge_driver_t *bridge_driver) {
-    bridges.push_back(std::unique_ptr<bridge_driver_t>(bridge_driver));
+  void add_bridge_driver(bridge_driver_t *bridge) {
+    bridges.emplace_back(bridge);
+  }
+  void add_bridge_driver(FpgaModel *bridge) {
+    fpga_models.emplace_back(bridge);
   }
 
 private:
@@ -32,7 +35,7 @@ private:
   std::vector<std::unique_ptr<bridge_driver_t>> bridges;
   // FPGA-hosted models with programmable registers & instrumentation
   // (i.e., bridges_drivers whose tick() is a nop)
-  std::vector<FpgaModel *> fpga_models;
+  std::vector<std::unique_ptr<FpgaModel>> fpga_models;
 
   // profile interval: # of cycles to advance before profiling instrumentation
   // registers in models

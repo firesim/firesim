@@ -1,0 +1,10 @@
+// See LICENSE for license details.
+
+#include "PassthroughModelTest.h"
+
+class TestPassthroughModelNested final : public PassthroughModelDriver {
+public:
+  using PassthroughModelDriver::PassthroughModelDriver;
+};
+
+TEST_MAIN(TestPassthroughModelNested)
