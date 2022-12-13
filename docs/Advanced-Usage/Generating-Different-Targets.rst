@@ -171,7 +171,9 @@ resides in ``sim/``.  These projects are:
    :gh-file-ref:`sim/src/main/scala/midasexamples`, these are a set of simple chisel
    circuits like GCD, that demonstrate how to use Golden Gate.  These are useful test
    cases for bringing up new Golden Gate features.
-3. **fasedtests**: designs to do integration testing of FASED memory-system timing models.
+3. **bridges**: tests for firesim-lib bridges.  These have more dependencies and
+   involve more logic than `midasexamples`.
+4. **fasedtests**: designs to do integration testing of FASED memory-system timing models.
 
 Projects have the following directory structure:
 
