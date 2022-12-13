@@ -110,6 +110,13 @@ abstract class FireSimTestSuite(
   runSuite("verilator")(benchmarks)
 }
 
+class SimpleRocketF1Tests
+    extends FireSimTestSuite(
+      "FireSim",
+      "DDR3FCFS_FireSimRocketConfig",
+      "BaseF1Config",
+    )
+
 class RocketF1Tests
     extends FireSimTestSuite(
       "FireSim",
@@ -170,4 +177,11 @@ class CVA6F1Tests
     )
 
 // This test suite only mirrors what is run in CI. CI invokes each test individually, using a testOnly call.
-class CITests extends Suites(new RocketF1Tests, new MultiRocketF1Tests, new BoomF1Tests, new RocketNICF1Tests)
+class CITests
+    extends Suites(
+      new SimpleRocketF1Tests,
+      new RocketF1Tests,
+      new MultiRocketF1Tests,
+      new BoomF1Tests,
+      new RocketNICF1Tests,
+    )
