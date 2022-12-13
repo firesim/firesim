@@ -521,13 +521,18 @@ class FireSimTopologyWithPasses:
         self.boot_simulation_passes(False, skip_instance_binding=True)
 
         @parallel
-        def monitor_jobs_wrapper(run_farm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
+        def monitor_jobs_wrapper(
+                run_farm: RunFarm,
+                prior_completed_jobs: List[str],
+                is_final_loop: bool,
+                is_networked: bool,
+                terminateoncompletion: bool,
+                job_results_dir: str) -> Dict[str, Dict[str, bool]]:
             """ on each instance, check over its switches and simulations
             to copy results off. """
             my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node.instance_deploy_manager is not None
-            return my_node.instance_deploy_manager.monitor_jobs_instance(completed_jobs, teardown, terminateoncompletion, job_results_dir)
-
+            return my_node.instance_deploy_manager.monitor_jobs_instance(prior_completed_jobs, is_final_loop, is_networked, terminateoncompletion, job_results_dir)
 
         def loop_logger(instancestates: Dict[str, Any], terminateoncompletion: bool) -> None:
             """ Print the simulation status nicely. """
@@ -601,8 +606,8 @@ class FireSimTopologyWithPasses:
             rootLogger.info("""{}/{} simulations are still running.""".format(runningsims, totalsims))
             rootLogger.info("-"*80)
 
-        # teardown is required if roots are switches
-        teardown_required = isinstance(self.firesimtopol.roots[0], FireSimSwitchNode)
+        # is networked if a switch node is the root
+        is_networked = isinstance(self.firesimtopol.roots[0], FireSimSwitchNode)
 
         # run polling loop
         while True:
@@ -612,24 +617,21 @@ class FireSimTopologyWithPasses:
             def get_jobs_completed_local_info():
                 # this is a list of jobs completed, since any completed job will have
                 # a directory within this directory.
-                jobscompleted = os.listdir(self.workload.job_monitoring_dir)
-                rootLogger.debug("Monitoring dir jobs completed: " + str(jobscompleted))
-                return jobscompleted
+                monitored_jobs_completed = os.listdir(self.workload.job_monitoring_dir)
+                rootLogger.debug(f"Monitoring dir jobs completed: {monitored_jobs_completed}")
+                return monitored_jobs_completed
 
-            jobscompleted = get_jobs_completed_local_info()
-
-
-            # this job on the instance should return all the state about the instance
-            # e.g.:
-            # if an instance has been terminated (really - is termination
-            # requested and no jobs are left, then we will have implicitly
-            # terminated
-            teardown = False
-            instancestates = execute(monitor_jobs_wrapper, self.run_farm,
-                                    jobscompleted, teardown,
-                                    self.terminateoncompletion,
-                                    self.workload.job_results_dir,
-                                    hosts=all_run_farm_ips)
+            # return all the state about the instance (potentially copy back results and/or terminate)
+            is_final_run = False
+            monitored_jobs_completed = get_jobs_completed_local_info()
+            instancestates = execute(monitor_jobs_wrapper,
+                                     self.run_farm,
+                                     monitored_jobs_completed,
+                                     is_final_run,
+                                     is_networked,
+                                     self.terminateoncompletion,
+                                     self.workload.job_results_dir,
+                                     hosts=all_run_farm_ips)
 
             # log sim state, raw
             rootLogger.debug(pprint.pformat(instancestates))
@@ -637,31 +639,37 @@ class FireSimTopologyWithPasses:
             # log sim state, properly
             loop_logger(instancestates, self.terminateoncompletion)
 
-            jobs_complete_dict = dict()
+            jobs_complete_dict = {}
             simstates = [x['sims'] for x in instancestates.values()]
             for x in simstates:
                 jobs_complete_dict.update(x)
             global_status = jobs_complete_dict.values()
-            rootLogger.debug("jobs complete dict " + str(jobs_complete_dict))
-            rootLogger.debug("global status: " + str(global_status))
+            rootLogger.debug(f"Jobs complete: {jobs_complete_dict}")
+            rootLogger.debug(f"Global status: {global_status}")
 
-            if teardown_required and any(global_status):
+            if is_networked and any(global_status):
+                # at least one simulation has finished
+
                 # in this case, do the teardown, then call exec again, then exit
-                rootLogger.info("Teardown required, manually tearing down...")
+                rootLogger.info("Networked simulation, manually tearing down all instances...")
                 # do not disconnect nbds, because we may need them for copying
                 # results. the process of copying results will tear them down anyway
                 self.kill_simulation_passes(use_mock_instances_for_testing, disconnect_all_nbds=False)
-                rootLogger.debug("continuing one more loop to fully copy results and terminate")
-                teardown = True
-                # get latest local info about jobs completed. avoid extra copy
-                jobscompleted = get_jobs_completed_local_info()
-                instancestates = execute(monitor_jobs_wrapper, self.run_farm,
-                                        jobscompleted, teardown,
-                                        self.terminateoncompletion,
-                                        self.workload.job_results_dir,
-                                        hosts=all_run_farm_ips)
+
+                rootLogger.debug("One more loop to fully copy results and terminate.")
+                is_final_run = True
+                monitored_jobs_completed = get_jobs_completed_local_info()
+                instancestates = execute(monitor_jobs_wrapper,
+                                         self.run_farm,
+                                         monitored_jobs_completed,
+                                         is_final_run,
+                                         is_networked,
+                                         self.terminateoncompletion,
+                                         self.workload.job_results_dir,
+                                         hosts=all_run_farm_ips)
                 break
-            if not teardown_required and all(global_status):
+
+            if not is_networked and all(global_status):
                 break
 
             time.sleep(10)
