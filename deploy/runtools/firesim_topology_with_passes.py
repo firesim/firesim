@@ -432,6 +432,14 @@ class FireSimTopologyWithPasses:
         """ Only run passes to build drivers. """
         self.pass_build_required_drivers()
 
+    @parallel
+    def monitor_jobs_wrapper(self, run_farm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
+        """ on each instance, check over its switches and simulations
+        to copy results off. """
+        my_node = run_farm.lookup_by_host(env.host_string)
+        assert my_node.instance_deploy_manager is not None
+        return my_node.instance_deploy_manager.monitor_jobs_instance(completed_jobs, teardown, terminateoncompletion, job_results_dir)
+
     def boot_simulation_passes(self, use_mock_instances_for_testing: bool, skip_instance_binding: bool = False) -> None:
         """ Passes that setup for boot and boot the simulation.
         skip instance binding lets users not call the binding pass on the run_farm
@@ -500,6 +508,18 @@ class FireSimTopologyWithPasses:
                     time.sleep(1)
 
         execute(screens, hosts=all_run_farm_ips)
+        # Run the monitor to copy back all results in their current state.
+        # This is copied from run_workload
+        execute(self.monitor_jobs_wrapper, self.run_farm,
+                # Hack: Treat all jobs as not completed since it's not trivial to look up the old results directory
+                # Note, this will copy back new copies of finished jobs under a new results-dir name timestamped
+                # with the time `kill`, not `runworkload`, was run.
+                completed_jobs = [],
+                teardown = True,
+                # Leave instances up for debugging purposes
+                terminateoncompletion = False,
+                job_results_dir = self.workload.job_results_dir,
+                hosts=all_run_farm_ips)
 
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
@@ -519,15 +539,6 @@ class FireSimTopologyWithPasses:
 
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
-
-        @parallel
-        def monitor_jobs_wrapper(run_farm, completed_jobs: List[str], teardown: bool, terminateoncompletion: bool, job_results_dir: str) -> Dict[str, Dict[str, bool]]:
-            """ on each instance, check over its switches and simulations
-            to copy results off. """
-            my_node = run_farm.lookup_by_host(env.host_string)
-            assert my_node.instance_deploy_manager is not None
-            return my_node.instance_deploy_manager.monitor_jobs_instance(completed_jobs, teardown, terminateoncompletion, job_results_dir)
-
 
         def loop_logger(instancestates: Dict[str, Any], terminateoncompletion: bool) -> None:
             """ Print the simulation status nicely. """
