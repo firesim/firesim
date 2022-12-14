@@ -40,16 +40,21 @@ tracedoctor_t::tracedoctor_t(
     info.traceBytes = (traceWidth + 7) / 8;
 
     std::string suffix = std::string("=");
-    std::string tracetrigger_arg            = std::string("+tracedoctor-trigger") + suffix;
-    std::string tracethreads_arg            = std::string("+tracedoctor-threads") + suffix;
-    std::string tracebuffers_arg            = std::string("+tracedoctor-buffers") + suffix;
-    std::string traceworker_arg             = std::string("+tracedoctor-worker") + suffix;
-
+    std::string tracetrigger_arg = std::string("+tracedoctor-trigger") + suffix;
+    std::string tracethreads_arg = std::string("+tracedoctor-threads") + suffix;
+    std::string tracebuffers_arg = std::string("+tracedoctor-buffers") + suffix;
+    std::string traceworker_arg  = std::string("+tracedoctor-worker") + suffix;
 
     for (auto &arg: args) {
         if (arg.find(tracetrigger_arg) == 0) {
             std::string const sarg = arg.substr(tracetrigger_arg.length());
-            this->traceTrigger = std::stol(sarg);
+            if (sarg.compare("none") == 0) {
+              this->traceTrigger = 0;
+            } else if (sarg.compare("tracerv") == 0) {
+              this->traceTrigger = 1;
+            } else {
+              throw std::invalid_argument("TraceDoctor@" + std::to_string(info.tracerId) + " '" + sarg + "' invalid trigger argument, choose 'none' or 'tracerv'");
+            }
         }
         if (arg.find(tracebuffers_arg) == 0) {
             auto bufferargs = strSplit(arg.substr(tracebuffers_arg.length()), ",");
@@ -160,8 +165,8 @@ void tracedoctor_t::init() {
     } else {
       write(mmioAddrs->traceEnable, 1);
       write(mmioAddrs->triggerSelector, traceTrigger);
-      fprintf(stdout, "TraceDoctor@%d: trigger(%d), stream_depth(%d), token_width(%d), trace_width(%d),\n",
-              info.tracerId, traceTrigger, streamDepth, info.tokenBits, info.traceBits);
+      fprintf(stdout, "TraceDoctor@%d: trigger(%s), stream_depth(%d), token_width(%d), trace_width(%d),\n",
+              info.tracerId, (traceTrigger == 0) ? "none" : "tracerv", streamDepth, info.tokenBits, info.traceBits);
       fprintf(stdout, "TraceDoctor@%d: buffer_grouping(%d), buffer_depth(%d), workers(%ld), threads(%d)\n", info.tracerId, bufferGrouping, bufferDepth, workers.size(), traceThreads);
     }
     write(mmioAddrs->initDone, true);

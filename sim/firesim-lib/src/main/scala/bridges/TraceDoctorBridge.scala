@@ -11,7 +11,6 @@ import testchipip.TileTraceDoctorIO
 case class TraceDoctorKey(traceWidth: Int)
 
 class TraceDoctorTargetIO(val traceWidth : Int) extends Bundle {
-  val tracevTrigger = Input(Bool())
   val trace = Input(new TileTraceDoctorIO(traceWidth))
 }
 
@@ -26,7 +25,6 @@ class TraceDoctorBridge(val traceWidth: Int) extends BlackBox
 object TraceDoctorBridge {
   def apply(tracedoctor: TileTraceDoctorIO)(implicit p:Parameters): TraceDoctorBridge = {
     val ep = Module(new TraceDoctorBridge(tracedoctor.traceWidth))
-    // withClockAndReset(tracedoctor.clock, tracedoctor.reset) { TriggerSink(ep.io.tracevTrigger, noSourceDefault = false.B) }
     ep.io.trace := tracedoctor
     ep
   }
@@ -42,10 +40,8 @@ class TraceDoctorBridgeModule(key: TraceDoctorKey)(implicit p: Parameters)
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new TraceDoctorTargetIO(key.traceWidth)))
 
-    // Set after trigger-dependent memory-mapped registers have been set, to
-    // prevent spurious credits
-    val initDone    = genWORegInit(Wire(Bool()), "initDone", false.B)
-    val traceEnable    = genWORegInit(Wire(Bool()), "traceEnable", false.B)
+    val initDone = genWORegInit(Wire(Bool()), "initDone", false.B)
+    val traceEnable = genWORegInit(Wire(Bool()), "traceEnable", false.B)
 
     // Trigger Selector
     val triggerSelector = RegInit(0.U((p(CtrlNastiKey).dataBits).W))
@@ -54,12 +50,11 @@ class TraceDoctorBridgeModule(key: TraceDoctorKey)(implicit p: Parameters)
     // Mask off ready samples when under reset
     val trace = hPort.hBits.trace.data
     val traceValid = trace.valid && !hPort.hBits.trace.reset
-    val triggerTraceV = hPort.hBits.tracevTrigger
 
     // Connect trigger
     val trigger = MuxLookup(triggerSelector, false.B, Seq(
       0.U -> true.B,
-      1.U -> triggerTraceV
+      1.U -> hPort.hBits.trace.tracerVTrigger
     ))
 
     val traceOut = initDone && traceEnable && traceValid && trigger
