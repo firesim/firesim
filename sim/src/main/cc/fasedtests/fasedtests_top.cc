@@ -101,16 +101,16 @@ int fasedtests_top_t::simulation_run() {
     fprintf(stderr,
             "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
             exitcode,
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   } else if (max_cycles_timeout) {
     fprintf(stderr,
             "*** FAILED *** +max_cycles specified timeout after %" PRIu64
             " cycles\n",
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   } else {
     fprintf(stderr,
             "*** PASSED *** after %" PRIu64 " cycles\n",
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   }
 
   return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;

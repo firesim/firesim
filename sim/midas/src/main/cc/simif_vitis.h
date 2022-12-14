@@ -16,7 +16,7 @@ public:
   // to setup the FPGAManagedStream engine.
   void host_mmio_init() override{};
 
-  int run() override { return simulation_run(); }
+  int run() { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;

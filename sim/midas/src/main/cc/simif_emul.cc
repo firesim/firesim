@@ -6,8 +6,11 @@
 #include "bridges/fpga_managed_stream.h"
 
 simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
-    : simif_t(args) {
+    : simif_t(args), master(std::make_unique<mmio_t>(CTRL_BEAT_BYTES)),
+      cpu_managed_axi4(std::make_unique<mmio_t>(CPU_MANAGED_AXI4_BEAT_BYTES)),
+      cpu_mem(std::make_unique<mm_magic_t>()) {
 
+  // Parse arguments.
   for (auto arg : args) {
     if (arg.find("+waveform=") == 0) {
       waveform = arg.c_str() + 10;
@@ -23,13 +26,10 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
     }
   }
 
-  master = new mmio_t(CTRL_BEAT_BYTES);
-  cpu_managed_axi4 = new mmio_t(CPU_MANAGED_AXI4_BEAT_BYTES);
-  slave = new mm_t *[MEM_NUM_CHANNELS];
-  cpu_mem = new mm_magic_t;
-  for (int i = 0; i < MEM_NUM_CHANNELS; i++) {
-    slave[i] = (mm_t *)new mm_magic_t;
-    slave[i]->init(memsize, MEM_BEAT_BYTES, 64);
+  // Initialise memories.
+  for (unsigned i = 0; i < MEM_NUM_CHANNELS; ++i) {
+    auto &mem = slave.emplace_back(std::make_unique<mm_magic_t>());
+    mem->init(memsize, MEM_BEAT_BYTES, 64);
   }
 
 #ifdef FPGA_MANAGED_AXI4_PRESENT
@@ -100,9 +100,20 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
   }
 
 #endif // FPGAMANAGEDSTREAMENGINE_0_PRESENT
+
+  // Set up the simulation thread.
+  finished = false;
+  exit_code = EXIT_FAILURE;
+  {
+    std::unique_lock lock(target_mutex);
+    sim_flag = false;
+    target_flag = false;
+    thread = std::thread([&] { thread_main(); });
+    target_cond.wait(lock, [&] { return target_flag; });
+  }
 }
 
-simif_emul_t::~simif_emul_t(){};
+simif_emul_t::~simif_emul_t() {}
 
 void simif_emul_t::host_mmio_init() {
   for (auto &stream : this->fpga_to_cpu_streams) {
@@ -111,30 +122,15 @@ void simif_emul_t::host_mmio_init() {
   for (auto &stream : this->cpu_to_fpga_streams) {
     stream->init();
   }
-};
-
-int simif_emul_t::run() {
-  if (fastloadmem && !load_mem_path.empty()) {
-    fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
-    load_mems(load_mem_path.c_str());
-  }
-
-  sim_init();
-
-  int exit_code = simulation_run();
-
-  finish();
-
-  return exit_code;
 }
 
-void simif_emul_t::wait_write(mmio_t *mmio) {
-  while (!mmio->write_resp())
+void simif_emul_t::wait_write(mmio_t &mmio) {
+  while (!mmio.write_resp())
     advance_target();
 }
 
-void simif_emul_t::wait_read(mmio_t *mmio, void *data) {
-  while (!mmio->read_resp(data))
+void simif_emul_t::wait_read(mmio_t &mmio, void *data) {
+  while (!mmio.read_resp(data))
     advance_target();
 }
 
@@ -143,13 +139,13 @@ void simif_emul_t::write(size_t addr, uint32_t data) {
   static_assert(CTRL_AXI4_SIZE == 2,
                 "AXI4-lite control interface has unexpected size");
   master->write_req(addr, CTRL_AXI4_SIZE, 0, &data, &strb);
-  wait_write(master);
+  wait_write(*master);
 }
 
 uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
   master->read_req(addr, CTRL_AXI4_SIZE, 0);
-  wait_read(master, &data);
+  wait_read(*master, &data);
   return data;
 }
 
@@ -192,7 +188,7 @@ simif_emul_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
 
     cpu_managed_axi4->read_req(
         addr, log2(CPU_MANAGED_AXI4_BEAT_BYTES), part_len);
-    wait_read(cpu_managed_axi4, data);
+    wait_read(*cpu_managed_axi4, data);
 
     len -= (part_len + 1);
     addr += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
@@ -226,7 +222,7 @@ simif_emul_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
 
     cpu_managed_axi4->write_req(
         addr, log2(CPU_MANAGED_AXI4_BEAT_BYTES), part_len, data, strb_ptr);
-    wait_write(cpu_managed_axi4);
+    wait_write(*cpu_managed_axi4);
 
     len -= (part_len + 1);
     addr += (part_len + 1) * CPU_MANAGED_AXI4_BEAT_BYTES;
@@ -240,4 +236,60 @@ simif_emul_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
 void simif_emul_t::load_mems(const char *fname) {
   slave[0]->load_mem(0, fname);
   // TODO: allow file to be split across slaves
+}
+
+int simif_emul_t::end() {
+  assert(finished && "simulation not yet finished");
+  thread.join();
+  return exit_code;
+}
+
+void simif_emul_t::do_tick() {
+  sim_flag = false;
+  target_flag = true;
+
+  {
+    std::unique_lock lock(target_mutex);
+    target_cond.notify_one();
+  }
+  {
+    std::unique_lock lock(sim_mutex);
+    sim_cond.wait(lock, [&] { return sim_flag; });
+  }
+}
+
+bool simif_emul_t::to_sim() {
+  target_flag = false;
+  sim_flag = true;
+
+  {
+    std::unique_lock lock(sim_mutex);
+    sim_cond.notify_one();
+  }
+  {
+    std::unique_lock lock(target_mutex);
+    target_cond.wait(lock, [&] { return target_flag || finished; });
+  }
+  return finished;
+}
+
+void simif_emul_t::thread_main() {
+  // Switch over to the target thread and wait for the first tick.
+  do_tick();
+
+  // Load memories before initialising the simulation.
+  if (fastloadmem && !load_mem_path.empty()) {
+    fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
+    load_mems(load_mem_path.c_str());
+  }
+
+  // Run the simulation flow.
+  exit_code = simulation_run();
+
+  // Wake the target thread before returning from the simulation thread.
+  {
+    std::unique_lock lock(target_mutex);
+    finished = true;
+    target_cond.notify_one();
+  }
 }
