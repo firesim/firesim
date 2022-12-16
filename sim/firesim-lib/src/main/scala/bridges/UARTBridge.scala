@@ -39,7 +39,7 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
   val io = IO(new UARTBridgeTargetIO(uParams))
   // Implement the bridgeIO member of Bridge using HostPort. This indicates that
   // we want to divide io, into a bidirectional token stream with the input
-  // token corresponding to all of the inputs of this BlackBox, and the output token consisting of 
+  // token corresponding to all of the inputs of this BlackBox, and the output token consisting of
   // all of the outputs from the BlackBox
   val bridgeIO = HostPort(io)
 

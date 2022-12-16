@@ -22,10 +22,10 @@ class TerminationModuleDUT extends Module {
   val io = IO(new TerminationModuleIO(params))
   val counter = RegInit(0.U(16.W))
 
-  counter := counter + 1.U 
+  counter := counter + 1.U
   val valid = (io.doneErrCode.asBools).map { _ && (counter >= io.validInCycle)}
 
-  TerminationBridge(valid, params) 
+  TerminationBridge(valid, params)
 
 }
 

@@ -220,7 +220,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       masters = Seq(AXI4MasterParameters(
         name = "fased-memory-timing-model",
         id   = IdRange(0, 1 << p(NastiKey).idBits),
-        aligned = true, // This must be the case for the TL-based width adapter to work 
+        aligned = true, // This must be the case for the TL-based width adapter to work
         maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID))
       )))))
 

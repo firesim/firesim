@@ -21,7 +21,7 @@ body:
       placeholder: Version + Hash
       value: |
         <!-- copy/paste the output of `git describe --tags --long` below -->
-        
+
     validations:
       required: true
 

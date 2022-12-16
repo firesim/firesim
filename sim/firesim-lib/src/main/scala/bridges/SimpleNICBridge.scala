@@ -114,7 +114,7 @@ class NICTokenToBigTokenAdapter extends Module {
     val pcie_out = DecoupledIO(UInt(512.W))
   })
 
-  // step one, buffer 7 elems into registers. note that the 7th element is here 
+  // step one, buffer 7 elems into registers. note that the 7th element is here
   // just for convenience. in reality, it is not used since we're bypassing to
   // remove a cycle of latency
   val NTHT_BUF = Reg(Vec(7, new NICToHostToken))

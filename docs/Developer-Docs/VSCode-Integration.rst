@@ -52,7 +52,7 @@ How To Use (Remote Manager)
         User centos
         IdentityFile ~/.ssh/<your-firesim.pem>
         Hostname <IP ADDR>
-    
+
 #. In VSCode, using the ``Remote Manager`` on the left sidebar, connect to your manager instance.
 #. Open a workspace in your FireSim clone under ``sim/``.
 #. First time per remote: install the Metals plugin on the *remote* machine.
@@ -62,8 +62,8 @@ How To Use (Remote Manager)
 At this point, metals should automatically attempt to import the SBT-defined build rooted at ``sim/``. It will:
 
 #. Call out to SBT to run ``bloopInstall``
-#. Spin up a bloop build server. 
-#. Compile all scala sources for the default SBT project in firesim. 
+#. Spin up a bloop build server.
+#. Compile all scala sources for the default SBT project in firesim.
 
 Once this process is complete, autocompletion, jump to source, code lenses, and all that good stuff should work correctly.
 
@@ -72,7 +72,7 @@ Limitations
 
 #. **No test task support for ScalaTests that use make.** Due to the way
    FireSim's ScalaTest calls out to make to invoke the generator and Golden Gate, Metals's bloop instance
-   must initialized with ``env.sh`` sourced. This will be resolved in a future PR. 
+   must initialized with ``env.sh`` sourced. This will be resolved in a future PR.
 
 Other Notes
 ###########

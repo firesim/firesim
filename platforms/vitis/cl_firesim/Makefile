@@ -28,7 +28,7 @@ SIM_DIR        := $(buildroot)/simulation
 bitstream: TARGET = hw
 bitstream: VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/build-bitstream.cfg
 sim:       TARGET = hw_emu
-sim:       VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg 
+sim:       VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
 run-sim:   TARGET = hw_emu
 run-sim:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
 

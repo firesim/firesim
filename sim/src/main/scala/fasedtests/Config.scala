@@ -73,7 +73,7 @@ class WithNFuzzers(numFuzzers: Int) extends Config((site, here, up) => {
     FuzzerParameters(
       site(NumTransactions) / numFuzzers,
       site(MaxFlight),
-      Some(AddressSet(regionSize * i, (regionSize - 1) & site(FuzzerAddressMaskKey)))) 
+      Some(AddressSet(regionSize * i, (regionSize - 1) & site(FuzzerAddressMaskKey))))
   }
 })
 class QuadFuzzer extends WithNFuzzers(4)

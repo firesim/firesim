@@ -62,7 +62,7 @@ case object ChannelSink extends ChannelFlow { def suffix = "_sink" }
   * This contains methods useful for analyzing inter-model connectivity and decoding
   * information carried by various FAMEAnnotations into more usable forms.
   *
-  * At different points during compilation different members be safely used. Three 
+  * At different points during compilation different members be safely used. Three
   * points of interest:
   *
   * 1) Post-[[FAMEDefaults]]: [[FAMEChannelConnectionAnnotation]]s are fully defined (provided between
@@ -131,7 +131,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
 
   private val moduleOfInstance = new LinkedHashMap[String, String]
   val topConnects = new LinkedHashMap[ReferenceTarget, ReferenceTarget]
-  val topBridgeLoopbackConnects = new LinkedHashMap[ReferenceTarget, ReferenceTarget] 
+  val topBridgeLoopbackConnects = new LinkedHashMap[ReferenceTarget, ReferenceTarget]
   val inputChannels = new LinkedHashMap[ModuleTarget, mutable.Set[String]] with MultiMap[ModuleTarget, String]
   val outputChannels = new LinkedHashMap[ModuleTarget, mutable.Set[String]] with MultiMap[ModuleTarget, String]
   getTopConnects(moduleNodes(topTarget).asInstanceOf[Module].body)
@@ -374,10 +374,10 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
       val modulePreamble = s"Deduper for module ${mTarget.module}"
       val outputPreamble = s"  Output Ports"
       val inputPreamble = s"  Input Ports"
-      val outputs = outputChannelDedups.groupBy(_._2).map { case (pName, channels) => 
+      val outputs = outputChannelDedups.groupBy(_._2).map { case (pName, channels) =>
         Seq(s"    Port ${pName} drives channels:") ++: channels.map { case (ch, _) =>  s"      ${ch}" }
       }
-      val inputs = inputChannelDedups.groupBy(_._2).map { case (pName, channels) => 
+      val inputs = inputChannelDedups.groupBy(_._2).map { case (pName, channels) =>
         s"""|    Port ${pName} sinks channel:
             |      ${channels.head._1}""".stripMargin
       }

@@ -6,7 +6,7 @@ import scala.io.Source
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 
 /**
-  * An base class for implementing FireSim integration tests that call out to the Make 
+  * An base class for implementing FireSim integration tests that call out to the Make
   * buildsystem. These tests typically have three steps whose results are tracked by scalatest:
   * 1) Elaborate the target and compile it through golden gate (ElaborateAndCompile)
   * 2) Compile a metasimulator for the generated RTL (compileMlSimulator)

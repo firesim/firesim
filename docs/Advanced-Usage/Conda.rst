@@ -67,7 +67,7 @@ hit ``<<Enter>>`` and move forward with your life.
 
     However, it is always a better idea to modify the version in ``machine-launch-script.sh`` so that:
     #. you remember to commit and share the new version requirement.
-    #. you are providing a complete set of requirements for ``conda`` to solve.  There is a subtle difference between installing everything you need in a single `conda install` vs incrementally installing one or two packages at a time because  the version constraints *are not maintained between conda invocations*.   (NOTE: certain packages like Python are implicitly `pinned <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-pkgs.html#preventing-packages-from-updating-pinning>`_ at environment creation and will `only be updated if explicitly requested <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-python.html#updating-or-upgrading-python>`_ .) 
+    #. you are providing a complete set of requirements for ``conda`` to solve.  There is a subtle difference between installing everything you need in a single `conda install` vs incrementally installing one or two packages at a time because  the version constraints *are not maintained between conda invocations*.   (NOTE: certain packages like Python are implicitly `pinned <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-pkgs.html#preventing-packages-from-updating-pinning>`_ at environment creation and will `only be updated if explicitly requested <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-python.html#updating-or-upgrading-python>`_ .)
 
 
 So, modify ``machine-launch-script.sh`` with the updated version of ``moto``, and run it.  If you'd like to see what
@@ -121,8 +121,8 @@ by running ``conda env list`` to get output similar to::
     doc_writing           *  /opt/conda/envs/doc_writing
 
 In the output above, you can see that I had the 'base' environment that is created when you install ``conda`` as well as
-the ``firesim`` environment that ``machine-launch-script.sh`` creates by default.  I also created a 'doc_writing' environment 
-to show some of the examples pasted earlier. 
+the ``firesim`` environment that ``machine-launch-script.sh`` creates by default.  I also created a 'doc_writing' environment
+to show some of the examples pasted earlier.
 
 You can also see that 'doc_writing' has an asterisk next to it, indicating that it is the currently 'activated' environment.
 To switch to a different environment, I could ``conda activate <name>`` e.g. ``conda activate firesim``

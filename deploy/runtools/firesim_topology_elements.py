@@ -417,7 +417,7 @@ class FireSimServerNode(FireSimNode):
         if rfsname is not None:
             is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = dest_sim_slot_dir + "mountpoint"
-            
+
             run("""{} mkdir -p {}""".format("sudo" if sudo else "", mountpoint))
 
             if is_qcow2:

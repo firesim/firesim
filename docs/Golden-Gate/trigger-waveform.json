@@ -11,4 +11,4 @@
   edge:['a-~>b', 'b-~>c', 'd-~>e', 'e-~>f'],
   config: {hscale: 1.25},
  }
-   
+

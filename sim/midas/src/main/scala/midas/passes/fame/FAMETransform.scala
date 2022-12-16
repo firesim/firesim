@@ -197,7 +197,7 @@ object FAMEModuleTransformer {
       val bufferOutputRT = mTarget.ref(buf.name).field("O")
 
       if (currentModuleIsHub) {
-        // Leverage the MFMR hint provided by the clock bridge to relax the setup constraints on 
+        // Leverage the MFMR hint provided by the clock bridge to relax the setup constraints on
         // intra-domain paths. Do this only for the hub, since it it is the only multiclock model.
         //
         // Using this multicycle setup constraint is conservative, since all

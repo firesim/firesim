@@ -28,7 +28,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
   val topWiringPrefix = "simulationTrigger_"
   val sinkWiringKey = "trigger_sink"
 
-  // Defines the width of credit and debit counters local to a specific clock domain 
+  // Defines the width of credit and debit counters local to a specific clock domain
   // For the trigger to function correctly:
   // localWidth >= log2Ceil(max(localCreditSources, localDebitSources) * Ceil(N/M))
   // where:
@@ -153,7 +153,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       val ns = Namespace(wiredTopModule)
       val addedStmts = new mutable.ArrayBuffer[Statement]()
 
-      def addReduce(bools: Seq[WRef]): WRef = DensePrefixSum(bools)({ case (a, b) => 
+      def addReduce(bools: Seq[WRef]): WRef = DensePrefixSum(bools)({ case (a, b) =>
         val name = ns.newTemp
         val node = DefNode(NoInfo, name, DoPrim(PrimOps.Add, Seq(a, b), Seq.empty, UnknownType))
         addedStmts += node

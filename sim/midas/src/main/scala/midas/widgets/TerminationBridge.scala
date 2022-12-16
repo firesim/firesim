@@ -9,7 +9,7 @@ import midas.targetutils._
 import freechips.rocketchip.util.{DecoupledHelper}
 
 /**
-  * Defines a condition under which the simulator should halt. 
+  * Defines a condition under which the simulator should halt.
   * @param Message A string printed by the driver to indicate why the simulator is terminating.
   * @param isError When true, instructs the driver to return a non-zero value when exiting under this condition.
 **/
@@ -27,12 +27,12 @@ object TerminationCondition {
  */
 case class TerminationBridgeParams(
   conditionInfo: Seq[TerminationCondition]
-)                
+)
 
 class TerminationBridgeTargetIO(params: TerminationBridgeParams) extends Bundle {
   val clock = Input(Clock())
   val terminationCode = Input(UInt((log2Ceil((params.conditionInfo).size)).W))
-  val valid = Input(Bool()) 
+  val valid = Input(Bool())
 }
 
 class TerminationBridgeHostIO(params: TerminationBridgeParams)

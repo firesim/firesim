@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 RUNBIN=../target-design/chipyard/tests/blkdev.riscv
-#RUNBIN=../riscv-tools-install/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-add 
+#RUNBIN=../riscv-tools-install/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-add
 
 # generate a fresh test.stuff disk, all zeroed
 dd if=/dev/zero bs=1M count=128 of=test.disk

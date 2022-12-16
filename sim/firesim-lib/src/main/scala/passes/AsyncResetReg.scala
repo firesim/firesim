@@ -53,7 +53,7 @@ object AsyncResetRegPass extends firrtl.Transform {
       case m: ExtModule if m.defname == "AsyncResetReg" =>
         module.copy(info=m.info, name=m.name)
       case _ => m
-    } 
+    }
 
   def execute(cs: CircuitState): CircuitState = {
     val transformedMods = cs.circuit.modules.map(transform)
@@ -69,4 +69,4 @@ object AsyncResetRegPass extends firrtl.Transform {
 
     cs.copy(circuit = cs.circuit.copy(modules = transformedMods), annotations = transformedAnnos)
   }
-} 
+}

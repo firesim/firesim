@@ -151,8 +151,8 @@ Critical fix to libdwarf submodule URL. Fix boto3 pagination in manager. Fix syn
 
 ### Fixed
 *  update libdwarf submodule url #988
-*  Fix synthesized assertions stop-printf pair detection #999 
-*  Use pagination for boto3 calls in the manager #991 
+*  Fix synthesized assertions stop-printf pair detection #999
+*  Use pagination for boto3 calls in the manager #991
 
 ## [1.13.3] - 2022-03-01
 More small updates to AMI string in deploy area.
@@ -175,29 +175,29 @@ Small clarifications to the documentation and fixes the FPGA simulation driver i
 * Clarify AMI search term in documentation #967
 
 ## [1.13.0] - 2022-02-15
-Highlights include a bump to Chisel 3.5 & FIRRTL 1.5, Vivado 2020.2 & Developer AMI 1.10, considerable FPGA QoR optimizations, and standardized file emission stategy from Golden Gate (all file names described [here](https://docs.fires.im/en/1.13.0/Golden-Gate/Output-Files.html)). 
+Highlights include a bump to Chisel 3.5 & FIRRTL 1.5, Vivado 2020.2 & Developer AMI 1.10, considerable FPGA QoR optimizations, and standardized file emission stategy from Golden Gate (all file names described [here](https://docs.fires.im/en/1.13.0/Golden-Gate/Output-Files.html)).
 
 ### Added
-* A Basic Floorplan for DRAM Controllers #798 
+* A Basic Floorplan for DRAM Controllers #798
 * A ResetPulseBridge to drive reset a conventional bridge #782
   * This is used in place of peek poke to avoid an early deadlock condition.
  * A global reset condition to mask off events during reset #791
 * Support for XDC Emission that is Hierarchy-Mutation Robust. #825
-* Multi-cycle constraints to improve fmax on multiclock designs. #834 
+* Multi-cycle constraints to improve fmax on multiclock designs. #834
 * Bake-in FASED default runtime configuration into hardware #889
 
 ### Changed
 * Bumped to AMI 1.10 / AWS FPGA 1.4.19 / Vivado 2020.2 #788
 * libelf + libdwarf now installed to a firesim-local sysroot @ sim/lib-install #806
-* Improved host IFs to make it easier to define  bridges with custom channelization #778 
+* Improved host IFs to make it easier to define  bridges with custom channelization #778
 * Use a Standard File Emission Strategy #802
-* Only use required DRAM channels to save FPGA resources #816 
+* Only use required DRAM channels to save FPGA resources #816
 * Limit builddir directory name length by omitting chisel_triplet #826
 * install ca-certificates for latest root certs #840
 * Removed -o and -E options in Golden Gate's CLI #851
-* Changed word addresses to byte addresses in drivers #857  
-* Provide a more informative env.sh on build-setup failure  #885 
-* Use Published Dependencies For Chisel + FIRRTL #893 
+* Changed word addresses to byte addresses in drivers #857
+* Provide a more informative env.sh on build-setup failure  #885
+* Use Published Dependencies For Chisel + FIRRTL #893
 * Factor peek/poke out of simif_t #864
 * Chisel 3.5 / FIRRTL 1.5 Bump using Published Deps #899
 * Allow launchrunfarm to retry up to a specified timeout #940
@@ -208,9 +208,9 @@ Highlights include a bump to Chisel 3.5 & FIRRTL 1.5, Vivado 2020.2 & Developer 
 * Driver Return Code #910
 
 ### Removed
-* Source dependency on Barstools (ucb-bar/barstools) #803  
+* Source dependency on Barstools (ucb-bar/barstools) #803
 * Misc FASED Chisel Utilities + GeneratorUtils + PlusArgReader Pass #812
-* FIRRTL IR node helpers in midas.passes.util #811 
+* FIRRTL IR node helpers in midas.passes.util #811
 * Boost Dependency #806
 * WithAutoILA from default recipes #913
 
@@ -229,11 +229,11 @@ FIRRTL deduplication interaction.
 * A strategy for disabling retiming firesim/aws-fpga-firesim#34
 
 ### Changed
-* PLATFORM_CONFIG must mixin WithAutoILA to populate ILA #712 
+* PLATFORM_CONFIG must mixin WithAutoILA to populate ILA #712
 * Check sns topic permission at start of buildafi and warn user #754
 * Default AGFI target-frequency configurations #785
   *  Unnetworked targets (1.6 GHz, 0.8GHz, 1GHz) for Tile, Uncore, DRAM respectively
-  *  Networked targets (3.2GHz , 3.2GHz, 1.0 GHz) for tile 
+  *  Networked targets (3.2GHz , 3.2GHz, 1.0 GHz) for tile
 * Unrouted clock nets promoted to error firesim/aws-fpga-firesim#31
 
 ### Fixed
@@ -247,7 +247,7 @@ FIRRTL deduplication interaction.
 * Coremark and SPEC workloads moved to Chipyard
 
 ## [1.11.0] - 2021-01-19
-FireSim 1.11.0 formally introduces the _instance multithreading_ optimization, the subject of Albert Magyar's dissertation work, which can be used to improve FPGA capacity by up to 8X (2 -> 16 large boom cores) for some designs. Other notable changes include: putting DRAM in its own clock domain, RC + Chisel + FIRRTL bumps + many QoL improvements. 
+FireSim 1.11.0 formally introduces the _instance multithreading_ optimization, the subject of Albert Magyar's dissertation work, which can be used to improve FPGA capacity by up to 8X (2 -> 16 large boom cores) for some designs. Other notable changes include: putting DRAM in its own clock domain, RC + Chisel + FIRRTL bumps + many QoL improvements.
 
 ### Added
 * SBT 1.4 native client support; removes no SBT launch time (#668 )
@@ -255,37 +255,37 @@ FireSim 1.11.0 formally introduces the _instance multithreading_ optimization, t
 * Platform config to enable model multi-threading resource optimization (#636)
 * Support for designs with no AXI4 backing memory (#638)
 * A simulation heartbeat to record throughput and detect simulation deadlock (#662)
-* More informational logging during AutoCounter elaboration (#664) h/t @timsnyder-siv 
-* Separate parameter to specify width of backendLatency in FASED (#663) h/t @timsnyder-siv 
+* More informational logging during AutoCounter elaboration (#664) h/t @timsnyder-siv
+* Separate parameter to specify width of backendLatency in FASED (#663) h/t @timsnyder-siv
 * A 16-core LargeBOOM configuration has been added to FireChip (ucb-bar/chipyard#756)
 * A switch to disable synth asserts at runtime (#619)
 
 ### Changed
 * Bump to Chipyard 1.4 (Rocket Chip, Chisel 3.4.1, FIRRTL, 1.4.1)
 * Default targets now put DRAM in it's own 1 GHz clock domain (#644)
-* UARTBridge now obtains baud rate from UARTParams passed (#598) 
+* UARTBridge now obtains baud rate from UARTParams passed (#598)
 * Timing Failure and specific route_design failures promoted to fatal errors (firesim/aws-fpga-firesim#28)
 * Make memory loading compatible with new testchipip API (#617)
 * RationalClockBridge no longer assumes the zeroth clock is the base clock (#632)
 * Bumped to Chisel 3.4 and FIRRTL 1.4 (#668)
-* only warn on missing simoutputs copy back (#681) h/t @timsnyder-siv 
-* repo_state_summary introspects toplevel git repo and cd's there (#682) h/t @timsnyder-siv 
-* FIRRTL wiring transform is run in TargetTransforms by default (#625) 
+* only warn on missing simoutputs copy back (#681) h/t @timsnyder-siv
+* repo_state_summary introspects toplevel git repo and cd's there (#682) h/t @timsnyder-siv
+* FIRRTL wiring transform is run in TargetTransforms by default (#625)
 
 
-### Fixed 
+### Fixed
 * An AssertionSynthesis where assertion causes would be misattributed  (#582) (BP to 5.10.1)
 * Merging of memory channels under RAM optimizations (#589) (BP to 5.10.1)
 * ILAWiring Transform scheduling to prevent it running after the emitter (#590, #594, #603) (BP to 5.10.1)
 * Manager now terminates build instance and notifies user if Vivado fails during buildafi (#602)
-* Ctrl bus can now address more than 1024 registers (#635) (BP to 5.10.1) h/t @timsnyder-siv 
+* Ctrl bus can now address more than 1024 registers (#635) (BP to 5.10.1) h/t @timsnyder-siv
 * Model threading (#636) by non-power-of-two factors (#671)
-* Can now specify custom runtime configs in relative paths above the default location (#665) h/t @timsnyder-siv 
+* Can now specify custom runtime configs in relative paths above the default location (#665) h/t @timsnyder-siv
 * Quiet scalac warning about `midas.widgets.CppGenerationUtils.toStrLit` implicitConversion (#677) h/t @ingallsj
-* Add try/catch blocks in toplevel driver functions to avoid VCS error DPI-UED (#684) h/t @timsnyder-siv 
+* Add try/catch blocks in toplevel driver functions to avoid VCS error DPI-UED (#684) h/t @timsnyder-siv
 * fix compile warning: Midas code unreachable (#679) h/t @ingallsj
 * fix compile warnings: Midas Bits (#687) h/t @ingallsj
-* provide vcs -top to avoid spurious toplevel in hierarchy (#690) h/t @timsnyder-siv 
+* provide vcs -top to avoid spurious toplevel in hierarchy (#690) h/t @timsnyder-siv
 * fix a bug where multiple BUFGCEs would be appended to generated verilog (#694)
 * fix a deadlock in FASED instances with wide data interfaces (#680)
 
@@ -323,7 +323,7 @@ Adds initial support for simulating multi-clock targets in FireSim.
   * FirePerf now supports cores with IPC > 1 (BOOM)
 * Assert file no longer copied to manager, baked into driver via header (PR #441)
 * Bridges are now diplomatic (LazyModules) (PR #433)
-* Synthesized Printfs in different clocks domains are captured in different output files (#441) 
+* Synthesized Printfs in different clocks domains are captured in different output files (#441)
 * The default version of Verilator has changed to v4.034 (#550). Since this release adds enhanced support for Verilog timescales, the build detects if Verilator v4.034 or newer is visible in the build environment and sets default timescale flags appropriately.
 *  Elaboration output piped to stdout in `buildafi` (PR #433, resolves #440)
 * Midas-Level simulation no longer simulates the Shim layer, and instead simulates the module hierarchy rooted at FPGATop #548
@@ -389,31 +389,31 @@ Adds initial support for simulating multi-clock targets in FireSim.
 A more detailed account of everything included is included in the dev to master PR for this release: https://github.com/firesim/firesim/pull/413
 
 ### Added
-* Black-box Verilog support via external clock-gating PR #388 
+* Black-box Verilog support via external clock-gating PR #388
   * For the transform to work, the Chisel `Blackbox` that wraps the Verilog IP must have a single clock input that can safely be clock-gated.
   * The compiler that produces the decoupled simulator ("FAME Transform") automatically recognizes such blackboxes inside the target design.
   * The compiler automatically gates the clock to the Verilog IP to ensure that it deterministically advances in lockstep with the rest of the simulator.
   * This allows any Verilog module with a single clock input to be instantiated anywhere in the target design using the standard Chisel `Blackbox` interface.
-* Added chisel assertions to check for token irrevocability (non-determinism check) PR #416 
+* Added chisel assertions to check for token irrevocability (non-determinism check) PR #416
   * Enable by adding `HostDebugFeatures` to your `PLATFORM_CONFIG`
-* Support for QCOW2 disk images in the manager. This means that FireSim simulations can now boot directly from qcow2 images---the default linux-uniform image is 40MB as a qcow2 image as opposed to 2GB as a raw .img. Firemarshal support for generating these images is upcoming. This is PR #415 and resolves #411 
+* Support for QCOW2 disk images in the manager. This means that FireSim simulations can now boot directly from qcow2 images---the default linux-uniform image is 40MB as a qcow2 image as opposed to 2GB as a raw .img. Firemarshal support for generating these images is upcoming. This is PR #415 and resolves #411
 * AutoCounter and Trigger features from FirePerf paper (PR #437)
 
 ### Changed
-* Default buildfarm instances changed from c5.4xlarges to z1d.2xlarges #464  
+* Default buildfarm instances changed from c5.4xlarges to z1d.2xlarges #464
 * Update to Chipyard 1.1.0
 * Update FireMarshal to 1.8. This drastically reduces the default root filesystem image sizes and allows for FireMarshal workloads to be in any directory (not just the workloads/ directory).
 
 ### Fixed
 * Fix managerinit aws configure bug introduced by tutorial modifications. managerinit now correctly runs aws configure again, there is no need to run it separately (docs are updated to reflect this)
-* Supernode: Copying back results from supernode simulations now works for all rootfses, not just the zeroeth rootfs of a supernode sim. PR #415 
-* Manager: No longer double-copies results for a node that is responsible for triggering a teardown in the networked simulation case. PR #415 
+* Supernode: Copying back results from supernode simulations now works for all rootfses, not just the zeroeth rootfs of a supernode sim. PR #415
+* Manager: No longer double-copies results for a node that is responsible for triggering a teardown in the networked simulation case. PR #415
 
 ### Deprecated
 * N/A
 
 ### Removed
-* MIDAS submodule removed, now inlined in this repo ([MIDAS]-prefixed commits denote commits that originate from that repo) PR #400 
+* MIDAS submodule removed, now inlined in this repo ([MIDAS]-prefixed commits denote commits that originate from that repo) PR #400
 
 ## [1.7.0] - 2019-10-16
 
@@ -421,8 +421,8 @@ A more detailed account of everything included is included in the dev to master 
 
 ### Added
 * Upgraded MIDAS to Golden Gate (MIDAS II)
-* Better support for FireSim as a library. 
-  * Toolchains now built through chipyard, with firesim-specific tools added on top 
+* Better support for FireSim as a library.
+  * Toolchains now built through chipyard, with firesim-specific tools added on top
 * Workloads
   * Coremark (PR #288)
   * A linux workload that immediately powers off (PR #321)
@@ -464,7 +464,7 @@ A more detailed account of everything included is included in the dev to master 
 
 ### Fixed
 * Block Device widget
-  * A bug that would cause the simulation to hang under current reads and writes (PR #308) 
+  * A bug that would cause the simulation to hang under current reads and writes (PR #308)
   * A determinism hole that would cause reads to be released prematurely in target-time (PR #325)
 
 ### Deprecated
@@ -494,7 +494,7 @@ The release also updates firesim-software, see the changelog at sw/firesim-softw
 
 ### Changed
 * PR #261 Print out that post run hook is running, so it doesn't look like simulation termination is stuck.
-* PR #290 Bumps RocketChip from 50bb13d (Sept 25th, '18) to b8baef6 (May 10th, '19)  
+* PR #290 Bumps RocketChip from 50bb13d (Sept 25th, '18) to b8baef6 (May 10th, '19)
   * Bumps Buildroot in firesim-software; points at upstream
   * Bumps RISC-V tools; RISC-V toolchain is built directly from build-setup.sh
     * Resolves #217
@@ -525,7 +525,7 @@ A more detailed account of everything included is included in the dev->master PR
 ### Added
 
 * Supernode support now mainlined
-    * Resolves #11 
+    * Resolves #11
     * Includes support for using all 4 host memory channels and connecting them to N targets
 * FPGA Frequency now configurable in Chisel Config
 * Printf Synthesis support. See Docs for more info.
@@ -541,29 +541,29 @@ A more detailed account of everything included is included in the dev->master PR
 ### Changed
 
 * PR #218. Bump aws-fpga/FPGA Dev AMI support to 1.4.6 / 1.5.0 respectively.
-    * Resolves #170 
+    * Resolves #170
     * According to AWS, this should still work for users on the 1.4.0 AMI
-* Switch to XDMA from EDMA for DMA transfers. Improves performance ~20% in single-instance cases. 
+* Switch to XDMA from EDMA for DMA transfers. Improves performance ~20% in single-instance cases.
     * Resolves #51
 * Only request build-farm instances after successful replace-rtl
-    * Resolves #100 
+    * Resolves #100
 * SBT project reworked; FIRRTL provided as an unmanaged dep; target-land annotations pulled into separate project.
-  * Resolves #175 
+  * Resolves #175
 * Common DMA RTL factored out into Widget Traits in MIDAS
 * Boom bumped with RVC Support
-    * Resolves #202 
-* PR #232. Adds separate optimization flags RTL-simulators/driver 
+    * Resolves #202
+* PR #232. Adds separate optimization flags RTL-simulators/driver
 
 ### Fixed
 
 * Properly generate exit codes in the manager
-    * Resolves #194 
+    * Resolves #194
 * Catch build error on infrasetup and log it to file + advise the user to run make command manually
-    * Resolves #69 
+    * Resolves #69
 * Fix mem-model bug due to FRFCFS having an under-provisioned functional model
 * PR #199. Targets with long names can now be killed automatically by firesim
-    * Resolves #56 
-* PR #193. Fedora networking now works in FireSim 
+    * Resolves #56
+* PR #193. Fedora networking now works in FireSim
     * Address assignment fixed (gets assigned IP addresses in slot-order on firesim)
 * PR #204. Fix support for heterogeneous rootfs's - each job can have its own rootfs, or no rootfs at all
 
@@ -618,7 +618,7 @@ This is a large release. A much more detailed account of everything included is 
     * Also early support for multiple DMA endpoints (e.g. Tracer + NIC). Currently requires hardcoding endpoint addresses, will be addressed in next release.
 * Infrastructure for merging supernode to master
     * Supernode currently lives on its own branch, will be merged in the future.
-    * WIP on support for multiple copies of endpoints (e.g. multiple UARTs). 
+    * WIP on support for multiple copies of endpoints (e.g. multiple UARTs).
     * Replace macro system for endpoints with generated structs.
 
 ## [1.3.2] - 2018-09-22
@@ -627,7 +627,7 @@ This is a large release. A much more detailed account of everything included is 
 
 * Serial IO model made deterministic (resolves https://github.com/ucb-bar/midas/issues/78 )
 * `firesim managerinit` generates an initial bucket name that won't collide with an existing one
-* verilator is now installed by the machine launch script 
+* verilator is now installed by the machine launch script
 * Rebuild EDMA driver on Run Farm nodes. This fixes a potential kernel version mismatch issue due to AWS GUI scripts
 
 ### Added
@@ -639,19 +639,19 @@ This is a large release. A much more detailed account of everything included is 
   * Documentation and integration into manager for ease of use
 * sim/Make system fractured into:
   * `sim/Makefile` -- the top-level Makefile
-  * `sim/Makefrag` -- target-agnostic recipes for build simulators and simulation drivers and 
+  * `sim/Makefrag` -- target-agnostic recipes for build simulators and simulation drivers and
   * `sim/src/main/makefrag/<project>/Makefrag` -- target specific recipes for generating RTL
   * this makes it easier to submodule firesim from a larger project, and allows for multiple target projects to coexist within FireSim
-  * see `Targets/Generating Different Target-RTL` in Advanced Docs. 
+  * see `Targets/Generating Different Target-RTL` in Advanced Docs.
 * MIDAS-examples added (Resolves https://github.com/firesim/firesim/issues/81 )
   * live in `sim/src/main/{cc, scala, makefrag}/midas-examples`
   * a suite of simple circuits like GCD to demonstrate MIDAS/FireSim
   * these serve as good smoke tests for bringing up features in MIDAS
-  * see `Targets/Midas Examples` in Advanced Docs. 
+  * see `Targets/Midas Examples` in Advanced Docs.
 * Scalatests updated
   * generates all of the MIDAS-examples, a Rocket- and Boom-based target and runs them through midas-level simulation.
     * good regression test for bumping/changing chisel/firrtl/rocket chip/midas
-* Better ctags support. Script to generate ctags efficiently in `gen-tags.sh`. Also called by build-setup process. On a fresh clone, gen-tags.sh only takes ~10s. Resolves #79 
+* Better ctags support. Script to generate ctags efficiently in `gen-tags.sh`. Also called by build-setup process. On a fresh clone, gen-tags.sh only takes ~10s. Resolves #79
   * Generated across: target-design code, all shim code, driver code, workloads, etc.
 
 
@@ -693,7 +693,7 @@ This is a large release. A much more detailed account of everything included is 
 ### Added
 
 Our first release of FireSim! Everything is a newly added feature, so check out
-the full documentation in the docs directory or the docs tagged 1.1.0 at 
+the full documentation in the docs directory or the docs tagged 1.1.0 at
 https://docs.fires.im .
 
 
@@ -702,7 +702,7 @@ https://docs.fires.im .
 ### Added
 
 This was a closed-source, but free-to-use demo of FireSim released on
-[AWS Marketplace](https://aws.amazon.com/marketplace/pp/B0758SR46G) with our 
+[AWS Marketplace](https://aws.amazon.com/marketplace/pp/B0758SR46G) with our
 [AWS Compute Blog Post](https://aws.amazon.com/blogs/compute/bringing-datacenter-scale-hardware-software-co-design-to-the-cloud-with-firesim-and-amazon-ec2-f1-instances/)
 in August 2017. This was built from a very old version of FireSim and no
 longer supported, but noted here to explain why the versioning of this repo

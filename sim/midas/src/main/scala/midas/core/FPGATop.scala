@@ -32,7 +32,7 @@ case object CPUManagedAXI4Key extends Field[Option[CPUManagedAXI4Params]]
 
 /** FPGA-managed AXI4, aka "pcim" on F1. Used by the fabric to do DMA into
   * the host-CPU's memory. Used to implement bridge streams on platforms that lack a CPU-managed AXI4 interface.
-  * Set this to None if this interface is not present on the host. 
+  * Set this to None if this interface is not present on the host.
   */
 case object FPGAManagedAXI4Key extends Field[Option[FPGAManagedAXI4Params]]
 
@@ -131,7 +131,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val master = addWidget(new SimulationMaster)
 
   val bridgeAnnos = p(SimWrapperKey).annotations collect { case ba: BridgeIOAnnotation => ba }
-  val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] = 
+  val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
     ListMap((bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget))):_*)
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
@@ -163,12 +163,12 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val dramOffsets = dramOffsetsRev.tail.reverse
   val availableDRAM =  p(HostMemNumChannels) * p(HostMemChannelKey).size
   require(totalDRAMAllocated <= availableDRAM,
-    s"Total requested DRAM of ${totalDRAMAllocated}B, exceeds host capacity of ${availableDRAM}B") 
+    s"Total requested DRAM of ${totalDRAMAllocated}B, exceeds host capacity of ${availableDRAM}B")
 
   val loadMem = addWidget(new LoadMemWidget(totalDRAMAllocated))
   // Host DRAM handling
   val memChannelParams = p(HostMemChannelKey)
-  // Define multiple single-channel nodes, instead of one multichannel node to more easily 
+  // Define multiple single-channel nodes, instead of one multichannel node to more easily
   // bind a subset to the XBAR.
   val memAXI4Nodes = Seq.tabulate(p(HostMemNumChannels)) { channel =>
     val device = new MemoryDevice
@@ -341,7 +341,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val ctrl = IO(Flipped(WidgetMMIO()))
   val mem = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
-  val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) => 
+  val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) =>
     val port = IO(Flipped(AXI4Bundle(params.axi4BundleParams)))
     node.out.head._1 <> port
     port

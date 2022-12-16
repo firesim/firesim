@@ -1,4 +1,4 @@
-<!-- 
+<!--
 First, please ensure that the title of your PR is sufficient to include in the next changelog.
 Refer to https://github.com/firesim/firesim/releases for examples and feel free to ask reviewers for help.
 

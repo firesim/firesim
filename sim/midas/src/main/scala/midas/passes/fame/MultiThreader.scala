@@ -15,12 +15,12 @@ import collection.mutable
 import collection.immutable.HashMap
 
 /* TODO:
- * 
+ *
  * This got really messy because of the need to emulate gated
  * clocks.  This involves recovering the enable from the gated clock
  * and using it to select either the output of the logic or the
  * shadowed previous value of the currently active register slot.
- * 
+ *
  * Also TODO: maybe use fewer than 200 characters per line.
  */
 

@@ -19,7 +19,7 @@ class BlackBoxWrapper(mod: => BaseModule) extends MultiIOModule {
 }
 
 class ChannelizedHostPortIOSpec extends AnyFlatSpec {
-  // 
+  //
   class BridgeTargetIO extends Bundle {
     val out = Output(Bool())
     val in =  Input(Bool())

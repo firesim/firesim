@@ -26,7 +26,7 @@ to use this instance as a GH-A self-hosted runner (see https://docs.github.com/e
 Running FPGA-related Tasks
 --------------------------
 
-CI now includes the capability to run FPGA-simulations on specific PRs. This requires that you tag your PR on creation with the tag `ci:fpga-deploy`. Adding the tag after the PR is created will not run the FPGA jobs without a resynchronization event (e.g., closing + reopening the PR, adding a new commit, or rebasing the branch). 
+CI now includes the capability to run FPGA-simulations on specific PRs. This requires that you tag your PR on creation with the tag `ci:fpga-deploy`. Adding the tag after the PR is created will not run the FPGA jobs without a resynchronization event (e.g., closing + reopening the PR, adding a new commit, or rebasing the branch).
 
 Debugging Failures
 ------------------

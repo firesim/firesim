@@ -74,7 +74,7 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
 
   behavior of "RAMStyleHint"
 
-  // Sanity check that stuff passes through elaboration. 
+  // Sanity check that stuff passes through elaboration.
   it should "correctly annotate a chisel3.SyncReadMem as BRAM" in {
     checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.BRAM)) with MemApplyMethod)
   }

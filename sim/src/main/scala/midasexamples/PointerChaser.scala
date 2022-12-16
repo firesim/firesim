@@ -26,12 +26,12 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
     val result = Decoupled(SInt(nastiXDataBits.W))
     val startAddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
   })
-  
+
   val memoryIF = io.nasti
   val busy = RegInit(false.B)
   val resultReg = RegInit(0.S)
   val resultValid = RegInit(false.B)
-  
+
   val startFire = io.startAddr.valid && ~busy
   val doneFire =  io.result.valid && io.result.ready
 
@@ -65,7 +65,7 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
     resultValid := false.B
     resultReg := 0.S
   }
-  
+
   val arFire = memoryIF.ar.ready && memoryIF.ar.valid
 
   val arRegAddr = RegInit(0.U)

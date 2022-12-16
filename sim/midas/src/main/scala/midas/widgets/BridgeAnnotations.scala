@@ -83,12 +83,12 @@ case class ReadyValidBridgeChannel(
   *
   * @param widgetClass  The full class name of the BridgeModule generator
   *
-  * @param widgetConstructorKey A optional, serializable object which will be passed 
-  *   to the constructor of the BridgeModule. Consult https://github.com/json4s/json4s#serialization to 
+  * @param widgetConstructorKey A optional, serializable object which will be passed
+  *   to the constructor of the BridgeModule. Consult https://github.com/json4s/json4s#serialization to
   *   better understand what can and cannot be serialized.
   *
   *   To provide additional typeHints to the serilization/deserialization
-  *   protocol mix in HasSerializationHints into your ConstructorKey's class and return 
+  *   protocol mix in HasSerializationHints into your ConstructorKey's class and return
   *   additional pertinent classes
   */
 
@@ -141,7 +141,7 @@ case class BridgeAnnotation(
   * @param channelMapping A mapping from the channel names initially emitted by the Chisel Module, to uniquified global ones
   *  to find associated FCCAs for this bridge
   *
-  * @param clockInfo Contains information about the domain in which the bridge is instantiated. 
+  * @param clockInfo Contains information about the domain in which the bridge is instantiated.
   *  This will always be nonEmpty for bridges instantiated in the input FIRRTL
   *
   * @param widgetClass The BridgeModule's full class name. See BridgeAnnotation

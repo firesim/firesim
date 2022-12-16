@@ -42,7 +42,7 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   type ChannelType[A <: Data] = DecoupledIO[A]
   // This is built up with invocations to [[InputChannel]] and [[OutputChannel]]
   // _1 -> A reference to the target field (directioned if elaborated as part
-  //       of the target-side of the bridge) 
+  //       of the target-side of the bridge)
   // _2 -> The associated host-channel (an actual element in this aggregate, unlike above)
   // _3 -> Associated metadate which will encode for the FCCA
   private val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], PipeChannelMetadata)]()

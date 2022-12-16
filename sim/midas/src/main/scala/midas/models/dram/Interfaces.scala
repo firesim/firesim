@@ -62,7 +62,7 @@ class CurrentReadResp(implicit val p: Parameters) extends ParameterizedBundle
   val id = UInt(nastiRIdBits.W)
   val len = UInt(nastiXLenBits.W)
 }
-class CurrentWriteResp(implicit val p: Parameters) extends ParameterizedBundle 
+class CurrentWriteResp(implicit val p: Parameters) extends ParameterizedBundle
     with HasNastiParameters {
   val id = UInt(nastiRIdBits.W)
 }

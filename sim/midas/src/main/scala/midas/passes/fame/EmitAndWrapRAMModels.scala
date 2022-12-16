@@ -217,7 +217,7 @@ class EmitAndWrapRAMModels extends Transform {
     val ns = Namespace(c)
 
     val memModelAnnotations = state.annotations.collect({
-      case anno: MemPortAnnotation => portAnnos.addBinding(anno.addr.moduleTarget, anno) 
+      case anno: MemPortAnnotation => portAnnos.addBinding(anno.addr.moduleTarget, anno)
     })
 
 

@@ -229,7 +229,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
       // 1:The last ready request has been made to the bank
       newReference.bits.addrMatch(cmdRank, cmdBank) && memReqDone && !otherReadyEntries ||
       // 2: There are no ready references, and a precharge is not being issued to the bank this cycle
-      !bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) && 
+      !bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) &&
       !(selectedCmd === cmd_pre && newRefBankAddrMatch),
       false.B)
 

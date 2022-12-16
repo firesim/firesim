@@ -25,7 +25,7 @@ class FuzzingUIntSourceBridge(width: Int) extends BlackBox
   generateAnnotations()
 }
 
-class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Parameters) 
+class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[FuzzingUIntSourceTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())

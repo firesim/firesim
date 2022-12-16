@@ -178,7 +178,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     val widths = (printPort.printRecords.map(_._2.getWidth))
 
     // C-types for emission
-    val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
+    val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) =>
       UInt32(offsets.head.value + width) +: offsets}).tail.reverse
 
     val argumentCounts  = printPort.printRecords.map(_._2.args.size).map(UInt32(_))

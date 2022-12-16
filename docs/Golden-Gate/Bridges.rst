@@ -3,7 +3,7 @@ Target-to-Host Bridges
 
 A custom model in a FireSim Simulation, either CPU-hosted or FPGA-hosted, is
 deployed by using a *Target-to-Host Bridge*, or Bridge for short. Bridges provide the
-means to inject hardware and software models that produce and consume token streams. 
+means to inject hardware and software models that produce and consume token streams.
 
 Bridges enable:
 
@@ -31,7 +31,7 @@ Bridges enable:
 
 The use of Bridges in a FireSim simulation has many analogs to doing
 mixed-language (Verilog-C++) simulation of the same system in software. Where
-possible, we'll draw analogies. After reading this page we encourage you to read the 
+possible, we'll draw analogies. After reading this page we encourage you to read the
 :ref:`bridge-walkthrough`, which concretely explains the implementation of the UARTBridge.
 
 

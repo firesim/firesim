@@ -235,7 +235,7 @@ object AutoCounterWrappers {
 }
 
 /**
-  * Mix into any module that has AutoCounters contained within its module hierarchy. 
+  * Mix into any module that has AutoCounters contained within its module hierarchy.
   */
 trait AutoCounterTestContext { this: Module =>
   def instName: String

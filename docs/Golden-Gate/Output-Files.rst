@@ -18,7 +18,7 @@ These are used in nearly all flows.
 
 FPGA Build Files
 -------------------------------------
-These are additional files passed to the FPGA build directory. 
+These are additional files passed to the FPGA build directory.
 
 * **<BASE>.defines.vh**: Verilog macro definitions for FPGA synthesis.
 * **<BASE>.ila_insert_vivado.tcl**: Synthesizes an ILA for the design. See :ref:`auto-ila` for more details about using ILAs in FireSim.

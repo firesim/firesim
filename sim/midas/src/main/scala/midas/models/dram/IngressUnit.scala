@@ -49,7 +49,7 @@ trait IngressModuleParameters {
   require(ingressAWQdepth >= cfg.maxWrites)
 }
 
-class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Module 
+class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Module
     with IngressModuleParameters {
   val io = IO(new Bundle {
     // This is target valid and not decoupled because the model has handshaked
@@ -101,7 +101,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
 
   val read_req_done = arQueue.io.enq.fire
 
-  // FIFO that tracks the relative order of reads and writes are they are received 
+  // FIFO that tracks the relative order of reads and writes are they are received
   // bit 0 = Read, bit 1 = Write
   val xaction_order = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
   xaction_order.io.enqA.valid := read_req_done

@@ -260,7 +260,7 @@ object PerfCounter {
     * coutner unless AutoCounter is enabled in your the platform config. See
     * the docs.fires.im for end-to-end usage information.
     *
-    * @param target The number of occurances of the event (in the current cycle) 
+    * @param target The number of occurances of the event (in the current cycle)
     *
     * @param clock The clock to which this event is sychronized.
     *

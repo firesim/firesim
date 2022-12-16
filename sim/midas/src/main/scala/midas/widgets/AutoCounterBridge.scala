@@ -164,7 +164,7 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
 
     override def genHeader(base: BigInt, sb: StringBuilder) {
       headerComment(sb)
-      // Exclude counter addresses as their names can vary across AutoCounter instances, but 
+      // Exclude counter addresses as their names can vary across AutoCounter instances, but
       // we only generate a single struct typedef
       val headerWidgetName = wName.toUpperCase
       crRegistry.genHeader(headerWidgetName, base, sb, lowCountAddrs ++ highCountAddrs)

@@ -54,11 +54,11 @@ class SimplifyMems extends Transform {
               Connect(mem.info, WSubField(memPort, name), WSubField(adapterPort, name))
           }
       }
-      memAdapters(mem.name) = adapterDecl 
+      memAdapters(mem.name) = adapterDecl
       renames.record(oldRT, oldRT.copy(ref = simpleMemDecl.name))
       Block(Seq(adapterDecl, simpleMemDecl) ++ adapterConnects)
     }
-  
+
     def canSimplify(mem: DefMemory) = mem.dataType match {
       case at: AggregateType =>
         val wMasks = mem.writers.map(w => getMaskBits(connects, memPortField(mem, w, "en"), memPortField(mem, w, "mask")))

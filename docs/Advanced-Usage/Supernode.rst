@@ -76,7 +76,7 @@ We currently provide a single pre-built AGFI for supernode of 4 quad-core
 RocketChips with DDR3 memory models. You can build your own AGFI, using the supplied samples in
 ``config_build_recipes.yaml``.  Importantly, in order to meet FPGA timing
 contraints, Supernode target may require lower host clock frequencies.
-Host clock frequencies can be configured as parts of the ``platform_config_args`` 
+Host clock frequencies can be configured as parts of the ``platform_config_args``
 (this must be done using ``PLATFORM_CONFIG`` if not using F1) in ``config_build_recipes.yaml``.
 
 Running Supernode Simulations

@@ -38,7 +38,7 @@ class RuntimeConfigGenerationPhase extends Phase {
     // Collect only FASEDBridges since they are the only ones that provide
     // runtime configuration generation
     val fasedBridges = shim.top.bridgeModuleMap.values.collect { case f: FASEDMemoryTimingModel  => f }
-    // Since presently all memory models share the same runtime configuration. Grab only the first 
+    // Since presently all memory models share the same runtime configuration. Grab only the first
     // FASED BridgeAnnotation, and use that to elaborate a memory model
     val settings = fasedBridges.headOption.map({ lm =>
       lazy val fasedBridge = lm

@@ -62,7 +62,7 @@ the simulated node:
     ports[1] = new SSHPort(1);
 
     #endif
-    
+
     #ifdef MACPORTSCONFIG
     uint16_t mac2port[3]  {1, 2, 0};
     #endif

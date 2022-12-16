@@ -61,7 +61,7 @@ class GCDDUT extends Module {
     done2 := true.B
     result2 := inner2.io.z
   }
-  
+
   inner1.io.a := io.a
   inner1.io.b := io.b
   inner1.io.e := io.e

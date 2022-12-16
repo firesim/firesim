@@ -6,7 +6,7 @@ module replay;
   reg exit = 1'b0;
   reg [64:0] cycles = 0;
 
-`ifdef VCS 
+`ifdef VCS
   always #(`CLOCK_PERIOD / 2.0) clock = ~clock;
 
   reg vcdon = 1'b0;

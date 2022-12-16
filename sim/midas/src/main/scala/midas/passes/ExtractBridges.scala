@@ -70,7 +70,7 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
                               insts: mutable.ArrayBuffer[(String, String)])
                              (stmt: Statement): Unit = {
     stmt match {
-      case c @ Connect(_, WSubField(WRef(topName, _, InstanceKind, _), portName, _, _), 
+      case c @ Connect(_, WSubField(WRef(topName, _, InstanceKind, _), portName, _, _),
                           WRef(bridgeInstName, _, InstanceKind, _)) =>
         portInstMapping += (portName -> bridgeInstName)
       case i @ WDefInstance(_, name, module, _) if name != "realTopInst" =>
