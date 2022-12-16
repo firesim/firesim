@@ -10,8 +10,7 @@
 
 fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,
                                    simif_t *simif)
-    : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create),
-      simulation_t(args) {
+    : simulation_t(args), simif(simif) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -64,7 +63,7 @@ void fasedtests_top_t::simulation_init() {
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_W_addrs,
                  (const char *const *)FASEDMEMORYTIMINGMODEL_0_W_names);
   add_bridge_driver(
-      new test_harness_bridge_t(simif, this, fased_addr_map, args));
+      new test_harness_bridge_t(simif, peek_poke.get(), fased_addr_map, args));
 
   for (auto &e : fpga_models) {
     e->init();
@@ -80,7 +79,7 @@ int fasedtests_top_t::simulation_run() {
 
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
-    step(get_largest_stepsize(), false);
+    simif->take_steps(get_largest_stepsize(), false);
     while (!simif->done() && !simulation_complete()) {
       for (auto &e : bridges)
         e->tick();
@@ -101,16 +100,16 @@ int fasedtests_top_t::simulation_run() {
     fprintf(stderr,
             "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
             exitcode,
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   } else if (max_cycles_timeout) {
     fprintf(stderr,
             "*** FAILED *** +max_cycles specified timeout after %" PRIu64
             " cycles\n",
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   } else {
     fprintf(stderr,
             "*** PASSED *** after %" PRIu64 " cycles\n",
-            simif->get_end_tcycle());
+            simif->actual_tcycle());
   }
 
   return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;

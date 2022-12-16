@@ -19,7 +19,7 @@ public:
 
       // Poke channel A
       uint32_t in = random() % 16;
-      poke(io_aIn, in);
+      poke("io_aIn", in);
 
       uint32_t vbIn_foo = random() % 16;
       uint32_t vbIn_bar_valid = random() % 2;
@@ -27,19 +27,19 @@ public:
 
       // These pokes also serve to provide some host delay for the poke above to
       // propagate through the simulator
-      poke(io_bIn_foo, vbIn_foo);
-      poke(io_bIn_bar_valid, vbIn_bar_valid);
-      poke(io_bIn_bar_bits, vbIn_bar_bits);
+      poke("io_bIn_foo", vbIn_foo);
+      poke("io_bIn_bar_valid", vbIn_bar_valid);
+      poke("io_bIn_bar_bits", vbIn_bar_bits);
 
       // Expect wire outputs -- this propagate combinationally before calling
       // step
-      expect(io_aOut, in);
+      expect("io_aOut", in);
       step(1);
 
       // Expect registered outputs
-      expect(io_bOut_foo, vbIn_foo);
-      expect(io_bOut_bar_valid, vbIn_bar_valid);
-      expect(io_bOut_bar_bits, vbIn_bar_bits);
+      expect("io_bOut_foo", vbIn_foo);
+      expect("io_bOut_bar_valid", vbIn_bar_valid);
+      expect("io_bOut_bar_bits", vbIn_bar_bits);
     }
   }
 };

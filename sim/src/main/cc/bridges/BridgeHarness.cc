@@ -8,13 +8,16 @@
 
 BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
                              simif_t *simif)
-    : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create),
-      simulation_t(args) {}
+    : simulation_t(args), simif(simif) {}
 
 BridgeHarness::~BridgeHarness() {}
 
 void BridgeHarness::add_bridge_driver(bridge_driver_t *bridge) {
   bridges.emplace_back(bridge);
+}
+
+void BridgeHarness::add_bridge_driver(peek_poke_t *bridge) {
+  peek_poke.reset(bridge);
 }
 
 void BridgeHarness::simulation_init() {
@@ -25,14 +28,14 @@ void BridgeHarness::simulation_init() {
 }
 
 int BridgeHarness::simulation_run() {
-  // Reset the device.
-  poke(reset, 1);
-  step(1);
-  poke(reset, 0);
-  step(1);
+  // Reset the DUT.
+  peek_poke->poke("reset", 1, /*blocking=*/true);
+  simif->take_steps(1, /*blocking=*/true);
+  peek_poke->poke("reset", 0, /*blocking=*/true);
+  simif->take_steps(1, /*blocking=*/true);
 
   // Tick until all requests are serviced.
-  step(get_step_limit(), false);
+  simif->take_steps(get_step_limit(), /*blocking=*/false);
   for (unsigned i = 0; i < get_tick_limit() && !simif->done(); ++i) {
     for (auto &bridge : bridges) {
       bridge->tick();
@@ -40,7 +43,7 @@ int BridgeHarness::simulation_run() {
   }
 
   // Cleanup.
-  return teardown();
+  return EXIT_SUCCESS;
 }
 
 void BridgeHarness::simulation_finish() {

@@ -9,11 +9,11 @@
 
 constexpr size_t multireg_n_copies = 4;
 
-static const size_t multireg_input_ios[multireg_n_copies] = {
-    io_pipeIOs_0_i, io_pipeIOs_1_i, io_pipeIOs_2_i, io_pipeIOs_3_i};
+static const std::string_view multireg_input_ios[multireg_n_copies] = {
+    "io_pipeIOs_0_i", "io_pipeIOs_1_i", "io_pipeIOs_2_i", "io_pipeIOs_3_i"};
 
-static const size_t multireg_output_ios[multireg_n_copies] = {
-    io_pipeIOs_0_o, io_pipeIOs_1_o, io_pipeIOs_2_o, io_pipeIOs_3_o};
+static const std::string_view multireg_output_ios[multireg_n_copies] = {
+    "io_pipeIOs_0_o", "io_pipeIOs_1_o", "io_pipeIOs_2_o", "io_pipeIOs_3_o"};
 
 static const uint32_t inputs[] = {45, 9, 11, 13, 99, 2, 8, 15, 16, 12, 1};
 

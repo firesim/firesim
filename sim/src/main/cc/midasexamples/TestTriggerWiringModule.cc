@@ -33,9 +33,9 @@ public:
     for (auto &ep : assert_endpoints)
       ep->init();
 
-    poke(reset, 1);
+    poke("reset", 1);
     step(1);
-    poke(reset, 0);
+    poke("reset", 0);
     step(10000, false);
     while (!simif->done() && !simulation_complete()) {
       for (auto &ep : assert_endpoints) {

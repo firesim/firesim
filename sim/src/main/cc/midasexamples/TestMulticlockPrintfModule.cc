@@ -11,7 +11,7 @@ public:
       print_endpoint->init();
     }
     step(1);
-    poke(reset, 0);
+    poke("reset", 0);
     run_and_collect_prints(256);
   };
 };

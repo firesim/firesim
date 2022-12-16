@@ -2,7 +2,6 @@
 
 #include "TestHarness.h"
 
-#include "simif_peek_poke.h"
 #include <iostream>
 #include <string.h>
 
@@ -17,7 +16,7 @@ public:
   }
 
   void run_test() override {
-    poke(reset, 1);
+    poke("reset", 1);
     int lv_validinCycle = 0;
     int validinCycle = 0;
     int lv_msginCycle = 0;
@@ -35,7 +34,7 @@ public:
     poke(io_msgInCycle, lv_msginCycle);
     poke(io_doneErrCode, termination_code);
     step(reset_length);
-    poke(reset, 0);
+    poke("reset", 0);
     if (termination_code % 2 != 0) {
       msgid = 0;
     } else if (termination_code % 4 != 0) {

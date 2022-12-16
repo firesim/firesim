@@ -70,6 +70,7 @@ void firesim_top_t::simulation_init() {
   // This file can be included in the setup method of any top-level to pass
   // an instance of each driver to the `add_bridge_driver` method. Drivers can
   // be distinguished by overloading the method with the appropriate type.
+#define SKIP_PEEK_POKE
 #include "constructor.h"
   // DOC include end: Bridge Driver Registration
 

@@ -14,14 +14,17 @@
 constexpr size_t reg_n_reads = 2;
 constexpr size_t reg_n_writes = 2;
 
-const size_t reg_w_addr_ios[reg_n_writes] = {io_writes_0_addr,
-                                             io_writes_1_addr};
-const size_t reg_w_data_ios[reg_n_writes] = {io_writes_0_data,
-                                             io_writes_1_data};
-const size_t reg_w_en_ios[reg_n_writes] = {io_writes_0_en, io_writes_1_en};
+const std::string_view reg_w_addr_ios[reg_n_writes] = {"io_writes_0_addr",
+                                                       "io_writes_1_addr"};
+const std::string_view reg_w_data_ios[reg_n_writes] = {"io_writes_0_data",
+                                                       "io_writes_1_data"};
+const std::string_view reg_w_en_ios[reg_n_writes] = {"io_writes_0_en",
+                                                     "io_writes_1_en"};
 
-const size_t reg_r_addr_ios[reg_n_reads] = {io_reads_0_addr, io_reads_1_addr};
-const size_t reg_r_data_ios[reg_n_reads] = {io_reads_0_data, io_reads_1_data};
+const std::string_view reg_r_addr_ios[reg_n_reads] = {"io_reads_0_addr",
+                                                      "io_reads_1_addr"};
+const std::string_view reg_r_data_ios[reg_n_reads] = {"io_reads_0_data",
+                                                      "io_reads_1_data"};
 
 class RegfileTest : public TestHarness {
 public:

@@ -11,10 +11,10 @@ public:
     uint32_t i, total = 0;
     target_reset();
     for (i = 0; i < (sizeof(inputs) / sizeof(inputs[0])); i++) {
-      poke(io_in, inputs[i]);
+      poke("io_in", inputs[i]);
       step(1);
       total += inputs[i];
-      expect(io_out, total);
+      expect("io_out", total);
     }
   }
 };
