@@ -58,3 +58,6 @@ export FIRESIM_RUNFARM_PREFIX=""
 
 # put FlameGraph/other fireperf utils on the user path
 export PATH=$(pwd)/utils/fireperf:$(pwd)/utils/fireperf/FlameGraph:$PATH
+
+# install pre-commit hooks
+pre-commit install

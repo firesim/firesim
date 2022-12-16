@@ -1,0 +1,26 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: trailing-whitespace
+## The following pre-commit hooks are left commented for future discoverability
+#      - id: end-of-file-fixer
+#      - id: check-yaml
+#      - id: check-json
+#      - id: check-added-large-files
+#  - repo: https://github.com/pre-commit/mirrors-clang-format
+#    rev: v15.0.4
+#    hooks:
+#      - id: clang-format
+#  - repo: https://github.com/pre-commit/mirrors-clang-format
+#    rev: v15.0.4
+#    hooks:
+#      - id: clang-format
+#  - repo: https://github.com/psf/black
+#    rev: 22.12.0
+#    hooks:
+#      - id: black
+#        language_version: python3.9
+#

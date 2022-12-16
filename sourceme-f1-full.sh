@@ -56,3 +56,6 @@ fi
 
 # flag for scripts to check that this has been sourced
 export FIRESIM_SOURCED=1
+
+# install pre-commit hooks
+pre-commit install

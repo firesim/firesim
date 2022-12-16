@@ -96,6 +96,9 @@ dependencies:
     - clang-format
     - clang-tools
 
+    # managed pre-commit hooks
+    - pre-commit
+
     # python packages
     # While it is possible to install using pip after creating the
     # conda environment, pip's dependency resolution can conflict with
