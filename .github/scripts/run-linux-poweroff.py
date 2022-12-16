@@ -47,8 +47,8 @@ def run_linux_poweroff():
                 else:
                     print(f"Workload {workload} successful.")
 
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-all-no-nic.yaml", "30m")
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-nic.yaml", "30m")
+        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-all-no-nic.yaml", "45m")
+        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-nic.yaml", "45m")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
