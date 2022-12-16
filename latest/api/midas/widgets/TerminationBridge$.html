@@ -522,7 +522,7 @@
                         <a class="class" href="TerminationBridgeTargetIO.html" title=""></a>
                         <a href="TerminationBridgeTargetIO.html" title="">TerminationBridgeTargetIO</a>
                       </li><li class="current-entities indented2">
-                        <span class="separator"></span>
+                        <a class="object" href="TerminationCondition$.html" title="Sugar for constructing instances of TerminationConditions"></a>
                         <a class="class" href="TerminationCondition.html" title="Defines a condition under which the simulator should halt."></a>
                         <a href="TerminationCondition.html" title="Defines a condition under which the simulator should halt.">TerminationCondition</a>
                       </li><li class="current-entities indented2">
@@ -732,7 +732,7 @@
         <span class="name">apply</span><span class="params">(<span name="clock">clock: <span class="extype" name="chisel3.Clock">Clock</span></span>, <span name="reset">reset: <span class="extype" name="chisel3.Reset">Reset</span></span>, <span name="conditionBools">conditionBools: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="chisel3.Bool">Bool</span>]</span>, <span name="params">params: <a href="TerminationBridgeParams.html" class="extype" name="midas.widgets.TerminationBridgeParams">TerminationBridgeParams</a></span>)</span><span class="result">: <a href="TerminationBridge.html" class="extype" name="midas.widgets.TerminationBridge">TerminationBridge</a></span>
       </span>
       
-      <p class="shortcomment cmt">Instatiates the target side of the Bridge, selects one of
+      <p class="shortcomment cmt">Instantiates the target side of the Bridge, selects one of
  the available finish conditions and passes on the corresponding
  error message.</p>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -751,6 +751,27 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.widgets.TerminationBridge#assert" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="assert(condition:chisel3.Bool,message:String):midas.widgets.TerminationBridge"></a><a id="assert(Bool,String):TerminationBridge"></a>
+      <span class="permalink">
+      <a href="../../midas/widgets/TerminationBridge$.html#assert(condition:chisel3.Bool,message:String):midas.widgets.TerminationBridge" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">assert</span><span class="params">(<span name="condition">condition: <span class="extype" name="chisel3.Bool">Bool</span></span>, <span name="message">message: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="TerminationBridge.html" class="extype" name="midas.widgets.TerminationBridge">TerminationBridge</a></span>
+      </span>
+      
+      <p class="shortcomment cmt">A stand-in for a single synthesized assertion.</p><div class="fullcomment"><div class="comment cmt"><p>A stand-in for a single synthesized assertion.</p><p>In the future this may be subsumed by annotations on existing Assert statements.
+</p></div><dl class="paramcmts block"><dt class="param">condition</dt><dd class="cmt"><p>
+  The invariant that should remain true (except possibly under reset).
+  Mirrors what you'd pass to chisel3.assert</p></dd><dt class="param">message</dt><dd class="cmt"><p>
+  The message to print when the assertion fails to hold.
+  Mirrors what you'd pass to chisel3.assert</p></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
