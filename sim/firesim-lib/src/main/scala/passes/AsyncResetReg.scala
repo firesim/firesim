@@ -4,11 +4,6 @@
 package firesim
 package passes
 
-import firrtl._
-import firrtl.ir._
-import firrtl.Mappers._
-import firrtl.transforms._
-
 class AsyncResetReg extends chisel3.Module {
   import chisel3._
   import chisel3.util._
@@ -20,6 +15,11 @@ class AsyncResetReg extends chisel3.Module {
 
 // Transform RocketChip's async reset to sync reset
 object AsyncResetRegPass extends firrtl.Transform {
+  import firrtl._
+  import firrtl.ir._
+  import firrtl.Mappers._
+  import firrtl.transforms._
+
   override def name = "[FireSim] Replace AsyncReset Pass"
   override def inputForm = MidForm
   override def outputForm = MidForm
