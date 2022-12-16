@@ -7,6 +7,15 @@
 
 #include "bridge_driver.h"
 
+// Bridge Driver Instantiation Template
+#define INSTANTIATE_TERMINATION(FUNC, IDX)                                     \
+  FUNC(new termination_t(this,                                                 \
+                         args,                                                 \
+                         TERMINATIONBRIDGEMODULE_##IDX##_substruct_create,     \
+                         TERMINATIONBRIDGEMODULE_##IDX##_message_count,        \
+                         TERMINATIONBRIDGEMODULE_##IDX##_message_type,         \
+                         TERMINATIONBRIDGEMODULE_##IDX##_message));
+
 class termination_t : public bridge_driver_t {
 public:
   termination_t(simif_t *sim,
