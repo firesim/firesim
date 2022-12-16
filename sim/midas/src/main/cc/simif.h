@@ -5,12 +5,16 @@
 
 #include <cassert>
 #include <cstring>
-#include <gmp.h>
-#include <map>
+
+#include <memory>
 #include <queue>
 #include <random>
 #include <sstream>
+
+#include <gmp.h>
+#include <map>
 #include <sys/time.h>
+
 #define TIME_DIV_CONST 1000000.0;
 typedef uint64_t midas_time_t;
 
@@ -20,6 +24,49 @@ double diff_secs(midas_time_t end, midas_time_t start);
 
 typedef std::map<std::string, size_t> idmap_t;
 typedef std::map<std::string, size_t>::const_iterator idmap_it_t;
+
+/**
+ * Interface for a simulation implementation.
+ *
+ * `simulation_t` interacts with the simulation, initialising it, running and
+ * and running finalisation logic at the end.  All simulation implementations
+ * (midasexamples, firesim, bridges, fasedtests) derive this interface,
+ * implementing the driver-specific logic.
+ */
+class simulation_t {
+public:
+  simulation_t(const std::vector<std::string> &args) : args(args) {}
+
+  virtual ~simulation_t() {}
+
+  /**
+   * Simulation main loop.
+   *
+   * @return Exit code to return to the system.
+   */
+  virtual int simulation_run() = 0;
+
+  /**
+   * Simulation initialization.
+   *
+   * Presently, this is used to both construct bridge instances and call their
+   * `init` methods. MMIO is allowed at this stage.
+   *
+   * The software-only and the software-hardware phases of initialisation should
+   * be further split in the future.
+   */
+  virtual void simulation_init() {}
+
+  /**
+   * Simulation finalization.
+   *
+   * Should call the `finish` method on all registered bridges.
+   */
+  virtual void simulation_finish() {}
+
+protected:
+  const std::vector<std::string> args;
+};
 
 /** \class simif_t
  *
@@ -49,27 +96,14 @@ typedef std::map<std::string, size_t>::const_iterator idmap_it_t;
  */
 class simif_t {
 public:
-  simif_t();
+  simif_t(const std::vector<std::string> &args);
   virtual ~simif_t() {}
 
-private:
-  // random numbers
-  uint64_t seed;
-  std::mt19937_64 gen;
-  const SIMULATIONMASTER_struct master_mmio_addrs;
-  const LOADMEMWIDGET_struct loadmem_mmio_addrs;
-  const CLOCKBRIDGEMODULE_struct clock_bridge_mmio_addrs;
-  midas_time_t start_time, end_time;
-  uint64_t start_hcycle = -1;
-  uint64_t end_hcycle = 0;
-  uint64_t end_tcycle = 0;
-
-  virtual void load_mem(std::string filename);
-
 public:
-  // Simulation APIs
-  virtual void init(int argc, char **argv);
+  /// Returns true if the simulation is complete.
   inline bool done() { return read(master_mmio_addrs.DONE); }
+
+  /// Advances the simulation for a given number of steps.
   inline void take_steps(size_t n, bool blocking) {
     write(master_mmio_addrs.STEP, n);
     if (blocking)
@@ -77,20 +111,11 @@ public:
         ;
   }
 
+  /// Entry point to the simulation.
+  virtual int run() = 0;
+
   // Host-platform interface. See simif_f1; simif_emul for implementation
   // examples
-
-  /**
-   * Performs platform-level initialization that for some reason or another
-   * cannot be done in the constructor. (For one, currently command line args
-   * are not passed to constructor).
-   */
-  virtual void host_init(int argc, char **argv) = 0;
-
-  /**
-   *  Does final platform-specific cleanup before destructors are called.
-   */
-  virtual int host_finish() = 0;
 
   /** Bridge / Widget MMIO methods */
 
@@ -155,26 +180,83 @@ public:
 
   // End host-platform interface.
 
-  // LOADMEM functions
+  /**
+   * Returns the seed of the random-number generator.
+   */
+  uint64_t get_seed() const { return seed; };
+
+  /**
+   * Returns the next available random number, modulo limit.
+   */
+  uint64_t rand_next(uint64_t limit) { return gen() % limit; }
+
+  /**
+   * Provides the current target cycle of the fastest clock.
+   *
+   * The target cycle is based on the number of clock tokens enqueued
+   * (will report a larger number).
+   */
+  uint64_t actual_tcycle();
+
+  /**
+   * Returns the current host cycle as measured by a hardware counter
+   */
+  uint64_t hcycle();
+
+  /**
+   * Returns the last completed cycle number.
+   */
+  uint64_t get_end_tcycle() { return end_tcycle; }
+
+  // LOADMEM functions.
   void read_mem(size_t addr, mpz_t &value);
   void write_mem(size_t addr, mpz_t &value);
   void write_mem_chunk(size_t addr, mpz_t &value, size_t bytes);
-  void zero_out_dram();
 
-  uint64_t get_seed() { return seed; };
+private:
+  /**
+   * Waits for the target to be initialised.
+   */
+  void target_init();
 
-  // Returns the current target cycle of the fastest clock in the simulated
-  // system, based on the number of clock tokens enqueued (will report a larger
-  // number)
-  uint64_t actual_tcycle();
-  // Returns the current host cycle as measured by a hardware counter
-  uint64_t hcycle();
-  uint64_t rand_next(uint64_t limit) { return gen() % limit; }
-
+  // Simulation performance counters.
   void record_start_times();
   void record_end_times();
-  uint64_t get_end_tcycle() { return end_tcycle; }
   void print_simulation_performance_summary();
+
+  // Helper to zero out all DRAM.
+  void zero_out_dram();
+
+  void load_mem(std::string filename);
+
+protected:
+  /**
+   * Simulation main loop.
+   */
+  int simulation_run();
+
+protected:
+  /**
+   * Reference to the user-defined bits of the simulation.
+   */
+  std::unique_ptr<simulation_t> sim;
+
+  std::string loadmem;
+  bool fastloadmem = false;
+  // If set, will write all zeros to fpga dram before commencing simulation
+  bool do_zero_out_dram = false;
+
+private:
+  // random numbers
+  uint64_t seed = 0;
+  std::mt19937_64 gen;
+  const SIMULATIONMASTER_struct master_mmio_addrs;
+  const LOADMEMWIDGET_struct loadmem_mmio_addrs;
+  const CLOCKBRIDGEMODULE_struct clock_bridge_mmio_addrs;
+  midas_time_t start_time, end_time;
+  uint64_t start_hcycle = -1;
+  uint64_t end_hcycle = 0;
+  uint64_t end_tcycle = 0;
 };
 
 #endif // __SIMIF_H

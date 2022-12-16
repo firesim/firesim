@@ -9,7 +9,7 @@
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_TERMINATION(FUNC, IDX)                                     \
-  FUNC(new termination_t(this,                                                 \
+  FUNC(new termination_t(simif,                                                \
                          args,                                                 \
                          TERMINATIONBRIDGEMODULE_##IDX##_substruct_create,     \
                          TERMINATIONBRIDGEMODULE_##IDX##_message_count,        \

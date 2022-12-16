@@ -1,14 +1,6 @@
 #ifndef MIDAEXAMPLES_TESTHARNESS_H
 #define MIDAEXAMPLES_TESTHARNESS_H
 
-#ifndef RTLSIM
-#include "simif_f1.h"
-#define SIMIF simif_f1_t
-#else
-#include "simif_emul.h"
-#define SIMIF simif_emul_t
-#endif
-
 #include "bridges/autocounter.h"
 #include "bridges/bridge_driver.h"
 #include "bridges/plusargs.h"
@@ -16,7 +8,7 @@
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 #include "bridges/termination.h"
-
+#include "simif.h"
 #include "simif_peek_poke.h"
 
 /**
@@ -28,18 +20,13 @@
  * to take control of bridges, it can override the appropriate method and
  * intercept the bridge for later use.
  */
-class TestHarness : public SIMIF, public simif_peek_poke_t {
+class TestHarness : public simif_peek_poke_t, public simulation_t {
 public:
-  TestHarness(const std::vector<std::string> &args)
-      : SIMIF(args),
-        simif_peek_poke_t(this, PEEKPOKEBRIDGEMODULE_0_substruct_create) {}
+  TestHarness(const std::vector<std::string> &args, simif_t *simif)
+      : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create),
+        simulation_t(args) {}
 
   virtual ~TestHarness() {}
-
-  /// Initialization method that registers all bridges.
-  void add_bridges(const std::vector<std::string> &args) {
-#include "constructor.h"
-  }
 
   // Bridge creation callbacks.
 #define BRIDGE_HANDLER(ty, name)                                               \
@@ -69,16 +56,20 @@ public:
 
   /// Test entry point to override.
   virtual void run_test() = 0;
+
+  void simulation_init() override {
+#include "constructor.h"
+  }
+
+  int simulation_run() override {
+    run_test();
+    return teardown();
+  }
 };
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
-  int main(int argc, char **argv) {                                            \
-    std::vector<std::string> args(argv + 1, argv + argc);                      \
-    CLASS_NAME dut(args);                                                      \
-    dut.add_bridges(args);                                                     \
-    dut.init(argc, argv);                                                      \
-    dut.run_test();                                                            \
-    return dut.teardown();                                                     \
+  std::unique_ptr<simulation_t> create_simulation(                             \
+      const std::vector<std::string> &args, simif_t *simif) {                  \
+    return std::make_unique<CLASS_NAME>(args, simif);                          \
   }
-
 #endif // MIDAEXAMPLES_TESTHARNESS_H

@@ -9,26 +9,25 @@
 #include <fpga_pci.h>
 #endif
 
-class simif_f1_t : public simif_t {
+class simif_f1_t final : public simif_t {
 public:
   simif_f1_t(const std::vector<std::string> &args);
-  virtual ~simif_f1_t();
+  ~simif_f1_t();
 
   // Unused by F1 since initialization / deinitization is done in the
   // constructor
-  virtual void host_init(int argc, char **argv){};
-  virtual int host_finish() { return 0; };
+  int run() override { return simulation_run(); }
 
-  virtual void write(size_t addr, uint32_t data);
-  virtual uint32_t read(size_t addr);
-  virtual size_t pull(unsigned int stream_idx,
-                      void *dest,
-                      size_t num_bytes,
-                      size_t threshold_bytes);
-  virtual size_t push(unsigned int stream_idx,
-                      void *src,
-                      size_t num_bytes,
-                      size_t threshold_bytes);
+  void write(size_t addr, uint32_t data) override;
+  uint32_t read(size_t addr) override;
+  size_t pull(unsigned int stream_idx,
+              void *dest,
+              size_t num_bytes,
+              size_t threshold_bytes) override;
+  size_t push(unsigned int stream_idx,
+              void *src,
+              size_t num_bytes,
+              size_t threshold_bytes) override;
   uint32_t is_write_ready();
   void check_rc(int rc, char *infostr);
   void fpga_shutdown();

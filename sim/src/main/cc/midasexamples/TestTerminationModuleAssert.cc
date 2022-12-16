@@ -20,7 +20,7 @@ public:
   void step_assume_continue(int count) {
     step(count, false);
     expected_cycle_at_bridge += count;
-    while (!done()) {
+    while (!simif->done()) {
       terminator->tick();
       assert(!terminator->terminate() && "Unexpected termination signaled.");
     }

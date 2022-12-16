@@ -158,15 +158,11 @@ bool simif_peek_poke_t::expect(size_t id, mpz_t &expected) {
 }
 
 int simif_peek_poke_t::teardown() {
-  simif->record_end_times();
   fprintf(stderr, "[%s] %s Test", pass ? "PASS" : "FAIL", TARGET_NAME);
   if (!pass) {
     fprintf(stdout, " at cycle %" PRIu64, fail_t);
   }
   fprintf(stderr, "\nSEED: %ld\n", simif->get_seed());
-  simif->print_simulation_performance_summary();
-
-  simif->host_finish();
 
   return pass ? EXIT_SUCCESS : EXIT_FAILURE;
 }

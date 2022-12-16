@@ -24,7 +24,7 @@ public:
     step(1);
     poke(reset, 0);
     int num_test_cases = 3;
-    int test_case = 0;
+
     for (int test_case = 0; test_case < num_test_cases; test_case++) {
       switch (test_case) {
       case 0:
