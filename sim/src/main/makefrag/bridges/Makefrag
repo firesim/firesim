@@ -58,29 +58,31 @@ $(FIRRTL_FILE) $(ANNO_FILE): $(chisel_srcs) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS
 # Driver Sources & Flags #
 ##########################
 
-TESTCHIPIP_CSRC_DIR = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
+testchipip_csrc_dir = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
 
-DRIVER_DIR = $(firesim_base_dir)/src/main/cc
-FIRESIM_LIB_DIR = $(firesim_base_dir)/firesim-lib/src/main/cc/
+driver_dir = $(firesim_base_dir)/src/main/cc
+firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 
-DRIVER_H = $(shell find $(DRIVER_DIR) -name "*.h")
+DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 
 DRIVER_CC := \
-		$(DRIVER_DIR)/midasexamples/simif_peek_poke.cc \
-		$(DRIVER_DIR)/bridges/$(DESIGN).cc \
-		$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc \
-		$(wildcard $(addprefix $(FIRESIM_LIB_DIR)/, \
+		$(driver_dir)/midasexamples/simif_peek_poke.cc \
+		$(driver_dir)/bridges/$(DESIGN).cc \
+		$(testchipip_csrc_dir)/testchip_tsi.cc \
+		$(wildcard $(addprefix $(firesim_lib_dir)/, \
 			bridges/uart.cc \
 			bridges/serial.cc \
+			bridges/blockdev.cc \
 			fesvr/firesim_tsi.cc \
 		))
 
 TARGET_CXX_FLAGS := \
-		-isystem $(TESTCHIPIP_CSRC_DIR) \
-		-I$(DRIVER_DIR)/midasexamples \
-		-I$(FIRESIM_LIB_DIR) \
-		-I$(DRIVER_DIR) \
-		-I$(DRIVER_DIR)/bridges \
+		-isystem $(testchipip_csrc_dir) \
+		-I$(RISCV)/include \
+		-I$(firesim_lib_dir) \
+		-I$(driver_dir)/midasexamples \
+		-I$(driver_dir) \
+		-I$(driver_dir)/bridges \
 		-g
 
 TARGET_LD_FLAGS := \
