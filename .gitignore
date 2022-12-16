@@ -9,4 +9,5 @@ tags
 build
 scala-doc-env.sh
 *.swp
+*.swo
 /.conda-env

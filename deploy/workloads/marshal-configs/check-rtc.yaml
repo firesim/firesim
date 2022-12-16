@@ -1,0 +1,5 @@
+{
+  "name" : "check-rtc",
+  "base" : "bare-base.json",
+  "bin" : "check-rtc",
+}

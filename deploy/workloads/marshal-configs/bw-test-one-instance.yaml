@@ -1,0 +1,40 @@
+{
+  "name" : "bw-test-one-instance",
+  "base" : "bare-base.json",
+  "host-init" : "build.sh 4",
+  "post_run_hook" : "bw-test-graph.py",
+  "jobs" : [
+    {
+      "name" : "client-0",
+      "bin" : "bw-test-client-0.riscv",
+    },
+    {
+      "name" : "client-1",
+      "bin" : "bw-test-client-1.riscv",
+    },
+    {
+      "name" : "client-2",
+      "bin" : "bw-test-client-2.riscv",
+    },
+    {
+      "name" : "client-3",
+      "bin" : "bw-test-client-3.riscv",
+    },
+    {
+      "name" : "server-4",
+      "bin" : "bw-test-server-4.riscv",
+    },
+    {
+      "name" : "server-5",
+      "bin" : "bw-test-server-5.riscv",
+    },
+    {
+      "name" : "server-6",
+      "bin" : "bw-test-server-6.riscv",
+    },
+    {
+      "name" : "server-7",
+      "bin" : "bw-test-server-7.riscv",
+    }
+  ]
+}

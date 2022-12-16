@@ -1,0 +1,15 @@
+{
+  "name" : "fc-test",
+  "base" : "bare-base.json",
+  "host-init" : "build.sh",
+  "jobs" : [
+    {
+      "name" : "fc-client",
+      "bin" : "fc-client.riscv",
+    },
+    {
+      "name" : "fc-server",
+      "bin" : "fc-server.riscv",
+    }
+  ]
+}

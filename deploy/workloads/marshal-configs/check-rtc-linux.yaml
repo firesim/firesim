@@ -1,0 +1,12 @@
+{
+  "name" : "check-rtc-linux",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "host-init" : "build.sh",
+  "jobs" : [
+    {
+      "name" : "check-rtc-linux",
+      "command" : "check-rtc-linux && poweroff",
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+    "name" : "memcached-thread-imbalance",
+    "base" : "br-base.json",
+    "host-init" : "build.sh",
+    "post_run_hook" : "process-data.py",
+    "overlay" : "mutilate-loadgen-riscv-release/overlay"
+}

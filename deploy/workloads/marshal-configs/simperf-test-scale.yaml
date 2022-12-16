@@ -1,0 +1,18 @@
+{
+  # this is hacky.
+  # i have separate build/run jsons for this because the rootfs
+  # build scripts don't support building uniform-mode
+  # rootfses, and the manager doesn't support having a
+  # single workload be specified as a uniform run",
+  "name" : "simperf-test-scale",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "workdir" : "simperf-test",
+  "post_run_hook" : "simperf-test-scale-results.py",
+  "jobs" : [
+    {
+      "name": "poweroffnode",
+      "command": "poweroffone.sh",
+    }
+  ]
+}
