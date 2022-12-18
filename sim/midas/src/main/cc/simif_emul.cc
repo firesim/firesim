@@ -11,9 +11,6 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
     if (arg.find("+waveform=") == 0) {
       waveform = arg.c_str() + 10;
     }
-    if (arg.find("+loadmem=") == 0) {
-      loadmem = arg.c_str() + 9;
-    }
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
     }
@@ -77,9 +74,9 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
 simif_emul_t::~simif_emul_t(){};
 
 int simif_emul_t::run() {
-  if (fastloadmem && !loadmem.empty()) {
-    fprintf(stdout, "[fast loadmem] %s\n", loadmem.c_str());
-    load_mems(loadmem.c_str());
+  if (fastloadmem && !load_mem_path.empty()) {
+    fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
+    load_mems(load_mem_path.c_str());
   }
 
   sim_init();

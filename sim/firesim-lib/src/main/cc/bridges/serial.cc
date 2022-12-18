@@ -89,12 +89,14 @@ void serial_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   mpz_t buf;
   mpz_init(buf);
   while (loadmem.size > 0) {
-    sim->read_mem(loadmem.addr + mem_host_offset, buf);
+    auto &driver = sim->get_loadmem();
+    driver.read_mem(loadmem.addr + mem_host_offset, buf);
 
     // If the read word is 0; mpz_export seems to return an array with length 0
-    size_t beats_requested = (loadmem.size / sizeof(uint32_t) > MEM_DATA_CHUNK)
-                                 ? MEM_DATA_CHUNK
-                                 : loadmem.size / sizeof(uint32_t);
+    size_t beats_requested =
+        (loadmem.size / sizeof(uint32_t) > driver.get_mem_data_chunk())
+            ? driver.get_mem_data_chunk()
+            : loadmem.size / sizeof(uint32_t);
     // The number of beats exported from buf; may be less than beats requested.
     size_t non_zero_beats;
     uint32_t *data = (uint32_t *)mpz_export(
@@ -127,7 +129,8 @@ void serial_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
              0,
              0,
              buf);
-  sim->write_mem_chunk(loadmem.addr + mem_host_offset, data, loadmem.size);
+  sim->get_loadmem().write_mem_chunk(
+      loadmem.addr + mem_host_offset, data, loadmem.size);
   mpz_clear(data);
 }
 
