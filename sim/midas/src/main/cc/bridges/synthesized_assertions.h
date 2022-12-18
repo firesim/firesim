@@ -14,7 +14,10 @@ typedef struct ASSERTBRIDGEMODULE_struct {
 
 class synthesized_assertions_t : public bridge_driver_t {
 public:
-  synthesized_assertions_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  synthesized_assertions_t(simif_t &sim,
                            const std::vector<std::string> &args,
                            const ASSERTBRIDGEMODULE_struct &mmio_addrs,
                            const char *const *msgs);

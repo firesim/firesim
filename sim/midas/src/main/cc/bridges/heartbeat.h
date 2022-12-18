@@ -1,8 +1,9 @@
 #ifndef __HEARTBEAT_H
 #define __HEARTBEAT_H
 
-#include "core/bridge_driver.h"
 #include <fstream>
+
+#include "core/bridge_driver.h"
 
 // Periodically checks that the target is advancing by polling an FPGA-hosted
 // cycle count, which it writes out to a file.  The causes of an apparently
@@ -14,9 +15,12 @@
 // for expanded discussion.
 
 class heartbeat_t : public bridge_driver_t {
-
 public:
-  heartbeat_t(simif_t *sim, const std::vector<std::string> &args);
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  heartbeat_t(simif_t &sim, const std::vector<std::string> &args);
+
   virtual void init(){};
   virtual void tick();
   virtual bool terminate() { return has_timed_out; };
@@ -25,7 +29,6 @@ public:
 
 private:
   std::ofstream log;
-  simif_t *sim;
   time_t start_time;
 
   bool has_timed_out = false;

@@ -100,7 +100,7 @@ int firesim_top_t::exit_code() {
 }
 
 void firesim_top_t::simulation_init() {
-  add_bridge_driver(new heartbeat_t(simif, args));
+  add_bridge_driver(new heartbeat_t(*simif, args));
 
   // DOC include start: Bridge Driver Registration
   // Here we instantiate our driver once for each bridge in the target

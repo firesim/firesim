@@ -1,10 +1,14 @@
+#include "synthesized_prints.h"
+
+#include <cassert>
+
 #include <iomanip>
 #include <iostream>
 
-#include "synthesized_prints.h"
+char synthesized_prints_t::KIND;
 
 synthesized_prints_t::synthesized_prints_t(
-    simif_t *sim,
+    simif_t &sim,
     StreamEngine &stream,
     const std::vector<std::string> &args,
     const PRINTBRIDGEMODULE_struct &mmio_addrs,
@@ -21,7 +25,7 @@ synthesized_prints_t::synthesized_prints_t(
     const unsigned int clock_multiplier,
     const unsigned int clock_divisor,
     int printno)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       print_count(print_count), token_bytes(token_bytes),
       idle_cycles_mask(idle_cycles_mask), print_offsets(print_offsets),
       format_strings(format_strings), argument_counts(argument_counts),

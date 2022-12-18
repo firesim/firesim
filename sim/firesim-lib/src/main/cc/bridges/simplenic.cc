@@ -2,9 +2,11 @@
 
 #include "simplenic.h"
 
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+
 #include <iostream>
-#include <stdio.h>
-#include <string.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -12,6 +14,8 @@
 #include <unistd.h>
 
 #include <sys/mman.h>
+
+char simplenic_t::KIND;
 
 // DO NOT MODIFY PARAMS BELOW THIS LINE
 #define TOKENS_PER_BIGTOKEN 7
@@ -47,7 +51,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd) {
     fflush(this->niclog);                                                      \
   }
 
-simplenic_t::simplenic_t(simif_t *sim,
+simplenic_t::simplenic_t(simif_t &sim,
                          StreamEngine &stream,
                          const std::vector<std::string> &args,
                          const SIMPLENICBRIDGEMODULE_struct &mmio_addrs,
@@ -56,7 +60,7 @@ simplenic_t::simplenic_t(simif_t *sim,
                          const int stream_to_cpu_depth,
                          const int stream_from_cpu_idx,
                          const int stream_from_cpu_depth)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_to_cpu_idx(stream_to_cpu_idx),
       stream_from_cpu_idx(stream_from_cpu_idx) {
   const char *niclogfile = NULL;

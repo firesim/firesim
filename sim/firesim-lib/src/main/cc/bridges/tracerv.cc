@@ -1,11 +1,14 @@
 // See LICENSE for license details
 
 #include "tracerv.h"
+#include "bridges/tracerv/trace_tracker.h"
+#include "bridges/tracerv/tracerv_processing.h"
 
-#include <inttypes.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cinttypes>
+#include <climits>
+#include <cstdio>
+#include <cstring>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -14,13 +17,15 @@
 
 #include <sys/mman.h>
 
+char tracerv_t::KIND;
+
 // put FIREPERF in a mode that writes a simple log for processing later.
 // useful for iterating on software side only without re-running on FPGA.
 // #define FIREPERF_LOGGER
 
 constexpr uint64_t valid_mask = (1ULL << 40);
 
-tracerv_t::tracerv_t(simif_t *sim,
+tracerv_t::tracerv_t(simif_t &sim,
                      StreamEngine &stream,
                      const std::vector<std::string> &args,
                      const TRACERVBRIDGEMODULE_struct &mmio_addrs,
@@ -31,7 +36,7 @@ tracerv_t::tracerv_t(simif_t *sim,
                      const unsigned int clock_multiplier,
                      const unsigned int clock_divisor,
                      int tracerno)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_idx(stream_idx), stream_depth(stream_depth),
       max_core_ipc(max_core_ipc),
       clock_info(clock_domain_name, clock_multiplier, clock_divisor) {

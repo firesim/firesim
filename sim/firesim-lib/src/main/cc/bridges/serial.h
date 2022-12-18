@@ -3,7 +3,10 @@
 #define __SERIAL_H
 
 #include "core/bridge_driver.h"
-#include "fesvr/firesim_tsi.h"
+
+class loadmem_t;
+class firesim_tsi_t;
+class firesim_loadmem_t;
 
 template <class T>
 struct serial_data_t {
@@ -35,22 +38,27 @@ typedef struct SERIALBRIDGEMODULE_struct {
 
 class serial_t : public bridge_driver_t {
 public:
-  serial_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  serial_t(simif_t &simif,
            const std::vector<std::string> &args,
            const SERIALBRIDGEMODULE_struct &mmio_addrs,
-           int serialno,
+           loadmem_t &loadmem_widget,
            bool has_mem,
-           int64_t mem_host_offset);
+           int64_t mem_host_offset,
+           int serialno);
   ~serial_t();
   virtual void init();
   virtual void tick();
-  virtual bool terminate() { return fesvr->done(); }
-  virtual int exit_code() { return fesvr->exit_code(); }
+  virtual bool terminate();
+  virtual int exit_code();
   virtual void finish(){};
 
 private:
   const SERIALBRIDGEMODULE_struct mmio_addrs;
-  simif_t *sim;
+  loadmem_t &loadmem_widget;
+
   firesim_tsi_t *fesvr;
   bool has_mem;
   // host memory offset based on the number of memory models and their size

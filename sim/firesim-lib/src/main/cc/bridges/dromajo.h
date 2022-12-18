@@ -24,7 +24,10 @@ struct dromajo_config_t {
 
 class dromajo_t : public streaming_bridge_driver_t {
 public:
-  dromajo_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  dromajo_t(simif_t &sim,
             StreamEngine &stream,
             std::vector<std::string> &args,
             const DROMAJOBRIDGEMODULE_struct &mmio_addrs,

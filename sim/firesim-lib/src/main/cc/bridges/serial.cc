@@ -1,15 +1,22 @@
 // See LICENSE for license details
 
 #include "serial.h"
-#include <assert.h>
+#include "core/simif.h"
+#include "fesvr/firesim_tsi.h"
 
-serial_t::serial_t(simif_t *sim,
+#include <cassert>
+
+char serial_t::KIND;
+
+serial_t::serial_t(simif_t &simif,
                    const std::vector<std::string> &args,
                    const SERIALBRIDGEMODULE_struct &mmio_addrs,
-                   int serialno,
+                   loadmem_t &loadmem_widget,
                    bool has_mem,
-                   int64_t mem_host_offset)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), sim(sim), has_mem(has_mem),
+                   int64_t mem_host_offset,
+                   int serialno)
+    : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
+      loadmem_widget(loadmem_widget), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
 
   std::string num_equals = std::to_string(serialno) + std::string("=");
@@ -95,13 +102,12 @@ void serial_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   mpz_t buf;
   mpz_init(buf);
   while (loadmem.size > 0) {
-    auto &driver = sim->get_loadmem();
-    driver.read_mem(loadmem.addr + mem_host_offset, buf);
+    loadmem_widget.read_mem(loadmem.addr + mem_host_offset, buf);
 
     // If the read word is 0; mpz_export seems to return an array with length 0
     size_t beats_requested =
-        (loadmem.size / sizeof(uint32_t) > driver.get_mem_data_chunk())
-            ? driver.get_mem_data_chunk()
+        (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk())
+            ? loadmem_widget.get_mem_data_chunk()
             : loadmem.size / sizeof(uint32_t);
     // The number of beats exported from buf; may be less than beats requested.
     size_t non_zero_beats;
@@ -135,7 +141,7 @@ void serial_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
              0,
              0,
              buf);
-  sim->get_loadmem().write_mem_chunk(
+  loadmem_widget.write_mem_chunk(
       loadmem.addr + mem_host_offset, data, loadmem.size);
   mpz_clear(data);
 }
@@ -170,3 +176,6 @@ void serial_t::tick() {
     go();
   }
 }
+
+bool serial_t::terminate() { return fesvr->done(); }
+int serial_t::exit_code() { return fesvr->exit_code(); }

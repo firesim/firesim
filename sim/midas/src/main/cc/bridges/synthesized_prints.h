@@ -29,9 +29,11 @@ typedef struct PRINTBRIDGEMODULE_struct {
 } PRINTBRIDGEMODULE_struct;
 
 class synthesized_prints_t : public streaming_bridge_driver_t {
-
 public:
-  synthesized_prints_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  synthesized_prints_t(simif_t &sim,
                        StreamEngine &stream,
                        const std::vector<std::string> &args,
                        const PRINTBRIDGEMODULE_struct &mmio_addrs,

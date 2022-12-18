@@ -10,7 +10,10 @@ typedef struct GROUNDTESTBRIDGEMODULE_struct {
 
 class groundtest_t : public bridge_driver_t {
 public:
-  groundtest_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  groundtest_t(simif_t &sim,
                const std::vector<std::string> &args,
                const GROUNDTESTBRIDGEMODULE_struct &mmio_addrs);
   ~groundtest_t();
@@ -23,7 +26,6 @@ public:
 
 private:
   bool _success = false;
-  simif_t *sim;
   const GROUNDTESTBRIDGEMODULE_struct mmio_addrs;
 };
 

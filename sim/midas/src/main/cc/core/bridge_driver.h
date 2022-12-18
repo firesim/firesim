@@ -12,12 +12,12 @@
  *
  * Bridge Drivers are the CPU-hosted component of a Target-to-Host Bridge. A
  * Bridge Driver interacts with their accompanying FPGA-hosted BridgeModule
- * using MMIO (via read() and write() methods) or bridge streams (via pull()
- * and push()).
+ * using MMIO (via read() and write() methods).
  */
-class bridge_driver_t {
+class bridge_driver_t : public widget_t {
 public:
-  bridge_driver_t(simif_t *s) : sim(s) {}
+  using widget_t::widget_t;
+
   virtual ~bridge_driver_t(){};
   // Initialize BridgeModule state -- this can't be done in the constructor
   // currently
@@ -42,12 +42,9 @@ public:
   // DOC include end: Bridge Driver Interface
 
 protected:
-  void write(size_t addr, uint32_t data) { sim->write(addr, data); }
+  void write(size_t addr, uint32_t data);
 
-  uint32_t read(size_t addr) { return sim->read(addr); }
-
-private:
-  simif_t *sim;
+  uint32_t read(size_t addr);
 };
 
 /**
@@ -57,8 +54,8 @@ private:
  */
 class streaming_bridge_driver_t : public bridge_driver_t {
 public:
-  streaming_bridge_driver_t(simif_t *s, StreamEngine &stream)
-      : bridge_driver_t(s), stream(stream) {}
+  streaming_bridge_driver_t(simif_t &s, StreamEngine &stream, const void *kind)
+      : bridge_driver_t(s, kind), stream(stream) {}
 
   /**
    *  @brief Logical byte width of Bridge streams

@@ -6,6 +6,8 @@
 #include <string.h>
 #include <string>
 
+char blockdev_t::KIND;
+
 /* Block Device Endpoint Driver
  *
  * This works in conjunction with
@@ -33,13 +35,13 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t *sim,
+blockdev_t::blockdev_t(simif_t &sim,
                        const std::vector<std::string> &args,
                        uint32_t num_trackers,
                        uint32_t latency_bits,
                        const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
                        int blkdevno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs) {
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs) {
   this->_file = NULL;
   this->logfile = NULL;
   _ntags = num_trackers;

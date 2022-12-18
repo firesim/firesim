@@ -1,13 +1,16 @@
 #include "synthesized_assertions.h"
+
 #include <fstream>
 #include <iostream>
 
+char synthesized_assertions_t::KIND;
+
 synthesized_assertions_t::synthesized_assertions_t(
-    simif_t *sim,
+    simif_t &sim,
     const std::vector<std::string> &args,
     const ASSERTBRIDGEMODULE_struct &mmio_addrs,
     const char *const *msgs)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), msgs(msgs) {
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs), msgs(msgs) {
   for (auto &arg : args) {
     if (arg.find("+disable-asserts") == 0)
       enable = false;

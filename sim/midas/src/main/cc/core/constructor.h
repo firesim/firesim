@@ -4,7 +4,7 @@
 // of the `add_bridge_driver` method with appropriate types.
 
 #ifdef PEEKPOKEBRIDGEMODULE_0_PRESENT
-add_bridge_driver(new peek_poke_t(simif,
+add_bridge_driver(new peek_poke_t(*simif,
                                   PEEKPOKEBRIDGEMODULE_0_substruct_create,
                                   POKE_SIZE,
                                   (const uint32_t *)INPUT_ADDRS,
@@ -22,7 +22,7 @@ RESETPULSEBRIDGEMODULE_checks;
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_RESET_PULSE(FUNC, IDX)                                     \
-  FUNC(new reset_pulse_t(simif,                                                \
+  FUNC(new reset_pulse_t(*simif,                                               \
                          args,                                                 \
                          RESETPULSEBRIDGEMODULE_##IDX##_substruct_create,      \
                          RESETPULSEBRIDGEMODULE_##IDX##_max_pulse_length,      \
@@ -43,35 +43,35 @@ UARTBRIDGEMODULE_checks;
 
 #ifdef UARTBRIDGEMODULE_0_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_0_substruct_create, 0));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_0_substruct_create, 0));
 #endif
 #ifdef UARTBRIDGEMODULE_1_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_1_substruct_create, 1));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_1_substruct_create, 1));
 #endif
 #ifdef UARTBRIDGEMODULE_2_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_2_substruct_create, 2));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_2_substruct_create, 2));
 #endif
 #ifdef UARTBRIDGEMODULE_3_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_3_substruct_create, 3));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_3_substruct_create, 3));
 #endif
 #ifdef UARTBRIDGEMODULE_4_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_4_substruct_create, 4));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_4_substruct_create, 4));
 #endif
 #ifdef UARTBRIDGEMODULE_5_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_5_substruct_create, 5));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_5_substruct_create, 5));
 #endif
 #ifdef UARTBRIDGEMODULE_6_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_6_substruct_create, 6));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_6_substruct_create, 6));
 #endif
 #ifdef UARTBRIDGEMODULE_7_PRESENT
 add_bridge_driver(
-    new uart_t(simif, args, UARTBRIDGEMODULE_7_substruct_create, 7));
+    new uart_t(*simif, args, UARTBRIDGEMODULE_7_substruct_create, 7));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_checks
@@ -80,7 +80,7 @@ FASEDMEMORYTIMINGMODEL_checks;
 
 #define INSTANTIATE_FASED(FUNC, IDX)                                           \
   FUNC(new FASEDMemoryTimingModel(                                             \
-      simif,                                                                   \
+      *simif,                                                                  \
       AddressMap(FASEDMEMORYTIMINGMODEL_##IDX##_R_num_registers,               \
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_R_addrs, \
                  (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_R_names,  \
@@ -146,12 +146,13 @@ SERIALBRIDGEMODULE_checks;
 #endif // SERIALBRIDGEMODULE_checks
 
 #define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
-  FUNC(new serial_t(simif,                                                     \
+  FUNC(new serial_t(*simif,                                                    \
                     args,                                                      \
                     SERIALBRIDGEMODULE_##IDX##_substruct_create,               \
-                    IDX,                                                       \
+                    simif->get_loadmem(),                                      \
                     SERIALBRIDGEMODULE_##IDX##_has_memory,                     \
-                    SERIALBRIDGEMODULE_##IDX##_memory_offset));
+                    SERIALBRIDGEMODULE_##IDX##_memory_offset,                  \
+                    IDX));
 
 #ifdef SERIALBRIDGEMODULE_0_PRESENT
 INSTANTIATE_SERIAL(add_bridge_driver, 0)
@@ -207,7 +208,7 @@ BLOCKDEVBRIDGEMODULE_checks;
 #endif // BLOCKDEVBRIDGEMODULE_checks
 
 #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_0_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_0_latency_bits,
@@ -215,7 +216,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  0));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_1_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_1_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_1_latency_bits,
@@ -223,7 +224,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  1));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_2_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_2_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_2_latency_bits,
@@ -231,7 +232,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  2));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_3_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_3_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_3_latency_bits,
@@ -239,7 +240,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  3));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_4_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_4_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_4_latency_bits,
@@ -247,7 +248,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  4));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_5_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_5_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_5_latency_bits,
@@ -255,7 +256,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  5));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_6_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_6_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_6_latency_bits,
@@ -263,7 +264,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  6));
 #endif
 #ifdef BLOCKDEVBRIDGEMODULE_7_PRESENT
-add_bridge_driver(new blockdev_t(simif,
+add_bridge_driver(new blockdev_t(*simif,
                                  args,
                                  BLOCKDEVBRIDGEMODULE_7_num_trackers,
                                  BLOCKDEVBRIDGEMODULE_7_latency_bits,
@@ -276,7 +277,7 @@ SIMPLENICBRIDGEMODULE_checks;
 #endif // SIMPLENICBRIDGEMODULE_checks
 
 #define INSTANTIATE_SIMPLENIC(FUNC, IDX)                                       \
-  FUNC(new simplenic_t(simif,                                                  \
+  FUNC(new simplenic_t(*simif,                                                 \
                        simif->get_managed_stream(),                            \
                        args,                                                   \
                        SIMPLENICBRIDGEMODULE_##IDX##_substruct_create,         \
@@ -317,7 +318,7 @@ TRACERVBRIDGEMODULE_checks;
 
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
-  FUNC(new tracerv_t(simif,                                                    \
+  FUNC(new tracerv_t(*simif,                                                   \
                      simif->get_managed_stream(),                              \
                      args,                                                     \
                      TRACERVBRIDGEMODULE_##IDX##_substruct_create,             \
@@ -428,7 +429,7 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
 
 #ifdef DROMAJOBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new dromajo_t(
-            simif, args,
+            *simif, args,
             DROMAJOBRIDGEMODULE_0_substruct_create,
             dromajo_config_t{
                 .resetVector = DROMAJO_RESET_VECTOR,
@@ -457,35 +458,35 @@ GROUNDTESTBRIDGEMODULE_checks;
 
 #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_1_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_1_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_1_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_2_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_2_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_2_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_3_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_3_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_3_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_4_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_4_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_4_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_5_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_5_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_5_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_6_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_6_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_6_substruct_create));
 #endif
 #ifdef GROUNDTESTBRIDGEMODULE_7_PRESENT
     add_bridge_driver(new groundtest_t(
-            simif, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
+            *simif, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
 #endif
 
 #ifdef AUTOCOUNTERBRIDGEMODULE_checks
@@ -494,7 +495,7 @@ AUTOCOUNTERBRIDGEMODULE_checks;
 
 #define INSTANTIATE_AUTOCOUNTER(FUNC, IDX)                                     \
   FUNC(new autocounter_t(                                                      \
-      simif,                                                                   \
+      *simif,                                                                  \
       args,                                                                    \
       AUTOCOUNTERBRIDGEMODULE_##IDX##_substruct_create,                        \
       AddressMap(                                                              \
@@ -547,42 +548,42 @@ ASSERTBRIDGEMODULE_checks;
 #endif // ASSERTBRIDGEMODULE_checks
 
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_0_substruct_create,
                                                    ASSERTBRIDGEMODULE_0_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_1_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_1_substruct_create,
                                                    ASSERTBRIDGEMODULE_1_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_2_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_2_substruct_create,
                                                    ASSERTBRIDGEMODULE_2_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_3_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_3_substruct_create,
                                                    ASSERTBRIDGEMODULE_3_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_4_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_4_substruct_create,
                                                    ASSERTBRIDGEMODULE_4_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_5_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_5_substruct_create,
                                                    ASSERTBRIDGEMODULE_5_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_6_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_6_substruct_create,
                                                    ASSERTBRIDGEMODULE_6_assert_messages));
 #endif
 #ifdef ASSERTBRIDGEMODULE_7_PRESENT
-    add_bridge_driver(new synthesized_assertions_t(simif, args,
+    add_bridge_driver(new synthesized_assertions_t(*simif, args,
                                                    ASSERTBRIDGEMODULE_7_substruct_create,
                                                    ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
@@ -592,7 +593,7 @@ PRINTBRIDGEMODULE_checks;
 #endif // PRINTBRIDGEMODULE_checks
 
 #define INSTANTIATE_PRINTF(FUNC, IDX)                                          \
-  FUNC(new synthesized_prints_t(simif,                                         \
+  FUNC(new synthesized_prints_t(*simif,                                        \
                                 simif->get_managed_stream(),                   \
                                 args,                                          \
                                 PRINTBRIDGEMODULE_##IDX##_substruct_create,    \
@@ -640,7 +641,7 @@ PLUSARGSBRIDGEMODULE_checks;
 #endif // PLUSARGSBRIDGEMODULE_checks
 
 #define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
-  FUNC(new plusargs_t(simif,                                                   \
+  FUNC(new plusargs_t(*simif,                                                  \
                       args,                                                    \
                       PLUSARGSBRIDGEMODULE_##IDX##_substruct_create,           \
                       PLUSARGSBRIDGEMODULE_##IDX##_name,                       \
@@ -679,7 +680,7 @@ TERMINATIONBRIDGEMODULE_checks;
 #endif // TERMINATIONBRIDGEMODULE_checks
 
 #define INSTANTIATE_TERMINATION(FUNC, IDX)                                     \
-  FUNC(new termination_t(simif,                                                \
+  FUNC(new termination_t(*simif,                                               \
                          args,                                                 \
                          TERMINATIONBRIDGEMODULE_##IDX##_substruct_create,     \
                          TERMINATIONBRIDGEMODULE_##IDX##_message_count,        \

@@ -2,10 +2,12 @@
 
 #include "groundtest.h"
 
-groundtest_t::groundtest_t(simif_t *sim,
+char groundtest_t::KIND;
+
+groundtest_t::groundtest_t(simif_t &sim,
                            const std::vector<std::string> &args,
                            const GROUNDTESTBRIDGEMODULE_struct &mmio_addrs)
-    : bridge_driver_t(sim), sim(sim), mmio_addrs(mmio_addrs) {}
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs) {}
 
 groundtest_t::~groundtest_t() {}
 

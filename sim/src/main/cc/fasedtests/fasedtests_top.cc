@@ -103,7 +103,7 @@ void fasedtests_top_t::simulation_init() {
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_W_addrs,
                  (const char *const *)FASEDMEMORYTIMINGMODEL_0_W_names);
   add_bridge_driver(
-      new test_harness_bridge_t(simif, peek_poke.get(), fased_addr_map, args));
+      new test_harness_bridge_t(*simif, *peek_poke, fased_addr_map, args));
 
   for (auto &e : fpga_models) {
     e->init();
