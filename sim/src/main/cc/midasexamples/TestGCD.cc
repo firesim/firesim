@@ -6,8 +6,6 @@ class TestGCD final : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  void add_bridge_driver(synthesized_assertions_t *bridge) override {}
-
   void run_test() override {
     uint32_t a = 64, b = 48, z = 16; // test vectors
     target_reset();

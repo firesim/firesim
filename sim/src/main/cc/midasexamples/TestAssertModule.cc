@@ -8,6 +8,9 @@ public:
   using AssertTest::AssertTest;
 
   void run_test() override {
+    assert(assert_endpoints.size() == 1 && "expected one assert");
+    auto *assert_endpoint = assert_endpoints[0];
+
     int assertions_thrown = 0;
     poke("reset", 1);
     poke("io_a", 0);
@@ -40,8 +43,9 @@ public:
                                  std::to_string(test_case));
         break;
       }
+
       auto &assert_endpoint = *assert_endpoints[0];
-      while (!simif->done()) {
+      while (!sim.done()) {
         assert_endpoint.tick();
         if (assert_endpoint.terminate()) {
           assert_endpoint.resume();

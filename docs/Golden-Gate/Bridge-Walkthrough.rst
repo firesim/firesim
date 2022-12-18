@@ -132,11 +132,11 @@ Registering the Driver
 ++++++++++++++++++++++
 
 With the Bridge Driver implemented, we now have to register it in the main simulator
-simulator class defined in ``sim/src/main/cc/firesim/firesim_top.cc``. Here, we
+simulator class defined in ``sim/midas/src/main/cc/core/constructor.h``. Here, we
 rely on the C preprocessor macros to instantiate the bridge driver only when
 the corresponding BridgeModule is present:
 
-.. literalinclude:: ../../sim/src/main/cc/firesim/firesim_top.cc
+.. literalinclude:: ../../sim/midas/src/main/cc/core/constructor.h
     :language: c++
     :start-after: DOC include start: Bridge Driver Registration
     :end-before: DOC include end: Bridge Driver Registration

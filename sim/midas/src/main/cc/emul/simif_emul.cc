@@ -43,13 +43,11 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
   if (std::optional<AXI4Config> conf = config.cpu_managed) {
     assert(!config.fpga_managed && "stream should be CPU or FPGA managed");
     cpu_managed_stream_io.reset(new CPUManagedStreamIOImpl(*this, *conf));
-    managed_stream.reset(new CPUManagedStreamWidget(*cpu_managed_stream_io));
   }
 
   if (std::optional<AXI4Config> conf = config.fpga_managed) {
     assert(!config.cpu_managed && "stream should be CPU or FPGA managed");
     fpga_managed_stream_io.reset(new FPGAManagedStreamIOImpl(*this, *conf));
-    managed_stream.reset(new FPGAManagedStreamWidget(*fpga_managed_stream_io));
   }
 
   // Set up the simulation thread.

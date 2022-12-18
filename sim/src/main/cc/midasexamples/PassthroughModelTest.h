@@ -11,8 +11,6 @@ class PassthroughModelDriver : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  void add_bridge_driver(synthesized_assertions_t *bridge) override {}
-
   int latency = 1;
   int length = 1 << 16;
 

@@ -1,10 +1,11 @@
 // See LICENSE for license details.
 
-#include "TestHarness.h"
-
 #include <iomanip>
 #include <iostream>
 #include <string_view>
+
+#include "TestHarness.h"
+#include "bridges/plusargs.h"
 
 /**
  * @brief PlusArgs Bridge Driver Test
@@ -35,19 +36,15 @@ private:
   }
 
 public:
-  std::unique_ptr<plusargs_t> plusargsinator;
-  void add_bridge_driver(plusargs_t *bridge) override {
-    assert(!plusargsinator && "multiple bridges registered");
-    plusargsinator.reset(bridge);
-  }
+  plusargs_t &plusargsinator;
 
   /**
    * Constructor.
    *
    * @param [in] args The argument list from main
    */
-  TestPlusArgsModule(const std::vector<std::string> &args, simif_t *simif)
-      : TestHarness(args, simif) {
+  TestPlusArgsModule(const std::vector<std::string> &args, simif_t &simif)
+      : TestHarness(args, simif), plusargsinator(get_bridge<plusargs_t>()) {
     parse_key(args);
   }
 
@@ -113,7 +110,7 @@ public:
       std::cout << "No test key found, will not assert\n";
     }
 
-    plusargsinator->init();
+    plusargsinator.init();
     target_reset();
 
     for (int i = 0; i < 8; i++) {

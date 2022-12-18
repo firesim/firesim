@@ -1,6 +1,7 @@
 #include "cpu_managed_stream.h"
+#include "core/simif.h"
 
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 
 /**
@@ -87,28 +88,19 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   return bytes_read;
 }
 
-CPUManagedStreamWidget::CPUManagedStreamWidget(CPUManagedStreamIO &io) {
-#ifdef CPUMANAGEDSTREAMENGINE_0_PRESENT
-  for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
+CPUManagedStreamWidget::CPUManagedStreamWidget(
+    CPUManagedStreamIO &io,
+    std::vector<CPUManagedStreams::StreamParameters> &&from_cpu,
+    std::vector<CPUManagedStreams::StreamParameters> &&to_cpu) {
+  for (auto &&params : from_cpu) {
     cpu_to_fpga_streams.push_back(
-        std::make_unique<CPUManagedStreams::CPUToFPGADriver>(
-            CPUManagedStreams::StreamParameters(
-                std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
-                CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
-                CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
-                CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]),
-            io));
+        std::make_unique<CPUManagedStreams::CPUToFPGADriver>(std::move(params),
+                                                             io));
   }
 
-  for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
+  for (auto &&params : to_cpu) {
     fpga_to_cpu_streams.push_back(
-        std::make_unique<CPUManagedStreams::FPGAToCPUDriver>(
-            CPUManagedStreams::StreamParameters(
-                std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
-                CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
-                CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
-                CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]),
-            io));
+        std::make_unique<CPUManagedStreams::FPGAToCPUDriver>(std::move(params),
+                                                             io));
   }
-#endif // CPUMANAGEDSTREAMENGINE_0_PRESENT
 }

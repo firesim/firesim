@@ -6,38 +6,29 @@
 #include "bridges/uart.h"
 #include "core/bridge_driver.h"
 
-BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
-                             simif_t *simif)
-    : simulation_t(*simif, args), simif(simif) {}
+BridgeHarness::BridgeHarness(const std::vector<std::string> &args, simif_t &sim)
+    : simulation_t(sim, args),
+      peek_poke(sim.get_registry().get_widget<peek_poke_t>()) {}
 
 BridgeHarness::~BridgeHarness() = default;
 
-void BridgeHarness::add_bridge_driver(bridge_driver_t *bridge) {
-  bridges.emplace_back(bridge);
-}
-
-void BridgeHarness::add_bridge_driver(peek_poke_t *bridge) {
-  peek_poke.reset(bridge);
-}
-
 void BridgeHarness::simulation_init() {
-#include "core/constructor.h"
-  for (auto &bridge : bridges) {
+  for (auto &bridge : sim.get_registry().get_all_bridges()) {
     bridge->init();
   }
 }
 
 int BridgeHarness::simulation_run() {
   // Reset the DUT.
-  peek_poke->poke("reset", 1, /*blocking=*/true);
-  simif->take_steps(1, /*blocking=*/true);
-  peek_poke->poke("reset", 0, /*blocking=*/true);
-  simif->take_steps(1, /*blocking=*/true);
+  peek_poke.poke("reset", 1, /*blocking=*/true);
+  sim.take_steps(1, /*blocking=*/true);
+  peek_poke.poke("reset", 0, /*blocking=*/true);
+  sim.take_steps(1, /*blocking=*/true);
 
   // Tick until all requests are serviced.
-  simif->take_steps(get_step_limit(), /*blocking=*/false);
-  for (unsigned i = 0; i < get_tick_limit() && !simif->done(); ++i) {
-    for (auto &bridge : bridges) {
+  sim.take_steps(get_step_limit(), /*blocking=*/false);
+  for (unsigned i = 0; i < get_tick_limit() && !sim.done(); ++i) {
+    for (auto &bridge : sim.get_registry().get_all_bridges()) {
       bridge->tick();
     }
   }
@@ -47,7 +38,7 @@ int BridgeHarness::simulation_run() {
 }
 
 void BridgeHarness::simulation_finish() {
-  for (auto &bridge : bridges) {
+  for (auto &bridge : sim.get_registry().get_all_bridges()) {
     bridge->finish();
   }
 }

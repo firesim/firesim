@@ -17,12 +17,9 @@ class bridge_driver_t;
  */
 class BridgeHarness : public simulation_t {
 public:
-  BridgeHarness(const std::vector<std::string> &args, simif_t *simif);
+  BridgeHarness(const std::vector<std::string> &args, simif_t &sim);
 
   ~BridgeHarness() override;
-
-  void add_bridge_driver(bridge_driver_t *bridge);
-  void add_bridge_driver(peek_poke_t *bridge);
 
   void simulation_init() override;
   int simulation_run() override;
@@ -33,14 +30,12 @@ protected:
   virtual unsigned get_tick_limit() const = 0;
 
 private:
-  simif_t *simif;
-  std::vector<std::unique_ptr<bridge_driver_t>> bridges;
-  std::unique_ptr<peek_poke_t> peek_poke;
+  peek_poke_t &peek_poke;
 };
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
   std::unique_ptr<simulation_t> create_simulation(                             \
-      const std::vector<std::string> &args, simif_t *simif) {                  \
-    return std::make_unique<CLASS_NAME>(args, simif);                          \
+      const std::vector<std::string> &args, simif_t &sim) {                    \
+    return std::make_unique<CLASS_NAME>(args, sim);                            \
   }
 #endif // MIDAEXAMPLES_BRIDGEHARNESS_H

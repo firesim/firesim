@@ -56,30 +56,20 @@ void FPGAManagedStreams::FPGAToCPUDriver::flush() {
   }
 }
 
-FPGAManagedStreamWidget::FPGAManagedStreamWidget(FPGAManagedStreamIO &io) {
-#ifdef FPGAMANAGEDSTREAMENGINE_0_PRESENT
-  char *fpga_address_memory_base = io.get_memory_base();
-  auto offset = 0;
+FPGAManagedStreamWidget::FPGAManagedStreamWidget(
+    FPGAManagedStreamIO &io,
+    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
 
-  for (size_t i = 0; i < FPGAMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
-    uint32_t buffer_capacity =
-        FPGAMANAGEDSTREAMENGINE_0_to_cpu_fpgaBufferDepth[i];
+  char *fpga_address_memory_base = io.get_memory_base();
+  uint64_t offset = 0;
+  for (auto &&params : to_cpu) {
+    uint32_t capacity = params.buffer_capacity;
     fpga_to_cpu_streams.push_back(
         std::make_unique<FPGAManagedStreams::FPGAToCPUDriver>(
-            FPGAManagedStreams::StreamParameters(
-                std::string(FPGAMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
-                buffer_capacity,
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_toHostPhysAddrHighAddrs[i],
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_toHostPhysAddrLowAddrs[i],
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_bytesAvailableAddrs[i],
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_bytesConsumedAddrs[i],
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_toHostStreamDoneInitAddrs[i],
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_toHostStreamFlushAddrs[i],
-                FPGAMANAGEDSTREAMENGINE_0_to_cpu_toHostStreamFlushDoneAddrs[i]),
+            std::move(params),
             (void *)(fpga_address_memory_base + offset),
             offset,
             io));
-    offset += buffer_capacity;
+    offset += capacity;
   }
-#endif // FPGAMANAGEDSTREAMENGINE_0_PRESENT
 }

@@ -17,9 +17,12 @@
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
 #include "core/timing.h"
+#include "core/widget_registry.h"
 
 class StreamEngine;
 class simulation_t;
+class CPUManagedStreamIO;
+class FPGAManagedStreamIO;
 
 /** \class simif_t
  *
@@ -53,13 +56,13 @@ public:
   /**
    * Returns true if the simulation is complete.
    */
-  inline bool done() { return master.is_done(); }
+  inline bool done() { return registry->get_widget<master_t>().is_done(); }
 
   /**
    * Advance the simulation a given number of steps.
    */
   inline void take_steps(size_t n, bool blocking) {
-    return master.step(n, blocking);
+    return registry->get_widget<master_t>().step(n, blocking);
   }
 
   // Host-platform interface. See simif_f1; simif_emul for implementation
@@ -82,6 +85,22 @@ public:
    */
   virtual uint32_t read(size_t addr) = 0;
 
+  /**
+   * Return a functor accessing CPU-managed streams.
+   *
+   * This method aborts if it is not reimplemented by the desired host
+   * platform simif.
+   */
+  virtual CPUManagedStreamIO &get_cpu_managed_stream_io();
+
+  /**
+   * Return a functor accessing FPGA-managed streams.
+   *
+   * This method aborts if it is not reimplemented by the desired host platform
+   * simif.
+   */
+  virtual FPGAManagedStreamIO &get_fpga_managed_stream_io();
+
   // End host-platform interface.
 
   /**
@@ -90,25 +109,26 @@ public:
    * The target cycle is based on the number of clock tokens enqueued
    * (will report a larger number).
    */
-  uint64_t actual_tcycle() { return clock.tcycle(); }
+  uint64_t actual_tcycle() {
+    return registry->get_widget<clockmodule_t>().tcycle();
+  }
 
   /**
    * Provides the current host cycle.
    */
-  uint64_t actual_hcycle() { return clock.hcycle(); }
+  uint64_t actual_hcycle() {
+    return registry->get_widget<clockmodule_t>().hcycle();
+  }
 
   /**
-   * Return a reference to the LoadMem widget.
+   * Return the name of the simulated target.
    */
-  loadmem_t &get_loadmem() { return loadmem; }
-
-  /// Return the name of the simulated target.
   std::string_view get_target_name() const { return config.target_name; }
 
   /**
-   * Return a reference to the managed stream engine.
+   * Return a reference to the registry which owns all widgets.
    */
-  StreamEngine &get_managed_stream() { return *managed_stream; }
+  widget_registry_t &get_registry() { return *registry; }
 
 private:
   /**
@@ -131,24 +151,14 @@ protected:
   const TargetConfig config;
 
   /**
-   * LoadMem widget driver.
+   * Saved command-line arguments.
    */
-  loadmem_t loadmem;
+  std::vector<std::string> args;
 
   /**
-   * ClockBridge driver.
+   * Helper holding references to all bridges.
    */
-  clockmodule_t clock;
-
-  /**
-   * SimulationMaster widget.
-   */
-  master_t master;
-
-  /**
-   * Widget implementing CPU-managed streams.
-   */
-  std::unique_ptr<StreamEngine> managed_stream;
+  std::unique_ptr<widget_registry_t> registry;
 
   /**
    * Reference to the user-defined bits of the simulation.

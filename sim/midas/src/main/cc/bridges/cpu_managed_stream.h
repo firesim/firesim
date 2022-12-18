@@ -159,7 +159,10 @@ public:
    *
    * @param io Reference to a functor implementing low-level IO.
    */
-  CPUManagedStreamWidget(CPUManagedStreamIO &io);
+  CPUManagedStreamWidget(
+      CPUManagedStreamIO &io,
+      std::vector<CPUManagedStreams::StreamParameters> &&from_cpu,
+      std::vector<CPUManagedStreams::StreamParameters> &&to_cpu);
 };
 
 #endif // __BRIDGES_CPU_MANAGED_STREAM_H

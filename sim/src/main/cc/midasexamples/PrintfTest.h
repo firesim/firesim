@@ -1,24 +1,29 @@
 // See LICENSE for license details.
 
-#ifndef MIDASEXAMPLES_PRINTFMODULE_H
-#define MIDASEXAMPLES_PRINTFMODULE_H
-
-#include <memory>
+#ifndef MIDASEXAMPLES_PRINTTEST_H
+#define MIDASEXAMPLES_PRINTTEST_H
 
 #include "TestHarness.h"
+#include "bridges/synthesized_prints.h"
 
 class PrintTest : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  std::vector<std::unique_ptr<synthesized_prints_t>> print_endpoints;
-  void add_bridge_driver(synthesized_prints_t *bridge) override {
-    print_endpoints.emplace_back(bridge);
+  ~PrintTest() override = default;
+
+  const std::vector<synthesized_prints_t *> print_endpoints =
+      get_bridges<synthesized_prints_t>();
+
+  void simulation_init() override {
+    for (auto &print_endpoint : print_endpoints) {
+      print_endpoint->init();
+    }
   }
 
   void run_and_collect_prints(int cycles) {
     step(cycles, false);
-    while (!simif->done()) {
+    while (!sim.done()) {
       for (auto &print_endpoint : print_endpoints) {
         print_endpoint->tick();
       }
@@ -29,4 +34,4 @@ public:
   }
 };
 
-#endif // MIDASEXAMPLES_PRINTFMODULE_H
+#endif // MIDASEXAMPLES_PRINTTEST_H

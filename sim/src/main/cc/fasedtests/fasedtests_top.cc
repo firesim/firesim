@@ -11,32 +11,14 @@
 
 class fasedtests_top_t : public systematic_scheduler_t, public simulation_t {
 public:
-  fasedtests_top_t(const std::vector<std::string> &args, simif_t *simif);
+  fasedtests_top_t(const std::vector<std::string> &args, simif_t &sim);
   ~fasedtests_top_t() override = default;
 
   void simulation_init() override;
   void simulation_finish() override;
   int simulation_run() override;
 
-protected:
-  void add_bridge_driver(bridge_driver_t *bridge) {
-    bridges.emplace_back(bridge);
-  }
-  void add_bridge_driver(FpgaModel *bridge) {
-    fpga_models.emplace_back(bridge);
-  }
-  void add_bridge_driver(peek_poke_t *bridge) { peek_poke.reset(bridge); }
-
 private:
-  // Simulation interface.
-  simif_t *simif;
-  // Peek-poke bridge.
-  std::unique_ptr<peek_poke_t> peek_poke;
-  // Memory mapped bridges bound to software models
-  std::vector<std::unique_ptr<bridge_driver_t>> bridges;
-  // FPGA-hosted models with programmable registers & instrumentation
-  std::vector<std::unique_ptr<FpgaModel>> fpga_models;
-
   // profile interval: # of cycles to advance before profiling instrumentation
   // registers in models
   uint64_t profile_interval = -1;
@@ -49,8 +31,8 @@ private:
 };
 
 fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,
-                                   simif_t *simif)
-    : simulation_t(*simif, args), simif(simif) {
+                                   simif_t &sim)
+    : simulation_t(sim, args) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -62,25 +44,32 @@ fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,
       profile_interval = atoi(arg.c_str() + 18);
     }
   }
+
+  auto *model = sim.get_registry().get_all_models()[0];
+  sim.get_registry().add_widget(
+      new test_harness_bridge_t(sim,
+                                sim.get_registry().get_widget<peek_poke_t>(),
+                                model->get_addr_map(),
+                                args));
 }
 
 bool fasedtests_top_t::simulation_complete() {
   bool is_complete = false;
-  for (auto &e : bridges) {
+  for (auto &e : sim.get_registry().get_all_bridges()) {
     is_complete |= e->terminate();
   }
   return is_complete;
 }
 
 uint64_t fasedtests_top_t::profile_models() {
-  for (auto &mod : fpga_models) {
+  for (auto &mod : sim.get_registry().get_all_models()) {
     mod->profile();
   }
   return profile_interval;
 }
 
 int fasedtests_top_t::exit_code() {
-  for (auto &e : bridges) {
+  for (auto &e : sim.get_registry().get_all_bridges()) {
     if (e->exit_code())
       return e->exit_code();
   }
@@ -88,31 +77,25 @@ int fasedtests_top_t::exit_code() {
 }
 
 void fasedtests_top_t::simulation_init() {
-#include "core/constructor.h"
   // Add functions you'd like to periodically invoke on a paused simulator here.
   if (profile_interval != -1) {
     register_task([this]() { return this->profile_models(); }, 0);
   }
 
-  // Test harness.
-  add_bridge_driver(new test_harness_bridge_t(
-      *simif, *peek_poke, fpga_models[0]->get_addr_map(), args));
-
-  for (auto &e : fpga_models) {
-    e->init();
+  for (auto *bridge : sim.get_registry().get_all_bridges()) {
+    bridge->init();
   }
-
-  for (auto &e : bridges) {
-    e->init();
+  for (auto *model : sim.get_registry().get_all_models()) {
+    model->init();
   }
 }
 
 int fasedtests_top_t::simulation_run() {
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
-    simif->take_steps(get_largest_stepsize(), false);
-    while (!simif->done() && !simulation_complete()) {
-      for (auto &e : bridges)
+    sim.take_steps(get_largest_stepsize(), false);
+    while (!sim.done() && !simulation_complete()) {
+      for (auto &e : sim.get_registry().get_all_bridges())
         e->tick();
     }
   }
@@ -121,16 +104,15 @@ int fasedtests_top_t::simulation_run() {
 }
 
 void fasedtests_top_t::simulation_finish() {
-  for (auto &e : fpga_models) {
-    e->finish();
+  for (auto *bridge : sim.get_registry().get_all_bridges()) {
+    bridge->finish();
   }
-
-  for (auto &e : bridges) {
-    e->finish();
+  for (auto *model : sim.get_registry().get_all_models()) {
+    model->finish();
   }
 }
 
 std::unique_ptr<simulation_t>
-create_simulation(const std::vector<std::string> &args, simif_t *simif) {
-  return std::make_unique<fasedtests_top_t>(args, simif);
+create_simulation(const std::vector<std::string> &args, simif_t &sim) {
+  return std::make_unique<fasedtests_top_t>(args, sim);
 }

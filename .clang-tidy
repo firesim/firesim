@@ -11,7 +11,7 @@ Checks: >
         bugprone-copy-constructor-init,
         bugprone-dangling-handle,
         bugprone-dynamic-static-initializers,
-        #bugprone-macro-parentheses,
+        bugprone-macro-parentheses,
         bugprone-macro-repeated-side-effects,
         bugprone-misplaced-widening-cast,
         bugprone-move-forwarding-reference,
