@@ -1,6 +1,8 @@
 #ifndef MIDAEXAMPLES_TESTHARNESS_H
 #define MIDAEXAMPLES_TESTHARNESS_H
 
+#include <random>
+
 #include "bridges/autocounter.h"
 #include "bridges/bridge_driver.h"
 #include "bridges/plusargs.h"
@@ -65,6 +67,10 @@ public:
     run_test();
     return teardown();
   }
+
+protected:
+  /// Random number generator for tests, using a fixed default seed.
+  std::mt19937_64 random;
 };
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
