@@ -278,6 +278,8 @@ jobs:
       - name: Run firesim-lib Scala tests
         uses: ./.github/actions/run-scala-test
         with:
+          target-project: "bridges"
+          test-package: "firesim.bridges"
           test-name: "BridgeTests"
 
   run-chipyard-tests:
