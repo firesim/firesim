@@ -10,7 +10,7 @@ public:
     uint32_t is_odd = 0;
     target_reset();
     for (int i = 0; i < 64; i++) {
-      uint32_t bit = simif->rand_next(2);
+      uint32_t bit = random() % 2;
       poke(io_in, bit);
       step(1);
       is_odd = (is_odd + bit) % 2;

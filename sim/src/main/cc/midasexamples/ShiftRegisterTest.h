@@ -13,7 +13,7 @@ public:
     std::vector<uint32_t> reg(4);
     target_reset();
     for (int i = 0; i < 64; i++) {
-      uint32_t in = simif->rand_next(2);
+      uint32_t in = random() % 2;
       poke(io_in, in);
       step(1);
       for (int j = 3; j > 0; j--)

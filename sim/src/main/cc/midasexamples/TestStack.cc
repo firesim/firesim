@@ -13,10 +13,10 @@ public:
     uint32_t nextDataOut = 0;
     target_reset();
     for (int i = 0; i < 64; i++) {
-      uint32_t enable = simif->rand_next(2);
-      uint32_t push = simif->rand_next(2);
-      uint32_t pop = simif->rand_next(2);
-      uint32_t dataIn = simif->rand_next(256);
+      uint32_t enable = random() % 2;
+      uint32_t push = random() % 2;
+      uint32_t pop = random() % 2;
+      uint32_t dataIn = random() % 256;
       uint32_t dataOut = nextDataOut;
 
       if (enable) {

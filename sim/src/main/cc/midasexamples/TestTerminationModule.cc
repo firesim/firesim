@@ -26,9 +26,9 @@ public:
     int reset_length = 1;
     std::string failure_msg_list[3] = {"success 1", "success 2", "failure 3"};
     int failure_cond_list[3] = {0, 0, 1};
-    validinCycle = simif->rand_next(100);
-    msginCycle = simif->rand_next(100);
-    int termination_code = simif->rand_next(8);
+    validinCycle = random() % 100;
+    msginCycle = random() % 100;
+    int termination_code = random() % 8;
     lv_validinCycle = lv_validinCycle + validinCycle;
     lv_msginCycle = lv_msginCycle + msginCycle;
     poke(io_validInCycle, lv_validinCycle);
