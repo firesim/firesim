@@ -130,7 +130,6 @@ INSTANTIATE_SERIAL(add_bridge_driver, 14)
 INSTANTIATE_SERIAL(add_bridge_driver, 15)
 #endif
 
-#ifdef BLOCKDEVBRIDGEMODULE_struct_guard
 #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
 add_bridge_driver(new blockdev_t(simif,
                                  args,
@@ -195,9 +194,7 @@ add_bridge_driver(new blockdev_t(simif,
                                  BLOCKDEVBRIDGEMODULE_7_substruct_create,
                                  7));
 #endif
-#endif
 
-#ifdef SIMPLENICBRIDGEMODULE_struct_guard
 #ifdef SIMPLENICBRIDGEMODULE_0_PRESENT
 INSTANTIATE_SIMPLENIC(add_bridge_driver, 0)
 #endif
@@ -222,9 +219,7 @@ INSTANTIATE_SIMPLENIC(add_bridge_driver, 6)
 #ifdef SIMPLENICBRIDGEMODULE_7_PRESENT
 INSTANTIATE_SIMPLENIC(add_bridge_driver, 7)
 #endif
-#endif
 
-#ifdef TRACERVBRIDGEMODULE_struct_guard
 #ifdef TRACERVBRIDGEMODULE_0_PRESENT
 INSTANTIATE_TRACERV(add_bridge_driver, 0)
 #endif
@@ -321,9 +316,7 @@ INSTANTIATE_TRACERV(add_bridge_driver, 30)
 #ifdef TRACERVBRIDGEMODULE_31_PRESENT
 INSTANTIATE_TRACERV(add_bridge_driver, 31)
 #endif
-#endif
 
-#ifdef DROMAJOBRIDGEMODULE_struct_guard
 #ifdef DROMAJOBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new dromajo_t(
             simif, args,
@@ -338,9 +331,7 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_count_address,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_full_address)
 #endif
-#endif
 
-#ifdef GROUNDTESTBRIDGEMODULE_struct_guard
 #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new groundtest_t(
             simif, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
@@ -372,7 +363,6 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
 #ifdef GROUNDTESTBRIDGEMODULE_7_PRESENT
     add_bridge_driver(new groundtest_t(
             simif, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
-#endif
 #endif
 
 #ifdef AUTOCOUNTERBRIDGEMODULE_0_PRESENT

@@ -21,6 +21,22 @@ struct serial_data_t {
   } out;
 };
 
+typedef struct SERIALBRIDGEMODULE_struct {
+  uint64_t in_bits;
+  uint64_t in_valid;
+  uint64_t in_ready;
+  uint64_t out_bits;
+  uint64_t out_valid;
+  uint64_t out_ready;
+  uint64_t step_size;
+  uint64_t done;
+  uint64_t start;
+} SERIALBRIDGEMODULE_struct;
+
+#ifdef SERIALBRIDGEMODULE_checks
+SERIALBRIDGEMODULE_checks;
+#endif // SERIALBRIDGEMODULE_checks
+
 // Bridge Driver Instantiation Template
 // Casts are required for now since the emitted type can change
 #define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
@@ -31,7 +47,6 @@ struct serial_data_t {
                     SERIALBRIDGEMODULE_##IDX##_has_memory,                     \
                     SERIALBRIDGEMODULE_##IDX##_memory_offset));
 
-#ifdef SERIALBRIDGEMODULE_struct_guard
 class serial_t : public bridge_driver_t {
 public:
   serial_t(simif_t *sim,
@@ -67,6 +82,5 @@ private:
   void handle_loadmem_write(firesim_loadmem_t loadmem);
   void serial_bypass_via_loadmem();
 };
-#endif // SERIALBRIDGEMODULE_struct_guard
 
 #endif // __SERIAL_H

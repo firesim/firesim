@@ -84,8 +84,8 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
   def numChunks(e: Bits): Int = ((e.getWidth + ctrlWidth - 1) / ctrlWidth)
 
-  def attach(reg: Data, name: String, permissions: Permissions = ReadWrite): Int = {
-    crRegistry.allocate(RegisterEntry(reg, name, permissions))
+  def attach(reg: Data, name: String, permissions: Permissions = ReadWrite, substruct: Boolean = true): Int = {
+    crRegistry.allocate(RegisterEntry(reg, name, permissions, substruct))
   }
 
   // Recursively binds the IO of a module:
@@ -105,9 +105,9 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
     def innerAttachIO(node: Data, parent: Data, name: String): Unit = node match {
       case (b: Bits) => (DataMirror.directionOf(b): @unchecked) match {
-        case ActualDirection.Output => attach(b, s"${name}", ReadOnly)
+        case ActualDirection.Output => attach(b, s"${name}", ReadOnly, substruct = false)
         case ActualDirection.Input =>
-          genAndAttachReg(b, name, getInitValue(b, parent))
+          genAndAttachReg(b, name, getInitValue(b, parent), substruct = false)
       }
       case (v: Vec[_]) => {
         (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, node, s"${name}_$idx")})
@@ -121,12 +121,12 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   }
 
 
-  def attachDecoupledSink(channel: DecoupledIO[UInt], name: String): Int = {
-    crRegistry.allocate(DecoupledSinkEntry(channel, name))
+  def attachDecoupledSink(channel: DecoupledIO[UInt], name: String, substruct: Boolean = true): Int = {
+    crRegistry.allocate(DecoupledSinkEntry(channel, name, substruct))
   }
 
-  def attachDecoupledSource(channel: DecoupledIO[UInt], name: String): Int = {
-    crRegistry.allocate(DecoupledSourceEntry(channel, name))
+  def attachDecoupledSource(channel: DecoupledIO[UInt], name: String, substruct: Boolean = true): Int = {
+    crRegistry.allocate(DecoupledSourceEntry(channel, name, substruct))
   }
 
   def genAndAttachQueue(channel: DecoupledIO[UInt], name: String, depth: Int = 2): DecoupledIO[UInt] = {
@@ -140,20 +140,23 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
       wire: T,
       name: String,
       default: Option[T] = None,
-      masterDriven: Boolean = true): T = {
+      masterDriven: Boolean = true,
+      substruct: Boolean = true): T = {
     require(wire.getWidth <= ctrlWidth)
     val reg = default match {
       case None => Reg(wire.cloneType)
       case Some(init) => RegInit(init)
     }
     if (masterDriven) wire := reg else reg := wire
-    attach(reg, name)
+    attach(reg, name, substruct = substruct)
     reg suggestName name
     reg
   }
 
-  def genWOReg[T <: Data](wire: T, name: String): T = genAndAttachReg(wire, name)
-  def genROReg[T <: Data](wire: T, name: String): T = genAndAttachReg(wire, name, masterDriven = false)
+  def genWOReg[T <: Data](wire: T, name: String, substruct: Boolean = true): T =
+    genAndAttachReg(wire, name, substruct = substruct)
+  def genROReg[T <: Data](wire: T, name: String, substruct: Boolean = true): T =
+    genAndAttachReg(wire, name, masterDriven = false, substruct = substruct)
 
   def genWORegInit[T <: Data](wire: T, name: String, default: T): T =
     genAndAttachReg(wire, name, Some(default))
@@ -161,18 +164,18 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     genAndAttachReg(wire, name, Some(default), false)
 
 
-  def genWideRORegInit[T <: Bits](default: T, name: String): T = {
+  def genWideRORegInit[T <: Bits](default: T, name: String, substruct: Boolean = true): T = {
     val reg = RegInit(default)
     val shadowReg = Reg(default.cloneType)
     shadowReg.suggestName(s"${name}_mmreg")
     val baseAddr = Seq.tabulate((default.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
       val msb = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
       val slice = shadowReg(msb, ctrlWidth * i)
-      attach(slice, s"${name}_$i", ReadOnly)
+      attach(slice, s"${name}_$i", ReadOnly, substruct)
     }).head
     // When a read request is made of the low order address snapshot the entire register
     val latchEnable = WireInit(false.B).suggestName(s"${name}_latchEnable")
-    attach(latchEnable, s"${name}_latch", WriteOnly)
+    attach(latchEnable, s"${name}_latch", WriteOnly, substruct)
     when (latchEnable) {
       shadowReg := reg
     }

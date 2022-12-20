@@ -1,4 +1,3 @@
-#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
 
 #include "autocounter.h"
 
@@ -179,5 +178,3 @@ void autocounter_t::finish() {
   while (drain_sample())
     ;
 }
-
-#endif // AUTOCOUNTERBRIDGEMODULE_struct_guard

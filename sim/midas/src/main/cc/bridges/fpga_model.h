@@ -31,6 +31,8 @@ public:
   virtual void profile() = 0;
   virtual void finish() = 0;
 
+  const AddressMap &get_addr_map() const { return addr_map; }
+
 protected:
   AddressMap addr_map;
 

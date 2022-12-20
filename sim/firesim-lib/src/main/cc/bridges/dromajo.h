@@ -7,7 +7,12 @@
 #include <string>
 #include <vector>
 
-#ifdef DROMAJOBRIDGEMODULE_struct_guard
+#ifdef DROMAJOBRIDGEMODULE_0_PRESENT
+
+typedef struct DROMAJOBRIDGEMODULE_struct {
+
+} DROMAJOBRIDGEMODULE_struct;
+
 class dromajo_t : public bridge_driver_t {
 public:
   dromajo_t(simif_t *sim,
@@ -18,7 +23,7 @@ public:
             int cause_width,
             int tval_width,
             int num_traces,
-            DROMAJOBRIDGEMODULE_struct *mmio_addrs,
+            const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
             int stream_idx,
             int stream_depth);
   ~dromajo_t();
@@ -30,7 +35,7 @@ public:
   virtual void finish() { this->flush(); };
 
 private:
-  DROMAJOBRIDGEMODULE_struct *_mmio_addrs;
+  const DROMAJOBRIDGEMODULE_struct mmio_addrs;
   simif_t *_sim;
 
   int invoke_dromajo(uint8_t *buf);
@@ -77,6 +82,5 @@ private:
   std::string dromajo_bin;
   dromajo_cosim_state_t *dromajo_state;
 };
-#endif // DROMAJOBRIDGEMODULE_struct_guard
-
+#endif // DROMAJOBRIDGEMODULE_0_PRESENT
 #endif // __DROMAJO_H

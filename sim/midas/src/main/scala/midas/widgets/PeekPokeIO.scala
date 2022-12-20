@@ -48,7 +48,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     // before we reach the desired target cycle
     val cycleHorizon = RegInit(0.U(ctrlWidth.W))
     val tCycleName = "tCycle"
-    val tCycle = genWideRORegInit(0.U(64.W), tCycleName)
+    val tCycle = genWideRORegInit(0.U(64.W), tCycleName, false)
     val tCycleAdvancing = WireInit(false.B)
 
     // needs back pressure from reset queues
@@ -91,7 +91,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       channel.bits := Cat(reg.reverse).asTypeOf(channel.bits)
       channel.valid := !cyclesAhead.full && cyclesAhead.value < cycleHorizon || advanceViaPoke
 
-      val regAddrs = reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite) })
+      val regAddrs = reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadWrite, false) })
       channelDecouplingFlags += isAhead
       channelPokes += regAddrs -> poke
       regAddrs
@@ -119,7 +119,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
 
       channelDecouplingFlags += isAhead
       outputPrecisePeekableFlags += cyclesAhead.value === 1.U
-      reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly) })
+      reg.zipWithIndex.map({ case (chunk, idx) => attach(chunk,  s"${name}_${idx}", ReadOnly, false) })
     }
 
     val inputAddrs = hPort.ins.map(elm => bindInputs(elm._1, elm._2))

@@ -9,8 +9,6 @@
 #include "firesim/systematic_scheduler.h"
 #include "midasexamples/simif_peek_poke.h"
 
-#include "bridges/synthesized_prints.h"
-
 class fasedtests_top_t : public simif_peek_poke_t,
                          public systematic_scheduler_t,
                          public simulation_t {

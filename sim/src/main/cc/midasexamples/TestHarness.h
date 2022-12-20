@@ -37,24 +37,12 @@ public:
     abort();                                                                   \
   }
 
-#ifdef AUTOCOUNTERBRIDGEMODULE_struct_guard
   BRIDGE_HANDLER(autocounter_t, "Auto Counter bridge");
-#endif
-#ifdef ASSERTBRIDGEMODULE_struct_guard
   BRIDGE_HANDLER(synthesized_assertions_t, "Synthesized Assert bridge");
-#endif
-#ifdef PRINTBRIDGEMODULE_struct_guard
   BRIDGE_HANDLER(synthesized_prints_t, "Synthesized Print bridge");
-#endif
-#ifdef RESETPULSEBRIDGEMODULE_struct_guard
   BRIDGE_HANDLER(reset_pulse_t, "Reset Pulse bridge");
-#endif
-#ifdef PLUSARGSBRIDGEMODULE_struct_guard
   BRIDGE_HANDLER(plusargs_t, "PlusArgs bridge");
-#endif
-#ifdef TERMINATIONBRIDGEMODULE_struct_guard
   BRIDGE_HANDLER(termination_t, "Termination bridge");
-#endif
 
   /// Test entry point to override.
   virtual void run_test() = 0;

@@ -8,6 +8,39 @@
 
 #include "bridges/bridge_driver.h"
 
+typedef struct BLOCKDEVBRIDGEMODULE_struct {
+  uint64_t read_latency;
+  uint64_t write_latency;
+  uint64_t bdev_nsectors;
+  uint64_t bdev_max_req_len;
+  uint64_t bdev_req_valid;
+  uint64_t bdev_req_write;
+  uint64_t bdev_req_offset;
+  uint64_t bdev_req_len;
+  uint64_t bdev_req_tag;
+  uint64_t bdev_req_ready;
+  uint64_t bdev_data_valid;
+  uint64_t bdev_data_data_upper;
+  uint64_t bdev_data_data_lower;
+  uint64_t bdev_data_tag;
+  uint64_t bdev_data_ready;
+  uint64_t bdev_rresp_data_upper;
+  uint64_t bdev_rresp_data_lower;
+  uint64_t bdev_rresp_tag;
+  uint64_t bdev_rresp_valid;
+  uint64_t bdev_rresp_ready;
+  uint64_t bdev_wack_tag;
+  uint64_t bdev_wack_valid;
+  uint64_t bdev_wack_ready;
+  uint64_t bdev_reqs_pending;
+  uint64_t bdev_wack_stalled;
+  uint64_t bdev_rresp_stalled;
+} BLOCKDEVBRIDGEMODULE_struct;
+
+#ifdef BLOCKDEVBRIDGEMODULE_checks
+BLOCKDEVBRIDGEMODULE_checks;
+#endif // BLOCKDEVBRIDGEMODULE_checks
+
 #define SECTOR_SIZE 512
 #define SECTOR_SHIFT 9
 #define SECTOR_BEATS (SECTOR_SIZE / 8)
@@ -32,7 +65,6 @@ struct blkdev_write_tracker {
   uint64_t data[MAX_REQ_LEN * SECTOR_BEATS];
 };
 
-#ifdef BLOCKDEVBRIDGEMODULE_struct_guard
 class blockdev_t : public bridge_driver_t {
 public:
   blockdev_t(simif_t *sim,
@@ -83,6 +115,5 @@ private:
   uint32_t read_latency = 4096;
   uint32_t write_latency = 4096;
 };
-#endif // BLOCKDEVBRIDGEMODULE_struct_guard
 
 #endif // __BLOCKDEV_H

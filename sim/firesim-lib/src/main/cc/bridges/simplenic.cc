@@ -1,5 +1,4 @@
 // See LICENSE for license details
-#ifdef SIMPLENICBRIDGEMODULE_struct_guard
 
 #include "simplenic.h"
 
@@ -397,5 +396,3 @@ void simplenic_t::tick() {
     currentround = (currentround + 1) % 2;
   }
 }
-
-#endif // #ifdef SIMPLENICBRIDGEMODULE_struct_guard

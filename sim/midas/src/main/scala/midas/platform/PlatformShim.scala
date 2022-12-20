@@ -31,6 +31,7 @@ private [midas] object PlatformShim {
 abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
   val top = LazyModule(new midas.core.FPGATop)
   def genHeader(sb: StringBuilder, target: String) {
+    sb.append("#include <stddef.h>\n")
     sb.append("#include <stdint.h>\n")
     sb.append("#include <stdbool.h>\n")
     sb.append(genStatic("TARGET_NAME", CStrLit(target)))

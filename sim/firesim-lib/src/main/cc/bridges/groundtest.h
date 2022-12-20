@@ -4,12 +4,15 @@
 
 #include "bridges/bridge_driver.h"
 
-#ifdef GROUNDTESTBRIDGEMODULE_struct_guard
+typedef struct GROUNDTESTBRIDGEMODULE_struct {
+  uint64_t success;
+} GROUNDTESTBRIDGEMODULE_struct;
+
 class groundtest_t : public bridge_driver_t {
 public:
   groundtest_t(simif_t *sim,
                const std::vector<std::string> &args,
-               GROUNDTESTBRIDGEMODULE_struct *mmio_addrs);
+               const GROUNDTESTBRIDGEMODULE_struct &mmio_addrs);
   ~groundtest_t();
 
   virtual void init();
@@ -21,8 +24,7 @@ public:
 private:
   bool _success = false;
   simif_t *sim;
-  GROUNDTESTBRIDGEMODULE_struct *mmio_addrs;
+  const GROUNDTESTBRIDGEMODULE_struct mmio_addrs;
 };
-#endif
 
 #endif

@@ -1,5 +1,3 @@
-#ifdef PLUSARGSBRIDGEMODULE_struct_guard
-
 #include "plusargs.h"
 #include <iomanip>
 #include <iostream>
@@ -128,5 +126,3 @@ void plusargs_t::init() {
   // after all registers are handled, set this
   write(mmio_addrs.initDone, 1);
 }
-
-#endif
