@@ -11,9 +11,12 @@
 #include <random>
 #include <sstream>
 
-#include <gmp.h>
 #include <map>
 #include <sys/time.h>
+
+#include "bridges/clock.h"
+#include "bridges/loadmem.h"
+#include "bridges/master.h"
 
 #define TIME_DIV_CONST 1000000.0;
 typedef uint64_t midas_time_t;
@@ -21,9 +24,6 @@ typedef uint64_t midas_time_t;
 midas_time_t timestamp();
 
 double diff_secs(midas_time_t end, midas_time_t start);
-
-typedef std::map<std::string, size_t> idmap_t;
-typedef std::map<std::string, size_t>::const_iterator idmap_it_t;
 
 /**
  * Interface for a simulation implementation.
@@ -68,36 +68,7 @@ protected:
   const std::vector<std::string> args;
 };
 
-typedef struct SIMULATIONMASTER_struct {
-  uint64_t STEP;
-  uint64_t DONE;
-  uint64_t INIT_DONE;
-} SIMULATIONMASTER_struct;
-
-typedef struct LOADMEMWIDGET_struct {
-  uint64_t W_ADDRESS_H;
-  uint64_t W_ADDRESS_L;
-  uint64_t W_LENGTH;
-  uint64_t ZERO_OUT_DRAM;
-  uint64_t W_DATA;
-  uint64_t ZERO_FINISHED;
-  uint64_t R_ADDRESS_H;
-  uint64_t R_ADDRESS_L;
-  uint64_t R_DATA;
-} LOADMEMWIDGET_struct;
-
-typedef struct CLOCKBRIDGEMODULE_struct {
-  uint64_t hCycle_0;
-  uint64_t hCycle_1;
-  uint64_t hCycle_latch;
-  uint64_t tCycle_0;
-  uint64_t tCycle_1;
-  uint64_t tCycle_latch;
-} CLOCKBRIDGEMODULE_struct;
-
-SIMULATIONMASTER_checks;
-LOADMEMWIDGET_checks;
-CLOCKBRIDGEMODULE_checks;
+;
 
 /** \class simif_t
  *
@@ -131,15 +102,16 @@ public:
   virtual ~simif_t() {}
 
 public:
-  /// Returns true if the simulation is complete.
-  inline bool done() { return read(master_mmio_addrs.DONE); }
+  /**
+   * Returns true if the simulation is complete.
+   */
+  inline bool done() { return master.is_done(); }
 
-  /// Advances the simulation for a given number of steps.
+  /**
+   * Advance the simulation a given number of steps.
+   */
   inline void take_steps(size_t n, bool blocking) {
-    write(master_mmio_addrs.STEP, n);
-    if (blocking)
-      while (!done())
-        ;
+    return master.step(n, blocking);
   }
 
   /// Entry point to the simulation.
@@ -227,22 +199,17 @@ public:
    * The target cycle is based on the number of clock tokens enqueued
    * (will report a larger number).
    */
-  uint64_t actual_tcycle();
-
-  /**
-   * Returns the current host cycle as measured by a hardware counter
-   */
-  uint64_t hcycle();
+  uint64_t actual_tcycle() { return clock.tcycle(); }
 
   /**
    * Returns the last completed cycle number.
    */
   uint64_t get_end_tcycle() { return end_tcycle; }
 
-  // LOADMEM functions.
-  void read_mem(size_t addr, mpz_t &value);
-  void write_mem(size_t addr, mpz_t &value);
-  void write_mem_chunk(size_t addr, mpz_t &value, size_t bytes);
+  /**
+   * Return a reference to the LoadMem widget.
+   */
+  loadmem_t &get_loadmem() { return loadmem; }
 
 private:
   /**
@@ -255,9 +222,6 @@ private:
   void record_end_times();
   void print_simulation_performance_summary();
 
-  // Helper to zero out all DRAM.
-  void zero_out_dram();
-
   void load_mem(std::string filename);
 
 protected:
@@ -268,11 +232,30 @@ protected:
 
 protected:
   /**
+   * LoadMem widget driver.
+   */
+  loadmem_t loadmem;
+
+  /**
+   * ClockBridge driver.
+   */
+  clockmodule_t clock;
+
+  /**
+   * SimulationMaster widged.
+   */
+  master_t master;
+
+  /**
    * Reference to the user-defined bits of the simulation.
    */
   std::unique_ptr<simulation_t> sim;
 
-  std::string loadmem;
+  /**
+   * Path to load DRAM contents from.
+   */
+  std::string load_mem_path;
+
   bool fastloadmem = false;
   // If set, will write all zeros to fpga dram before commencing simulation
   bool do_zero_out_dram = false;
@@ -281,9 +264,7 @@ private:
   // random numbers
   uint64_t seed = 0;
   std::mt19937_64 gen;
-  const SIMULATIONMASTER_struct master_mmio_addrs;
-  const LOADMEMWIDGET_struct loadmem_mmio_addrs;
-  const CLOCKBRIDGEMODULE_struct clock_bridge_mmio_addrs;
+
   midas_time_t start_time, end_time;
   uint64_t start_hcycle = -1;
   uint64_t end_hcycle = 0;
