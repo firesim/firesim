@@ -45,8 +45,7 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
 
   // Returns widget-relative word address
   def getCRAddr(name: String): Int = {
-    module.crRegistry.lookupAddress(name).getOrElse(
-      throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
+     module.getCRAddr(name)
   }
 
   def headerComment(sb: StringBuilder) {
@@ -193,6 +192,13 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
     wrapper.getHeaderFragments(base).foreach { sb.append }
   }
+
+  // Returns widget-relative word address
+  def getCRAddr(name: String): Int = {
+    crRegistry.lookupAddress(name).getOrElse(
+      throw new RuntimeException(s"Could not find address for name: '${name}' in widget: '${wrapper.wName}'"))
+  }
+
 }
 
 object Widget {
@@ -270,27 +276,29 @@ trait HasWidgets {
   }
 
   /**
+    * Get the base address for a widget
+    */
+  def getBaseAddr(w: Widget): BigInt = {
+    getBaseAddr(w.getWName)
+  }
+
+  /**
+    * Get the base address for a widget using it's name
+    */
+  def getBaseAddr(widgetName: String): BigInt = {
+    addrMap(widgetName).start
+  }
+
+  /**
     * Iterates through each bridge, generating the header fragment. Must be
     * called after bridge address assignment is complete.
     */
   def genHeader(sb: StringBuilder) {
-    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, sb))
+    widgets foreach ((w: Widget) => w.module.genHeader(getBaseAddr(w), sb))
   }
 
   def printWidgets {
     widgets foreach ((w: Widget) => println(w.getWName))
-  }
-
-  def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {
-    val widget = name2inst.get(wName).getOrElse(
-      throw new RuntimeException("Could not find Widget: $wName"))
-    getCRAddr(widget, crName)
-  }
-
-  def getCRAddr(w: Widget, crName: String)(implicit channelWidth: Int): BigInt = {
-    // TODO: Deal with byte vs word addresses && don't use a name in the hash?
-    val base = (addrMap(w.getWName).start >> log2Up(channelWidth/8))
-    base + w.getCRAddr(crName)
   }
 
   /**

@@ -3,6 +3,8 @@
 #ifndef __SIMIF_H
 #define __SIMIF_H
 
+#include "simif_token_hashers.h"
+
 #include <cassert>
 #include <cstring>
 #include <gmp.h>
@@ -175,6 +177,9 @@ public:
   void record_end_times();
   uint64_t get_end_tcycle() { return end_tcycle; }
   void print_simulation_performance_summary();
+
+public:
+  simif_token_hashers_t* token_hashers = 0;
 };
 
 #endif // __SIMIF_H

@@ -220,12 +220,24 @@ class PlusArgsGroup68Bit extends TutorialSuite("PlusArgsModule", "PlusArgsModule
 }
 
 class PlusArgsGroup29Bit extends TutorialSuite("PlusArgsModule", "PlusArgsModuleTestConfigGroup29Bit") with PlusArgsKey {
-  it should "provide the correct default value, 1 slice" in {
-    assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
-  }
+  // it should "provide the correct default value, 1 slice" in {
+  //   assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
+  // }
 
   it should "accept an int from the command line, 1 slice" in {
-    assert(run("verilator", false, args = Seq(s"+plusar_v=${BigInt("1eadbeef", 16)}", getKey(1,1))) == 0)
+    assert(run("verilator", true, args = Seq(s"+plusar_v=${BigInt("1eadbeef", 16)}", getKey(1,1))) == 0)
+  }
+}
+
+// This test piggy-backs off of PlusArgsTest. Because the token hashers apply to all bridges
+// it makes sense to use an existing one
+class TokenHashersTest extends TutorialSuite("TokenHashersModule", "PlusArgsModuleTestConfigGroup29Bit", "HostDebugFeatures_DefaultF1Config_EnableTokenHashersDefault") with PlusArgsKey {
+  // it should "provide the correct default value, 1 slice" in {
+  //   assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
+  // }
+
+  it should "hash basic" in {
+    assert(run("verilator", true, args = Seq(s"+plusar_v=${BigInt("1eadbeef", 16)}", getKey(0,0))) == 0)
   }
 }
 
@@ -245,7 +257,7 @@ class AutoCounterModuleF1Test extends TutorialSuite("AutoCounterModule",
   checkAutoCounterCSV("autocounter0.csv", "AUTOCOUNTER_PRINT ")
 }
 class AutoCounter32bRolloverTest extends TutorialSuite("AutoCounter32bRollover",
-    simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter")) {
+    simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter", "HostDebugFeatures_DefaultF1Config_EnableTokenHashersDefault")) {
   checkAutoCounterCSV("autocounter0.csv", "AUTOCOUNTER_PRINT ")
 }
 class AutoCounterCoverModuleF1Test extends TutorialSuite("AutoCounterCoverModule",
@@ -285,7 +297,9 @@ class PrintfModuleF1Test extends TutorialSuite("PrintfModule",
   diffSynthesizedLog("synthprinttest.out0")
 }
 class NarrowPrintfModuleF1Test extends TutorialSuite("NarrowPrintfModule",
-  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out")) {
+  simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out"),
+  platformConfigs = "HostDebugFeatures_DefaultF1Config_WithTokenHashers"
+  ) {
   diffSynthesizedLog("synthprinttest.out0")
 }
 
@@ -439,6 +453,7 @@ class ChiselExampleDesigns extends Suites(
   new ParityF1Test,
   new PlusArgsGroup68Bit,
   new PlusArgsGroup29Bit,
+  new TokenHashersTest,
   new ResetShiftRegisterF1Test,
   new EnableShiftRegisterF1Test,
   new StackF1Test,
