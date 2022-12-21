@@ -21,8 +21,11 @@
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 
+std::vector<std::string> args_copy;
+
 firesim_top_t::firesim_top_t(int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
+  args_copy = args;
 
   max_cycles = -1;
   profile_interval = max_cycles;
@@ -603,6 +606,9 @@ int firesim_top_t::exit_code() {
 }
 
 void firesim_top_t::run() {
+
+  token_hashers->set_params(0, 16);
+
   for (auto &e : fpga_models) {
     e->init();
   }
@@ -627,6 +633,9 @@ void firesim_top_t::run() {
         e->tick();
     }
   }
+
+  std::cout << token_hashers->get_csv_string();
+  token_hashers->write_csv_file(std::string(args_copy[0]) + "_rocket-f1-run.csv");
 
   record_end_times();
   fprintf(stderr, "\nSimulation complete.\n");

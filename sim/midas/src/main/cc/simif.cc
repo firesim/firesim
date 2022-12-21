@@ -15,7 +15,7 @@ double diff_secs(midas_time_t end, midas_time_t start) {
   return ((double)(end - start)) / TIME_DIV_CONST;
 }
 
-simif_t::simif_t() {
+simif_t::simif_t(): token_hashers(new simif_token_hashers_t(this)) {
   seed = time(NULL); // FIXME: better initail seed?
   SIMULATIONMASTER_0_substruct_create;
   this->master_mmio_addrs = SIMULATIONMASTER_0_substruct;

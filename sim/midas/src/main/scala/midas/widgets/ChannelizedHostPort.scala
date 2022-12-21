@@ -126,4 +126,49 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
       PipeBridgeChannel(name, meta.clockRT, meta.fieldRTs, Seq(), 0)
     }
   })
+
+  // def getOutputChannelPorts() = channels.map({ case (targetField, ch, meta) =>
+  //   ch
+  // })
+
+  // outputs only
+  def getOutputChannelPorts() = channels.collect({ case (targetField, ch, meta) if !meta.bridgeSunk =>
+    (reverseElementMap(ch), ch)
+  })
+
+
+  // inputs only
+  def getInputChannelPorts() = channels.collect({ case (targetField, ch, meta) if meta.bridgeSunk =>
+    (reverseElementMap(ch), ch)
+  })
+
+  // def tokenHashers() = {
+  //   println("CALLED tokenHashers from ChannelizedHostPort")
+  //   // // val yYYY = 0x0eadbeef.U
+  //   // val (zZZZOunter, counterWrap) = Counter.apply(true.B, 1024)
+  //   // val ZZZcounterValid = true.B
+  //   // val ZZZcounterHash = XORHash32(zZZZOunter, ZZZcounterValid)
+  //   // chisel3.assert(ZZZcounterHash===RegNext(ZZZcounterHash))
+
+  //   channels.map({ case (targetField, ch, meta) =>
+  //     val name = reverseElementMap(ch)
+  //     // println("bridgeChannels:")
+  //     // println(name)
+  //     // checkFieldDirection(targetField, meta.bridgeSunk)
+  //     if (meta.bridgeSunk) {
+  //       println(s"INPUT Channel ${name}")
+  //       // PipeBridgeChannel(name, meta.clockRT, Seq(), meta.fieldRTs, 0)
+  //     } else {
+  //       println(s"OUTPUT Channel ${name}")
+  //       // PipeBridgeChannel(name, meta.clockRT, meta.fieldRTs, Seq(), 0)
+
+  //       val ZZZoutputChannelHash = XORHash32(ch.bits, ch.valid)
+  //       chisel3.assert(ZZZoutputChannelHash===RegNext(ZZZoutputChannelHash))
+
+  //       // val readHash = genWOReg(ZZZoutputChannelHash, s"readHash${name}")
+  //     }
+  //   })
+
+  //   Unit
+  // }
 }

@@ -4,7 +4,23 @@ package firesim.configs
 import firrtl.options.Dependency
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import midas.{TargetTransforms, HostTransforms}
+import midas.widgets.{InsertTokenHashersKey, TokenHashersUseCounter}
 import firesim.bridges._
+
+/** Defines a test group with Token Hashers enabled.
+  */
+class WithTokenHashers extends Config((site, here, up) => {
+  case InsertTokenHashersKey => true
+  case TokenHashersUseCounter => false
+})
+
+/** Defines a test group with Token Hashers enabled, but in counter mode.
+  */
+class WithTokenHashersCounter extends Config((site, here, up) => {
+  case InsertTokenHashersKey => true
+  case TokenHashersUseCounter => true
+})
+
 
 // Experimental: mixing this in will enable assertion synthesis
 class WithSynthAsserts extends Config((site, here, up) => {

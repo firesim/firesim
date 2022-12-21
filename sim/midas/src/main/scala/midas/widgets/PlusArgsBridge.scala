@@ -195,6 +195,7 @@ class PlusArgsBridgeModule(params: PlusArgsBridgeParams)(implicit p: Parameters)
       sb.append(genStatic(s"${headerWidgetName}_docstring", CStrLit(params.docstring)))
       sb.append(genConstStatic(s"${headerWidgetName}_width", UInt32(params.width)))
       sb.append(genConstStatic(s"${headerWidgetName}_slice_count", UInt32(slices.length)))
+      // val foo = 34 / 0
 
       // call getCRAddr to get the registers by name, and then build this C style array
       sb.append(

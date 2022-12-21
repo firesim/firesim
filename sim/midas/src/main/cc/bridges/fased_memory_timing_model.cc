@@ -81,6 +81,9 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(simif_t *sim,
     }
   }
 
+  // FORCE THIS
+  require_all_runtime_settings = false;
+
   stats_file.open(stats_file_name, std::ofstream::out);
   if (!stats_file.is_open()) {
     throw std::runtime_error("Could not open output file: " + stats_file_name);
