@@ -23,7 +23,7 @@
 
 firesim_top_t::firesim_top_t(const std::vector<std::string> &args,
                              simif_t *simif)
-    : simulation_t(args), simif(simif) {
+    : simulation_t(*simif, args), simif(simif) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -89,7 +89,6 @@ void firesim_top_t::simulation_init() {
 }
 
 int firesim_top_t::simulation_run() {
-  fprintf(stderr, "Commencing simulation.\n");
 
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
@@ -100,32 +99,7 @@ int firesim_top_t::simulation_run() {
     }
   }
 
-  fprintf(stderr, "\nSimulation complete.\n");
-
-  int exitcode = exit_code();
-  // If the simulator is idle and we've gotten here without any bridge
-  // indicating doneness, we've advanced to the +max_cycles limit in the
-  // fastest target clock domain.
-  bool max_cycles_timeout =
-      !simulation_complete() && simif->done() && finished_scheduled_tasks();
-
-  if (exitcode != 0) {
-    fprintf(stderr,
-            "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
-            exitcode,
-            simif->actual_tcycle());
-  } else if (max_cycles_timeout) {
-    fprintf(stderr,
-            "*** FAILED *** +max_cycles specified timeout after %" PRIu64
-            " cycles\n",
-            simif->actual_tcycle());
-  } else {
-    fprintf(stderr,
-            "*** PASSED *** after %" PRIu64 " cycles\n",
-            simif->actual_tcycle());
-  }
-
-  return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
+  return exit_code();
 }
 
 void firesim_top_t::simulation_finish() {

@@ -8,7 +8,7 @@
 
 BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
                              simif_t *simif)
-    : simulation_t(args), simif(simif) {}
+    : simulation_t(*simif, args), simif(simif) {}
 
 BridgeHarness::~BridgeHarness() {}
 
