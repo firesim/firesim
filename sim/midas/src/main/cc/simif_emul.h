@@ -116,6 +116,10 @@ protected:
   // bridge streams.
   int maximum_host_delay = 1;
 
+  // random numbers
+  uint64_t fuzz_seed = 0;
+  std::mt19937_64 fuzz_gen;
+
   std::string waveform = "dump.vcd";
 
   uint64_t memsize;
@@ -126,7 +130,7 @@ protected:
    * The number of ticks is bounded by `maximum_host_delay`.
    */
   inline void advance_target() {
-    unsigned nticks = rand_next(maximum_host_delay) + 1;
+    unsigned nticks = fuzz_gen() % maximum_host_delay + 1;
     for (unsigned i = 0; i < nticks; ++i)
       do_tick();
   }
