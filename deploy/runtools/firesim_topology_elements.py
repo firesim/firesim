@@ -494,8 +494,8 @@ class FireSimServerNode(FireSimNode):
     def get_tarball_path_pair(self) -> Tuple[str, str]:
         """ Return local and remote paths of the actual driver tarball, not files inside"""
 
-        if not isinstance(self.server_hardware_config, str) and self.server_hardware_config is not None and self.server_hardware_config.driver_tar_uri is not None:
-            return (self.server_hardware_config.driver_tar_uri, self.get_tar_name())
+        if not isinstance(self.server_hardware_config, str) and self.server_hardware_config is not None and self.server_hardware_config.driver_tar is not None:
+            return (self.server_hardware_config.driver_tar, self.get_tar_name())
         else:
             return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
 
