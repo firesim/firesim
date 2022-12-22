@@ -24,7 +24,7 @@ target_config:
     switching_latency: 10
     net_bandwidth: 200
     profile_interval: -1
-    default_hw_config: vitis-test
+    default_hw_config: vitis_test
     plusarg_passthrough: ""
 
 tracing:

@@ -1,8 +1,11 @@
-vitis-test:
+vitis_test:
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
     PLATFORM_CONFIG: BaseVitisConfig
     deploy_triplet: null
+    platform_config_args:
+        fpga_frequency: 140
+        build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/vitis.yaml
