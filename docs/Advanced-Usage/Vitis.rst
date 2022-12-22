@@ -84,6 +84,7 @@ Running A Simulation
     run_farm:
       base_recipe: run-farm-recipes/externally_provisioned.yaml
       recipe_arg_overrides:
+        default_platform: VitisInstanceDeployManager
         default_simulation_dir: <PATH TO SIMULATION AREA>
         run_farm_hosts_to_use:
             - localhost: one_fpga_spec
