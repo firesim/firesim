@@ -20,7 +20,9 @@ OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 1.0
 
 override CXXFLAGS += -Wall -I$(midas_dir)
+#-I/opt/xilinx/xrt/include -I/opt/xilinx/xrt/experimental/include -I/home/Xilinx/Vivado/2022.1/tps/boost_1_72_0 -I/home/novo/Work/firesim/sim/firesim-lib/src/main/cc -I/home/novo/Work/firesim/target-design/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/home/novo/Work/firesim/target-design/chipyard/toolchains/riscv-tools/riscv-isa-sim -I/home/novo/Work/firesim/target-design/chipyard/toolchains/riscv-tools/riscv-isa-sim/build/
 override LDFLAGS += -L$(GEN_DIR) -lstdc++ -lpthread -lgmp
+#-lelf -ldwarf -lxrt_coreutil -L/opt/xilinx/xrt/lib
 
 design_v  := $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
 design_h  := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.h
@@ -62,7 +64,7 @@ emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 verilator_conf := rtlsim/ml-verilator-conf.vlt
 verilator_wrapper_v := $(v_dir)/verilator_top.sv
-verilator_harness := emul/verilator-harness.cc
+verilator_harness := simif_emul_verilator.cc
 top_module := verilator_top
 include rtlsim/Makefrag-verilator
 
@@ -71,7 +73,7 @@ verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug
 
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/vcs_top.v
-vcs_harness := emul/vcs-harness.cc
+vcs_harness := emul/vcs-harness.cc simif_emul_vcs.cc
 TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs
