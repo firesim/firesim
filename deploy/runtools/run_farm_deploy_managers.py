@@ -149,10 +149,13 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 run("; ".join(fullcmd))
 
     def get_remote_sim_dir_for_slot(self, slotno: int) -> str:
-        """ Returns the path on the remote for a given slot number. This function
-        must return a path that includes the trailing slash."""
+        """ Returns the path on the remote for a given slot number. """
         remote_home_dir = self.parent_node.get_sim_dir()
-        remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+        remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
+        
+        # so that callers can reliably concatenate folders to the returned value
+        assert remote_sim_dir[-1] == '/', f"Return value of get_remote_sim_dir_for_slot({slotno}) must end with '/'."
+
         return remote_sim_dir
 
     def copy_sim_slot_infrastructure(self, slotno: int) -> None:
@@ -165,7 +168,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
             remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
-            run("""mkdir -p {}""".format(remote_sim_rsync_dir))
+            run(f"mkdir -p {remote_sim_rsync_dir}")
 
             files_to_copy = serv.get_required_files_local_paths()
             for local_path, remote_path in files_to_copy:
@@ -175,7 +178,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
 
-            run("""cp -r {}/* {}/""".format(remote_sim_rsync_dir, remote_sim_dir), shell=True)
+            run(f"cp -r {remote_sim_rsync_dir}/* {remote_sim_dir}/", shell=True)
 
     def extract_driver_tarball(self, slotno: int) -> None:
         """ extract tarball that already exists on the remote node. """
