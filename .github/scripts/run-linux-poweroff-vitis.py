@@ -30,6 +30,10 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
+            # download prebuilt xclbin to /tmp
+            with prefix('cd /tmp'):
+                run('wget https://people.eecs.berkeley.edu/~abe.gonzalez/firesim_rocket_singlecore_no_nic_2c251a.xclbin')
+
             def run_w_timeout(workload_path, workload, timeout):
                 log_tail_length = 100
                 rc = 0
