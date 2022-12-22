@@ -323,23 +323,22 @@ jobs:
       - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
         run: .github/scripts/run-linux-poweroff-externally-provisioned.py
 
-# AJG: disable temporarily due to local CI machine issues
-#  run-basic-linux-poweroff-vitis:
-#    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
-#    name: run-basic-linux-poweroff-vitis
-#    runs-on: local-fpga
-#    env:
-#      TERM: xterm-256-color
-#    steps:
-#      # This forces a fresh clone of the repo during the `checkout` step
-#      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-#      - name: Delete old checkout
-#        run: |
-#          rm -rf ${{ github.workspace }}/* || true
-#          rm -rf ${{ github.workspace }}/.* || true
-#      - uses: actions/checkout@v3
-#      - name: Run simple linux poweroff test w/ vitis
-#        run: .github/scripts/run-linux-poweroff-vitis.py
+  run-basic-linux-poweroff-vitis:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    name: run-basic-linux-poweroff-vitis
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run simple linux poweroff test w/ vitis
+        run: .github/scripts/run-linux-poweroff-vitis.py
 
   documentation-check:
     name: documentation-check
