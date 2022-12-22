@@ -309,8 +309,8 @@ class RuntimeHWConfig:
                     # copying between two local directories.
                     # This uses the same option flags but operates rsync in local->local mode
                     options = '-pthrvz -L'
-                    local_dir=local_path
-                    local_remote_dir=pjoin(builddir, remote_path)
+                    local_dir = local_path
+                    local_remote_dir = pjoin(builddir, remote_path)
                     cmd = f"rsync {options} {local_dir} {local_remote_dir}"
 
                     results = run(cmd)
