@@ -10,6 +10,7 @@ import logging
 import yaml
 import os
 import sys
+from fabric.operations import _stdoutString # type: ignore
 from fabric.api import prefix, settings, local, run # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
@@ -256,7 +257,7 @@ class RuntimeHWConfig:
         # Note that pkill only works for names <=15 characters
         return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
-    def handle_failure(self, buildresult, what: str, dir: Path|str, cmd: str):
+    def handle_failure(self, buildresult: _stdoutString, what: str, dir: Path|str, cmd: str) -> None:
         """ A helper function for a nice error message when used in conjunction with the run() function"""
         if buildresult.failed:
             rootLogger.info(f"{self.driver_type_message} {what} failed. Exiting. See log for details.")
