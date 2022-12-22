@@ -15,4 +15,4 @@
 bit_builder_type: VitisBitBuilder
 args:
     # REQUIRED: vitis fpga platform
-    device: xilinx_u250_gen3x16_xdma_3_1_202020_1
+    device: xilinx_u250_gen3x16_xdma_2_1_202010_1

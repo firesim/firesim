@@ -17,7 +17,7 @@ build_farm_type: ExternallyProvisioned
 args:
     # managerinit arg start
     # REQUIRED: (replace this) default location of build directory on build host.
-    default_build_dir: null
+    default_build_dir: /mnt/resource/upstream_builds
     # REQUIRED: List of IP addresses (or "localhost"). Each can have an OPTIONAL
     # argument, called "override_build_dir", specifying to override the default
     # build directory.
