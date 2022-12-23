@@ -95,20 +95,6 @@ set_property value {host_mem_0} [::ipx::get_register_parameters -of_objects $hos
 ipx::add_bus_parameter DATA_WIDTH [ipx::get_bus_interfaces host_mem_0 -of_objects [ipx::current_core]]
 set_property value          {64}  [ipx::get_bus_parameters DATA_WIDTH -of_objects [ipx::get_bus_interfaces host_mem_0 -of_objects [ipx::current_core]]]
 
-# set up memory map for host memory access
-set cpu_mem_offset      [::ipx::add_register -quiet "cpu_mem_offset" $addr_block]
-set_property address_offset 0x020 $cpu_mem_offset
-set_property size           64    $cpu_mem_offset
-
-set_property slave_memory_map_ref "s_axi_lite" [::ipx::get_bus_interfaces -of $core "s_axi_lite"]
-
-# define association between pointer arguments (SRC_ADDR, DEST_ADDR) and axi masters (axi_rmst, axi_wmst)
-ipx::add_register_parameter ASSOCIATED_BUSIF $cpu_mem_offset
-set_property value {cpu_mem} [::ipx::get_register_parameters -of_objects $cpu_mem_offset ASSOCIATED_BUSIF]
-
-ipx::add_bus_parameter DATA_WIDTH [ipx::get_bus_interfaces cpu_mem -of_objects [ipx::current_core]]
-set_property value          {64}  [ipx::get_bus_parameters DATA_WIDTH -of_objects [ipx::get_bus_interfaces cpu_mem -of_objects [ipx::current_core]]]
-
 set_property xpm_libraries {XPM_CDC XPM_MEMORY XPM_FIFO} $core
 set_property sdx_kernel true $core
 set_property sdx_kernel_type rtl $core
