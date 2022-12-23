@@ -69,12 +69,7 @@ DRIVER_CC := \
 		$(driver_dir)/bridges/BridgeHarness.cc \
 		$(driver_dir)/bridges/$(DESIGN).cc \
 		$(testchipip_csrc_dir)/testchip_tsi.cc \
-		$(wildcard $(addprefix $(firesim_lib_dir)/, \
-			bridges/uart.cc \
-			bridges/serial.cc \
-			bridges/blockdev.cc \
-			fesvr/firesim_tsi.cc \
-		))
+		$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))
 
 TARGET_CXX_FLAGS := \
 		-isystem $(testchipip_csrc_dir) \
@@ -86,8 +81,8 @@ TARGET_CXX_FLAGS := \
 		-g
 
 TARGET_LD_FLAGS := \
-		-L$(RISCV)/lib \
-		-lfesvr
+		-L$(RISCV)/lib -lfesvr \
+		-L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so
 
 ##########################
 # Midas-Level Sim Recipes#
