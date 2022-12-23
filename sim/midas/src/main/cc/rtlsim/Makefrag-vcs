@@ -21,7 +21,7 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	-top $(TB) \
 	-Mdir=$(GEN_DIR)/$(DRIVER_NAME)-debug.csrc \
 	+vc+list \
-	-CFLAGS "$(CXXFLAGS) -D_GNU_SOURCE -DVCS -I$(VCS_HOME)/include" \
+	-CFLAGS "$(CXXFLAGS) -D_GNU_SOURCE -DVCS -I$(VCS_HOME)/include -I$(GEN_DIR)" \
 	-LDFLAGS "$(LDFLAGS)" \
 	-sverilog \
 	-assert svaext \

@@ -70,7 +70,7 @@ verilator: $(OUT_DIR)/V$(DRIVER_NAME)
 verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug
 
 # Add an extra wrapper source for VCS simulators
-vcs_wrapper_v := $(v_dir)/vcs_top.v
+vcs_wrapper_v := $(v_dir)/vcs_top.sv
 vcs_harness := emul/vcs-harness.cc simif_emul_vcs.cc
 TB := emul
 VCS_FLAGS := -e vcs_main

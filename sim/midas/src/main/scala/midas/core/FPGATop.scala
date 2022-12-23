@@ -431,6 +431,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     "FPGA_MANAGED_AXI4_ID_BITS"    -> fpga_managed_axi4.map(_.params.idBits)  .getOrElse(0).toLong,
     "FPGA_MANAGED_AXI4_ADDR_BITS"  -> fpga_managed_axi4.map(_.params.addrBits).getOrElse(0).toLong,
     "FPGA_MANAGED_AXI4_DATA_BITS"  -> fpga_managed_axi4.map(_.params.dataBits).getOrElse(0).toLong,
+    "FPGA_MANAGED_AXI4_STRB_BITS"  -> fpga_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
+    "FPGA_MANAGED_AXI4_BEAT_BYTES" -> fpga_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
     // Data chunk width of LoadMemWidget
     "MEM_DATA_CHUNK" -> outer.loadMem.memDataChunk
   ) ++:

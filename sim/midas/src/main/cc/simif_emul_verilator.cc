@@ -54,6 +54,11 @@ void simif_emul_verilator_t::finish() {
 #endif
 }
 
+static std::vector<uint32_t> to_vector(void *ptr, unsigned nbits) {
+  return std::vector<uint32_t>((uint32_t *)ptr,
+                               (uint32_t *)ptr + nbits / sizeof(uint32_t));
+}
+
 void simif_emul_verilator_t::tick() {
   assert(cpu_managed_axi4 != nullptr);
   assert(master != nullptr);
@@ -222,23 +227,24 @@ void simif_emul_verilator_t::tick() {
                top->ctrl_aw_ready,
                top->ctrl_w_ready,
                top->ctrl_r_bits_id,
-               &top->ctrl_r_bits_data,
+               to_vector(&top->ctrl_r_bits_data, CTRL_DATA_BITS),
                top->ctrl_r_bits_last,
                top->ctrl_r_valid,
                top->ctrl_b_bits_id,
                top->ctrl_b_valid);
 
 #ifdef CPU_MANAGED_AXI4_PRESENT
-  cpu_managed_axi4->tick(top->reset,
-                         top->cpu_managed_axi4_ar_ready,
-                         top->cpu_managed_axi4_aw_ready,
-                         top->cpu_managed_axi4_w_ready,
-                         top->cpu_managed_axi4_r_bits_id,
-                         &top->cpu_managed_axi4_r_bits_data,
-                         top->cpu_managed_axi4_r_bits_last,
-                         top->cpu_managed_axi4_r_valid,
-                         top->cpu_managed_axi4_b_bits_id,
-                         top->cpu_managed_axi4_b_valid);
+  cpu_managed_axi4->tick(
+      top->reset,
+      top->cpu_managed_axi4_ar_ready,
+      top->cpu_managed_axi4_aw_ready,
+      top->cpu_managed_axi4_w_ready,
+      top->cpu_managed_axi4_r_bits_id,
+      to_vector(&top->cpu_managed_axi4_r_bits_data, CPU_MANAGED_AXI4_DATA_BITS),
+      top->cpu_managed_axi4_r_bits_last,
+      top->cpu_managed_axi4_r_valid,
+      top->cpu_managed_axi4_b_bits_id,
+      top->cpu_managed_axi4_b_valid);
 #endif // CPU_MANAGED_AXI4_PRESENT
 
 #ifdef FPGA_MANAGED_AXI4_PRESENT
@@ -257,12 +263,14 @@ void simif_emul_verilator_t::tick() {
 
                 top->fpga_managed_axi4_w_valid,
 #if FPGA_MANAGED_AXI4_STRB_BITS > 64
-                &top->fpga_managed_axi4_w_bits_strb,
+                to_vector(&top->fpga_managed_axi4_w_bits_strb,
+                          FPGA_MANAGED_AXI4_STRB_BITS),
 #else
                 top->fpga_managed_axi4_w_bits_strb,
 #endif
 #if FPGA_MANAGED_AXI4_DATA_BITS > 64
-                &top->fpga_managed_axi4_w_bits_data,
+                to_vector(&top->fpga_managed_axi4_w_bits_data,
+                          FPGA_MANAGED_AXI4_DATA_BITS),
 #else
                 top->fpga_managed_axi4_w_bits_data,
 #endif
@@ -290,7 +298,7 @@ void simif_emul_verilator_t::tick() {
 #if MEM_DATA_BITS > 64
                  top->mem_0_w_bits_data,
 #else
-                 &top->mem_0_w_bits_data,
+                 to_vector(&top->mem_0_w_bits_data, MEM_DATA_BITS),
 #endif
                  top->mem_0_w_bits_last,
 
@@ -316,7 +324,7 @@ void simif_emul_verilator_t::tick() {
 #if MEM_DATA_BITS > 64
                  top->mem_1_w_bits_data,
 #else
-                 &top->mem_1_w_bits_data,
+                 to_vector(&top->mem_1_w_bits_data, MEM_DATA_BITS),
 #endif
                  top->mem_1_w_bits_last,
 
@@ -342,7 +350,7 @@ void simif_emul_verilator_t::tick() {
 #if MEM_DATA_BITS > 64
                  top->mem_2_w_bits_data,
 #else
-                 &top->mem_2_w_bits_data,
+                 to_vector(&top->mem_2_w_bits_data, MEM_DATA_BITS),
 #endif
                  top->mem_2_w_bits_last,
 
@@ -368,7 +376,7 @@ void simif_emul_verilator_t::tick() {
 #if MEM_DATA_BITS > 64
                  top->mem_3_w_bits_data,
 #else
-                 &top->mem_3_w_bits_data,
+                 to_vector(&top->mem_3_w_bits_data, MEM_DATA_BITS),
 #endif
                  top->mem_3_w_bits_last,
 
