@@ -5,10 +5,8 @@
 #include <iostream>
 
 void FPGAManagedStreams::FPGAToCPUDriver::init() {
-  this->mmio_write(this->params.toHostPhysAddrHighAddr,
-                   (uint32_t)(this->buffer_base_fpga >> 32));
-  this->mmio_write(this->params.toHostPhysAddrLowAddr,
-                   (uint32_t)this->buffer_base_fpga);
+  mmio_write(params.toHostPhysAddrHighAddr, (uint32_t)(buffer_base_fpga >> 32));
+  mmio_write(params.toHostPhysAddrLowAddr, (uint32_t)buffer_base_fpga);
 }
 /**
  * @brief Dequeues as much as num_bytes of data from the associated bridge
@@ -24,15 +22,15 @@ size_t FPGAManagedStreams::FPGAToCPUDriver::pull(void *dest,
                                                  size_t num_bytes,
                                                  size_t required_bytes) {
   assert(num_bytes >= required_bytes);
-  size_t bytes_in_buffer = this->mmio_read(this->params.bytesAvailableAddr);
+  size_t bytes_in_buffer = mmio_read(params.bytesAvailableAddr);
   if (bytes_in_buffer < required_bytes) {
     return 0;
   }
 
   void *src_addr = (char *)buffer_base + buffer_offset;
   size_t first_copy_bytes =
-      ((buffer_offset + bytes_in_buffer) > this->params.buffer_capacity)
-          ? this->params.buffer_capacity - buffer_offset
+      ((buffer_offset + bytes_in_buffer) > params.buffer_capacity)
+          ? params.buffer_capacity - buffer_offset
           : bytes_in_buffer;
   std::memcpy(dest, src_addr, first_copy_bytes);
   if (first_copy_bytes < bytes_in_buffer) {
@@ -40,19 +38,20 @@ size_t FPGAManagedStreams::FPGAToCPUDriver::pull(void *dest,
                 buffer_base,
                 bytes_in_buffer - first_copy_bytes);
   }
-  buffer_offset =
-      (buffer_offset + bytes_in_buffer) % this->params.buffer_capacity;
-  this->mmio_write(this->params.bytesConsumedAddr, bytes_in_buffer);
+  buffer_offset = (buffer_offset + bytes_in_buffer) % params.buffer_capacity;
+  mmio_write(params.bytesConsumedAddr, bytes_in_buffer);
   return bytes_in_buffer;
 }
 
 void FPGAManagedStreams::FPGAToCPUDriver::flush() {
-  this->mmio_write(this->params.toHostStreamFlushAddr, 1);
+  mmio_write(params.toHostStreamFlushAddr, 1);
   // TODO: Consider if this should be made non-blocking // alternate API
   auto flush_done = false;
   int attempts = 0;
   while (!flush_done) {
-    flush_done = (this->mmio_read(this->params.toHostStreamFlushDoneAddr) & 1);
-    assert(++attempts < 256); // Bridge stream flush appears to deadlock
+    flush_done = (mmio_read(params.toHostStreamFlushDoneAddr) & 1);
+    if (++attempts > 256) {
+      exit(1); // Bridge stream flush appears to deadlock
+    };
   }
 }
