@@ -12,8 +12,10 @@ public:
   simif_vitis_t(const std::vector<std::string> &args);
   ~simif_vitis_t() {}
 
-  // Unused by Vitis since initialization / deinitization is done in the
-  // constructor
+  // Will be used once FPGA-managed AXI4 is fully plumbed through the shim
+  // to setup the FPGAManagedStream engine.
+  void host_mmio_init() override{};
+
   int run() override { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;

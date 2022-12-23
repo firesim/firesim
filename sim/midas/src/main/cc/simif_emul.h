@@ -22,6 +22,8 @@ public:
 
   virtual void sim_init() = 0;
 
+  void host_mmio_init() override;
+
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
 

@@ -120,6 +120,14 @@ public:
   /** Bridge / Widget MMIO methods */
 
   /**
+   * @brief Provides a hook to do mmio-related initialization _before_ bridges.
+   *
+   * This permits setting up core simulation widgets (like stream engines) in a
+   * fashion that may vary across different specializations of simif_t.
+   */
+  virtual void host_mmio_init() = 0;
+
+  /**
    * @brief 32b MMIO write, issued over the simulation control bus (AXI4-lite).
    *
    * @param addr The address to preform the 32b read in the MMIO address space..

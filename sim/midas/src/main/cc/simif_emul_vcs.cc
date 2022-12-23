@@ -37,13 +37,6 @@ void simif_emul_vcs_t::sim_init() {
   for (size_t i = 0; i < 10; i++)
     target.switch_to();
   vcs_rst = false;
-
-  for (auto &stream : this->fpga_to_cpu_streams) {
-    stream->init();
-  }
-  for (auto &stream : this->cpu_to_fpga_streams) {
-    stream->init();
-  }
 }
 
 void simif_emul_vcs_t::advance_target() {

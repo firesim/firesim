@@ -14,8 +14,9 @@ public:
   simif_f1_t(const std::vector<std::string> &args);
   ~simif_f1_t();
 
-  // Unused by F1 since initialization / deinitization is done in the
-  // constructor
+  // Unused since no F1-specific MMIO is required to setup the simulation.
+  void host_mmio_init() override{};
+
   int run() override { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;

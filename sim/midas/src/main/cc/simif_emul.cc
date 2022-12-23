@@ -104,6 +104,15 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
 
 simif_emul_t::~simif_emul_t(){};
 
+void simif_emul_t::host_mmio_init() {
+  for (auto &stream : this->fpga_to_cpu_streams) {
+    stream->init();
+  }
+  for (auto &stream : this->cpu_to_fpga_streams) {
+    stream->init();
+  }
+};
+
 int simif_emul_t::run() {
   if (fastloadmem && !load_mem_path.empty()) {
     fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
