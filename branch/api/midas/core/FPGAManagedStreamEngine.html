@@ -143,8 +143,8 @@
                         <a href="FPGAManagedAXI4Params.html" title="Specifies the AXI4 interface for FPGA-driven DMA">FPGAManagedAXI4Params</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="class" href="" title="This is a stub to foreshadow the other implementation"></a>
-                        <a href="" title="This is a stub to foreshadow the other implementation">FPGAManagedStreamEngine</a>
+                        <a class="class" href="" title=""></a>
+                        <a href="" title="">FPGAManagedStreamEngine</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
                         <a class="class" href="FPGATop.html" title=""></a>
@@ -297,6 +297,10 @@
                         <span class="separator"></span>
                         <a class="trait" href="UnpackedWrapperConfig.html" title="A convienence mixin that preprocesses the SimWrapperConfig"></a>
                         <a href="UnpackedWrapperConfig.html" title="A convienence mixin that preprocesses the SimWrapperConfig">UnpackedWrapperConfig</a>
+                      </li><li class="current-entities indented2">
+                        <span class="separator"></span>
+                        <a class="class" href="WriteMetadata.html" title=""></a>
+                        <a href="WriteMetadata.html" title="">WriteMetadata</a>
                       </li>
               </ul>
             </div>
@@ -325,8 +329,7 @@
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>This is a stub to foreshadow the other implementation
-</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
@@ -482,6 +485,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="midas.core.FPGAManagedStreamEngine#beatBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="beatBytes:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#beatBytes:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">beatBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="freechips.rocketchip.diplomacy.LazyModule#children" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:List[freechips.rocketchip.diplomacy.LazyModule]"></a><a id="children:List[LazyModule]"></a>
       <span class="permalink">
@@ -653,9 +672,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="midas.core.FPGAManagedStreamEngine#fpgaManagedAXI4NodeOpt" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="fpgaManagedAXI4NodeOpt:Some[freechips.rocketchip.amba.axi4.AXI4OutwardNode]"></a><a id="fpgaManagedAXI4NodeOpt:Some[AXI4OutwardNode]"></a>
+      <a id="fpgaManagedAXI4NodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4NexusNode]"></a><a id="fpgaManagedAXI4NodeOpt:Option[AXI4NexusNode]"></a>
       <span class="permalink">
-      <a href="../../midas/core/FPGAManagedStreamEngine.html#fpgaManagedAXI4NodeOpt:Some[freechips.rocketchip.amba.axi4.AXI4OutwardNode]" title="Permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#fpgaManagedAXI4NodeOpt:Option[freechips.rocketchip.amba.axi4.AXI4NexusNode]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -664,7 +683,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">fpgaManagedAXI4NodeOpt</span><span class="result">: <span class="extype" name="scala.Some">Some</span>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4OutwardNode">AXI4OutwardNode</span>]</span>
+        <span class="name">fpgaManagedAXI4NodeOpt</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4NexusNode">AXI4NexusNode</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.core.FPGAManagedStreamEngine">FPGAManagedStreamEngine</a> → <a href="StreamEngine.html" class="extype" name="midas.core.StreamEngine">StreamEngine</a></dd></dl></div>
@@ -918,6 +937,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyModule</dd></dl></div>
+    </li><li name="midas.core.FPGAManagedStreamEngine#maxFlightForStream" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="maxFlightForStream(params:midas.core.StreamSourceParameters):Int"></a><a id="maxFlightForStream(StreamSourceParameters):Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#maxFlightForStream(params:midas.core.StreamSourceParameters):Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxFlightForStream</span><span class="params">(<span name="params">params: <a href="StreamSourceParameters.html" class="extype" name="midas.core.StreamSourceParameters">StreamSourceParameters</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="midas.widgets.Widget#memRegionSize" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="memRegionSize:BigInt"></a>
       <span class="permalink">
@@ -935,9 +970,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a></dd></dl></div>
     </li><li name="midas.core.FPGAManagedStreamEngine#module" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="module:midas.widgets.WidgetImp{valio:midas.widgets.WidgetIO}"></a><a id="module:WidgetImp{valio:midas.widgets.WidgetIO}"></a>
+      <a id="module:midas.widgets.WidgetImp{valio:midas.widgets.WidgetIO;typeToCPUStreamDriverParameters&lt;:ProductwithSerializable{valname:String;valfpgaBufferDepth:Int;valtoHostPhysAddrHighAddr:Int;valtoHostPhysAddrLowAddr:Int;valbytesAvailableAddr:Int;valbytesConsumedAddr:Int;valtoHostStreamDoneInitAddr:Int;valtoHostStreamFlushAddr:Int;valtoHostStreamFlushDoneAddr:Int;defcopy(name:String,fpgaBufferDepth:Int,toHostPhysAddrHighAddr:Int,toHostPhysAddrLowAddr:Int,bytesAvailableAddr:Int,bytesConsumedAddr:Int,toHostStreamDoneInitAddr:Int,toHostStreamFlushAddr:Int,toHostStreamFlushDoneAddr:Int):this.ToCPUStreamDriverParameters;defcopy$default$1:String@scala.annotation.unchecked.uncheckedVariance;defcopy$default$2:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$3:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$4:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$5:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$6:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$7:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$8:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$9:Int@scala.annotation.unchecked.uncheckedVariance};objectToCPUStreamDriverParameters;defelaborateToHostCPUStream(channel:chisel3.util.DecoupledIO[chisel3.UInt],axi4:freechips.rocketchip.amba.axi4.AXI4Bundle,chParams:midas.core.StreamSourceParameters):this.ToCPUStreamDriverParameters;valsourceDriverParameters:Seq[this.ToCPUStreamDriverParameters]}"></a><a id="module:WidgetImp{.../*5definitionsintyperefinement*/}"></a>
       <span class="permalink">
-      <a href="../../midas/core/FPGAManagedStreamEngine.html#module:midas.widgets.WidgetImp{valio:midas.widgets.WidgetIO}" title="Permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#module:midas.widgets.WidgetImp{valio:midas.widgets.WidgetIO;typeToCPUStreamDriverParameters&lt;:ProductwithSerializable{valname:String;valfpgaBufferDepth:Int;valtoHostPhysAddrHighAddr:Int;valtoHostPhysAddrLowAddr:Int;valbytesAvailableAddr:Int;valbytesConsumedAddr:Int;valtoHostStreamDoneInitAddr:Int;valtoHostStreamFlushAddr:Int;valtoHostStreamFlushDoneAddr:Int;defcopy(name:String,fpgaBufferDepth:Int,toHostPhysAddrHighAddr:Int,toHostPhysAddrLowAddr:Int,bytesAvailableAddr:Int,bytesConsumedAddr:Int,toHostStreamDoneInitAddr:Int,toHostStreamFlushAddr:Int,toHostStreamFlushDoneAddr:Int):this.ToCPUStreamDriverParameters;defcopy$default$1:String@scala.annotation.unchecked.uncheckedVariance;defcopy$default$2:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$3:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$4:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$5:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$6:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$7:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$8:Int@scala.annotation.unchecked.uncheckedVariance;defcopy$default$9:Int@scala.annotation.unchecked.uncheckedVariance};objectToCPUStreamDriverParameters;defelaborateToHostCPUStream(channel:chisel3.util.DecoupledIO[chisel3.UInt],axi4:freechips.rocketchip.amba.axi4.AXI4Bundle,chParams:midas.core.StreamSourceParameters):this.ToCPUStreamDriverParameters;valsourceDriverParameters:Seq[this.ToCPUStreamDriverParameters]}" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -946,7 +981,7 @@
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">module</span><span class="result">: <a href="../widgets/WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a> { val io: midas.widgets.WidgetIO }</span>
+        <span class="name">module</span><span class="result">: <a href="../widgets/WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a> { ... /* 5 definitions in type refinement */ }</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="midas.core.FPGAManagedStreamEngine">FPGAManagedStreamEngine</a> → <a href="../widgets/Widget.html" class="extype" name="midas.widgets.Widget">Widget</a> → LazyModule</dd></dl></div>
@@ -1104,6 +1139,38 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LazyModule</dd></dl></div>
+    </li><li name="midas.core.FPGAManagedStreamEngine#pageBeats" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="pageBeats:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#pageBeats:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pageBeats</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
+    </li><li name="midas.core.FPGAManagedStreamEngine#pageBytes" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="pageBytes:Int"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#pageBytes:Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pageBytes</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      
     </li><li name="midas.core.FPGAManagedStreamEngine#params" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="params:midas.core.StreamEngineParameters"></a><a id="params:StreamEngineParameters"></a>
       <span class="permalink">
@@ -1328,6 +1395,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="midas.core.FPGAManagedStreamEngine#toCPUNode" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toCPUNode:Option[freechips.rocketchip.amba.axi4.AXI4MasterNode]"></a><a id="toCPUNode:Option[AXI4MasterNode]"></a>
+      <span class="permalink">
+      <a href="../../midas/core/FPGAManagedStreamEngine.html#toCPUNode:Option[freechips.rocketchip.amba.axi4.AXI4MasterNode]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toCPUNode</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="freechips.rocketchip.amba.axi4.AXI4MasterNode">AXI4MasterNode</span>]</span>
+      </span>
+      
+      
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
