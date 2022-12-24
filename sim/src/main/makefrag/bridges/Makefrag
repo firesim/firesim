@@ -67,6 +67,7 @@ DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 
 DRIVER_CC := \
 		$(driver_dir)/midasexamples/simif_peek_poke.cc \
+		$(driver_dir)/bridges/BridgeHarness.cc \
 		$(driver_dir)/bridges/$(DESIGN).cc \
 		$(testchipip_csrc_dir)/testchip_tsi.cc \
 		$(wildcard $(addprefix $(firesim_lib_dir)/, \

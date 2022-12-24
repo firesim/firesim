@@ -39,52 +39,22 @@ void sighand(int s) {
 }
 #endif
 
-uart_fd_handler::uart_fd_handler(int uartno) {
-  this->loggingfd = 0; // unused
+/**
+ * Helper class which links the UART stream to primitive streams.
+ */
+class uart_fd_handler : public uart_handler {
+public:
+  uart_fd_handler() {}
+  virtual ~uart_fd_handler();
 
-  if (uartno == 0) {
-    // signal handler so ctrl-c doesn't kill simulation when UART is attached
-    // to stdin/stdout
-    struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = sighand;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
-    printf("UART0 is here (stdin/stdout).\n");
-    inputfd = STDIN_FILENO;
-    outputfd = STDOUT_FILENO;
-  } else {
-    // for UARTs that are not UART0, use a PTY
-    char slavename[SLAVENAMELEN];
-    int ptyfd = posix_openpt(O_RDWR | O_NOCTTY);
-    grantpt(ptyfd);
-    unlockpt(ptyfd);
-    ptsname_r(ptyfd, slavename, SLAVENAMELEN);
+  std::optional<char> get() override;
+  void put(char data) override;
 
-    // create symlink for reliable location to find uart pty
-    std::string symlinkname = std::string("uartpty") + std::to_string(uartno);
-    // unlink in case symlink already exists
-    unlink(symlinkname.c_str());
-    symlink(slavename, symlinkname.c_str());
-    printf("UART%d is on PTY: %s, symlinked at %s\n",
-           uartno,
-           slavename,
-           symlinkname.c_str());
-    printf("Attach to this UART with 'sudo screen %s' or 'sudo screen %s'\n",
-           slavename,
-           symlinkname.c_str());
-    inputfd = ptyfd;
-    outputfd = ptyfd;
-
-    // also, for these we want to log output to file here.
-    std::string uartlogname = std::string("uartlog") + std::to_string(uartno);
-    printf("UART logfile is being written to %s\n", uartlogname.c_str());
-    this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT, 0644);
-  }
-
-  // Don't block on reads if there is nothing typed in
-  fcntl(inputfd, F_SETFL, fcntl(inputfd, F_GETFL) | O_NONBLOCK);
-}
+protected:
+  int inputfd;
+  int outputfd;
+  int loggingfd = 0;
+};
 
 uart_fd_handler::~uart_fd_handler() { close(this->loggingfd); }
 
@@ -116,10 +86,105 @@ void uart_fd_handler::put(char data) {
   }
 }
 
+/**
+ * UART handler which fetches data from stdin and outputs to stdout.
+ */
+class uart_stdin_handler final : public uart_fd_handler {
+public:
+  uart_stdin_handler() {
+    // signal handler so ctrl-c doesn't kill simulation when UART is attached
+    // to stdin/stdout
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = sighand;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
+    printf("UART0 is here (stdin/stdout).\n");
+    inputfd = STDIN_FILENO;
+    outputfd = STDOUT_FILENO;
+    // Don't block on reads if there is nothing typed in
+    fcntl(inputfd, F_SETFL, fcntl(inputfd, F_GETFL) | O_NONBLOCK);
+  }
+};
+
+/**
+ * UART handler connected to PTY.
+ */
+class uart_pty_handler final : public uart_fd_handler {
+public:
+  uart_pty_handler(int uartno) {
+    // for UARTs that are not UART0, use a PTY
+    char slavename[SLAVENAMELEN];
+    int ptyfd = posix_openpt(O_RDWR | O_NOCTTY);
+    grantpt(ptyfd);
+    unlockpt(ptyfd);
+    ptsname_r(ptyfd, slavename, SLAVENAMELEN);
+
+    // create symlink for reliable location to find uart pty
+    std::string symlinkname = std::string("uartpty") + std::to_string(uartno);
+    // unlink in case symlink already exists
+    unlink(symlinkname.c_str());
+    symlink(slavename, symlinkname.c_str());
+    printf("UART%d is on PTY: %s, symlinked at %s\n",
+           uartno,
+           slavename,
+           symlinkname.c_str());
+    printf("Attach to this UART with 'sudo screen %s' or 'sudo screen %s'\n",
+           slavename,
+           symlinkname.c_str());
+    inputfd = ptyfd;
+    outputfd = ptyfd;
+
+    // also, for these we want to log output to file here.
+    std::string uartlogname = std::string("uartlog") + std::to_string(uartno);
+    printf("UART logfile is being written to %s\n", uartlogname.c_str());
+    this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT, 0644);
+    // Don't block on reads if there is nothing typed in
+    fcntl(inputfd, F_SETFL, fcntl(inputfd, F_GETFL) | O_NONBLOCK);
+  }
+};
+
+/**
+ * UART handler connected to files.
+ */
+class uart_file_handler final : public uart_fd_handler {
+public:
+  uart_file_handler(const std::string &in_name, const std::string &out_name) {
+    inputfd = open(in_name.c_str(), O_RDONLY);
+    outputfd = open(out_name.c_str(), O_WRONLY | O_CREAT, 0644);
+  }
+};
+
+static std::unique_ptr<uart_handler>
+create_handler(const std::vector<std::string> &args, int uartno) {
+  std::string in_arg = std::string("+uart-in") + std::to_string(uartno) + "=";
+  std::string out_arg = std::string("+uart-out") + std::to_string(uartno) + "=";
+
+  std::string in_name, out_name;
+  for (auto arg : args) {
+    if (arg.find(in_arg) == 0) {
+      in_name = const_cast<char *>(arg.c_str()) + in_arg.length();
+    }
+    if (arg.find(out_arg) == 0) {
+      out_name = const_cast<char *>(arg.c_str()) + out_arg.length();
+    }
+  }
+
+  if (!in_name.empty() && !out_name.empty()) {
+    return std::make_unique<uart_file_handler>(in_name, out_name);
+  }
+  if (uartno == 0) {
+    return std::make_unique<uart_stdin_handler>();
+  }
+  return std::make_unique<uart_pty_handler>(uartno);
+}
+
 uart_t::uart_t(simif_t *sim,
+               const std::vector<std::string> &args,
                const UARTBRIDGEMODULE_struct &mmio_addrs,
                int uartno)
-    : uart_t(sim, mmio_addrs, std::make_unique<uart_fd_handler>(uartno)) {}
+    : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
+      handler(create_handler(args, uartno)) {}
 
 uart_t::~uart_t() {}
 

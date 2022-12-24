@@ -8,28 +8,36 @@ INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
 #endif
 
 #ifdef UARTBRIDGEMODULE_0_PRESENT
-add_bridge_driver(new uart_t(simif, UARTBRIDGEMODULE_0_substruct_create, 0));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_0_substruct_create, 0));
 #endif
 #ifdef UARTBRIDGEMODULE_1_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_1_substruct_create, 1));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_1_substruct_create, 1));
 #endif
 #ifdef UARTBRIDGEMODULE_2_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_2_substruct_create, 2));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_2_substruct_create, 2));
 #endif
 #ifdef UARTBRIDGEMODULE_3_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_3_substruct_create, 3));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_3_substruct_create, 3));
 #endif
 #ifdef UARTBRIDGEMODULE_4_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_4_substruct_create, 4));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_4_substruct_create, 4));
 #endif
 #ifdef UARTBRIDGEMODULE_5_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_5_substruct_create, 5));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_5_substruct_create, 5));
 #endif
 #ifdef UARTBRIDGEMODULE_6_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_6_substruct_create, 6));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_6_substruct_create, 6));
 #endif
 #ifdef UARTBRIDGEMODULE_7_PRESENT
-add_bridge_driver(new uart_t(this, UARTBRIDGEMODULE_7_substruct_create, 7));
+add_bridge_driver(
+    new uart_t(simif, args, UARTBRIDGEMODULE_7_substruct_create, 7));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_0

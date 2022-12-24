@@ -50,23 +50,15 @@ abstract class BridgeSuite(
     *   Backend simulator: "verilator" or "vcs"
     * @param debug
     *   When true, captures waves from the simulation
-    * @param shouldPass
-    *   When false, asserts the test returns a non-zero code
     */
-  def runTest(backend: String, debug: Boolean = false, shouldPass: Boolean = true) {
-    val prefix     = if (shouldPass) "pass in " else "fail in "
-    val testEnvStr = s"${backend} MIDAS-level simulation"
-    val wavesStr   = if (debug) " with waves enabled" else ""
+  def runTest(backend: String, debug: Boolean = false)
 
-    val haveThisBehavior = prefix + testEnvStr + wavesStr
-
-    if (isCmdAvailable(backend)) {
-      it should haveThisBehavior in {
-        assert((run(backend, debug) == 0) == shouldPass)
-      }
-    } else {
-      ignore should haveThisBehavior in {}
-    }
+  /** Helper to generate tests strings.
+    */
+  def getTestString(length: Int): String = {
+    val gen   = new scala.util.Random(100)
+    val alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    (1 to length).map(_ => alpha(gen.nextInt(alpha.length))).mkString
   }
 
   mkdirs()
@@ -74,57 +66,72 @@ abstract class BridgeSuite(
   elaborateAndCompile()
   for (backend <- Seq("vcs", "verilator")) {
     compileMlSimulator(backend)
-    runTest(backend)
+
+    val testEnvStr = s"pass in ${backend} MIDAS-level simulation"
+
+    if (isCmdAvailable(backend)) {
+      it should testEnvStr in {
+        runTest(backend)
+      }
+    } else {
+      ignore should testEnvStr in {}
+    }
   }
 }
 
-class UARTTest(targetConfig: String) extends BridgeSuite("UARTModule", "UARTConfig", targetConfig) {}
+class UARTTest(targetConfig: String) extends BridgeSuite("UARTModule", "UARTConfig", targetConfig) {
+  override def runTest(backend: String, debug: Boolean) {
+    // Generate a short test string.
+    val data = getTestString(16)
 
-class UARTF1Test    extends BridgeSuite("UARTModule", "UARTConfig", "DefaultF1Config")
-class UARTVitisTest extends BridgeSuite("UARTModule", "UARTConfig", "DefaultVitisConfig")
+    // Create an input file.
+    val input       = File.createTempFile("input", ".txt")
+    input.deleteOnExit()
+    val inputWriter = new BufferedWriter(new FileWriter(input))
+    inputWriter.write(data)
+    inputWriter.flush()
+    inputWriter.close()
+
+    // Create an output file to write to.
+    val output = File.createTempFile("output", ".txt")
+
+    val runResult = run(backend, debug, args = Seq(s"+uart-in0=${input.getPath}", s"+uart-out0=${output.getPath}"))
+    assert(runResult == 0)
+    val result    = scala.io.Source.fromFile(output.getPath).mkString
+    result should equal(data)
+  }
+}
+
+class UARTF1Test    extends UARTTest("DefaultF1Config")
+class UARTVitisTest extends UARTTest("DefaultVitisConfig")
 
 class BlockDevTest(targetConfig: String) extends BridgeSuite("BlockDevModule", "BlockDevConfig", targetConfig) {
-  override def runTest(backend: String, debug: Boolean, shouldPass: Boolean) {
-    val prefix     = if (shouldPass) "pass in " else "fail in "
-    val testEnvStr = s"${backend} MIDAS-level simulation"
-    val wavesStr   = if (debug) " with waves enabled" else ""
+  override def runTest(backend: String, debug: Boolean) {
+    // Generate a random string spanning 2 sectors with a fixed seed.
+    val data = getTestString(1024)
 
-    val haveThisBehavior = prefix + testEnvStr + wavesStr
+    // Create an input file.
+    val input       = File.createTempFile("input", ".txt")
+    input.deleteOnExit()
+    val inputWriter = new BufferedWriter(new FileWriter(input))
+    inputWriter.write(data)
+    inputWriter.flush()
+    inputWriter.close()
 
-    if (isCmdAvailable(backend)) {
-      // Generate a random string spanning 2 sectors with a fixed seed.
-      val gen = new scala.util.Random(100)
-
-      val alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-      val data  = (1 to 1024).map(_ => alpha(gen.nextInt(alpha.length))).mkString
-
-      // Create an input file.
-      val input       = File.createTempFile("input", ".txt")
-      input.deleteOnExit()
-      val inputWriter = new BufferedWriter(new FileWriter(input))
-      inputWriter.write(data)
-      inputWriter.flush()
-      inputWriter.close()
-
-      // Pre-allocate space in the output.
-      val output       = File.createTempFile("output", ".txt")
-      output.deleteOnExit()
-      val outputWriter = new BufferedWriter(new FileWriter(output))
-      for (i <- 1 to data.size) {
-        outputWriter.write('x')
-      }
-      outputWriter.flush()
-      outputWriter.close()
-
-      it should haveThisBehavior in {
-        val runResult = run(backend, debug, args = Seq(s"+blkdev0=${input.getPath}", s"+blkdev1=${output.getPath}"))
-        assert((runResult == 0) == shouldPass)
-        val result    = scala.io.Source.fromFile(output.getPath).mkString
-        result should equal(data)
-      }
-    } else {
-      ignore should haveThisBehavior in {}
+    // Pre-allocate space in the output.
+    val output       = File.createTempFile("output", ".txt")
+    output.deleteOnExit()
+    val outputWriter = new BufferedWriter(new FileWriter(output))
+    for (i <- 1 to data.size) {
+      outputWriter.write('x')
     }
+    outputWriter.flush()
+    outputWriter.close()
+
+    val runResult = run(backend, debug, args = Seq(s"+blkdev0=${input.getPath}", s"+blkdev1=${output.getPath}"))
+    assert(runResult == 0)
+    val result    = scala.io.Source.fromFile(output.getPath).mkString
+    result should equal(data)
   }
 }
 

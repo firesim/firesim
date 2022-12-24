@@ -38,34 +38,13 @@ public:
   virtual void put(char data) = 0;
 };
 
-/**
- * Helper class which links the UART stream to either a file or PTY.
- */
-class uart_fd_handler final : public uart_handler {
-public:
-  uart_fd_handler(int uartno);
-  ~uart_fd_handler();
-
-  std::optional<char> get() override;
-  void put(char data) override;
-
-private:
-  int inputfd;
-  int outputfd;
-  int loggingfd;
-};
-
 class uart_t final : public bridge_driver_t {
 public:
   /// Creates a bridge which interacts with standard streams or PTY.
-  uart_t(simif_t *sim, const UARTBRIDGEMODULE_struct &mmio_addrs, int uartno);
-
-  /// Creates a bridge which pulls/pushes data using a custom handler.
   uart_t(simif_t *sim,
+         const std::vector<std::string> &args,
          const UARTBRIDGEMODULE_struct &mmio_addrs,
-         std::unique_ptr<uart_handler> &&handler)
-      : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
-        handler(std::move(handler)) {}
+         int uartno);
 
   ~uart_t();
 
@@ -85,8 +64,9 @@ public:
 
 private:
   const UARTBRIDGEMODULE_struct mmio_addrs;
-  serial_data_t<char> data;
   std::unique_ptr<uart_handler> handler;
+
+  serial_data_t<char> data;
 
   void send();
   void recv();
