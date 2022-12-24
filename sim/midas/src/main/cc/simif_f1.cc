@@ -36,25 +36,25 @@ simif_f1_t::simif_f1_t(const std::vector<std::string> &args) : simif_t(args) {
       std::bind(&simif_f1_t::cpu_managed_axi4_write, this, _1, _2, _3);
 
   for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
-    auto params = CPUManagedStreamParameters(
+    auto params = CPUManagedStreams::StreamParameters(
         std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
         CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
         CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
         CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
 
-    from_host_streams.push_back(
-        StreamFromCPU(params, mmio_read_func, cpu_managed_axi4_write_func));
+    from_host_streams.push_back(CPUManagedStreams::CPUToFPGADriver(
+        params, mmio_read_func, cpu_managed_axi4_write_func));
   }
 
   for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
-    auto params = CPUManagedStreamParameters(
+    auto params = CPUManagedStreams::StreamParameters(
         std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
         CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
         CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
         CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
 
-    to_host_streams.push_back(
-        StreamToCPU(params, mmio_read_func, cpu_managed_axi4_read_func));
+    to_host_streams.push_back(CPUManagedStreams::FPGAToCPUDriver(
+        params, mmio_read_func, cpu_managed_axi4_read_func));
   }
 }
 

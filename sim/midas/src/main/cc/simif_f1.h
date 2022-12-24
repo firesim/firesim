@@ -14,8 +14,9 @@ public:
   simif_f1_t(const std::vector<std::string> &args);
   ~simif_f1_t();
 
-  // Unused by F1 since initialization / deinitization is done in the
-  // constructor
+  // Unused since no F1-specific MMIO is required to setup the simulation.
+  void host_mmio_init() override{};
+
   int run() override { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;
@@ -28,6 +29,10 @@ public:
               void *src,
               size_t num_bytes,
               size_t threshold_bytes) override;
+
+  void pull_flush(unsigned int stream_no) override {}
+  void push_flush(unsigned int stream_no) override {}
+
   uint32_t is_write_ready();
   void check_rc(int rc, char *infostr);
   void fpga_shutdown();
@@ -37,8 +42,8 @@ private:
   char in_buf[CTRL_BEAT_BYTES];
   char out_buf[CTRL_BEAT_BYTES];
 
-  std::vector<StreamToCPU> to_host_streams;
-  std::vector<StreamFromCPU> from_host_streams;
+  std::vector<CPUManagedStreams::FPGAToCPUDriver> to_host_streams;
+  std::vector<CPUManagedStreams::CPUToFPGADriver> from_host_streams;
 
   size_t cpu_managed_axi4_write(size_t addr, char *data, size_t size);
   size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size);

@@ -17,7 +17,7 @@ import midas.core.{
 /**
   * Bridge Streams serve as means to do bulk transport from BridgeDriver to
   * BridgeModule and vice versa.  Abstractly, they can be thought of as a 512b
-  * wide latency-insensitive channel (i.e., queue).
+  * wide latency-insensitive channel (i.e., a queue with some unknown latency).
   *
   * The two mixins in this file implement the two directions of
   * producer-consumer relationships: [[StreamFromHostCPU]] add a stream in

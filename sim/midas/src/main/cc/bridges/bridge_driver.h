@@ -72,6 +72,7 @@ protected:
       return 0;
     return sim->push(stream_idx, data, size, minimum_batch_size);
   }
+  void pull_flush(unsigned stream_idx) { return sim->pull_flush(stream_idx); }
 
 private:
   simif_t *sim;
