@@ -3,6 +3,7 @@
 package junctions
 
 import Chisel._
+import chisel3.PrintableHelper
 import scala.math.{min, max}
 import scala.collection.mutable.ArraySeq
 import freechips.rocketchip.amba.axi4._
@@ -525,9 +526,9 @@ class NastiRouter(nSlaves: Int, routeSel: UInt => UInt)(implicit p: Parameters)
     ar_queue.io.deq(i).tag := all_slaves(i).r.bits.id
 
     assert(!aw_queue.io.deq(i).valid || aw_queue.io.deq(i).matches,
-      s"aw_queue $i tried to dequeue untracked transaction")
+      cf"aw_queue ${i.toString} tried to dequeue untracked transaction")
     assert(!ar_queue.io.deq(i).valid || ar_queue.io.deq(i).matches,
-      s"ar_queue $i tried to dequeue untracked transaction")
+      cf"ar_queue ${i.toString} tried to dequeue untracked transaction")
   }
 
   io.master.b <> b_arb.io.out

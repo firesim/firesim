@@ -58,7 +58,7 @@ class AssertTortureModule(
     withClockAndReset(clocks(clockIdx), resets(clockIdx)) {
       val message = s"${clockPrefix(clockIdx)}A${assertIdx}"
       val condition = counters(clockIdx) =/= assertIdx.U
-      when(!condition) { printf(s"${printfPrefix}${message}\n") }
+      when(!condition) { printf(cf"${printfPrefix}${message}\n") }
       assert(condition, message)
     }
     indexes.updated(clockIdx, assertIdx + 1)

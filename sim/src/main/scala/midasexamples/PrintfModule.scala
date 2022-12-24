@@ -30,17 +30,20 @@ class PrintfModuleDUT(printfPrefix: String = "SYNTHESIZED_PRINT ") extends Modul
   // Printf format strings must be prefixed with "SYNTHESIZED_PRINT CYCLE: %d"
   // so they can be pulled out of RTL simulators log and sorted within a cycle
   // As the printf order will be different betwen RTL simulator and synthesized stream
-  SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d\n", cycle))
+  private val printStr0 = s"${printfPrefix}CYCLE: %d\n"
+  SynthesizePrintf(printf(printStr0, cycle))
 
   val wideArgument = VecInit(Seq.fill(33)(WireInit(cycle))).asUInt
-  SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d wideArgument: %x\n", cycle, wideArgument)) // argument width > DMA width
+  private val printStr1 = s"${printfPrefix}CYCLE: %d wideArgument: %x\n"
+  SynthesizePrintf(printf(printStr1, cycle, wideArgument)) // argument width > DMA width
 
   val childInst = Module(new PrintfModuleChild(printfPrefix))
   childInst.c := io.a
   childInst.cycle := cycle
 
   val ch = Mux(cycle(7,0) > 32.U && cycle(7,0) < 127.U, cycle(7,0), 32.U(8.W))
-  SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d Char: %c\n", cycle, ch))
+  private val printStr2 = s"${printfPrefix}CYCLE: %d Char: %c\n"
+  SynthesizePrintf(printf(printStr2, cycle, ch))
 }
 
 class PrintfModuleChild(printfPrefix: String) extends MultiIOModule {
@@ -48,7 +51,8 @@ class PrintfModuleChild(printfPrefix: String) extends MultiIOModule {
   val cycle = IO(Input(UInt(16.W)))
 
   val lfsr = LFSR(16, c)
-  SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d LFSR: %x\n", cycle, lfsr))
+  private val printStr = s"${printfPrefix}CYCLE: %d LFSR: %x\n"
+  SynthesizePrintf(printf(printStr, cycle, lfsr))
 
   //when (lsfr(0)) {
   //  SynthesizePrintf(printf(p"SYNTHESIZED_PRINT CYCLE: ${cycle} LFSR is odd"))

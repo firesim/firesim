@@ -309,13 +309,13 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
         reg.node := write(index).bits
       }
     } else {
-      assert(write(index).valid =/= true.B, s"Register ${reg.name} is read only")
+      assert(write(index).valid =/= true.B, cf"Register ${reg.name} is read only")
     }
 
     if (reg.permissions.readable) {
       read(index).bits := reg.node
     } else {
-      assert(read(index).ready === false.B, "Register ${reg.name} is write only")
+      assert(read(index).ready === false.B, cf"Register ${reg.name} is write only")
     }
 
     read(index).valid := true.B
