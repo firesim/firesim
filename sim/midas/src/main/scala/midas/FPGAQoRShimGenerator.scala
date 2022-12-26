@@ -2,7 +2,7 @@
 package midas.unittest
 
 import chisel3._
-import chisel3.experimental.DataMirror
+import chisel3.reflect.DataMirror
 
 import freechips.rocketchip.config.{Parameters, Config, Field}
 import midas.widgets.ScanRegister
@@ -17,9 +17,9 @@ class QoRShim(implicit val p: Parameters) extends Module {
 
   val modules = p(QoRTargets)(p)
   val scanOuts = modules.map({ module =>
-    val ports = DataMirror.modulePorts(module).flatMap({
-      case (_, id: Clock) => None
-      case (_, id) => Some(id)
+    val ports = DataMirror.modulePorts(module).map(_._2).flatMap({
+      case chisel3.internal.firrtl.Port(id: Clock, _) => None
+      case chisel3.internal.firrtl.Port(id, _) => Some(id)
     })
     ScanRegister(ports, io.scanEnable, io.scanIn)
   })

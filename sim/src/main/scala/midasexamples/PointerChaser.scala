@@ -60,7 +60,7 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
 
   when (rFire && memoryIF.r.bits.last){
     resultValid := isFinalNode
-    resultReg := resultReg + memoryIF.r.bits.data.asSInt()
+    resultReg := resultReg + memoryIF.r.bits.data.asSInt
   }.elsewhen (doneFire) {
     resultValid := false.B
     resultReg := 0.S
