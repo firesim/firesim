@@ -32,7 +32,7 @@ def run_linux_poweroff_vitis():
 
             # download prebuilt xclbin to /tmp
             with prefix('cd /tmp'):
-                run('wget https://people.eecs.berkeley.edu/~abe.gonzalez/firesim_rocket_singlecore_no_nic_2c251a.xclbin')
+                run('wget https://people.eecs.berkeley.edu/~abe.gonzalez/firesim_rocket_singlecore_no_nic_9e1a21.xclbin')
 
             def run_w_timeout(workload_path, workload, timeout):
                 log_tail_length = 100
