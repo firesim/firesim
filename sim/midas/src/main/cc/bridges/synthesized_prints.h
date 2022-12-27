@@ -9,25 +9,6 @@
 #include "bridge_driver.h"
 #include "clock_info.h"
 
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_PRINTF(FUNC, IDX)                                          \
-  FUNC(new synthesized_prints_t(simif,                                         \
-                                args,                                          \
-                                PRINTBRIDGEMODULE_##IDX##_substruct_create,    \
-                                PRINTBRIDGEMODULE_##IDX##_print_count,         \
-                                PRINTBRIDGEMODULE_##IDX##_token_bytes,         \
-                                PRINTBRIDGEMODULE_##IDX##_idle_cycles_mask,    \
-                                PRINTBRIDGEMODULE_##IDX##_print_offsets,       \
-                                PRINTBRIDGEMODULE_##IDX##_format_strings,      \
-                                PRINTBRIDGEMODULE_##IDX##_argument_counts,     \
-                                PRINTBRIDGEMODULE_##IDX##_argument_widths,     \
-                                PRINTBRIDGEMODULE_##IDX##_to_cpu_stream_idx,   \
-                                PRINTBRIDGEMODULE_##IDX##_to_cpu_stream_depth, \
-                                PRINTBRIDGEMODULE_##IDX##_clock_domain_name,   \
-                                PRINTBRIDGEMODULE_##IDX##_clock_multiplier,    \
-                                PRINTBRIDGEMODULE_##IDX##_clock_divisor,       \
-                                IDX));
-
 struct print_vars_t {
   std::vector<mpz_t *> data;
   ~print_vars_t() {
@@ -46,10 +27,6 @@ typedef struct PRINTBRIDGEMODULE_struct {
   uint64_t doneInit;
   uint64_t flushNarrowPacket;
 } PRINTBRIDGEMODULE_struct;
-
-#ifdef PRINTBRIDGEMODULE_checks
-PRINTBRIDGEMODULE_checks;
-#endif // PRINTBRIDGEMODULE_checks
 
 class synthesized_prints_t : public bridge_driver_t {
 

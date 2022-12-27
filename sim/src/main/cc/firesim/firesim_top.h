@@ -6,6 +6,7 @@
 
 #include "bridges/bridge_driver.h"
 #include "bridges/fpga_model.h"
+#include "bridges/peek_poke.h"
 #include "simif.h"
 #include "systematic_scheduler.h"
 
@@ -26,6 +27,8 @@ private:
            finished_scheduled_tasks();
   }
 
+protected:
+  void add_bridge_driver(peek_poke_t *peek_poke) { delete peek_poke; }
   void add_bridge_driver(bridge_driver_t *bridge) {
     bridges.emplace_back(bridge);
   }

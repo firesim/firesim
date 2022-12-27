@@ -37,10 +37,6 @@ typedef struct BLOCKDEVBRIDGEMODULE_struct {
   uint64_t bdev_rresp_stalled;
 } BLOCKDEVBRIDGEMODULE_struct;
 
-#ifdef BLOCKDEVBRIDGEMODULE_checks
-BLOCKDEVBRIDGEMODULE_checks;
-#endif // BLOCKDEVBRIDGEMODULE_checks
-
 #define SECTOR_SIZE 512
 #define SECTOR_SHIFT 9
 #define SECTOR_BEATS (SECTOR_SIZE / 8)

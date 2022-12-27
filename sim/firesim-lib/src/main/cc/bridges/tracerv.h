@@ -26,23 +26,6 @@ typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t triggerSelector;
 } TRACERVBRIDGEMODULE_struct;
 
-#ifdef TRACERVBRIDGEMODULE_checks
-TRACERVBRIDGEMODULE_checks;
-#endif // TRACERVBRIDGEMODULE_checks
-
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
-  FUNC(new tracerv_t(simif,                                                    \
-                     args,                                                     \
-                     TRACERVBRIDGEMODULE_##IDX##_substruct_create,             \
-                     TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_idx,            \
-                     TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_depth,          \
-                     TRACERVBRIDGEMODULE_##IDX##_max_core_ipc,                 \
-                     TRACERVBRIDGEMODULE_##IDX##_clock_domain_name,            \
-                     TRACERVBRIDGEMODULE_##IDX##_clock_multiplier,             \
-                     TRACERVBRIDGEMODULE_##IDX##_clock_divisor,                \
-                     IDX));
-
 class tracerv_t : public bridge_driver_t
 
 {

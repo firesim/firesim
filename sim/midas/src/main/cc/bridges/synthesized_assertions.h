@@ -12,10 +12,6 @@ typedef struct ASSERTBRIDGEMODULE_struct {
   uint64_t enable;
 } ASSERTBRIDGEMODULE_struct;
 
-#ifdef ASSERTBRIDGEMODULE_checks
-ASSERTBRIDGEMODULE_checks;
-#endif // ASSERTBRIDGEMODULE_checks
-
 class synthesized_assertions_t : public bridge_driver_t {
 public:
   synthesized_assertions_t(simif_t *sim,

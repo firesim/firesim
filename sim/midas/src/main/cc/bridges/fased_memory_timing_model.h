@@ -20,28 +20,8 @@
 typedef struct FASEDMEMORYTIMINGMODEL_struct {
 } FASEDMEMORYTIMINGMODEL_struct;
 
-#ifdef FASEDMEMORYTIMINGMODEL_checks
-FASEDMEMORYTIMINGMODEL_checks
-#endif
-
-// Bridge Driver Instantiation Template
-// Casts are required for now since the emitted type can change
-#define INSTANTIATE_FASED(FUNC, IDX)                                           \
-  FUNC(new FASEDMemoryTimingModel(                                             \
-      simif,                                                                   \
-      AddressMap(FASEDMEMORYTIMINGMODEL_##IDX##_R_num_registers,               \
-                 (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_R_addrs, \
-                 (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_R_names,  \
-                 FASEDMEMORYTIMINGMODEL_##IDX##_W_num_registers,               \
-                 (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_W_addrs, \
-                 (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_W_names), \
-      args,                                                                    \
-      "memory_stats" #IDX ".csv",                                              \
-      1L << FASEDMEMORYTIMINGMODEL_##IDX##_target_addr_bits,                   \
-      "_" #IDX));
-
-    // MICRO HACKS.
-    constexpr int HISTOGRAM_SIZE = 1024;
+// MICRO HACKS.
+constexpr int HISTOGRAM_SIZE = 1024;
 constexpr int BIN_SIZE = 36;
 constexpr int RANGE_COUNT_SIZE = 48;
 constexpr uint32_t BIN_H_MASK = (1L << (BIN_SIZE - 32)) - 1;

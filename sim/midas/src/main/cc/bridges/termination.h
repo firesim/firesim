@@ -5,15 +5,6 @@
 
 #include "bridge_driver.h"
 
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_TERMINATION(FUNC, IDX)                                     \
-  FUNC(new termination_t(simif,                                                \
-                         args,                                                 \
-                         TERMINATIONBRIDGEMODULE_##IDX##_substruct_create,     \
-                         TERMINATIONBRIDGEMODULE_##IDX##_message_count,        \
-                         TERMINATIONBRIDGEMODULE_##IDX##_message_type,         \
-                         TERMINATIONBRIDGEMODULE_##IDX##_message));
-
 typedef struct TERMINATIONBRIDGEMODULE_struct {
   uint64_t out_counter_0;
   uint64_t out_counter_1;
@@ -21,10 +12,6 @@ typedef struct TERMINATIONBRIDGEMODULE_struct {
   uint64_t out_status;
   uint64_t out_terminationCode;
 } TERMINATIONBRIDGEMODULE_struct;
-
-#ifdef TERMINATIONBRIDGEMODULE_checks
-TERMINATIONBRIDGEMODULE_checks;
-#endif // TERMINATIONBRIDGEMODULE_checks
 
 class termination_t : public bridge_driver_t {
 public:
