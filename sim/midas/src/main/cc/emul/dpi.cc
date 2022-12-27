@@ -96,136 +96,110 @@ private:
   const svBitVecVal *vec;
 };
 
-/**
- * Helper class bridging the simulator AXI4 objects with arguments.
- */
-template <unsigned ID_BITS,
-          unsigned ADDR_BITS,
-          unsigned STRB_BITS,
-          unsigned BEAT_BYTES>
-class AXI4 {
-private:
-  static constexpr size_t LENGTH(size_t bits) {
-    return (bits + sizeof(svBitVecVal) * 8 - 1) / (sizeof(svBitVecVal) * 8);
-  }
+namespace AXI4 {
+void rev_tick(bool rst, mm_t &mem, const svBitVecVal *io) {
+  const AXI4Config &conf = mem.get_config();
+  StructReader r(io);
+  auto b_ready = r.getScalar();
+  auto r_ready = r.getScalar();
+  auto w_last = r.getScalar();
+  auto w_data = r.getVector(conf.get_data_size());
+  auto w_strb = r.getScalarOrVector(conf.strb_bits());
+  auto w_valid = r.getScalar();
+  auto aw_len = r.getScalarOrVector(8);
+  auto aw_size = r.getScalarOrVector(3);
+  auto aw_id = r.getScalarOrVector(conf.id_bits);
+  auto aw_addr = r.getScalarOrVector(conf.addr_bits);
+  auto aw_valid = r.getScalar();
+  auto ar_len = r.getScalarOrVector(8);
+  auto ar_size = r.getScalarOrVector(3);
+  auto ar_id = r.getScalarOrVector(conf.id_bits);
+  auto ar_addr = r.getScalarOrVector(conf.addr_bits);
+  auto ar_valid = r.getScalar();
 
-  static constexpr size_t DATA_SIZE = BEAT_BYTES / sizeof(svBitVecVal);
+  mem.tick(rst,
+           ar_valid,
+           ar_addr,
+           ar_id,
+           ar_size,
+           ar_len,
+           aw_valid,
+           aw_addr,
+           aw_id,
+           aw_size,
+           aw_len,
+           w_valid,
+           w_strb,
+           w_data,
+           w_last,
+           r_ready,
+           b_ready);
+}
 
-public:
-  static void rev_tick(bool rst, mm_t &mem, const svBitVecVal *io) {
-    StructReader r(io);
-    auto b_ready = r.getScalar();
-    auto r_ready = r.getScalar();
-    auto w_last = r.getScalar();
-    auto w_data = r.getVector(DATA_SIZE);
-    auto w_strb = r.getScalarOrVector(STRB_BITS);
-    auto w_valid = r.getScalar();
-    auto aw_len = r.getScalarOrVector(8);
-    auto aw_size = r.getScalarOrVector(3);
-    auto aw_id = r.getScalarOrVector(ID_BITS);
-    auto aw_addr = r.getScalarOrVector(ADDR_BITS);
-    auto aw_valid = r.getScalar();
-    auto ar_len = r.getScalarOrVector(8);
-    auto ar_size = r.getScalarOrVector(3);
-    auto ar_id = r.getScalarOrVector(ID_BITS);
-    auto ar_addr = r.getScalarOrVector(ADDR_BITS);
-    auto ar_valid = r.getScalar();
+void fwd_tick(bool rst, mmio_t &mmio, const svBitVecVal *io) {
+  const AXI4Config &conf = mmio.get_config();
+  StructReader r(io);
+  auto b_id = r.getScalarOrVector(conf.id_bits);
+  /*b_resp=*/r.getScalarOrVector(2);
+  auto b_valid = r.getScalar();
+  auto r_last = r.getScalar();
+  auto r_data = r.getVector(conf.get_data_size());
+  auto r_id = r.getScalarOrVector(conf.id_bits);
+  /*r_resp=*/r.getScalarOrVector(2);
+  auto r_valid = r.getScalar();
+  auto w_ready = r.getScalar();
+  auto aw_ready = r.getScalar();
+  auto ar_ready = r.getScalar();
 
-    mem.tick(rst,
-             ar_valid,
-             ar_addr,
-             ar_id,
-             ar_size,
-             ar_len,
-             aw_valid,
-             aw_addr,
-             aw_id,
-             aw_size,
-             aw_len,
-             w_valid,
-             w_strb,
-             w_data,
-             w_last,
-             r_ready,
-             b_ready);
-  }
+  mmio.tick(rst,
+            ar_ready,
+            aw_ready,
+            w_ready,
+            r_id,
+            r_data,
+            r_last,
+            r_valid,
+            b_id,
+            b_valid);
+}
 
-  static void fwd_tick(bool rst, mmio_t &mmio, const svBitVecVal *io) {
-    StructReader r(io);
-    auto b_id = r.getScalarOrVector(ID_BITS);
-    /*b_resp=*/r.getScalarOrVector(2);
-    auto b_valid = r.getScalar();
-    auto r_last = r.getScalar();
-    auto r_data = r.getVector(DATA_SIZE);
-    auto r_id = r.getScalarOrVector(ID_BITS);
-    /*r_resp=*/r.getScalarOrVector(2);
-    auto r_valid = r.getScalar();
-    auto w_ready = r.getScalar();
-    auto aw_ready = r.getScalar();
-    auto ar_ready = r.getScalar();
+void fwd_put(mm_t &mem, svBitVecVal *io) {
+  const AXI4Config &conf = mem.get_config();
+  StructWriter w(io);
+  w.putScalarOrVector(mem.b_id(), conf.id_bits);
+  w.putScalarOrVector(mem.b_resp(), 2);
+  w.putScalar(mem.b_valid());
+  w.putScalar(mem.r_last());
+  w.putVector(mem.r_data(), conf.get_data_size());
+  w.putScalarOrVector(mem.r_id(), conf.id_bits);
+  w.putScalarOrVector(mem.r_resp(), 2);
+  w.putScalar(mem.r_valid());
+  w.putScalar(mem.w_ready());
+  w.putScalar(mem.aw_ready());
+  w.putScalar(mem.ar_ready());
+}
 
-    mmio.tick(rst,
-              ar_ready,
-              aw_ready,
-              w_ready,
-              r_id,
-              r_data,
-              r_last,
-              r_valid,
-              b_id,
-              b_valid);
-  }
-
-  static void fwd_put(mm_t &mem, svBitVecVal *io) {
-    StructWriter w(io);
-    w.putScalarOrVector(mem.b_id(), ID_BITS);
-    w.putScalarOrVector(mem.b_resp(), 2);
-    w.putScalar(mem.b_valid());
-    w.putScalar(mem.r_last());
-    w.putVector(mem.r_data(), DATA_SIZE);
-    w.putScalarOrVector(mem.r_id(), ID_BITS);
-    w.putScalarOrVector(mem.r_resp(), 2);
-    w.putScalar(mem.r_valid());
-    w.putScalar(mem.w_ready());
-    w.putScalar(mem.aw_ready());
-    w.putScalar(mem.ar_ready());
-  }
-
-  static void rev_put(mmio_t &mmio, svBitVecVal *io) {
-    StructWriter w(io);
-    w.putScalar(mmio.b_ready());
-    w.putScalar(mmio.r_ready());
-    w.putScalar(mmio.w_last());
-    w.putVector(mmio.w_data(), DATA_SIZE);
-    w.putScalarOrVector(mmio.w_strb(), STRB_BITS);
-    w.putScalar(mmio.w_valid());
-    w.putScalarOrVector(mmio.aw_len(), 8);
-    w.putScalarOrVector(mmio.aw_size(), 3);
-    w.putScalarOrVector(mmio.aw_id(), ID_BITS);
-    w.putScalarOrVector(mmio.aw_addr(), ADDR_BITS);
-    w.putScalar(mmio.aw_valid());
-    w.putScalarOrVector(mmio.ar_len(), 8);
-    w.putScalarOrVector(mmio.ar_size(), 3);
-    w.putScalarOrVector(mmio.ar_id(), ID_BITS);
-    w.putScalarOrVector(mmio.ar_addr(), ADDR_BITS);
-    w.putScalar(mmio.ar_valid());
-  }
-};
-
-using Ctrl =
-    AXI4<CTRL_ID_BITS, CTRL_ADDR_BITS, CTRL_STRB_BITS, CTRL_BEAT_BYTES>;
-
-using CpuManagedAXI4 = AXI4<CPU_MANAGED_AXI4_ID_BITS,
-                            CPU_MANAGED_AXI4_ADDR_BITS,
-                            CPU_MANAGED_AXI4_STRB_BITS,
-                            CPU_MANAGED_AXI4_BEAT_BYTES>;
-
-using FpgaManagedAXI4 = AXI4<FPGA_MANAGED_AXI4_ID_BITS,
-                             FPGA_MANAGED_AXI4_ADDR_BITS,
-                             FPGA_MANAGED_AXI4_STRB_BITS,
-                             FPGA_MANAGED_AXI4_BEAT_BYTES>;
-
-using Memory = AXI4<MEM_ID_BITS, MEM_ADDR_BITS, MEM_STRB_BITS, MEM_BEAT_BYTES>;
+void rev_put(mmio_t &mmio, svBitVecVal *io) {
+  const AXI4Config &conf = mmio.get_config();
+  StructWriter w(io);
+  w.putScalar(mmio.b_ready());
+  w.putScalar(mmio.r_ready());
+  w.putScalar(mmio.w_last());
+  w.putVector(mmio.w_data(), conf.get_data_size());
+  w.putScalarOrVector(mmio.w_strb(), conf.strb_bits());
+  w.putScalar(mmio.w_valid());
+  w.putScalarOrVector(mmio.aw_len(), 8);
+  w.putScalarOrVector(mmio.aw_size(), 3);
+  w.putScalarOrVector(mmio.aw_id(), conf.id_bits);
+  w.putScalarOrVector(mmio.aw_addr(), conf.addr_bits);
+  w.putScalar(mmio.aw_valid());
+  w.putScalarOrVector(mmio.ar_len(), 8);
+  w.putScalarOrVector(mmio.ar_size(), 3);
+  w.putScalarOrVector(mmio.ar_id(), conf.id_bits);
+  w.putScalarOrVector(mmio.ar_addr(), conf.addr_bits);
+  w.putScalar(mmio.ar_valid());
+}
+} // namespace AXI4
 
 extern simif_emul_t *simulator;
 
@@ -267,54 +241,40 @@ void simulator_tick(
     // The driver ucontext is initialized before spawning the VCS
     // context, so these pointers should be initialized.
     assert(simulator != nullptr);
-    assert(simulator->cpu_managed_axi4 != nullptr);
     assert(simulator->master != nullptr);
 
-    Ctrl::fwd_tick(reset, *simulator->master, ctrl_in);
+    std::array<svBitVecVal *, 4> mem_out{
+        mem_0_out, mem_1_out, mem_2_out, mem_3_out};
+    std::array<const svBitVecVal *, 4> mem_in{
+        mem_0_in, mem_1_in, mem_2_in, mem_3_in};
 
-#ifdef CPU_MANAGED_AXI4_PRESENT
-    CpuManagedAXI4::fwd_tick(
-        reset, *simulator->cpu_managed_axi4, cpu_managed_axi4_in);
-#endif // CPU_MANAGED_AXI4_PRESENT
+    AXI4::fwd_tick(reset, *simulator->master, ctrl_in);
 
-#ifdef FPGA_MANAGED_AXI4_PRESENT
-    FpgaManagedAXI4::rev_tick(reset, *simulator->cpu_mem, fpga_managed_axi4_in);
-#endif // FPGA_MANAGED_AXI4_PRESENT
-
-    Memory::rev_tick(reset, *simulator->slave[0], mem_0_in);
-#ifdef MEM_HAS_CHANNEL1
-    Memory::rev_tick(reset, *simulator->slave[1], mem_1_in);
-#endif
-#ifdef MEM_HAS_CHANNEL2
-    Memory::rev_tick(reset, *simulator->slave[2], mem_2_in);
-#endif
-#ifdef MEM_HAS_CHANNEL3
-    Memory::rev_tick(reset, *simulator->slave[3], mem_3_in);
-#endif
+    if (simulator->cpu_managed_axi4) {
+      AXI4::fwd_tick(reset, *simulator->cpu_managed_axi4, cpu_managed_axi4_in);
+    }
+    if (simulator->cpu_mem) {
+      AXI4::rev_tick(reset, *simulator->cpu_mem, fpga_managed_axi4_in);
+    }
+    for (size_t i = 0, n = simulator->slave.size(); i < n; ++i) {
+      AXI4::rev_tick(reset, *simulator->slave[i], mem_in[i]);
+    }
 
     *fin = tick();
     if (*fin)
       return;
 
-    Ctrl::rev_put(*simulator->master, ctrl_out);
-#ifdef CPU_MANAGED_AXI4_PRESENT
-    CpuManagedAXI4::rev_put(*simulator->cpu_managed_axi4, cpu_managed_axi4_out);
-#endif // CPU_MANAGED_AXI4_PRESENT
+    AXI4::rev_put(*simulator->master, ctrl_out);
+    if (simulator->cpu_managed_axi4) {
+      AXI4::rev_put(*simulator->cpu_managed_axi4, cpu_managed_axi4_out);
+    }
+    if (simulator->cpu_mem) {
+      AXI4::fwd_put(*simulator->cpu_mem, fpga_managed_axi4_out);
+    }
+    for (size_t i = 0, n = simulator->slave.size(); i < n; ++i) {
+      AXI4::fwd_put(*simulator->slave[i], mem_out[i]);
+    }
 
-#ifdef FPGA_MANAGED_AXI4_PRESENT
-    FpgaManagedAXI4::fwd_put(*simulator->cpu_mem, fpga_managed_axi4_out);
-#endif // FPGA_MANAGED_AXI4_PRESENT
-
-    Memory::fwd_put(*simulator->slave[0], mem_0_out);
-#ifdef MEM_HAS_CHANNEL1
-    Memory::fwd_put(*simulator->slave[1], mem_1_out);
-#endif
-#ifdef MEM_HAS_CHANNEL2
-    Memory::fwd_put(*simulator->slave[2], mem_2_out);
-#endif
-#ifdef MEM_HAS_CHANNEL3
-    Memory::fwd_put(*simulator->slave[3], mem_3_out);
-#endif
   } catch (std::exception &e) {
     fprintf(stderr, "Caught Exception headed for VCS: %s.\n", e.what());
     abort();

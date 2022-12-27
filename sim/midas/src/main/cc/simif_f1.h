@@ -11,7 +11,7 @@
 
 class simif_f1_t final : public simif_t {
 public:
-  simif_f1_t(const std::vector<std::string> &args);
+  simif_f1_t(const TargetConfig &config, const std::vector<std::string> &args);
   ~simif_f1_t();
 
   // Unused since no F1-specific MMIO is required to setup the simulation.
@@ -39,9 +39,6 @@ public:
   void fpga_setup(int slot_id);
 
 private:
-  char in_buf[CTRL_BEAT_BYTES];
-  char out_buf[CTRL_BEAT_BYTES];
-
   std::vector<CPUManagedStreams::FPGAToCPUDriver> to_host_streams;
   std::vector<CPUManagedStreams::CPUToFPGADriver> from_host_streams;
 

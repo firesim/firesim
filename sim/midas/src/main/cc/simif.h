@@ -95,7 +95,7 @@ protected:
  */
 class simif_t {
 public:
-  simif_t(const std::vector<std::string> &args);
+  simif_t(const TargetConfig &config, const std::vector<std::string> &args);
   virtual ~simif_t() {}
 
 public:
@@ -231,7 +231,7 @@ public:
   loadmem_t &get_loadmem() { return loadmem; }
 
   /// Return the name of the simulated target.
-  std::string_view get_target_name() const { return TARGET_NAME; }
+  std::string_view get_target_name() const { return config.target_name; }
 
 private:
   /**
@@ -253,6 +253,11 @@ protected:
   int simulation_run();
 
 protected:
+  /**
+   * Target configuration.
+   */
+  const TargetConfig config;
+
   /**
    * LoadMem widget driver.
    */

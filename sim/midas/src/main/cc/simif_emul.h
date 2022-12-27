@@ -20,7 +20,8 @@
  */
 class simif_emul_t : public simif_t {
 public:
-  simif_emul_t(const std::vector<std::string> &args);
+  simif_emul_t(const TargetConfig &config,
+               const std::vector<std::string> &args);
 
   virtual ~simif_emul_t();
 
@@ -117,7 +118,7 @@ protected:
 
   std::string waveform = "dump.vcd";
 
-  uint64_t memsize = 1L << MEM_ADDR_BITS;
+  uint64_t memsize;
 
   /**
    * Advances the simulation by a random number of ticks.

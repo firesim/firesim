@@ -406,41 +406,72 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   outer.printHostDRAMSummary()
   outer.emitDefaultPlusArgsFile()
 
-  val headerConsts = List[(String, Long)](
-    "CTRL_ID_BITS"   -> ctrl.nastiXIdBits,
-    "CTRL_ADDR_BITS" -> ctrl.nastiXAddrBits,
-    "CTRL_DATA_BITS" -> ctrl.nastiXDataBits,
-    "CTRL_STRB_BITS" -> ctrl.nastiWStrobeBits,
-    "CTRL_BEAT_BYTES"-> ctrl.nastiWStrobeBits,
-    "CTRL_AXI4_SIZE" -> log2Ceil(ctrl.nastiWStrobeBits),
-    // These specify channel widths; used mostly in the test harnesses
-    "MEM_NUM_CHANNELS" -> p(HostMemNumChannels),
-    "MEM_ADDR_BITS"  -> p(HostMemChannelKey).axi4BundleParams.addrBits,
-    "MEM_DATA_BITS"  -> p(HostMemChannelKey).axi4BundleParams.dataBits,
-    "MEM_ID_BITS"    -> p(HostMemChannelKey).axi4BundleParams.idBits,
-    "MEM_STRB_BITS"  -> p(HostMemChannelKey).axi4BundleParams.dataBits / 8,
-    "MEM_BEAT_BYTES" -> p(HostMemChannelKey).axi4BundleParams.dataBits / 8,
-    // These are fixed by the AXI4 standard, only used in SW DRAM model
-    "MEM_SIZE_BITS"  -> AXI4Parameters.sizeBits,
-    "MEM_LEN_BITS"   -> AXI4Parameters.lenBits,
-    "MEM_RESP_BITS"  -> AXI4Parameters.respBits,
-    // Address width of the aggregated host-DRAM space
-    "CPU_MANAGED_AXI4_ID_BITS"    -> cpu_managed_axi4.map(_.params.idBits)      .getOrElse(0).toLong,
-    "CPU_MANAGED_AXI4_ADDR_BITS"  -> cpu_managed_axi4.map(_.params.addrBits)    .getOrElse(0).toLong,
-    "CPU_MANAGED_AXI4_DATA_BITS"  -> cpu_managed_axi4.map(_.params.dataBits)    .getOrElse(0).toLong,
-    "CPU_MANAGED_AXI4_STRB_BITS"  -> cpu_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
-    "CPU_MANAGED_AXI4_BEAT_BYTES" -> cpu_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
-    // Widths of the AXI4 FPGA to CPU channel
-    "FPGA_MANAGED_AXI4_ID_BITS"    -> fpga_managed_axi4.map(_.params.idBits)  .getOrElse(0).toLong,
-    "FPGA_MANAGED_AXI4_ADDR_BITS"  -> fpga_managed_axi4.map(_.params.addrBits).getOrElse(0).toLong,
-    "FPGA_MANAGED_AXI4_DATA_BITS"  -> fpga_managed_axi4.map(_.params.dataBits).getOrElse(0).toLong,
-    "FPGA_MANAGED_AXI4_STRB_BITS"  -> fpga_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
-    "FPGA_MANAGED_AXI4_BEAT_BYTES" -> fpga_managed_axi4.map(_.params.dataBits / 8).getOrElse(0).toLong,
-    // Data chunk width of LoadMemWidget
-    "MEM_DATA_CHUNK" -> outer.loadMem.memDataChunk
-  ) ++:
-   cpu_managed_axi4.map { _ => "CPU_MANAGED_AXI4_PRESENT" -> 1.toLong } ++:
-   fpga_managed_axi4.map { _ => "FPGA_MANAGED_AXI4_PRESENT" -> 1.toLong } ++:
-   Seq.tabulate[(String, Long)](p(HostMemNumChannels))(idx => s"MEM_HAS_CHANNEL${idx}" -> 1)
-  def genHeader(sb: StringBuilder)(implicit p: Parameters) = outer.genHeader(sb)
+  val confCtrl = (ctrl.nastiXIdBits, ctrl.nastiXAddrBits, ctrl.nastiXDataBits)
+  val memParams = p(HostMemChannelKey).axi4BundleParams
+  val confMem = (memParams.idBits, memParams.addrBits, memParams.dataBits)
+  val confCPUManaged = cpu_managed_axi4.map(m => (m.params.idBits, m.params.addrBits, m.params.dataBits))
+  val confFPGAManaged = fpga_managed_axi4.map(m => (m.params.idBits, m.params.addrBits, m.params.dataBits))
+
+  def genHeader(sb: StringBuilder, target: String)(implicit p: Parameters) = {
+    outer.genHeader(sb)
+
+    def printConfig(conf: (Int, Int, Int)) : Unit = {
+      val (idBits, addrBits, dataBits) = conf
+      sb.append("AXI4Config{")
+      sb.append(s"${idBits}, ${addrBits}, ${dataBits}")
+      sb.append("}")
+    }
+
+    sb.append("static constexpr TargetConfig conf_target{\n")
+    sb.append(".ctrl = ")
+    printConfig(confCtrl)
+
+    sb.append(",\n.mem = ")
+    printConfig(confMem)
+
+    sb.append(s",\n.mem_num_channels = ${p(HostMemNumChannels)}")
+
+    sb.append(",\n.cpu_managed = ")
+    confCPUManaged match {
+      case None => sb.append("std::nullopt")
+      case Some(conf) => printConfig(conf)
+    }
+    sb.append(",\n.fpga_managed = ")
+    confFPGAManaged match {
+      case None => sb.append("std::nullopt")
+      case Some(conf) => printConfig(conf)
+    }
+    sb.append(s",\n.target_name = ${CStrLit(target).toC}")
+    sb.append("\n};\n")
+  }
+
+  def genVHeader(sb: StringBuilder)(implicit p: Parameters) = {
+    sb.append("\n// Simulation Constants\n")
+
+    def printMacro(prefix: String, name: String, value: Long): Unit = {
+      sb.append(s"`define ${prefix}_${name} ${value}\n")
+    }
+
+    def printConfig(prefix: String, conf: (Int, Int, Int)) {
+      val (idBits, addrBits, dataBits) = conf
+      printMacro(prefix, "ID_BITS", idBits)
+      printMacro(prefix, "ADDR_BITS", addrBits)
+      printMacro(prefix, "DATA_BITS", dataBits)
+    }
+
+    printConfig("CTRL", confCtrl)
+    confCPUManaged.foreach { conf =>
+      printConfig("CPU_MANAGED_AXI4", conf)
+      printMacro("CPU_MANAGED_AXI4", "PRESENT", 1.toLong)
+    }
+    confFPGAManaged.foreach { conf =>
+      printConfig("FPGA_MANAGED_AXI4", conf)
+      printMacro("FPGA_MANAGED_AXI4", "PRESENT", 1.toLong)
+    }
+
+    for (idx <- 1 to p(HostMemNumChannels)) {
+      printMacro("MEM", s"HAS_CHANNEL${idx - 1}", 1.toLong)
+    }
+    printConfig("MEM", confMem)
+  }
 }

@@ -16,8 +16,9 @@ constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
  */
 constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
 
-simif_vitis_t::simif_vitis_t(const std::vector<std::string> &args)
-    : simif_t(args) {
+simif_vitis_t::simif_vitis_t(const TargetConfig &config,
+                             const std::vector<std::string> &args)
+    : simif_t(config, args) {
   slotid = -1;
   binary_file = "";
 
@@ -115,5 +116,5 @@ uint32_t simif_vitis_t::is_write_ready() {
 
 int main(int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_vitis_t(args).run();
+  return simif_vitis_t(conf_target, args).run();
 }

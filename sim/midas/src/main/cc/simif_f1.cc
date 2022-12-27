@@ -6,7 +6,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-simif_f1_t::simif_f1_t(const std::vector<std::string> &args) : simif_t(args) {
+simif_f1_t::simif_f1_t(const TargetConfig &config,
+                       const std::vector<std::string> &args)
+    : simif_t(config, args) {
 #ifdef SIMULATION_XSIM
   mkfifo(driver_to_xsim, 0666);
   fprintf(stderr, "opening driver to xsim\n");
@@ -28,6 +30,8 @@ simif_f1_t::simif_f1_t(const std::vector<std::string> &args) : simif_t(args) {
   fpga_setup(slot_id);
 #endif
 
+  auto cpu_managed_conf = *config.cpu_managed;
+
   using namespace std::placeholders;
   auto mmio_read_func = std::bind(&simif_f1_t::read, this, _1);
   auto cpu_managed_axi4_read_func =
@@ -43,7 +47,7 @@ simif_f1_t::simif_f1_t(const std::vector<std::string> &args) : simif_t(args) {
         CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
 
     from_host_streams.push_back(CPUManagedStreams::CPUToFPGADriver(
-        params, mmio_read_func, cpu_managed_axi4_write_func));
+        params, cpu_managed_conf, mmio_read_func, cpu_managed_axi4_write_func));
   }
 
   for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
@@ -54,7 +58,7 @@ simif_f1_t::simif_f1_t(const std::vector<std::string> &args) : simif_t(args) {
         CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
 
     to_host_streams.push_back(CPUManagedStreams::FPGAToCPUDriver(
-        params, mmio_read_func, cpu_managed_axi4_read_func));
+        params, cpu_managed_conf, mmio_read_func, cpu_managed_axi4_read_func));
   }
 }
 
@@ -271,5 +275,5 @@ uint32_t simif_f1_t::is_write_ready() {
 
 int main(int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_f1_t(args).run();
+  return simif_f1_t(conf_target, args).run();
 }

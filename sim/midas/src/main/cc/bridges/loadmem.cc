@@ -8,8 +8,10 @@
 
 loadmem_t::loadmem_t(simif_t *sim,
                      const LOADMEMWIDGET_struct &mmio_addrs,
+                     const AXI4Config &mem_conf,
                      unsigned mem_data_chunk)
-    : sim(sim), mmio_addrs(mmio_addrs), mem_data_chunk(mem_data_chunk) {}
+    : sim(sim), mmio_addrs(mmio_addrs), mem_conf(mem_conf),
+      mem_data_chunk(mem_data_chunk) {}
 
 void loadmem_t::load_mem_from_file(const std::string &filename) {
   fprintf(stdout, "[loadmem] start loading\n");
@@ -18,7 +20,7 @@ void loadmem_t::load_mem_from_file(const std::string &filename) {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
     exit(EXIT_FAILURE);
   }
-  const size_t chunk = MEM_DATA_BITS / 4;
+  const size_t chunk = mem_conf.data_bits / 4;
   size_t addr = 0;
   std::string line;
   mpz_t data;
@@ -41,12 +43,11 @@ void loadmem_t::read_mem(size_t addr, mpz_t &value) {
   // with an array of zeros.
   sim->write(mmio_addrs.R_ADDRESS_H, addr >> 32);
   sim->write(mmio_addrs.R_ADDRESS_L, addr & ((1ULL << 32) - 1));
-  const size_t size = MEM_DATA_CHUNK;
-  uint32_t data[size];
-  for (size_t i = 0; i < size; i++) {
+  uint32_t data[mem_data_chunk];
+  for (size_t i = 0; i < mem_data_chunk; i++) {
     data[i] = sim->read(mmio_addrs.R_DATA);
   }
-  mpz_import(value, size, -1, sizeof(uint32_t), 0, 0, data);
+  mpz_import(value, mem_data_chunk, -1, sizeof(uint32_t), 0, 0, data);
 }
 
 void loadmem_t::write_mem(size_t addr, mpz_t &value) {
@@ -56,7 +57,7 @@ void loadmem_t::write_mem(size_t addr, mpz_t &value) {
   size_t size;
   uint32_t *data =
       (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
-  for (size_t i = 0; i < MEM_DATA_CHUNK; i++) {
+  for (size_t i = 0; i < mem_data_chunk; i++) {
     sim->write(mmio_addrs.W_DATA, i < size ? data[i] : 0);
   }
 }
@@ -74,7 +75,7 @@ void loadmem_t::write_mem_chunk(size_t addr, mpz_t &value, size_t bytes) {
   size_t size;
   uint32_t *data =
       (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
-  for (size_t i = 0; i < num_beats * MEM_DATA_CHUNK; i++) {
+  for (size_t i = 0; i < num_beats * mem_data_chunk; i++) {
     sim->write(mmio_addrs.W_DATA, i < size ? data[i] : 0);
   }
 }

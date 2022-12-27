@@ -9,7 +9,8 @@
 
 class simif_vitis_t final : public simif_t {
 public:
-  simif_vitis_t(const std::vector<std::string> &args);
+  simif_vitis_t(const TargetConfig &config,
+                const std::vector<std::string> &args);
   ~simif_vitis_t() {}
 
   // Will be used once FPGA-managed AXI4 is fully plumbed through the shim
@@ -29,6 +30,9 @@ public:
               size_t num_bytes,
               size_t threshold_bytes) override;
   uint32_t is_write_ready();
+
+  void pull_flush(unsigned int stream_no) override {}
+  void push_flush(unsigned int stream_no) override {}
 
 private:
   int slotid;

@@ -1,42 +1,54 @@
 /* verilator lint_off LITENDIAN */
 
-`define AXI4_FWD_STRUCT(name, defname) \
-  typedef struct packed {                                               \
-    bit                              ar_ready;                          \
-    bit                              aw_ready;                          \
-    bit                              w_ready;                           \
-    bit                              r_valid;                           \
-    bit [1:0]                        r_resp;                            \
-    bit [```defname``_ID_BITS-1:0]   r_id;                              \
-    bit [```defname``_DATA_BITS-1:0] r_data;                            \
-    bit                              r_last;                            \
-    bit                              b_valid;                           \
-    bit [1:0]                        b_resp;                            \
-    bit [```defname``_ID_BITS-1:0]   b_id;                              \
-  } name``_fwd_t;                                                       \
-  typedef struct packed {                                               \
-    bit                              ar_valid;                          \
-    bit [```defname``_ADDR_BITS-1:0] ar_addr;                           \
-    bit [```defname``_ID_BITS-1:0]   ar_id;                             \
-    bit [2:0]                        ar_size;                           \
-    bit [7:0]                        ar_len;                            \
-    bit                              aw_valid;                          \
-    bit [```defname``_ADDR_BITS-1:0] aw_addr;                           \
-    bit [```defname``_ID_BITS-1:0]   aw_id;                             \
-    bit [2:0]                        aw_size;                           \
-    bit [7:0]                        aw_len;                            \
-    bit                              w_valid;                           \
-    bit [```defname``_STRB_BITS-1:0] w_strb;                            \
-    bit [```defname``_DATA_BITS-1:0] w_data;                            \
-    bit                              w_last;                            \
-    bit                              r_ready;                           \
-    bit                              b_ready;                           \
+`ifndef CPU_MANAGED_AXI4_ADDR_BITS
+`define CPU_MANAGED_AXI4_ADDR_BITS 0
+`define CPU_MANAGED_AXI4_DATA_BITS 0
+`define CPU_MANAGED_AXI4_ID_BITS 0
+`endif
+
+`ifndef FPGA_MANAGED_AXI4_ADDR_BITS
+`define FPGA_MANAGED_AXI4_ADDR_BITS 0
+`define FPGA_MANAGED_AXI4_DATA_BITS 0
+`define FPGA_MANAGED_AXI4_ID_BITS 0
+`endif
+
+`define AXI4_STRUCT(name, defname) \
+  typedef struct packed {                                                 \
+    bit                                ar_ready;                          \
+    bit                                aw_ready;                          \
+    bit                                w_ready;                           \
+    bit                                r_valid;                           \
+    bit [1:0]                          r_resp;                            \
+    bit [```defname``_ID_BITS-1:0]     r_id;                              \
+    bit [```defname``_DATA_BITS-1:0]   r_data;                            \
+    bit                                r_last;                            \
+    bit                                b_valid;                           \
+    bit [1:0]                          b_resp;                            \
+    bit [```defname``_ID_BITS-1:0]     b_id;                              \
+  } name``_fwd_t;                                                         \
+  typedef struct packed {                                                 \
+    bit                                ar_valid;                          \
+    bit [```defname``_ADDR_BITS-1:0]   ar_addr;                           \
+    bit [```defname``_ID_BITS-1:0]     ar_id;                             \
+    bit [2:0]                          ar_size;                           \
+    bit [7:0]                          ar_len;                            \
+    bit                                aw_valid;                          \
+    bit [```defname``_ADDR_BITS-1:0]   aw_addr;                           \
+    bit [```defname``_ID_BITS-1:0]     aw_id;                             \
+    bit [2:0]                          aw_size;                           \
+    bit [7:0]                          aw_len;                            \
+    bit                                w_valid;                           \
+    bit [```defname``_DATA_BITS/8-1:0] w_strb;                            \
+    bit [```defname``_DATA_BITS-1:0]   w_data;                            \
+    bit                                w_last;                            \
+    bit                                r_ready;                           \
+    bit                                b_ready;                           \
   } name``_rev_t;
 
-`AXI4_FWD_STRUCT(ctrl, CTRL)
-`AXI4_FWD_STRUCT(cpu_managed_axi4, CPU_MANAGED_AXI4)
-`AXI4_FWD_STRUCT(fpga_managed_axi4, FPGA_MANAGED_AXI4)
-`AXI4_FWD_STRUCT(mem, MEM)
+`AXI4_STRUCT(ctrl, CTRL)
+`AXI4_STRUCT(mem, MEM)
+`AXI4_STRUCT(cpu_managed_axi4, CPU_MANAGED_AXI4)
+`AXI4_STRUCT(fpga_managed_axi4, FPGA_MANAGED_AXI4)
 
 `define BIND_AXI_FWD(name, obj)                    \
     .name``_ar_ready(obj.ar_ready),                \
@@ -168,14 +180,16 @@ module emul(
 
   /* verilator lint_off PINMISSING */
   FPGATop FPGATop(
+    `BIND_CHANNEL(ctrl)
 `ifdef CPU_MANAGED_AXI4_PRESENT
     `BIND_CHANNEL(cpu_managed_axi4)
 `endif
 `ifdef FPGA_MANAGED_AXI4_PRESENT
     `BIND_CHANNEL(fpga_managed_axi4)
 `endif
-    `BIND_CHANNEL(ctrl)
+`ifdef MEM_HAS_CHANNEL0
     `BIND_CHANNEL(mem_0)
+`endif
 `ifdef MEM_HAS_CHANNEL1
     `BIND_CHANNEL(mem_1)
 `endif

@@ -30,21 +30,20 @@ private [midas] object PlatformShim {
 
 abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
   val top = LazyModule(new midas.core.FPGATop)
+
   def genHeader(sb: StringBuilder, target: String) {
-    sb.append("#include <stddef.h>\n")
-    sb.append("#include <stdint.h>\n")
-    sb.append("#include <stdbool.h>\n")
-    sb.append(genStatic("TARGET_NAME", CStrLit(target)))
-    top.module.genHeader(sb)
-    sb.append("\n// Simulation Constants\n")
-    top.module.headerConsts map { case (name, value) =>
-      genMacro(name, UInt32(value)) } addString sb
+    sb.append("#include <cstddef>\n")
+    sb.append("#include <cstdint>\n")
+    sb.append("#include <cstdbool>\n")
+    sb.append("#include <vector>\n")
+    sb.append("#include <optional>\n")
+    sb.append("#include \"config.h\"\n")
+
+    top.module.genHeader(sb, target)
   }
 
   def genVHeader(sb: StringBuilder, target: String): Unit = {
-    def vMacro(arg: (String, Long)): String = s"`define ${arg._1} ${arg._2}\n"
-
-    top.module.headerConsts map vMacro foreach sb.append
+    top.module.genVHeader(sb)
   }
 
   // Emit a `XDCPathToCircuitAnnotation` with the pre- and post-link circuit
