@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "bridges/cpu_managed_stream.h"
+#include "bridges/fpga_managed_stream.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
 #include "simif.h"
@@ -65,29 +66,38 @@ public:
    */
   void do_tick();
 
-  void host_mmio_init() override;
-
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
 
-  size_t pull(unsigned int stream_idx,
-              void *dest,
-              size_t num_bytes,
-              size_t threshold_bytes) override;
-  size_t push(unsigned int stream_idx,
-              void *src,
-              size_t num_bytes,
-              size_t threshold_bytes) override;
+  /**
+   * Returns a pointer to the CPU-managed AXI4 IF at the metasimulation
+   * boundary.
+   *
+   * This is used by the harness to bridge the driver and the simulation.
+   */
+  mmio_t *get_cpu_managed_axi4() {
+    if (cpu_managed_stream_io)
+      return &cpu_managed_stream_io->cpu_managed_axi4;
+    return nullptr;
+  }
 
-  void pull_flush(unsigned int stream_no) override;
-  void push_flush(unsigned int stream_no) override;
+  /**
+   * Returns a pointer to a mm_t instance written to by FPGA-managed AXI4
+   * transactions during metasimulation.
+   *
+   * This is used by the harness to bridge the driver and the simulation.
+   */
+  mm_t *get_fpga_managed_axi4() {
+    if (fpga_managed_stream_io)
+      return &fpga_managed_stream_io->cpu_mem;
+    return nullptr;
+  }
 
   /**
    * @brief Pointers to inter-context (i.e., between VCS/verilator and driver)
    * AXI4 transaction channels
    */
   std::unique_ptr<mmio_t> master;
-  std::unique_ptr<mmio_t> cpu_managed_axi4;
 
   /**
    * @brief Host DRAM models shared across the RTL simulator and driver
@@ -99,15 +109,6 @@ public:
    * simif_emul_t::load_mems.
    */
   std::vector<std::unique_ptr<mm_t>> slave;
-
-  /**
-   * @brief A model of FPGA-addressable CPU-host memory.
-   *
-   * In metasimulations, FPGA-managed AXI4 transactions read and write to this
-   * AXI4 memory subordinate as a proxy for writing into actual host-CPU DRAM.
-   * The driver-side of FPGAManagedStreams inspect circular buffers hosted here.
-   */
-  std::unique_ptr<mm_t> cpu_mem;
 
 protected:
   // The maximum number of cycles the RTL simulator can advance before
@@ -138,14 +139,59 @@ protected:
   void wait_read(mmio_t &mmio, void *data);
   void wait_write(mmio_t &mmio);
 
-  size_t cpu_managed_axi4_write(size_t addr, char *data, size_t size);
-  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size);
-
   // Writes directly into the host DRAM models to initialize them.
   void load_mems(const char *fname);
 
-  std::vector<std::unique_ptr<FPGAToCPUStreamDriver>> fpga_to_cpu_streams;
-  std::vector<std::unique_ptr<CPUToFPGAStreamDriver>> cpu_to_fpga_streams;
+private:
+  class CPUManagedStreamIOImpl final : public CPUManagedStreamIO {
+  public:
+    CPUManagedStreamIOImpl(simif_emul_t &simif, const AXI4Config &config)
+        : simif(simif), cpu_managed_axi4(config) {}
+
+    uint32_t mmio_read(size_t addr) override { return simif.read(addr); }
+
+    size_t
+    cpu_managed_axi4_write(size_t addr, const char *data, size_t size) override;
+
+    size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
+
+    uint64_t get_beat_bytes() const override {
+      return cpu_managed_axi4.get_config().beat_bytes();
+    }
+
+    simif_emul_t &simif;
+    mmio_t cpu_managed_axi4;
+  };
+
+  std::unique_ptr<CPUManagedStreamIOImpl> cpu_managed_stream_io;
+
+private:
+  class FPGAManagedStreamIOImpl final : public FPGAManagedStreamIO {
+  public:
+    FPGAManagedStreamIOImpl(simif_emul_t &simif, const AXI4Config &config);
+
+    uint32_t mmio_read(size_t addr) override { return simif.read(addr); }
+
+    void mmio_write(size_t addr, uint32_t value) override {
+      return simif.write(addr, value);
+    }
+
+    char *get_memory_base() override { return ((char *)cpu_mem.get_data()); }
+
+    simif_emul_t &simif;
+
+    /**
+     * @brief A model of FPGA-addressable CPU-host memory.
+     *
+     * In metasimulations, FPGA-managed AXI4 transactions read and write to this
+     * AXI4 memory subordinate as a proxy for writing into actual host-CPU DRAM.
+     * The driver-side of FPGAManagedStreams inspect circular buffers hosted
+     * here.
+     */
+    mm_magic_t cpu_mem;
+  };
+
+  std::unique_ptr<FPGAManagedStreamIOImpl> fpga_managed_stream_io;
 
 private:
   /**

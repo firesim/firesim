@@ -18,6 +18,7 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
+#include "bridges/stream_engine.h"
 
 #define TIME_DIV_CONST 1000000.0;
 typedef uint64_t midas_time_t;
@@ -163,14 +164,6 @@ public:
   /** Bridge / Widget MMIO methods */
 
   /**
-   * @brief Provides a hook to do mmio-related initialization _before_ bridges.
-   *
-   * This permits setting up core simulation widgets (like stream engines) in a
-   * fashion that may vary across different specializations of simif_t.
-   */
-  virtual void host_mmio_init() = 0;
-
-  /**
    * @brief 32b MMIO write, issued over the simulation control bus (AXI4-lite).
    *
    * @param addr The address to preform the 32b read in the MMIO address space..
@@ -184,67 +177,6 @@ public:
    * @returns A uint32_t capturing the read value.
    */
   virtual uint32_t read(size_t addr) = 0;
-
-  /** Bridge Stream Methods */
-
-  /**
-   * @brief Dequeues num_bytes of data from an FPGA-to-CPU stream
-   *
-   * Attempts to copy @num_bytes of data from the head of a bridge stream
-   * specified by @stream_idx into a destination buffer (@dest) in the
-   * process’s memory space. Non-blocking.
-   *
-   * @param stream_idx Stream index. Assigned at Golden Gate compile time
-   * @param dest Destination buffer into which to copy stream data. (Virtual
-   * address.)
-   * @param num_bytes Number of bytes to copy.
-   * @param required_bytes If pull would return less than this many bytes, it
-   * returns 0 instead.
-   *
-   * @returns Number of bytes copied. Can be less than requested.
-   *
-   */
-  virtual size_t pull(unsigned int stream_idx,
-                      void *dest,
-                      size_t num_bytes,
-                      size_t required_bytes) = 0;
-
-  /**
-   * @brief Enqueues num_bytes of data into a CPU-to-FPGA stream
-   *
-   * Attempts to copy @num_bytes of data from a source buffer (@src) to the
-   * tail of the CPU-to-FPGA bridge stream specified by @stream_idx.
-   *
-   * @param stream_idx Stream index. Assigned at Golden Gate compile time
-   * @param src Source buffer from which to copy stream data.
-   * @param num_bytes Number of bytes to copy.
-   * @param required_bytes If push would accept less than this many bytes, it
-   * accepts 0 instead.
-   *
-   * @returns Number of bytes copied. Can be less than requested.
-   *
-   */
-  virtual size_t push(unsigned int stream_idx,
-                      void *src,
-                      size_t num_bytes,
-                      size_t required_bytes) = 0;
-  /**
-   * @brief Hint that a stream should bypass any underlying batching
-   * optimizations.
-   *
-   * A user-directed hint that a stream should bypass any underlying batching
-   * optimizations. This may permit a future pull to read data that may
-   * otherwise remain queued in parts of the host.
-   *
-   * @param stream_no The index of the stream to flush
-   */
-  virtual void pull_flush(unsigned int stream_no) = 0;
-  /**
-   * @brief Analagous to pull_flush but for CPU-to-FPGA streams
-   *
-   * @param stream_no The index of the stream to flush
-   */
-  virtual void push_flush(unsigned int stream_no) = 0;
 
   // End host-platform interface.
 
@@ -268,6 +200,11 @@ public:
 
   /// Return the name of the simulated target.
   std::string_view get_target_name() const { return config.target_name; }
+
+  /**
+   * Return a reference to the managed stream engine.
+   */
+  StreamEngine &get_managed_stream() { return *managed_stream; }
 
 private:
   /**
@@ -300,9 +237,14 @@ protected:
   clockmodule_t clock;
 
   /**
-   * SimulationMaster widged.
+   * SimulationMaster widget.
    */
   master_t master;
+
+  /**
+   * Widget implementing CPU-managed streams.
+   */
+  std::unique_ptr<StreamEngine> managed_stream;
 
   /**
    * Reference to the user-defined bits of the simulation.

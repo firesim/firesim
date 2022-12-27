@@ -1,38 +1,33 @@
 #ifndef __SIMIF_VITIS_H
 #define __SIMIF_VITIS_H
 
+#include <experimental/xrt_device.h>
+#include <experimental/xrt_ip.h>
+#include <experimental/xrt_kernel.h>
+
+#include "bridges/fpga_managed_stream.h"
 #include "simif.h"
 
-#include "experimental/xrt_device.h"
-#include "experimental/xrt_ip.h"
-#include "experimental/xrt_kernel.h"
-
-class simif_vitis_t final : public simif_t {
+class simif_vitis_t final : public simif_t, public FPGAManagedStreamIO {
 public:
   simif_vitis_t(const TargetConfig &config,
                 const std::vector<std::string> &args);
   ~simif_vitis_t() {}
 
-  // Will be used once FPGA-managed AXI4 is fully plumbed through the shim
-  // to setup the FPGAManagedStream engine.
-  void host_mmio_init() override{};
-
   int run() { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
-  size_t pull(unsigned stream_idx,
-              void *dest,
-              size_t num_bytes,
-              size_t threshold_bytes) override;
-  size_t push(unsigned stream_idx,
-              void *src,
-              size_t num_bytes,
-              size_t threshold_bytes) override;
+
   uint32_t is_write_ready();
 
-  void pull_flush(unsigned int stream_no) override {}
-  void push_flush(unsigned int stream_no) override {}
+private:
+  uint32_t mmio_read(size_t addr) override { return read(addr); }
+  void mmio_write(size_t addr, uint32_t value) override {
+    return write(addr, value);
+  }
+
+  char *get_memory_base() override;
 
 private:
   int slotid;

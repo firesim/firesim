@@ -243,6 +243,9 @@ void simulator_tick(
     assert(simulator != nullptr);
     assert(simulator->master != nullptr);
 
+    mmio_t *cpu_managed_axi4 = simulator->get_cpu_managed_axi4();
+    mm_t *fpga_managed_axi4 = simulator->get_fpga_managed_axi4();
+
     std::array<svBitVecVal *, 4> mem_out{
         mem_0_out, mem_1_out, mem_2_out, mem_3_out};
     std::array<const svBitVecVal *, 4> mem_in{
@@ -250,11 +253,11 @@ void simulator_tick(
 
     AXI4::fwd_tick(reset, *simulator->master, ctrl_in);
 
-    if (simulator->cpu_managed_axi4) {
-      AXI4::fwd_tick(reset, *simulator->cpu_managed_axi4, cpu_managed_axi4_in);
+    if (cpu_managed_axi4) {
+      AXI4::fwd_tick(reset, *cpu_managed_axi4, cpu_managed_axi4_in);
     }
-    if (simulator->cpu_mem) {
-      AXI4::rev_tick(reset, *simulator->cpu_mem, fpga_managed_axi4_in);
+    if (fpga_managed_axi4) {
+      AXI4::rev_tick(reset, *fpga_managed_axi4, fpga_managed_axi4_in);
     }
     for (size_t i = 0, n = simulator->slave.size(); i < n; ++i) {
       AXI4::rev_tick(reset, *simulator->slave[i], mem_in[i]);
@@ -265,11 +268,11 @@ void simulator_tick(
       return;
 
     AXI4::rev_put(*simulator->master, ctrl_out);
-    if (simulator->cpu_managed_axi4) {
-      AXI4::rev_put(*simulator->cpu_managed_axi4, cpu_managed_axi4_out);
+    if (cpu_managed_axi4) {
+      AXI4::rev_put(*cpu_managed_axi4, cpu_managed_axi4_out);
     }
-    if (simulator->cpu_mem) {
-      AXI4::fwd_put(*simulator->cpu_mem, fpga_managed_axi4_out);
+    if (fpga_managed_axi4) {
+      AXI4::fwd_put(*fpga_managed_axi4, fpga_managed_axi4_out);
     }
     for (size_t i = 0, n = simulator->slave.size(); i < n; ++i) {
       AXI4::fwd_put(*simulator->slave[i], mem_out[i]);

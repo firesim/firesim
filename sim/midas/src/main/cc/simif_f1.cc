@@ -30,54 +30,7 @@ simif_f1_t::simif_f1_t(const TargetConfig &config,
   fpga_setup(slot_id);
 #endif
 
-  auto cpu_managed_conf = *config.cpu_managed;
-
-  using namespace std::placeholders;
-  auto mmio_read_func = std::bind(&simif_f1_t::read, this, _1);
-  auto cpu_managed_axi4_read_func =
-      std::bind(&simif_f1_t::cpu_managed_axi4_read, this, _1, _2, _3);
-  auto cpu_managed_axi4_write_func =
-      std::bind(&simif_f1_t::cpu_managed_axi4_write, this, _1, _2, _3);
-
-  for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
-    auto params = CPUManagedStreams::StreamParameters(
-        std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
-        CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
-
-    from_host_streams.push_back(CPUManagedStreams::CPUToFPGADriver(
-        params, cpu_managed_conf, mmio_read_func, cpu_managed_axi4_write_func));
-  }
-
-  for (int i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
-    auto params = CPUManagedStreams::StreamParameters(
-        std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
-        CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
-
-    to_host_streams.push_back(CPUManagedStreams::FPGAToCPUDriver(
-        params, cpu_managed_conf, mmio_read_func, cpu_managed_axi4_read_func));
-  }
-}
-
-size_t simif_f1_t::pull(unsigned stream_idx,
-                        void *dest,
-                        size_t num_bytes,
-                        size_t threshold_bytes) {
-  assert(stream_idx < to_host_streams.size());
-  return this->to_host_streams[stream_idx].pull(
-      dest, num_bytes, threshold_bytes);
-}
-
-size_t simif_f1_t::push(unsigned stream_idx,
-                        void *src,
-                        size_t num_bytes,
-                        size_t threshold_bytes) {
-  assert(stream_idx < from_host_streams.size());
-  return this->from_host_streams[stream_idx].push(
-      src, num_bytes, threshold_bytes);
+  managed_stream.reset(new CPUManagedStreamWidget(*this));
 }
 
 void simif_f1_t::check_rc(int rc, char *infostr) {
@@ -242,7 +195,7 @@ size_t simif_f1_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
 }
 
 size_t
-simif_f1_t::cpu_managed_axi4_write(size_t addr, char *data, size_t size) {
+simif_f1_t::cpu_managed_axi4_write(size_t addr, const char *data, size_t size) {
 #ifdef SIMULATION_XSIM
   assert(false); // PCIS is unsupported in FPGA-level metasimulation
 #else

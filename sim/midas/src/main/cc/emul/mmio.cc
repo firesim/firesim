@@ -8,7 +8,7 @@ void mmio_t::read_req(uint64_t addr, size_t size, size_t len) {
 }
 
 void mmio_t::write_req(
-    uint64_t addr, size_t size, size_t len, void *data, size_t *strb) {
+    uint64_t addr, size_t size, size_t len, const void *data, size_t *strb) {
   int nbytes = 1 << size;
 
   mmio_req_addr_t aw(0, addr, size, len);

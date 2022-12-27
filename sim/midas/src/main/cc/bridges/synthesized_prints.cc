@@ -5,6 +5,7 @@
 
 synthesized_prints_t::synthesized_prints_t(
     simif_t *sim,
+    StreamEngine &stream,
     const std::vector<std::string> &args,
     const PRINTBRIDGEMODULE_struct &mmio_addrs,
     unsigned int print_count,
@@ -20,11 +21,12 @@ synthesized_prints_t::synthesized_prints_t(
     const unsigned int clock_multiplier,
     const unsigned int clock_divisor,
     int printno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), print_count(print_count),
-      token_bytes(token_bytes), idle_cycles_mask(idle_cycles_mask),
-      print_offsets(print_offsets), format_strings(format_strings),
-      argument_counts(argument_counts), argument_widths(argument_widths),
-      stream_idx(stream_idx), stream_depth(stream_depth),
+    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+      print_count(print_count), token_bytes(token_bytes),
+      idle_cycles_mask(idle_cycles_mask), print_offsets(print_offsets),
+      format_strings(format_strings), argument_counts(argument_counts),
+      argument_widths(argument_widths), stream_idx(stream_idx),
+      stream_depth(stream_depth),
       clock_info(clock_domain_name, clock_multiplier, clock_divisor),
       printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
