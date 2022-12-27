@@ -4,6 +4,7 @@
 #define __SIMIF_TOKEN_HASHERS_H
 
 #include <vector>
+#include <string>
 
 // forward declare
 class simif_t;
@@ -35,7 +36,7 @@ public:
   std::tuple<std::string, std::string> name(const size_t index);
   size_t count();
   token_hasher_result_t cached_results;
-  
+
 
   uint32_t trigger0;
   uint32_t trigger1;
