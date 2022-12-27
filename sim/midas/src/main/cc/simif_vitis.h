@@ -30,6 +30,9 @@ public:
               size_t threshold_bytes) override;
   uint32_t is_write_ready();
 
+  void pull_flush(unsigned int stream_no) override {}
+  void push_flush(unsigned int stream_no) override {}
+
 private:
   int slotid;
   std::string binary_file;
