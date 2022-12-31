@@ -1,4 +1,5 @@
-//See LICENSE for license details.
+// See LICENSE for license details.
+
 package firesim.firesim
 
 import java.io.File
@@ -8,34 +9,34 @@ import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import scala.io.Source
 import org.scalatest.Suites
 
+import firesim.configs._
+import firesim.{BasePlatformConfig, TestSuiteCommon}
+
+import freechips.rocketchip.config.Config
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.system.{BenchmarkTestSuite, RocketTestSuite}
 import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
 
+object BaseConfigs {
+  case object F1    extends BasePlatformConfig("f1", Seq(classOf[BaseF1Config]))
+  case object Vitis extends BasePlatformConfig("vitis", Seq(classOf[BaseVitisConfig]))
+}
+
 abstract class FireSimTestSuite(
-  topModuleClass:  String,
-  targetConfigs:   String,
-  platformConfigs: String,
-  platform:        String = "f1",
-  N:               Int    = 8,
-) extends firesim.TestSuiteCommon {
+  override val targetName:         String,
+  override val targetConfigs:      String,
+  override val basePlatformConfig: BasePlatformConfig,
+  platformConfigs:                 String = "",
+  N:                               Int    = 8,
+) extends TestSuiteCommon("firesim") {
+
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
 
-  override def platformName = platform
-
   val topModuleProject = "firesim.firesim"
 
-  val chipyardLongName = topModuleProject + "." + topModuleClass + "." + targetConfigs
-
-  // From TestSuiteCommon
-  val targetTuple    = s"$topModuleClass-$targetConfigs-$platformConfigs"
-  val commonMakeArgs = Seq(
-    s"DESIGN=${topModuleClass}",
-    s"TARGET_CONFIG=${targetConfigs}",
-    s"PLATFORM_CONFIG=${platformConfigs}",
-  )
+  val chipyardLongName = topModuleProject + "." + targetName + "." + targetConfigs
 
   override lazy val genDir = new File(firesimDir, s"generated-src/${chipyardLongName}")
 
@@ -114,66 +115,67 @@ class SimpleRocketF1Tests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FCFS_FireSimRocketConfig",
-      "BaseF1Config",
+      BaseConfigs.F1,
     )
 
 class RocketF1Tests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
-      "WithSynthAsserts_BaseF1Config",
+      BaseConfigs.F1,
+      "WithSynthAsserts",
     )
 
 class MultiRocketF1Tests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
-      "WithSynthAsserts_WithModelMultiThreading_BaseF1Config",
+      BaseConfigs.F1,
+      "WithSynthAsserts_WithModelMultiThreading",
     )
 
 class BoomF1Tests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimLargeBoomConfig",
-      "BaseF1Config",
+      BaseConfigs.F1,
     )
 
 class RocketNICF1Tests
     extends FireSimTestSuite(
       "FireSim",
       "WithNIC_DDR3FRFCFSLLC4MB_FireSimRocketConfig",
-      "BaseF1Config",
+      BaseConfigs.F1,
     )
 
 class RocketVitisTests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
-      "WithSynthAsserts_BaseVitisConfig",
-      "vitis",
+      BaseConfigs.Vitis,
+      "WithSynthAsserts",
     )
 
 class MultiRocketVitisTests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
-      "WithSynthAsserts_WithModelMultiThreading_BaseVitisConfig",
-      "vitis",
+      BaseConfigs.Vitis,
+      "WithSynthAsserts_WithModelMultiThreading",
     )
 
 class BoomVitisTests
     extends FireSimTestSuite(
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimLargeBoomConfig",
-      "BaseVitisConfig",
-      "vitis",
+      BaseConfigs.Vitis,
     )
 
 class CVA6F1Tests
     extends FireSimTestSuite(
       "FireSim",
       "WithNIC_DDR3FRFCFSLLC4MB_FireSimCVA6Config",
-      "BaseF1Config",
+      BaseConfigs.F1,
     )
 
 // This test suite only mirrors what is run in CI. CI invokes each test individually, using a testOnly call.
