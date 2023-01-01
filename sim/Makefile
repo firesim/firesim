@@ -47,7 +47,7 @@ SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
 SBT_THIN_CLIENT_TIMESTAMP = $(base_dir)/project/target/active.json
 
-ifdef ENABLE_SBT_THIN_CLIENT
+ifndef DISABLE_SBT_THIN_CLIENT
 override SCALA_BUILDTOOL_DEPS += $(SBT_THIN_CLIENT_TIMESTAMP)
 # enabling speeds up sbt loading
 SBT_CLIENT_FLAG = --client
