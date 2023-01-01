@@ -30,7 +30,6 @@ FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := {file:$(firesim_base_dir)/}firesim
 	target_sbt_project := {file:${chipyard_dir}}firechip
 
 	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print 2> /dev/null)
@@ -38,7 +37,6 @@ ifdef FIRESIM_STANDALONE
 	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
 else
 	target_sbt_project := firechip
-	firesim_sbt_project := firechip
 endif
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
@@ -250,6 +248,8 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
 	./$(notdir $($(EMUL)_debug)) $< +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
+
+.PRECIOUS: $(OUTPUT_DIR)/%.vpd $(OUTPUT_DIR)/%.out $(OUTPUT_DIR)/%.run
 
 # TraceGen rules
 
