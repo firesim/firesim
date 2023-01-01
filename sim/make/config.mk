@@ -1,27 +1,10 @@
-# FireSim Target Agnostic Make Fragment
-#
-# Defines make targets for:
-# - invoking Golden Gate (phony: verilog / compile)
-# - building a simulation driver (phony: f1)
-# - populating an FPGA build directory (phony: replace-rtl)
-# - generating new runtime configurations (phony: conf)
-# - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug)
-#
+# See LICENSE for license details.
 
-# The prefix used for all Golden Gate-generated files
-BASE_FILE_NAME ?=
-
-# The directory into which generated verilog and headers will be dumped
-# RTL simulations will also be built here
-GENERATED_DIR ?=
-# Results from RTL simulations live here
-OUTPUT_DIR ?=
+################################################################################
+# Target-Specific  Configuration
+################################################################################
 # Root name for generated binaries
 DESIGN ?=
-
-# The target's FIRRTL and associated anotations; inputs to Golden Gate
-FIRRTL_FILE ?=
-ANNO_FILE ?=
 
 # The host config package and class string
 PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
@@ -42,4 +25,22 @@ DRIVER_H ?=
 TARGET_CXX_FLAGS ?=
 TARGET_LD_FLAGS ?=
 
-# END MAKEFRAG INTERFACE
+################################################################################
+# File and directory setup
+################################################################################
+
+# The prefix used for all Golden Gate-generated files
+BASE_FILE_NAME := FireSim-generated
+
+name_tuple := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
+
+# The directory into which generated verilog and headers will be dumped
+# RTL simulations will also be built here
+GENERATED_DIR ?= $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+# Results from RTL simulations live here
+OUTPUT_DIR ?= $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
+
+# The target's FIRRTL and associated anotations; inputs to Golden Gate
+FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
+ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
