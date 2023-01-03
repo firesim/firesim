@@ -7,6 +7,8 @@
 
 #include <gmp.h>
 
+#include "core/config.h"
+
 class simif_t;
 
 typedef struct LOADMEMWIDGET_struct {

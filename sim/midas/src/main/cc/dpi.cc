@@ -14,8 +14,6 @@
 #include "emul/mmio.h"
 #include "emul/simif_emul.h"
 
-extern simif_emul_t *emulator;
-
 #ifdef VCS
 #include "vc_hdrs.h"
 #else

@@ -6,6 +6,7 @@
 #include <functional>
 #include <string>
 
+#include "core/config.h"
 #include "core/stream_engine.h"
 
 /**

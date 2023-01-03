@@ -16,8 +16,10 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
+#include "core/config.h"
 #include "core/timing.h"
 
+class StreamEngine;
 class StreamEngine;
 class simulation_t;
 
@@ -25,18 +27,18 @@ class simulation_t;
  *
  *  @brief FireSim's main simulation class.
  *
- *  Historically this god class wrapped all of the features presented by FireSim
- *  / MIDAS-derived simulators. Critically, it declares an interface for
- *  interacting with the host-FPGA, which consist of methods for implementing
- *  32b MMIO (read, write), and latency-insensitive bridge streams (push, pull).
- *  Concrete subclasses of simif_t must be written for metasimulation and each
- *  supported host plaform. See simif_f1_t for an example.
- *  simif_t also provides a few core functions that are tied to bridges and
- *  widgets that must be present in all simulators:
+ *  Historically this god class wrapped all of the features presented by
+ * FireSim / MIDAS-derived simulators. Critically, it declares an interface
+ * for interacting with the host-FPGA, which consist of methods for
+ * implementing 32b MMIO (read, write), and latency-insensitive bridge streams
+ * (push, pull). Concrete subclasses of simif_t must be written for
+ * metasimulation and each supported host plaform. See simif_f1_t for an
+ * example. simif_t also provides a few core functions that are tied to
+ * bridges and widgets that must be present in all simulators:
  *
  *  - To track simulation time, it provides methods to interact with the
- *    ClockBridge. This bridge is solely responsible for defining a schedule of
- *    clock edges to simulate, and must be instantiated in all targets. See
+ *    ClockBridge. This bridge is solely responsible for defining a schedule
+ * of clock edges to simulate, and must be instantiated in all targets. See
  *    actual_tcycle() and hcycle().  Utilities to report performance are based
  *    off these measures of time.
  *

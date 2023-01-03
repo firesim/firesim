@@ -32,6 +32,8 @@ private:
   simif_t *simif;
   // Peek-poke bridge.
   std::unique_ptr<peek_poke_t> peek_poke;
+
+private:
   // Memory mapped bridges bound to software models
   std::vector<std::unique_ptr<bridge_driver_t>> bridges;
   // FPGA-hosted models with programmable registers & instrumentation

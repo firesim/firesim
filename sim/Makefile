@@ -44,6 +44,7 @@ include make/config.mk
 include make/library.mk
 include make/goldengate.mk
 include make/fpga.mk
+include make/xsim.mk
 include make/verilator.mk
 include make/vcs.mk
 include make/driver.mk

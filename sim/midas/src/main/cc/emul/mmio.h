@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <vector>
 
+#include "core/config.h"
+
 struct mmio_req_addr_t {
   size_t id;
   uint64_t addr;
