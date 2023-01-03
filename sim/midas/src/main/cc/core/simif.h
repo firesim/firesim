@@ -16,7 +16,7 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
-#include "bridges/timing.h"
+#include "core/timing.h"
 
 class StreamEngine;
 class simulation_t;

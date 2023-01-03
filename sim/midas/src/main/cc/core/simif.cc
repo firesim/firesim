@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
 #include "simif.h"
-#include "bridges/simulation.h"
-#include "bridges/stream_engine.h"
+#include "core/simulation.h"
+#include "core/stream_engine.h"
 
 extern std::unique_ptr<simulation_t>
 create_simulation(const std::vector<std::string> &args, simif_t *simif);

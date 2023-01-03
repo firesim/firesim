@@ -13,8 +13,6 @@ typedef struct SIMULATIONMASTER_struct {
   uint64_t INIT_DONE;
 } SIMULATIONMASTER_struct;
 
-SIMULATIONMASTER_checks;
-
 class master_t final {
 public:
   master_t(simif_t *sim, const SIMULATIONMASTER_struct &mmio_addrs);

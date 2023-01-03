@@ -29,6 +29,10 @@ RESETPULSEBRIDGEMODULE_checks;
                          RESETPULSEBRIDGEMODULE_##IDX##_default_pulse_length,  \
                          IDX));
 
+CLOCKBRIDGEMODULE_checks;
+LOADMEMWIDGET_checks;
+SIMULATIONMASTER_checks;
+
 #ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
 INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
 #endif

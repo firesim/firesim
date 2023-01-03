@@ -1,25 +1,64 @@
 // See LICENSE for license details
-#include "firesim_top.h"
 
-// FireSim library bridge drivers
-// From firesim-lib/src/main/cc/bridges
 #include "bridges/autocounter.h"
 #include "bridges/blockdev.h"
 #include "bridges/dromajo.h"
+#include "bridges/fased_memory_timing_model.h"
+#include "bridges/fpga_model.h"
 #include "bridges/groundtest.h"
+#include "bridges/heartbeat.h"
+#include "bridges/peek_poke.h"
 #include "bridges/plusargs.h"
 #include "bridges/reset_pulse.h"
 #include "bridges/serial.h"
 #include "bridges/simplenic.h"
-#include "bridges/tracerv.h"
-#include "bridges/uart.h"
-
-// Golden Gate provided bridge drivers
-#include "bridges/fased_memory_timing_model.h"
-#include "bridges/fpga_model.h"
-#include "bridges/heartbeat.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
+#include "bridges/tracerv.h"
+#include "bridges/uart.h"
+#include "core/bridge_driver.h"
+#include "core/simif.h"
+#include "core/simulation.h"
+#include "core/systematic_scheduler.h"
+
+class firesim_top_t : public systematic_scheduler_t, public simulation_t {
+public:
+  firesim_top_t(const std::vector<std::string> &args, simif_t *simif);
+  ~firesim_top_t() {}
+
+  void simulation_init();
+  void simulation_finish();
+  int simulation_run();
+
+protected:
+  void add_bridge_driver(peek_poke_t *peek_poke) { delete peek_poke; }
+  void add_bridge_driver(bridge_driver_t *bridge) {
+    bridges.emplace_back(bridge);
+  }
+  void add_bridge_driver(FpgaModel *bridge) {
+    fpga_models.emplace_back(bridge);
+  }
+
+private:
+  // Simulator interface.
+  simif_t *simif;
+
+  // A registry of all bridge drivers in the simulator
+  std::vector<std::unique_ptr<bridge_driver_t>> bridges;
+  // FPGA-hosted models with programmable registers & instrumentation
+  // (i.e., bridges_drivers whose tick() is a nop)
+  std::vector<std::unique_ptr<FpgaModel>> fpga_models;
+
+  // profile interval: # of cycles to advance before profiling instrumentation
+  // registers in models
+  uint64_t profile_interval = -1;
+  uint64_t profile_models();
+
+  // Returns true if any bridge has signaled for simulation termination
+  bool simulation_complete();
+  // Returns the error code of the first bridge for which it is non-zero
+  int exit_code();
+};
 
 firesim_top_t::firesim_top_t(const std::vector<std::string> &args,
                              simif_t *simif)
@@ -70,7 +109,7 @@ void firesim_top_t::simulation_init() {
   // This file can be included in the setup method of any top-level to pass
   // an instance of each driver to the `add_bridge_driver` method. Drivers can
   // be distinguished by overloading the method with the appropriate type.
-#include "constructor.h"
+#include "core/constructor.h"
   // DOC include end: Bridge Driver Registration
 
   // Add functions you'd like to periodically invoke on a paused simulator here.

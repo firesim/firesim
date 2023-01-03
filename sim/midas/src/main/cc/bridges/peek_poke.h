@@ -6,7 +6,7 @@
 #include <gmp.h>
 #include <string_view>
 
-#include "simif.h"
+#include "core/simif.h"
 
 typedef struct PEEKPOKEBRIDGEMODULE_struct {
   uint64_t PRECISE_PEEKABLE;

@@ -5,9 +5,9 @@
 
 #include <unordered_map>
 
-#include "bridges/address_map.h"
-#include "bridges/bridge_driver.h"
 #include "bridges/peek_poke.h"
+#include "core/address_map.h"
+#include "core/bridge_driver.h"
 
 class test_harness_bridge_t : public bridge_driver_t {
 private:

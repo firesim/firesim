@@ -1,5 +1,6 @@
 midas_dir = $(abspath .)
 bridge_dir = $(midas_dir)/bridges
+core_dir = $(midas_dir)/core
 v_dir = $(abspath ../verilog)
 r_dir = $(abspath ../resources)
 
@@ -26,18 +27,19 @@ design_v  := $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
 design_h  := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.h
 design_vh := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.vh
 driver_h = $(foreach t, $(DRIVER), $(wildcard $(dir $(t))/*.h))
-bridge_h := $(wildcard $(bridge_dir)/*.h)
-bridge_cc := $(wildcard $(bridge_dir)/*.cc)
-bridge_o := $(patsubst $(bridge_dir)/%.cc, $(GEN_DIR)/%.o, $(bridge_cc))
-$(bridge_o): $(GEN_DIR)/%.o: $(bridge_dir)/%.cc $(design_h) $(bridge_h)
+
+bridge_h := $(wildcard $(bridge_dir)/*.h) $(wildcard $(core_dir)/*.h)
+bridge_cc := $(wildcard $(bridge_dir)/*.cc) $(wildcard $(core_dir)/*.cc)
+bridge_o := $(patsubst $(midas_dir)/%.cc, $(GEN_DIR)/%.o, $(bridge_cc))
+$(bridge_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(bridge_h)
+	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-platform_files := simif simif_$(PLATFORM)
-platform_h := $(addprefix $(midas_dir)/, $(addsuffix .h, $(platform_files)))
+platform_files := simif_$(PLATFORM)
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files)))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
 
-$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(platform_h)
+$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
@@ -54,7 +56,7 @@ override CXXFLAGS += -std=c++17 -include $(design_h)
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
-emul_files := simif simif_emul emul/mmio emul/mm
+emul_files := emul/simif_emul emul/mmio emul/mm
 emul_h     := $(driver_h) $(bridge_h) $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files)))
 # This includes c sources and static libraries
 emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files)))
@@ -62,7 +64,7 @@ emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 verilator_conf := rtlsim/ml-verilator-conf.vlt
 verilator_wrapper_v := $(v_dir)/top.sv
-verilator_harness := emul/dpi.cc simif_emul_verilator.cc
+verilator_harness := $(midas_dir)/dpi.cc $(midas_dir)/simif_emul_verilator.cc
 top_module := emul
 include rtlsim/Makefrag-verilator
 
@@ -71,7 +73,7 @@ verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug
 
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/top.sv
-vcs_harness := emul/dpi.cc simif_emul_vcs.cc
+vcs_harness := $(midas_dir)/dpi.cc $(midas_dir)/simif_emul_vcs.cc
 TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs

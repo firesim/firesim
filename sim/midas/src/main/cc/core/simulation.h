@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "bridges/timing.h"
+#include "core/timing.h"
 
 class simif_t;
 

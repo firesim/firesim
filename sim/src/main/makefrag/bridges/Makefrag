@@ -1,5 +1,9 @@
 # See LICENSE for license details.
 
+ifndef RISCV
+$(error Missing path to RISC-V toolchain)
+endif
+
 # These point at the main class of the target's Chisel generator
 DESIGN_PACKAGE ?= firesim.bridges
 DESIGN ?= GCD

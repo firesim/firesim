@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
 #include "simulation.h"
-#include "bridges/timing.h"
-#include "simif.h"
+#include "core/simif.h"
+#include "core/timing.h"
 
 #include <cassert>
 #include <cinttypes>

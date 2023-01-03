@@ -37,7 +37,7 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
     sb.append("#include <cstdbool>\n")
     sb.append("#include <vector>\n")
     sb.append("#include <optional>\n")
-    sb.append("#include \"config.h\"\n")
+    sb.append("#include \"core/config.h\"\n")
 
     top.module.genHeader(sb, target)
   }

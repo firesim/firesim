@@ -3,8 +3,8 @@
 #include "BridgeHarness.h"
 
 #include "bridges/blockdev.h"
-#include "bridges/bridge_driver.h"
 #include "bridges/uart.h"
+#include "core/bridge_driver.h"
 
 BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
                              simif_t *simif)
@@ -21,7 +21,7 @@ void BridgeHarness::add_bridge_driver(peek_poke_t *bridge) {
 }
 
 void BridgeHarness::simulation_init() {
-#include "constructor.h"
+#include "core/constructor.h"
   for (auto &bridge : bridges) {
     bridge->init();
   }

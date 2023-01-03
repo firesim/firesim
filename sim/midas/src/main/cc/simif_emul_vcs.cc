@@ -1,16 +1,22 @@
 
 #include <signal.h>
 
-#include "simif_emul_vcs.h"
+#include "emul/simif_emul.h"
 
-simif_emul_vcs_t::simif_emul_vcs_t(const TargetConfig &config,
-                                   const std::vector<std::string> &args)
-    : simif_emul_t(config, args) {}
+/**
+ * VCS-specific metasimulator implementation.
+ */
+class simif_emul_vcs_t final : public simif_emul_t {
+public:
+  simif_emul_vcs_t(const TargetConfig &config,
+                   const std::vector<std::string> &args)
+      : simif_emul_t(config, args) {}
 
-simif_emul_vcs_t::~simif_emul_vcs_t() {}
+  ~simif_emul_vcs_t() {}
+};
 
 /// Simulator instance used by DPI.
-simif_emul_vcs_t *simulator = nullptr;
+simif_emul_t *simulator = nullptr;
 
 extern "C" {
 int vcs_main(int argc, char **argv);

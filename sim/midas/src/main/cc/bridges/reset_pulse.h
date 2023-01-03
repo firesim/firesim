@@ -8,7 +8,7 @@ typedef struct RESETPULSEBRIDGEMODULE_struct {
 
 #include <vector>
 
-#include "bridge_driver.h"
+#include "core/bridge_driver.h"
 
 class reset_pulse_t : public bridge_driver_t {
 
