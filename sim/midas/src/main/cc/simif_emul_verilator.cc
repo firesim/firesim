@@ -3,7 +3,7 @@
 #include <signal.h>
 
 #include <verilated.h>
-#ifdef VM_TRACE
+#if VM_TRACE
 #include <verilated_vcd_c.h>
 #endif
 
@@ -31,7 +31,7 @@ private:
   void tick();
 
   std::unique_ptr<Vemul> top;
-#ifdef VM_TRACE
+#if VM_TRACE
   std::unique_ptr<VerilatedVcdC> tfp;
 #endif
 };

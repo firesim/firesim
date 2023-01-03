@@ -1,10 +1,9 @@
 // See LICENSE for license details.
 
 #include "loadmem.h"
+#include "core/simif.h"
 
 #include <fstream>
-
-#include "core/simif.h"
 
 char loadmem_t::KIND;
 

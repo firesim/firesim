@@ -445,4 +445,4 @@ jobs:
         run: |
           export FIRESIM_ENV_SOURCED=1
           export FIRESIM_STANDALONE=1
-          make -C sim clang-tidy
+          make -C sim TARGET_PROJECT=midasexamples clang-tidy

@@ -24,7 +24,7 @@ DRIVER_CC := \
 			$(addsuffix .cc, fesvr/* bridges/tracerv/*) \
 		))
 
-TARGET_CXX_FLAGS := \
+DRIVER_CXX_FLAGS := \
 		-isystem $(testchipip_csrc_dir) \
 		-I$(RISCV)/include \
 		-I$(firesim_lib_dir) \
