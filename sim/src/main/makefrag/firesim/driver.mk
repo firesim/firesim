@@ -1,5 +1,9 @@
 # See LICENSE for license details.
 
+ifndef RISCV
+$(error Missing path to RISC-V toolchain)
+endif
+
 # DOC include start: Bridge Build System Changes
 ##########################
 # Driver Sources & Flags #
@@ -39,6 +43,7 @@ DROMAJO_REQS = $(DROMAJO_H) $(DROMAJO_ROM) $(DROMAJO_DTB)
 
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc
 driver_dir = $(firesim_base_dir)/src/main/cc
+
 DRIVER_H = \
 	$(shell find $(driver_dir) -name "*.h") \
 	$(shell find $(firesim_lib_dir) -name "*.h") \
@@ -46,14 +51,14 @@ DRIVER_H = \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
 
 DRIVER_CC = \
-	$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top)) \
+	$(driver_dir)/firesim/firesim_top.cc \
 	$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 	$(RISCV)/lib/libfesvr.a \
 	$(DROMAJO_LIB_DIR)/lib$(DROMAJO_LIB_NAME).a \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
 # Disable missing override warning for testchipip.
-TARGET_CXX_FLAGS += -g \
+DRIVER_CXX_FLAGS += \
 	-isystem $(RISCV)/include \
 	-isystem $(TESTCHIPIP_CSRC_DIR) \
 	-isystem $(DROMAJO_INCLUDE_DIR) \
@@ -61,5 +66,14 @@ TARGET_CXX_FLAGS += -g \
 	-I$(firesim_lib_dir) \
 	-I$(GENERATED_DIR) \
 	-Wno-inconsistent-missing-override
-TARGET_LD_FLAGS += -L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so -lz
+
+TARGET_LD_FLAGS += \
+	$(RISCV)/lib/libfesvr.a \
+	$(DROMAJO_LIB_DIR)/lib$(DROMAJO_LIB_NAME).a \
+	-L$(CONDA_PREFIX)/lib \
+	-l:libdwarf.so \
+	-l:libelf.so \
+	-lz \
+	-lrt
+
 # DOC include end: Bridge Build System Changes

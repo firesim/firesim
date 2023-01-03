@@ -17,6 +17,7 @@
 #include "core/widget_registry.h"
 
 class StreamEngine;
+class StreamEngine;
 class simulation_t;
 class CPUManagedStreamIO;
 class FPGAManagedStreamIO;

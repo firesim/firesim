@@ -4,23 +4,38 @@
 # Verilator MIDAS-Level Simulators #
 ####################################
 
-VERILATOR_CXXOPTS ?= -O0
 VERILATOR_MAKEFLAGS ?= -j8 VM_PARALLEL_BUILDS=1
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
+
+.PHONY: verilator
+verilator: $(verilator)
+$(verilator): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator \
+		PLATFORM=$(PLATFORM) \
+		DRIVER_NAME=$(DESIGN) \
+		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+		GEN_DIR=$(GENERATED_DIR) \
+		TOP_DIR=$(chipyard_dir) \
+		BASE_DIR=$(base_dir) \
+		VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)" \
+		DRIVER_CC="$(DRIVER_CC)" \
+		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
+		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"
+
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 
-$(verilator) $(verilator_debug): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(VERILATOR_CXXOPTS) -D RTLSIM
-$(verilator) $(verilator_debug): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN'
-
-$(verilator): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
-	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir) VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)"
-
+.PHONY: verilator-debug
+verilator-debug: $(verilator-debug)
 $(verilator_debug): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
-	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug PLATFORM=$(PLATFORM) DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
-	GEN_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" TOP_DIR=$(chipyard_dir) VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)"
-
-.PHONY: verilator verilator-debug
-verilator: $(verilator)
-verilator-debug: $(verilator_debug)
+	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug \
+		PLATFORM=$(PLATFORM) \
+		DRIVER_NAME=$(DESIGN) \
+		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+		GEN_DIR=$(GENERATED_DIR) \
+		TOP_DIR=$(chipyard_dir) \
+		BASE_DIR=$(base_dir) \
+		VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)" \
+		DRIVER_CC="$(DRIVER_CC)" \
+		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
+		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"

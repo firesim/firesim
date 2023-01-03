@@ -12,16 +12,29 @@ xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 # Compile XSIM Driver #
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
-$(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags)
-$(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
+XSIM_CXX_FLAGS := \
+	$(TARGET_CXX_FLAGS) \
+	$(common_cxx_flags) \
+	-DSIMULATION_XSIM \
+	-DNO_MAIN
+
+XSIM_LD_FLAGS := \
+	$(TARGET_LD_FLAGS) \
+	$(common_ld_flags)
+
 $(xsim): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
-	$(MAKE) -C $(simif_dir) driver MAIN=f1_xsim PLATFORM=f1 \
+	$(MAKE) -C $(simif_dir) f1 MAIN=f1_xsim PLATFORM=f1 \
 		DRIVER_NAME=$(DESIGN) \
 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 		GEN_DIR=$(GENERATED_DIR) \
 		OUT_DIR=$(GENERATED_DIR) \
-		DRIVER="$(DRIVER_CC)" \
-		TOP_DIR=$(chipyard_dir)
+		TOP_DIR=$(chipyard_dir) \
+		BASE_DIR=$(base_dir) \
+		DRIVER_CC="$(DRIVER_CC)" \
+		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
+		PLATFORM_CXX_FLAGS="$(XSIM_CXX_FLAGS)" \
+		PLATFORM_LD_FLAGS="$(XSIM_LD_FLAGS)" \
+		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"
 
 .PHONY: xsim
 xsim: $(xsim)
