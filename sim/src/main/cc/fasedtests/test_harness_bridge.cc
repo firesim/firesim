@@ -4,7 +4,7 @@
 
 test_harness_bridge_t::test_harness_bridge_t(
     simif_t *simif,
-    simif_peek_poke_t *peek_poke,
+    peek_poke_t *peek_poke,
     AddressMap addr_map,
     const std::vector<std::string> &args)
     : bridge_driver_t(simif), simif(simif), peek_poke(peek_poke),
@@ -30,10 +30,10 @@ void test_harness_bridge_t::tick() {
   if (simif->actual_tcycle() < 100)
     return;
 
-  this->done = peek_poke->sample_value(
-      done); // use a non-blocking sample since this signal is monotonic
+  // use a non-blocking sample since this signal is monotonic
+  done = peek_poke->sample_value("done");
   if (done) {
-    this->error = 0;
+    error = 0;
     // Iterate through all uarch values we want to validate
     for (auto &pair : expected_uarchevent_values) {
       auto actual_value = read(addr_map.r_addr(pair.first));

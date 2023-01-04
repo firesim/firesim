@@ -28,11 +28,11 @@ public:
           stack.pop();
         }
       }
-      poke(io_pop, pop);
-      poke(io_push, push);
-      poke(io_en, enable);
-      poke(io_dataIn, dataIn);
-      expect(io_dataOut, dataOut);
+      poke("io_pop", pop);
+      poke("io_push", push);
+      poke("io_en", enable);
+      poke("io_dataIn", dataIn);
+      expect("io_dataOut", dataOut);
       step(1);
     }
   }

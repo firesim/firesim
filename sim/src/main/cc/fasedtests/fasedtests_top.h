@@ -6,12 +6,10 @@
 
 #include "bridges/bridge_driver.h"
 #include "bridges/fpga_model.h"
+#include "bridges/peek_poke.h"
 #include "firesim/systematic_scheduler.h"
-#include "midasexamples/simif_peek_poke.h"
 
-class fasedtests_top_t : public simif_peek_poke_t,
-                         public systematic_scheduler_t,
-                         public simulation_t {
+class fasedtests_top_t : public systematic_scheduler_t, public simulation_t {
 public:
   fasedtests_top_t(const std::vector<std::string> &args, simif_t *simif);
   ~fasedtests_top_t() {}
@@ -27,8 +25,13 @@ protected:
   void add_bridge_driver(FpgaModel *bridge) {
     fpga_models.emplace_back(bridge);
   }
+  void add_bridge_driver(peek_poke_t *bridge) { peek_poke.reset(bridge); }
 
 private:
+  // Simulation interface.
+  simif_t *simif;
+  // Peek-poke bridge.
+  std::unique_ptr<peek_poke_t> peek_poke;
   // Memory mapped bridges bound to software models
   std::vector<std::unique_ptr<bridge_driver_t>> bridges;
   // FPGA-hosted models with programmable registers & instrumentation

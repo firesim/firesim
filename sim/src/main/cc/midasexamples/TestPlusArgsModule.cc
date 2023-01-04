@@ -100,7 +100,7 @@ public:
       break;
     }
 
-    expect(io_gotPlusArgValue, e0);
+    expect("io_gotPlusArgValue", e0);
 
     mpz_clear(e0);
   }

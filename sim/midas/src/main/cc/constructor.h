@@ -3,6 +3,21 @@
 // Top-levels can filter the bridges they want to add by creating overloads
 // of the `add_bridge_driver` method with appropriate types.
 
+#ifdef PEEKPOKEBRIDGEMODULE_0_PRESENT
+#ifndef SKIP_PEEK_POKE
+add_bridge_driver(new peek_poke_t(simif,
+                                  PEEKPOKEBRIDGEMODULE_0_substruct_create,
+                                  POKE_SIZE,
+                                  (const uint32_t *)INPUT_ADDRS,
+                                  (const char *const *)INPUT_NAMES,
+                                  (const uint32_t *)INPUT_CHUNKS,
+                                  PEEK_SIZE,
+                                  (const uint32_t *)OUTPUT_ADDRS,
+                                  (const char *const *)OUTPUT_NAMES,
+                                  (const uint32_t *)OUTPUT_CHUNKS));
+#endif
+#endif
+
 #ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
 INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
 #endif

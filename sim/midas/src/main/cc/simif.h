@@ -233,6 +233,9 @@ public:
    */
   loadmem_t &get_loadmem() { return loadmem; }
 
+  /// Return the name of the simulated target.
+  std::string_view get_target_name() const { return TARGET_NAME; }
+
 private:
   /**
    * Waits for the target to be initialised.

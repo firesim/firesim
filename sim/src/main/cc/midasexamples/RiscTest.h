@@ -27,27 +27,27 @@ public:
     do {
       tick();
       k += 1;
-    } while (peek(io_valid) == 0 && k < timeout);
+    } while (peek("io_valid") == 0 && k < timeout);
     expect(k < timeout, "TIME LIMIT");
-    expect(io_out, expected);
+    expect("io_out", expected);
   }
 
 private:
   void wr(uint32_t addr, uint32_t data) {
-    poke(io_isWr, 1);
-    poke(io_boot, 0);
-    poke(io_wrAddr, addr);
-    poke(io_wrData, data);
+    poke("io_isWr", 1);
+    poke("io_boot", 0);
+    poke("io_wrAddr", addr);
+    poke("io_wrData", data);
     step(1);
   }
   void boot() {
-    poke(io_isWr, 0);
-    poke(io_boot, 1);
+    poke("io_isWr", 0);
+    poke("io_boot", 1);
     step(1);
   }
   void tick() {
-    poke(io_isWr, 0);
-    poke(io_boot, 0);
+    poke("io_isWr", 0);
+    poke("io_boot", 0);
     step(1);
   }
   uint32_t I(uint32_t op, uint32_t rc, uint32_t ra, uint32_t rb) {

@@ -15,21 +15,21 @@ public:
   void run_test() {
     target_reset();
     for (int i = 0; i < latency; i++) {
-      poke(io_a_i0, i0[i]);
-      poke(io_a_i1, i1[i]);
-      poke(io_b_i0, i1[i]);
-      poke(io_b_i1, i0[i]);
+      poke("io_a_i0", i0[i]);
+      poke("io_a_i1", i1[i]);
+      poke("io_b_i0", i1[i]);
+      poke("io_b_i1", i0[i]);
       step(1);
     }
     for (int i = 0; i < ntests; i++) {
-      expect(io_a_o0, i0[i] + 1);
-      expect(io_a_o1, i1[i] + 1);
-      expect(io_b_o0, i1[i] + 1);
-      expect(io_b_o1, i0[i] + 1);
-      poke(io_a_i0, (i >= ntests - latency) ? 0 : i0[i + latency]);
-      poke(io_a_i1, (i >= ntests - latency) ? 0 : i1[i + latency]);
-      poke(io_b_i0, (i >= ntests - latency) ? 0 : i1[i + latency]);
-      poke(io_b_i1, (i >= ntests - latency) ? 0 : i0[i + latency]);
+      expect("io_a_o0", i0[i] + 1);
+      expect("io_a_o1", i1[i] + 1);
+      expect("io_b_o0", i1[i] + 1);
+      expect("io_b_o1", i0[i] + 1);
+      poke("io_a_i0", (i >= ntests - latency) ? 0 : i0[i + latency]);
+      poke("io_a_i1", (i >= ntests - latency) ? 0 : i1[i + latency]);
+      poke("io_b_i0", (i >= ntests - latency) ? 0 : i1[i + latency]);
+      poke("io_b_i1", (i >= ntests - latency) ? 0 : i0[i + latency]);
       step(1);
     }
     step(10);
