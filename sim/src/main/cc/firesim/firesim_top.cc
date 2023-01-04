@@ -607,7 +607,7 @@ int firesim_top_t::exit_code() {
 
 void firesim_top_t::run() {
 
-  token_hashers->set_params(0, 16);
+  token_hashers->set_params(100, 1700000);
 
   for (auto &e : fpga_models) {
     e->init();
