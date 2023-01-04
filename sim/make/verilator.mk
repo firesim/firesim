@@ -10,7 +10,7 @@ verilator = $(GENERATED_DIR)/V$(DESIGN)
 
 .PHONY: verilator
 verilator: $(verilator)
-$(verilator): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+$(verilator): $(header) $(DRIVER_CC) $(DRIVER_H) $(DRIVER_LIBS) $(midas_cc) $(midas_h) $(simulator_verilog)
 	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator \
 		PLATFORM=$(PLATFORM) \
 		DRIVER_NAME=$(DESIGN) \
@@ -21,13 +21,14 @@ $(verilator): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simula
 		VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)" \
 		DRIVER_CC="$(DRIVER_CC)" \
 		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
+		DRIVER_LIBS="$(DRIVER_LIBS)" \
 		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"
 
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug
 
 .PHONY: verilator-debug
 verilator-debug: $(verilator-debug)
-$(verilator_debug): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(simulator_verilog)
+$(verilator_debug): $(header) $(DRIVER_CC) $(DRIVER_H) $(DRIVER_LIBS) $(midas_cc) $(midas_h) $(simulator_verilog)
 	$(MAKE) $(VERILATOR_MAKEFLAGS) -C $(simif_dir) verilator-debug \
 		PLATFORM=$(PLATFORM) \
 		DRIVER_NAME=$(DESIGN) \
@@ -38,4 +39,5 @@ $(verilator_debug): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(
 		VERILATOR_FLAGS="$(EXTRA_VERILATOR_FLAGS)" \
 		DRIVER_CC="$(DRIVER_CC)" \
 		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
+		DRIVER_LIBS="$(DRIVER_LIBS)" \
 		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"

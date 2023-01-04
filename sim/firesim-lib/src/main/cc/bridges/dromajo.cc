@@ -151,7 +151,7 @@ void dromajo_t::init() {
 
   printf("[INFO] Dromajo command: \n");
   char *dromajo_argv[dromajo_args.size()];
-  for (int i = 0; i < dromajo_args.size(); ++i) {
+  for (size_t i = 0; i < dromajo_args.size(); ++i) {
     dromajo_argv[i] = const_cast<char *>(dromajo_args[i].c_str());
     printf("%s ", dromajo_argv[i]);
   }

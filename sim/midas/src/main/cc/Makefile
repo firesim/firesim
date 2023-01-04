@@ -41,6 +41,7 @@ library_ldflags := \
 
 library_cxxflags = \
 	-std=c++17 -Wall -Wno-unused-variable \
+	-g -Og \
 	-I$(midas_dir) \
 	$(CXXFLAGS)
 
@@ -75,7 +76,7 @@ $(GEN_DIR)/libfiresim-emul.a: $(emul_o)
 ################################################################################
 
 driver_cxxflags = \
-	-std=c++17 -Wall -Wno-unused-variable \
+	-std=c++17 -Wall -Wno-unused-variable -Werror=return-type \
 	-I$(midas_dir) \
 	$(DRIVER_CXX_FLAGS) \
 	$(CXXFLAGS)
@@ -110,7 +111,7 @@ platform_ldflags := \
 platform_file := simif_$(MAIN)
 platform_cc := $(midas_dir)/$(platform_file).cc
 platform_o := $(GEN_DIR)/$(platform_file).o
-platform_libs := $(GEN_DIR)/libdriver.a $(GEN_DIR)/libfiresim.a
+platform_libs := $(GEN_DIR)/libdriver.a $(GEN_DIR)/libfiresim.a $(DRIVER_LIBS)
 
 $(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(core_h) $(emul_h)
 	mkdir -p $(@D)
@@ -129,7 +130,7 @@ $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(main_o) $(platform_o) $(platform_libs)
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
-emul_libs  := $(main_o) $(GEN_DIR)/libdriver.a $(GEN_DIR)/libfiresim-emul.a $(GEN_DIR)/libfiresim.a
+emul_libs  := $(main_o) $(GEN_DIR)/libdriver.a $(GEN_DIR)/libfiresim-emul.a $(GEN_DIR)/libfiresim.a $(DRIVER_LIBS)
 emul_h     := $(driver_h) $(core_h) $(bridge_h) $(emul_h)
 emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models) $(v_dir)/top.sv
 emul_top   := emul

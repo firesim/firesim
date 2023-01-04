@@ -21,6 +21,9 @@ struct SERIALBRIDGEMODULE_struct {
   uint64_t start;
 };
 
+class firesim_tsi_t;
+class firesim_loadmem_t;
+
 class serial_t : public bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.

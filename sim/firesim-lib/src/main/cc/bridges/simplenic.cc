@@ -251,12 +251,12 @@ void simplenic_t::init() {
   // FPGA-hosted part of the simulator to execute SIMLATENCY cycles in the
   // NIC-local clock domain before requiring additional interaction from the
   // driver.
-  auto token_bytes_to_send = SIMLATENCY_BT * BUFWIDTH;
+  uint64_t token_bytes_to_send = SIMLATENCY_BT * BUFWIDTH;
   // Set the threshold here to 0 as a proxy for checking the stream capacity.
   // If we cannot enqueue the full payload, the stream is likely undersized
   // for our desired latency or the FPGA has not been properly reset /
   // reprogrammed.
-  auto token_bytes_produced = this->push(
+  uint64_t token_bytes_produced = this->push(
       stream_from_cpu_idx, pcis_write_bufs[1], token_bytes_to_send, 0);
 
   if (token_bytes_produced != token_bytes_to_send) {

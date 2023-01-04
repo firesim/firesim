@@ -24,7 +24,7 @@ F1_LD_FLAGS := \
 	-lfpga_mgmt
 
 # Compile Driver
-$(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(DRIVER_LIBS) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(header) $(OUTPUT_DIR)/build/
 	$(MAKE) -C $(simif_dir) driver MAIN=f1 PLATFORM=f1 \
@@ -38,6 +38,7 @@ $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
 		PLATFORM_CXX_FLAGS="$(F1_CXX_FLAGS)" \
 		PLATFORM_LD_FLAGS="$(F1_LD_FLAGS)" \
+		DRIVER_LIBS="$(DRIVER_LIBS)" \
 		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"
 
 VITIS_CXX_FLAGS := \
@@ -56,7 +57,7 @@ VITIS_LD_FLAGS := \
 	-lxrt_coreutil
 
 # Compile Driver
-$(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(DRIVER_LIBS) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(header) $(OUTPUT_DIR)/build/
 	$(MAKE) -C $(simif_dir) driver MAIN=vitis PLATFORM=vitis \
@@ -70,6 +71,7 @@ $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		DRIVER_CXX_FLAGS="$(DRIVER_CXX_FLAGS)" \
 		PLATFORM_CXX_FLAGS="$(VITIS_CXX_FLAGS)" \
 		PLATFORM_LD_FLAGS="$(VITIS_LD_FLAGS)" \
+		DRIVER_LIBS="$(DRIVER_LIBS)" \
 		TARGET_LD_FLAGS="$(TARGET_LD_FLAGS)"
 
 tags: $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)

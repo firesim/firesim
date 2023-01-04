@@ -1,0 +1,74 @@
+# See LICENSE for license details.
+
+ifndef RISCV
+$(error Missing path to RISC-V toolchain)
+endif
+
+simif_dir = $(firesim_base_dir)/midas/src/main/cc
+midas_h  = $(shell find $(simif_dir) -name "*.h")
+midas_cc = $(shell find $(simif_dir) -name "*.cc")
+
+################################################################################
+# Berkeley bridges library
+################################################################################
+
+LIBELF_PREFIX ?= $(CONDA_PREFIX)
+LIBDWARF_PREFIX ?= $(CONDA_PREFIX)
+DROMAJO_PREFIX ?= $(CONDA_PREFIX)
+
+firesim_lib_dir := $(firesim_base_dir)/firesim-lib/src/main/cc
+testchipip_csrc_dir = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
+
+bridges_cxxflags := \
+	-std=c++17 \
+	-Wall -Wextra -Werror -Wno-unused-parameter \
+	-isystem $(RISCV)/include \
+	-isystem $(DROMAJO_PREFIX)/include \
+	-isystem $(LIBELF_PREFIX)/include \
+	-isystem $(LIBDWARF_PREFIX)/include \
+	-isystem $(testchipip_csrc_dir) \
+	-I $(firesim_lib_dir) \
+	-I $(simif_dir) \
+	$(CXXFLAGS)
+
+BRIDGES_LDFLAGS := \
+	-L$(RISCV)/lib -lfesvr \
+	-L$(LIBELF_LIB_DIR)/lib -l:libdwarf.so \
+	-L$(LIBDWARF_LIB_DIR)/lib -l:libelf.so \
+	-L$(DROMAJO_PREFIX)/lib -ldromajo_cosim \
+	-lz \
+	-lrt
+
+bridges_cc := \
+	$(firesim_lib_dir)/bridges/tracerv/trace_tracker.cc \
+	$(firesim_lib_dir)/bridges/tracerv/tracerv_dwarf.cc \
+	$(firesim_lib_dir)/bridges/tracerv/tracerv_elf.cc \
+	$(firesim_lib_dir)/bridges/tracerv/tracerv_processing.cc \
+	$(firesim_lib_dir)/bridges/blockdev.cc \
+	$(firesim_lib_dir)/bridges/groundtest.cc \
+	$(firesim_lib_dir)/bridges/serial.cc \
+	$(firesim_lib_dir)/bridges/simplenic.cc \
+	$(firesim_lib_dir)/bridges/tracerv.cc \
+	$(firesim_lib_dir)/bridges/uart.cc \
+	$(firesim_lib_dir)/bridges/dromajo.cc \
+	$(firesim_lib_dir)/fesvr/firesim_tsi.cc \
+	$(testchipip_csrc_dir)/testchip_tsi.cc
+
+root_dir  := $(abspath $(base_dir)/..)
+build_dir := $(firesim_base_dir)/generated-src/bridges
+
+bridges_h := $(patsubst %.cc,%.h,$(bridges_cc))
+bridges_o := $(patsubst $(root_dir)/%.cc, $(build_dir)/%.o, $(bridges_cc))
+
+$(bridges_o): $(build_dir)/%.o: $(root_dir)/%.cc $(midas_h) $(bridges_h)
+	mkdir -p $(@D)
+	$(CXX) $(bridges_cxxflags) -c -o $@ $<
+
+BRIDGES_LIB := $(build_dir)/libbridges.a
+
+.PHONY: libbridges
+libbridges: $(BRIDGES_LIB)
+$(BRIDGES_LIB): $(bridges_o)
+	mkdir -p $(@D)
+	rm -f $(BRIDGES_LIB)
+	$(AR) rcs $@ $^
