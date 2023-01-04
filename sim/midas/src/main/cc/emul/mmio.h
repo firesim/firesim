@@ -46,11 +46,13 @@ struct mmio_resp_data_t {
  *  Used for CPU-mastered AXI4 (aka, DMA), and MMIO requests (see simif_t::read,
  *  simif_t::write).
  */
-class mmio_t {
+class mmio_t final {
 public:
   mmio_t(size_t size) : read_inflight(false), write_inflight(false) {
     dummy_data.resize(size);
   }
+
+  ~mmio_t() {}
 
   bool aw_valid() { return !aw.empty() && !write_inflight; }
   size_t aw_id() { return aw_valid() ? aw.front().id : 0; }
@@ -83,11 +85,11 @@ public:
             size_t b_id,
             bool b_valid);
 
-  virtual void read_req(uint64_t addr, size_t size, size_t len);
-  virtual void
+  void read_req(uint64_t addr, size_t size, size_t len);
+  void
   write_req(uint64_t addr, size_t size, size_t len, void *data, size_t *strb);
-  virtual bool read_resp(void *data);
-  virtual bool write_resp();
+  bool read_resp(void *data);
+  bool write_resp();
 
 private:
   std::queue<mmio_req_addr_t> ar;

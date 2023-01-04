@@ -15,9 +15,9 @@ public:
   ~simif_f1_t();
 
   // Unused since no F1-specific MMIO is required to setup the simulation.
-  void host_mmio_init() override{};
+  void host_mmio_init() override {}
 
-  int run() override { return simulation_run(); }
+  int run() { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;

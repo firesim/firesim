@@ -1,4 +1,3 @@
-/* verilator lint_off PINMISSING */
 /* verilator lint_off LITENDIAN */
 
 `define AXI4_FWD_STRUCT(name, defname) \
@@ -70,68 +69,56 @@
     .name``_r_ready(obj.r_ready),                  \
     .name``_b_ready(obj.b_ready),
 
-`define BIND_CHANNEL(name)                \
-    `BIND_AXI_FWD(name, name``_fwd_delay) \
-    `BIND_AXI_REV(name, name``_rev_delay)
+`define BIND_CHANNEL(name)          \
+    `BIND_AXI_FWD(name, name``_fwd) \
+    `BIND_AXI_REV(name, name``_rev)
 
-import "DPI-C" function void tick
+import "DPI-C" function void simulator_tick
 (
-  output bit                                          reset,
+  input  bit                                          reset,
   output bit                                          fin,
 
-  output ctrl_rev_t                                   ctrl_rev,
   input  ctrl_fwd_t                                   ctrl_fwd,
-
-  output cpu_managed_axi4_rev_t                       cpu_managed_axi4_rev,
   input  cpu_managed_axi4_fwd_t                       cpu_managed_axi4_fwd,
-
   input  fpga_managed_axi4_rev_t                      fpga_managed_axi4_rev,
-  output fpga_managed_axi4_fwd_t                      fpga_managed_axi4_fwd,
-
   input  mem_rev_t                                    mem_0_rev,
-  output mem_fwd_t                                    mem_0_fwd,
   input  mem_rev_t                                    mem_1_rev,
-  output mem_fwd_t                                    mem_1_fwd,
   input  mem_rev_t                                    mem_2_rev,
-  output mem_fwd_t                                    mem_2_fwd,
   input  mem_rev_t                                    mem_3_rev,
+
+  output ctrl_rev_t                                   ctrl_rev,
+  output cpu_managed_axi4_rev_t                       cpu_managed_axi4_rev,
+  output fpga_managed_axi4_fwd_t                      fpga_managed_axi4_fwd,
+  output mem_fwd_t                                    mem_0_fwd,
+  output mem_fwd_t                                    mem_1_fwd,
+  output mem_fwd_t                                    mem_2_fwd,
   output mem_fwd_t                                    mem_3_fwd
 );
 
 module emul(
 `ifdef VERILATOR
   input bit clock,
-  input bit pre_clock,
-  input bit post_clock
+  input bit reset,
+  output bit fin
 `endif
 );
-
 `ifndef VERILATOR
-  // Chisel-generated Verilog might contain race conditions. To address
-  // problems, information is passed to and from the design from the DPI call
-  // with a slight delay using out-of-phase clocks. The design is not allowed
-  // to make assumptions about these clocks and they are not exposed to it.
+  // Generate a single clock signal as long as the simulation is running.
   bit clock;
-  initial clock = 1'b0;
-  always clock = #(`CLOCK_PERIOD / 2.0) ~clock;
-
-  bit pre_clock;
+  reg fin = 1'b0;
   initial begin
-    pre_clock = 1'b0;
-    #(`CLOCK_PERIOD / 2.0 - 0.1) forever
-      pre_clock = #(`CLOCK_PERIOD / 2.0) ~pre_clock;
+    clock = 1'b0;
+    while (!fin) begin
+      clock = #(`CLOCK_PERIOD / 2.0) ~clock;
+    end
   end
 
-  bit post_clock;
+  reg reset;
   initial begin
-    post_clock = 1'b0;
-    #(`CLOCK_PERIOD / 2.0 + 0.1) forever
-      post_clock = #(`CLOCK_PERIOD / 2.0) ~post_clock;
+    reset = 1'b1;
+    #(`CLOCK_PERIOD * 9.0) reset = 1'b0;
   end
 `endif
-
-  reg reset = 1'b1;
-  reg fin = 1'b0;
 
 `ifndef VERILATOR
 `ifdef DEBUG
@@ -162,59 +149,24 @@ module emul(
 `endif
 `endif
 
-  ctrl_fwd_t ctrl_fwd;
+  // Bind the top-level to the records carrying information in and out of it.
   ctrl_rev_t ctrl_rev;
-  cpu_managed_axi4_fwd_t cpu_managed_axi4_fwd;
   cpu_managed_axi4_rev_t cpu_managed_axi4_rev;
   fpga_managed_axi4_fwd_t fpga_managed_axi4_fwd;
-  fpga_managed_axi4_rev_t fpga_managed_axi4_rev;
   mem_fwd_t mem_0_fwd;
-  mem_rev_t mem_0_rev;
   mem_fwd_t mem_1_fwd;
-  mem_rev_t mem_1_rev;
   mem_fwd_t mem_2_fwd;
-  mem_rev_t mem_2_rev;
   mem_fwd_t mem_3_fwd;
+
+  ctrl_fwd_t ctrl_fwd;
+  cpu_managed_axi4_fwd_t cpu_managed_axi4_fwd;
+  fpga_managed_axi4_rev_t fpga_managed_axi4_rev;
+  mem_rev_t mem_0_rev;
+  mem_rev_t mem_1_rev;
+  mem_rev_t mem_2_rev;
   mem_rev_t mem_3_rev;
 
-  ctrl_fwd_t ctrl_fwd_delay;
-  ctrl_rev_t ctrl_rev_delay;
-  cpu_managed_axi4_fwd_t cpu_managed_axi4_fwd_delay;
-  cpu_managed_axi4_rev_t cpu_managed_axi4_rev_delay;
-  fpga_managed_axi4_rev_t fpga_managed_axi4_rev_delay;
-  fpga_managed_axi4_fwd_t fpga_managed_axi4_fwd_delay;
-  mem_fwd_t mem_0_fwd_delay;
-  mem_rev_t mem_0_rev_delay;
-  mem_fwd_t mem_1_fwd_delay;
-  mem_rev_t mem_1_rev_delay;
-  mem_fwd_t mem_2_fwd_delay;
-  mem_rev_t mem_2_rev_delay;
-  mem_fwd_t mem_3_fwd_delay;
-  mem_rev_t mem_3_rev_delay;
-
-  bit reset_delay;
-
-  always_ff @(posedge pre_clock) begin
-    ctrl_fwd = ctrl_fwd_delay;
-    cpu_managed_axi4_fwd = cpu_managed_axi4_fwd_delay;
-    fpga_managed_axi4_rev = fpga_managed_axi4_rev_delay;
-    mem_0_rev = mem_0_rev_delay;
-    mem_1_rev = mem_1_rev_delay;
-    mem_2_rev = mem_2_rev_delay;
-    mem_3_rev = mem_3_rev_delay;
-  end
-
-  always_ff @(posedge post_clock) begin
-    ctrl_rev_delay = ctrl_rev;
-    cpu_managed_axi4_rev_delay = cpu_managed_axi4_rev;
-    fpga_managed_axi4_fwd_delay = fpga_managed_axi4_fwd;
-    mem_0_fwd_delay = mem_0_fwd;
-    mem_1_fwd_delay = mem_1_fwd;
-    mem_2_fwd_delay = mem_2_fwd;
-    mem_3_fwd_delay = mem_3_fwd;
-    reset_delay = reset;
-  end
-
+  /* verilator lint_off PINMISSING */
   FPGATop FPGATop(
 `ifdef CPU_MANAGED_AXI4_PRESENT
     `BIND_CHANNEL(cpu_managed_axi4)
@@ -222,9 +174,7 @@ module emul(
 `ifdef FPGA_MANAGED_AXI4_PRESENT
     `BIND_CHANNEL(fpga_managed_axi4)
 `endif
-
     `BIND_CHANNEL(ctrl)
-
     `BIND_CHANNEL(mem_0)
 `ifdef MEM_HAS_CHANNEL1
     `BIND_CHANNEL(mem_1)
@@ -236,23 +186,80 @@ module emul(
     `BIND_CHANNEL(mem_3)
 `endif
     .clock(clock),
-    .reset(reset_delay)
+    .reset(reset)
   );
+  /* verilator lint_on PINMISSING */
 
+  // Bind the simulation to another bank of records.
+  ctrl_fwd_t ctrl_fwd_sync;
+  cpu_managed_axi4_fwd_t cpu_managed_axi4_fwd_sync;
+  fpga_managed_axi4_rev_t fpga_managed_axi4_rev_sync;
+  mem_rev_t mem_0_rev_sync;
+  mem_rev_t mem_1_rev_sync;
+  mem_rev_t mem_2_rev_sync;
+  mem_rev_t mem_3_rev_sync;
+
+  ctrl_rev_t ctrl_rev_sync;
+  cpu_managed_axi4_rev_t cpu_managed_axi4_rev_sync;
+  fpga_managed_axi4_fwd_t fpga_managed_axi4_fwd_sync;
+  mem_fwd_t mem_0_fwd_sync;
+  mem_fwd_t mem_1_fwd_sync;
+  mem_fwd_t mem_2_fwd_sync;
+  mem_fwd_t mem_3_fwd_sync;
+
+  // To deal with the race conditions in Chisel-generated SystemVerilog, the
+  // simulator inputs are latched out-of-phase, on the negative edge.
+  // The `simulator_tick` function is delayed by one cycle relative to the DUT.
+  // When the DUT is on cycle N, the tick function uses the inputs of the N-1th
+  // cycle to compute the output for the Nth cycle. These outputs are delayed
+  // by one cycle so on the N+1st cycle the DUT computes the N+1st cycle using
+  // inputs from the Nth cycle.
   always @(posedge clock) begin
-    tick(
+    simulator_tick(
       reset,
       fin,
-      ctrl_rev, ctrl_fwd,
-      cpu_managed_axi4_rev, cpu_managed_axi4_fwd,
-      fpga_managed_axi4_rev, fpga_managed_axi4_fwd,
-      mem_0_rev, mem_0_fwd,
-      mem_1_rev, mem_1_fwd,
-      mem_2_rev, mem_2_fwd,
-      mem_3_rev, mem_3_fwd
+
+      ctrl_fwd_sync,
+      cpu_managed_axi4_fwd_sync,
+      fpga_managed_axi4_rev_sync,
+      mem_0_rev_sync,
+      mem_1_rev_sync,
+      mem_2_rev_sync,
+      mem_3_rev_sync,
+
+      ctrl_rev_sync,
+      cpu_managed_axi4_rev_sync,
+      fpga_managed_axi4_fwd_sync,
+      mem_0_fwd_sync,
+      mem_1_fwd_sync,
+      mem_2_fwd_sync,
+      mem_3_fwd_sync
     );
+
+`ifndef VERILATOR
 `ifdef DEBUG
     trace_count = trace_count + 1;
 `endif
+`endif
+  end
+
+  always_ff @(negedge clock) begin
+    ctrl_fwd_sync <= ctrl_fwd;
+    cpu_managed_axi4_fwd_sync <= cpu_managed_axi4_fwd;
+    fpga_managed_axi4_rev_sync <= fpga_managed_axi4_rev;
+    mem_0_rev_sync <= mem_0_rev;
+    mem_1_rev_sync <= mem_1_rev;
+    mem_2_rev_sync <= mem_2_rev;
+    mem_3_rev_sync <= mem_3_rev;
+  end
+
+  always_ff @(posedge clock) begin
+    ctrl_rev <= ctrl_rev_sync;
+    cpu_managed_axi4_rev <= cpu_managed_axi4_rev_sync;
+    fpga_managed_axi4_fwd <= fpga_managed_axi4_fwd_sync;
+    mem_0_fwd <= mem_0_fwd_sync;
+    mem_1_fwd <= mem_1_fwd_sync;
+    mem_2_fwd <= mem_2_fwd_sync;
+    mem_3_fwd <= mem_3_fwd_sync;
   end
 endmodule;

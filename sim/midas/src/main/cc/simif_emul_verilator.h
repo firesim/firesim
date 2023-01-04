@@ -17,20 +17,21 @@ class simif_emul_verilator_t final : public simif_emul_t {
 public:
   simif_emul_verilator_t(const std::vector<std::string> &args);
 
-  ~simif_emul_verilator_t() {}
+  ~simif_emul_verilator_t();
 
-  void sim_init() override;
+  int run();
 
-  void finish() override;
-
-  void advance_target() override;
+  uint64_t get_time() const { return main_time; }
 
 private:
   void tick();
 
 private:
-  std::unique_ptr<Vverilator_top> top;
-#ifdef VM_TRACE
+  uint64_t main_time = 0;
+
+  std::unique_ptr<Vemul> top;
+
+#if VM_TRACE
   std::unique_ptr<VerilatedVcdC> tfp;
 #endif
 };
