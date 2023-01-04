@@ -28,8 +28,8 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
 
   // Initialise memories.
   for (unsigned i = 0; i < MEM_NUM_CHANNELS; ++i) {
-    auto &mem = slave.emplace_back(std::make_unique<mm_magic_t>());
-    mem->init(memsize, MEM_BEAT_BYTES, 64);
+    slave.emplace_back(std::make_unique<mm_magic_t>());
+    (*slave.rbegin())->init(memsize, MEM_BEAT_BYTES, 64);
   }
 
 #ifdef FPGA_MANAGED_AXI4_PRESENT
@@ -105,7 +105,7 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
   finished = false;
   exit_code = EXIT_FAILURE;
   {
-    std::unique_lock lock(target_mutex);
+    std::unique_lock<std::mutex> lock(target_mutex);
     sim_flag = false;
     target_flag = false;
     thread = std::thread([&] { thread_main(); });
@@ -249,11 +249,11 @@ void simif_emul_t::do_tick() {
   target_flag = true;
 
   {
-    std::unique_lock lock(target_mutex);
+    std::unique_lock<std::mutex> lock(target_mutex);
     target_cond.notify_one();
   }
   {
-    std::unique_lock lock(sim_mutex);
+    std::unique_lock<std::mutex> lock(sim_mutex);
     sim_cond.wait(lock, [&] { return sim_flag; });
   }
 }
@@ -263,11 +263,11 @@ bool simif_emul_t::to_sim() {
   sim_flag = true;
 
   {
-    std::unique_lock lock(sim_mutex);
+    std::unique_lock<std::mutex> lock(sim_mutex);
     sim_cond.notify_one();
   }
   {
-    std::unique_lock lock(target_mutex);
+    std::unique_lock<std::mutex> lock(target_mutex);
     target_cond.wait(lock, [&] { return target_flag || finished; });
   }
   return finished;
@@ -288,7 +288,7 @@ void simif_emul_t::thread_main() {
 
   // Wake the target thread before returning from the simulation thread.
   {
-    std::unique_lock lock(target_mutex);
+    std::unique_lock<std::mutex> lock(target_mutex);
     finished = true;
     target_cond.notify_one();
   }
