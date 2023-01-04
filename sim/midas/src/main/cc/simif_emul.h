@@ -163,15 +163,19 @@ private:
    */
   std::thread thread;
 
-  // Synchronisation primitives blocking the simulator.
-  std::mutex sim_mutex;
-  std::condition_variable sim_cond;
-  bool sim_flag;
+  // Synchronisation primitives blocking the driver.  The driver thread
+  // waits on the condition variable until the simulator allows it to proceed.
+  std::mutex driver_mutex;
+  std::condition_variable driver_cond;
+  bool driver_flag;
 
-  // Synchronisation primitives blocking the target.
-  std::mutex target_mutex;
-  std::condition_variable target_cond;
-  bool target_flag;
+  // Synchronisation primitives blocking the simulator.  The simulator thread
+  // is the main thread, invoking the DPI tick function.  After information is
+  // passed on, the simulator thread yields to the driver and waits on these
+  // variables until the driver performs a tick.
+  std::mutex rtlsim_mutex;
+  std::condition_variable rtlsim_cond;
+  bool rtlsim_flag;
 };
 
 #endif // __SIMIF_EMUL_H

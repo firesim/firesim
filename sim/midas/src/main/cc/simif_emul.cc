@@ -105,11 +105,11 @@ simif_emul_t::simif_emul_t(const std::vector<std::string> &args)
   finished = false;
   exit_code = EXIT_FAILURE;
   {
-    std::unique_lock<std::mutex> lock(target_mutex);
-    sim_flag = false;
-    target_flag = false;
+    std::unique_lock<std::mutex> lock(rtlsim_mutex);
+    driver_flag = false;
+    rtlsim_flag = false;
     thread = std::thread([&] { thread_main(); });
-    target_cond.wait(lock, [&] { return target_flag; });
+    rtlsim_cond.wait(lock, [&] { return rtlsim_flag; });
   }
 }
 
@@ -245,30 +245,30 @@ int simif_emul_t::end() {
 }
 
 void simif_emul_t::do_tick() {
-  sim_flag = false;
-  target_flag = true;
+  driver_flag = false;
+  rtlsim_flag = true;
 
   {
-    std::unique_lock<std::mutex> lock(target_mutex);
-    target_cond.notify_one();
+    std::unique_lock<std::mutex> lock(rtlsim_mutex);
+    rtlsim_cond.notify_one();
   }
   {
-    std::unique_lock<std::mutex> lock(sim_mutex);
-    sim_cond.wait(lock, [&] { return sim_flag; });
+    std::unique_lock<std::mutex> lock(driver_mutex);
+    driver_cond.wait(lock, [&] { return driver_flag; });
   }
 }
 
 bool simif_emul_t::to_sim() {
-  target_flag = false;
-  sim_flag = true;
+  rtlsim_flag = false;
+  driver_flag = true;
 
   {
-    std::unique_lock<std::mutex> lock(sim_mutex);
-    sim_cond.notify_one();
+    std::unique_lock<std::mutex> lock(driver_mutex);
+    driver_cond.notify_one();
   }
   {
-    std::unique_lock<std::mutex> lock(target_mutex);
-    target_cond.wait(lock, [&] { return target_flag || finished; });
+    std::unique_lock<std::mutex> lock(rtlsim_mutex);
+    rtlsim_cond.wait(lock, [&] { return rtlsim_flag || finished; });
   }
   return finished;
 }
@@ -288,8 +288,8 @@ void simif_emul_t::thread_main() {
 
   // Wake the target thread before returning from the simulation thread.
   {
-    std::unique_lock<std::mutex> lock(target_mutex);
+    std::unique_lock<std::mutex> lock(rtlsim_mutex);
     finished = true;
-    target_cond.notify_one();
+    rtlsim_cond.notify_one();
   }
 }
