@@ -26,10 +26,7 @@ class StreamEngine;
  */
 class widget_registry_t final {
 public:
-  widget_registry_t(const TargetConfig &config,
-                    simif_t &simif,
-                    const std::vector<std::string> &args);
-
+  widget_registry_t();
   ~widget_registry_t();
 
   /**
@@ -94,9 +91,6 @@ public:
   void add_widget(StreamEngine *widget);
 
 private:
-  // Target-specific configuration.
-  const TargetConfig config;
-
   // Mapping from bridge kinds to the list of bridges of that kind.
   using widget_list_t = std::vector<std::unique_ptr<widget_t>>;
   std::unordered_map<const void *, widget_list_t> widgets;

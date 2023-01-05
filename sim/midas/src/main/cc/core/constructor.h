@@ -76,7 +76,7 @@ UARTBRIDGEMODULE_checks;
 #ifdef LOADMEMWIDGET_0_PRESENT
 registry.add_widget(new loadmem_t(simif,
                                   LOADMEMWIDGET_0_substruct_create,
-                                  config.mem,
+                                  conf_target.mem,
                                   LOADMEMWIDGET_0_mem_data_chunk));
 #endif // LOADMEMWIDGET_0_PRESENT
 

@@ -19,8 +19,6 @@ public:
                 const std::vector<std::string> &args);
   ~simif_vitis_t() {}
 
-  int run() { return simulation_run(); }
-
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
 
@@ -138,7 +136,8 @@ char *simif_vitis_t::get_memory_base() {
   abort();
 }
 
-int main(int argc, char **argv) {
+std::unique_ptr<simif_t>
+create_simif(const TargetConfig &config, int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_vitis_t(conf_target, args).run();
+  return std::make_unique<simif_vitis_t>(config, args);
 }

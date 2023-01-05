@@ -11,16 +11,14 @@ clang_tidy_files := $(shell \
 	find $(firesim_base_dir) -name '*.cc' -or -name '*.h' \
 		| grep -v generic_vharness.cc \
 		| grep -v TestPointerChaser.cc \
-		| grep -v simif.cc \
 		| grep -v simif_ \
 		| grep -v tracerv \
 		| grep -v dromajo \
 		| grep -v serial \
 		| grep -v fesvr \
-		| grep -v firesim_top \
 		| grep -v generated-src \
 		| grep -v output \
-		| grep -v constructor.h \
+		| grep -v -F 'main.cc' \
 )
 
 clang_tidy_flags :=\

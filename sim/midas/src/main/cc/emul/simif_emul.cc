@@ -4,6 +4,7 @@
 
 #include "bridges/cpu_managed_stream.h"
 #include "bridges/fpga_managed_stream.h"
+#include "core/simulation.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
 
@@ -49,7 +50,11 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     assert(!config.cpu_managed && "stream should be CPU or FPGA managed");
     fpga_managed_stream_io.reset(new FPGAManagedStreamIOImpl(*this, *conf));
   }
+}
 
+simif_emul_t::~simif_emul_t() {}
+
+void simif_emul_t::start_driver(simulation_t &sim) {
   // Set up the simulation thread.
   finished = false;
   exit_code = EXIT_FAILURE;
@@ -57,12 +62,35 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     std::unique_lock<std::mutex> lock(rtlsim_mutex);
     driver_flag = false;
     rtlsim_flag = false;
-    thread = std::thread([&] { thread_main(); });
+
+    // Spawn the target thread.
+    thread = std::thread([&] {
+      do_tick();
+
+      // Load memories before initialising the simulation.
+      if (fastloadmem && !load_mem_path.empty()) {
+        fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
+        load_mems(load_mem_path.c_str());
+      }
+
+      // Run the simulation flow.
+      target_init();
+      exit_code = sim.execute_simulation_flow();
+
+      // Wake the target thread before returning from the simulation thread.
+      {
+        std::unique_lock<std::mutex> lock(rtlsim_mutex);
+        finished = true;
+        rtlsim_cond.notify_one();
+      }
+    });
+
+    // Wait for the target thread to yield and enter the RTL simulator.
+    // The target thread is waken up when the DPI tick function is
+    // ready to transfer data to it.
     rtlsim_cond.wait(lock, [&] { return rtlsim_flag; });
   }
 }
-
-simif_emul_t::~simif_emul_t() {}
 
 void simif_emul_t::wait_write(mmio_t &mmio) {
   while (!mmio.write_resp())
@@ -189,25 +217,4 @@ bool simif_emul_t::to_sim() {
     rtlsim_cond.wait(lock, [&] { return rtlsim_flag || finished; });
   }
   return finished;
-}
-
-void simif_emul_t::thread_main() {
-  // Switch over to the target thread and wait for the first tick.
-  do_tick();
-
-  // Load memories before initialising the simulation.
-  if (fastloadmem && !load_mem_path.empty()) {
-    fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
-    load_mems(load_mem_path.c_str());
-  }
-
-  // Run the simulation flow.
-  exit_code = simulation_run();
-
-  // Wake the target thread before returning from the simulation thread.
-  {
-    std::unique_lock<std::mutex> lock(rtlsim_mutex);
-    finished = true;
-    rtlsim_cond.notify_one();
-  }
 }

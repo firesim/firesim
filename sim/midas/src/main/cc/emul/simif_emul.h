@@ -39,7 +39,7 @@ public:
   int end();
 
   /**
-   * Simulation thread implementation.
+   * Start the driver thread.
    *
    * This thread is synchronized by the main thread driven by Verilator/VCS
    * which simulates the RTL and invokes the tick function through DPI. At
@@ -53,7 +53,7 @@ public:
    * runs for one cycle, handling the AXI transactions, before switching control
    * back to the target thread that reads outputs into the RTL.
    */
-  void thread_main();
+  void start_driver(simulation_t &sim);
 
   /**
    * Transfers control to the simulator on a tick.
