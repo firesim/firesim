@@ -3,8 +3,9 @@
 
 #include "simif_emul_vcs.h"
 
-simif_emul_vcs_t::simif_emul_vcs_t(const std::vector<std::string> &args)
-    : simif_emul_t(args) {}
+simif_emul_vcs_t::simif_emul_vcs_t(const TargetConfig &config,
+                                   const std::vector<std::string> &args)
+    : simif_emul_t(config, args) {}
 
 simif_emul_vcs_t::~simif_emul_vcs_t() {}
 
@@ -20,6 +21,6 @@ int vcs_main(int argc, char **argv);
  */
 int main(int argc, char **argv) {
   std::vector<std::string> args{argv + 1, argv + argc};
-  simulator = new simif_emul_vcs_t(args);
+  simulator = new simif_emul_vcs_t(conf_target, args);
   return vcs_main(argc, argv);
 }

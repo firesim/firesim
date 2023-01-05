@@ -13,8 +13,8 @@ simif_emul_verilator_t *simulator = nullptr;
 double sc_time_stamp() { return simulator->get_time(); }
 
 simif_emul_verilator_t::simif_emul_verilator_t(
-    const std::vector<std::string> &args)
-    : simif_emul_t(args), top(std::make_unique<Vemul>()) {
+    const TargetConfig &config, const std::vector<std::string> &args)
+    : simif_emul_t(config, args), top(std::make_unique<Vemul>()) {
   simulator = this;
 
 #if VM_TRACE
@@ -72,5 +72,5 @@ void simif_emul_verilator_t::tick() {
 int main(int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_emul_verilator_t(args).run();
+  return simif_emul_verilator_t(conf_target, args).run();
 }

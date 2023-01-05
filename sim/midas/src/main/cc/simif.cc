@@ -17,8 +17,12 @@ double diff_secs(midas_time_t end, midas_time_t start) {
 extern std::unique_ptr<simulation_t>
 create_simulation(const std::vector<std::string> &args, simif_t *simif);
 
-simif_t::simif_t(const std::vector<std::string> &args)
-    : loadmem(this, LOADMEMWIDGET_0_substruct_create, MEM_DATA_CHUNK),
+simif_t::simif_t(const TargetConfig &config,
+                 const std::vector<std::string> &args)
+    : config(config), loadmem(this,
+                              LOADMEMWIDGET_0_substruct_create,
+                              config.mem,
+                              LOADMEMWIDGET_0_mem_data_chunk),
       clock(this, CLOCKBRIDGEMODULE_0_substruct_create),
       master(this, SIMULATIONMASTER_0_substruct_create),
       sim(create_simulation(args, this)) {

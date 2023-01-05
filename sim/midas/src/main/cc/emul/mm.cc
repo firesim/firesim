@@ -36,9 +36,9 @@ std::vector<char> mm_t::read(uint64_t addr) {
   return std::vector<char>(base, base + word_size);
 }
 
-void mm_t::init(size_t sz, int wsz, int lsz) {
-  assert(wsz > 0 && lsz > 0 && (lsz & (lsz - 1)) == 0 && lsz % wsz == 0);
-  word_size = wsz;
+void mm_t::init(size_t sz, int lsz) {
+  assert(word_size > 0 && lsz > 0);
+  assert((lsz & (lsz - 1)) == 0 && lsz % word_size == 0);
   line_size = lsz;
   data = (uint8_t *)mmap(NULL,
                          sz,
@@ -56,8 +56,8 @@ void mm_t::init(size_t sz, int wsz, int lsz) {
 
 mm_t::~mm_t() { munmap(data, this->size); }
 
-void mm_magic_t::init(size_t sz, int wsz, int lsz) {
-  mm_t::init(sz, wsz, lsz);
+void mm_magic_t::init(size_t sz, int lsz) {
+  mm_t::init(sz, lsz);
   dummy_data.resize(word_size);
 }
 

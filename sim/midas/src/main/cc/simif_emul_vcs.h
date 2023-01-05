@@ -17,7 +17,8 @@ void emul_signal_handler(int sig);
  */
 class simif_emul_vcs_t final : public simif_emul_t {
 public:
-  simif_emul_vcs_t(const std::vector<std::string> &args);
+  simif_emul_vcs_t(const TargetConfig &config,
+                   const std::vector<std::string> &args);
   ~simif_emul_vcs_t();
 };
 

@@ -27,6 +27,7 @@ class loadmem_t final {
 public:
   loadmem_t(simif_t *sim,
             const LOADMEMWIDGET_struct &mmio_addrs,
+            const AXI4Config &mem_conf,
             unsigned mem_data_chunk);
 
   void read_mem(size_t addr, mpz_t &value);
@@ -44,6 +45,7 @@ public:
 private:
   simif_t *sim;
   const LOADMEMWIDGET_struct mmio_addrs;
+  const AXI4Config mem_conf;
   const unsigned mem_data_chunk;
 };
 

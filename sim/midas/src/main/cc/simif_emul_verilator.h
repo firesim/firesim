@@ -15,7 +15,8 @@
  */
 class simif_emul_verilator_t final : public simif_emul_t {
 public:
-  simif_emul_verilator_t(const std::vector<std::string> &args);
+  simif_emul_verilator_t(const TargetConfig &config,
+                         const std::vector<std::string> &args);
 
   ~simif_emul_verilator_t();
 

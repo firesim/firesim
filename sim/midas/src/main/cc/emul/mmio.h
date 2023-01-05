@@ -48,8 +48,9 @@ struct mmio_resp_data_t {
  */
 class mmio_t final {
 public:
-  mmio_t(size_t size) : read_inflight(false), write_inflight(false) {
-    dummy_data.resize(size);
+  mmio_t(const AXI4Config &conf)
+      : conf(conf), read_inflight(false), write_inflight(false) {
+    dummy_data.resize(conf.beat_bytes());
   }
 
   ~mmio_t() {}
@@ -91,7 +92,11 @@ public:
   bool read_resp(void *data);
   bool write_resp();
 
+  const AXI4Config &get_config() const { return conf; }
+
 private:
+  const AXI4Config conf;
+
   std::queue<mmio_req_addr_t> ar;
   std::queue<mmio_req_addr_t> aw;
   std::queue<mmio_req_data_t> w;

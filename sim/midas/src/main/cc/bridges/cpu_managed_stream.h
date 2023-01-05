@@ -46,12 +46,14 @@ typedef struct StreamParameters {
 class CPUManagedDriver {
 public:
   CPUManagedDriver(StreamParameters params,
+                   const AXI4Config &config,
                    std::function<uint32_t(size_t)> mmio_read_func)
-      : params(params), mmio_read_func(mmio_read_func){};
+      : params(params), config(config), mmio_read_func(mmio_read_func){};
   virtual ~CPUManagedDriver(){};
 
 private:
   StreamParameters params;
+  const AXI4Config config;
   std::function<uint32_t(size_t)> mmio_read_func;
 
 public:
@@ -60,6 +62,7 @@ public:
   int fpga_buffer_size() { return params.fpga_buffer_size; };
   uint64_t dma_addr() { return params.dma_addr; };
   uint64_t count_addr() { return params.count_addr; };
+  uint64_t beat_bytes() const { return config.beat_bytes(); }
 };
 
 /**
@@ -74,9 +77,10 @@ class FPGAToCPUDriver final : public CPUManagedDriver,
                               public FPGAToCPUStreamDriver {
 public:
   FPGAToCPUDriver(StreamParameters params,
+                  const AXI4Config &config,
                   std::function<uint32_t(size_t)> mmio_read,
                   std::function<size_t(size_t, char *, size_t)> axi4_read)
-      : CPUManagedDriver(params, mmio_read), axi4_read(axi4_read){};
+      : CPUManagedDriver(params, config, mmio_read), axi4_read(axi4_read){};
 
   virtual size_t
   pull(void *dest, size_t num_bytes, size_t required_bytes) override;
@@ -100,9 +104,10 @@ class CPUToFPGADriver final : public CPUManagedDriver,
                               public CPUToFPGAStreamDriver {
 public:
   CPUToFPGADriver(StreamParameters params,
+                  const AXI4Config &config,
                   std::function<uint32_t(size_t)> mmio_read,
                   std::function<size_t(size_t, char *, size_t)> axi4_write)
-      : CPUManagedDriver(params, mmio_read), axi4_write(axi4_write){};
+      : CPUManagedDriver(params, config, mmio_read), axi4_write(axi4_write){};
 
   virtual size_t
   push(void *src, size_t num_bytes, size_t required_bytes) override;

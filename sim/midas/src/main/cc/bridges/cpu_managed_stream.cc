@@ -15,16 +15,17 @@
 size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
                                                 size_t num_bytes,
                                                 size_t required_bytes) {
+
   assert(num_bytes >= required_bytes);
 
   // Similarly to above, the legacy implementation of DMA does not correctly
   // implement non-multiples of 512b. The FPGA-side queue will take on the
   // high-order bytes of the final beat in the transaction, and the strobe is
   // not respected. So put the assertion here and discuss what to do next.
-  assert((num_bytes % CPU_MANAGED_AXI4_BEAT_BYTES) == 0);
+  assert((num_bytes % beat_bytes()) == 0);
 
-  auto num_beats = num_bytes / CPU_MANAGED_AXI4_BEAT_BYTES;
-  auto threshold_beats = required_bytes / CPU_MANAGED_AXI4_BEAT_BYTES;
+  auto num_beats = num_bytes / beat_bytes();
+  auto threshold_beats = required_bytes / beat_bytes();
 
   assert(threshold_beats <= this->fpga_buffer_size());
   auto space_available =
@@ -35,7 +36,7 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   }
 
   auto push_beats = std::min(space_available, num_beats);
-  auto push_bytes = push_beats * CPU_MANAGED_AXI4_BEAT_BYTES;
+  auto push_bytes = push_beats * beat_bytes();
   auto bytes_written =
       this->axi4_write(this->dma_addr(), (char *)src, push_bytes);
   assert(bytes_written == push_bytes);
@@ -68,10 +69,10 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   // Due to the destructive nature of reads, if we wish to support reads that
   // aren't a multiple of 512b, we'll need to keep a little buffer around for
   // the remainder, and prepend this to the destination buffer.
-  assert((num_bytes % CPU_MANAGED_AXI4_BEAT_BYTES) == 0);
+  assert((num_bytes % beat_bytes()) == 0);
 
-  auto num_beats = num_bytes / CPU_MANAGED_AXI4_BEAT_BYTES;
-  auto threshold_beats = required_bytes / CPU_MANAGED_AXI4_BEAT_BYTES;
+  auto num_beats = num_bytes / beat_bytes();
+  auto threshold_beats = required_bytes / beat_bytes();
 
   assert(threshold_beats <= this->fpga_buffer_size());
   auto count = this->mmio_read(this->count_addr());
@@ -81,7 +82,7 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   }
 
   auto pull_beats = std::min(count, num_beats);
-  auto pull_bytes = pull_beats * CPU_MANAGED_AXI4_BEAT_BYTES;
+  auto pull_bytes = pull_beats * beat_bytes();
   auto bytes_read = this->axi4_read(this->dma_addr(), (char *)dest, pull_bytes);
   assert(bytes_read == pull_bytes);
   return bytes_read;
