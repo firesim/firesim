@@ -16,8 +16,6 @@ public:
   simif_f1_t(const TargetConfig &config, const std::vector<std::string> &args);
   ~simif_f1_t();
 
-  int run() { return simulation_run(); }
-
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
 
@@ -204,7 +202,8 @@ uint32_t simif_f1_t::is_write_ready() {
   return value & 0xFFFFFFFF;
 }
 
-int main(int argc, char **argv) {
+std::unique_ptr<simif_t>
+create_simif(const TargetConfig &config, int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_f1_t(conf_target, args).run();
+  return std::make_unique<simif_f1_t>(config, args);
 }

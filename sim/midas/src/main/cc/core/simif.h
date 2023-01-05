@@ -23,6 +23,7 @@ class StreamEngine;
 class simulation_t;
 class CPUManagedStreamIO;
 class FPGAManagedStreamIO;
+class TargetConfig;
 
 /** \class simif_t
  *
@@ -95,45 +96,45 @@ public:
    * (will report a larger number).
    */
   uint64_t actual_tcycle() {
-    return registry->get_widget<clockmodule_t>().tcycle();
+    return registry.get_widget<clockmodule_t>().tcycle();
   }
 
   /**
    * Provides the current host cycle.
    */
   uint64_t actual_hcycle() {
-    return registry->get_widget<clockmodule_t>().hcycle();
+    return registry.get_widget<clockmodule_t>().hcycle();
   }
 
   /**
    * Return the name of the simulated target.
    */
-  std::string_view get_target_name() const { return config.target_name; }
+  std::string_view get_target_name() const;
 
   /**
    * Return a reference to the registry which owns all widgets.
    */
-  widget_registry_t &get_registry() { return *registry; }
+  widget_registry_t &get_registry() { return registry; }
 
-private:
   /**
-   * Waits for the target to be initialised.
+   * Runs the simulation in the context of the driver.
+   *
+   * The default implementation initialises the target and hands control to
+   * the driver routines, suitable for actual FPGA implementations.
    */
-  void target_init();
-
-  void load_mem(std::string filename);
+  virtual int run(simulation_t &sim);
 
 protected:
   /**
-   * Simulation main loop.
+   * Sets up the target and blocks until it is initialized.
    */
-  int simulation_run();
+  void target_init();
 
 protected:
   /**
    * Target configuration.
    */
-  const TargetConfig config;
+  const TargetConfig &config;
 
   /**
    * Saved command-line arguments.
@@ -143,12 +144,7 @@ protected:
   /**
    * Helper holding references to all bridges.
    */
-  std::unique_ptr<widget_registry_t> registry;
-
-  /**
-   * Reference to the user-defined bits of the simulation.
-   */
-  std::unique_ptr<simulation_t> sim;
+  widget_registry_t registry;
 
   /**
    * Path to load DRAM contents from.

@@ -11,11 +11,11 @@
 class firesim_top_t : public systematic_scheduler_t, public simulation_t {
 public:
   firesim_top_t(const std::vector<std::string> &args, simif_t &sim);
-  ~firesim_top_t() {}
+  ~firesim_top_t() override = default;
 
-  void simulation_init();
-  void simulation_finish();
-  int simulation_run();
+  void simulation_init() override;
+  void simulation_finish() override;
+  int simulation_run() override;
 
 private:
   // profile interval: # of cycles to advance before profiling instrumentation
