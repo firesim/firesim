@@ -20,7 +20,12 @@ public:
   void simulation_finish();
   int simulation_run();
 
-protected:
+private:
+  bool simulation_timed_out() {
+    return !simulation_complete() && simif->done() &&
+           finished_scheduled_tasks();
+  }
+
   void add_bridge_driver(bridge_driver_t *bridge) {
     bridges.emplace_back(bridge);
   }

@@ -7,7 +7,7 @@ static const char *blocking_fail =
     "progress.";
 
 TestHarness::TestHarness(const std::vector<std::string> &args, simif_t *simif)
-    : simulation_t(args), simif(simif) {
+    : simulation_t(*simif, args), simif(simif) {
   for (auto arg : args) {
     if (arg.find("+seed=") == 0) {
       random_seed = strtoll(arg.c_str() + 6, NULL, 10);

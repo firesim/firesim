@@ -14,6 +14,84 @@ double diff_secs(midas_time_t end, midas_time_t start) {
   return ((double)(end - start)) / TIME_DIV_CONST;
 }
 
+void simulation_t::record_start_times() {
+  start_hcycle = sim.actual_hcycle();
+  start_time = timestamp();
+}
+
+void simulation_t::record_end_times() {
+  end_time = timestamp();
+  end_tcycle = sim.actual_tcycle();
+  end_hcycle = sim.actual_hcycle();
+}
+
+void simulation_t::print_simulation_performance_summary() {
+  // Must call record_start_times and record_end_times before invoking this
+  // function
+  assert(start_hcycle != -1 && end_hcycle != 0 && "simulation not executed");
+
+  const uint64_t hcycles = end_hcycle - start_hcycle;
+  const double sim_time = diff_secs(end_time, start_time);
+  const double sim_speed = ((double)end_tcycle) / (sim_time * 1000.0);
+  const double measured_host_frequency =
+      ((double)hcycles) / (sim_time * 1000.0);
+  const double fmr = ((double)hcycles / end_tcycle);
+
+  fprintf(stderr, "\nEmulation Performance Summary\n");
+  fprintf(stderr, "------------------------------\n");
+  fprintf(stderr, "Wallclock Time Elapsed: %.1f s\n", sim_time);
+  // Provide enough sig-figs to let the report be useful in RTL sim
+  fprintf(stderr, "Host Frequency: ");
+  if (measured_host_frequency > 1000.0) {
+    fprintf(stderr, "%.3f MHz\n", measured_host_frequency / 1000.0);
+  } else {
+    fprintf(stderr, "%.3f KHz\n", measured_host_frequency);
+  }
+
+  fprintf(stderr, "Target Cycles Emulated: %" PRIu64 "\n", end_tcycle);
+  fprintf(stderr, "Effective Target Frequency: ");
+  if (sim_speed > 1000.0) {
+    fprintf(stderr, "%.3f MHz\n", sim_speed / 1000.0);
+  } else {
+    fprintf(stderr, "%.3f KHz\n", sim_speed);
+  }
+  fprintf(stderr, "FMR: %.2f\n", fmr);
+  fprintf(stderr,
+          "Note: The latter three figures are based on the fastest "
+          "target clock.\n");
+}
+
+int simulation_t::execute_simulation_flow() {
+  simulation_init();
+
+  record_start_times();
+  fprintf(stderr, "Commencing simulation.\n");
+  const int exit_code = simulation_run();
+  fprintf(stderr, "\nSimulation complete.\n");
+  record_end_times();
+
+  simulation_finish();
+
+  const bool timeout = simulation_timed_out();
+
+  if (exit_code != 0) {
+    fprintf(stderr,
+            "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
+            exit_code,
+            end_tcycle);
+  } else if (timeout) {
+    fprintf(stderr,
+            "*** FAILED *** simulation timed out after %" PRIu64 " cycles\n",
+            end_tcycle);
+  } else {
+    fprintf(stderr, "*** PASSED *** after %" PRIu64 " cycles\n", end_tcycle);
+  }
+
+  print_simulation_performance_summary();
+
+  return timeout ? EXIT_FAILURE : exit_code;
+}
+
 extern std::unique_ptr<simulation_t>
 create_simulation(const std::vector<std::string> &args, simif_t *simif);
 
@@ -67,60 +145,5 @@ int simif_t::simulation_run() {
     loadmem.zero_out_dram();
   }
 
-  sim->simulation_init();
-
-  record_start_times();
-  int exitcode = sim->simulation_run();
-  record_end_times();
-
-  sim->simulation_finish();
-
-  print_simulation_performance_summary();
-  return exitcode;
-}
-
-void simif_t::record_start_times() {
-  this->start_hcycle = clock.hcycle();
-  this->start_time = timestamp();
-}
-
-void simif_t::record_end_times() {
-  this->end_time = timestamp();
-  this->end_tcycle = actual_tcycle();
-  this->end_hcycle = clock.hcycle();
-}
-
-void simif_t::print_simulation_performance_summary() {
-  // Must call record_start_times and record_end_times before invoking this
-  // function
-  assert(start_hcycle != -1);
-  assert(end_hcycle != 0);
-  uint64_t hcycles = end_hcycle - start_hcycle;
-  double sim_time = diff_secs(end_time, start_time);
-  double sim_speed = ((double)end_tcycle) / (sim_time * 1000.0);
-  double measured_host_frequency = ((double)hcycles) / (sim_time * 1000.0);
-  double fmr = ((double)hcycles / end_tcycle);
-
-  fprintf(stderr, "\nEmulation Performance Summary\n");
-  fprintf(stderr, "------------------------------\n");
-  fprintf(stderr, "Wallclock Time Elapsed: %.1f s\n", sim_time);
-  // Provide enough sig-figs to let the report be useful in RTL sim
-  fprintf(stderr, "Host Frequency: ");
-  if (measured_host_frequency > 1000.0) {
-    fprintf(stderr, "%.3f MHz\n", measured_host_frequency / 1000.0);
-  } else {
-    fprintf(stderr, "%.3f KHz\n", measured_host_frequency);
-  }
-
-  fprintf(stderr, "Target Cycles Emulated: %" PRIu64 "\n", end_tcycle);
-  fprintf(stderr, "Effective Target Frequency: ");
-  if (sim_speed > 1000.0) {
-    fprintf(stderr, "%.3f MHz\n", sim_speed / 1000.0);
-  } else {
-    fprintf(stderr, "%.3f KHz\n", sim_speed);
-  }
-  fprintf(stderr, "FMR: %.2f\n", fmr);
-  fprintf(stderr,
-          "Note: The latter three figures are based on the fastest "
-          "target clock.\n");
+  return sim->execute_simulation_flow();
 }
