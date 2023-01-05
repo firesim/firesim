@@ -7,24 +7,23 @@ import java.io._
 import org.scalatest.Suites
 import org.scalatest.matchers.should._
 
+import freechips.rocketchip.config.Config
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.config._
 
+import firesim.{BasePlatformConfig, TestSuiteCommon}
+
+object BaseConfigs {
+  case object F1    extends BasePlatformConfig("f1", Seq(classOf[DefaultF1Config]))
+  case object Vitis extends BasePlatformConfig("vitis", Seq(classOf[DefaultVitisConfig]))
+}
+
 abstract class BridgeSuite(
-  val targetName:      String,
-  val targetConfigs:   String = "NoConfig",
-  val platformConfigs: String = "HostDebugFeatures_DefaultF1Config",
-) extends firesim.TestSuiteCommon
+  val targetName:                  String,
+  override val targetConfigs:      String,
+  override val basePlatformConfig: BasePlatformConfig,
+) extends TestSuiteCommon("bridges")
     with Matchers {
-
-  val targetTuple = s"$targetName-$targetConfigs-$platformConfigs"
-
-  val commonMakeArgs = Seq(
-    s"TARGET_PROJECT=bridges",
-    s"DESIGN=$targetName",
-    s"TARGET_CONFIG=${targetConfigs}",
-    s"PLATFORM_CONFIG=${platformConfigs}",
-  )
 
   def run(
     backend:  String,
@@ -79,7 +78,7 @@ abstract class BridgeSuite(
   }
 }
 
-class UARTTest(targetConfig: String) extends BridgeSuite("UARTModule", "UARTConfig", targetConfig) {
+class UARTTest(targetConfig: BasePlatformConfig) extends BridgeSuite("UARTModule", "UARTConfig", targetConfig) {
   override def runTest(backend: String, debug: Boolean) {
     // Generate a short test string.
     val data = getTestString(16)
@@ -102,10 +101,11 @@ class UARTTest(targetConfig: String) extends BridgeSuite("UARTModule", "UARTConf
   }
 }
 
-class UARTF1Test    extends UARTTest("DefaultF1Config")
-class UARTVitisTest extends UARTTest("DefaultVitisConfig")
+class UARTF1Test    extends UARTTest(BaseConfigs.F1)
+class UARTVitisTest extends UARTTest(BaseConfigs.Vitis)
 
-class BlockDevTest(targetConfig: String) extends BridgeSuite("BlockDevModule", "BlockDevConfig", targetConfig) {
+class BlockDevTest(targetConfig: BasePlatformConfig)
+    extends BridgeSuite("BlockDevModule", "BlockDevConfig", targetConfig) {
   override def runTest(backend: String, debug: Boolean) {
     // Generate a random string spanning 2 sectors with a fixed seed.
     val data = getTestString(1024)
@@ -135,8 +135,8 @@ class BlockDevTest(targetConfig: String) extends BridgeSuite("BlockDevModule", "
   }
 }
 
-class BlockDevF1Test    extends BlockDevTest("DefaultF1Config")
-class BlockDevVitisTest extends BlockDevTest("DefaultVitisConfig")
+class BlockDevF1Test    extends BlockDevTest(BaseConfigs.F1)
+class BlockDevVitisTest extends BlockDevTest(BaseConfigs.Vitis)
 
 class BridgeTests
     extends Suites(
