@@ -26,9 +26,7 @@ typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t triggerSelector;
 } TRACERVBRIDGEMODULE_struct;
 
-class tracerv_t : public bridge_driver_t
-
-{
+class tracerv_t : public bridge_driver_t {
 public:
   tracerv_t(simif_t *sim,
             const std::vector<std::string> &args,

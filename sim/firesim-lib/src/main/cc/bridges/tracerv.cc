@@ -16,7 +16,7 @@
 
 // put FIREPERF in a mode that writes a simple log for processing later.
 // useful for iterating on software side only without re-running on FPGA.
-//#define FIREPERF_LOGGER
+// #define FIREPERF_LOGGER
 
 constexpr uint64_t valid_mask = (1ULL << 40);
 

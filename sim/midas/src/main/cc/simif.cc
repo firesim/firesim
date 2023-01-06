@@ -111,20 +111,10 @@ simif_t::simif_t(const TargetConfig &config,
     if (arg.find("+loadmem=") == 0) {
       load_mem_path = arg.c_str() + 9;
     }
-    if (arg.find("+seed=") == 0) {
-      seed = strtoll(arg.c_str() + 6, NULL, 10);
-      fprintf(stderr, "Using custom SEED: %ld\n", seed);
-    }
     if (arg.find("+zero-out-dram") == 0) {
       do_zero_out_dram = true;
     }
   }
-
-  gen.seed(seed);
-  fprintf(stderr,
-          "random min: 0x%" PRIx64 ", random max: 0x%" PRIx64 "\n",
-          gen.min(),
-          gen.max());
 }
 
 void simif_t::target_init() {

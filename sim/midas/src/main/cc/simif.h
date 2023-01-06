@@ -249,16 +249,6 @@ public:
   // End host-platform interface.
 
   /**
-   * Returns the seed of the random-number generator.
-   */
-  uint64_t get_seed() const { return seed; };
-
-  /**
-   * Returns the next available random number, modulo limit.
-   */
-  uint64_t rand_next(uint64_t limit) { return gen() % limit; }
-
-  /**
    * Provides the current target cycle of the fastest clock.
    *
    * The target cycle is based on the number of clock tokens enqueued
@@ -329,9 +319,10 @@ protected:
   bool do_zero_out_dram = false;
 
 private:
-  // random numbers
-  uint64_t seed = 0;
-  std::mt19937_64 gen;
+  midas_time_t start_time, end_time;
+  uint64_t start_hcycle = -1;
+  uint64_t end_hcycle = 0;
+  uint64_t end_tcycle = 0;
 };
 
 #endif // __SIMIF_H

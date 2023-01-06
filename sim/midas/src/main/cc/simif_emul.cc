@@ -25,7 +25,12 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     if (arg.find("+fuzz-host-timing=") == 0) {
       maximum_host_delay = atoi(arg.c_str() + 18);
     }
+    if (arg.find("+fuzz-seed=") == 0) {
+      fuzz_seed = strtoll(arg.c_str() + 11, NULL, 10);
+      fprintf(stderr, "Using custom fuzzer seed: %ld\n", fuzz_seed);
+    }
   }
+  fuzz_gen.seed(fuzz_seed);
 
   // Initialise memories.
   for (unsigned i = 0; i < config.mem_num_channels; ++i) {

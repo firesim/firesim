@@ -9,7 +9,7 @@ public:
   void run_test() {
     gmp_randstate_t rstate;
     gmp_randinit_default(rstate);
-    gmp_randseed_ui(rstate, simif->get_seed());
+    gmp_randseed_ui(rstate, 0u);
     mpz_t vbIn_bar_bits, vbOut_bar_bits;
     mpz_inits(vbIn_bar_bits, NULL);
     int width = 128;

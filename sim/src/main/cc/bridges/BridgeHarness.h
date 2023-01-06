@@ -3,6 +3,7 @@
 
 #include "bridges/blockdev.h"
 #include "bridges/peek_poke.h"
+#include "bridges/tracerv.h"
 #include "bridges/uart.h"
 #include "simif.h"
 
