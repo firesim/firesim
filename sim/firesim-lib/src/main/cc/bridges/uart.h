@@ -23,10 +23,6 @@ typedef struct UARTBRIDGEMODULE_struct {
   uint64_t in_ready;
 } UARTBRIDGEMODULE_struct;
 
-#ifdef UARTBRIDGEMODULE_checks
-UARTBRIDGEMODULE_checks;
-#endif // UARTBRIDGEMODULE_checks
-
 /**
  * Base class for callbacks handling data coming in and out a UART stream.
  */

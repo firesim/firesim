@@ -18,20 +18,6 @@ typedef struct SIMPLENICBRIDGEMODULE_struct {
   uint64_t done;
 } SIMPLENICBRIDGEMODULE_struct;
 
-#ifdef SIMPLENICBRIDGEMODULE_checks
-SIMPLENICBRIDGEMODULE_checks;
-#endif // SIMPLENICBRIDGEMODULE_checks
-
-#define INSTANTIATE_SIMPLENIC(FUNC, IDX)                                       \
-  FUNC(new simplenic_t(simif,                                                  \
-                       args,                                                   \
-                       SIMPLENICBRIDGEMODULE_##IDX##_substruct_create,         \
-                       IDX,                                                    \
-                       SIMPLENICBRIDGEMODULE_##IDX##_to_cpu_stream_idx,        \
-                       SIMPLENICBRIDGEMODULE_##IDX##_to_cpu_stream_depth,      \
-                       SIMPLENICBRIDGEMODULE_##IDX##_from_cpu_stream_idx,      \
-                       SIMPLENICBRIDGEMODULE_##IDX##_from_cpu_stream_depth));
-
 class simplenic_t : public bridge_driver_t {
 public:
   simplenic_t(simif_t *sim,

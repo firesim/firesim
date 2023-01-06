@@ -10,32 +10,6 @@
 // This will need to be manually incremented by descretion.
 constexpr int autocounter_csv_format_version = 1;
 
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_AUTOCOUNTER(FUNC, IDX)                                     \
-  FUNC(new autocounter_t(                                                      \
-      simif,                                                                   \
-      args,                                                                    \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_substruct_create,                        \
-      AddressMap(                                                              \
-          AUTOCOUNTERBRIDGEMODULE_##IDX##_R_num_registers,                     \
-          (const unsigned int *)AUTOCOUNTERBRIDGEMODULE_##IDX##_R_addrs,       \
-          (const char *const *)AUTOCOUNTERBRIDGEMODULE_##IDX##_R_names,        \
-          AUTOCOUNTERBRIDGEMODULE_##IDX##_W_num_registers,                     \
-          (const unsigned int *)AUTOCOUNTERBRIDGEMODULE_##IDX##_W_addrs,       \
-          (const char *const *)AUTOCOUNTERBRIDGEMODULE_##IDX##_W_names),       \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_count,                             \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_types,                             \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_widths,                            \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_accumulator_widths,                      \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_addr_hi,                           \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_addr_lo,                           \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_descriptions,                      \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_labels,                            \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_domain_name,                       \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_multiplier,                        \
-      AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_divisor,                           \
-      IDX));
-
 typedef struct AUTOCOUNTERBRIDGEMODULE_struct {
   uint64_t cycles_low;
   uint64_t cycles_high;
@@ -45,10 +19,6 @@ typedef struct AUTOCOUNTERBRIDGEMODULE_struct {
   uint64_t countersready;
   uint64_t readdone;
 } AUTOCOUNTERBRIDGEMODULE_struct;
-
-#ifdef AUTOCOUNTERBRIDGEMODULE_checks
-AUTOCOUNTERBRIDGEMODULE_checks;
-#endif // AUTOCOUNTERBRIDGEMODULE_checks
 
 class autocounter_t : public bridge_driver_t {
 public:

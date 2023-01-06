@@ -6,22 +6,9 @@ typedef struct RESETPULSEBRIDGEMODULE_struct {
   unsigned long doneInit;
 } RESETPULSEBRIDGEMODULE_struct;
 
-#ifdef RESETPULSEBRIDGEMODULE_checks
-RESETPULSEBRIDGEMODULE_checks;
-#endif // RESETPULSEBRIDGEMODULE_checks
-
 #include <vector>
 
 #include "bridge_driver.h"
-
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_RESET_PULSE(FUNC, IDX)                                     \
-  FUNC(new reset_pulse_t(simif,                                                \
-                         args,                                                 \
-                         RESETPULSEBRIDGEMODULE_##IDX##_substruct_create,      \
-                         RESETPULSEBRIDGEMODULE_##IDX##_max_pulse_length,      \
-                         RESETPULSEBRIDGEMODULE_##IDX##_default_pulse_length,  \
-                         IDX));
 
 class reset_pulse_t : public bridge_driver_t {
 

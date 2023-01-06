@@ -33,20 +33,6 @@ typedef struct SERIALBRIDGEMODULE_struct {
   uint64_t start;
 } SERIALBRIDGEMODULE_struct;
 
-#ifdef SERIALBRIDGEMODULE_checks
-SERIALBRIDGEMODULE_checks;
-#endif // SERIALBRIDGEMODULE_checks
-
-// Bridge Driver Instantiation Template
-// Casts are required for now since the emitted type can change
-#define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
-  FUNC(new serial_t(simif,                                                     \
-                    args,                                                      \
-                    SERIALBRIDGEMODULE_##IDX##_substruct_create,               \
-                    IDX,                                                       \
-                    SERIALBRIDGEMODULE_##IDX##_has_memory,                     \
-                    SERIALBRIDGEMODULE_##IDX##_memory_offset));
-
 class serial_t : public bridge_driver_t {
 public:
   serial_t(simif_t *sim,
