@@ -7,6 +7,7 @@
 #include "bridges/bridge_driver.h"
 #include "bridges/fpga_model.h"
 #include "bridges/peek_poke.h"
+#include "bridges/simulation.h"
 #include "simif.h"
 #include "systematic_scheduler.h"
 

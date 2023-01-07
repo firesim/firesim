@@ -8,9 +8,11 @@
 #include "bridges/peek_poke.h"
 #include "bridges/plusargs.h"
 #include "bridges/reset_pulse.h"
+#include "bridges/simulation.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 #include "bridges/termination.h"
+#include "simif.h"
 
 /**
  * Base class for simple unit tests.
