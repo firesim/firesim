@@ -14,6 +14,7 @@ r_dir = $(abspath ../resources)
 # 6) DRIVER: software driver written by user
 # 7) CLOCK_PERIOD(optional): clock period of tests
 # 8) VERILATOR_FLAGS(optional): set of verilator flags to add
+# 9) MAIN: platform-specific main to choose from
 ########################################################################
 
 PLATFORM ?= f1
@@ -35,7 +36,7 @@ $(bridge_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(bridge_h)
 	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-platform_files := simif_$(PLATFORM)
+platform_files := simif_$(MAIN)
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files)))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
 
@@ -48,7 +49,8 @@ $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(design_h) $(DRIVER) $(driver_h) $(platf
 	$(CXX) $(CXXFLAGS) -include $< \
 	-o $@ $(DRIVER) $(platform_o) $(bridge_o) $(LDFLAGS)
 
-$(PLATFORM): $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM)
+.PHONY: driver
+driver: $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM)
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
 override CXXFLAGS += -std=c++17 -include $(design_h)
@@ -81,4 +83,4 @@ include rtlsim/Makefrag-vcs
 vcs: $(OUT_DIR)/$(DRIVER_NAME)
 vcs-debug: $(OUT_DIR)/$(DRIVER_NAME)-debug
 
-.PHONY: $(PLATFORM) verilator verilator-debug vcs vcs-debug
+.PHONY: verilator verilator-debug vcs vcs-debug

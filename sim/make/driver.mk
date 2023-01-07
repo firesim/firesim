@@ -22,9 +22,13 @@ $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -
 $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(header) $(OUTPUT_DIR)/build/
-	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
-	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
-	TOP_DIR=$(chipyard_dir)
+	$(MAKE) -C $(simif_dir) driver MAIN=f1 PLATFORM=f1 \
+		DRIVER_NAME=$(DESIGN) \
+		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+		GEN_DIR=$(OUTPUT_DIR)/build \
+		OUT_DIR=$(OUTPUT_DIR) \
+		DRIVER="$(DRIVER_CC)" \
+		TOP_DIR=$(chipyard_dir)
 
 $(vitis): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
 	-idirafter ${CONDA_PREFIX}/include -idirafter /usr/include -idirafter $(XILINX_XRT)/include
@@ -36,9 +40,13 @@ $(vitis): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN
 $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(header) $(OUTPUT_DIR)/build/
-	$(MAKE) -C $(simif_dir) vitis PLATFORM=vitis DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
-	GEN_DIR=$(OUTPUT_DIR)/build OUT_DIR=$(OUTPUT_DIR) DRIVER="$(DRIVER_CC)" \
-	TOP_DIR=$(chipyard_dir)
+	$(MAKE) -C $(simif_dir) driver MAIN=vitis PLATFORM=vitis \
+		DRIVER_NAME=$(DESIGN) \
+		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+		GEN_DIR=$(OUTPUT_DIR)/build \
+		OUT_DIR=$(OUTPUT_DIR) \
+		DRIVER="$(DRIVER_CC)" \
+		TOP_DIR=$(chipyard_dir)
 
 tags: $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .
