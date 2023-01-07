@@ -2,17 +2,7 @@
 
 #include "simif.h"
 #include <algorithm>
-#include <inttypes.h>
-
-midas_time_t timestamp() {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return 1000000L * tv.tv_sec + tv.tv_usec;
-}
-
-double diff_secs(midas_time_t end, midas_time_t start) {
-  return ((double)(end - start)) / TIME_DIV_CONST;
-}
+#include <cinttypes>
 
 void simulation_t::record_start_times() {
   start_hcycle = sim.actual_hcycle();

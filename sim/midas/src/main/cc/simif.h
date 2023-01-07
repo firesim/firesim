@@ -13,19 +13,11 @@
 
 #include <map>
 
-#include <sys/time.h>
-
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
 #include "bridges/stream_engine.h"
-
-#define TIME_DIV_CONST 1000000.0;
-typedef uint64_t midas_time_t;
-
-midas_time_t timestamp();
-
-double diff_secs(midas_time_t end, midas_time_t start);
+#include "bridges/timing.h"
 
 /**
  * Interface for a simulation implementation.
@@ -259,12 +251,6 @@ protected:
   bool fastloadmem = false;
   // If set, will write all zeros to fpga dram before commencing simulation
   bool do_zero_out_dram = false;
-
-private:
-  midas_time_t start_time, end_time;
-  uint64_t start_hcycle = -1;
-  uint64_t end_hcycle = 0;
-  uint64_t end_tcycle = 0;
 };
 
 #endif // __SIMIF_H
