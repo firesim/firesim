@@ -9,29 +9,15 @@
 #include <fpga_pci.h>
 #endif
 
-class simif_f1_t final : public simif_t {
+class simif_f1_t final : public simif_t, public CPUManagedStreamIO {
 public:
   simif_f1_t(const TargetConfig &config, const std::vector<std::string> &args);
   ~simif_f1_t();
-
-  // Unused since no F1-specific MMIO is required to setup the simulation.
-  void host_mmio_init() override {}
 
   int run() { return simulation_run(); }
 
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
-  size_t pull(unsigned int stream_idx,
-              void *dest,
-              size_t num_bytes,
-              size_t threshold_bytes) override;
-  size_t push(unsigned int stream_idx,
-              void *src,
-              size_t num_bytes,
-              size_t threshold_bytes) override;
-
-  void pull_flush(unsigned int stream_no) override {}
-  void push_flush(unsigned int stream_no) override {}
 
   uint32_t is_write_ready();
   void check_rc(int rc, char *infostr);
@@ -39,11 +25,16 @@ public:
   void fpga_setup(int slot_id);
 
 private:
-  std::vector<CPUManagedStreams::FPGAToCPUDriver> to_host_streams;
-  std::vector<CPUManagedStreams::CPUToFPGADriver> from_host_streams;
+  uint32_t mmio_read(size_t addr) override { return read(addr); }
 
-  size_t cpu_managed_axi4_write(size_t addr, char *data, size_t size);
-  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size);
+  size_t
+  cpu_managed_axi4_write(size_t addr, const char *data, size_t size) override;
+
+  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
+
+  uint64_t get_beat_bytes() const override {
+    return config.cpu_managed->beat_bytes();
+  }
 
 #ifdef SIMULATION_XSIM
   char *driver_to_xsim = "/tmp/driver_to_xsim";

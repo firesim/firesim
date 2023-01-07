@@ -27,9 +27,8 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   auto num_beats = num_bytes / beat_bytes();
   auto threshold_beats = required_bytes / beat_bytes();
 
-  assert(threshold_beats <= this->fpga_buffer_size());
-  auto space_available =
-      this->fpga_buffer_size() - this->mmio_read(this->count_addr());
+  assert(threshold_beats <= fpga_buffer_size());
+  auto space_available = fpga_buffer_size() - mmio_read(count_addr());
 
   if ((space_available == 0) || (space_available < threshold_beats)) {
     return 0;
@@ -38,7 +37,7 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   auto push_beats = std::min(space_available, num_beats);
   auto push_bytes = push_beats * beat_bytes();
   auto bytes_written =
-      this->axi4_write(this->dma_addr(), (char *)src, push_bytes);
+      cpu_managed_axi4_write(dma_addr(), (char *)src, push_bytes);
   assert(bytes_written == push_bytes);
 
   return bytes_written;
@@ -74,8 +73,8 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   auto num_beats = num_bytes / beat_bytes();
   auto threshold_beats = required_bytes / beat_bytes();
 
-  assert(threshold_beats <= this->fpga_buffer_size());
-  auto count = this->mmio_read(this->count_addr());
+  assert(threshold_beats <= fpga_buffer_size());
+  auto count = mmio_read(count_addr());
 
   if ((count == 0) || (count < threshold_beats)) {
     return 0;
@@ -83,7 +82,33 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
 
   auto pull_beats = std::min(count, num_beats);
   auto pull_bytes = pull_beats * beat_bytes();
-  auto bytes_read = this->axi4_read(this->dma_addr(), (char *)dest, pull_bytes);
+  auto bytes_read = cpu_managed_axi4_read(dma_addr(), (char *)dest, pull_bytes);
   assert(bytes_read == pull_bytes);
   return bytes_read;
+}
+
+CPUManagedStreamWidget::CPUManagedStreamWidget(CPUManagedStreamIO &io) {
+#ifdef CPUMANAGEDSTREAMENGINE_0_PRESENT
+  for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
+    auto params = CPUManagedStreams::StreamParameters(
+        std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
+        CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
+        CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
+        CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
+
+    cpu_to_fpga_streams.push_back(
+        std::make_unique<CPUManagedStreams::CPUToFPGADriver>(params, io));
+  }
+
+  for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
+    auto params = CPUManagedStreams::StreamParameters(
+        std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
+        CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
+        CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
+        CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
+
+    fpga_to_cpu_streams.push_back(
+        std::make_unique<CPUManagedStreams::FPGAToCPUDriver>(params, io));
+  }
+#endif // CPUMANAGEDSTREAMENGINE_0_PRESENT
 }

@@ -87,31 +87,16 @@ uint32_t simif_vitis_t::read(size_t addr) {
   return value & 0xFFFFFFFF;
 }
 
-size_t simif_vitis_t::pull(unsigned stream_idx,
-                           void *dest,
-                           size_t num_bytes,
-                           size_t threshold_bytes) {
-  std::cerr << "FPGA-to-CPU Bridge streams are not yet supported on "
-               "vitis-based FPGA deployments."
-            << std::endl;
-  exit(1);
-}
-
-size_t simif_vitis_t::push(unsigned stream_idx,
-                           void *src,
-                           size_t num_bytes,
-                           size_t threshold_bytes) {
-  std::cerr << "CPU-to-FPGA Bridge streams are not yet supported on "
-               "vitis-based FPGA deployments."
-            << std::endl;
-  exit(1);
-}
-
 uint32_t simif_vitis_t::is_write_ready() {
   uint64_t addr = 0x4;
   uint32_t value;
   value = kernel_handle.read_register(addr);
   return value & 0xFFFFFFFF;
+}
+
+char *simif_vitis_t::get_memory_base() {
+  std::cerr << "FPGA-managed streams are not yet supported";
+  abort();
 }
 
 int main(int argc, char **argv) {

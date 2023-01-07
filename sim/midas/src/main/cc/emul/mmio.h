@@ -87,8 +87,8 @@ public:
             bool b_valid);
 
   void read_req(uint64_t addr, size_t size, size_t len);
-  void
-  write_req(uint64_t addr, size_t size, size_t len, void *data, size_t *strb);
+  void write_req(
+      uint64_t addr, size_t size, size_t len, const void *data, size_t *strb);
   bool read_resp(void *data);
   bool write_resp();
 

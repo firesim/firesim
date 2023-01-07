@@ -121,10 +121,14 @@ void simif_t::target_init() {
   // Do any post-constructor initialization required before requesting MMIO
   while (!master.is_init_done())
     ;
+
   if (!fastloadmem && !load_mem_path.empty()) {
     loadmem.load_mem_from_file(load_mem_path);
   }
-  host_mmio_init();
+
+  if (managed_stream) {
+    managed_stream->init();
+  }
 }
 
 int simif_t::simulation_run() {

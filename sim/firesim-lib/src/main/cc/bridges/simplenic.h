@@ -4,6 +4,7 @@
 #define __SIMPLENIC_H
 
 #include "bridges/bridge_driver.h"
+#include "bridges/stream_engine.h"
 #include <vector>
 
 // TODO this should not be hardcoded here.
@@ -18,9 +19,10 @@ typedef struct SIMPLENICBRIDGEMODULE_struct {
   uint64_t done;
 } SIMPLENICBRIDGEMODULE_struct;
 
-class simplenic_t : public bridge_driver_t {
+class simplenic_t : public streaming_bridge_driver_t {
 public:
   simplenic_t(simif_t *sim,
+              StreamEngine &stream,
               const std::vector<std::string> &args,
               const SIMPLENICBRIDGEMODULE_struct &addrs,
               int simplenicno,

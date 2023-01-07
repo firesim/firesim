@@ -3,19 +3,8 @@
 #ifndef __BRIDGE_DRIVER_H
 #define __BRIDGE_DRIVER_H
 
+#include "bridges/stream_engine.h"
 #include "simif.h"
-
-namespace BridgeConstants {
-/**
- *  @brief Logical byte width of Bridge streams
- *
- * Bridge streams are logically latency-insensitive FIFOs with a width of
- * \c STREAM_WIDTH_BYTES.
- * \note { The host-implementation may use a different width under-the-hood but
- * this should not be exposed to bridge developers. }
- */
-constexpr int STREAM_WIDTH_BYTES = 64;
-} // namespace BridgeConstants
 
 // DOC include start: Bridge Driver Interface
 /**
@@ -57,25 +46,41 @@ protected:
 
   uint32_t read(size_t addr) { return sim->read(addr); }
 
-  size_t pull(unsigned stream_idx,
-              void *data,
-              size_t size,
-              size_t minimum_batch_size) {
-    return sim->pull(stream_idx, data, size, minimum_batch_size);
-  }
-
-  size_t push(unsigned stream_idx,
-              void *data,
-              size_t size,
-              size_t minimum_batch_size) {
-    if (size == 0)
-      return 0;
-    return sim->push(stream_idx, data, size, minimum_batch_size);
-  }
-  void pull_flush(unsigned stream_idx) { return sim->pull_flush(stream_idx); }
-
 private:
   simif_t *sim;
+};
+
+/**
+ * Bridge driver which interacts with the BridgeModule through streams.
+ *
+ * Information from streams is acquired using the `pull` and `push` methods.
+ */
+class streaming_bridge_driver_t : public bridge_driver_t {
+public:
+  streaming_bridge_driver_t(simif_t *s, StreamEngine &stream)
+      : bridge_driver_t(s), stream(stream) {}
+
+  /**
+   *  @brief Logical byte width of Bridge streams
+   *
+   * Bridge streams are logically latency-insensitive FIFOs with a width of
+   * \c STREAM_WIDTH_BYTES.
+   * \note { The host-implementation may use a different width under-the-hood
+   * but this should not be exposed to bridge developers. }
+   */
+  static constexpr unsigned STREAM_WIDTH_BYTES = 64;
+
+protected:
+  size_t
+  pull(unsigned stream_idx, void *data, size_t size, size_t minimum_batch_size);
+
+  size_t
+  push(unsigned stream_idx, void *data, size_t size, size_t minimum_batch_size);
+
+  void pull_flush(unsigned stream_idx);
+
+private:
+  StreamEngine &stream;
 };
 
 #endif // __BRIDGE_DRIVER_H

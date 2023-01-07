@@ -26,11 +26,10 @@ typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t triggerSelector;
 } TRACERVBRIDGEMODULE_struct;
 
-class tracerv_t : public bridge_driver_t
-
-{
+class tracerv_t : public streaming_bridge_driver_t {
 public:
   tracerv_t(simif_t *sim,
+            StreamEngine &stream,
             const std::vector<std::string> &args,
             const TRACERVBRIDGEMODULE_struct &mmio_addrs,
             const int stream_idx,

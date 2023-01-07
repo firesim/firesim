@@ -28,10 +28,11 @@ typedef struct PRINTBRIDGEMODULE_struct {
   uint64_t flushNarrowPacket;
 } PRINTBRIDGEMODULE_struct;
 
-class synthesized_prints_t : public bridge_driver_t {
+class synthesized_prints_t : public streaming_bridge_driver_t {
 
 public:
   synthesized_prints_t(simif_t *sim,
+                       StreamEngine &stream,
                        const std::vector<std::string> &args,
                        const PRINTBRIDGEMODULE_struct &mmio_addrs,
                        unsigned int print_count,
@@ -70,7 +71,7 @@ private:
   const int printno;
 
   // Stream batching parameters
-  static constexpr size_t beat_bytes = BridgeConstants::STREAM_WIDTH_BYTES;
+  static constexpr size_t beat_bytes = STREAM_WIDTH_BYTES;
   // The number of stream beats to pull off the FPGA on each invocation of
   // tick() This will be set based on the ratio of token_size :
   // desired_batch_beats

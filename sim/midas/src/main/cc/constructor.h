@@ -273,6 +273,7 @@ SIMPLENICBRIDGEMODULE_checks;
 
 #define INSTANTIATE_SIMPLENIC(FUNC, IDX)                                       \
   FUNC(new simplenic_t(simif,                                                  \
+                       simif->get_managed_stream(),                            \
                        args,                                                   \
                        SIMPLENICBRIDGEMODULE_##IDX##_substruct_create,         \
                        IDX,                                                    \
@@ -313,6 +314,7 @@ TRACERVBRIDGEMODULE_checks;
 // Bridge Driver Instantiation Template
 #define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
   FUNC(new tracerv_t(simif,                                                    \
+                     simif->get_managed_stream(),                              \
                      args,                                                     \
                      TRACERVBRIDGEMODULE_##IDX##_substruct_create,             \
                      TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_idx,            \
@@ -577,6 +579,7 @@ PRINTBRIDGEMODULE_checks;
 
 #define INSTANTIATE_PRINTF(FUNC, IDX)                                          \
   FUNC(new synthesized_prints_t(simif,                                         \
+                                simif->get_managed_stream(),                   \
                                 args,                                          \
                                 PRINTBRIDGEMODULE_##IDX##_substruct_create,    \
                                 PRINTBRIDGEMODULE_##IDX##_print_count,         \
