@@ -4,7 +4,6 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.IO
 import freechips.rocketchip.diplomacy.InModuleBody
 
 import midas.core.{

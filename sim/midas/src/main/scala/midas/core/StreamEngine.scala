@@ -4,7 +4,6 @@ package midas.core
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.IO
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
