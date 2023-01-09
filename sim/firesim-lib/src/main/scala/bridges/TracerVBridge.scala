@@ -68,6 +68,22 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
 }
 
 object TracerVBridge {
+  def apply(widths: TracedInstructionWidths, numInsns: Int)(implicit p: Parameters): TracerVBridge = {
+    val tracerv = Module(new TracerVBridge(widths, numInsns))
+    tracerv.generateTriggerAnnotations
+    tracerv.io.trace.clock := Module.clock
+    tracerv.io.trace.reset := Module.reset
+    tracerv
+  }
+
+  // def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
+  //   val tracerv = withClockAndReset(tracedInsns.clock, tracedInsns.reset) {
+  //     TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns)
+  //   }
+  //   tracerv.io.trace := tracedInsns
+  //   tracerv
+  // }
+
   def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
     val ep = Module(new TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
     withClockAndReset(tracedInsns.clock, tracedInsns.reset) { ep.generateTriggerAnnotations }

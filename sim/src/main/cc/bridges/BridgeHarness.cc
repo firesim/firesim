@@ -5,6 +5,7 @@
 #include "bridges/blockdev.h"
 #include "bridges/bridge_driver.h"
 #include "bridges/uart.h"
+#include "bridges/tracerv.h"
 
 BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
                              simif_t *simif)

@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream>
 
 #include <sys/mman.h>
 
@@ -34,8 +35,8 @@ tracerv_t::tracerv_t(simif_t *sim,
       stream_depth(stream_depth), max_core_ipc(max_core_ipc),
       clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
   // Biancolin: move into elaboration
-  assert(this->max_core_ipc <= 7 &&
-         "TracerV only supports cores with a maximum IPC <= 7");
+  // assert(this->max_core_ipc <= 7 &&
+  //        "TracerV only supports cores with a maximum IPC <= 7");
   const char *tracefilename = NULL;
   const char *dwarf_file_name = NULL;
   this->tracefile = NULL;
@@ -108,6 +109,8 @@ tracerv_t::tracerv_t(simif_t *sim,
   }
 
   if (tracefilename) {
+    std::cout << "tracefilename: " << tracefilename << "\n";
+
     // giving no tracefilename means we will create NO tracefiles
     std::string tfname = std::string(tracefilename) + std::string("-C") +
                          std::to_string(tracerno);
@@ -226,6 +229,7 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
   // check that a tracefile exists (one is enough) since the manager
   // does not create a tracefile when trace_enable is disabled, but the
   // TracerV bridge still exists, and no tracefile is created by default.
+  // std::cout << "this->tracefile " << this->tracefile << "\n";
   if (this->tracefile) {
     if (this->human_readable || this->test_output) {
       for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {

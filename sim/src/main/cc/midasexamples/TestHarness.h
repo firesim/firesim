@@ -11,6 +11,7 @@
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 #include "bridges/termination.h"
+#include "bridges/tracerv.h"
 
 /**
  * Base class for simple unit tests.
@@ -40,6 +41,7 @@ public:
   BRIDGE_HANDLER(reset_pulse_t, "Reset Pulse bridge");
   BRIDGE_HANDLER(plusargs_t, "PlusArgs bridge");
   BRIDGE_HANDLER(termination_t, "Termination bridge");
+  BRIDGE_HANDLER(tracerv_t, "TracerV bridge");
 
   void add_bridge_driver(peek_poke_t *bridge) { peek_poke.reset(bridge); }
 

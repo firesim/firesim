@@ -138,10 +138,25 @@ class BlockDevTest(targetConfig: BasePlatformConfig)
 class BlockDevF1Test    extends BlockDevTest(BaseConfigs.F1)
 class BlockDevVitisTest extends BlockDevTest(BaseConfigs.Vitis)
 
+class TracerVTest(targetConfig: BasePlatformConfig)
+    extends BridgeSuite("TracerVModule", "NoConfig", targetConfig) {
+
+      override def runTest(backend: String, debug: Boolean) {
+          val runResult = run(backend, true)
+          // val runResult = run(backend, debug)
+          assert(runResult == 0)
+      }
+    }
+
+class TracerVF1Test    extends TracerVTest(BaseConfigs.F1)
+class TracerVVitisTest extends TracerVTest(BaseConfigs.Vitis)
+
 class BridgeTests
     extends Suites(
       new UARTF1Test,
       new UARTVitisTest,
       new BlockDevF1Test,
       new BlockDevVitisTest,
+      new TracerVF1Test,
+      new TracerVVitisTest,
     )
