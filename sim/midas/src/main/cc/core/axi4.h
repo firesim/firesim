@@ -1,5 +1,5 @@
-#ifndef __EMUL_AXI4
-#define __EMUL_AXI4
+#ifndef __CORE_AXI4
+#define __CORE_AXI4
 
 #include <cmath>
 #include <cstdint>
@@ -34,20 +34,4 @@ struct AXI4Config {
   uint64_t get_data_size() const { return beat_bytes() / sizeof(uint32_t); }
 };
 
-/**
- * Structure carrying the configuration of a target.
- */
-struct TargetConfig {
-  const AXI4Config ctrl;
-
-  const AXI4Config mem;
-  const unsigned mem_num_channels;
-
-  const std::optional<AXI4Config> cpu_managed;
-
-  const std::optional<AXI4Config> fpga_managed;
-
-  const char *target_name;
-};
-
-#endif // __EMUL_AXI4
+#endif // __CORE_AXI4
