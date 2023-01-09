@@ -216,7 +216,7 @@ case class AutoCounterFirrtlAnnotation(
   // The AutoCounter tranform will reject this annotation if it's not enclosed
   def shouldBeIncluded(modList: Seq[String]): Boolean = !coverGenerated || modList.contains(target.module)
   def enclosingModule(): String = target.module
-  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, enclosingModule)
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, enclosingModule())
   def typeHints(): Seq[Class[_]] = Seq(opType.getClass)
 }
 

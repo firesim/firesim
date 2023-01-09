@@ -70,7 +70,7 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
 object TracerVBridge {
   def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
     val ep = Module(new TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
-    withClockAndReset(tracedInsns.clock, tracedInsns.reset) { ep.generateTriggerAnnotations }
+    withClockAndReset(tracedInsns.clock, tracedInsns.reset) { ep.generateTriggerAnnotations() }
     ep.io.trace := tracedInsns
     ep
   }
@@ -200,7 +200,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
 
     val tFireHelper = DecoupledHelper(streamEnq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
 
-    val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire)
+    val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire())
     hPort.hBits.triggerDebit := !trigger && triggerReg
     hPort.hBits.triggerCredit := trigger && !triggerReg
 
@@ -212,7 +212,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
 
     streamEnq.valid := tFireHelper.fire(streamEnq.ready, trigger) && traceEnable
 
-    when (tFireHelper.fire) {
+    when (tFireHelper.fire()) {
       trace_cycle_counter := trace_cycle_counter + 1.U
     }
 

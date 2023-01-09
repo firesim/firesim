@@ -26,21 +26,21 @@ trait HasConsoleUtils {
         }
         if (max != None && value > max.get) {
           Console.printf(s"Request integer ${value} exceeds maximum ${max.get}")
-          inner
+          inner()
         } else if (min != None && value < min.get) {
           Console.printf(s"Request integer ${value} is less than minimum ${min.get}")
-          inner
+          inner()
         }
       } catch {
         case e: java.lang.NumberFormatException => {
           Console.println("Please give me an integer!")
-          value = inner
+          value = inner()
         }
         case e: java.io.EOFException => { value = default }
       }
       value
     }
-    inner
+    inner()
   }
 
   // Select from list of possibilities
@@ -150,7 +150,7 @@ trait HasProgrammableRegisters extends Bundle {
   def setUnboundSettings(prefix: String = "test") {
     // Set all local registers
     registers foreach {
-      case (elem, reg) if !reg.isSet  => reg.requestSetting(elem)
+      case (elem, reg) if !reg.isSet() => reg.requestSetting(elem)
       case _ => None
     }
     // Traverse into leaf bundles and set them

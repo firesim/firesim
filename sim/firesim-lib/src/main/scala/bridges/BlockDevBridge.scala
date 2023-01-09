@@ -74,7 +74,7 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
                                        rRespStallN,
                                        wAckStallN)):_*)
 
-    val tFire = tFireHelper.fire
+    val tFire = tFireHelper.fire()
     // Decoupled helper can't exclude two bools unfortunately...
     val targetReset = channelCtrlSignals.reduce(_ && _) && hPort.hBits.reset
 
@@ -83,8 +83,8 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     rRespBuf.reset  := reset.asBool || targetReset
     wAckBuf.reset  := reset.asBool || targetReset
 
-    hPort.toHost.hReady := tFireHelper.fire
-    hPort.fromHost.hValid := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
+    hPort.fromHost.hValid := tFireHelper.fire()
 
     reqBuf.io.enq.bits := target.req.bits
     reqBuf.io.enq.valid := target.req.valid && tFireHelper.fire(reqBuf.io.enq.ready)

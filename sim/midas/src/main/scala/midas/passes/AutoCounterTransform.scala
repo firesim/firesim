@@ -62,7 +62,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
                                  (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
       val coverAnnos = coverTupleAnnoMap(m.name)
-      val mT = coverAnnos.head.enclosingModuleTarget
+      val mT = coverAnnos.head.enclosingModuleTarget()
       val moduleNS = Namespace(mod)
       val addedStmts = coverAnnos.flatMap({ anno =>
         val eventName = moduleNS.newName(anno.label)
@@ -79,7 +79,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
                                 (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
       val coverAnnos = coverTupleAnnoMap(m.name)
-      val mT = coverAnnos.head.enclosingModuleTarget
+      val mT = coverAnnos.head.enclosingModuleTarget()
       val moduleNS = Namespace(mod)
       val addedStmts = new mutable.ArrayBuffer[Statement]
 
@@ -272,7 +272,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     filteredCounterAnnos.foreach({ i => println(s"  ${i}") })
 
     // group the selected signal by modules, and attach label from the cover point to each signal
-    val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule)
+    val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule())
 
     if (!selectedsignals.isEmpty) {
       println(s"[AutoCounter] signals are:")
@@ -284,7 +284,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       // Common preprocessing: gate all annotated events with their associated reset
       val updatedAnnos = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
       val updatedModules = state.circuit.modules.map((gateEventsWithReset(selectedsignals, updatedAnnos)))
-      val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule)
+      val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule())
       val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos)
 
       val preppedState = (new ResolveAndCheck).runTransform(gatedState)

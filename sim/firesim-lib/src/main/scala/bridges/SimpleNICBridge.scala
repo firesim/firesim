@@ -202,7 +202,7 @@ class SimpleNICBridgeModule(implicit p: Parameters)
     val target = hPort.hBits.nic
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
                                       hPort.fromHost.hReady)
-    val tFire = tFireHelper.fire
+    val tFire = tFireHelper.fire()
 
     if (p(LoopbackNIC)) {
       val tokenGen = Module(new HostToNICTokenGenerator(10))

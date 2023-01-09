@@ -322,19 +322,19 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
                                       hPort.fromHost.hReady,
                                       ingressReady, bReady, rReady, tResetReady)
 
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
 
     val gate = Module(new AbstractClockGate)
     gate.I := clock
     gate.CE := targetFire
 
     val model = withClock(gate.O)(cfg.elaborate())
-    printGenerationConfig
+    printGenerationConfig()
 
     // HACK: Feeding valid back on ready and ready back on valid until we figure out
     // channel tokenization
-    hPort.toHost.hReady := tFireHelper.fire
-    hPort.fromHost.hValid := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
+    hPort.fromHost.hValid := tFireHelper.fire()
     ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
     model.tNasti <> tNasti

@@ -116,7 +116,7 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
     }
 
     def getSourceSinkPair(iMaps: Map[String, Map[Instance, OfModule]]):
-      (ReferenceTarget, ReferenceTarget) = absoluteSourceRT(iMaps) -> portRT
+      (ReferenceTarget, ReferenceTarget) = absoluteSourceRT(iMaps) -> portRT()
   }
 
   def execute(state: CircuitState): CircuitState = {

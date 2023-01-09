@@ -115,7 +115,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
                                       dummyPredicate)
     // Hack: include toHost.hValid to prevent individual wire channels from dequeuing before
     // all sub-channels have valid tokens
-    hPort.toHost.hReady := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
     // We don't generate tokens
     hPort.fromHost.hValid := true.B
     val tFire = tFireHelper.fire(dummyPredicate)
@@ -125,7 +125,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     }
 
     // PAYLOAD HANDLING
-    val valid = printPort.hasEnabledPrint
+    val valid = printPort.hasEnabledPrint()
     val printsAsUInt = Cat(printPort.printRecords.map(_._2.asUInt).reverse)
     val data = Cat(printsAsUInt, valid) | 0.U(pow2Bits.W)
 
@@ -182,8 +182,8 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
       UInt32(offsets.head.value + width) +: offsets}).tail.reverse
 
     val argumentCounts  = printPort.printRecords.map(_._2.args.size).map(UInt32(_))
-    val argumentWidths  = printPort.printRecords.flatMap(_._2.argumentWidths).map(UInt32(_))
-    val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets.map(UInt32(_)))
+    val argumentWidths  = printPort.printRecords.flatMap(_._2.argumentWidths()).map(UInt32(_))
+    val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets().map(UInt32(_)))
     val formatStrings   = printPort.printRecords.map(_._2.formatString).map(CStrLit)
 
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {

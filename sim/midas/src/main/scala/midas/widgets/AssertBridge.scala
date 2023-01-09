@@ -50,7 +50,7 @@ class AssertBridgeModule(params: AssertBridgeParameters)(implicit p: Parameters)
     val stallN = (!assertFire || resume || !enable)
 
     val tFireHelper = DecoupledHelper(q.io.deq.valid, stallN)
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
     q.io.deq.ready := tFireHelper.fire(q.io.deq.valid)
     when (targetFire) {
       cycles := cycles + 1.U

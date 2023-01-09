@@ -136,7 +136,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
       val mT = cT.module(m.name)
       val mInfo = new ModuleAssertInfo(m, meta, mT)
       // Connect asserts
-      if (mInfo.hasAsserts) {
+      if (mInfo.hasAsserts()) {
         val namespace = Namespace(m)
         val tpe = mInfo.assertUInt
         val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
@@ -184,7 +184,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
     val mInfo = new ModuleAssertInfo(topModule, meta, topMT)
     println(s"[Golden Gate] total # of assertions synthesized: ${mInfo.assertWidth}")
 
-    if (!mInfo.hasAsserts) state else {
+    if (!mInfo.hasAsserts()) state else {
       // Step 4: Associate each assertion with a source clock
       val postWiredState = state.copy(circuit = c.copy(modules = mods), form = MidForm)
       val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))

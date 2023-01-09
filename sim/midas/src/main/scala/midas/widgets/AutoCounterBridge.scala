@@ -96,7 +96,7 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     val initDone = RegInit(false.B)
 
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
     // We only sink tokens, so tie off the return channel
     hPort.fromHost.hValid := true.B
 

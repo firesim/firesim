@@ -134,7 +134,7 @@ class TerminationBridgeModule(params: TerminationBridgeParams)(implicit p: Param
 
     val tFireHelper = DecoupledHelper(terminationCode.valid, statusDone.valid, noTermination)
 
-    when(tFireHelper.fire) {
+    when(tFireHelper.fire()) {
       tokenCounter := tokenCounter + 1.U
     }
 
