@@ -120,7 +120,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
     SimUtils.findClocks(hBits).map(_ := false.B.asClock)
   }
 
-  def bridgeChannels: Seq[BridgeChannel] = {
+  def bridgeChannels(): Seq[BridgeChannel] = {
     val clockRT = getClock.toNamed.toTarget
 
     inputWireChannels().map({ case (field, chName) =>

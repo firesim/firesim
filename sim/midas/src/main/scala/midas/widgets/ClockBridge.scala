@@ -125,7 +125,7 @@ object RationalClockBridge {
 class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with ClockBridgeConsts {
   val clocks = new DecoupledIO(Vec(numClocks, Bool()))
 
-  def bridgeChannels = Seq()
+  def bridgeChannels() = Seq()
 
   def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit =
     targetIO.clockElement._2 <> clocks
