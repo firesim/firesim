@@ -128,7 +128,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     val numTokenForAll = ((numTraces - 1) / totalTracesPerToken) + 1
 
     // only inc the counter when the something is sent (this implies that the input is valid and output is avail on the other side)
-    val counterFire = streamEnq.fire()
+    val counterFire = streamEnq.fire
     val (cnt, wrap) = Counter(counterFire, numTokenForAll)
 
     val paddedTracesAligned = paddedTraces.map(t => t.asUInt.pad(outDataSzBits/totalTracesPerToken))

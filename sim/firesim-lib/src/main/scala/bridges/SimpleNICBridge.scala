@@ -95,7 +95,7 @@ class BigTokenToNICTokenAdapter extends Module {
   val xactHelper = DecoupledHelper(io.htnt.ready, io.pcie_in.valid)
 
   val loopIter = RegInit(0.U(32.W))
-  when (io.htnt.fire()) {
+  when (io.htnt.fire) {
     loopIter := Mux(loopIter === 6.U, 0.U, loopIter + 1.U)
   }
 
@@ -138,7 +138,7 @@ class NICTokenToBigTokenAdapter extends Module {
 
   // debug check to help check we're not losing tokens somewhere
   val token_trace_counter = RegInit(0.U(43.W))
-  when (io.pcie_out.fire()) {
+  when (io.pcie_out.fire) {
     token_trace_counter := token_trace_counter + 1.U
   } .otherwise {
     token_trace_counter := token_trace_counter
@@ -169,7 +169,7 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   val s_init :: s_seed :: s_forward :: Nil = Enum(3)
   val state = RegInit(s_init)
 
-  val (_, seedDone) = Counter(state === s_seed && io.out.fire(), nTokens)
+  val (_, seedDone) = Counter(state === s_seed && io.out.fire, nTokens)
 
   io.out.valid := state === s_seed || (state === s_forward && io.in.valid)
   io.out.bits.data_in_valid := state === s_forward && io.in.bits.data_out_valid
