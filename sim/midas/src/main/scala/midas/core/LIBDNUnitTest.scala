@@ -2,7 +2,7 @@
 
 package midas.core
 
-import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
+import freechips.rocketchip.util.random.SeededRandom // Better than chisel's
 
 import chisel3._
 import chisel3.util._
@@ -20,7 +20,7 @@ case class IChannelDesc[T <: Data](
   tokenGenFunc: Option[() => T] = None) {
 
   private def tokenSequenceGenerator(typ: Data): Data =
-    Cat(Seq.fill((typ.getWidth + 63)/64)(LFSR64()))(typ.getWidth - 1, 0).asTypeOf(typ)
+    Cat(Seq.fill((typ.getWidth + 63)/64)(SeededRandom.lfsr(64)))(typ.getWidth - 1, 0).asTypeOf(typ)
 
   // Generate the testing hardware for a single input channel of a model
   def genEnvironment(testLength: Int): Unit = {
@@ -41,7 +41,7 @@ case class IChannelDesc[T <: Data](
     inputTokenQueue.io.deq.ready := stickyTokenValid && modelChannel.ready
 
     when (modelChannel.fire || ~stickyTokenValid) {
-      stickyTokenValid := LFSR64()(1)
+      stickyTokenValid := SeededRandom.lfsr(64)(1)
     }
   }
 }
@@ -82,7 +82,7 @@ case class OChannelDesc[T <: Data](
     refOutputs.io.deq.ready := modelChannel.fire
 
     // Fuzz backpressure on the token channel
-    modelChannel.ready := LFSR64()(1) & !modelChannelDone
+    modelChannel.ready := SeededRandom.lfsr(64)(1) & !modelChannelDone
 
     // Return the done signal
     modelChannelDone
