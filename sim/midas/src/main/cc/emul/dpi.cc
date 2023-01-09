@@ -20,39 +20,52 @@
 
 /**
  * Helper to encode sequential elements into a packed structure.
+ *
+ * The writer does not use DPI methods as bit-sequence writes starting from
+ * an uninitialised array can mix in uninitialised bits into the result. Since
+ * Valgrind does not do bit-level taint tracking, this results in false
+ * positives. Instead, the methods are specialised to only append values.
  */
 class StructWriter {
 public:
-  StructWriter(svBitVecVal *vec) : vec(vec) {}
+  StructWriter(svBitVecVal *vec) : vec(reinterpret_cast<uint64_t *>(vec)) {}
 
-  void putScalar(bool value) {
-    svPutBitselBit(vec, offset, value);
-    offset += 1;
-  }
+  void putScalar(bool value) { putScalarOrVector(value, 1); }
 
-  void putScalarOrVector(uint64_t value, int width) {
+  void putScalarOrVector(uint64_t value, unsigned width) {
     assert(width >= 1 && width <= 64);
-    if (width == 1) {
-      svPutBitselBit(vec, offset, value);
-    } else if (width <= 32) {
-      svPutPartselBit(vec, value, offset, width);
-    } else {
-      svPutPartselBit(vec, value, offset, 32);
-      svPutPartselBit(vec, value >> 32, offset + 32, width - 32);
+
+    unsigned idx = offset / 64;
+    unsigned off = offset % 64;
+
+    if (off == 0) {
+      vec[idx] = value;
+      offset += width;
+      return;
     }
+
+    unsigned remaining = 64 - off;
+    if (remaining >= width) {
+      vec[idx] |= value << off;
+      offset += width;
+      return;
+    }
+
+    vec[idx] |= value << off;
+    vec[idx + 1] = value >> remaining;
+
     offset += width;
   }
 
-  void putVector(void *data, int width) {
+  void putVector(void *data, unsigned width) {
     for (size_t i = 0; i < width; i++) {
-      svPutPartselBit(vec, ((uint32_t *)data)[i], offset, 32);
-      offset += 32;
+      putScalarOrVector(((uint32_t *)data)[i], 32);
     }
   }
 
 private:
   size_t offset = 0;
-  svBitVecVal *vec;
+  uint64_t *vec;
 };
 
 /**
@@ -203,20 +216,6 @@ void rev_put(mmio_t &mmio, svBitVecVal *io) {
 
 extern simif_emul_t *simulator;
 
-static bool tick() {
-  bool finished = simulator->to_sim();
-#ifdef VCS
-  if (finished) {
-    int exit_code = simulator->end();
-    delete simulator;
-    simulator = nullptr;
-    if (exit_code)
-      exit(exit_code);
-  }
-#endif
-  return finished;
-}
-
 extern "C" {
 void simulator_tick(
     /* INPUT  */ const svBit reset,
@@ -263,9 +262,7 @@ void simulator_tick(
       AXI4::rev_tick(reset, *simulator->slave[i], mem_in[i]);
     }
 
-    *fin = tick();
-    if (*fin)
-      return;
+    *fin = simulator->to_sim();
 
     AXI4::rev_put(*simulator->master, ctrl_out);
     if (cpu_managed_axi4) {
@@ -278,6 +275,15 @@ void simulator_tick(
       AXI4::fwd_put(*simulator->slave[i], mem_out[i]);
     }
 
+#ifdef VCS
+    if (*fin) {
+      int exit_code = simulator->end();
+      delete simulator;
+      simulator = nullptr;
+      if (exit_code)
+        exit(exit_code);
+    }
+#endif
   } catch (std::exception &e) {
     fprintf(stderr, "Caught Exception headed for VCS: %s.\n", e.what());
     abort();
