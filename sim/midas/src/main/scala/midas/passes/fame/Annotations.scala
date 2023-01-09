@@ -61,7 +61,7 @@ case class FAMEChannelConnectionAnnotation(
     val renamer = RTRenamer.exact(renames)
     Seq(FAMEChannelConnectionAnnotation(globalName, channelInfo.update(renames), clock.map(renamer), sources.map(_.map(renamer)), sinks.map(_.map(renamer))))
   }
-  def typeHints(): Seq[Class[_]] = Seq(channelInfo.getClass)
+  def typeHints: Seq[Class[_]] = Seq(channelInfo.getClass)
 
   def getBridgeModule(): String = sources.getOrElse(sinks.get).head.module
 

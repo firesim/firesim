@@ -217,7 +217,7 @@ case class AutoCounterFirrtlAnnotation(
   def shouldBeIncluded(modList: Seq[String]): Boolean = !coverGenerated || modList.contains(target.module)
   def enclosingModule(): String = target.module
   def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, enclosingModule())
-  def typeHints(): Seq[Class[_]] = Seq(opType.getClass)
+  def typeHints: Seq[Class[_]] = Seq(opType.getClass)
 }
 
 case class AutoCounterCoverModuleFirrtlAnnotation(target: ModuleTarget) extends
