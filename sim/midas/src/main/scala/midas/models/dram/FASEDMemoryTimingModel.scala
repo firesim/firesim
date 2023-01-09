@@ -555,7 +555,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
         val prefix = s"const std::map<std::string, int> $mapName = {\n"
         map.foldLeft(prefix)((str, kvp) => str + s""" {\"${kvp._1}\", ${kvp._2}},\n""") + "};\n"

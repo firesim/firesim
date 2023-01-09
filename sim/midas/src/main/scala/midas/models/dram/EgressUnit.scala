@@ -57,17 +57,17 @@ class RATEntry(vIdWidth: Int, pIdWidth: Int) extends Bundle {
   def matchTail(id: UInt): Bool = {
     (current.bits === id) && (current.valid) && !next.valid
   }
-  def push(id: UInt) {
+  def push(id: UInt): Unit = {
     next.bits := id
     next.valid := true.B
   }
-  def setTranslation(id: UInt) {
+  def setTranslation(id: UInt): Unit = {
     current.bits := id
     current.valid := true.B
   }
 
-  def setHead() { head := true.B }
-  def pop() {
+  def setHead(): Unit = { head := true.B }
+  def pop(): Unit = {
     current.valid := false.B
     next.valid := false.B
     head := false.B

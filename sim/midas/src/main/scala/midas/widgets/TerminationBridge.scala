@@ -146,7 +146,7 @@ class TerminationBridgeModule(params: TerminationBridgeParams)(implicit p: Param
     //MMIO to indicate one of the target defined termination messages
     genROReg(terminationCode.bits, "out_terminationCode")
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)

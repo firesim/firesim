@@ -75,7 +75,7 @@ trait IsRuntimeSetting extends HasConsoleUtils {
   private var _isSet = false
   private var _value: BigInt = 0
 
-  def set(value: BigInt) {
+  def set(value: BigInt): Unit = {
     require(!_isSet, "Trying to set a programmable register that has already been set.")
     _value = value;
     _isSet = true
@@ -86,7 +86,7 @@ trait IsRuntimeSetting extends HasConsoleUtils {
   def getOrElse(alt: =>BigInt): BigInt = if (_isSet) _value else alt
 
   // This prompts the user via the console for setting
-  def requestSetting(field: Data) {
+  def requestSetting(field: Data): Unit = {
     set(requestInput(query, default, Some(min), max))
   }
 }
@@ -147,7 +147,7 @@ trait HasProgrammableRegisters extends Bundle {
   }
 
   // Requests the users input for all unset RuntimeSettings
-  def setUnboundSettings(prefix: String = "test") {
+  def setUnboundSettings(prefix: String = "test"): Unit = {
     // Set all local registers
     registers foreach {
       case (elem, reg) if !reg.isSet() => reg.requestSetting(elem)

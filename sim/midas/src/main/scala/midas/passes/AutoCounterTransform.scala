@@ -27,7 +27,7 @@ class FireSimPropertyLibrary extends property.BasePropertyLibrary {
   import chisel3.experimental.DataMirror.internal.isSynthesizable
   import chisel3.internal.sourceinfo.{SourceInfo}
   import chisel3.experimental.{annotate,ChiselAnnotation}
-  def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
+  def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo): Unit = {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
       annotate(new ChiselAnnotation {

@@ -65,7 +65,7 @@ class AssertBridgeModule(params: AssertBridgeParameters)(implicit p: Parameters)
     attach(enable, "enable")
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)
