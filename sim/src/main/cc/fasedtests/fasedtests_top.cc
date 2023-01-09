@@ -1,8 +1,5 @@
 // See LICENSE for license details.
 
-// MIDAS-defined bridges
-#include <cinttypes>
-
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/reset_pulse.h"
 #include "fasedtests_top.h"
