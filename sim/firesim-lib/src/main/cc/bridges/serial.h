@@ -2,7 +2,7 @@
 #ifndef __SERIAL_H
 #define __SERIAL_H
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 #include "fesvr/firesim_tsi.h"
 
 template <class T>

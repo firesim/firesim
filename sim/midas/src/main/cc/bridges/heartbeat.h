@@ -1,7 +1,7 @@
 #ifndef __HEARTBEAT_H
 #define __HEARTBEAT_H
 
-#include "bridge_driver.h"
+#include "core/bridge_driver.h"
 #include <fstream>
 
 // Periodically checks that the target is advancing by polling an FPGA-hosted

@@ -3,8 +3,8 @@
 #ifndef __FPGA_MODEL_H
 #define __FPGA_MODEL_H
 
-#include "address_map.h"
-#include "simif.h"
+#include "core/address_map.h"
+#include "core/simif.h"
 
 /**
  * Base class for (handwritten) FPGA-hosted models

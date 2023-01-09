@@ -3,9 +3,9 @@
 
 #include "bridges/blockdev.h"
 #include "bridges/peek_poke.h"
-#include "bridges/simulation.h"
 #include "bridges/uart.h"
-#include "simif.h"
+#include "core/simif.h"
+#include "core/simulation.h"
 
 class bridge_driver_t;
 

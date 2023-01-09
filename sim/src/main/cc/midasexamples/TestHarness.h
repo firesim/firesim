@@ -4,15 +4,15 @@
 #include <random>
 
 #include "bridges/autocounter.h"
-#include "bridges/bridge_driver.h"
 #include "bridges/peek_poke.h"
 #include "bridges/plusargs.h"
 #include "bridges/reset_pulse.h"
-#include "bridges/simulation.h"
 #include "bridges/synthesized_assertions.h"
 #include "bridges/synthesized_prints.h"
 #include "bridges/termination.h"
-#include "simif.h"
+#include "core/bridge_driver.h"
+#include "core/simif.h"
+#include "core/simulation.h"
 
 /**
  * Base class for simple unit tests.
@@ -51,7 +51,7 @@ public:
   virtual void run_test() = 0;
 
   void simulation_init() override {
-#include "constructor.h"
+#include "core/constructor.h"
   }
 
   int simulation_run() override {

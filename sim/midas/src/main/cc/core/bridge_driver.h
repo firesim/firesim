@@ -3,8 +3,8 @@
 #ifndef __BRIDGE_DRIVER_H
 #define __BRIDGE_DRIVER_H
 
-#include "bridges/stream_engine.h"
-#include "simif.h"
+#include "core/simif.h"
+#include "core/stream_engine.h"
 
 // DOC include start: Bridge Driver Interface
 /**

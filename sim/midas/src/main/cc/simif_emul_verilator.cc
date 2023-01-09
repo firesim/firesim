@@ -1,11 +1,40 @@
 // See LICENSE for license details.
 
+#include <signal.h>
+
 #include <verilated.h>
-#if VM_TRACE
+#ifdef VM_TRACE
 #include <verilated_vcd_c.h>
 #endif
 
-#include "simif_emul_verilator.h"
+#include "emul/mm.h"
+#include "emul/mmio.h"
+#include "emul/simif_emul.h"
+
+/**
+ * Verilator-specific metasimulator implementation.
+ */
+class simif_emul_verilator_t final : public simif_emul_t {
+public:
+  simif_emul_verilator_t(const TargetConfig &config,
+                         const std::vector<std::string> &args);
+
+  ~simif_emul_verilator_t();
+
+  int run();
+
+  uint64_t get_time() const { return main_time; }
+
+private:
+  uint64_t main_time = 0;
+
+  void tick();
+
+  std::unique_ptr<Vemul> top;
+#ifdef VM_TRACE
+  std::unique_ptr<VerilatedVcdC> tfp;
+#endif
+};
 
 /// Simulator instance used by DPI.
 simif_emul_verilator_t *simulator = nullptr;

@@ -106,7 +106,7 @@ Bridge Drivers extend the ``bridge_driver_t`` interface, which declares 5 virtua
 a concrete bridge driver must implement:
 
 
-.. literalinclude:: ../../sim/midas/src/main/cc/bridges/bridge_driver.h
+.. literalinclude:: ../../sim/midas/src/main/cc/core/bridge_driver.h
     :language: c++
     :start-after: DOC include start: Bridge Driver Interface
     :end-before: DOC include end: Bridge Driver Interface

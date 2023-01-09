@@ -3,7 +3,7 @@
 #define __TERMINATION_H
 // See LICENSE for license details.
 
-#include "bridge_driver.h"
+#include "core/bridge_driver.h"
 
 typedef struct TERMINATIONBRIDGEMODULE_struct {
   uint64_t out_counter_0;

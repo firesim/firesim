@@ -16,8 +16,6 @@ typedef struct CLOCKBRIDGEMODULE_struct {
   uint64_t tCycle_latch;
 } CLOCKBRIDGEMODULE_struct;
 
-CLOCKBRIDGEMODULE_checks;
-
 class clockmodule_t final {
 public:
   clockmodule_t(simif_t *sim, const CLOCKBRIDGEMODULE_struct &mmio_addrs);

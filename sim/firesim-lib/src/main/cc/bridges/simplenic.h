@@ -3,9 +3,10 @@
 #ifndef __SIMPLENIC_H
 #define __SIMPLENIC_H
 
-#include "bridges/bridge_driver.h"
-#include "bridges/stream_engine.h"
 #include <vector>
+
+#include "core/bridge_driver.h"
+#include "core/stream_engine.h"
 
 // TODO this should not be hardcoded here.
 #define MAX_BANDWIDTH 200

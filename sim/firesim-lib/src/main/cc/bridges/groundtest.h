@@ -2,7 +2,7 @@
 #ifndef __GROUNDTEST_H
 #define __GROUNDTEST_H
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 
 typedef struct GROUNDTESTBRIDGEMODULE_struct {
   uint64_t success;
