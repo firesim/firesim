@@ -98,6 +98,7 @@ private:
   std::string tracefilename;
   std::string dwarf_file_name;
   bool fireperf = false;
+  bool init_ran = false;
 
   size_t process_tokens(int num_beats, int minium_batch_beats);
   int beats_available_stable();

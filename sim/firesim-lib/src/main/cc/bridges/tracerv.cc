@@ -213,6 +213,7 @@ void tracerv_t::init() {
            ULONG_MAX);
   }
   write(mmio_addrs.initDone, true);
+  init_ran = true;
 }
 
 size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
@@ -289,6 +290,10 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
 }
 
 void tracerv_t::tick() {
+  if (!init_ran) {
+    fprintf(stderr, "tracerv_t::init() must be called before tick()\n");
+    return;
+  }
   if (this->trace_enabled) {
     process_tokens(this->stream_depth, this->stream_depth);
   }

@@ -142,7 +142,7 @@ class TracerVTest(targetConfig: BasePlatformConfig)
     extends BridgeSuite("TracerVModule", "NoConfig", targetConfig) {
 
       override def runTest(backend: String, debug: Boolean) {
-          val runResult = run(backend, true)
+          val runResult = run(backend, true, args = Seq(s"+tracefile=/home/centos/trace.txt", "+trace-test-output"))
           // val runResult = run(backend, debug)
           assert(runResult == 0)
       }
