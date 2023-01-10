@@ -56,15 +56,15 @@ override CXXFLAGS += -std=c++17 -include $(design_h)
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
-emul_files := emul/simif_emul emul/mmio emul/mm
-emul_h     := $(driver_h) $(bridge_h) $(addprefix $(midas_dir)/, $(addsuffix .h, $(emul_files)))
+emul_dir   := $(midas_dir)/emul
+emul_h     := $(driver_h) $(bridge_h) $(emul_dir)/simif_emul.h $(emul_dir)/mmio.h $(emul_dir)/mm.h
 # This includes c sources and static libraries
-emul_cc    := $(DRIVER) $(bridge_cc) $(addprefix $(midas_dir)/, $(addsuffix .cc, $(emul_files)))
+emul_cc    := $(DRIVER) $(bridge_cc) $(emul_dir)/simif_emul.cc $(emul_dir)/mmio.cc $(emul_dir)/mm.cc $(emul_dir)/dpi.cc
 emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 verilator_conf := rtlsim/ml-verilator-conf.vlt
 verilator_wrapper_v := $(v_dir)/top.sv
-verilator_harness := $(midas_dir)/dpi.cc $(midas_dir)/simif_emul_verilator.cc
+verilator_harness := $(midas_dir)/simif_emul_verilator.cc
 top_module := emul
 include rtlsim/Makefrag-verilator
 
@@ -73,7 +73,7 @@ verilator-debug: $(OUT_DIR)/V$(DRIVER_NAME)-debug
 
 # Add an extra wrapper source for VCS simulators
 vcs_wrapper_v := $(v_dir)/top.sv
-vcs_harness := $(midas_dir)/dpi.cc $(midas_dir)/simif_emul_vcs.cc
+vcs_harness := $(midas_dir)/simif_emul_vcs.cc
 TB := emul
 VCS_FLAGS := -e vcs_main
 include rtlsim/Makefrag-vcs
