@@ -161,10 +161,11 @@ public:
     }
 
     // set the callback to capture traced instructions
-    tracerv->set_callback(std::bind(&TracerVModule::got_instruction,
-                                    this,
-                                    std::placeholders::_1,
-                                    std::placeholders::_2));
+    tracerv->set_on_instruction_received(
+        std::bind(&TracerVModule::got_instruction,
+                  this,
+                  std::placeholders::_1,
+                  std::placeholders::_2));
 
     // Reset the DUT.
     peek_poke->poke("reset", 1, /*blocking=*/true);
@@ -183,8 +184,7 @@ public:
     // load MMIO and capture expected outputs
     auto load = [&](std::vector<uint64_t> iad, std::vector<bool> bit) {
       assert(iad.size() == bit.size());
-      const auto sz = iad.size();
-      for (unsigned i = 0; i < sz; i++) {
+      for (unsigned i = 0; i < iad.size(); i++) {
         // std::cout << "loading " << i << " with " << iad[i] << "," << bit[i]
         // << std::endl;
         peek_poke->poke(namei(i), iad[i], true);
@@ -212,7 +212,7 @@ public:
       steps(1);
     }
 
-    auto [final_iaddr, final_valid] = get_final_values(tracerv_width);
+    const auto &[final_iaddr, final_valid] = get_final_values(tracerv_width);
 
     // load final values (which are not valid and thus not checked)
     load(final_iaddr, final_valid);

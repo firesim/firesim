@@ -256,10 +256,11 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
             }
           }
         }
-        if (callback) {
+        if (on_instruction_received) {
           for (int q = 0; q < max_core_ipc; q++) {
             if (OUTBUF[i + q + 1] & valid_mask) {
-              callback(OUTBUF[i + 0], OUTBUF[i + q + 1] & (~valid_mask));
+              on_instruction_received(OUTBUF[i + 0],
+                                      OUTBUF[i + q + 1] & (~valid_mask));
             }
           }
         }
@@ -318,6 +319,7 @@ void tracerv_t::flush() {
  * the same value for cycle indicates that multiple instructions landed on that
  * cycle
  */
-void tracerv_t::set_callback(std::function<void(uint64_t, uint64_t)> cb) {
-  callback = cb;
+void tracerv_t::set_on_instruction_received(
+    std::function<void(uint64_t, uint64_t)> cb) {
+  on_instruction_received = cb;
 }

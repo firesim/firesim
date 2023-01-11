@@ -65,7 +65,7 @@ public:
   virtual bool terminate() { return false; }
   virtual int exit_code() { return 0; }
   virtual void finish() { flush(); };
-  void set_callback(std::function<void(uint64_t, uint64_t)> cb);
+  void set_on_instruction_received(std::function<void(uint64_t, uint64_t)> cb);
 
 private:
   const TRACERVBRIDGEMODULE_struct mmio_addrs;
@@ -105,7 +105,7 @@ private:
   std::string dwarf_file_name;
   bool fireperf = false;
   bool init_ran = false;
-  std::function<void(uint64_t, uint64_t)> callback = NULL;
+  std::function<void(uint64_t, uint64_t)> on_instruction_received = NULL;
 
   size_t process_tokens(int num_beats, int minium_batch_beats);
   int beats_available_stable();
