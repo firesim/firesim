@@ -6,8 +6,8 @@
 #include "bridges/clock_info.h"
 #include "bridges/tracerv/trace_tracker.h"
 #include "bridges/tracerv/tracerv_processing.h"
-#include <vector>
 #include <functional>
+#include <vector>
 
 typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t initDone;
@@ -67,14 +67,14 @@ public:
   virtual void finish() { flush(); };
   void set_callback(std::function<void(uint64_t, uint64_t)> cb);
 
-
-
 private:
   const TRACERVBRIDGEMODULE_struct mmio_addrs;
   const int stream_idx;
   const int stream_depth;
+
 public:
   const int max_core_ipc;
+
 private:
   ClockInfo clock_info;
 

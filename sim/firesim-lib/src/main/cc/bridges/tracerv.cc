@@ -8,10 +8,10 @@
 #include <string.h>
 
 #include <fcntl.h>
+#include <iostream>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <iostream>
 
 #include <sys/mman.h>
 
@@ -256,7 +256,7 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
             }
           }
         }
-        if(callback) {
+        if (callback) {
           for (int q = 0; q < max_core_ipc; q++) {
             if (OUTBUF[i + q + 1] & valid_mask) {
               callback(OUTBUF[i + 0], OUTBUF[i + q + 1] & (~valid_mask));
@@ -314,8 +314,9 @@ void tracerv_t::flush() {
 
 /**
  * Set a callback that will fire with each traced instructions
- * The first argument is the cycle, the second is the PC. Multiple calls with the same value for cycle
- * indicates that multiple instructions landed on that cycle
+ * The first argument is the cycle, the second is the PC. Multiple calls with
+ * the same value for cycle indicates that multiple instructions landed on that
+ * cycle
  */
 void tracerv_t::set_callback(std::function<void(uint64_t, uint64_t)> cb) {
   callback = cb;
