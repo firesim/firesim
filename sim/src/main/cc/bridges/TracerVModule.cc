@@ -25,6 +25,28 @@
 
 #include <iostream>
 
+std::vector<bool> get_contiguous(const unsigned bits, const unsigned total) {
+  std::vector<bool> ret;
+  for(unsigned i = 0; i < total; i++) {
+    const bool value = (i < bits);
+    ret.emplace_back(value);
+    // std::cout << value << "\n";
+  }
+
+  return ret;
+}
+
+std::vector<uint64_t> get_iaddrs(const unsigned step, const unsigned total) {
+  constexpr uint64_t offset = 1024; // should be larger than total but doesn't really matter
+  std::vector<uint64_t> ret;
+
+  for(unsigned i = 0; i < total; i++) {
+    ret.emplace_back(step*offset+i);
+  }
+
+  return ret;
+}
+
 class TracerVModule final : public simulation_t {
 public:
   TracerVModule(const std::vector<std::string> &args, simif_t *simif)
@@ -106,12 +128,19 @@ public:
     return was_done;
   }
 
+  std::vector<std::vector<uint64_t>> expected_iaddr;
+  std::vector<std::vector<bool>> expected_valid;
   
   int simulation_run() override {
     std::cout << "simulation_run" << std::endl;
     if(!tracerv) {
       std::cout << "tracerv was never set" << std::endl;
-    } 
+    }
+
+    // for(unsigned i2 = 0; i2 < 300; i2++) {
+    //   std::cout << simif->rand_next(32) << std::endl;
+    // }
+
     // Reset the DUT.
     peek_poke->poke("reset", 1, /*blocking=*/true);
     simif->take_steps(1, /*blocking=*/true);
@@ -119,37 +148,89 @@ public:
     simif->take_steps(1, /*blocking=*/true);
 
 
-    peek_poke->poke("io_tracervdebug", 9999, /*blocking=*/true);
+    // peek_poke->poke("io_tracervdebug", 9999, /*blocking=*/true);
 
-    std::cout << "Step A" << std::endl;
+    // std::cout << "Step A" << std::endl;
 
-    steps(1);
+    // steps(1);
 
-    // these two are a problem
-    simif->take_steps(100, /*blocking=*/false);
+    // // these two are a problem
+    // simif->take_steps(100, /*blocking=*/false);
 
-    steps(100);
+    // steps(100);
 
-    std::cout << "Step B" << std::endl;
-    peek_poke->poke("io_tracervdebug", 100, /*blocking=*/true);
+    // std::cout << "Step B" << std::endl;
+    // peek_poke->poke("io_tracervdebug", 100, /*blocking=*/true);
 
-    steps(1);
+    // steps(1);
 
-    std::cout << "Step C" << std::endl;
+    // std::cout << "Step C" << std::endl;
 
-    peek_poke->poke("io_tracervdebug", 100, /*blocking=*/true);
+    // peek_poke->poke("io_tracervdebug", 100, /*blocking=*/true);
 
-    steps(10);
-    peek_poke->poke("io_insns_0_iaddr", 4, /*blocking=*/true);
-    peek_poke->poke("io_insns_0_valid", 1, /*blocking=*/true);
-    peek_poke->poke("io_insns_1_iaddr", 4+100, /*blocking=*/true);
-    peek_poke->poke("io_insns_1_valid", 1, /*blocking=*/true);
-    steps(1);
-    peek_poke->poke("io_insns_0_valid", 0, /*blocking=*/true);
-    peek_poke->poke("io_insns_1_valid", 0, /*blocking=*/true);
+    // steps(10);
+
+    auto namei = [](const unsigned x) {
+      std::stringstream ss;
+      ss << "io_insns_" << x << "_iaddr";
+      return ss.str();
+    };
+
+    auto namev = [](const unsigned x) {
+      std::stringstream ss;
+      ss << "io_insns_" << x << "_valid";
+      return ss.str();
+    };
+
+    
+
+    const unsigned tracerv_width = 4;
 
 
+    auto load = [&](std::vector<uint64_t> iad, std::vector<bool> btt) {
+      assert(iad.size() == btt.size());
+      const auto sz = iad.size();
+      for(unsigned i = 0; i < sz; i++) {
+        std::cout << "loading " << i << " with " << iad[i] << "," << btt[i] << std::endl;
+        peek_poke->poke(namei(i), iad[i], true);
+        peek_poke->poke(namev(i), btt[i], true);
+      }
+    };
+
+    for(unsigned test_step = 0; test_step < 10; test_step++) {
+      const uint64_t pull = simif->rand_next(tracerv_width);
+
+      auto pull_iaddr = get_iaddrs(test_step, tracerv_width);
+      auto pull_bits = get_contiguous(pull, tracerv_width);
+
+      load(pull_iaddr, pull_bits);
+      steps(1);
+    }
+    
+    std::vector<bool> final_valid;
+    std::vector<uint64_t> final_iaddr;
+
+    for(unsigned i = 0; i < tracerv_width; i++) {
+      final_valid.emplace_back(0);
+      final_iaddr.emplace_back(0xffff);
+    }
+
+    load(final_iaddr, final_valid);
     steps(get_step_limit());
+
+
+
+
+    // peek_poke->poke("io_insns_0_iaddr", 4, /*blocking=*/true);
+    // peek_poke->poke("io_insns_0_valid", 1, /*blocking=*/true);
+    // peek_poke->poke("io_insns_1_iaddr", 4+100, /*blocking=*/true);
+    // peek_poke->poke("io_insns_1_valid", 1, /*blocking=*/true);
+    // steps(1);
+    // peek_poke->poke("io_insns_0_valid", 0, /*blocking=*/true);
+    // peek_poke->poke("io_insns_1_valid", 0, /*blocking=*/true);
+
+
+    // steps(get_step_limit());
 
     // Cleanup.
     return EXIT_SUCCESS;
