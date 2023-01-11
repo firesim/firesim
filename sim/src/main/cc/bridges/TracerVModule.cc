@@ -25,7 +25,7 @@
 
 #include <iostream>
 
-std::vector<bool> get_contiguous(const unsigned bits, const unsigned total) {
+static std::vector<bool> get_contiguous(const unsigned bits, const unsigned total) {
   std::vector<bool> ret;
   for(unsigned i = 0; i < total; i++) {
     const bool value = (i < bits);
@@ -36,7 +36,7 @@ std::vector<bool> get_contiguous(const unsigned bits, const unsigned total) {
   return ret;
 }
 
-std::vector<uint64_t> get_iaddrs(const unsigned step, const unsigned total) {
+static std::vector<uint64_t> get_iaddrs(const unsigned step, const unsigned total) {
   constexpr uint64_t offset = 1024; // should be larger than total but doesn't really matter
   std::vector<uint64_t> ret;
 
@@ -46,6 +46,18 @@ std::vector<uint64_t> get_iaddrs(const unsigned step, const unsigned total) {
 
   return ret;
 }
+
+static std::string namei(const unsigned x) {
+  std::stringstream ss;
+  ss << "io_insns_" << x << "_iaddr";
+  return ss.str();
+};
+
+static std::string namev(const unsigned x) {
+  std::stringstream ss;
+  ss << "io_insns_" << x << "_valid";
+  return ss.str();
+};
 
 class TracerVModule final : public simulation_t {
 public:
@@ -128,8 +140,21 @@ public:
     return was_done;
   }
 
+
   std::vector<std::vector<uint64_t>> expected_iaddr;
   std::vector<std::vector<bool>> expected_valid;
+
+  std::vector<uint64_t> expected_cycle;
+  std::vector<uint64_t> expected_cycle_pc;
+
+  std::vector<uint64_t> got_cycle;
+  std::vector<uint64_t> got_iaddr;
+
+  void got_instruction(const uint64_t cycle, const uint64_t pc) {
+    std::cout << "cycle: " << cycle << " pc: " << pc << std::endl;
+    got_cycle.emplace_back(cycle);
+    got_iaddr.emplace_back(pc);
+  }
   
   int simulation_run() override {
     std::cout << "simulation_run" << std::endl;
@@ -137,9 +162,8 @@ public:
       std::cout << "tracerv was never set" << std::endl;
     }
 
-    // for(unsigned i2 = 0; i2 < 300; i2++) {
-    //   std::cout << simif->rand_next(32) << std::endl;
-    // }
+    // set the callback to capture traced instructions
+    tracerv->set_callback(std::bind(&TracerVModule::got_instruction, this, std::placeholders::_1, std::placeholders::_2));
 
     // Reset the DUT.
     peek_poke->poke("reset", 1, /*blocking=*/true);
@@ -147,46 +171,16 @@ public:
     peek_poke->poke("reset", 0, /*blocking=*/true);
     simif->take_steps(1, /*blocking=*/true);
 
+    // the value of the first cycle as returned from TracerV
+    const uint64_t cycle_offset = 3;
 
-    // peek_poke->poke("io_tracervdebug", 9999, /*blocking=*/true);
-
-    // std::cout << "Step A" << std::endl;
-
-    // steps(1);
-
-    // // these two are a problem
-    // simif->take_steps(100, /*blocking=*/false);
-
-    // steps(100);
-
-    // std::cout << "Step B" << std::endl;
-    // peek_poke->poke("io_tracervdebug", 100, /*blocking=*/true);
-
-    // steps(1);
-
-    // std::cout << "Step C" << std::endl;
-
-    // peek_poke->poke("io_tracervdebug", 100, /*blocking=*/true);
-
-    // steps(10);
-
-    auto namei = [](const unsigned x) {
-      std::stringstream ss;
-      ss << "io_insns_" << x << "_iaddr";
-      return ss.str();
-    };
-
-    auto namev = [](const unsigned x) {
-      std::stringstream ss;
-      ss << "io_insns_" << x << "_valid";
-      return ss.str();
-    };
-
-    
-
-    const unsigned tracerv_width = 4;
+    // modified as we go
+    uint64_t e_cycle = cycle_offset;
 
 
+    const unsigned tracerv_width = tracerv->max_core_ipc;
+
+    // load mmio and capture expected outputs
     auto load = [&](std::vector<uint64_t> iad, std::vector<bool> btt) {
       assert(iad.size() == btt.size());
       const auto sz = iad.size();
@@ -194,10 +188,19 @@ public:
         std::cout << "loading " << i << " with " << iad[i] << "," << btt[i] << std::endl;
         peek_poke->poke(namei(i), iad[i], true);
         peek_poke->poke(namev(i), btt[i], true);
+
+        // calculate what TraverV should output, and save it
+        if(btt[i]) {
+          expected_cycle.emplace_back(e_cycle);
+          expected_cycle_pc.emplace_back(iad[i]);
+        }
+
       }
+
+      e_cycle++;
     };
 
-    for(unsigned test_step = 0; test_step < 10; test_step++) {
+    for(unsigned test_step = 0; test_step < 4; test_step++) {
       const uint64_t pull = simif->rand_next(tracerv_width);
 
       auto pull_iaddr = get_iaddrs(test_step, tracerv_width);
@@ -207,32 +210,32 @@ public:
       steps(1);
     }
     
+
+    // calculate the final values we will feed into MMIO
     std::vector<bool> final_valid;
     std::vector<uint64_t> final_iaddr;
-
     for(unsigned i = 0; i < tracerv_width; i++) {
       final_valid.emplace_back(0);
       final_iaddr.emplace_back(0xffff);
     }
 
+    // load final values, which are not valid
     load(final_iaddr, final_valid);
+
+    // step to flush things out
     steps(get_step_limit());
 
+    // check for test pass
+    if(got_cycle != expected_cycle) {
+      std::cerr << "FAIL: TracerV Cycles did not match\n";
+      exit(1);
+    }
 
+    if(got_iaddr != expected_cycle_pc) {
+      std::cerr << "FAIL: TracerV Iaddr did not match\n";
+      exit(1);
+    }
 
-
-    // peek_poke->poke("io_insns_0_iaddr", 4, /*blocking=*/true);
-    // peek_poke->poke("io_insns_0_valid", 1, /*blocking=*/true);
-    // peek_poke->poke("io_insns_1_iaddr", 4+100, /*blocking=*/true);
-    // peek_poke->poke("io_insns_1_valid", 1, /*blocking=*/true);
-    // steps(1);
-    // peek_poke->poke("io_insns_0_valid", 0, /*blocking=*/true);
-    // peek_poke->poke("io_insns_1_valid", 0, /*blocking=*/true);
-
-
-    // steps(get_step_limit());
-
-    // Cleanup.
     return EXIT_SUCCESS;
   }
   void simulation_finish() override {
@@ -246,8 +249,8 @@ private:
   std::vector<std::unique_ptr<bridge_driver_t>> bridges;
   std::unique_ptr<peek_poke_t> peek_poke;
 
-  unsigned get_step_limit() const { return 6000; }
-  unsigned get_tick_limit() const { return 3000; }
+  // seems like smaller values will cause TraverV not to collect data
+  unsigned get_step_limit() const { return 6200; }
 
   std::unique_ptr<tracerv_t> tracerv;
 };

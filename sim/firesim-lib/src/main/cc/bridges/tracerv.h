@@ -7,6 +7,7 @@
 #include "bridges/tracerv/trace_tracker.h"
 #include "bridges/tracerv/tracerv_processing.h"
 #include <vector>
+#include <functional>
 
 typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t initDone;
@@ -64,12 +65,17 @@ public:
   virtual bool terminate() { return false; }
   virtual int exit_code() { return 0; }
   virtual void finish() { flush(); };
+  void set_callback(std::function<void(uint64_t, uint64_t)> cb);
+
+
 
 private:
   const TRACERVBRIDGEMODULE_struct mmio_addrs;
   const int stream_idx;
   const int stream_depth;
+public:
   const int max_core_ipc;
+private:
   ClockInfo clock_info;
 
   FILE *tracefile;
@@ -99,6 +105,7 @@ private:
   std::string dwarf_file_name;
   bool fireperf = false;
   bool init_ran = false;
+  std::function<void(uint64_t, uint64_t)> callback = NULL;
 
   size_t process_tokens(int num_beats, int minium_batch_beats);
   int beats_available_stable();
