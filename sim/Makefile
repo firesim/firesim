@@ -43,10 +43,11 @@ include $(TARGET_PROJECT_MAKEFRAG)
 include make/config.mk
 include make/library.mk
 include make/goldengate.mk
-include make/fpga.mk
 include make/verilator.mk
 include make/vcs.mk
 include make/driver.mk
+include make/fpga.mk
+include make/xsim.mk
 include make/unittest.mk
 include make/scala.mk
 
