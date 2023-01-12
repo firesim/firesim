@@ -2,7 +2,7 @@
 
 #include "clock.h"
 
-#include "simif.h"
+#include "core/simif.h"
 
 clockmodule_t::clockmodule_t(simif_t *sim,
                              const CLOCKBRIDGEMODULE_struct &mmio_addrs)

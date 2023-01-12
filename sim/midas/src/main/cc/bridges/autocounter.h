@@ -1,9 +1,9 @@
 #ifndef __AUTOCOUNTER_H
 #define __AUTOCOUNTER_H
 
-#include "bridges/address_map.h"
-#include "bridges/bridge_driver.h"
-#include "bridges/clock_info.h"
+#include "core/address_map.h"
+#include "core/bridge_driver.h"
+#include "core/clock_info.h"
 #include <fstream>
 #include <vector>
 

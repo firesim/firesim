@@ -4,14 +4,15 @@
 
 #include "bridges/cpu_managed_stream.h"
 #include "bridges/fpga_managed_stream.h"
+#include "emul/mm.h"
+#include "emul/mmio.h"
 
 simif_emul_t::simif_emul_t(const TargetConfig &config,
                            const std::vector<std::string> &args)
     : simif_t(config, args), master(std::make_unique<mmio_t>(config.ctrl)) {
 
-  memsize = 1L << config.mem.addr_bits;
-
   // Parse arguments.
+  memsize = 1L << config.mem.addr_bits;
   for (auto arg : args) {
     if (arg.find("+waveform=") == 0) {
       waveform = arg.c_str() + 10;

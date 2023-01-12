@@ -2,10 +2,10 @@
 #ifndef __TRACERV_H
 #define __TRACERV_H
 
-#include "bridges/bridge_driver.h"
-#include "bridges/clock_info.h"
 #include "bridges/tracerv/trace_tracker.h"
 #include "bridges/tracerv/tracerv_processing.h"
+#include "core/bridge_driver.h"
+#include "core/clock_info.h"
 #include <vector>
 
 typedef struct TRACERVBRIDGEMODULE_struct {

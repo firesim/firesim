@@ -4,7 +4,7 @@
 
 #include <fstream>
 
-#include "simif.h"
+#include "core/simif.h"
 
 loadmem_t::loadmem_t(simif_t *sim,
                      const LOADMEMWIDGET_struct &mmio_addrs,

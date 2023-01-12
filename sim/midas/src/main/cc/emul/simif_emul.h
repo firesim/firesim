@@ -12,9 +12,12 @@
 
 #include "bridges/cpu_managed_stream.h"
 #include "bridges/fpga_managed_stream.h"
+#include "core/simif.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
-#include "simif.h"
+
+class mm_t;
+class mmio_t;
 
 /**
  * Simulation implementation bridging an RTL DUT to a simulation.

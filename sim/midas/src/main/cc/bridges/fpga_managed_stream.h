@@ -6,7 +6,7 @@
 #include <functional>
 #include <string>
 
-#include "bridges/stream_engine.h"
+#include "core/stream_engine.h"
 
 /**
  * An abstraction over the low-level hardware interface on which streams rely.

@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-#include "simif.h"
+#include "core/simif.h"
 
 master_t::master_t(simif_t *sim, const SIMULATIONMASTER_struct &mmio_addrs)
     : sim(sim), mmio_addrs(mmio_addrs) {}

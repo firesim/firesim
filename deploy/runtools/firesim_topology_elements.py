@@ -474,18 +474,11 @@ class FireSimServerNode(FireSimNode):
         """
         return self.get_resolved_server_hardware_config().get_kill_simulation_command()
 
-    def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
-        """ Return local paths of all stuff needed to run this simulation as
-        an array. """
+    def get_tarball_files_paths(self) -> List[Tuple[str, str]]:
+        """ Return local and remote paths of all stuff destined for the driver tarball 
+        The returned paths in the tuple are [local_path, remote_path]. When remote_path 
+        is an empty string the local filename is used."""
         all_paths = []
-
-        job_rootfs_path = self.get_job().rootfs_path()
-        if job_rootfs_path is not None:
-            self_rootfs_name = self.get_rootfs_name()
-            assert self_rootfs_name is not None
-            all_paths.append((job_rootfs_path, self_rootfs_name))
-
-        all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
         driver_path = self.get_resolved_server_hardware_config().get_local_driver_path()
         all_paths.append((driver_path, ''))
@@ -496,6 +489,33 @@ class FireSimServerNode(FireSimNode):
         all_paths += self.get_resolved_server_hardware_config().get_additional_required_sim_files()
 
         all_paths += self.get_job().get_siminputs()
+        return all_paths
+    
+    def get_tarball_path_pair(self) -> Tuple[str, str]:
+        """ Return local and remote paths of the actual driver tarball, not files inside"""
+
+        if not isinstance(self.server_hardware_config, str) and self.server_hardware_config is not None and self.server_hardware_config.driver_tar is not None:
+            return (self.server_hardware_config.driver_tar, self.get_tar_name())
+        else:
+            return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
+
+
+
+    def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
+        """ Return local and remote paths of all stuff needed to run this simulation as
+        an array. The returned paths in the tuple are [local_path, remote_path]. """
+        all_paths = []
+
+        job_rootfs_path = self.get_job().rootfs_path()
+        if job_rootfs_path is not None:
+            self_rootfs_name = self.get_rootfs_name()
+            assert self_rootfs_name is not None
+            all_paths.append((job_rootfs_path, self_rootfs_name))
+
+        all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
+
+        all_paths.append(self.get_tarball_path_pair())
+
         return all_paths
 
     def get_agfi(self) -> str:
@@ -525,6 +545,10 @@ class FireSimServerNode(FireSimNode):
             # prefix rootfs name with the job name to disambiguate in supernode
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
+
+    def get_tar_name(self) -> str:
+        """ Get the name of the tarball on the run host"""
+        return "driver-bundle.tar.gz"
 
     def get_all_rootfs_names(self) -> List[Optional[str]]:
         """ Get all rootfs filenames as a list. """

@@ -21,8 +21,6 @@ typedef struct LOADMEMWIDGET_struct {
   uint64_t R_DATA;
 } LOADMEMWIDGET_struct;
 
-LOADMEMWIDGET_checks;
-
 class loadmem_t final {
 public:
   loadmem_t(simif_t *sim,

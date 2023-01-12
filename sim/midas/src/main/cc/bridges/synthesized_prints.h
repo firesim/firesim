@@ -6,8 +6,8 @@
 #include <iostream>
 #include <vector>
 
-#include "bridge_driver.h"
-#include "clock_info.h"
+#include "core/bridge_driver.h"
+#include "core/clock_info.h"
 
 struct print_vars_t {
   std::vector<mpz_t *> data;

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <vector>
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 
 typedef struct BLOCKDEVBRIDGEMODULE_struct {
   uint64_t read_latency;

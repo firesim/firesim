@@ -1,7 +1,7 @@
 #ifndef __SYNTHESIZED_ASSERTIONS_H
 #define __SYNTHESIZED_ASSERTIONS_H
 
-#include "bridge_driver.h"
+#include "core/bridge_driver.h"
 
 typedef struct ASSERTBRIDGEMODULE_struct {
   uint64_t id;
