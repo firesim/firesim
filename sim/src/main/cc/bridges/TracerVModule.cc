@@ -218,7 +218,12 @@ public:
     load(final_iaddr, final_valid);
 
     // step to flush things out
-    steps(get_step_limit());
+    // steps(get_step_limit());
+
+    tracerv->flush();
+
+    steps(100);
+
 
     // check for test pass
     check_test_pass();
@@ -256,7 +261,7 @@ private:
   std::unique_ptr<peek_poke_t> peek_poke;
 
   // seems like smaller values will cause TraverV not to collect data
-  unsigned get_step_limit() const { return 10000; }
+  // unsigned get_step_limit() const { return 10000; }
   unsigned get_total_trace_tests() const { return 64; }
 
   std::unique_ptr<tracerv_t> tracerv;
