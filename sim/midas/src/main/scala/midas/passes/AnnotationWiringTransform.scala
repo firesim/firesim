@@ -85,7 +85,7 @@ class AnnotationParameterizedWiringTransform[
       }
     }
 
-    doWiring match {
+    doWiring() match {
       case Success(state) => state.copy(annotations = cleanedAnnotations)
       case Failure(why) =>
         throw new RuntimeException(s"Could not perform wiring for annotation: ${wiringKey}. Exception follows.\n $why")

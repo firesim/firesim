@@ -49,7 +49,7 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
       throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
-  def headerComment(sb: StringBuilder) {
+  def headerComment(sb: StringBuilder): Unit = {
     val name = getWName.toUpperCase
     sb.append("\n// Widget: %s\n".format(getWName))
     sb.append(CppGenerationUtils.genMacro(s"${name}(x)", s"${name}_ ## x"))
@@ -190,7 +190,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     crFile
   }
 
-  def genHeader(base: BigInt, sb: StringBuilder){
+  def genHeader(base: BigInt, sb: StringBuilder): Unit = {
     wrapper.headerComment(sb)
     crRegistry.genHeader(wrapper.getWName.toUpperCase, base, sb)
     crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
@@ -244,7 +244,7 @@ trait HasWidgets {
 
   private def sortedWidgets = widgets.toSeq.sortWith(_.memRegionSize > _.memRegionSize)
 
-  def genCtrlIO(master: WidgetMMIO)(implicit p: Parameters) {
+  def genCtrlIO(master: WidgetMMIO)(implicit p: Parameters): Unit = {
 
     val lastWidgetRegion = addrMap.entries.last.region
     val widgetAddressMax = lastWidgetRegion.start + lastWidgetRegion.size
@@ -276,11 +276,11 @@ trait HasWidgets {
     * Iterates through each bridge, generating the header fragment. Must be
     * called after bridge address assignment is complete.
     */
-  def genHeader(sb: StringBuilder) {
+  def genHeader(sb: StringBuilder): Unit = {
     widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, sb))
   }
 
-  def printWidgets {
+  def printWidgets: Unit = {
     widgets foreach ((w: Widget) => println(w.getWName))
   }
 

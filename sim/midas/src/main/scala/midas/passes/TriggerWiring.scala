@@ -47,7 +47,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
                                  (mod: DefModule): DefModule = mod match {
     case m: Module if sourceModuleMap.isDefinedAt(m.name) =>
       val annos = sourceModuleMap(m.name)
-      val mT = annos.head.enclosingModuleTarget
+      val mT = annos.head.enclosingModuleTarget()
       val moduleNS = Namespace(mod)
       val addedStmts = annos.flatMap({ anno =>
         if (anno.reset.nonEmpty) {
@@ -85,7 +85,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
                 (s: Statement): Statement = s.map(onStmtSink(sinkAnnos, addedAnnos, ns)) match {
     case node@DefNode(_,name,_) if sinkAnnos.isDefinedAt(name) =>
       val sinkAnno = sinkAnnos(name)
-      val mT = sinkAnno.enclosingModuleTarget
+      val mT = sinkAnno.enclosingModuleTarget()
       val triggerSyncName = ns.newName("trigger_sync")
       val triggerSync = RegZeroPreset(NoInfo, triggerSyncName, BoolType, WRef(sinkAnno.clock.ref))
       addedAnnos += SinkAnnotation(mT.ref(triggerSyncName).toNamed, sinkWiringKey)
@@ -120,7 +120,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     } else {
       // Step 1) Gate credits and debits with their associated reset, if provided
       val updatedAnnos = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
-      val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule)
+      val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule())
       val gatedCircuit = state.circuit.map(gateEventsWithReset(srcAnnoMap, updatedAnnos))
       val (gatedCredits, gatedDebits) = updatedAnnos.partition(_.sourceType)
 

@@ -39,7 +39,7 @@ class FirstReadyFCFSMMRegIO(val cfg: FirstReadyFCFSConfig) extends BaseDRAMMMReg
         min     = 1,
         max     = Some(cfg.transactionQueueDepth)))
 
-  def requestSettings() {
+  def requestSettings(): Unit = {
     Console.println(s"Configuring First-Ready First-Come First Serve Model")
     setBaseDRAMSettings()
   }
@@ -53,7 +53,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
     with HasDRAMMASConstants {
 
   val longName = "First-Ready FCFS MAS"
-  def printTimingModelGenerationConfig {}
+  def printTimingModelGenerationConfig: Unit = {}
   /**************************** CHISEL BEGINS *********************************/
 
   import DRAMMasEnums._

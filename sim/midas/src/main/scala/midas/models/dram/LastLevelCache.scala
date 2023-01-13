@@ -28,8 +28,8 @@ class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
   val enabled       = Bool() // Set by a runtime configuration register
 
   def valid(): Bool = (wb_in_flight || acq_in_flight) && enabled
-  def available(): Bool = !valid && enabled
-  def setCollision(set_addr: UInt): Bool = (set_addr === this.set_addr) && valid
+  def available(): Bool = !valid() && enabled
+  def setCollision(set_addr: UInt): Bool = (set_addr === this.set_addr) && valid()
 
   // Call on a MSHR register; sets all pertinent fields (leaving enabled untouched)
   def allocate(
@@ -168,7 +168,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   val mshr_available = mshrs.exists({m: MSHR => m.available() })
   val mshr_next_idx = mshrs.indexWhere({ m: MSHR => m.available() })
 
-  val mshrs_allocated = mshrs.count({m: MSHR => m.valid})
+  val mshrs_allocated = mshrs.count({m: MSHR => m.valid()})
   assert((mshrs_allocated < RegNext(io.settings.activeMSHRs)) || !mshr_available,
     "Too many runtime MSHRs exposed given runtime programmable limit")
 

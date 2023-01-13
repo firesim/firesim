@@ -89,7 +89,7 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
       super.genHeader(base, sb)

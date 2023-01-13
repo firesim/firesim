@@ -96,7 +96,7 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     val initDone = RegInit(false.B)
 
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
     // We only sink tokens, so tie off the return channel
     hPort.fromHost.hValid := true.B
 
@@ -162,7 +162,7 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     attach(btht_queue.io.deq.valid, "countersready", ReadOnly)
     Pulsify(genWORegInit(btht_queue.io.deq.ready, "readdone", false.B), 1)
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       headerComment(sb)
       // Exclude counter addresses as their names can vary across AutoCounter instances, but 
       // we only generate a single struct typedef

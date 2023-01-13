@@ -168,23 +168,23 @@ class RAMModelInst(name: String, val readPorts: Seq[ReadPort], val writePorts: S
   ))
 
   def defInst() = WDefInstance(NoInfo, "model", name, instType())
-  def refInst() = WRef(defInst)
+  def refInst() = WRef(defInst())
 
   private def portNo(vecName: String, elmType: Type)(idx: Int) =
-    new Decoupled(WSubIndex(WSubField(WSubField(refInst, "channels"), vecName), idx, elmType, UnknownFlow))
+    new Decoupled(WSubIndex(WSubField(WSubField(refInst(), "channels"), vecName), idx, elmType, UnknownFlow))
   def readCmdPort: Int => Decoupled = portNo("read_cmds", readCommand)
   def readDataPort: Int => Decoupled = portNo("read_resps", readDataType)
   def writePort: Int => Decoupled = portNo("write_cmds", writeCommand)
-  def resetChannel = new Decoupled(WSubField(WSubField(refInst, "channels"), "reset"))
+  def resetChannel = new Decoupled(WSubField(WSubField(refInst(), "channels"), "reset"))
 
   def emitStatements(clock: WRef, hostReset: WRef): Seq[Statement] = {
     val readConnects = readPorts.zipWithIndex.flatMap({ case (readPort, idx) =>
       readPort.attachChannels(readCmdPort(idx), readDataPort(idx)) })
     val writeConnects = writePorts.zipWithIndex.flatMap({ case (wPort, idx) =>
       wPort.attachChannels(writePort(idx)) })
-    Seq(defInst,
-        Connect(NoInfo, WSubField(refInst, "clock"), clock),
-        Connect(NoInfo, WSubField(refInst, "reset"), hostReset),
+    Seq(defInst(),
+        Connect(NoInfo, WSubField(refInst(), "clock"), clock),
+        Connect(NoInfo, WSubField(refInst(), "reset"), hostReset),
         Connect(NoInfo, resetChannel.valid, Utils.one),
         Connect(NoInfo, resetChannel.bits(), Utils.zero)
     ) ++ readConnects ++ writeConnects

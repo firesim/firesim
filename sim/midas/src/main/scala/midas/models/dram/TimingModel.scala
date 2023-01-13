@@ -77,7 +77,7 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   // chisel elaboration
   protected def printTimingModelGenerationConfig: Unit
 
-  def printGenerationConfig {
+  def printGenerationConfig: Unit = {
     println("  Timing Model Class: " + longName)
     printTimingModelGenerationConfig
   }
