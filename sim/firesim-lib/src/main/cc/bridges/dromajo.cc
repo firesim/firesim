@@ -8,33 +8,31 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef DROMAJOBRIDGEMODULE_0_PRESENT
-
-// The maximum number of beats available in the FPGA-side FIFO
-#define STREAM_WIDTH_B BridgeConstants::STREAM_WIDTH_BYTES;
 // Create bitmask macro
 #define BIT_MASK(__TYPE__, __ONE_COUNT__)                                      \
   ((__TYPE__)(-((__ONE_COUNT__) != 0))) &                                      \
       (((__TYPE__)-1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
 
-//#define DEBUG
+// #define DEBUG
 
 /**
  * Constructor for Dromajo
  */
 dromajo_t::dromajo_t(simif_t *sim,
+                     StreamEngine &stream,
                      std::vector<std::string> &args,
+                     const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
+                     const dromajo_config_t &config,
                      int iaddr_width,
                      int insn_width,
                      int wdata_width,
                      int cause_width,
                      int tval_width,
                      int num_traces,
-                     const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
                      int stream_idx,
                      int stream_depth)
-    : bridge_driver_t(sim), stream_idx(stream_idx), stream_depth(stream_depth),
-      mmio_addrs(mmio_addrs) {
+    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+      config(config), stream_idx(stream_idx), stream_depth(stream_depth) {
   // setup max constants given from the RTL
   this->_num_traces = num_traces;
 
@@ -59,7 +57,6 @@ dromajo_t::dromajo_t(simif_t *sim,
   this->_tval_offset = this->_cause_offset + this->_cause_width;
 
   // setup misc. state variables
-  this->_dma_addr = dma_addr;
   this->_trace_idx = 0;
   this->dromajo_failed = false;
   this->dromajo_exit_code = 0;
@@ -115,9 +112,6 @@ dromajo_t::~dromajo_t() {
     dromajo_cosim_fini(this->dromajo_state);
 }
 
-#define MAX_ARGS 24
-#define MAX_STR_LEN 24
-
 /**
  * Setup simulation and initialize Dromajo cosimulation
  */
@@ -130,41 +124,38 @@ void dromajo_t::init() {
          this->_num_traces);
 
   // setup arguments
-  char local_argc = 21;
-  char *local_argv[MAX_ARGS] = {"./dromajo",
-                                "--compact_bootrom",
-                                "--custom_extension",
-                                "--clear_ids",
-                                "--reset_vector",
-                                DROMAJO_RESET_VECTOR,
-                                "--bootrom",
-                                (char *)this->dromajo_bootrom.c_str(),
-                                "--mmio_range",
-                                DROMAJO_MMIO_START ":" DROMAJO_MMIO_END,
-                                "--plic",
-                                DROMAJO_PLIC_BASE ":" DROMAJO_PLIC_SIZE,
-                                "--clint",
-                                DROMAJO_CLINT_BASE ":" DROMAJO_CLINT_SIZE,
-                                "--memory_size",
-                                DROMAJO_MEM_SIZE,
-                                "--save",
-                                "dromajo_snap",
-                                "--dtb",
-                                (char *)this->dromajo_dtb.c_str(),
-                                (char *)this->dromajo_bin.c_str()};
-
-  if (MAX_ARGS < local_argc) {
-    printf("[DRJ_ERR] Too many arguments\n");
-    exit(1);
-  }
+  std::vector<std::string> dromajo_args{
+      "./dromajo",
+      "--compact_bootrom",
+      "--custom_extension",
+      "--clear_ids",
+      "--reset_vector",
+      config.resetVector,
+      "--bootrom",
+      dromajo_bootrom,
+      "--mmio_range",
+      std::string(config.mmioStart) + ":" + config.mmioEnd,
+      "--plic",
+      std::string(config.plicBase) + ":" + config.plicSize,
+      "--clint",
+      std::string(config.clintBase) + ":" + config.clintSize,
+      "--memory_size",
+      config.memSize,
+      "--save",
+      "dromajo_snap",
+      "--dtb",
+      dromajo_dtb,
+      dromajo_bin};
 
   printf("[INFO] Dromajo command: \n");
-  for (int i = 0; i < local_argc; ++i) {
-    printf("%s ", local_argv[i]);
+  char *dromajo_argv[dromajo_args.size()];
+  for (int i = 0; i < dromajo_args.size(); ++i) {
+    dromajo_argv[i] = const_cast<char *>(dromajo_args[i].c_str());
+    printf("%s ", dromajo_argv[i]);
   }
   printf("\n");
 
-  this->dromajo_state = dromajo_cosim_init(local_argc, local_argv);
+  this->dromajo_state = dromajo_cosim_init(dromajo_args.size(), dromajo_argv);
   if (this->dromajo_state == NULL) {
     printf("[ERROR] Error setting up Dromajo\n");
     exit(1);
@@ -224,10 +215,10 @@ int dromajo_t::invoke_dromajo(uint8_t *buf) {
  * Read queue and co-simulate
  */
 size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
-  size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_B;
-  size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_B;
+  size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_BYTES;
+  size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
   // TODO: as opt can mmap file and just load directly into it.
-  alignas(4096) char OUTBUF[maximum_batch_bytes];
+  alignas(4096) uint8_t OUTBUF[maximum_batch_bytes];
   auto bytes_received =
       pull(stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
 
@@ -236,7 +227,7 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
     return bytes_received;
 
   for (uint32_t offset = 0; offset < bytes_received;
-       offset += STREAM_WIDTH_B / 2) {
+       offset += STREAM_WIDTH_BYTES / 2) {
     // invoke dromajo (requires that buffer is aligned properly)
     int rval = this->invoke_dromajo(OUTBUF + offset);
     if (rval) {
@@ -248,21 +239,21 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       fprintf(stderr,
               "C[%d] off(%d) token(",
               this->_trace_idx,
-              offset / (STREAM_WIDTH_B / 2));
+              offset / (STREAM_WIDTH_BYTES / 2));
 
-      for (int32_t i = STREAM_WIDTH_B - 1; i >= 0; --i) {
+      for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) {
         fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-        if (i == STREAM_WIDTH_B / 2)
+        if (i == STREAM_WIDTH_BYTES / 2)
           fprintf(stderr, " ");
       }
       fprintf(stderr, ")\n");
 
       fprintf(stderr, "get_next_token token(");
-      uint32_t next_off = offset += STREAM_WIDTH_B;
+      uint32_t next_off = offset += STREAM_WIDTH_BYTES;
 
-      for (int32_t i = STREAM_WIDTH_B - 1; i >= 0; --i) {
+      for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) {
         fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
-        if (i == STREAM_WIDTH_B / 2)
+        if (i == STREAM_WIDTH_BYTES / 2)
           fprintf(stderr, " ");
       }
       fprintf(stderr, ")\n");
@@ -280,15 +271,15 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       this->saw_int_excp = false;
     }
 
-    // add an extra STREAM_WIDTH_B if there is an odd amount of traces
+    // add an extra STREAM_WIDTH_BYTES if there is an odd amount of traces
     if (this->_trace_idx == 0 && (this->_num_traces % 2 == 1)) {
 #ifdef DEBUG
       fprintf(stderr,
               "off(%d + 1) = %d\n",
-              offset / (STREAM_WIDTH_B / 2),
-              (offset + STREAM_WIDTH_B / 2) / (STREAM_WIDTH_B / 2));
+              offset / (STREAM_WIDTH_BYTES / 2),
+              (offset + STREAM_WIDTH_BYTES / 2) / (STREAM_WIDTH_BYTES / 2));
 #endif
-      offset += STREAM_WIDTH_B / 2;
+      offset += STREAM_WIDTH_BYTES / 2;
     }
   }
 
@@ -311,5 +302,3 @@ void dromajo_t::flush() {
   while (!dromajo_failed && (this->process_tokens(this->stream_depth, 0) > 0))
     ;
 }
-
-#endif
