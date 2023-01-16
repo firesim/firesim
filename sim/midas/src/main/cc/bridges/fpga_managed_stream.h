@@ -6,7 +6,32 @@
 #include <functional>
 #include <string>
 
-#include "bridge_stream_driver.h"
+#include "core/stream_engine.h"
+
+/**
+ * An abstraction over the low-level hardware interface on which streams rely.
+ *
+ * The hardware interface must implement these methods to provide access to
+ * the memory region where the AXI interface used by the streams is mapped to,
+ * as well as the controller's MMIO mechanism.
+ */
+class FPGAManagedStreamIO {
+public:
+  /**
+   * Reads from the MMIO control interface.
+   */
+  virtual uint32_t mmio_read(size_t addr) = 0;
+
+  /**
+   * Performs a write to the MMIO control interface.
+   */
+  virtual void mmio_write(size_t addr, uint32_t value) = 0;
+
+  /**
+   * Returns a pointer to the memory region where the device is mapped.
+   */
+  virtual char *get_memory_base() = 0;
+};
 
 namespace FPGAManagedStreams {
 /**
@@ -58,31 +83,41 @@ public:
   FPGAToCPUDriver(StreamParameters params,
                   void *buffer_base,
                   uint64_t buffer_base_fpga,
-                  std::function<uint32_t(size_t)> mmio_read,
-                  std::function<void(size_t, uint32_t)> mmio_write)
+                  FPGAManagedStreamIO &io)
       : params(params), buffer_base(buffer_base),
-        buffer_base_fpga(buffer_base_fpga), mmio_read_func(mmio_read),
-        mmio_write_func(mmio_write){};
+        buffer_base_fpga(buffer_base_fpga), io(io) {}
 
   virtual size_t
   pull(void *dest, size_t num_bytes, size_t required_bytes) override;
   virtual void flush() override;
   virtual void init() override;
 
-  size_t mmio_read(size_t addr) { return mmio_read_func(addr); };
-  void mmio_write(size_t addr, uint32_t data) { mmio_write_func(addr, data); };
+  size_t mmio_read(size_t addr) { return io.mmio_read(addr); };
+  void mmio_write(size_t addr, uint32_t data) { io.mmio_write(addr, data); };
 
 private:
   StreamParameters params;
   void *buffer_base;
   uint64_t buffer_base_fpga;
-  std::function<uint32_t(size_t)> mmio_read_func;
-  std::function<void(size_t, uint32_t)> mmio_write_func;
+  FPGAManagedStreamIO &io;
 
   // A read pointer offset from the base, in bytes
   int buffer_offset = 0;
 };
 
 } // namespace FPGAManagedStreams
+
+/**
+ * Widget handling FPGA-managed streams.
+ */
+class FPGAManagedStreamWidget final : public StreamEngine {
+public:
+  /**
+   * Creates a new FPGA-managed stream widget.
+   *
+   * @param io Reference to a functor implementing the low-level IO.
+   */
+  FPGAManagedStreamWidget(FPGAManagedStreamIO &io);
+};
 
 #endif // __BRIDGES_FPGA_MANAGED_STREAM_H

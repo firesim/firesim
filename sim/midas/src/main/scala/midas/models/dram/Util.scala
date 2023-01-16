@@ -75,7 +75,7 @@ class ProgrammableSubAddr(
     (mask   -> RuntimeSetting(defaultMask,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
   )
 
-  def forceSettings(offsetValue: BigInt, maskValue: BigInt) {
+  def forceSettings(offsetValue: BigInt, maskValue: BigInt): Unit = {
     regMap(offset).set(offsetValue)
     regMap(mask).set(maskValue)
   }

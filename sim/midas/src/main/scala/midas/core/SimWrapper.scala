@@ -133,11 +133,11 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig)
 
   // Looks up a  channel based on a channel name
   val wireOutputPortMap = wirePortMap.collect({
-    case (name, portTuple) if portTuple.isOutput => name -> portTuple.source.get
+    case (name, portTuple) if portTuple.isOutput() => name -> portTuple.source.get
   })
 
   val wireInputPortMap = wirePortMap.collect({
-    case (name, portTuple) if portTuple.isInput => name -> portTuple.sink.get
+    case (name, portTuple) if portTuple.isInput() => name -> portTuple.sink.get
   })
 
 
@@ -180,11 +180,11 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig)
 
   // Looks up a  channel based on a channel name
   val rvOutputPortMap = rvPortMap.collect({
-    case (name, portTuple) if portTuple.isOutput => name -> portTuple.source.get
+    case (name, portTuple) if portTuple.isOutput() => name -> portTuple.source.get
   })
 
   val rvInputPortMap = rvPortMap.collect({
-    case (name, portTuple) if portTuple.isInput => name -> portTuple.sink.get
+    case (name, portTuple) if portTuple.isInput() => name -> portTuple.sink.get
   })
 
   // Looks up a FCCA based on a global channel name

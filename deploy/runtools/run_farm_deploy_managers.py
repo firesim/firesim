@@ -149,6 +149,16 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
                 run("; ".join(fullcmd))
 
+    def get_remote_sim_dir_for_slot(self, slotno: int) -> str:
+        """ Returns the path on the remote for a given slot number. """
+        remote_home_dir = self.parent_node.get_sim_dir()
+        remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
+        
+        # so that callers can reliably concatenate folders to the returned value
+        assert remote_sim_dir[-1] == '/', f"Return value of get_remote_sim_dir_for_slot({slotno}) must end with '/'."
+
+        return remote_sim_dir
+
     def copy_sim_slot_infrastructure(self, slotno: int) -> None:
         """ copy all the simulation infrastructure to the remote node. """
         if self.instance_assigned_simulations():
@@ -157,11 +167,9 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             self.instance_logger(f"""Copying {self.sim_type_message} simulation infrastructure for slot: {slotno}.""")
 
-            remote_home_dir = self.parent_node.get_sim_dir()
-
-            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
             remote_sim_rsync_dir = remote_sim_dir + "rsyncdir/"
-            run("""mkdir -p {}""".format(remote_sim_rsync_dir))
+            run(f"mkdir -p {remote_sim_rsync_dir}")
 
             files_to_copy = serv.get_required_files_local_paths()
             for local_path, remote_path in files_to_copy:
@@ -171,7 +179,19 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
 
-            run("""cp -r {}/* {}/""".format(remote_sim_rsync_dir, remote_sim_dir), shell=True)
+            run(f"cp -r {remote_sim_rsync_dir}/* {remote_sim_dir}/", shell=True)
+
+    def extract_driver_tarball(self, slotno: int) -> None:
+        """ extract tarball that already exists on the remote node. """
+        if self.instance_assigned_simulations():
+            assert slotno < len(self.parent_node.sim_slots)
+            serv = self.parent_node.sim_slots[slotno]
+
+            remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
+            options = "-xf"
+
+            with cd(remote_sim_dir):
+                run(f"tar {options} {serv.get_tar_name()}")
 
     def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
         """ copy all the switch infrastructure to the remote node. """
@@ -587,6 +607,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
+                self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
                 self.get_and_install_aws_fpga_sdk()

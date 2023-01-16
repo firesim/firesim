@@ -1,17 +1,56 @@
 // See LICENSE for license details.
 
-// MIDAS-defined bridges
-#include <cinttypes>
-
 #include "bridges/fased_memory_timing_model.h"
+#include "bridges/fpga_model.h"
+#include "bridges/peek_poke.h"
 #include "bridges/reset_pulse.h"
-#include "fasedtests_top.h"
+#include "core/bridge_driver.h"
+#include "core/simulation.h"
+#include "core/systematic_scheduler.h"
 #include "test_harness_bridge.h"
+
+class fasedtests_top_t : public systematic_scheduler_t, public simulation_t {
+public:
+  fasedtests_top_t(const std::vector<std::string> &args, simif_t *simif);
+  ~fasedtests_top_t() {}
+
+  void simulation_init();
+  void simulation_finish();
+  int simulation_run();
+
+protected:
+  void add_bridge_driver(bridge_driver_t *bridge) {
+    bridges.emplace_back(bridge);
+  }
+  void add_bridge_driver(FpgaModel *bridge) {
+    fpga_models.emplace_back(bridge);
+  }
+  void add_bridge_driver(peek_poke_t *bridge) { peek_poke.reset(bridge); }
+
+private:
+  // Simulation interface.
+  simif_t *simif;
+  // Peek-poke bridge.
+  std::unique_ptr<peek_poke_t> peek_poke;
+  // Memory mapped bridges bound to software models
+  std::vector<std::unique_ptr<bridge_driver_t>> bridges;
+  // FPGA-hosted models with programmable registers & instrumentation
+  std::vector<std::unique_ptr<FpgaModel>> fpga_models;
+
+  // profile interval: # of cycles to advance before profiling instrumentation
+  // registers in models
+  uint64_t profile_interval = -1;
+  uint64_t profile_models();
+
+  // Returns true if any bridge has signaled for simulation termination
+  bool simulation_complete();
+  // Returns the error code of the first bridge for which it is non-zero
+  int exit_code();
+};
 
 fasedtests_top_t::fasedtests_top_t(const std::vector<std::string> &args,
                                    simif_t *simif)
-    : simif_peek_poke_t(simif, PEEKPOKEBRIDGEMODULE_0_substruct_create),
-      simulation_t(args) {
+    : simulation_t(*simif, args), simif(simif) {
   max_cycles = -1;
   profile_interval = max_cycles;
 
@@ -49,7 +88,7 @@ int fasedtests_top_t::exit_code() {
 }
 
 void fasedtests_top_t::simulation_init() {
-#include "constructor.h"
+#include "core/constructor.h"
   // Add functions you'd like to periodically invoke on a paused simulator here.
   if (profile_interval != -1) {
     register_task([this]() { return this->profile_models(); }, 0);
@@ -64,7 +103,7 @@ void fasedtests_top_t::simulation_init() {
                  (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_W_addrs,
                  (const char *const *)FASEDMEMORYTIMINGMODEL_0_W_names);
   add_bridge_driver(
-      new test_harness_bridge_t(simif, this, fased_addr_map, args));
+      new test_harness_bridge_t(simif, peek_poke.get(), fased_addr_map, args));
 
   for (auto &e : fpga_models) {
     e->init();
@@ -76,44 +115,16 @@ void fasedtests_top_t::simulation_init() {
 }
 
 int fasedtests_top_t::simulation_run() {
-  fprintf(stderr, "Commencing simulation.\n");
-
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
-    step(get_largest_stepsize(), false);
+    simif->take_steps(get_largest_stepsize(), false);
     while (!simif->done() && !simulation_complete()) {
       for (auto &e : bridges)
         e->tick();
     }
   }
 
-  fprintf(stderr, "\nSimulation complete.\n");
-
-  int exitcode = exit_code();
-
-  // If the simulator is idle and we've gotten here without any bridge
-  // indicating doneness, we've advanced to the +max_cycles limit in the fastest
-  // target clock domain.
-  bool max_cycles_timeout =
-      !simulation_complete() && simif->done() && finished_scheduled_tasks();
-
-  if (exitcode != 0) {
-    fprintf(stderr,
-            "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
-            exitcode,
-            simif->get_end_tcycle());
-  } else if (max_cycles_timeout) {
-    fprintf(stderr,
-            "*** FAILED *** +max_cycles specified timeout after %" PRIu64
-            " cycles\n",
-            simif->get_end_tcycle());
-  } else {
-    fprintf(stderr,
-            "*** PASSED *** after %" PRIu64 " cycles\n",
-            simif->get_end_tcycle());
-  }
-
-  return ((exitcode != 0) || max_cycles_timeout) ? EXIT_FAILURE : EXIT_SUCCESS;
+  return exit_code();
 }
 
 void fasedtests_top_t::simulation_finish() {

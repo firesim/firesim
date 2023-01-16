@@ -2,8 +2,6 @@
 
 #include "TestHarness.h"
 
-#include "simif_peek_poke.h"
-
 class TestTerminationModuleAssert final : public TestHarness {
 public:
   using TestHarness::TestHarness;
@@ -41,23 +39,23 @@ public:
   void run_test() override {
     // Check that the termination bridge doesn't call for teardown before reset
     // is asserted
-    poke(reset, 0);
-    poke(io_globalResetCondition, 1);
-    poke(io_shouldBeTrue, 0);
+    poke("reset", 0);
+    poke("io_globalResetCondition", 1);
+    poke("io_shouldBeTrue", 0);
     step_assume_continue(10);
 
     // Check that the termination bridge doesn't call for teardown while the
     // local reset is asserted
-    poke(reset, 1);
-    poke(io_globalResetCondition, 0);
+    poke("reset", 1);
+    poke("io_globalResetCondition", 0);
     step_assume_continue(10);
 
     // Now proceed with regularly scheduled content
-    poke(reset, 0);
-    poke(io_shouldBeTrue, 1);
+    poke("reset", 0);
+    poke("io_shouldBeTrue", 1);
     step_assume_continue(10);
 
-    poke(io_shouldBeTrue, 0);
+    poke("io_shouldBeTrue", 0);
     step_once_and_wait_on_terminate();
 
     expect(terminator->cycle_count() == expected_cycle_at_bridge,

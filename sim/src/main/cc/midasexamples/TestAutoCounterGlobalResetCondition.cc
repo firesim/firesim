@@ -10,9 +10,9 @@ public:
     for (auto &autocounter_endpoint : autocounter_endpoints) {
       autocounter_endpoint->init();
     }
-    poke(reset, 1);
+    poke("reset", 1);
     step(4);
-    poke(reset, 0);
+    poke("reset", 0);
     run_and_collect(3000);
   };
 };

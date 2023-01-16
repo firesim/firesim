@@ -6,27 +6,8 @@
 #include <iostream>
 #include <vector>
 
-#include "bridge_driver.h"
-#include "clock_info.h"
-
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_PRINTF(FUNC, IDX)                                          \
-  FUNC(new synthesized_prints_t(simif,                                         \
-                                args,                                          \
-                                PRINTBRIDGEMODULE_##IDX##_substruct_create,    \
-                                PRINTBRIDGEMODULE_##IDX##_print_count,         \
-                                PRINTBRIDGEMODULE_##IDX##_token_bytes,         \
-                                PRINTBRIDGEMODULE_##IDX##_idle_cycles_mask,    \
-                                PRINTBRIDGEMODULE_##IDX##_print_offsets,       \
-                                PRINTBRIDGEMODULE_##IDX##_format_strings,      \
-                                PRINTBRIDGEMODULE_##IDX##_argument_counts,     \
-                                PRINTBRIDGEMODULE_##IDX##_argument_widths,     \
-                                PRINTBRIDGEMODULE_##IDX##_to_cpu_stream_idx,   \
-                                PRINTBRIDGEMODULE_##IDX##_to_cpu_stream_depth, \
-                                PRINTBRIDGEMODULE_##IDX##_clock_domain_name,   \
-                                PRINTBRIDGEMODULE_##IDX##_clock_multiplier,    \
-                                PRINTBRIDGEMODULE_##IDX##_clock_divisor,       \
-                                IDX));
+#include "core/bridge_driver.h"
+#include "core/clock_info.h"
 
 struct print_vars_t {
   std::vector<mpz_t *> data;
@@ -47,14 +28,11 @@ typedef struct PRINTBRIDGEMODULE_struct {
   uint64_t flushNarrowPacket;
 } PRINTBRIDGEMODULE_struct;
 
-#ifdef PRINTBRIDGEMODULE_checks
-PRINTBRIDGEMODULE_checks;
-#endif // PRINTBRIDGEMODULE_checks
-
-class synthesized_prints_t : public bridge_driver_t {
+class synthesized_prints_t : public streaming_bridge_driver_t {
 
 public:
   synthesized_prints_t(simif_t *sim,
+                       StreamEngine &stream,
                        const std::vector<std::string> &args,
                        const PRINTBRIDGEMODULE_struct &mmio_addrs,
                        unsigned int print_count,
@@ -93,7 +71,7 @@ private:
   const int printno;
 
   // Stream batching parameters
-  static constexpr size_t beat_bytes = BridgeConstants::STREAM_WIDTH_BYTES;
+  static constexpr size_t beat_bytes = STREAM_WIDTH_BYTES;
   // The number of stream beats to pull off the FPGA on each invocation of
   // tick() This will be set based on the ratio of token_size :
   // desired_batch_beats

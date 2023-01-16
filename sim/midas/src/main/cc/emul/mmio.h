@@ -46,11 +46,14 @@ struct mmio_resp_data_t {
  *  Used for CPU-mastered AXI4 (aka, DMA), and MMIO requests (see simif_t::read,
  *  simif_t::write).
  */
-class mmio_t {
+class mmio_t final {
 public:
-  mmio_t(size_t size) : read_inflight(false), write_inflight(false) {
-    dummy_data.resize(size);
+  mmio_t(const AXI4Config &conf)
+      : conf(conf), read_inflight(false), write_inflight(false) {
+    dummy_data.resize(conf.beat_bytes());
   }
+
+  ~mmio_t() {}
 
   bool aw_valid() { return !aw.empty() && !write_inflight; }
   size_t aw_id() { return aw_valid() ? aw.front().id : 0; }
@@ -83,13 +86,17 @@ public:
             size_t b_id,
             bool b_valid);
 
-  virtual void read_req(uint64_t addr, size_t size, size_t len);
-  virtual void
-  write_req(uint64_t addr, size_t size, size_t len, void *data, size_t *strb);
-  virtual bool read_resp(void *data);
-  virtual bool write_resp();
+  void read_req(uint64_t addr, size_t size, size_t len);
+  void write_req(
+      uint64_t addr, size_t size, size_t len, const void *data, size_t *strb);
+  bool read_resp(void *data);
+  bool write_resp();
+
+  const AXI4Config &get_config() const { return conf; }
 
 private:
+  const AXI4Config conf;
+
   std::queue<mmio_req_addr_t> ar;
   std::queue<mmio_req_addr_t> aw;
   std::queue<mmio_req_data_t> w;

@@ -1,5 +1,9 @@
 # See LICENSE for license details.
 
+ifndef RISCV
+$(error Missing path to RISC-V toolchain)
+endif
+
 # These point at the main class of the target's Chisel generator
 DESIGN_PACKAGE ?= firesim.bridges
 DESIGN ?= GCD
@@ -23,12 +27,6 @@ BASE_FILE_NAME := FireSim-generated
 long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
-
-ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := firesim
-else
-	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
-endif
 
 chisel_src_dirs = \
 		$(addprefix $(firesim_base_dir)/,. midas midas/targetutils firesim-lib) \
@@ -66,7 +64,6 @@ firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 
 DRIVER_CC := \
-		$(driver_dir)/midasexamples/simif_peek_poke.cc \
 		$(driver_dir)/bridges/BridgeHarness.cc \
 		$(driver_dir)/bridges/$(DESIGN).cc \
 		$(testchipip_csrc_dir)/testchip_tsi.cc \

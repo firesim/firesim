@@ -201,7 +201,7 @@ case class CompleteConfig(
     axi4Widths: NastiParameters,
     axi4Edge: Option[AXI4EdgeSummary] = None,
     memoryRegionName: Option[String] = None) extends HasSerializationHints {
-  def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
+  def typeHints: Seq[Class[_]] = Seq(userProvided.getClass)
 }
 
 class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
@@ -322,19 +322,19 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
                                       hPort.fromHost.hReady,
                                       ingressReady, bReady, rReady, tResetReady)
 
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
 
     val gate = Module(new AbstractClockGate)
     gate.I := clock
     gate.CE := targetFire
 
     val model = withClock(gate.O)(cfg.elaborate())
-    printGenerationConfig
+    printGenerationConfig()
 
     // HACK: Feeding valid back on ready and ready back on valid until we figure out
     // channel tokenization
-    hPort.toHost.hReady := tFireHelper.fire
-    hPort.fromHost.hValid := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
+    hPort.fromHost.hValid := tFireHelper.fire()
     ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
     model.tNasti <> tNasti
@@ -555,7 +555,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
         val prefix = s"const std::map<std::string, int> $mapName = {\n"
         map.foldLeft(prefix)((str, kvp) => str + s""" {\"${kvp._1}\", ${kvp._2}},\n""") + "};\n"

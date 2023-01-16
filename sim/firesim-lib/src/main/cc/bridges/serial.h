@@ -2,7 +2,7 @@
 #ifndef __SERIAL_H
 #define __SERIAL_H
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 #include "fesvr/firesim_tsi.h"
 
 template <class T>
@@ -33,20 +33,6 @@ typedef struct SERIALBRIDGEMODULE_struct {
   uint64_t start;
 } SERIALBRIDGEMODULE_struct;
 
-#ifdef SERIALBRIDGEMODULE_checks
-SERIALBRIDGEMODULE_checks;
-#endif // SERIALBRIDGEMODULE_checks
-
-// Bridge Driver Instantiation Template
-// Casts are required for now since the emitted type can change
-#define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
-  FUNC(new serial_t(simif,                                                     \
-                    args,                                                      \
-                    SERIALBRIDGEMODULE_##IDX##_substruct_create,               \
-                    IDX,                                                       \
-                    SERIALBRIDGEMODULE_##IDX##_has_memory,                     \
-                    SERIALBRIDGEMODULE_##IDX##_memory_offset));
-
 class serial_t : public bridge_driver_t {
 public:
   serial_t(simif_t *sim,
@@ -71,6 +57,11 @@ private:
   int64_t mem_host_offset;
   // Number of target cycles between fesvr interactions
   uint32_t step_size;
+
+  // Arguments passed to firesim_tsi.
+  char **tsi_argv = nullptr;
+  int tsi_argc;
+
   // Tell the widget to start enqueuing tokens
   void go();
   // Moves data to and from the widget and fesvr

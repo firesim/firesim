@@ -19,11 +19,11 @@ public:
     for (auto &ep : assert_endpoints)
       ep->init();
 
-    poke(reset, 0);
-    poke(fullrate_pulseLength, 2);
-    poke(fullrate_cycle, 186);
-    poke(halfrate_pulseLength, 2);
-    poke(halfrate_cycle, 129);
+    poke("reset", 0);
+    poke("fullrate_pulseLength", 2);
+    poke("fullrate_cycle", 186);
+    poke("halfrate_pulseLength", 2);
+    poke("halfrate_cycle", 129);
     step(256, false);
     while (!simif->done()) {
       for (auto &ep : assert_endpoints) {

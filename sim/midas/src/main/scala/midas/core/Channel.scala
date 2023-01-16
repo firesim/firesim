@@ -192,7 +192,7 @@ class ReadyValidChannel[T <: Data](
     (enqRevFired || io.enq.rev.hReady),
     (deqFwdFired || io.deq.fwd.hReady))
 
-  val targetFire = finishing.fire
+  val targetFire = finishing.fire()
   val enqBitsLast = RegEnable(enqFwdQ.io.deq.bits.bits, targetFire)
   // enqRev
   io.enq.rev.hValid := !enqRevFired

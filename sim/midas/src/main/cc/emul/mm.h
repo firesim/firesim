@@ -9,9 +9,10 @@
 
 class mm_t {
 public:
-  mm_t() : data(0), size(0) {}
+  mm_t(const AXI4Config conf)
+      : conf(conf), word_size(conf.beat_bytes()), data(0), size(0) {}
 
-  virtual void init(size_t sz, int word_size, int line_size);
+  virtual void init(size_t sz, int line_size);
 
   virtual bool ar_ready() = 0;
   virtual bool aw_ready() = 0;
@@ -59,10 +60,14 @@ public:
 
   void load_mem(unsigned long start, const char *fname);
 
+  const AXI4Config &get_config() const { return conf; }
+
 protected:
+  const AXI4Config conf;
+
+  int word_size;
   uint8_t *data;
   size_t size;
-  int word_size;
   int line_size;
 };
 
@@ -85,9 +90,9 @@ struct mm_rresp_t {
 
 class mm_magic_t final : public mm_t {
 public:
-  mm_magic_t() : store_inflight(false){};
+  mm_magic_t(const AXI4Config &conf) : mm_t(conf), store_inflight(false){};
 
-  virtual void init(size_t sz, int word_size, int line_size);
+  virtual void init(size_t sz, int line_size);
 
   virtual bool ar_ready() { return true; }
   virtual bool aw_ready() { return !store_inflight; }

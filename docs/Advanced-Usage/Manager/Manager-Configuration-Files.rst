@@ -553,6 +553,20 @@ to the relative name of the config. For example,
 ``custom_runtime_config: GREATCONFIG.conf``.
 
 
+``driver_tar``
+"""""""""""""""""""""""""""""
+
+When this key is present, the local driver will not build from source.
+Instead, during `firesim infrasetup`, this file will be deployed and extracted
+into the `sim_slot_X` folder on the run farm instance. This file may
+be a `.tar`, `.tar.gz`, `.tar.bz2` or any other format that GNU tar (version 1.26)
+can automatically detect. The purpose of this feature is to enable advanced CI
+configurations where the driver build step is decoupled. For now this can
+only accept a path to a file on the manager's local filesystem.
+In a future update, full URI support will be added.
+
+
+
 Add more hardware config sections, like ``NAME_GOES_HERE_2``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

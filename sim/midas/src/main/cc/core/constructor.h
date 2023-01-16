@@ -3,9 +3,43 @@
 // Top-levels can filter the bridges they want to add by creating overloads
 // of the `add_bridge_driver` method with appropriate types.
 
+#ifdef PEEKPOKEBRIDGEMODULE_0_PRESENT
+add_bridge_driver(new peek_poke_t(simif,
+                                  PEEKPOKEBRIDGEMODULE_0_substruct_create,
+                                  POKE_SIZE,
+                                  (const uint32_t *)INPUT_ADDRS,
+                                  (const char *const *)INPUT_NAMES,
+                                  (const uint32_t *)INPUT_CHUNKS,
+                                  PEEK_SIZE,
+                                  (const uint32_t *)OUTPUT_ADDRS,
+                                  (const char *const *)OUTPUT_NAMES,
+                                  (const uint32_t *)OUTPUT_CHUNKS));
+#endif
+
+#ifdef RESETPULSEBRIDGEMODULE_checks
+RESETPULSEBRIDGEMODULE_checks;
+#endif // RESETPULSEBRIDGEMODULE_checks
+
+// Bridge Driver Instantiation Template
+#define INSTANTIATE_RESET_PULSE(FUNC, IDX)                                     \
+  FUNC(new reset_pulse_t(simif,                                                \
+                         args,                                                 \
+                         RESETPULSEBRIDGEMODULE_##IDX##_substruct_create,      \
+                         RESETPULSEBRIDGEMODULE_##IDX##_max_pulse_length,      \
+                         RESETPULSEBRIDGEMODULE_##IDX##_default_pulse_length,  \
+                         IDX));
+
+CLOCKBRIDGEMODULE_checks;
+LOADMEMWIDGET_checks;
+SIMULATIONMASTER_checks;
+
 #ifdef RESETPULSEBRIDGEMODULE_0_PRESENT
 INSTANTIATE_RESET_PULSE(add_bridge_driver, 0)
 #endif
+
+#ifdef UARTBRIDGEMODULE_checks
+UARTBRIDGEMODULE_checks;
+#endif // UARTBRIDGEMODULE_checks
 
 #ifdef UARTBRIDGEMODULE_0_PRESENT
 add_bridge_driver(
@@ -39,6 +73,24 @@ add_bridge_driver(
 add_bridge_driver(
     new uart_t(simif, args, UARTBRIDGEMODULE_7_substruct_create, 7));
 #endif
+
+#ifdef FASEDMEMORYTIMINGMODEL_checks
+FASEDMEMORYTIMINGMODEL_checks;
+#endif
+
+#define INSTANTIATE_FASED(FUNC, IDX)                                           \
+  FUNC(new FASEDMemoryTimingModel(                                             \
+      simif,                                                                   \
+      AddressMap(FASEDMEMORYTIMINGMODEL_##IDX##_R_num_registers,               \
+                 (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_R_addrs, \
+                 (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_R_names,  \
+                 FASEDMEMORYTIMINGMODEL_##IDX##_W_num_registers,               \
+                 (const unsigned int *)FASEDMEMORYTIMINGMODEL_##IDX##_W_addrs, \
+                 (const char *const *)FASEDMEMORYTIMINGMODEL_##IDX##_W_names), \
+      args,                                                                    \
+      "memory_stats" #IDX ".csv",                                              \
+      1L << FASEDMEMORYTIMINGMODEL_##IDX##_target_addr_bits,                   \
+      "_" #IDX));
 
 #ifdef FASEDMEMORYTIMINGMODEL_0
 INSTANTIATE_FASED(add_bridge_driver, 0)
@@ -89,6 +141,18 @@ INSTANTIATE_FASED(add_bridge_driver, 14)
 INSTANTIATE_FASED(add_bridge_driver, 15)
 #endif
 
+#ifdef SERIALBRIDGEMODULE_checks
+SERIALBRIDGEMODULE_checks;
+#endif // SERIALBRIDGEMODULE_checks
+
+#define INSTANTIATE_SERIAL(FUNC, IDX)                                          \
+  FUNC(new serial_t(simif,                                                     \
+                    args,                                                      \
+                    SERIALBRIDGEMODULE_##IDX##_substruct_create,               \
+                    IDX,                                                       \
+                    SERIALBRIDGEMODULE_##IDX##_has_memory,                     \
+                    SERIALBRIDGEMODULE_##IDX##_memory_offset));
+
 #ifdef SERIALBRIDGEMODULE_0_PRESENT
 INSTANTIATE_SERIAL(add_bridge_driver, 0)
 #endif
@@ -137,6 +201,10 @@ INSTANTIATE_SERIAL(add_bridge_driver, 14)
 #ifdef SERIALBRIDGEMODULE_15_PRESENT
 INSTANTIATE_SERIAL(add_bridge_driver, 15)
 #endif
+
+#ifdef BLOCKDEVBRIDGEMODULE_checks
+BLOCKDEVBRIDGEMODULE_checks;
+#endif // BLOCKDEVBRIDGEMODULE_checks
 
 #ifdef BLOCKDEVBRIDGEMODULE_0_PRESENT
 add_bridge_driver(new blockdev_t(simif,
@@ -203,6 +271,21 @@ add_bridge_driver(new blockdev_t(simif,
                                  7));
 #endif
 
+#ifdef SIMPLENICBRIDGEMODULE_checks
+SIMPLENICBRIDGEMODULE_checks;
+#endif // SIMPLENICBRIDGEMODULE_checks
+
+#define INSTANTIATE_SIMPLENIC(FUNC, IDX)                                       \
+  FUNC(new simplenic_t(simif,                                                  \
+                       simif->get_managed_stream(),                            \
+                       args,                                                   \
+                       SIMPLENICBRIDGEMODULE_##IDX##_substruct_create,         \
+                       IDX,                                                    \
+                       SIMPLENICBRIDGEMODULE_##IDX##_to_cpu_stream_idx,        \
+                       SIMPLENICBRIDGEMODULE_##IDX##_to_cpu_stream_depth,      \
+                       SIMPLENICBRIDGEMODULE_##IDX##_from_cpu_stream_idx,      \
+                       SIMPLENICBRIDGEMODULE_##IDX##_from_cpu_stream_depth));
+
 #ifdef SIMPLENICBRIDGEMODULE_0_PRESENT
 INSTANTIATE_SIMPLENIC(add_bridge_driver, 0)
 #endif
@@ -227,6 +310,24 @@ INSTANTIATE_SIMPLENIC(add_bridge_driver, 6)
 #ifdef SIMPLENICBRIDGEMODULE_7_PRESENT
 INSTANTIATE_SIMPLENIC(add_bridge_driver, 7)
 #endif
+
+#ifdef TRACERVBRIDGEMODULE_checks
+TRACERVBRIDGEMODULE_checks;
+#endif // TRACERVBRIDGEMODULE_checks
+
+// Bridge Driver Instantiation Template
+#define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
+  FUNC(new tracerv_t(simif,                                                    \
+                     simif->get_managed_stream(),                              \
+                     args,                                                     \
+                     TRACERVBRIDGEMODULE_##IDX##_substruct_create,             \
+                     TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_idx,            \
+                     TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_depth,          \
+                     TRACERVBRIDGEMODULE_##IDX##_max_core_ipc,                 \
+                     TRACERVBRIDGEMODULE_##IDX##_clock_domain_name,            \
+                     TRACERVBRIDGEMODULE_##IDX##_clock_multiplier,             \
+                     TRACERVBRIDGEMODULE_##IDX##_clock_divisor,                \
+                     IDX));
 
 #ifdef TRACERVBRIDGEMODULE_0_PRESENT
 INSTANTIATE_TRACERV(add_bridge_driver, 0)
@@ -340,6 +441,10 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_full_address)
 #endif
 
+#ifdef GROUNDTESTBRIDGEMODULE_checks
+GROUNDTESTBRIDGEMODULE_checks;
+#endif // GROUNDTESTBRIDGEMODULE_checks
+
 #ifdef GROUNDTESTBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new groundtest_t(
             simif, args, GROUNDTESTBRIDGEMODULE_0_substruct_create));
@@ -373,6 +478,35 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
             simif, args, GROUNDTESTBRIDGEMODULE_7_substruct_create));
 #endif
 
+#ifdef AUTOCOUNTERBRIDGEMODULE_checks
+AUTOCOUNTERBRIDGEMODULE_checks;
+#endif // AUTOCOUNTERBRIDGEMODULE_checks
+
+#define INSTANTIATE_AUTOCOUNTER(FUNC, IDX)                                     \
+  FUNC(new autocounter_t(                                                      \
+      simif,                                                                   \
+      args,                                                                    \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_substruct_create,                        \
+      AddressMap(                                                              \
+          AUTOCOUNTERBRIDGEMODULE_##IDX##_R_num_registers,                     \
+          (const unsigned int *)AUTOCOUNTERBRIDGEMODULE_##IDX##_R_addrs,       \
+          (const char *const *)AUTOCOUNTERBRIDGEMODULE_##IDX##_R_names,        \
+          AUTOCOUNTERBRIDGEMODULE_##IDX##_W_num_registers,                     \
+          (const unsigned int *)AUTOCOUNTERBRIDGEMODULE_##IDX##_W_addrs,       \
+          (const char *const *)AUTOCOUNTERBRIDGEMODULE_##IDX##_W_names),       \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_count,                             \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_types,                             \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_widths,                            \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_accumulator_widths,                      \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_addr_hi,                           \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_addr_lo,                           \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_descriptions,                      \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_event_labels,                            \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_domain_name,                       \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_multiplier,                        \
+      AUTOCOUNTERBRIDGEMODULE_##IDX##_clock_divisor,                           \
+      IDX));
+
 #ifdef AUTOCOUNTERBRIDGEMODULE_0_PRESENT
     INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 0)
 #endif
@@ -397,6 +531,10 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
 #ifdef AUTOCOUNTERBRIDGEMODULE_7_PRESENT
     INSTANTIATE_AUTOCOUNTER(add_bridge_driver, 7)
 #endif
+
+#ifdef ASSERTBRIDGEMODULE_checks
+ASSERTBRIDGEMODULE_checks;
+#endif // ASSERTBRIDGEMODULE_checks
 
 #ifdef ASSERTBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new synthesized_assertions_t(simif, args,
@@ -439,6 +577,29 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
                                                    ASSERTBRIDGEMODULE_7_assert_messages));
 #endif
 
+#ifdef PRINTBRIDGEMODULE_checks
+PRINTBRIDGEMODULE_checks;
+#endif // PRINTBRIDGEMODULE_checks
+
+#define INSTANTIATE_PRINTF(FUNC, IDX)                                          \
+  FUNC(new synthesized_prints_t(simif,                                         \
+                                simif->get_managed_stream(),                   \
+                                args,                                          \
+                                PRINTBRIDGEMODULE_##IDX##_substruct_create,    \
+                                PRINTBRIDGEMODULE_##IDX##_print_count,         \
+                                PRINTBRIDGEMODULE_##IDX##_token_bytes,         \
+                                PRINTBRIDGEMODULE_##IDX##_idle_cycles_mask,    \
+                                PRINTBRIDGEMODULE_##IDX##_print_offsets,       \
+                                PRINTBRIDGEMODULE_##IDX##_format_strings,      \
+                                PRINTBRIDGEMODULE_##IDX##_argument_counts,     \
+                                PRINTBRIDGEMODULE_##IDX##_argument_widths,     \
+                                PRINTBRIDGEMODULE_##IDX##_to_cpu_stream_idx,   \
+                                PRINTBRIDGEMODULE_##IDX##_to_cpu_stream_depth, \
+                                PRINTBRIDGEMODULE_##IDX##_clock_domain_name,   \
+                                PRINTBRIDGEMODULE_##IDX##_clock_multiplier,    \
+                                PRINTBRIDGEMODULE_##IDX##_clock_divisor,       \
+                                IDX));
+
 #ifdef PRINTBRIDGEMODULE_0_PRESENT
     INSTANTIATE_PRINTF(add_bridge_driver,0)
 #endif
@@ -464,6 +625,20 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
     INSTANTIATE_PRINTF(add_bridge_driver,7)
 #endif
 
+#ifdef PLUSARGSBRIDGEMODULE_checks
+PLUSARGSBRIDGEMODULE_checks;
+#endif // PLUSARGSBRIDGEMODULE_checks
+
+#define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
+  FUNC(new plusargs_t(simif,                                                   \
+                      args,                                                    \
+                      PLUSARGSBRIDGEMODULE_##IDX##_substruct_create,           \
+                      PLUSARGSBRIDGEMODULE_##IDX##_name,                       \
+                      PLUSARGSBRIDGEMODULE_##IDX##_default,                    \
+                      PLUSARGSBRIDGEMODULE_##IDX##_width,                      \
+                      PLUSARGSBRIDGEMODULE_##IDX##_slice_count,                \
+                      PLUSARGSBRIDGEMODULE_##IDX##_slice_addrs));
+
 #ifdef PLUSARGSBRIDGEMODULE_0_PRESENT
     INSTANTIATE_PLUSARGS(add_bridge_driver, 0)
 #endif
@@ -488,6 +663,18 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
 #ifdef PLUSARGSBRIDGEMODULE_7_PRESENT
     INSTANTIATE_PLUSARGS(add_bridge_driver, 7)
 #endif
+
+#ifdef TERMINATIONBRIDGEMODULE_checks
+TERMINATIONBRIDGEMODULE_checks;
+#endif // TERMINATIONBRIDGEMODULE_checks
+
+#define INSTANTIATE_TERMINATION(FUNC, IDX)                                     \
+  FUNC(new termination_t(simif,                                                \
+                         args,                                                 \
+                         TERMINATIONBRIDGEMODULE_##IDX##_substruct_create,     \
+                         TERMINATIONBRIDGEMODULE_##IDX##_message_count,        \
+                         TERMINATIONBRIDGEMODULE_##IDX##_message_type,         \
+                         TERMINATIONBRIDGEMODULE_##IDX##_message));
 
 #ifdef TERMINATIONBRIDGEMODULE_0_PRESENT
   INSTANTIATE_TERMINATION(add_bridge_driver, 0)

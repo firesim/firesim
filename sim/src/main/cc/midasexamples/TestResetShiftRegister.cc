@@ -15,12 +15,12 @@ public:
       uint32_t shift = random() % 2;
       if (shift == 1)
         ins[k % 5] = in;
-      poke(io_in, in);
-      poke(io_shift, shift);
+      poke("io_in", in);
+      poke("io_shift", shift);
       step(1);
       if (shift == 1)
         k++;
-      expect(io_out, cycles() < 3 ? 0 : ins[(k + 1) % 5]);
+      expect("io_out", cycles() < 3 ? 0 : ins[(k + 1) % 5]);
     }
   }
 };

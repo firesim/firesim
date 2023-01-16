@@ -1,4 +1,5 @@
 //See LICENSE for license details.
+
 package firesim.fasedtests
 
 import java.io.File
@@ -13,6 +14,9 @@ import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
 
 import firesim.configs.LlcKey
+import firesim.TestSuiteUtil._
+import firesim.BasePlatformConfig
+import firesim.midasexamples.BaseConfigs
 
 /** Different runtime-configuration modes extend this trait. See below.  */
 sealed trait RuntimeConfig {
@@ -38,27 +42,24 @@ case class  CustomRuntimeConfig(pathRelativeToSim: String) extends RuntimeConfig
   * A specialization of TestSuiteCommon for FASED-specific testing. Mostly
   * handles differences in the makefrag vs midasexamples..
   *
-  * @param topModuleClass DESIGN: target top-level module class
+  * @param targetName DESIGN: target top-level module class
   * @param targetConfigs  TARGET_CONFIG: config string to parameterize the target
   * @param platformConfigs PLATFORM_CONFIG: config string to configure GG
   * @param baseRuntimeConfig Default runtime conf handling for runtest
   * @param additionalPlusArgs Non-standard plusargs to add to runTest invocations by default
   */
 abstract class FASEDTest(
-    topModuleClass: String,
-    targetConfigs: String,
-    platformConfigs: String,
+    override val targetName: String,
+    override val targetConfigs: String,
+    platformConfigs: String = "",
     baseRuntimeConfig: RuntimeConfig = DefaultRuntimeConfig,
     additionalPlusArgs: Seq[String] = Seq(),
-  ) extends firesim.TestSuiteCommon {
+  ) extends firesim.TestSuiteCommon("fasedtests") {
+
+  override def basePlatformConfig = BaseConfigs.F1
+
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
-
-  val targetTuple = s"$topModuleClass-$targetConfigs-$platformConfigs"
-  val commonMakeArgs = Seq( "TARGET_PROJECT=fasedtests",
-                           s"DESIGN=${topModuleClass}",
-                           s"TARGET_CONFIG=${targetConfigs}",
-                           s"PLATFORM_CONFIG=${platformConfigs}")
 
   def invokeMlSimulator(backend: String, debug: Boolean, args: Seq[String]) = {
     make((s"run-${backend}%s".format(if (debug) "-debug" else "") +: args):_*)
@@ -98,11 +99,11 @@ abstract class FASEDTest(
   runTest("verilator", false)
 }
 
-class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "DefaultF1Config")
+class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig")
 
 // Sanity checks that target output is the same when using the default runtime
 // configuration and the hardwired values.
-class CheckHardwiredValuesTest extends FASEDTest("AXI4Fuzzer", "NT10e3_AddrBits16_DefaultConfig", "DefaultF1Config") {
+class CheckHardwiredValuesTest extends FASEDTest("AXI4Fuzzer", "NT10e3_AddrBits16_DefaultConfig") {
   val logA = new File(s"$outDir/using-runtime-conf.out")
   runTest(
     "verilator",
@@ -124,10 +125,10 @@ class CheckHardwiredValuesTest extends FASEDTest("AXI4Fuzzer", "NT10e3_AddrBits1
   }
 }
 
-class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_QuadChannel_DefaultConfig", "DefaultF1Config")
-class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig", "DefaultF1Config")
-class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig", "DefaultF1Config")
-class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig", "DefaultF1Config") {
+class AXI4FuzzerMultiChannelTest extends FASEDTest("AXI4Fuzzer", "FuzzMask3FFF_QuadFuzzer_QuadChannel_DefaultConfig")
+class AXI4FuzzerFCFSTest extends FASEDTest("AXI4Fuzzer", "FCFSConfig")
+class AXI4FuzzerFRFCFSTest extends FASEDTest("AXI4Fuzzer", "FRFCFSConfig")
+class AXI4FuzzerLLCDRAMTest extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig") {
   //override def runTests = {
   //  // Check that the memory model uses the correct number of MSHRs
   //  val maxMSHRs = targetParams(LlcKey).get.mshrs.max
@@ -162,4 +163,3 @@ class CIGroupB extends Suites(
   new AXI4FuzzerLLCDRAMTest,
   new NarrowIdConstraint
 )
-

@@ -2,7 +2,7 @@
 #ifndef __DROMAJO_H
 #define __DROMAJO_H
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 #include "dromajo_cosim.h"
 #include <string>
 #include <vector>

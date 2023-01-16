@@ -270,8 +270,8 @@ class MCRFileMap(bytesPerAddress: Int) {
   }
 
   // A variation of above which dumps the register map as a series of arrays
-  def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder) {
-    def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String) {
+  def genArrayHeader(prefix: String, base: BigInt, sb: StringBuilder): Unit = {
+    def emitArrays(regs: Seq[(MCRMapEntry, BigInt)], prefix: String): Unit = {
       sb.append(genConstStatic(s"${prefix}_num_registers", UInt32(regs.size)))
       sb.append(genArray(s"${prefix}_names", regs.unzip._1 map { reg => CStrLit(reg.name)}))
       sb.append(genArray(s"${prefix}_addrs", regs.unzip._2 map { addr => UInt32(addr)}))
@@ -287,7 +287,7 @@ class MCRFileMap(bytesPerAddress: Int) {
   // Returns a copy of the current register map
   def getRegMap = name2addr.toMap
 
-  def printCRs {
+  def printCRs: Unit = {
     regList.zipWithIndex foreach { case (entry, i) => println(s"Name: ${entry.name}, Addr: $i") }
   }
 }

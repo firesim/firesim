@@ -117,7 +117,7 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
     }
   }
 
-  def bridgeChannels = channels.map({ case (targetField, ch, meta) =>
+  def bridgeChannels() = channels.map({ case (targetField, ch, meta) =>
     val name = reverseElementMap(ch)
     checkFieldDirection(targetField, meta.bridgeSunk)
     if (meta.bridgeSunk) {

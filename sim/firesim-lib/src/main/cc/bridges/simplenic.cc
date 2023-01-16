@@ -18,7 +18,7 @@
 
 #define SIMLATENCY_BT (this->LINKLATENCY / TOKENS_PER_BIGTOKEN)
 
-#define BUFWIDTH BridgeConstants::STREAM_WIDTH_BYTES
+#define BUFWIDTH streaming_bridge_driver_t::STREAM_WIDTH_BYTES
 #define BUFBYTES (SIMLATENCY_BT * BUFWIDTH)
 #define EXTRABYTES 1
 
@@ -48,6 +48,7 @@ static void simplify_frac(int n, int d, int *nn, int *dd) {
   }
 
 simplenic_t::simplenic_t(simif_t *sim,
+                         StreamEngine &stream,
                          const std::vector<std::string> &args,
                          const SIMPLENICBRIDGEMODULE_struct &mmio_addrs,
                          int simplenicno,
@@ -55,7 +56,7 @@ simplenic_t::simplenic_t(simif_t *sim,
                          const int stream_to_cpu_depth,
                          const int stream_from_cpu_idx,
                          const int stream_from_cpu_depth)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
       stream_to_cpu_idx(stream_to_cpu_idx),
       stream_from_cpu_idx(stream_from_cpu_idx) {
   const char *niclogfile = NULL;
@@ -264,10 +265,10 @@ void simplenic_t::init() {
   return;
 }
 
-//#define TOKENVERIFY
+// #define TOKENVERIFY
 
 void simplenic_t::tick() {
-  //#define DEBUG_NIC_PRINT
+  // #define DEBUG_NIC_PRINT
 
   while (true) { // break when we don't have 5k tokens
     uint32_t tokens_this_round = SIMLATENCY_BT;

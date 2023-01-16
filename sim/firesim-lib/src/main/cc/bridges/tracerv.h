@@ -2,10 +2,10 @@
 #ifndef __TRACERV_H
 #define __TRACERV_H
 
-#include "bridges/bridge_driver.h"
-#include "bridges/clock_info.h"
 #include "bridges/tracerv/trace_tracker.h"
 #include "bridges/tracerv/tracerv_processing.h"
+#include "core/bridge_driver.h"
+#include "core/clock_info.h"
 #include <vector>
 
 typedef struct TRACERVBRIDGEMODULE_struct {
@@ -26,28 +26,10 @@ typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t triggerSelector;
 } TRACERVBRIDGEMODULE_struct;
 
-#ifdef TRACERVBRIDGEMODULE_checks
-TRACERVBRIDGEMODULE_checks;
-#endif // TRACERVBRIDGEMODULE_checks
-
-// Bridge Driver Instantiation Template
-#define INSTANTIATE_TRACERV(FUNC, IDX)                                         \
-  FUNC(new tracerv_t(simif,                                                    \
-                     args,                                                     \
-                     TRACERVBRIDGEMODULE_##IDX##_substruct_create,             \
-                     TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_idx,            \
-                     TRACERVBRIDGEMODULE_##IDX##_to_cpu_stream_depth,          \
-                     TRACERVBRIDGEMODULE_##IDX##_max_core_ipc,                 \
-                     TRACERVBRIDGEMODULE_##IDX##_clock_domain_name,            \
-                     TRACERVBRIDGEMODULE_##IDX##_clock_multiplier,             \
-                     TRACERVBRIDGEMODULE_##IDX##_clock_divisor,                \
-                     IDX));
-
-class tracerv_t : public bridge_driver_t
-
-{
+class tracerv_t : public streaming_bridge_driver_t {
 public:
   tracerv_t(simif_t *sim,
+            StreamEngine &stream,
             const std::vector<std::string> &args,
             const TRACERVBRIDGEMODULE_struct &mmio_addrs,
             const int stream_idx,

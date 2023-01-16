@@ -16,11 +16,12 @@
 
 // put FIREPERF in a mode that writes a simple log for processing later.
 // useful for iterating on software side only without re-running on FPGA.
-//#define FIREPERF_LOGGER
+// #define FIREPERF_LOGGER
 
 constexpr uint64_t valid_mask = (1ULL << 40);
 
 tracerv_t::tracerv_t(simif_t *sim,
+                     StreamEngine &stream,
                      const std::vector<std::string> &args,
                      const TRACERVBRIDGEMODULE_struct &mmio_addrs,
                      int stream_idx,
@@ -30,8 +31,9 @@ tracerv_t::tracerv_t(simif_t *sim,
                      const unsigned int clock_multiplier,
                      const unsigned int clock_divisor,
                      int tracerno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), stream_idx(stream_idx),
-      stream_depth(stream_depth), max_core_ipc(max_core_ipc),
+    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+      stream_idx(stream_idx), stream_depth(stream_depth),
+      max_core_ipc(max_core_ipc),
       clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
   // Biancolin: move into elaboration
   assert(this->max_core_ipc <= 7 &&
@@ -213,12 +215,10 @@ void tracerv_t::init() {
 }
 
 size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
-  size_t maximum_batch_bytes = num_beats * BridgeConstants::STREAM_WIDTH_BYTES;
-  size_t minimum_batch_bytes =
-      minimum_batch_beats * BridgeConstants::STREAM_WIDTH_BYTES;
+  size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_BYTES;
+  size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
   // TODO. as opt can mmap file and just load directly into it.
-  alignas(4096)
-      uint64_t OUTBUF[this->stream_depth * BridgeConstants::STREAM_WIDTH_BYTES];
+  alignas(4096) uint64_t OUTBUF[this->stream_depth * STREAM_WIDTH_BYTES];
   auto bytes_received = pull(this->stream_idx,
                              (char *)OUTBUF,
                              maximum_batch_bytes,
