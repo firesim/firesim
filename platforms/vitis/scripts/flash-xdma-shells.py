@@ -6,21 +6,22 @@
 import subprocess
 import json
 
-json_file = "/tmp/xbmgmt-examine-out.json"
-r = subprocess.run(f"sudo /opt/xilinx/xrt/bin/xbmgmt examine --format JSON -o {json_file} --force".split())
-print(" ".join(r.args))
-if r.returncode != 0:
-    assert False, "Unable to run /opt/xilinx/xrt/bin/xbmgmt examine command"
+def run_wrapper(run_str: str) -> None:
+    r = subprocess.run(run_str)
+    cmd = " ".join(r.args)
+    if r.returncode != 0:
+        assert False, f"Unable to run '{cmd}'"
+
+json_file = "/tmp/examine-out.json"
+
+run_wrapper(f"sudo /opt/xilinx/xrt/bin/xbmgmt examine --format JSON -o {json_file} --force".split())
 
 with open(json_file, "r") as f:
     json_dict = json.loads(f.read())
 card_bdfs = [d["bdf"] for d in json_dict["system"]["host"]["devices"]]
 
 for bdf in card_bdfs:
-    r = subprocess.run(f"sudo /opt/xilinx/xrt/bin/xbmgmt examine -d {bdf} -r platform -f json --output {json_file} --force".split())
-    print(" ".join(r.args))
-    if r.returncode != 0:
-        assert False, "Unable to run /opt/xilinx/xrt/bin/xbmgmt examine command"
+    run_wrapper(f"sudo /opt/xilinx/xrt/bin/xbmgmt examine -d {bdf} -r platform -f json --output {json_file} --force".split())
 
     with open(json_file, "r") as f:
         json_dict = json.loads(f.read())
@@ -33,7 +34,4 @@ for bdf in card_bdfs:
 
     shell_file = shell_dict[0]["file"]
 
-    r = subprocess.run(f"sudo /opt/xilinx/xrt/bin/xbmgmt program -d {bdf} --shell {shell_file}".split())
-    print(" ".join(r.args))
-    if r.returncode != 0:
-        assert False, "Unable to run /opt/xilinx/xrt/bin/xbmgmt program command"
+    run_wrapper(f"sudo /opt/xilinx/xrt/bin/xbmgmt program -d {bdf} --shell {shell_file}".split())
