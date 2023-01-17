@@ -297,6 +297,19 @@ jobs:
           test-package: "firesim.firesim"
           test-name: "CITests"
 
+  run-parallel-metasims:
+    name: run-parallel-metasims
+    # Building the driver can cause concurrency issues with SBT, so serialize
+    # this behind the scalatest train. Remove once we're off SBT.
+    needs: [build-default-workloads, run-chipyard-tests]
+    runs-on: aws-${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run parallel metasimulation tests (deploy on localhost and on AWS instances)
+        run: .github/scripts/run-parallel-metasims.py
+
   run-basic-linux-poweroff:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff
