@@ -8,10 +8,8 @@ DESIGN ?= AXI4Fuzzer
 # See src/main/scala/SimConfigs.scala
 TARGET_CONFIG_PACKAGE ?= firesim.fasedtests
 TARGET_CONFIG ?= DefaultConfig
-# TARGET_CONFIG ?= FireSimBoomConfig
 
 # These guide chisel elaboration of simulation components by MIDAS, including models and widgets.
 # See src/main/scala/SimConfigs.scala
 PLATFORM_CONFIG_PACKAGE ?= firesim.fasedtests
 PLATFORM_CONFIG ?= DefaultF1Config
-

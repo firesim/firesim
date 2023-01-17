@@ -63,22 +63,7 @@ include $(base_dir)/common.mk
 endif
 
 ifdef FIRESIM_STANDALONE
-	firesim_sbt_project := firesim
+	FIRESIM_SBT_PROJECT := firesim
 else
-	firesim_sbt_project := {file:${firesim_base_dir}/}firesim
+	FIRESIM_SBT_PROJECT := {file:${firesim_base_dir}/}firesim
 endif
-
-# Phony targets for launching the sbt shell and running scalatests
-SBT_COMMAND ?= shell
-SBT_NON_THIN ?= $(subst $(SBT_CLIENT_FLAG),,$(SBT))
-.PHONY: sbt
-sbt:
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); $(SBT_COMMAND)"
-
-.PHONY: test
-test:
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); test"
-
-.PHONY: testOnly
-testOnly:
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); testOnly $(SCALA_TEST)"

@@ -3,6 +3,7 @@
 ################################################################################
 # Target-Specific  Configuration
 ################################################################################
+
 # Root name for generated binaries
 DESIGN ?=
 
@@ -37,10 +38,21 @@ long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
-GENERATED_DIR ?= $(firesim_base_dir)/generated-src/$(PLATFORM)/$(name_tuple)
+BUILD_DIR := $(firesim_base_dir)/generated-src
+GENERATED_DIR ?= $(BUILD_DIR)/$(PLATFORM)/$(name_tuple)
 # Results from RTL simulations live here
 OUTPUT_DIR ?= $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
 
 # The target's FIRRTL and associated anotations; inputs to Golden Gate
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir
 ANNO_FILE := $(GENERATED_DIR)/$(long_name).anno.json
+
+################################################################################
+# Set up a fully-qualified classpath for the target.
+################################################################################
+
+# Rocket Chip stage requires a fully qualified classname for each fragment, whereas Chipyard's does not.
+# This retains a consistent TARGET_CONFIG naming convention across the different target projects.
+subst_prefix :=,$(TARGET_CONFIG_PACKAGE).
+
+TARGET_CONFIG_QUALIFIED := $(TARGET_CONFIG_PACKAGE).$(subst _,$(subst_prefix),$(TARGET_CONFIG))

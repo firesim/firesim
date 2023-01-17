@@ -49,6 +49,7 @@ PLATFORM ?= f1
 
 include $(TARGET_PROJECT_MAKEFRAG)/config.mk
 include make/config.mk
+include make/scala-build.mk
 
 include $(TARGET_PROJECT_MAKEFRAG)/build.mk
 include make/goldengate.mk
