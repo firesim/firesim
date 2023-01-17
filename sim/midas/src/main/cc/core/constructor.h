@@ -429,13 +429,23 @@ INSTANTIATE_TRACERV(add_bridge_driver, 31)
 #ifdef DROMAJOBRIDGEMODULE_0_PRESENT
     add_bridge_driver(new dromajo_t(
             simif, args,
+            DROMAJOBRIDGEMODULE_0_substruct_create,
+            dromajo_config_t{
+                .resetVector = DROMAJO_RESET_VECTOR,
+                .mmioStart = DROMAJO_MMIO_START,
+                .mmioEnd = DROMAJO_MMIO_END,
+                .memSize = DROMAJO_MEM_SIZE,
+                .plicBase = DROMAJO_PLIC_BASE,
+                .plicSize = DROMAJO_PLIC_SIZE,
+                .clintBase = DROMAJO_CLINT_BASE,
+                .clintSize = DROMAJO_CLINT_SIZE,
+            },
             DROMAJOBRIDGEMODULE_0_iaddr_width,
             DROMAJOBRIDGEMODULE_0_insn_width,
             DROMAJOBRIDGEMODULE_0_wdata_width,
             DROMAJOBRIDGEMODULE_0_cause_width,
             DROMAJOBRIDGEMODULE_0_tval_width,
             DROMAJOBRIDGEMODULE_0_num_traces,
-            DROMAJOBRIDGEMODULE_0_substruct_create,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_dma_address,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_count_address,
             DROMAJOBRIDGEMODULE_0_to_cpu_stream_full_address)
