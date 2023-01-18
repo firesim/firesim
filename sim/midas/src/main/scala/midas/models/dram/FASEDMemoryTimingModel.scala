@@ -254,7 +254,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
   val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
   // End: Implementation of UsesHostDRAM
 
-  lazy val module = new BridgeModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new FASEDTargetIO))
     val toHostDRAM: AXI4Bundle = toHostDRAMNode.out.head._1

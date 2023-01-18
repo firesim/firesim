@@ -147,7 +147,7 @@ class AutoCounterValidator(
     // Generate the validation hardware first, then spoof the cycle counter,
     // since it's behavior under reset does not match a conventional auto
     // counter (it still increments).
-    val counters = baseCycles +: localCycles +: _instances.map(_.generateReferenceHardware._1)
+    val counters = (baseCycles +: localCycles +: _instances.map(_.generateReferenceHardware._1)).toSeq
     addCycleCount()
 
     // Wait to print the header until the cycle before the first data row

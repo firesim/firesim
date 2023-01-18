@@ -58,10 +58,11 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
 
 // DOC include start: UART Bridge Companion Object
 object UARTBridge {
-  def apply(clock: Clock, uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
+  def apply(clock: Clock, uart: UARTPortIO, reset: Bool)(implicit p: Parameters): UARTBridge = {
     val ep = Module(new UARTBridge(uart.c))
     ep.io.uart <> uart
     ep.io.clock := clock
+    ep.io.reset := reset
     ep
   }
 }

@@ -12,19 +12,17 @@ import java.io.FileWriter
   * 2nd argument: fully qualified suite name
   */
 object EmitCIElaborationScript extends App {
-  override def main(args: Array[String]): Unit = {
-    assert(args.size == 2)
-    val Array(scriptName, className) = args
-    val inst = Class.forName(className).getConstructors().head.newInstance()
+  assert(args.size == 2)
+  val Array(scriptName, className) = args
+  val inst = Class.forName(className).getConstructors().head.newInstance()
 
-    def recurse(suite: Any): Seq[String] = suite match {
-      case t: TestSuiteCommon => Seq(t.makeCommand(t.elaborateMakeTarget:_*).mkString(" "))
-      case t: org.scalatest.Suites => t.nestedSuites.flatMap(recurse)
-    }
-
-    val makeCommands = recurse(inst)
-    val writer = new FileWriter(new File(scriptName))
-    makeCommands.foreach { l =>  writer.write(l + "\n") }
-    writer.close
+  def recurse(suite: Any): Seq[String] = suite match {
+    case t: TestSuiteCommon => Seq(t.makeCommand(t.elaborateMakeTarget:_*).mkString(" "))
+    case t: org.scalatest.Suites => t.nestedSuites.flatMap(recurse)
   }
+
+  val makeCommands = recurse(inst)
+  val writer = new FileWriter(new File(scriptName))
+  makeCommands.foreach { l =>  writer.write(l + "\n") }
+  writer.close
 }

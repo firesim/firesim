@@ -137,8 +137,8 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
   class ReferenceImpl {
     val refTotalCredit = Reg(UInt(32.W))
     val refTotalDebit  = Reg(UInt(32.W))
-    val refCreditNext  = refTotalCredit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffCredits))(_ + _).last
-    val refDebitNext   = refTotalDebit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffDebits))(_ + _).last
+    val refCreditNext  = refTotalCredit + DensePrefixSum(refSourceCounts.toSeq.map(_.syncAndDiffCredits))(_ + _).last
+    val refDebitNext   = refTotalDebit + DensePrefixSum(refSourceCounts.toSeq.map(_.syncAndDiffDebits))(_ + _).last
     refTotalCredit := refCreditNext
     refTotalDebit  := refDebitNext
     val refTriggerEnable = refCreditNext =/= refDebitNext
