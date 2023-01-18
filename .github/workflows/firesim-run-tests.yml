@@ -301,7 +301,7 @@ jobs:
     name: run-parallel-metasims
     # Building the driver can cause concurrency issues with SBT, so serialize
     # this behind the scalatest train. Remove once we're off SBT.
-    needs: [build-default-workloads, run-chipyard-tests]
+    needs: [run-chipyard-tests]
     runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
