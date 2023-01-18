@@ -1,5 +1,12 @@
 # See LICENSE for license details.
 
+# Defines make targets for:
+# - invoking Golden Gate (phony: verilog / compile)
+# - building a simulation driver (phony: f1)
+# - populating an FPGA build directory (phony: replace-rtl)
+# - generating new runtime configurations (phony: conf)
+# - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug)
+
 .PHONY: default
 default: compile
 
@@ -25,9 +32,13 @@ include make/chipyard.mk
 # 	midasexamples: simple chisel designs demonstrating FireSim's features
 TARGET_PROJECT ?= firesim
 
-# Users can override this to point at a makefrag defined in a parent project
-# that submodules firesim or source sim/Makefrag directly
-TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)/Makefrag
+# Users can override this to point at a collections of Makefrags.
+# The following makefrags must be present in the folder:
+#   config.mk: override configuration variables with project specifics
+#   build.mk: define the build rule generating the input FIRRTL and annotations
+#   driver.mk: define the configuration for the driver
+#   metasim.mk: define rules to run metasimulator binaries.
+TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)
 
 # The host-platform type (currently only f1, vitis supported)
 PLATFORM ?= f1
@@ -36,18 +47,23 @@ PLATFORM ?= f1
 #   Target Setup   #
 ####################
 
-# Include target-specific sources and input generation recipes
-include $(TARGET_PROJECT_MAKEFRAG)
-
-# All target-agnostic firesim recipes are defined here
+include $(TARGET_PROJECT_MAKEFRAG)/config.mk
 include make/config.mk
-include make/library.mk
+
+include $(TARGET_PROJECT_MAKEFRAG)/build.mk
 include make/goldengate.mk
-include make/verilator.mk
-include make/vcs.mk
+
+include $(TARGET_PROJECT_MAKEFRAG)/driver.mk
+include make/library.mk
+
 include make/driver.mk
 include make/fpga.mk
+include make/verilator.mk
+include make/vcs.mk
 include make/xsim.mk
+
+include $(TARGET_PROJECT_MAKEFRAG)/metasim.mk
+
 include make/unittest.mk
 include make/scala.mk
 
