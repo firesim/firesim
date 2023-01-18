@@ -280,8 +280,8 @@ class MCRFileMap(bytesPerAddress: Int) {
     val regAddrs = regList map (reg => reg -> (base + lookupAddress(reg.name).get))
     val readRegs = regAddrs filter (_._1.permissions.readable)
     val writeRegs = regAddrs filter (_._1.permissions.writeable)
-    emitArrays(readRegs, prefix + "_R")
-    emitArrays(writeRegs, prefix + "_W")
+    emitArrays(readRegs.toSeq, prefix + "_R")
+    emitArrays(writeRegs.toSeq, prefix + "_W")
   }
 
   // Returns a copy of the current register map

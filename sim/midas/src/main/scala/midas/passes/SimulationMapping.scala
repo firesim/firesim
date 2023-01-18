@@ -17,7 +17,7 @@ import firrtl.Mappers._
 import firrtl.passes.LowerTypes.loweredName
 import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, flow, module_type}
 import firrtl.passes.wiring._
-import Utils._
+import midas.passes.Utils._
 import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.LazyModule

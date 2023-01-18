@@ -97,7 +97,7 @@ class AddrMap(
       prot |= r.attr.prot
       cacheable &&= r.attr.cacheable
     }
-    (base - start, rebasedEntries, MemAttr(prot, cacheable))
+    (base - start, rebasedEntries.toSeq, MemAttr(prot, cacheable))
   }
 
   val flatten: Seq[AddrMapEntry] = {

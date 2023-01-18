@@ -190,7 +190,7 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
 
     val updatedCircuit = c.copy(modules = c.modules.map({
       case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts,
-                                                   body  = Block(m.body, addedConnects:_*))
+                                                   body  = Block(m.body, addedConnects.toSeq:_*))
       case o => o
     }))
 

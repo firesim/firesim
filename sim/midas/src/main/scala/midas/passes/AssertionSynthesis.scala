@@ -13,7 +13,7 @@ import firrtl.Utils.{zero, to_flip, BoolType}
 
 import freechips.rocketchip.config.{Parameters, Field}
 
-import Utils._
+import midas.passes.Utils.cat
 import midas.widgets.{BridgeIOAnnotation, AssertBridgeRecord, AssertBridgeModule, AssertBridgeParameters}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation

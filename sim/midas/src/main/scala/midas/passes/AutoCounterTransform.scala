@@ -124,7 +124,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
           def printEnable = Neq(WRef(target.ref), WRef(reg))
           generatePrintf(label, clock, WRef(target.ref), printEnable, target.ref + "_identity_print")
       }
-      m.copy(body = Block(m.body, addedStmts:_*))
+      m.copy(body = Block(m.body, addedStmts.toSeq:_*))
     case o => o
   }
 
@@ -226,7 +226,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     }
 
     val updatedCircuit = c.copy(modules = c.modules.map({
-      case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts, body = Block(m.body, addedStmts:_*))
+      case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts, body = Block(m.body, addedStmts.toSeq:_*))
       case o => o
     }))
 
@@ -267,12 +267,12 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     covermodulesnames.foreach({ i => println(s"  ${i}") })
 
     //collect annotations for manually annotated AutoCounter perf counters
-    val filteredCounterAnnos =  counterAnnos.filter(_.shouldBeIncluded(covermodulesnames))
+    val filteredCounterAnnos =  counterAnnos.filter(_.shouldBeIncluded(covermodulesnames.toSeq))
     println(s"[AutoCounter] selected ${filteredCounterAnnos.length} signals for instrumentation")
     filteredCounterAnnos.foreach({ i => println(s"  ${i}") })
 
     // group the selected signal by modules, and attach label from the cover point to each signal
-    val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule())
+    val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq }
 
     if (!selectedsignals.isEmpty) {
       println(s"[AutoCounter] signals are:")
@@ -284,8 +284,8 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       // Common preprocessing: gate all annotated events with their associated reset
       val updatedAnnos = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
       val updatedModules = state.circuit.modules.map((gateEventsWithReset(selectedsignals, updatedAnnos)))
-      val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule())
-      val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos)
+      val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq}
+      val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos.toSeq)
 
       val preppedState = (new ResolveAndCheck).runTransform(gatedState)
 
