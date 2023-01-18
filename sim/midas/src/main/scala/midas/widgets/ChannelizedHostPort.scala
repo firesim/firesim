@@ -48,7 +48,7 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   private val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], PipeChannelMetadata)]()
 
   // These will only be called after the record has been finalized.
-  lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)):_*)
+  lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)).toSeq:_*)
   private def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName  }).toMap
 
   private def getLeafDirs(token: Data): Seq[Direction] = token match {

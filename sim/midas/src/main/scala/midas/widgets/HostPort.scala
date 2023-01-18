@@ -109,11 +109,11 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
 
     // Dequeue from toHost channels only if all toHost tokens are available,
     // and the bridge consumes it
-    val toHostHelper   = DecoupledHelper((toHost.hReady +: toHostChannels.map(_.valid)):_*)
+    val toHostHelper   = DecoupledHelper((toHost.hReady +: toHostChannels.map(_.valid)).toSeq:_*)
     toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
 
     // Enqueue into the toHost channels only once all toHost channels can accept the token
-    val fromHostHelper = DecoupledHelper((fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
+    val fromHostHelper = DecoupledHelper((fromHost.hValid +: fromHostChannels.map(_.ready)).toSeq:_*)
     fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
 
     // Tie off the target clock; these should be unused in the BridgeModule
