@@ -19,7 +19,7 @@ def run_parallel_metasim():
                 rc = run("./marshal -v build test/bare.yaml &> bare.full.log").return_code
                 if rc != 0:
                     run("cat bare.full.log")
-                raise Exception("Building test/bare.yaml failed to run")
+                    raise Exception("Building test/bare.yaml failed to run")
 
             run("./marshal -v install test/bare.yaml")
 
