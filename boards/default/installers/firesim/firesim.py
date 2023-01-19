@@ -64,6 +64,9 @@ def install(targetCfg, opts):
 
             if 'outputs' in jCfg:
                 wls[slot]["outputs"] = [f.as_posix() for f in jCfg['outputs']]
+
+            if 'simulation_outputs' in jCfg:
+                wls[slot]["simulation_outputs"] = [f.as_posix() for f in jCfg['simulation_outputs']]
         fsCfg['workloads'] = wls
     else:
         # Single-node run

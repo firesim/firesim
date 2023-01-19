@@ -47,6 +47,8 @@ configUser = [
         # List of files to copy out of the image after running it. Files will
         # be flattened into results dir. [guest_src0, guest_src1, ...]
         'outputs',
+        # List of simulation outputs to copy after running it.
+        'simulation_outputs',
         # Path to script to run on the guest every time it boots
         'run',
         # An inline command to run at startup (cannot be set along with 'run')
@@ -473,6 +475,9 @@ class Config(collections.abc.MutableMapping):
 
         if 'outputs' in self.cfg:
             self.cfg['outputs'] = [pathlib.Path(f) for f in self.cfg['outputs']]
+
+        if 'simulation_outputs' in self.cfg:
+            self.cfg['simulation_outputs'] = [pathlib.Path(f) for f in self.cfg['simulation_outputs']]
 
         if 'out-dir' in self.cfg:
             self.cfg['out-dir'] = wlutil.getOpt('image-dir') / self.cfg['out-dir']
