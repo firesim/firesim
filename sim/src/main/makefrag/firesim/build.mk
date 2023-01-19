@@ -1,22 +1,36 @@
 # See LICENSE for license details.
 
-##################
-# RTL Generation #
-##################
-ifdef FIRESIM_STANDALONE
-	target_sbt_project := {file:${chipyard_dir}}firechip
-
-	lookup_scala_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print 2> /dev/null)
-	SOURCE_DIRS = $(chipyard_dir)/generators $(firesim_base_dir)
-	SCALA_SOURCES = $(call lookup_scala_srcs,$(SOURCE_DIRS))
-else
-	target_sbt_project := firechip
-endif
-
-$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR) $(SCALA_BUILDTOOL_DEPS)
-	mkdir -p $(@D)
-	$(call run_scala_main,$(target_sbt_project),chipyard.Generator,\
+$(FIRRTL_FILE) $(ANNO_FILE): $(TARGET_CP)
+	@mkdir -p $(@D)
+	java -cp $$(cat $(TARGET_CP)) chipyard.Generator \
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
+		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG)
+
+#######################################
+# Setup Extra Verilator Compile Flags #
+#######################################
+
+## default flags added for cva6
+CVA6_VERILATOR_FLAGS = \
+	--unroll-count 256 \
+	-Werror-PINMISSING \
+	-Werror-IMPLICIT \
+	-Wno-fatal \
+	-Wno-PINCONNECTEMPTY \
+	-Wno-ASSIGNDLY \
+	-Wno-DECLFILENAME \
+	-Wno-UNUSED \
+	-Wno-UNOPTFLAT \
+	-Wno-BLKANDNBLK \
+	-Wno-style \
+	-Wall
+
+# normal flags used for midas builds (that are incompatible with cva6)
+DEFAULT_MIDAS_VERILATOR_FLAGS = \
+	--assert
+
+# AJG: this must be evaluated after verilog generation to work (hence the =)
+EXTRA_VERILATOR_FLAGS = \
+	$(shell if ! grep -iq "module.*cva6" $(simulator_verilog); then echo "$(DEFAULT_MIDAS_VERILATOR_FLAGS)"; else echo "$(CVA6_VERILATOR_FLAGS)"; fi)
