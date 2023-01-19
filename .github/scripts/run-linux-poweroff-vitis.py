@@ -30,6 +30,11 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
+            # download prebuilt xclbin to /tmp
+            # this CI image is managed by the default CI account
+            with prefix('cd /tmp'):
+                run('wget https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_9e1a21.xclbin')
+
             def run_w_timeout(workload_path, workload, timeout):
                 log_tail_length = 100
                 rc = 0
