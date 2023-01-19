@@ -7,7 +7,7 @@ import freechips.rocketchip.config.Parameters
 import chisel3._
 import chisel3.util._
 
-class PipeModule[T <: Data](gen: T, latency: Int = 0) extends MultiIOModule {
+class PipeModule[T <: Data](gen: T, latency: Int = 0) extends Module {
   val in   = IO(Input(gen))
   val out  = IO(Output(gen))
   out := ShiftRegister(in, latency)
