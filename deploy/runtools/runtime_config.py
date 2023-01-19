@@ -289,9 +289,9 @@ class RuntimeHWConfig:
         self.driver_built = True
 
     def build_sim_tarball(self, paths: List[Tuple[str, str]], tarball_name: str) -> None:
-        """ Take the simulation driver and tar it. build_sim_driver() 
-        must run before this function.  Rsync is used in a mode where it's copying 
-        from local paths to a local folder. This is confusing as rsync traditionaly is 
+        """ Take the simulation driver and tar it. build_sim_driver()
+        must run before this function.  Rsync is used in a mode where it's copying
+        from local paths to a local folder. This is confusing as rsync traditionally is
         used for copying from local folders to a remote folder. The variable local_remote_dir is
         named as a reminder that it's actually pointing at this local machine"""
         if self.tarball_built:
@@ -300,7 +300,7 @@ class RuntimeHWConfig:
 
         # builddir is a temporary directory created by TemporaryDirectory()
         # the path a folder is under /tmp/ with a random name
-        # After this scope block exists, the entier folder is deleted
+        # After this scope block exists, the entire folder is deleted
         with TemporaryDirectory() as builddir:
 
             with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}'):
@@ -317,6 +317,9 @@ class RuntimeHWConfig:
                     self.handle_failure(results, 'local rsync', get_deploy_dir(), cmd)
 
             # This must be taken outside of a cd context
+            cmd = f"mkdir -p {self.local_triplet_path()}"
+            results = run(cmd)
+            self.handle_failure(results, 'local mkdir', builddir, cmd)
             absolute_tarball_path = self.local_triplet_path() / tarball_name
 
             with InfoStreamLogger('stdout'), prefix(f'cd {builddir}'):
@@ -348,8 +351,12 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
                  metasimulation_only_plusargs: str,
                  metasimulation_only_vcs_plusargs: str) -> None:
         self.name = name
+
         self.agfi = None
         self.xclbin = None
+        self.driver_tar = None
+        self.tarball_built = False
+
         self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
