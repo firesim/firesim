@@ -22,7 +22,17 @@ scalafmtAll:
 		midas / scalafmtAll ; \
 		targetutils / scalafmtAll ;"
 
+# Checks scala sources comply with the Scalafix rules defined here: sim/.scalafix.conf
+.PHONY: scalaFixCheck
+scalaFixCheck:
+	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
+		scalafixEnable; \
+		firesim / scalafix --check; \
+		firesimLib / scalafix --check; \
+		midas / scalafix --check; \
+		targetutils / scalafix --check; "
 
+# Applies the scalafix rules defined here: sim/.scalafix.conf
 .PHONY: scalaFix
 scalaFix:
 	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
@@ -32,11 +42,8 @@ scalaFix:
 		midas / scalafix; \
 		targetutils / scalafix; "
 
-.PHONY: scalaFixCheck
-scalaFixCheck:
-	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
-		scalafixEnable; \
-		firesim / scalafix --check; \
-		firesimLib / scalafix --check; \
-		midas / scalafix --check; \
-		targetutils / scalafix --check; "
+# These targets combines Scalafix and Scalafmt passes.
+# It's important to run Scalafix first so Scalafmt can cleanup whitespace issues
+.PHONY: scalaFixFmt scalaFixFmtCheck
+scalaFixFmt: scalaFix scalafmtAll
+scalaFixFmtCheck: scalaFixCheck scalafmtCheckAll

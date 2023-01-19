@@ -7,7 +7,6 @@ import freechips.rocketchip.config.{Config, Field, Parameters}
 
 import midas.widgets._
 
-
 /** Defines a test group with the id of 0
   */
 class PlusArgsModuleTestConfigGroup68Bit
