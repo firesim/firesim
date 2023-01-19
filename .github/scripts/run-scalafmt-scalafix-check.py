@@ -9,6 +9,7 @@ def run_scalafmt_check():
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
         run("make -C sim scalafmtCheckAll")
+        run("make -C sim scalaFixCheck")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
