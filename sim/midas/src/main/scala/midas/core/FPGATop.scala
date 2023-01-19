@@ -8,14 +8,11 @@ import midas.widgets._
 import midas.passes.{HostClockSource}
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{annotate, ChiselAnnotation}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.util.{DecoupledHelper, HeterogeneousBag}
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable
 
 /**
   * The following [[Field]]s capture the parameters of the four AXI4 bus types

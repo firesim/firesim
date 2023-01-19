@@ -6,7 +6,6 @@ import firrtl._
 import firrtl.analyses.InstanceGraph
 import firrtl.annotations._
 import firrtl.ir._
-import firrtl.Mappers._
 import firrtl.transforms.DontTouchAllTargets
 import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
 import firrtl.options.Dependency

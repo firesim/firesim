@@ -8,9 +8,7 @@ import midas.core.{TargetChannelIO}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
-import chisel3.util._
-import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, JsonProtocol, HasSerializationHints}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
 import scala.reflect.runtime.{universe => ru}
 

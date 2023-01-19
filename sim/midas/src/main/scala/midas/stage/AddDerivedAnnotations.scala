@@ -3,7 +3,6 @@
 package midas.stage
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.Annotation
 import firrtl.options.{Phase, Dependency}
 
 import scala.collection.mutable

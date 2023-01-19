@@ -6,7 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations.{ModuleTarget, ModuleName, CircuitName}
+import firrtl.annotations.{ModuleName, CircuitName}
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.Utils.BoolType
 import firrtl.passes.InlineAnnotation

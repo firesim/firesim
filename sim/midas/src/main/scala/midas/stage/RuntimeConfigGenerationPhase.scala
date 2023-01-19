@@ -8,15 +8,13 @@ import midas.models.FASEDMemoryTimingModel
 import midas.platform.PlatformShim
 import midas.core.SimWrapperConfig
 
-import freechips.rocketchip.diplomacy.{LazyModule, ValName}
+import freechips.rocketchip.diplomacy.LazyModule
 
 import firrtl.ir.Port
 import firrtl.annotations.{ReferenceTarget, NoTargetAnnotation}
-import firrtl.{Transform, CircuitState, AnnotationSeq}
-import firrtl.options.{Phase, TargetDirAnnotation, Dependency, CustomFileEmission}
+import firrtl.AnnotationSeq
+import firrtl.options.{Phase, Dependency}
 
-import java.io.{File, FileWriter, Writer}
-import logger._
 
 // When the runtime config generation phase is being used, the
 // BaseOutputFilenameAnnotation carries the complete name of the output file.

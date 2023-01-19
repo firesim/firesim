@@ -4,11 +4,9 @@ package midas.widgets
 
 import midas.core.{HostReadyValid, TargetChannelIO}
 import midas.core.SimUtils
-import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
 
 import chisel3._
 import chisel3.util.ReadyValidIO
-import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 
 import freechips.rocketchip.util.{DecoupledHelper}
 

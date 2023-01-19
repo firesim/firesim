@@ -11,7 +11,7 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
-import firrtl.Utils.{zero, BoolType}
+import firrtl.Utils.BoolType
 
 import scala.collection.mutable
 

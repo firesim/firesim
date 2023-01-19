@@ -5,7 +5,6 @@ import midas.widgets._
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 
 import testchipip.{SerialIO, SerialAdapter}

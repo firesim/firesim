@@ -14,8 +14,7 @@ import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
-import chisel3.experimental.DataMirror.directionOf
+import chisel3.experimental.{ChiselAnnotation, annotate}
 import firrtl.annotations.{Annotation, SingleTargetAnnotation, ReferenceTarget, IsModule}
 
 import scala.collection.immutable.ListMap

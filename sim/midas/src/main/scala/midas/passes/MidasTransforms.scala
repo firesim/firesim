@@ -3,18 +3,10 @@
 package midas
 package passes
 
-import midas.core._
 
-import freechips.rocketchip.config.Parameters
 
 import firrtl._
-import firrtl.annotations._
-import firrtl.ir._
-import logger._
-import firrtl.transforms.{DeadCodeElimination}
-import Utils._
 
-import java.io.{File, FileWriter}
 
 private[midas] class MidasTransforms extends Transform {
   def inputForm = LowForm

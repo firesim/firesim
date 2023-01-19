@@ -2,15 +2,12 @@ package midas
 package models
 
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.GenericParameterizedBundle
 
 import chisel3._
 import chisel3.util._
 
-import junctions._
 import midas.widgets._
 
-import Console.{UNDERLINED, RESET}
 
 case class FirstReadyFCFSConfig(
     dramKey: DramOrganizationParams,

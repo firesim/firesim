@@ -5,11 +5,9 @@ package midas
 import core._
 import widgets._
 import platform._
-import models._
 import firrtl.stage.TransformManager.TransformDependency
-import junctions.{NastiKey, NastiParameters}
+import junctions.NastiParameters
 import freechips.rocketchip.config.{Parameters, Config, Field}
-import freechips.rocketchip.unittest.UnitTests
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
 import java.io.{File}

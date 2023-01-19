@@ -4,8 +4,6 @@ package models
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.GenericParameterizedBundle
-import junctions._
 import midas.widgets._
 
 import Console.{UNDERLINED, RESET}
@@ -69,7 +67,6 @@ object BankConflictConstants {
   val bankIdle :: bankBusy :: bankPrecharge :: Nil = Enum(nBankStates)
 }
 
-import BankConflictConstants._
 
 class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
 

@@ -3,7 +3,6 @@
 package midas
 package widgets
 
-import core.HostDecoupledIO
 import junctions._
 
 import chisel3._

@@ -5,9 +5,9 @@ package midas.core
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{IO, prefix}
+import chisel3.experimental.prefix
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.DecoupledHelper
 

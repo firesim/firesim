@@ -2,19 +2,15 @@
 
 package midas.widgets
 
-import midas.core.{TargetChannelIO, SimUtils}
-import midas.core.SimUtils.{RVChTuple}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel, RTRenamer}
+import midas.core.TargetChannelIO
 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DensePrefixSum
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
+import chisel3.experimental.{ChiselAnnotation, annotate}
 
-import firrtl.{RenameMap}
-import firrtl.annotations.{Annotation, ModuleTarget, ReferenceTarget}
 
 /**
   * Defines a generated clock as a rational multiple of some reference clock. The generated

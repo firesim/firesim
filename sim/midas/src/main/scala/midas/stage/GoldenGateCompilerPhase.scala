@@ -7,9 +7,8 @@ import midas.passes.{MidasTransforms}
 import midas.stage.phases.{CreateParametersInstancePhase, ConfigParametersAnnotation}
 
 import firrtl.{CircuitState, AnnotationSeq}
-import firrtl.annotations.{Annotation}
 import firrtl.options.{Phase, Dependency}
-import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation}
+import firrtl.passes.memlib.InferReadWrite
 import firrtl.stage.{Forms, FirrtlCircuitAnnotation}
 import firrtl.stage.transforms.Compiler
 

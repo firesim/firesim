@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
-import midas.targetutils.{TriggerSource, TriggerSink}
 import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import freechips.rocketchip.config.Parameters
 import chisel3._

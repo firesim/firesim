@@ -2,7 +2,6 @@
 
 package midas.widgets
 
-import chisel3._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._

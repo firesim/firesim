@@ -5,12 +5,10 @@ package midas.passes.fame
 import firrtl._
 import ir._
 import Utils._
-import Mappers._
-import annotations.{CircuitTarget, InstanceTarget, Annotation, SingleTargetAnnotation}
+import annotations.{CircuitTarget, Annotation}
 import analyses.InstanceGraph
-import graph.DiGraph
 import scala.collection.mutable
-import firrtl.passes.{InlineInstances,PassException}
+import firrtl.passes.PassException
 
 /**
  * Takes PromoteSubmodule annotations for instantiations and causes

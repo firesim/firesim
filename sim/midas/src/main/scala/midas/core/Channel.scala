@@ -5,8 +5,7 @@ package core
 
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.unittest._
-import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue}
-import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
+import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue} // Better than chisel's
 
 import chisel3._
 import chisel3.util._

@@ -2,19 +2,14 @@
 
 package midas.passes.fame
 
-import java.io.{PrintWriter, File}
 
 import firrtl._
 import ir._
 import Mappers._
 import firrtl.Utils.{BoolType, kind}
 import firrtl.passes.MemPortUtils
-import annotations._
-import scala.collection.mutable
-import mutable.{LinkedHashSet, LinkedHashMap}
 import chisel3.util.log2Ceil
 
-import midas.passes._
 
 object PatientMemTransformer {
   def apply(mem: DefMemory, finishing: Expression, memClock: WRef, ns: Namespace): Block = {

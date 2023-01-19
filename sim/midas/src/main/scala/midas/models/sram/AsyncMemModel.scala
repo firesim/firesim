@@ -1,10 +1,8 @@
 package midas.models.sram
 
 import chisel3._
-import chisel3.util.{Mux1H, Decoupled, RegEnable, log2Ceil, Enum}
+import chisel3.util.Enum
 //import chisel3.experimental.ChiselEnum
-import chisel3.experimental.{DataMirror, requireIsChiselType}
-import collection.immutable.ListMap
 
 class AsyncMemModelGen(val depth: Int, val dataWidth: Int) extends ModelGenerator {
   assert(depth > 0)

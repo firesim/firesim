@@ -4,27 +4,18 @@ package midas.passes
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes._
-import firrtl.passes.wiring._
-import firrtl.Utils.{throwInternalError, BoolType, one, zero}
+import firrtl.Utils.{BoolType, one, zero}
 import firrtl.annotations._
-import firrtl.analyses.InstanceGraph
-import firrtl.transforms.TopWiring._
 import freechips.rocketchip.util.property
-import freechips.rocketchip.util.WideCounter
-import freechips.rocketchip.config.{Parameters, Field}
 import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
 import midas.widgets._
 import midas.targetutils._
-import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Or, Negate, Neq}
+import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Neq}
 
 import java.io._
-import scala.io.Source
 import collection.mutable
 
 class FireSimPropertyLibrary extends property.BasePropertyLibrary {
-  import chisel3._
-  import chisel3.experimental.DataMirror.internal.isSynthesizable
   import chisel3.internal.sourceinfo.{SourceInfo}
   import chisel3.experimental.{annotate,ChiselAnnotation}
   def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo): Unit = {

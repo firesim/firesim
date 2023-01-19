@@ -22,7 +22,6 @@ import midas.widgets._
 import scala.math.min
 import Console.{UNDERLINED, RESET}
 
-import java.io.{File, FileWriter}
 
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
@@ -560,7 +559,6 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         val prefix = s"const std::map<std::string, int> $mapName = {\n"
         map.foldLeft(prefix)((str, kvp) => str + s""" {\"${kvp._1}\", ${kvp._2}},\n""") + "};\n"
       }
-      import midas.widgets.CppGenerationUtils._
       super.genHeader(base, sb)
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
     }

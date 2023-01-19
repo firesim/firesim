@@ -4,10 +4,7 @@ package midas.widgets
 
 import midas.widgets.CppGenerationUtils._
 import freechips.rocketchip.amba.axi4.AXI4OutwardNode
-import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
-import freechips.rocketchip.util.{DecoupledHelper}
-import chisel3.util.isPow2
 
 /**
   * Constrains the "virtual" memory region as seen by Bridge.

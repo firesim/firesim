@@ -5,11 +5,9 @@ package models
 // misses onto the DRAM model, while short-circuiting hits.
 import junctions._
 
-import midas.core._
-import midas.widgets._
 
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.{ParameterizedBundle, MaskGen, UIntToOH1}
+import freechips.rocketchip.util.{MaskGen, UIntToOH1}
 
 import chisel3._
 import chisel3.util._
@@ -17,7 +15,6 @@ import chisel3.util._
 import scala.math.min
 import Console.{UNDERLINED, RESET}
 
-import java.io.{File, FileWriter}
 
 // State to track reads to DRAM, ~loosely an MSHR
 class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {

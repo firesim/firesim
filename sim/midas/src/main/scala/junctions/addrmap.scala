@@ -4,7 +4,6 @@
 package junctions
 
 import Chisel._
-import freechips.rocketchip.config._
 import scala.collection.mutable.HashMap
 
 case class MemAttr(prot: Int, cacheable: Boolean = false)

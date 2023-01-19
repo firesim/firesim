@@ -3,18 +3,12 @@ package firesim.bridges
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
-import freechips.rocketchip.rocket.TracedInstruction
-import freechips.rocketchip.tile.TileKey
 
-import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWidths}
+import testchipip.{TileTraceIO, TracedInstructionWidths}
 
 import midas.widgets._
-import testchipip.{StreamIO, StreamChannel}
-import junctions.{NastiIO, NastiKey}
 
 //******
 //* MISC

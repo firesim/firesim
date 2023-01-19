@@ -4,7 +4,7 @@ package midas.stage
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
-import firrtl.options.{Dependency, OptionsException, Phase, HasShellOptions}
+import firrtl.options.{OptionsException, Phase, HasShellOptions}
 
 import scala.reflect.{ClassTag, classTag}
 import scala.collection.mutable

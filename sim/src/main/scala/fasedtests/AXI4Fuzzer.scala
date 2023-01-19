@@ -3,7 +3,6 @@
 package firesim.fasedtests
 
 import chisel3._
-import chisel3.util.{isPow2, log2Ceil}
 
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
@@ -11,7 +10,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.subsystem.{ExtMem, MemoryPortParams}
 
-import junctions.{NastiKey, NastiParameters}
+import junctions.NastiParameters
 import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
 import midas.widgets.{PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
 

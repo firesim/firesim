@@ -1,14 +1,10 @@
 package midas
 package models
 
-import freechips.rocketchip.config._
 
 import chisel3._
 
-import org.json4s._
 
-import Console.{UNDERLINED, GREEN, RESET}
-import java.io.{File, FileWriter}
 
 // Hacky utilities to get console input from user.
 trait HasConsoleUtils {

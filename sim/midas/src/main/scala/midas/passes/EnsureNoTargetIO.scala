@@ -2,19 +2,10 @@
 
 package midas.passes
 
-import midas.widgets.BridgeAnnotation
-import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation}
 
 import firrtl._
-import firrtl.annotations._
 import firrtl.ir._
-import firrtl.Mappers._
-import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
-import firrtl.passes.wiring.{Wiring, WiringInfo}
-import Utils._
 
-import scala.collection.mutable
-import java.io.{File, FileWriter, StringWriter}
 
 // Ensures that there are no dangling IO on the target. All I/O coming off the DUT must be bound
 // to an Bridge BlackBox

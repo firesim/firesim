@@ -6,7 +6,6 @@ import chisel3._
 import freechips.rocketchip.config.Parameters
 import chisel3.util.HasBlackBoxInline
 
-import midas.widgets.PeekPokeBridge
 
 class AccumulatorIO extends Bundle {
   val in  = Input(UInt(16.W))

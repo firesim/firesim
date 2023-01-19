@@ -3,11 +3,9 @@
 package midas.stage
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, PhaseManager, PreservesAll, Shell, Stage, StageMain}
+import firrtl.options.{Phase, PreservesAll, Shell, Stage, StageMain}
 import firrtl.options.phases.DeletedWrapper
-import firrtl.options.Viewer.view
 
-import java.io.{StringWriter, PrintWriter}
 
 class GoldenGateStage extends Stage with PreservesAll[Phase] {
   val shell: Shell = new Shell("goldengate") with GoldenGateCli

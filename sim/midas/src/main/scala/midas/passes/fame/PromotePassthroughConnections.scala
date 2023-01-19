@@ -6,8 +6,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations._
-import firrtl.annotations.TargetToken.{OfModule, Instance, Field}
 import firrtl.stage.Forms
 import firrtl.options.Dependency
 import firrtl.transforms.{CheckCombLoops, LogicNode}

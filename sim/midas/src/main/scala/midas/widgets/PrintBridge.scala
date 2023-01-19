@@ -6,7 +6,6 @@ import scala.collection.immutable.ListMap
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}

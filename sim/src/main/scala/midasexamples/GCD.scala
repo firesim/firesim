@@ -6,7 +6,6 @@ import chisel3._
 import freechips.rocketchip.config.Parameters
 import chisel3.experimental.annotate
 
-import midas.widgets.PeekPokeBridge
 import midas.targetutils.{FAMEModelAnnotation, FpgaDebug}
 
 class GCDIO extends Bundle {

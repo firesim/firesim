@@ -2,7 +2,6 @@
 
 package firesim.midasexamples
 
-import chisel3._
 import freechips.rocketchip.config.Parameters
 import midas.targetutils.xdc._
 

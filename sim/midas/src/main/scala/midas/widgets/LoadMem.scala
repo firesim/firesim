@@ -7,7 +7,7 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.{ExtMem, MasterPortParams}
 
 import scala.math.{max, min}

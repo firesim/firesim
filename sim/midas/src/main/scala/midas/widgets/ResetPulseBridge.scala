@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
-import scala.collection.immutable
 
 /**
   * The [[ResetPulseBridge]] drives a bool pulse from time zero for a

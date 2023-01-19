@@ -4,16 +4,12 @@ package bridges
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
 import midas.widgets._
-import testchipip.{StreamIO, StreamChannel}
+import testchipip.StreamChannel
 import icenet.{NICIOvonly, RateLimiterSettings}
-import icenet.IceNIC._
-import junctions.{NastiIO, NastiKey}
 
 object TokenQueueConsts {
   val TOKENS_PER_BIG_TOKEN = 7

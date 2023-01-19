@@ -2,9 +2,6 @@ package midas.passes
 
 import firrtl._
 import firrtl.ir._
-import firrtl.annotations.{CircuitTarget, CompleteTarget}
-import firrtl.passes.Pass
-import firrtl.Utils.BoolType
 
 package object xilinx {
   object DefineBUFGCE extends Transform with NoAnalysisPass {

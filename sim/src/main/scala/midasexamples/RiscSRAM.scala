@@ -5,7 +5,6 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.config.Parameters
 import chisel3.util._
-import midas.targetutils._
 
 class RiscSRAMDUT extends Module {
   val io = IO(new Bundle {

@@ -2,13 +2,11 @@
 
 package midas.passes.fame
 
-import java.io.{PrintWriter, File}
 
 import firrtl._
 import ir._
 import Mappers._
-import firrtl.Utils.{BoolType, kind, one}
-import firrtl.passes.MemPortUtils
+import firrtl.Utils.BoolType
 import firrtl.transforms.DontTouchAnnotation
 import annotations._
 import scala.collection.mutable

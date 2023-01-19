@@ -2,8 +2,8 @@
 package firesim.configs
 
 import firrtl.options.Dependency
-import freechips.rocketchip.config.{Parameters, Config, Field}
-import midas.{TargetTransforms, HostTransforms}
+import freechips.rocketchip.config.Config
+import midas.TargetTransforms
 import firesim.bridges._
 
 // Experimental: mixing this in will enable assertion synthesis
