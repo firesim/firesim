@@ -186,8 +186,8 @@ jobs:
       - name: Run CI Python type checker
         run: .github/scripts/run-ci-python-typechecking.py
 
-  run-scalafmt-scalafix-check:
-    name: run-scalafmt-scalafix-check
+  run-scalafmt-check:
+    name: run-scalafmt-check
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     env:
