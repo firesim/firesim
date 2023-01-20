@@ -66,10 +66,10 @@ def install(targetCfg, opts):
                 wls[slot]["outputs"] = [f.as_posix() for f in jCfg['outputs']]
 
             if 'firesim' in jCfg:
-              if 'simulation_outputs' in jCfg['firesim']:
-                wls[slot]["simulation_outputs"] = [f.as_posix() for f in jCfg['firesim']['simulation_outputs']]
-              if 'simulation_inputs' in jCfg['firesim']:
-                wls[slot]["simulation_inputs"] = [f.as_posix() for f in jCfg['firesim']['simulation_inputs']]
+                if 'simulation_outputs' in jCfg['firesim']:
+                    wls[slot]["simulation_outputs"] = [f.as_posix() for f in jCfg['firesim']['simulation_outputs']]
+                if 'simulation_inputs' in jCfg['firesim']:
+                    wls[slot]["simulation_inputs"] = [f.as_posix() for f in jCfg['firesim']['simulation_inputs']]
 
         fsCfg['workloads'] = wls
     else:
@@ -85,10 +85,10 @@ def install(targetCfg, opts):
             fsCfg["common_outputs"] = [f.as_posix() for f in targetCfg['outputs']]
 
         if 'firesim' in targetCfg:
-          if 'simulation_outputs' in targetCfg['firesim']:
-            fsCfg["common_simulation_outputs"] = [f.as_posix() for f in targetCfg['firesim']['simulation_outputs']]
-          if 'simulation_inputs' in targetCfg['firesim']:
-            fsCfg["common_simulation_inputs"] = [f.as_posix() for f in targetCfg['firesim']['simulation_inputs']]
+            if 'simulation_outputs' in targetCfg['firesim']:
+                fsCfg["common_simulation_outputs"] = [f.as_posix() for f in targetCfg['firesim']['simulation_outputs']]
+            if 'simulation_inputs' in targetCfg['firesim']:
+                fsCfg["common_simulation_inputs"] = [f.as_posix() for f in targetCfg['firesim']['simulation_inputs']]
 
     with open(str(fsTargetDir / "README"), 'w') as readme:
         readme.write(readmeTxt)
