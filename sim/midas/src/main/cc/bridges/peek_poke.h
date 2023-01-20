@@ -9,8 +9,9 @@
 #include "core/simif.h"
 
 struct PEEKPOKEBRIDGEMODULE_struct {
+  uint64_t STEP;
+  uint64_t DONE;
   uint64_t PRECISE_PEEKABLE;
-  uint64_t READY;
 };
 
 /**
@@ -63,6 +64,16 @@ public:
    */
   bool unstable() const { return req_unstable; }
 
+  /**
+   * Check whether the cycle horizon has been reached.
+   */
+  bool is_done();
+
+  /**
+   * Advance the cycle horizon a given number of steps.
+   */
+  void step(size_t n, bool blocking);
+
 private:
   /// Base MMIO port mapping.
   const PEEKPOKEBRIDGEMODULE_struct mmio_addrs;
@@ -83,8 +94,8 @@ private:
     return true;
   }
 
-  bool wait_on_ready(double timeout) {
-    return wait_on(mmio_addrs.READY, timeout);
+  bool wait_on_done(double timeout) {
+    return wait_on(mmio_addrs.DONE, timeout);
   }
 
   bool wait_on_stable_peeks(double timeout) {

@@ -28,7 +28,7 @@ void TestHarness::step(uint32_t n, bool blocking) {
   if (log) {
     std::cerr << "* STEP " << n << " -> " << t + n << " *" << std::endl;
   }
-  sim.take_steps(n, blocking);
+  peek_poke.step(n, blocking);
   t += n;
 }
 

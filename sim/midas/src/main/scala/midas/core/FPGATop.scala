@@ -339,8 +339,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // transformations can inject hardware synchronous to correct clock.
   HostClockSource.annotate(clock)
 
-  val master  = outer.master
-
   val ctrl = IO(Flipped(WidgetMMIO()))
   val mem = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
@@ -375,12 +373,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
     val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
-    bridgeMod match {
-      case peekPoke: PeekPokeBridgeModule =>
-        peekPoke.module.io.step <> master.module.io.step
-        master.module.io.done := peekPoke.module.io.idle
-      case _ =>
-    }
     bridgeMod.module.hPort.connectChannels2Port(bridgeAnno, simIo)
   })
 

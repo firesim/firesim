@@ -45,7 +45,7 @@ public:
       }
 
       auto &assert_endpoint = *assert_endpoints[0];
-      while (!sim.done()) {
+      while (!peek_poke.is_done()) {
         assert_endpoint.tick();
         if (assert_endpoint.terminate()) {
           assert_endpoint.resume();

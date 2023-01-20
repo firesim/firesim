@@ -15,7 +15,7 @@ public:
   void step_assume_continue(int count) {
     step(count, false);
     expected_cycle_at_bridge += count;
-    while (!sim.done()) {
+    while (!peek_poke.is_done()) {
       terminator.tick();
       assert(!terminator.terminate() && "Unexpected termination signaled.");
     }

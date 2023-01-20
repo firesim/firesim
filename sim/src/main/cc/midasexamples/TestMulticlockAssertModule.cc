@@ -23,7 +23,7 @@ public:
     poke("halfrate_cycle", 129);
 
     step(256, false);
-    while (!sim.done()) {
+    while (!peek_poke.is_done()) {
       for (auto &ep : assert_endpoints) {
         ep->tick();
         if (ep->terminate()) {

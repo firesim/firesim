@@ -16,18 +16,18 @@ firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
     custom_runtime_config: null
 # DOCREF END: Example HWDB Entry
 firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3:
-    agfi: agfi-0c7427323dc4e5a5b
+    agfi: agfi-0ba7b280b17e28c95
     deploy_triplet_override: null
     custom_runtime_config: null
 firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
-    agfi: agfi-0c546c4a268d17914
+    agfi: agfi-03abaafca020aefe0
     deploy_triplet_override: null
     custom_runtime_config: null
 firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3:
-    agfi: agfi-088f1ca75400ee1d4
+    agfi: agfi-0cd4af5a3cc4f7c18
     deploy_triplet_override: null
     custom_runtime_config: null
 firesim_supernode_rocket_singlecore_nic_l2_lbp:
-    agfi: agfi-00ef454202a525d3c
+    agfi: agfi-037c336192e0a4d26
     deploy_triplet_override: null
     custom_runtime_config: null

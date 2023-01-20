@@ -18,8 +18,6 @@ import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.SerializationUtils._
 
 class PeekPokeWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {
-  val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
-  val idle = Output(Bool())
 }
 
 case class PeekPokeKey(
@@ -51,8 +49,13 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val tCycle = genWideRORegInit(0.U(64.W), tCycleName, false)
     val tCycleAdvancing = WireInit(false.B)
 
-    // needs back pressure from reset queues
-    io.idle := cycleHorizon === 0.U
+    // Simulation control.
+    val step = Wire(Decoupled(UInt(p(CtrlNastiKey).dataBits.W)))
+    genAndAttachQueue(step, "STEP")
+    val done = Wire(Input(Bool()))
+    genRORegInit(done, "DONE", 0.U)
+
+    done := cycleHorizon === 0.U
 
     def genWideReg(name: String, field: Bits): Seq[UInt] = Seq.tabulate(
         (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
@@ -126,8 +129,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
     // Every output one token "ahead" (current cycle value available) <=> entire PeekPoke state "precisely" peekable
-    genRORegInit((io.idle +: outputPrecisePeekableFlags).reduce(_ && _), "PRECISE_PEEKABLE", 0.U)
-    genRORegInit(io.idle, "READY", 0.U)
+    genRORegInit((done +: outputPrecisePeekableFlags).reduce(_ && _), "PRECISE_PEEKABLE", 0.U)
 
     val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
     // tCycleWouldAdvance will be asserted if all inputs have been poked; but only increment
@@ -138,11 +140,11 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       tCycleAdvancing := true.B
     }
 
-    when (io.step.fire) {
-      cycleHorizon := io.step.bits
+    when (step.fire) {
+      cycleHorizon := step.bits
     }
     // Do not allow the block to be stepped further, unless it has gone idle
-    io.step.ready := io.idle
+    step.ready := done
 
     val crFile = genCRFile()
     // Now that we've bound registers, snoop the poke register addresses for writes

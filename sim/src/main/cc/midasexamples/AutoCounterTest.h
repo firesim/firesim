@@ -24,7 +24,7 @@ public:
 
   void run_and_collect(int cycles) {
     step(cycles, false);
-    while (!sim.done()) {
+    while (!peek_poke.is_done()) {
       for (auto &autocounter_endpoint : autocounter_endpoints) {
         autocounter_endpoint->tick();
       }

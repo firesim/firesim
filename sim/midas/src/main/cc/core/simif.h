@@ -53,21 +53,6 @@ public:
   virtual ~simif_t();
 
 public:
-  /**
-   * Returns true if the simulation is complete.
-   */
-  inline bool done() { return registry->get_widget<master_t>().is_done(); }
-
-  /**
-   * Advance the simulation a given number of steps.
-   */
-  inline void take_steps(size_t n, bool blocking) {
-    return registry->get_widget<master_t>().step(n, blocking);
-  }
-
-  // Host-platform interface. See simif_f1; simif_emul for implementation
-  // examples
-
   /** Bridge / Widget MMIO methods */
 
   /**
