@@ -14,7 +14,7 @@ import freechips.rocketchip.config.Parameters
 import midas.widgets._
 
 // Can't elaborate a top-level that is a blackbox, so wrap it
-class BlackBoxWrapper(mod: => BaseModule) extends MultiIOModule {
+class BlackBoxWrapper(mod: => BaseModule) extends Module {
   val testMod = Module(mod)
 }
 

@@ -28,7 +28,7 @@ class TriggerPredicatedPrintfDUT(printfPrefix: String = "SYNTHESIZED_PRINT ")
 
   val io = IO(new Bundle{})
   // An inner class to reduce namespace bloat in midasexamples package
-  class ChildModule extends MultiIOModule {
+  class ChildModule extends Module {
     val cycle = IO(Input(UInt(16.W)))
     val lfsr = LFSR(16)
 

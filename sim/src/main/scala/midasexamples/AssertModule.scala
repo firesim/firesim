@@ -60,7 +60,7 @@ class DualClockModule extends Module {
   modA.io.pred := io.d
 }
 
-class StimulusGenerator extends MultiIOModule {
+class StimulusGenerator extends Module {
   val input = IO(new Bundle {
     val cycle       = Input(UInt(16.W))
     val pulseLength = Input(UInt(4.W))
