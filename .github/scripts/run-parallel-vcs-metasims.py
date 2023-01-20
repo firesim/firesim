@@ -5,7 +5,6 @@ from pathlib import Path
 
 from fabric.api import prefix, run, settings, execute # type: ignore
 
-from common import manager_fsim_dir, set_fabric_firesim_pem
 from ci_variables import ci_env
 
 def run_parallel_metasim():
@@ -70,7 +69,7 @@ def run_parallel_metasim():
                     else:
                         print(f"Workload {workload} successful.")
 
-            run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/hello-world-localhost-vcs-metasim.yaml", "15m")
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/hello-world-localhost-vcs-metasim.yaml", "15m")
 
 if __name__ == "__main__":
     execute(run_parallel_metasim, hosts=["localhost"])
