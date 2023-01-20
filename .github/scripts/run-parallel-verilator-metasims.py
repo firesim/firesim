@@ -59,7 +59,6 @@ def run_parallel_metasim():
                     print(f"Workload {workload} successful.")
 
         run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/hello-world-localhost-verilator-metasim.yaml", "15m")
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/hello-world-localhost-vcs-metasim.yaml", "15m")
         run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/hello-world-awsec2-verilator-metasim.yaml", "15m")
 
 if __name__ == "__main__":
