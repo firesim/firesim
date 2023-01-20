@@ -17,6 +17,9 @@ lazy val commonSettings = Seq(
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   libraryDependencies += "edu.berkeley.cs" %% "chisel3" % chiselVersion,
   addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full),
+  // Scalafix
+  semanticdbEnabled := true,
+  semanticdbVersion := scalafixSemanticdb.revision,
   // ScalaDoc
   autoAPIMappings  := true,
   exportJars := true,

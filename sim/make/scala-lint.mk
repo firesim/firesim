@@ -26,7 +26,6 @@ scalafmtAll:
 .PHONY: scalaFixCheck
 scalaFixCheck:
 	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
-		scalafixEnable; \
 		firesim / scalafix --check; \
 		firesimLib / scalafix --check; \
 		midas / scalafix --check; \
@@ -36,7 +35,6 @@ scalaFixCheck:
 .PHONY: scalaFix
 scalaFix:
 	cd $(base_dir) && $(SBT) ";project {file:$(firesim_base_dir)}firesim; \
-		scalafixEnable; \
 		firesim / scalafix; \
 		firesimLib / scalafix; \
 		midas / scalafix; \
