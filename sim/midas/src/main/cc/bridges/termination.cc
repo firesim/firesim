@@ -1,14 +1,19 @@
 #include "termination.h"
+
+#include <cassert>
+
 #include <iostream>
 
-termination_t::termination_t(simif_t *sim,
+char termination_t::KIND;
+
+termination_t::termination_t(simif_t &sim,
                              const std::vector<std::string> &args,
                              const TERMINATIONBRIDGEMODULE_struct &mmio_addrs,
                              unsigned int num_messages,
                              unsigned int *is_err,
                              const char *const *msgs)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), num_messages(num_messages),
-      is_err(is_err), msgs(msgs) {
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs),
+      num_messages(num_messages), is_err(is_err), msgs(msgs) {
   // tick-rate to decide sampling rate of MMIOs per number of ticks
   std::string tick_rate_arg = std::string("+termination-bridge-tick-rate=");
   for (auto &arg : args) {

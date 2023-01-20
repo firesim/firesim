@@ -1,9 +1,14 @@
+
 #include "heartbeat.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 
-heartbeat_t::heartbeat_t(simif_t *sim, const std::vector<std::string> &args)
-    : bridge_driver_t(sim), sim(sim) {
+#include "core/simif.h"
+
+char heartbeat_t::KIND;
+
+heartbeat_t::heartbeat_t(simif_t &sim, const std::vector<std::string> &args)
+    : bridge_driver_t(sim, &KIND) {
   auto interval_arg = std::string("+heartbeat-polling-interval=");
   for (auto arg : args) {
     if (arg.find(interval_arg) == 0) {
@@ -24,7 +29,7 @@ heartbeat_t::heartbeat_t(simif_t *sim, const std::vector<std::string> &args)
 void heartbeat_t::tick() {
   if (trip_count == polling_interval) {
     trip_count = 0;
-    uint64_t current_cycle = sim->actual_tcycle();
+    uint64_t current_cycle = simif.actual_tcycle();
     has_timed_out |= current_cycle == last_cycle;
 
     time_t current_time;

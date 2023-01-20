@@ -3,6 +3,8 @@
 #ifndef __CLOCK_H
 #define __CLOCK_H
 
+#include "core/widget.h"
+
 #include <cstdint>
 
 class simif_t;
@@ -16,9 +18,12 @@ typedef struct CLOCKBRIDGEMODULE_struct {
   uint64_t tCycle_latch;
 } CLOCKBRIDGEMODULE_struct;
 
-class clockmodule_t final {
+class clockmodule_t final : public widget_t {
 public:
-  clockmodule_t(simif_t *sim, const CLOCKBRIDGEMODULE_struct &mmio_addrs);
+  /// The identifier for the bridge type.
+  static char KIND;
+
+  clockmodule_t(simif_t &simif, const CLOCKBRIDGEMODULE_struct &mmio_addrs);
 
   /**
    * Provides the current target cycle of the fastest clock.
@@ -34,7 +39,6 @@ public:
   uint64_t hcycle();
 
 private:
-  simif_t *sim;
   const CLOCKBRIDGEMODULE_struct mmio_addrs;
 };
 

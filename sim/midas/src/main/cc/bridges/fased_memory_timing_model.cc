@@ -50,14 +50,16 @@ void AddrRangeCounter::finish() {
   write(enable, 0);
 }
 
+char FASEDMemoryTimingModel::KIND;
+
 FASEDMemoryTimingModel::FASEDMemoryTimingModel(
-    simif_t *sim,
+    simif_t &simif,
     AddressMap addr_map,
     const std::vector<std::string> &args,
     std::string stats_file_name,
     size_t mem_size,
     std::string suffix)
-    : FpgaModel(sim, addr_map), mem_size(mem_size) {
+    : FpgaModel(&simif, addr_map), widget_t(simif, &KIND), mem_size(mem_size) {
 
   for (auto &arg : args) {
     if (arg.find("+mm_") == 0 && arg.find(suffix) != std::string::npos) {
@@ -104,19 +106,19 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
   stats_file << std::endl;
 
   if (addr_map.w_reg_exists("hostReadLatencyHist_enable")) {
-    histograms.push_back(Histogram(sim, addr_map, "hostReadLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "hostWriteLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "targetReadLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "targetWriteLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "ingressReadLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "ingressWriteLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "totalReadLatency"));
-    histograms.push_back(Histogram(sim, addr_map, "totalWriteLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "hostReadLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "hostWriteLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "targetReadLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "targetWriteLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "ingressReadLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "ingressWriteLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "totalReadLatency"));
+    histograms.push_back(Histogram(&simif, addr_map, "totalWriteLatency"));
   }
 
   if (addr_map.w_reg_exists("readRanges_enable")) {
-    rangectrs.push_back(AddrRangeCounter(sim, addr_map, "read"));
-    rangectrs.push_back(AddrRangeCounter(sim, addr_map, "write"));
+    rangectrs.push_back(AddrRangeCounter(&simif, addr_map, "read"));
+    rangectrs.push_back(AddrRangeCounter(&simif, addr_map, "write"));
   }
 }
 

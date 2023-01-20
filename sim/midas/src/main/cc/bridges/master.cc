@@ -2,15 +2,17 @@
 
 #include "core/simif.h"
 
-master_t::master_t(simif_t *sim, const SIMULATIONMASTER_struct &mmio_addrs)
-    : sim(sim), mmio_addrs(mmio_addrs) {}
+char master_t::KIND;
 
-bool master_t::is_init_done() { return sim->read(mmio_addrs.INIT_DONE); }
+master_t::master_t(simif_t &simif, const SIMULATIONMASTER_struct &mmio_addrs)
+    : widget_t(simif, &KIND), mmio_addrs(mmio_addrs) {}
 
-bool master_t::is_done() { return sim->read(mmio_addrs.DONE); }
+bool master_t::is_init_done() { return simif.read(mmio_addrs.INIT_DONE); }
+
+bool master_t::is_done() { return simif.read(mmio_addrs.DONE); }
 
 void master_t::step(size_t n, bool blocking) {
-  sim->write(mmio_addrs.STEP, n);
+  simif.write(mmio_addrs.STEP, n);
 
   if (blocking) {
     while (!is_done())

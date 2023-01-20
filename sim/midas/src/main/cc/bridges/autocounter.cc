@@ -1,12 +1,14 @@
 
 #include "autocounter.h"
 
+#include <cassert>
 #include <cinttypes>
+#include <climits>
+#include <cstdio>
+#include <cstring>
+
 #include <iostream>
-#include <limits.h>
 #include <regex>
-#include <stdio.h>
-#include <string.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -15,7 +17,9 @@
 
 #include <sys/mman.h>
 
-autocounter_t::autocounter_t(simif_t *sim,
+char autocounter_t::KIND;
+
+autocounter_t::autocounter_t(simif_t &sim,
                              const std::vector<std::string> &args,
                              const AUTOCOUNTERBRIDGEMODULE_struct &mmio_addrs,
                              AddressMap addr_map,
@@ -31,7 +35,7 @@ autocounter_t::autocounter_t(simif_t *sim,
                              const unsigned int clock_multiplier,
                              const unsigned int clock_divisor,
                              int autocounterno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), addr_map(addr_map),
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs), addr_map(addr_map),
       event_count(event_count),
       event_types(event_types, event_types + event_count),
       event_widths(event_widths, event_widths + event_count),

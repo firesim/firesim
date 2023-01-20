@@ -1,13 +1,15 @@
 
 #include "reset_pulse.h"
 
-reset_pulse_t::reset_pulse_t(simif_t *sim,
+char reset_pulse_t::KIND;
+
+reset_pulse_t::reset_pulse_t(simif_t &sim,
                              const std::vector<std::string> &args,
                              const RESETPULSEBRIDGEMODULE_struct &mmio_addrs,
                              unsigned int max_pulse_length,
                              unsigned int default_pulse_length,
                              int reset_index)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs),
       max_pulse_length(max_pulse_length),
       default_pulse_length(default_pulse_length) {
 

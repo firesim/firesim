@@ -63,7 +63,10 @@ struct blkdev_write_tracker {
 
 class blockdev_t : public bridge_driver_t {
 public:
-  blockdev_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  blockdev_t(simif_t &sim,
              const std::vector<std::string> &args,
              uint32_t num_trackers,
              uint32_t latency_bits,

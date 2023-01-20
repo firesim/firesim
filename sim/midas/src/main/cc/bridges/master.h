@@ -3,6 +3,8 @@
 #ifndef __MASTER_H
 #define __MASTER_H
 
+#include "core/widget.h"
+
 #include <cstdint>
 
 class simif_t;
@@ -13,9 +15,12 @@ typedef struct SIMULATIONMASTER_struct {
   uint64_t INIT_DONE;
 } SIMULATIONMASTER_struct;
 
-class master_t final {
+class master_t final : public widget_t {
 public:
-  master_t(simif_t *sim, const SIMULATIONMASTER_struct &mmio_addrs);
+  /// The identifier for the bridge type.
+  static char KIND;
+
+  master_t(simif_t &simif, const SIMULATIONMASTER_struct &mmio_addrs);
 
   /**
    * Check whether the device is initialised.
@@ -33,7 +38,6 @@ public:
   void step(size_t n, bool blocking);
 
 private:
-  simif_t *sim;
   const SIMULATIONMASTER_struct mmio_addrs;
 };
 

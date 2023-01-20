@@ -7,6 +7,9 @@
 
 #include <gmp.h>
 
+#include "core/config.h"
+#include "core/widget.h"
+
 class simif_t;
 
 typedef struct LOADMEMWIDGET_struct {
@@ -21,9 +24,12 @@ typedef struct LOADMEMWIDGET_struct {
   uint64_t R_DATA;
 } LOADMEMWIDGET_struct;
 
-class loadmem_t final {
+class loadmem_t final : public widget_t {
 public:
-  loadmem_t(simif_t *sim,
+  /// The identifier for the bridge type.
+  static char KIND;
+
+  loadmem_t(simif_t &simif,
             const LOADMEMWIDGET_struct &mmio_addrs,
             const AXI4Config &mem_conf,
             unsigned mem_data_chunk);
@@ -41,7 +47,6 @@ public:
   unsigned get_mem_data_chunk() const { return mem_data_chunk; }
 
 private:
-  simif_t *sim;
   const LOADMEMWIDGET_struct mmio_addrs;
   const AXI4Config mem_conf;
   const unsigned mem_data_chunk;

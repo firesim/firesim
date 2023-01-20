@@ -11,9 +11,11 @@ typedef struct RESETPULSEBRIDGEMODULE_struct {
 #include "core/bridge_driver.h"
 
 class reset_pulse_t : public bridge_driver_t {
-
 public:
-  reset_pulse_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  reset_pulse_t(simif_t &sim,
                 const std::vector<std::string> &args,
                 const RESETPULSEBRIDGEMODULE_struct &mmio_addrs,
                 unsigned int max_pulse_length,
@@ -25,6 +27,8 @@ public:
   virtual bool terminate() { return false; };
   virtual int exit_code() { return 0; };
   virtual void finish(){};
+
+  unsigned get_max_pulse_length() const { return max_pulse_length; }
 
 private:
   const RESETPULSEBRIDGEMODULE_struct mmio_addrs;

@@ -14,6 +14,8 @@
 #ifndef _WIN32
 #include <unistd.h>
 
+char uart_t::KIND;
+
 // name length limit for ptys
 #define SLAVENAMELEN 256
 
@@ -179,11 +181,11 @@ create_handler(const std::vector<std::string> &args, int uartno) {
   return std::make_unique<uart_pty_handler>(uartno);
 }
 
-uart_t::uart_t(simif_t *sim,
+uart_t::uart_t(simif_t &simif,
                const std::vector<std::string> &args,
                const UARTBRIDGEMODULE_struct &mmio_addrs,
                int uartno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
+    : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
       handler(create_handler(args, uartno)) {}
 
 uart_t::~uart_t() {}

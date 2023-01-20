@@ -23,7 +23,10 @@ typedef struct PLUSARGSBRIDGEMODULE_struct {
  */
 class plusargs_t : public bridge_driver_t {
 public:
-  plusargs_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  plusargs_t(simif_t &sim,
              const std::vector<std::string> &args,
              const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
              const std::string_view name,

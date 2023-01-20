@@ -36,8 +36,11 @@ public:
 
 class uart_t final : public bridge_driver_t {
 public:
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
   /// Creates a bridge which interacts with standard streams or PTY.
-  uart_t(simif_t *sim,
+  uart_t(simif_t &simif,
          const std::vector<std::string> &args,
          const UARTBRIDGEMODULE_struct &mmio_addrs,
          int uartno);

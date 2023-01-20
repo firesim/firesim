@@ -22,7 +22,10 @@ typedef struct AUTOCOUNTERBRIDGEMODULE_struct {
 
 class autocounter_t : public bridge_driver_t {
 public:
-  autocounter_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  autocounter_t(simif_t &sim,
                 const std::vector<std::string> &args,
                 const AUTOCOUNTERBRIDGEMODULE_struct &mmio_addrs,
                 AddressMap addr_map,

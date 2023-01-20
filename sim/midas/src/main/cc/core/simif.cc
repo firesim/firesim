@@ -9,12 +9,12 @@ create_simulation(const std::vector<std::string> &args, simif_t *simif);
 
 simif_t::simif_t(const TargetConfig &config,
                  const std::vector<std::string> &args)
-    : config(config), loadmem(this,
+    : config(config), loadmem(*this,
                               LOADMEMWIDGET_0_substruct_create,
                               config.mem,
                               LOADMEMWIDGET_0_mem_data_chunk),
-      clock(this, CLOCKBRIDGEMODULE_0_substruct_create),
-      master(this, SIMULATIONMASTER_0_substruct_create),
+      clock(*this, CLOCKBRIDGEMODULE_0_substruct_create),
+      master(*this, SIMULATIONMASTER_0_substruct_create),
       sim(create_simulation(args, this)) {
   for (auto &arg : args) {
     if (arg.find("+fastloadmem") == 0) {

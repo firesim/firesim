@@ -2,6 +2,8 @@
 #include <iomanip>
 #include <iostream>
 
+char plusargs_t::KIND;
+
 /**
  * The default value is passed here (via the FireSim-generated.const.h).
  * All macros should be passed to this constructor.
@@ -19,7 +21,7 @@
  * @param [in] slice_count The number of MMIO used to represent the value
  * @param [in] slice_addrs The MMIO addresses of the slices
  */
-plusargs_t::plusargs_t(simif_t *sim,
+plusargs_t::plusargs_t(simif_t &sim,
                        const std::vector<std::string> &args,
                        const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
                        const std::string_view name_orig,
@@ -27,7 +29,8 @@ plusargs_t::plusargs_t(simif_t *sim,
                        const uint32_t bit_width,
                        const uint32_t slice_count,
                        const uint32_t *slice_addrs)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), slice_count(slice_count),
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs),
+      slice_count(slice_count),
       slice_addrs(slice_addrs, slice_addrs + slice_count) {
   std::string_view name = name_orig;
 

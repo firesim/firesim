@@ -11,11 +11,12 @@
  *
  */
 
+#include "bridges/fpga_model.h"
+#include "core/widget.h"
+
 #include <fstream>
 #include <set>
 #include <unordered_map>
-
-#include "fpga_model.h"
 
 typedef struct FASEDMEMORYTIMINGMODEL_struct {
 } FASEDMEMORYTIMINGMODEL_struct;
@@ -65,9 +66,12 @@ private:
   std::string addr = name + "Hist_addr";
 };
 
-class FASEDMemoryTimingModel : public FpgaModel {
+class FASEDMemoryTimingModel : public FpgaModel, public widget_t {
 public:
-  FASEDMemoryTimingModel(simif_t *s,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  FASEDMemoryTimingModel(simif_t &simif,
                          AddressMap addr_map,
                          const std::vector<std::string> &args,
                          std::string stats_file_name,

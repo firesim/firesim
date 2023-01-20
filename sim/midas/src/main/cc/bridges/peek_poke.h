@@ -22,8 +22,11 @@ typedef struct PEEKPOKEBRIDGEMODULE_struct {
  * Care must be taken to avoid deadlock, since calls to step. must be blocking
  * for peeks and pokes to capture and drive values at the correct cycles.
  */
-class peek_poke_t final {
+class peek_poke_t final : public widget_t {
 public:
+  /// The identifier for the bridge type.
+  static char KIND;
+
   struct port {
     uint64_t address;
     uint32_t chunks;
@@ -31,7 +34,7 @@ public:
 
   using port_map = std::map<std::string, port, std::less<>>;
 
-  peek_poke_t(simif_t *simif,
+  peek_poke_t(simif_t &simif,
               const PEEKPOKEBRIDGEMODULE_struct &mmio_addrs,
               unsigned poke_size,
               const uint32_t *input_addrs,
@@ -60,10 +63,6 @@ public:
    */
   bool unstable() const { return req_unstable; }
 
-protected:
-  /// Simulation interface.
-  simif_t *simif;
-
 private:
   /// Base MMIO port mapping.
   const PEEKPOKEBRIDGEMODULE_struct mmio_addrs;
@@ -78,7 +77,7 @@ private:
 
   bool wait_on(size_t flag_addr, double timeout) {
     midas_time_t start = timestamp();
-    while (!simif->read(flag_addr))
+    while (!simif.read(flag_addr))
       if (diff_secs(timestamp(), start) > timeout)
         return false;
     return true;

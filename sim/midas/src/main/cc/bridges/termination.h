@@ -15,7 +15,10 @@ typedef struct TERMINATIONBRIDGEMODULE_struct {
 
 class termination_t : public bridge_driver_t {
 public:
-  termination_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  termination_t(simif_t &sim,
                 const std::vector<std::string> &args,
                 const TERMINATIONBRIDGEMODULE_struct &mmio_addrs,
                 unsigned int num_messages,

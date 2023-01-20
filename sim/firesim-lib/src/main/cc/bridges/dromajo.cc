@@ -15,10 +15,12 @@
 
 // #define DEBUG
 
+char dromajo_t::KIND;
+
 /**
  * Constructor for Dromajo
  */
-dromajo_t::dromajo_t(simif_t *sim,
+dromajo_t::dromajo_t(simif_t &sim,
                      StreamEngine &stream,
                      std::vector<std::string> &args,
                      const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
@@ -31,7 +33,7 @@ dromajo_t::dromajo_t(simif_t *sim,
                      int num_traces,
                      int stream_idx,
                      int stream_depth)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       config(config), stream_idx(stream_idx), stream_depth(stream_depth) {
   // setup max constants given from the RTL
   this->_num_traces = num_traces;
