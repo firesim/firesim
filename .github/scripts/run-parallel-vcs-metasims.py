@@ -33,6 +33,8 @@ def run_parallel_metasim():
 
                 run("./marshal -v install test/bare.yaml")
 
+            run("firesim managerinit --platform vitis")
+
             def run_w_timeout(workload: str, timeout: str):
                 """ Run workload with a specific timeout
 
