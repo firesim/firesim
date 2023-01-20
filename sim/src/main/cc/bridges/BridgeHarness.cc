@@ -1,11 +1,13 @@
 // See LICENSE for license details.
 
 #include "BridgeHarness.h"
-
 #include "bridges/blockdev.h"
+#include "bridges/clock.h"
 #include "bridges/tracerv.h"
 #include "bridges/uart.h"
 #include "core/bridge_driver.h"
+
+#include <limits>
 
 BridgeHarness::BridgeHarness(widget_registry_t &registry,
                              const std::vector<std::string> &args)
@@ -15,6 +17,10 @@ BridgeHarness::BridgeHarness(widget_registry_t &registry,
 BridgeHarness::~BridgeHarness() = default;
 
 int BridgeHarness::simulation_run() {
+  // Let the design run.
+  registry.get_widget<clockmodule_t>().credit(
+      std::numeric_limits<uint32_t>::max());
+
   // Reset the DUT.
   peek_poke.poke("reset", 1, /*blocking=*/true);
   peek_poke.step(1, /*blocking=*/true);

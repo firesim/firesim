@@ -12,6 +12,8 @@
 class simif_t;
 
 struct CLOCKBRIDGEMODULE_struct {
+  uint64_t HAS_CREDIT;
+  uint64_t CREDIT;
   uint64_t hCycle_0;
   uint64_t hCycle_1;
   uint64_t hCycle_latch;
@@ -42,6 +44,22 @@ public:
    * Returns the current host cycle as measured by a hardware counter
    */
   uint64_t hcycle();
+
+  /**
+   * Credit the bridge to deliver <credit> more base clock cycles.
+   *
+   * Note, if a total of N credits have been granted, no intermediate positive
+   * edges in other, out-of-phase clock domains will be simulated.  In other
+   * words, the simulation will halt after the Nth positive edge in the base
+   * clock domain + a delta in which combinational logic driven by that
+   * launching edge has been resolved.
+   */
+  void credit(uint32_t credits);
+
+  /**
+   * Check whether there are any credits remaining.
+   */
+  bool has_credits();
 
 private:
   const CLOCKBRIDGEMODULE_struct mmio_addrs;

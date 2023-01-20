@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef MIDAEXAMPLES_BRIDGEHARNESS_H
 #define MIDAEXAMPLES_BRIDGEHARNESS_H
 

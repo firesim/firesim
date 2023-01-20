@@ -67,6 +67,10 @@ fasedtests_top_t::fasedtests_top_t(simif_t &simif,
 }
 
 int fasedtests_top_t::simulation_run() {
+  auto &peek_poke = registry.get_widget<peek_poke_t>();
+  registry.get_widget<clockmodule_t>().credit(
+      std::numeric_limits<uint32_t>::max());
+
   // Run the simulation until the target reports it is finished by setting
   // the done output flag or the desired number of cycles completes.
   while (!done && !finished_scheduled_tasks()) {

@@ -55,11 +55,20 @@ firesim_top_t::firesim_top_t(simif_t &simif,
 }
 
 int firesim_top_t::simulation_run() {
+  auto &clock = registry.get_widget<clockmodule_t>();
   int exit_code = 0;
   while (!terminated && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
-    peek_poke.step(get_largest_stepsize(), false);
-    while (!peek_poke.is_done() && !terminated) {
+    clock.credit(get_largest_stepsize());
+    while (clock.has_credits() && !terminated) {
+      // The use of the peek-poke bridge is vestigial in full-core simulations.
+      // Until it is removed from Chipyard, it is left in the design and ticked
+      // on a periodic basis to avoid it blocking the target.
+      auto *peek_poke = registry.get_widget_opt<peek_poke_t>();
+      if (peek_poke && peek_poke->is_done()) {
+        peek_poke->step(std::numeric_limits<uint32_t>::max(), false);
+      }
+
       for (auto *bridge : registry.get_all_bridges()) {
         bridge->tick();
         if (bridge->terminate()) {

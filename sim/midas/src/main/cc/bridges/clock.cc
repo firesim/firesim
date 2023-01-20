@@ -26,3 +26,11 @@ uint64_t clockmodule_t::hcycle() {
   uint32_t cycle_h = simif.read(mmio_addrs.hCycle_1);
   return (((uint64_t)cycle_h) << 32) | cycle_l;
 }
+
+void clockmodule_t::credit(uint32_t credits) {
+  simif.write(mmio_addrs.CREDIT, credits);
+}
+
+bool clockmodule_t::has_credits() {
+  return simif.read(mmio_addrs.HAS_CREDIT) != 0;
+}

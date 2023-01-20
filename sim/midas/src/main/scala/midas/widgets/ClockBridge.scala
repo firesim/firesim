@@ -147,13 +147,33 @@ class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with Cloc
 class ClockBridgeModule(params: ClockParameters)(implicit p: Parameters)
     extends BridgeModule[ClockTokenVector] {
   val clockInfo = params.clocks
+  val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
+
   lazy val module = new BridgeModuleImp(this) {
+
   val io = IO(new WidgetIO())
   val hPort = IO(new ClockTokenVector(clockInfo.size))
-  val phaseRelationships = clockInfo map { cInfo => (cInfo.multiplier, cInfo.divisor) }
-  val clockTokenGen = Module(new RationalClockTokenGenerator(phaseRelationships))
-  hPort.clocks <> clockTokenGen.io
+  val clocks = hPort.clocks
 
+  // Register which reports the number of remaining tokens to the driver.
+  val credit = RegInit(0.U(64.W))
+  attach(credit =/= 0.U, "HAS_CREDIT", ReadOnly)
+
+  // Register used to set the credit. Increments to the credit count are always accepted.
+  val creditIn = Wire(Decoupled(UInt(ctrlWidth.W)))
+  genAndAttachQueue(creditIn, "CREDIT")
+  creditIn.ready := true.B
+
+  // Generate tokens when credit is non-zero.
+  val clockTokenGen = Module(new RationalClockTokenGenerator(phaseRelationships))
+  clockTokenGen.io.ready := credit =/= 0.U && clocks.ready
+  clocks.bits := clockTokenGen.io.bits
+  clocks.valid := clockTokenGen.io.valid
+
+  // When credit is provided, increment the counter. Decrement whenever the base clock is ticked.
+  credit := credit - Mux(clocks.fire && clocks.bits(0), 1.U, 0.U) + Mux(creditIn.fire, creditIn.bits, 0.U)
+
+  // Expose a host cycle counter to the driver.
   val hCycleName = "hCycle"
   val hCycle = genWideRORegInit(0.U(64.W), hCycleName)
   hCycle := hCycle + 1.U
@@ -166,9 +186,10 @@ class ClockBridgeModule(params: ClockParameters)(implicit p: Parameters)
                                             .sortBy(_._1)
                                             .last._2
 
-  when (hPort.clocks.fire && hPort.clocks.bits(fastestClockIdx)) {
+  when (clocks.fire && clocks.bits(fastestClockIdx)) {
     tCycleFastest := tCycleFastest + 1.U
   }
+
   genCRFile()
 
   override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {

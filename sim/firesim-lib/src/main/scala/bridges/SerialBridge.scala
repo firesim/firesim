@@ -100,7 +100,7 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
           "serial",
           Seq(
               CppBoolean(serialBridgeParams.memoryRegionNameOpt.isDefined),
-              UInt32(offsetConst)
+              Int64(offsetConst)
           ),
           hasLoadMem = true
       )

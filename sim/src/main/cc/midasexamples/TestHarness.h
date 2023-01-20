@@ -1,11 +1,13 @@
+// See LICENSE for license details.
+
 #ifndef MIDAEXAMPLES_TESTHARNESS_H
 #define MIDAEXAMPLES_TESTHARNESS_H
-
-#include <random>
 
 #include "bridges/peek_poke.h"
 #include "core/simif.h"
 #include "core/simulation.h"
+
+#include <random>
 
 /**
  * Base class for simple unit tests.
@@ -27,10 +29,7 @@ public:
    */
   virtual void run_test() = 0;
 
-  int simulation_run() override {
-    run_test();
-    return teardown();
-  }
+  int simulation_run() override;
 
   void step(uint32_t n, bool blocking = true);
   void target_reset(int pulse_length = 5);
