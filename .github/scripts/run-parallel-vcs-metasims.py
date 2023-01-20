@@ -25,14 +25,13 @@ def run_parallel_metasim():
                 run("./init-submodules.sh")
 
                 # build hello world baremetal test
-                with prefix('cd sw/firesim-software'):
-                    with settings(warn_only=True):
-                        rc = run("./marshal -v build test/bare.yaml &> bare.full.log").return_code
-                        if rc != 0:
-                            run("cat bare.full.log")
-                            raise Exception("Building test/bare.yaml failed to run")
+                with settings(warn_only=True):
+                    rc = run("./marshal -v build test/bare.yaml &> bare.full.log").return_code
+                    if rc != 0:
+                        run("cat bare.full.log")
+                        raise Exception("Building test/bare.yaml failed to run")
 
-                    run("./marshal -v install test/bare.yaml")
+                run("./marshal -v install test/bare.yaml")
 
             def run_w_timeout(workload: str, timeout: str):
                 """ Run workload with a specific timeout
