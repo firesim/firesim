@@ -1,22 +1,14 @@
 // See LICENSE for license details.
 
+#include "AssertTest.h"
 #include "TestHarness.h"
 
-#include "bridges/synthesized_assertions.h"
-
-class TestAssertModule final : public TestHarness {
+class TestAssertModule final : public AssertTest {
 public:
-  using TestHarness::TestHarness;
-
-  std::unique_ptr<synthesized_assertions_t> assert_endpoint;
-  void add_bridge_driver(synthesized_assertions_t *bridge) override {
-    assert(!assert_endpoint && "multiple bridges registered");
-    assert_endpoint.reset(bridge);
-  }
+  using AssertTest::AssertTest;
 
   void run_test() override {
     int assertions_thrown = 0;
-    assert_endpoint->init();
     poke("reset", 1);
     poke("io_a", 0);
     poke("io_b", 0);
@@ -48,10 +40,11 @@ public:
                                      std::to_string(test_case));
         break;
       }
+      auto &assert_endpoint = *assert_endpoints[0];
       while (!simif->done()) {
-        assert_endpoint->tick();
-        if (assert_endpoint->terminate()) {
-          assert_endpoint->resume();
+        assert_endpoint.tick();
+        if (assert_endpoint.terminate()) {
+          assert_endpoint.resume();
           assertions_thrown++;
         }
       }

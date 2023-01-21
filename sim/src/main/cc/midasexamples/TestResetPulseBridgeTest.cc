@@ -16,9 +16,9 @@ public:
 
   // Since we rely on an assertion firing to catch a failure, just run a
   // similation that is at least the length of the expected pulse.
-  void run_test() {
+  void run_test() override {
     rb->init();
-    step(2 * RESETPULSEBRIDGEMODULE_0_max_pulse_length);
+    step(2 * rb->get_max_pulse_length());
   }
 };
 

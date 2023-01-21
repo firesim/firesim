@@ -66,7 +66,8 @@ include make/xsim.mk
 include $(TARGET_PROJECT_MAKEFRAG)/metasim.mk
 
 include make/unittest.mk
-include make/scala.mk
+include make/scala-lint.mk
+include make/cpp-lint.mk
 
 #########################
 # Cleaning Recipes      #

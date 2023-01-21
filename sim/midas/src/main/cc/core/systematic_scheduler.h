@@ -2,6 +2,7 @@
 #ifndef __SYSTEMATIC_SCHEDULER_H
 #define __SYSTEMATIC_SCHEDULER_H
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 

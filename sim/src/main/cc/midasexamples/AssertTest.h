@@ -12,10 +12,13 @@ public:
 
   virtual ~AssertTest() {}
 
-  const std::vector<synthesized_assertions_t *> assert_endpoints =
-      get_bridges<synthesized_assertions_t>();
+  std::vector<std::unique_ptr<synthesized_assertions_t>> assert_endpoints;
+  void add_bridge_driver(synthesized_assertions_t *bridge) override {
+    assert_endpoints.emplace_back(bridge);
+  }
 
   void simulation_init() override {
+    TestHarness::simulation_init();
     for (auto &assert_endpoint : assert_endpoints) {
       assert_endpoint->init();
     }

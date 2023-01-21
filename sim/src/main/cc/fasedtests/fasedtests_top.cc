@@ -95,15 +95,8 @@ void fasedtests_top_t::simulation_init() {
   }
 
   // Test harness.
-  AddressMap fased_addr_map =
-      AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,
-                 (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_R_addrs,
-                 (const char *const *)FASEDMEMORYTIMINGMODEL_0_R_names,
-                 FASEDMEMORYTIMINGMODEL_0_W_num_registers,
-                 (const unsigned int *)FASEDMEMORYTIMINGMODEL_0_W_addrs,
-                 (const char *const *)FASEDMEMORYTIMINGMODEL_0_W_names);
-  add_bridge_driver(
-      new test_harness_bridge_t(*simif, *peek_poke, fased_addr_map, args));
+  add_bridge_driver(new test_harness_bridge_t(
+      *simif, *peek_poke, fpga_models[0]->get_addr_map(), args));
 
   for (auto &e : fpga_models) {
     e->init();

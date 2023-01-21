@@ -4,6 +4,7 @@
 #define __BRIDGES_BRIDGE_STREAM_DRIVER_H
 
 #include <memory>
+#include <vector>
 
 class FPGAToCPUStreamDriver {
 public:

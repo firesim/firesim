@@ -3,6 +3,8 @@
 #ifndef __WIDGET_H
 #define __WIDGET_H
 
+#include <cstdlib>
+
 class widget_t;
 class widget_registry_t;
 class simif_t;

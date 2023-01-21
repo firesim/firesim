@@ -139,3 +139,11 @@ test: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
 .PHONY: testOnly
 testOnly: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
 	cd $(base_dir) && java -cp $$(cat $(FIRESIM_TEST_CP)) org.scalatest.run $(SCALA_TEST)
+
+################################################################################
+# ScalaDoc
+################################################################################
+
+.PHONY: scaladoc
+scaladoc:
+	cd $(base_dir) && $(SBT) "project {file:$(firesim_base_dir)}firesim" "unidoc"
