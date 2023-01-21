@@ -22,7 +22,7 @@ char autocounter_t::KIND;
 autocounter_t::autocounter_t(simif_t &sim,
                              const std::vector<std::string> &args,
                              const AUTOCOUNTERBRIDGEMODULE_struct &mmio_addrs,
-                             AddressMap addr_map,
+                             AddressMap &&addr_map,
                              const uint32_t event_count,
                              const char *const *event_types,
                              const uint32_t *event_widths,
@@ -35,8 +35,8 @@ autocounter_t::autocounter_t(simif_t &sim,
                              const unsigned int clock_multiplier,
                              const unsigned int clock_divisor,
                              int autocounterno)
-    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs), addr_map(addr_map),
-      event_count(event_count),
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs),
+      addr_map(std::move(addr_map)), event_count(event_count),
       event_types(event_types, event_types + event_count),
       event_widths(event_widths, event_widths + event_count),
       accumulator_widths(accumulator_widths, accumulator_widths + event_count),
@@ -47,7 +47,7 @@ autocounter_t::autocounter_t(simif_t &sim,
       clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
 
   this->autocounter_filename = "AUTOCOUNTER";
-  const char *autocounter_filename_in = NULL;
+  const char *autocounter_filename_in = nullptr;
   std::string readrate_arg = std::string("+autocounter-readrate=");
   std::string filename_arg = std::string("+autocounter-filename-base=");
 
@@ -91,7 +91,7 @@ See the AutoCounter documentation on Reset And Timing Considerations for discuss
   emit_autocounter_header();
 }
 
-autocounter_t::~autocounter_t() {}
+autocounter_t::~autocounter_t() = default;
 
 void autocounter_t::init() {
   // Decrement the readrate by one to simplify the HW a little bit
@@ -101,21 +101,23 @@ void autocounter_t::init() {
   write(mmio_addrs.init_done, 1);
 }
 
-std::string
-replace_all(std::string str, const std::string &from, const std::string &to) {
+std::string replace_all(const std::string &str,
+                        const std::string &from,
+                        const std::string &to) {
+  std::string result = str;
   size_t start_pos = 0;
-  while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-    str.replace(start_pos, from.length(), to);
+  while ((start_pos = result.find(from, start_pos)) != std::string::npos) {
+    result.replace(start_pos, from.length(), to);
     start_pos += to.length();
   }
-  return str;
+  return result;
 }
 
 // Since description fields may have commas, quote them to prevent introducing
 // extra delimiters. Note, the standard way to escape double-quotes is to double
 // them (" -> "")
 // https://stackoverflow.com/questions/17808511/properly-escape-a-double-quote-in-csv
-std::string quote_csv_element(std::string str) {
+std::string quote_csv_element(const std::string &str) {
   std::string quoted = replace_all(str, "\"", "\"\"");
   return '"' + quoted + '"';
 }
@@ -123,7 +125,7 @@ std::string quote_csv_element(std::string str) {
 template <typename T>
 void write_header_array_to_csv(std::ofstream &f,
                                std::vector<T> &row,
-                               std::string first_column) {
+                               const std::string &first_column) {
   f << first_column << ",";
   assert(!row.empty());
   for (auto it = row.begin(); it != row.end(); it++) {

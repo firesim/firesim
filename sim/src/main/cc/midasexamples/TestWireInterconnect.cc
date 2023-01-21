@@ -6,7 +6,7 @@ class TestWireInterconnect final : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  void run_test() {
+  void run_test() override {
     gmp_randstate_t rstate;
     gmp_randinit_default(rstate);
     gmp_randseed_ui(rstate, 0u);

@@ -11,10 +11,10 @@ struct firesim_loadmem_t {
   size_t size;
 };
 
-class firesim_tsi_t : public testchip_tsi_t {
+class firesim_tsi_t final : public testchip_tsi_t {
 public:
   firesim_tsi_t(int argc, char **argv, bool has_loadmem);
-  ~firesim_tsi_t(){};
+  ~firesim_tsi_t() {}
 
   bool busy() { return is_busy; };
 

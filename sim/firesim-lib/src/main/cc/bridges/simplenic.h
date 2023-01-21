@@ -11,14 +11,14 @@
 // TODO this should not be hardcoded here.
 #define MAX_BANDWIDTH 200
 
-typedef struct SIMPLENICBRIDGEMODULE_struct {
+struct SIMPLENICBRIDGEMODULE_struct {
   uint64_t macaddr_upper;
   uint64_t macaddr_lower;
   uint64_t rlimit_settings;
   uint64_t pause_threshold;
   uint64_t pause_times;
   uint64_t done;
-} SIMPLENICBRIDGEMODULE_struct;
+};
 
 class simplenic_t : public streaming_bridge_driver_t {
 public:
@@ -30,17 +30,17 @@ public:
               const std::vector<std::string> &args,
               const SIMPLENICBRIDGEMODULE_struct &addrs,
               int simplenicno,
-              const int stream_to_cpu_idx,
-              const int stream_to_cpu_depth,
-              const int stream_from_cpu_idx,
-              const int stream_from_cpu_depth);
-  ~simplenic_t();
+              int stream_to_cpu_idx,
+              int stream_to_cpu_depth,
+              int stream_from_cpu_idx,
+              int stream_from_cpu_depth);
+  ~simplenic_t() override;
 
-  virtual void init();
-  virtual void tick();
-  virtual bool terminate() { return false; };
-  virtual int exit_code() { return 0; }
-  virtual void finish(){};
+  void init() override;
+  void tick() override;
+  bool terminate() override { return false; };
+  int exit_code() override { return 0; }
+  void finish() override {}
 
 private:
   const SIMPLENICBRIDGEMODULE_struct mmio_addrs;

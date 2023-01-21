@@ -8,15 +8,16 @@ static const char *blocking_fail =
 
 TestHarness::TestHarness(const std::vector<std::string> &args, simif_t *simif)
     : simulation_t(*simif, args), simif(simif) {
-  for (auto arg : args) {
+  for (const auto &arg : args) {
     if (arg.find("+seed=") == 0) {
-      random_seed = strtoll(arg.c_str() + 6, NULL, 10);
+      random_seed = strtoll(arg.c_str() + 6, nullptr, 10);
       std::cerr << "Using custom SEED: " << random_seed << std::endl;
     }
-    continue;
   }
   random.seed(random_seed);
 }
+
+TestHarness::~TestHarness() = default;
 
 void TestHarness::step(uint32_t n, bool blocking) {
   if (n == 0)
@@ -79,7 +80,7 @@ uint32_t TestHarness::peek(std::string_view id, bool blocking) {
 
 void TestHarness::poke(std::string_view id, mpz_t &value) {
   if (log) {
-    std::unique_ptr<char[]> v_str(mpz_get_str(NULL, 16, value));
+    std::unique_ptr<char[]> v_str(mpz_get_str(nullptr, 16, value));
     std::cerr << "* POKE " << simif->get_target_name() << "." << id << " <- 0x"
               << std::hex << v_str.get() << " *" << std::endl;
   }
@@ -89,7 +90,7 @@ void TestHarness::poke(std::string_view id, mpz_t &value) {
 void TestHarness::peek(std::string_view id, mpz_t &value) {
   peek_poke->peek(id, value);
   if (log) {
-    std::unique_ptr<char[]> v_str(mpz_get_str(NULL, 16, value));
+    std::unique_ptr<char[]> v_str(mpz_get_str(nullptr, 16, value));
     std::cerr << "* PEEK " << simif->get_target_name() << "." << id << " <- 0x"
               << std::hex << v_str.get() << " *" << std::endl;
   }
@@ -103,7 +104,7 @@ bool TestHarness::expect(std::string_view id, uint32_t expected) {
               << " -> 0x" << std::hex << value << " ?= 0x" << std::hex
               << expected << " : " << (pass ? "PASS" : "FAIL") << std::endl;
   }
-  return expect(pass, NULL);
+  return expect(pass, nullptr);
 }
 
 bool TestHarness::expect(bool nowPass, const char *s) {
@@ -125,15 +126,15 @@ bool TestHarness::expect(std::string_view id, mpz_t &expected) {
   peek(id, value);
   bool pass = mpz_cmp(value, expected) == 0;
   if (log) {
-    std::unique_ptr<char[]> v_str(mpz_get_str(NULL, 16, value));
-    std::unique_ptr<char[]> e_str(mpz_get_str(NULL, 16, expected));
+    std::unique_ptr<char[]> v_str(mpz_get_str(nullptr, 16, value));
+    std::unique_ptr<char[]> e_str(mpz_get_str(nullptr, 16, expected));
 
     std::cerr << "* EXPECT " << simif->get_target_name() << "." << id
               << " -> 0x" << v_str.get() << " ?= 0x" << e_str.get() << " : "
               << (pass ? "PASS" : "FAIL") << std::endl;
   }
   mpz_clear(value);
-  return expect(pass, NULL);
+  return expect(pass, nullptr);
 }
 
 int TestHarness::teardown() {

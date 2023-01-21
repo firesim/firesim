@@ -65,7 +65,7 @@ void peek_poke_t::poke(std::string_view id, mpz_t &value) {
 
   size_t size;
   uint32_t *data =
-      (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
+      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
   for (size_t i = 0; i < it->second.chunks; i++) {
     simif.write(it->second.address + (i * sizeof(uint32_t)),
                 i < size ? data[i] : 0);

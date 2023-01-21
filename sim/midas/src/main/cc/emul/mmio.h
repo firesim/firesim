@@ -55,7 +55,7 @@ public:
     dummy_data.resize(conf.beat_bytes());
   }
 
-  ~mmio_t() {}
+  ~mmio_t() = default;
 
   bool aw_valid() { return !aw.empty() && !write_inflight; }
   size_t aw_id() { return aw_valid() ? aw.front().id : 0; }

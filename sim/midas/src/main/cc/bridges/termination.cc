@@ -25,7 +25,7 @@ termination_t::termination_t(simif_t &sim,
   }
 }
 
-termination_t::~termination_t() {}
+termination_t::~termination_t() = default;
 
 void termination_t::tick() { // reads the MMIOs at tick-rate
   if (tick_counter == tick_rate) {

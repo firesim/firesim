@@ -90,25 +90,25 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
 CPUManagedStreamWidget::CPUManagedStreamWidget(CPUManagedStreamIO &io) {
 #ifdef CPUMANAGEDSTREAMENGINE_0_PRESENT
   for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_from_cpu_stream_count; i++) {
-    auto params = CPUManagedStreams::StreamParameters(
-        std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
-        CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]);
-
     cpu_to_fpga_streams.push_back(
-        std::make_unique<CPUManagedStreams::CPUToFPGADriver>(params, io));
+        std::make_unique<CPUManagedStreams::CPUToFPGADriver>(
+            CPUManagedStreams::StreamParameters(
+                std::string(CPUMANAGEDSTREAMENGINE_0_from_cpu_names[i]),
+                CPUMANAGEDSTREAMENGINE_0_from_cpu_dma_addrs[i],
+                CPUMANAGEDSTREAMENGINE_0_from_cpu_count_addrs[i],
+                CPUMANAGEDSTREAMENGINE_0_from_cpu_buffer_sizes[i]),
+            io));
   }
 
   for (size_t i = 0; i < CPUMANAGEDSTREAMENGINE_0_to_cpu_stream_count; i++) {
-    auto params = CPUManagedStreams::StreamParameters(
-        std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
-        CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
-        CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]);
-
     fpga_to_cpu_streams.push_back(
-        std::make_unique<CPUManagedStreams::FPGAToCPUDriver>(params, io));
+        std::make_unique<CPUManagedStreams::FPGAToCPUDriver>(
+            CPUManagedStreams::StreamParameters(
+                std::string(CPUMANAGEDSTREAMENGINE_0_to_cpu_names[i]),
+                CPUMANAGEDSTREAMENGINE_0_to_cpu_dma_addrs[i],
+                CPUMANAGEDSTREAMENGINE_0_to_cpu_count_addrs[i],
+                CPUMANAGEDSTREAMENGINE_0_to_cpu_buffer_sizes[i]),
+            io));
   }
 #endif // CPUMANAGEDSTREAMENGINE_0_PRESENT
 }

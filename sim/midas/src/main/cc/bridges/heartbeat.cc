@@ -10,7 +10,7 @@ char heartbeat_t::KIND;
 heartbeat_t::heartbeat_t(simif_t &sim, const std::vector<std::string> &args)
     : bridge_driver_t(sim, &KIND) {
   auto interval_arg = std::string("+heartbeat-polling-interval=");
-  for (auto arg : args) {
+  for (const auto &arg : args) {
     if (arg.find(interval_arg) == 0) {
       char *str = const_cast<char *>(arg.c_str()) + interval_arg.length();
       polling_interval = atol(str);

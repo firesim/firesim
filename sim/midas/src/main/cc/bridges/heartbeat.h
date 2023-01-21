@@ -21,11 +21,11 @@ public:
 
   heartbeat_t(simif_t &sim, const std::vector<std::string> &args);
 
-  virtual void init(){};
-  virtual void tick();
-  virtual bool terminate() { return has_timed_out; };
-  virtual int exit_code() { return (has_timed_out) ? 1 : 0; };
-  virtual void finish(){};
+  void init() override {}
+  void tick() override;
+  bool terminate() override { return has_timed_out; };
+  int exit_code() override { return (has_timed_out) ? 1 : 0; };
+  void finish() override {}
 
 private:
   std::ofstream log;

@@ -10,7 +10,7 @@ BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
                              simif_t *simif)
     : simulation_t(*simif, args), simif(simif) {}
 
-BridgeHarness::~BridgeHarness() {}
+BridgeHarness::~BridgeHarness() = default;
 
 void BridgeHarness::add_bridge_driver(bridge_driver_t *bridge) {
   bridges.emplace_back(bridge);

@@ -18,7 +18,8 @@ public:
                     int numerator,
                     int denominator)
       : harness(harness), field_address(field_address), numerator(numerator),
-        denominator(denominator){};
+        denominator(denominator) {}
+
   void expect_and_update(uint64_t poked_value) {
     harness->expect(field_address, fast_domain_reg_out);
     fast_domain_reg_out = slow_domain_reg;

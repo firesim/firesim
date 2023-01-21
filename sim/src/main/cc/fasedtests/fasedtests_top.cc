@@ -12,11 +12,11 @@
 class fasedtests_top_t : public systematic_scheduler_t, public simulation_t {
 public:
   fasedtests_top_t(const std::vector<std::string> &args, simif_t *simif);
-  ~fasedtests_top_t() {}
+  ~fasedtests_top_t() override = default;
 
-  void simulation_init();
-  void simulation_finish();
-  int simulation_run();
+  void simulation_init() override;
+  void simulation_finish() override;
+  int simulation_run() override;
 
 protected:
   void add_bridge_driver(bridge_driver_t *bridge) {

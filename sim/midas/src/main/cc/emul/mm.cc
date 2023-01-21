@@ -40,7 +40,7 @@ void mm_t::init(size_t sz, int lsz) {
   assert(word_size > 0 && lsz > 0);
   assert((lsz & (lsz - 1)) == 0 && lsz % word_size == 0);
   line_size = lsz;
-  data = (uint8_t *)mmap(NULL,
+  data = (uint8_t *)mmap(nullptr,
                          sz,
                          PROT_READ | PROT_WRITE,
                          MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE,

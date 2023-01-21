@@ -9,7 +9,7 @@ class AutoCounterTest : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  virtual ~AutoCounterTest() {}
+  ~AutoCounterTest() override = default;
 
   std::vector<std::unique_ptr<autocounter_t>> autocounter_endpoints;
   void add_bridge_driver(autocounter_t *bridge) override {

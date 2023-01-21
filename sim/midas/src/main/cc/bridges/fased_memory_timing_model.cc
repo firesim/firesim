@@ -54,11 +54,11 @@ char FASEDMemoryTimingModel::KIND;
 
 FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     simif_t &simif,
-    AddressMap addr_map,
+    const AddressMap &addr_map,
     const std::vector<std::string> &args,
-    std::string stats_file_name,
+    const std::string &stats_file_name,
     size_t mem_size,
-    std::string suffix)
+    const std::string &suffix)
     : FpgaModel(&simif, addr_map), widget_t(simif, &KIND), mem_size(mem_size) {
 
   for (auto &arg : args) {
@@ -87,7 +87,7 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     throw std::runtime_error("Could not open output file: " + stats_file_name);
   }
 
-  for (auto pair : addr_map.r_registers) {
+  for (const auto &pair : addr_map.r_registers) {
     // Only profile readable registers
     if (!addr_map.w_reg_exists((pair.first))) {
       // Iterate through substrings to exclude
@@ -106,19 +106,19 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
   stats_file << std::endl;
 
   if (addr_map.w_reg_exists("hostReadLatencyHist_enable")) {
-    histograms.push_back(Histogram(&simif, addr_map, "hostReadLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "hostWriteLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "targetReadLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "targetWriteLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "ingressReadLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "ingressWriteLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "totalReadLatency"));
-    histograms.push_back(Histogram(&simif, addr_map, "totalWriteLatency"));
+    histograms.emplace_back(&simif, addr_map, "hostReadLatency");
+    histograms.emplace_back(&simif, addr_map, "hostWriteLatency");
+    histograms.emplace_back(&simif, addr_map, "targetReadLatency");
+    histograms.emplace_back(&simif, addr_map, "targetWriteLatency");
+    histograms.emplace_back(&simif, addr_map, "ingressReadLatency");
+    histograms.emplace_back(&simif, addr_map, "ingressWriteLatency");
+    histograms.emplace_back(&simif, addr_map, "totalReadLatency");
+    histograms.emplace_back(&simif, addr_map, "totalWriteLatency");
   }
 
   if (addr_map.w_reg_exists("readRanges_enable")) {
-    rangectrs.push_back(AddrRangeCounter(&simif, addr_map, "read"));
-    rangectrs.push_back(AddrRangeCounter(&simif, addr_map, "write"));
+    rangectrs.emplace_back(&simif, addr_map, "read");
+    rangectrs.emplace_back(&simif, addr_map, "write");
   }
 }
 

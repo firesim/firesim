@@ -5,7 +5,7 @@
 
 #include "TestHarness.h"
 
-typedef std::vector<uint32_t> app_t;
+using app_t = std::vector<uint32_t>;
 
 class RiscTest : public TestHarness {
 public:
@@ -14,7 +14,7 @@ public:
   uint32_t expected = 4;
   uint64_t timeout = 10;
 
-  void run_test() {
+  void run_test() override {
     app_t app;
     init_app(app);
     target_reset();

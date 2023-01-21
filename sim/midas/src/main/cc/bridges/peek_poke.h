@@ -8,10 +8,10 @@
 
 #include "core/simif.h"
 
-typedef struct PEEKPOKEBRIDGEMODULE_struct {
+struct PEEKPOKEBRIDGEMODULE_struct {
   uint64_t PRECISE_PEEKABLE;
   uint64_t READY;
-} PEEKPOKEBRIDGEMODULE_struct;
+};
 
 /**
  * Bridge interfacing with the top-level ports of the DUT.
@@ -44,7 +44,7 @@ public:
               const uint32_t *output_addrs,
               const char *const *output_names,
               const uint32_t *output_chunks);
-  ~peek_poke_t() {}
+  ~peek_poke_t() override = default;
 
   void poke(std::string_view id, uint32_t value, bool blocking);
   void poke(std::string_view id, mpz_t &value);

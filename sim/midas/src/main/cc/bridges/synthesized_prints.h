@@ -19,14 +19,14 @@ struct print_vars_t {
   }
 };
 
-typedef struct PRINTBRIDGEMODULE_struct {
+struct PRINTBRIDGEMODULE_struct {
   uint64_t startCycleL;
   uint64_t startCycleH;
   uint64_t endCycleL;
   uint64_t endCycleH;
   uint64_t doneInit;
   uint64_t flushNarrowPacket;
-} PRINTBRIDGEMODULE_struct;
+};
 
 class synthesized_prints_t : public streaming_bridge_driver_t {
 public:
@@ -46,17 +46,17 @@ public:
                        const unsigned int *argument_widths,
                        unsigned int stream_idx,
                        unsigned int stream_depth,
-                       const char *const clock_domain_name,
-                       const unsigned int clock_multiplier,
-                       const unsigned int clock_divisor,
+                       const char *clock_domain_name,
+                       unsigned int clock_multiplier,
+                       unsigned int clock_divisor,
                        int printno);
-  ~synthesized_prints_t();
-  virtual void init();
-  virtual void tick();
-  virtual bool terminate() { return false; };
-  virtual int exit_code() { return 0; };
+  ~synthesized_prints_t() override;
+  void init() override;
+  void tick() override;
+  bool terminate() override { return false; };
+  int exit_code() override { return 0; };
   void flush();
-  void finish() { flush(); };
+  void finish() override { flush(); };
 
 private:
   const PRINTBRIDGEMODULE_struct mmio_addrs;

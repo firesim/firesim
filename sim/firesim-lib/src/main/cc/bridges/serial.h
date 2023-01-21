@@ -9,7 +9,7 @@ class loadmem_t;
 class firesim_tsi_t;
 class firesim_loadmem_t;
 
-typedef struct SERIALBRIDGEMODULE_struct {
+struct SERIALBRIDGEMODULE_struct {
   uint64_t in_bits;
   uint64_t in_valid;
   uint64_t in_ready;
@@ -19,7 +19,7 @@ typedef struct SERIALBRIDGEMODULE_struct {
   uint64_t step_size;
   uint64_t done;
   uint64_t start;
-} SERIALBRIDGEMODULE_struct;
+};
 
 class serial_t : public bridge_driver_t {
 public:
@@ -38,7 +38,7 @@ public:
   virtual void tick();
   virtual bool terminate();
   virtual int exit_code();
-  virtual void finish(){};
+  virtual void finish() {}
 
 private:
   const SERIALBRIDGEMODULE_struct mmio_addrs;

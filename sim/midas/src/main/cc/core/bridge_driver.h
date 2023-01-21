@@ -18,7 +18,8 @@ class bridge_driver_t : public widget_t {
 public:
   using widget_t::widget_t;
 
-  virtual ~bridge_driver_t(){};
+  ~bridge_driver_t() override = default;
+  ;
   // Initialize BridgeModule state -- this can't be done in the constructor
   // currently
   virtual void init() = 0;

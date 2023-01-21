@@ -19,7 +19,7 @@ class BridgeHarness : public simulation_t {
 public:
   BridgeHarness(const std::vector<std::string> &args, simif_t *simif);
 
-  virtual ~BridgeHarness();
+  ~BridgeHarness() override;
 
   void add_bridge_driver(bridge_driver_t *bridge);
   void add_bridge_driver(peek_poke_t *bridge);

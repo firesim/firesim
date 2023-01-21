@@ -12,7 +12,7 @@ public:
 
   int latency = 3;
 
-  void run_test() {
+  void run_test() override {
     target_reset();
     for (int i = 0; i < latency; i++) {
       poke("io_a_i0", i0[i]);

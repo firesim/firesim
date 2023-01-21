@@ -18,8 +18,7 @@
 #include <set>
 #include <unordered_map>
 
-typedef struct FASEDMEMORYTIMINGMODEL_struct {
-} FASEDMEMORYTIMINGMODEL_struct;
+struct FASEDMEMORYTIMINGMODEL_struct {};
 
 // MICRO HACKS.
 constexpr int HISTOGRAM_SIZE = 1024;
@@ -30,12 +29,14 @@ constexpr uint32_t RANGE_H_MASK = (1L << (RANGE_COUNT_SIZE - 32)) - 1;
 
 class AddrRangeCounter final : public FpgaModel {
 public:
-  AddrRangeCounter(simif_t *sim, AddressMap addr_map, std::string name)
-      : FpgaModel(sim, addr_map), name(name){};
+  AddrRangeCounter(simif_t *sim,
+                   const AddressMap &addr_map,
+                   const std::string &name)
+      : FpgaModel(sim, addr_map), name(name) {}
 
-  void init();
-  void profile() {}
-  void finish();
+  void init() override;
+  void profile() override {}
+  void finish() override;
 
   std::string name;
   uint64_t *range_bytes;
@@ -50,12 +51,12 @@ private:
 
 class Histogram final : public FpgaModel {
 public:
-  Histogram(simif_t *s, AddressMap addr_map, std::string name)
-      : FpgaModel(s, addr_map), name(name){};
+  Histogram(simif_t *s, const AddressMap &addr_map, const std::string &name)
+      : FpgaModel(s, addr_map), name(name) {}
 
-  void init();
-  void profile(){};
-  void finish();
+  void init() override;
+  void profile() override {}
+  void finish() override;
   std::string name;
   uint64_t latency[HISTOGRAM_SIZE];
 
@@ -72,14 +73,14 @@ public:
   static char KIND;
 
   FASEDMemoryTimingModel(simif_t &simif,
-                         AddressMap addr_map,
+                         const AddressMap &addr_map,
                          const std::vector<std::string> &args,
-                         std::string stats_file_name,
+                         const std::string &stats_file_name,
                          size_t mem_size,
-                         std::string suffix);
-  void init();
-  void profile();
-  void finish();
+                         const std::string &suffix);
+  void init() override;
+  void profile() override;
+  void finish() override;
 
 private:
   // Saves a map of register names to settings
@@ -112,7 +113,7 @@ private:
                                           "Ranges_enable",
                                           "numRanges"};
 
-  bool has_latency_histograms() { return histograms.size() > 0; };
+  bool has_latency_histograms() { return !histograms.empty(); };
   size_t mem_size;
   // By default, FASED requires that plus args for all timing model parameters
   // are passed in to prevent accidental misconfigurations (ex. when
