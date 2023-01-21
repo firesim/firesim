@@ -47,6 +47,13 @@ configUser = [
         # List of files to copy out of the image after running it. Files will
         # be flattened into results dir. [guest_src0, guest_src1, ...]
         'outputs',
+        # To indicate that a certain value associated with this key is only
+        # used for firesim.
+        'firesim',
+        # List of simulation outputs to copy after running firesim.
+        'simulation_outputs',
+        # List of simulation inputs to copy before running firesim.
+        'simulation_inputs',
         # Path to script to run on the guest every time it boots
         'run',
         # An inline command to run at startup (cannot be set along with 'run')
@@ -473,6 +480,12 @@ class Config(collections.abc.MutableMapping):
 
         if 'outputs' in self.cfg:
             self.cfg['outputs'] = [pathlib.Path(f) for f in self.cfg['outputs']]
+
+        if 'firesim' in self.cfg:
+            if 'simulation_outputs' in self.cfg['firesim']:
+                self.cfg['firesim']['simulation_outputs'] = [pathlib.Path(f) for f in self.cfg['firesim']['simulation_outputs']]
+            if 'simulation_inputs' in self.cfg['firesim']:
+                self.cfg['firesim']['simulation_inputs'] = [pathlib.Path(f) for f in self.cfg['firesim']['simulation_inputs']]
 
         if 'out-dir' in self.cfg:
             self.cfg['out-dir'] = wlutil.getOpt('image-dir') / self.cfg['out-dir']
