@@ -42,6 +42,6 @@ scalaFix:
 
 # These targets combines Scalafix and Scalafmt passes.
 # It's important to run Scalafix first so Scalafmt can cleanup whitespace issues
-.PHONY: scalaFixFmt scalaFixFmtCheck
-scalaFixFmt: scalaFix scalafmtAll
-scalaFixFmtCheck: scalaFixCheck scalafmtCheckAll
+.PHONY: scala-lint scala-lint-check
+scala-lint: scalaFix scalafmtAll
+scala-lint-check: scalaFixCheck scalafmtCheckAll

@@ -8,7 +8,7 @@ def run_scalafmt_check():
     """Runs scalafmtCheckAll on FireSim subprojects."""
 
     with cd(manager_fsim_dir), prefix('source env.sh'):
-        run("make -C sim scalaFixFmtCheck")
+        run("make -C sim scala-lint-check")
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
