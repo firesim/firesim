@@ -3,10 +3,15 @@
 #ifndef __UART_H
 #define __UART_H
 
+#include "bridges/serial_data.h"
+#include "core/bridge_driver.h"
+
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <signal.h>
-
-#include "serial.h"
+#include <string>
+#include <vector>
 
 /**
  * Structure carrying the addresses of all fixed MMIO ports.

@@ -2,27 +2,12 @@
 #ifndef __SERIAL_H
 #define __SERIAL_H
 
+#include "bridges/serial_data.h"
 #include "core/bridge_driver.h"
 
 class loadmem_t;
 class firesim_tsi_t;
 class firesim_loadmem_t;
-
-template <class T>
-struct serial_data_t {
-  struct {
-    T bits;
-    bool valid;
-    bool ready;
-    bool fire() { return valid && ready; }
-  } in;
-  struct {
-    T bits;
-    bool ready;
-    bool valid;
-    bool fire() { return valid && ready; }
-  } out;
-};
 
 typedef struct SERIALBRIDGEMODULE_struct {
   uint64_t in_bits;

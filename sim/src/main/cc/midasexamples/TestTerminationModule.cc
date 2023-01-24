@@ -30,9 +30,9 @@ public:
     int termination_code = random() % 8;
     lv_validinCycle = lv_validinCycle + validinCycle;
     lv_msginCycle = lv_msginCycle + msginCycle;
-    poke(io_validInCycle, lv_validinCycle);
-    poke(io_msgInCycle, lv_msginCycle);
-    poke(io_doneErrCode, termination_code);
+    poke("io_validInCycle", lv_validinCycle);
+    poke("io_msgInCycle", lv_msginCycle);
+    poke("io_doneErrCode", termination_code);
     step(reset_length);
     poke("reset", 0);
     if (termination_code % 2 != 0) {

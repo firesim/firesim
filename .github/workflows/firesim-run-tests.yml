@@ -380,8 +380,8 @@ jobs:
           cat /tmp/sphinx-err*.log
       - uses: ./.github/actions/job-end
 
-  clang-format:
-    name: clang-format
+  cpp-lint:
+    name: cpp-lint
     runs-on: ubuntu-20.04
     steps:
       # Clone the repository (shallow to save time).
@@ -391,11 +391,18 @@ jobs:
           fetch-depth: 2
           submodules: false
 
-      # Install clang-format
-      - name: Install clang-format
+      # Checkout chipyard submodules.
+      - name: Checkout chipyard
+        run: |
+          git submodule update --init target-design/chipyard
+          cd target-design/chipyard
+          git submodule update --init generators/testchipip
+
+      # Install clang linters
+      - name: Install Clang linters
         run: |
           sudo apt update
-          sudo apt install clang-format -y
+          sudo apt install clang-format clang-tidy-12 parallel -y
 
       # Run 'clang-format', comparing against the base commit hash.
       # If anything got reformatted, fail and output a patch.
@@ -414,3 +421,10 @@ jobs:
             git checkout .
             exit 1
           fi
+
+      # Run clang-tidy on the entire codebase. Error will be logged.
+      - name: Run clang-tidy
+        run: |
+          export FIRESIM_ENV_SOURCED=1
+          export FIRESIM_STANDALONE=1
+          make -C sim clang-tidy

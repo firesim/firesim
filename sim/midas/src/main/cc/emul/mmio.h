@@ -3,10 +3,12 @@
 #ifndef __MMIO_H
 #define __MMIO_H
 
+#include "core/config.h"
+
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <queue>
-#include <stddef.h>
-#include <stdint.h>
 #include <vector>
 
 struct mmio_req_addr_t {

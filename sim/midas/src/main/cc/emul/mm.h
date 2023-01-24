@@ -3,6 +3,8 @@
 #ifndef __EMUL_MM_H
 #define __EMUL_MM_H
 
+#include "core/config.h"
+
 #include <cstring>
 #include <queue>
 #include <stdint.h>

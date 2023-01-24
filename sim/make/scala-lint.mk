@@ -1,13 +1,6 @@
 # See LICENSE for license details.
 
 #########################
-# ScalaDoc              #
-#########################
-.PHONY: scaladoc
-scaladoc:
-	cd $(base_dir) && $(SBT) "project {file:$(firesim_base_dir)}firesim" "unidoc"
-
-#########################
 # Scalafmt              #
 #########################
 
@@ -28,3 +21,4 @@ scalafmtAll:
 		firesimLib / scalafmtAll; \
 		midas / scalafmtAll ; \
 		targetutils / scalafmtAll ;"
+

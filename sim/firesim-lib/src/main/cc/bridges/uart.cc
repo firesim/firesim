@@ -1,6 +1,8 @@
 // See LICENSE for license details
 
 #include "uart.h"
+#include "core/simif.h"
+
 #include <fcntl.h>
 #include <sys/stat.h>
 
