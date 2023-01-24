@@ -58,7 +58,7 @@ void loadmem_t::write_mem(size_t addr, mpz_t &value) {
   simif.write(mmio_addrs.W_LENGTH, 1);
   size_t size;
   uint32_t *data =
-      (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
+      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
   for (size_t i = 0; i < mem_data_chunk; i++) {
     simif.write(mmio_addrs.W_DATA, i < size ? data[i] : 0);
   }
@@ -76,7 +76,7 @@ void loadmem_t::write_mem_chunk(size_t addr, mpz_t &value, size_t bytes) {
   simif.write(mmio_addrs.W_LENGTH, num_beats);
   size_t size;
   uint32_t *data =
-      (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
+      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
   for (size_t i = 0; i < num_beats * mem_data_chunk; i++) {
     simif.write(mmio_addrs.W_DATA, i < size ? data[i] : 0);
   }

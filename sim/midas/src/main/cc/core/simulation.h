@@ -23,7 +23,7 @@ public:
   simulation_t(simif_t &sim, const std::vector<std::string> &args)
       : args(args), sim(sim) {}
 
-  virtual ~simulation_t() {}
+  virtual ~simulation_t() = default;
 
   /**
    * Simulation main loop.

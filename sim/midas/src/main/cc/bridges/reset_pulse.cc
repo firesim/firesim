@@ -17,7 +17,7 @@ reset_pulse_t::reset_pulse_t(simif_t &sim,
   std::string pulse_length_arg =
       std::string("+reset-pulse-length") + num_equals;
 
-  for (auto arg : args) {
+  for (const auto &arg : args) {
     if (arg.find(pulse_length_arg) == 0) {
       char *str = const_cast<char *>(arg.c_str()) + pulse_length_arg.length();
       this->pulse_length = atol(str);

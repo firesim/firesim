@@ -12,7 +12,7 @@
 
 class simif_t;
 
-typedef struct LOADMEMWIDGET_struct {
+struct LOADMEMWIDGET_struct {
   uint64_t W_ADDRESS_H;
   uint64_t W_ADDRESS_L;
   uint64_t W_LENGTH;
@@ -22,7 +22,7 @@ typedef struct LOADMEMWIDGET_struct {
   uint64_t R_ADDRESS_H;
   uint64_t R_ADDRESS_L;
   uint64_t R_DATA;
-} LOADMEMWIDGET_struct;
+};
 
 class loadmem_t final : public widget_t {
 public:

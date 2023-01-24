@@ -78,8 +78,6 @@ public:
       mpz_set_str(e0, "f00000000", 16);
       break;
     case 0x03:
-      mpz_set_str(e0, "f0000000000000000", 16);
-      break;
     case 0x04:
       // value passed from scala is too large, but would truncate to this value
       // scala expects the test to fail, as C++ should exit before this line

@@ -17,7 +17,7 @@ synthesized_assertions_t::synthesized_assertions_t(
   }
 }
 
-synthesized_assertions_t::~synthesized_assertions_t() {}
+synthesized_assertions_t::~synthesized_assertions_t() = default;
 
 void synthesized_assertions_t::init() {
   write(mmio_addrs.enable, this->enable);

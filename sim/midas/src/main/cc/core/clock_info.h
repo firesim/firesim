@@ -16,7 +16,7 @@ public:
             const unsigned int clock_multiplier,
             const unsigned int clock_divisor)
       : domain_name(clock_domain_name), multiplier(clock_multiplier),
-        divisor(clock_divisor){};
+        divisor(clock_divisor) {}
 
   const char *const domain_name;
   const unsigned int multiplier;

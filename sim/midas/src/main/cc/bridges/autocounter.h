@@ -10,7 +10,7 @@
 // This will need to be manually incremented by descretion.
 constexpr int autocounter_csv_format_version = 1;
 
-typedef struct AUTOCOUNTERBRIDGEMODULE_struct {
+struct AUTOCOUNTERBRIDGEMODULE_struct {
   uint64_t cycles_low;
   uint64_t cycles_high;
   uint64_t readrate_low;
@@ -18,7 +18,7 @@ typedef struct AUTOCOUNTERBRIDGEMODULE_struct {
   uint64_t init_done;
   uint64_t countersready;
   uint64_t readdone;
-} AUTOCOUNTERBRIDGEMODULE_struct;
+};
 
 class autocounter_t : public bridge_driver_t {
 public:
@@ -28,8 +28,8 @@ public:
   autocounter_t(simif_t &sim,
                 const std::vector<std::string> &args,
                 const AUTOCOUNTERBRIDGEMODULE_struct &mmio_addrs,
-                AddressMap addr_map,
-                const uint32_t event_count,
+                AddressMap &&addr_map,
+                uint32_t event_count,
                 const char *const *event_types,
                 const uint32_t *event_widths,
                 const uint32_t *accumulator_widths,
@@ -37,21 +37,21 @@ public:
                 const uint32_t *event_addr_lo,
                 const char *const *event_msgs,
                 const char *const *event_labels,
-                const char *const clock_domain_name,
-                const unsigned int clock_multiplier,
-                const unsigned int clock_divisor,
+                const char *clock_domain_name,
+                unsigned int clock_multiplier,
+                unsigned int clock_divisor,
                 int autocounterno);
-  ~autocounter_t();
+  ~autocounter_t() override;
 
-  virtual void init();
-  virtual void tick();
-  virtual bool terminate() { return false; }
-  virtual int exit_code() { return 0; }
-  virtual void finish();
+  void init() override;
+  void tick() override;
+  bool terminate() override { return false; }
+  int exit_code() override { return 0; }
+  void finish() override;
 
 private:
   const AUTOCOUNTERBRIDGEMODULE_struct mmio_addrs;
-  AddressMap addr_map;
+  const AddressMap addr_map;
   const uint32_t event_count;
   std::vector<std::string> event_types;
   std::vector<uint32_t> event_widths;

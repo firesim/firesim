@@ -12,7 +12,7 @@ struct callsite_t {
   uint64_t pc;
   std::string name;
 
-  callsite_t(uint64_t pc) : pc(pc){};
+  callsite_t(uint64_t pc) : pc(pc) {}
   callsite_t(uint64_t pc, const char *name) : pc(pc), name(std::string(name)) {}
 };
 

@@ -27,7 +27,7 @@ class TestHarness : public simulation_t {
 public:
   TestHarness(const std::vector<std::string> &args, simif_t *simif);
 
-  virtual ~TestHarness() {}
+  ~TestHarness() override;
 
   // Bridge creation callbacks.
 #define BRIDGE_HANDLER(ty, name)                                               \

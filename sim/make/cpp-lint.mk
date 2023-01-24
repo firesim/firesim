@@ -18,6 +18,8 @@ clang_tidy_files := $(shell \
 		| grep -v serial \
 		| grep -v fesvr \
 		| grep -v firesim_top \
+		| grep -v generated-src \
+		| grep -v output \
 )
 
 clang_tidy_flags :=\

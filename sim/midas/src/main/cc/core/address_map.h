@@ -21,14 +21,18 @@ public:
              const char *const *write_register_names);
 
   // Look up register address based on name
-  uint32_t r_addr(std::string name) { return r_registers[name]; };
-  uint32_t w_addr(std::string name) { return w_registers[name]; };
+  uint32_t r_addr(const std::string &name) const {
+    return r_registers.find(name)->second;
+  };
+  uint32_t w_addr(const std::string &name) const {
+    return w_registers.find(name)->second;
+  };
 
   // Check for register presence
-  bool r_reg_exists(std::string name) {
+  bool r_reg_exists(const std::string &name) const {
     return r_registers.find(name) != r_registers.end();
   };
-  bool w_reg_exists(std::string name) {
+  bool w_reg_exists(const std::string &name) const {
     return w_registers.find(name) != w_registers.end();
   };
 

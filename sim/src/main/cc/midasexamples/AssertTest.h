@@ -10,7 +10,7 @@ class AssertTest : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  virtual ~AssertTest() {}
+  ~AssertTest() override = default;
 
   std::vector<std::unique_ptr<synthesized_assertions_t>> assert_endpoints;
   void add_bridge_driver(synthesized_assertions_t *bridge) override {

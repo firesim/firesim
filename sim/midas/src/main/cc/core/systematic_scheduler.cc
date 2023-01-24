@@ -2,8 +2,9 @@
 #include "systematic_scheduler.h"
 #include <assert.h>
 
-void systematic_scheduler_t::register_task(task_t task, uint64_t first_cycle) {
-  tasks.push_back(task_tuple_t{task, first_cycle});
+void systematic_scheduler_t::register_task(task_t &&task,
+                                           uint64_t first_cycle) {
+  tasks.push_back(task_tuple_t{std::move(task), first_cycle});
 }
 
 uint32_t systematic_scheduler_t::get_largest_stepsize() {

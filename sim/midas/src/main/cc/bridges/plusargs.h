@@ -8,9 +8,9 @@
 #include <string.h>
 #include <string_view>
 
-typedef struct PLUSARGSBRIDGEMODULE_struct {
+struct PLUSARGSBRIDGEMODULE_struct {
   uint64_t initDone;
-} PLUSARGSBRIDGEMODULE_struct;
+};
 
 /**
  * @brief PlusArgs Bridge Driver class
@@ -29,18 +29,18 @@ public:
   plusargs_t(simif_t &sim,
              const std::vector<std::string> &args,
              const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
-             const std::string_view name,
+             std::string_view name,
              const char *default_value,
-             const uint32_t bit_width,
-             const uint32_t slice_count,
+             uint32_t bit_width,
+             uint32_t slice_count,
              const uint32_t *slice_addrs);
-  ~plusargs_t();
-  virtual void init();
-  virtual void tick(){};
-  virtual void finish(){};
-  virtual bool terminate() { return false; };
-  virtual int exit_code() { return 0; };
-  uint32_t slice_address(const uint32_t idx);
+  ~plusargs_t() override;
+  void init() override;
+  void tick() override {}
+  void finish() override {}
+  bool terminate() override { return false; };
+  int exit_code() override { return 0; };
+  uint32_t slice_address(uint32_t idx);
   bool get_overridden();
 
 private:

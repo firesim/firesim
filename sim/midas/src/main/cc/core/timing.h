@@ -7,7 +7,7 @@
 
 #define TIME_DIV_CONST 1000000.0
 
-typedef uint64_t midas_time_t;
+using midas_time_t = uint64_t;
 
 midas_time_t timestamp();
 

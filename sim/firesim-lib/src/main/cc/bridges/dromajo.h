@@ -7,9 +7,7 @@
 #include <string>
 #include <vector>
 
-typedef struct DROMAJOBRIDGEMODULE_struct {
-
-} DROMAJOBRIDGEMODULE_struct;
+struct DROMAJOBRIDGEMODULE_struct {};
 
 struct dromajo_config_t {
   const char *resetVector;

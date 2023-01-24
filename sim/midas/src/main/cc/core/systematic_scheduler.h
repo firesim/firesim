@@ -19,15 +19,15 @@ constexpr uint64_t MAX_MIDAS_STEP = (1LL << sizeof(uint32_t) * 8) - 1;
 // instantiator to ensure the simulator has advanced to the desired cycle
 // before running the scheduled task.
 class systematic_scheduler_t {
-  typedef std::function<uint64_t()> task_t;
-  typedef struct {
+  using task_t = std::function<uint64_t()>;
+  using task_tuple_t = struct {
     task_t task;
     uint64_t next_cycle;
-  } task_tuple_t;
+  };
 
 public:
   // Adds a new task to scheduler.
-  void register_task(task_t task, uint64_t first_cycle);
+  void register_task(task_t &&task, uint64_t first_cycle);
   // Calculates the next simulation step by taking the min of all
   // tasks.next_cycle
   uint32_t get_largest_stepsize();

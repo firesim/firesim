@@ -9,14 +9,14 @@
 
 class simif_t;
 
-typedef struct CLOCKBRIDGEMODULE_struct {
+struct CLOCKBRIDGEMODULE_struct {
   uint64_t hCycle_0;
   uint64_t hCycle_1;
   uint64_t hCycle_latch;
   uint64_t tCycle_0;
   uint64_t tCycle_1;
   uint64_t tCycle_latch;
-} CLOCKBRIDGEMODULE_struct;
+};
 
 class clockmodule_t final : public widget_t {
 public:

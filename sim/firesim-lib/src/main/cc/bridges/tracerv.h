@@ -10,7 +10,7 @@
 class TraceTracker;
 class ObjdumpedBinary;
 
-typedef struct TRACERVBRIDGEMODULE_struct {
+struct TRACERVBRIDGEMODULE_struct {
   uint64_t initDone;
   uint64_t traceEnable;
   uint64_t hostTriggerPCStartHigh;
@@ -26,7 +26,7 @@ typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t hostTriggerEndInst;
   uint64_t hostTriggerEndInstMask;
   uint64_t triggerSelector;
-} TRACERVBRIDGEMODULE_struct;
+};
 
 class tracerv_t : public streaming_bridge_driver_t {
 public:

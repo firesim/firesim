@@ -5,13 +5,13 @@
 
 #include "core/bridge_driver.h"
 
-typedef struct TERMINATIONBRIDGEMODULE_struct {
+struct TERMINATIONBRIDGEMODULE_struct {
   uint64_t out_counter_0;
   uint64_t out_counter_1;
   uint64_t out_counter_latch;
   uint64_t out_status;
   uint64_t out_terminationCode;
-} TERMINATIONBRIDGEMODULE_struct;
+};
 
 class termination_t : public bridge_driver_t {
 public:
@@ -24,12 +24,12 @@ public:
                 unsigned int num_messages,
                 unsigned int *is_err,
                 const char *const *msgs);
-  ~termination_t();
-  virtual void init(){};
-  virtual void tick();
-  virtual void finish(){};
-  virtual bool terminate() { return test_done; };
-  virtual int exit_code() { return fail; };
+  ~termination_t() override;
+  void init() override {}
+  void tick() override;
+  void finish() override {}
+  bool terminate() override { return test_done; };
+  int exit_code() override { return fail; };
   const char *exit_message();
   int cycle_count();
 

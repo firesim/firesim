@@ -42,13 +42,13 @@ blockdev_t::blockdev_t(simif_t &sim,
                        const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
                        int blkdevno)
     : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs) {
-  this->_file = NULL;
-  this->logfile = NULL;
+  this->_file = nullptr;
+  this->logfile = nullptr;
   _ntags = num_trackers;
   long size;
   long mem_filesize = 0;
 
-  const char *logname = NULL;
+  const char *logname = nullptr;
 
   // construct arg parsing strings here. We basically append the bridge_driver
   // number to each of these base strings, to get args like +blkdev0 etc.
@@ -101,7 +101,7 @@ blockdev_t::blockdev_t(simif_t &sim,
 
   if (logname) {
     logfile = fopen(logname, "w");
-    if (logfile == NULL) {
+    if (logfile == nullptr) {
       fprintf(stderr, "Could not open %s\n", logname);
       abort();
     }
@@ -124,7 +124,7 @@ blockdev_t::blockdev_t(simif_t &sim,
     }
   } else if (mem_filesize > 0) {
     size = mem_filesize << SECTOR_SHIFT;
-    _file = fmemopen(NULL, size, "r+");
+    _file = fmemopen(nullptr, size, "r+");
     if (!_file) {
       perror("fmemopen");
       abort();

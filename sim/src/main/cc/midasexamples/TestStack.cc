@@ -20,11 +20,11 @@ public:
       uint32_t dataOut = nextDataOut;
 
       if (enable) {
-        if (stack.size())
+        if (!stack.empty())
           nextDataOut = stack.top();
         if (push && stack.size() < size) {
           stack.push(dataIn);
-        } else if (pop && stack.size() > 0) {
+        } else if (pop && !stack.empty()) {
           stack.pop();
         }
       }

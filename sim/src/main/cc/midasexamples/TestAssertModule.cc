@@ -36,8 +36,8 @@ public:
         step(2048, false);
         break;
       default:
-        throw new std::runtime_error("No test case associated with id " +
-                                     std::to_string(test_case));
+        throw std::runtime_error("No test case associated with id " +
+                                 std::to_string(test_case));
         break;
       }
       auto &assert_endpoint = *assert_endpoints[0];

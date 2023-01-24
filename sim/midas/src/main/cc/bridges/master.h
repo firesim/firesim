@@ -9,11 +9,11 @@
 
 class simif_t;
 
-typedef struct SIMULATIONMASTER_struct {
+struct SIMULATIONMASTER_struct {
   uint64_t STEP;
   uint64_t DONE;
   uint64_t INIT_DONE;
-} SIMULATIONMASTER_struct;
+};
 
 class master_t final : public widget_t {
 public:

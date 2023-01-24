@@ -9,7 +9,7 @@ groundtest_t::groundtest_t(simif_t &sim,
                            const GROUNDTESTBRIDGEMODULE_struct &mmio_addrs)
     : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs) {}
 
-groundtest_t::~groundtest_t() {}
+groundtest_t::~groundtest_t() = default;
 
 void groundtest_t::init() {}
 

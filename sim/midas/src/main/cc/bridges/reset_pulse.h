@@ -1,10 +1,10 @@
 #ifndef __RESET_PULSE_H
 #define __RESET_PULSE_H
 
-typedef struct RESETPULSEBRIDGEMODULE_struct {
+struct RESETPULSEBRIDGEMODULE_struct {
   unsigned long pulseLength;
   unsigned long doneInit;
-} RESETPULSEBRIDGEMODULE_struct;
+};
 
 #include <vector>
 
@@ -22,11 +22,11 @@ public:
                 unsigned int default_pulse_length,
                 int reset_index);
   // Bridge interface
-  virtual void init();
-  virtual void tick(){};
-  virtual bool terminate() { return false; };
-  virtual int exit_code() { return 0; };
-  virtual void finish(){};
+  void init() override;
+  void tick() override {}
+  bool terminate() override { return false; };
+  int exit_code() override { return 0; };
+  void finish() override {}
 
   unsigned get_max_pulse_length() const { return max_pulse_length; }
 

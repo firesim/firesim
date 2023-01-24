@@ -7,7 +7,7 @@ char test_harness_bridge_t::KIND;
 test_harness_bridge_t::test_harness_bridge_t(
     simif_t &simif,
     peek_poke_t &peek_poke,
-    AddressMap addr_map,
+    const AddressMap &addr_map,
     const std::vector<std::string> &args)
     : bridge_driver_t(simif, &KIND), peek_poke(peek_poke), addr_map(addr_map) {
 

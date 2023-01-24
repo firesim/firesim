@@ -83,7 +83,7 @@ plusargs_t::plusargs_t(simif_t &sim,
   }
 }
 
-plusargs_t::~plusargs_t() {}
+plusargs_t::~plusargs_t() = default;
 
 /**
  * Check if the overriden value was driven.
@@ -114,7 +114,7 @@ uint32_t plusargs_t::slice_address(const uint32_t idx) {
 void plusargs_t::init() {
   size_t size;
   const uint32_t *const slice_value =
-      (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
+      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
 
   // write out slices that we have data for using mpz
   for (size_t i = 0; i < size; i++) {
