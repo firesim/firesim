@@ -8,13 +8,10 @@ class TestMulticlockAssertModule final : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  std::vector<std::unique_ptr<synthesized_assertions_t>> assert_endpoints;
-  void add_bridge_driver(synthesized_assertions_t *bridge) override {
-    assert_endpoints.emplace_back(bridge);
-  }
-
   void run_test() override {
     int assertions_thrown = 0;
+
+    const auto &assert_endpoints = get_bridges<synthesized_assertions_t>();
 
     for (auto &ep : assert_endpoints)
       ep->init();
@@ -24,8 +21,9 @@ public:
     poke("fullrate_cycle", 186);
     poke("halfrate_pulseLength", 2);
     poke("halfrate_cycle", 129);
+
     step(256, false);
-    while (!simif->done()) {
+    while (!sim.done()) {
       for (auto &ep : assert_endpoints) {
         ep->tick();
         if (ep->terminate()) {

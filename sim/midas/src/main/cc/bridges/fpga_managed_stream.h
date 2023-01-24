@@ -116,7 +116,9 @@ public:
    *
    * @param io Reference to a functor implementing the low-level IO.
    */
-  FPGAManagedStreamWidget(FPGAManagedStreamIO &io);
+  FPGAManagedStreamWidget(
+      FPGAManagedStreamIO &io,
+      std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
 };
 
 #endif // __BRIDGES_FPGA_MANAGED_STREAM_H

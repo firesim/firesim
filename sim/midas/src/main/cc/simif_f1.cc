@@ -56,8 +56,6 @@ simif_f1_t::simif_f1_t(const TargetConfig &config,
     slot_id = 0;
   }
   fpga_setup(slot_id);
-
-  managed_stream.reset(new CPUManagedStreamWidget(*this));
 }
 
 void simif_f1_t::check_rc(int rc, char *infostr) {

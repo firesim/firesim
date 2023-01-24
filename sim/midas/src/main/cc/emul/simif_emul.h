@@ -113,6 +113,20 @@ public:
    */
   std::vector<std::unique_ptr<mm_t>> slave;
 
+  /**
+   * Return the wrapper around the CPU-managed stream AXI interface.
+   */
+  CPUManagedStreamIO &get_cpu_managed_stream_io() override {
+    return *cpu_managed_stream_io;
+  }
+
+  /**
+   * Return the wrapper around the FPGA-managed stream AXI interface.
+   */
+  FPGAManagedStreamIO &get_fpga_managed_stream_io() override {
+    return *fpga_managed_stream_io;
+  }
+
 protected:
   // The maximum number of cycles the RTL simulator can advance before
   // switching back to the driver process. +fuzz-host-timings sets this to a

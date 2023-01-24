@@ -20,6 +20,7 @@ clang_tidy_files := $(shell \
 		| grep -v firesim_top \
 		| grep -v generated-src \
 		| grep -v output \
+		| grep -v constructor.h \
 )
 
 clang_tidy_flags :=\

@@ -7,9 +7,6 @@ public:
   using AutoCounterTest::AutoCounterTest;
 
   void run_test() override {
-    for (auto &autocounter_endpoint : autocounter_endpoints) {
-      autocounter_endpoint->init();
-    }
     poke("reset", 1);
     poke("io_a", 0);
     step(1);

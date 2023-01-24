@@ -46,8 +46,6 @@ simif_f1_xsim_t::simif_f1_xsim_t(const TargetConfig &config,
   driver_to_xsim_fd = open(driver_to_xsim, O_WRONLY);
   fprintf(stderr, "opening xsim to driver\n");
   xsim_to_driver_fd = open(xsim_to_driver, O_RDONLY);
-
-  managed_stream.reset(new CPUManagedStreamWidget(*this));
 }
 
 void simif_f1_xsim_t::check_rc(int rc, char *infostr) {}

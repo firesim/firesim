@@ -5,11 +5,6 @@
 
 #include "bridges/autocounter.h"
 #include "bridges/peek_poke.h"
-#include "bridges/plusargs.h"
-#include "bridges/reset_pulse.h"
-#include "bridges/synthesized_assertions.h"
-#include "bridges/synthesized_prints.h"
-#include "bridges/termination.h"
 #include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/simulation.h"
@@ -25,34 +20,14 @@
  */
 class TestHarness : public simulation_t {
 public:
-  TestHarness(const std::vector<std::string> &args, simif_t *simif);
+  TestHarness(const std::vector<std::string> &args, simif_t &sim);
 
   ~TestHarness() override;
-
-  // Bridge creation callbacks.
-#define BRIDGE_HANDLER(ty, name)                                               \
-  virtual void add_bridge_driver(ty *bridge) {                                 \
-    fprintf(stderr, "Cannot handle " name "\n");                               \
-    abort();                                                                   \
-  }
-
-  BRIDGE_HANDLER(autocounter_t, "Auto Counter bridge");
-  BRIDGE_HANDLER(synthesized_assertions_t, "Synthesized Assert bridge");
-  BRIDGE_HANDLER(synthesized_prints_t, "Synthesized Print bridge");
-  BRIDGE_HANDLER(reset_pulse_t, "Reset Pulse bridge");
-  BRIDGE_HANDLER(plusargs_t, "PlusArgs bridge");
-  BRIDGE_HANDLER(termination_t, "Termination bridge");
-
-  void add_bridge_driver(peek_poke_t *bridge) { peek_poke.reset(bridge); }
 
   /**
    * Test entry point to override.
    */
   virtual void run_test() = 0;
-
-  void simulation_init() override {
-#include "core/constructor.h"
-  }
 
   int simulation_run() override {
     run_test();
@@ -68,7 +43,7 @@ public:
   uint32_t peek(std::string_view id, bool blocking = true);
   void peek(std::string_view id, mpz_t &value);
   uint32_t sample_value(std::string_view id) {
-    return peek_poke->sample_value(id);
+    return peek_poke.sample_value(id);
   }
 
   /**
@@ -83,15 +58,28 @@ public:
 
   int teardown();
 
+  /**
+   * Convenience method to get all bridges from the registry.
+   */
+  template <typename T>
+  std::vector<T *> get_bridges() {
+    return sim.get_registry().get_bridges<T>();
+  }
+
+  /**
+   * Convenience method to get a single bridge from the registry.
+   */
+  template <typename T>
+  T &get_bridge() {
+    return sim.get_registry().get_widget<T>();
+  }
+
 protected:
-  simif_t *simif;
+  peek_poke_t &peek_poke;
 
   /// Random number generator for tests, using a fixed default seed.
   uint64_t random_seed = 0;
   std::mt19937_64 random;
-
-private:
-  std::unique_ptr<peek_poke_t> peek_poke;
 
   bool pass = true;
   bool log = true;
@@ -102,7 +90,7 @@ private:
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
   std::unique_ptr<simulation_t> create_simulation(                             \
-      const std::vector<std::string> &args, simif_t *simif) {                  \
-    return std::make_unique<CLASS_NAME>(args, simif);                          \
+      const std::vector<std::string> &args, simif_t &sim) {                    \
+    return std::make_unique<CLASS_NAME>(args, sim);                            \
   }
 #endif // MIDAEXAMPLES_TESTHARNESS_H
