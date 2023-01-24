@@ -40,7 +40,7 @@ scalaFix:
 		midas / scalafix; \
 		targetutils / scalafix; "
 
-# These targets combines Scalafix and Scalafmt passes.
+# These targets combine Scalafix and Scalafmt passes.
 # It's important to run Scalafix first so Scalafmt can cleanup whitespace issues
 .PHONY: scala-lint scala-lint-check
 scala-lint: scalaFix scalafmtAll
