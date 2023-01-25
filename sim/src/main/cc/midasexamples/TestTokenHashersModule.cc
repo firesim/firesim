@@ -1,19 +1,20 @@
 // See LICENSE for license details.
 
+#include "TestHarness.h"
+#include "bridges/plusargs.h"
+
 #include <iomanip>
 #include <iostream>
 #include <string_view>
 
-#include "TestHarness.h"
-#include "bridges/plusargs.h"
-
 /**
- * @brief PlusArgs Bridge Driver Test
+ * @brief Token Hashers Bridge Driver Test
  *
- * This test parses `+plusargs_test_key` (given by TutorialSuite.scala)
+ * This test copies the cramework from PlusArgsModule.h
+ * parses `+plusargs_test_key` (given by TutorialSuite.scala)
  * and asserts for the correct values
  */
-class TestPlusArgsModule : public TestHarness {
+class TestTokenHashersModule : public TestHarness {
 private:
   /**
    * Find the `+plusargs_test_key` and set the appropriate member variables
@@ -36,19 +37,21 @@ private:
   }
 
 public:
-  plusargs_t &plusargsinator;
+  std::unique_ptr<plusargs_t> plusargsinator;
+  void add_bridge_driver(plusargs_t *bridge) override {
+    assert(!plusargsinator && "multiple bridges registered");
+    plusargsinator.reset(bridge);
+  }
 
   /**
    * Constructor.
    *
-   * @param [in] registry Reference to the widget registry holding bridges.
-   * @param [in] args The argument list from main
+   * @param [in] argc The standard argc from main()
+   * @param [in] argv The standard argv from main()
    */
-  TestPlusArgsModule(widget_registry_t &registry,
-                     const std::vector<std::string> &args,
-                     std::string_view target_name)
-      : TestHarness(registry, args, target_name),
-        plusargsinator(get_bridge<plusargs_t>()) {
+  TestTokenHashersModule(const std::vector<std::string> &args, simif_t *simif)
+      : TestHarness(args, simif) {
+
     parse_key(args);
   }
 
@@ -79,6 +82,8 @@ public:
       mpz_set_str(e0, "f00000000", 16);
       break;
     case 0x03:
+      mpz_set_str(e0, "f0000000000000000", 16);
+      break;
     case 0x04:
       // value passed from scala is too large, but would truncate to this value
       // scala expects the test to fail, as C++ should exit before this line
@@ -105,32 +110,60 @@ public:
   }
 
   /**
+   * Call initial set_params.
+   * @return the number of loops the main for loop should execute
+   */
+  int choose_params() {
+    int loops = 16;
+    if (!found_key) {
+      return loops; // bail if no key was passed. run no assertions
+    }
+    switch (test_key) {
+    case 0x00:
+      // token_hashers->set_params(0, 0);
+      loops = 32;
+      break;
+    default:
+    case -1:
+      std::cerr << "unknown test_key " << test_key << "\n";
+      exit(1);
+      break;
+    }
+
+    return loops;
+  }
+
+  /**
    * Run. Check our assertions before the first step, as well as 7 more times.
    * These extra assertion make sure that the value does not change or glitch.
    */
   void run_test() override {
+
     if (!found_key) {
       std::cout << "No test key found, will not assert\n";
     }
 
-    target_reset();
+    // token_hashers->set_params(0,0);
+    const int loops = choose_params();
 
-    // PLUSARGSBRIDGEMODULE_0_substruct_create;
-    // auto pa = PLUSARGSBRIDGEMODULE_0_substruct;
+    // for(int i = 0; i < )
 
     plusargsinator->init();
 
     target_reset();
 
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < loops; i++) {
       // validate before first tick and for a few after (b/c of the loop)
-      validate();
+      // validate();
 
       step(1);
     }
 
     // token_hashers->get();
     // token_hashers->print();
+    // std::cout << token_hashers->get_csv_string();
+
+    // token_hashers->write_csv_file("test-run.csv");
   }
 
 private:
@@ -138,4 +171,4 @@ private:
   int test_key = -1;
 };
 
-TEST_MAIN(TestPlusArgsModule)
+TEST_MAIN(TestTokenHashersModule)

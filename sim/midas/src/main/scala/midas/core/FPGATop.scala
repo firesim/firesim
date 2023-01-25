@@ -13,6 +13,7 @@ import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 
 import scala.collection.immutable.ListMap
+import CppGenerationUtils._
 
 /** The following [[Field]] s capture the parameters of the four AXI4 bus types presented to a simulator (in
   * [[FPGATop]]). A [[PlatformShim]] is free to adapt these widths, apply address offsets, etc..., but the values set
@@ -126,6 +127,12 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val bridgeAnnos                                                                              = p(SimWrapperKey).annotations.collect { case ba: BridgeIOAnnotation => ba }
   val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
     ListMap((bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget))): _*)
+  val hashMaster: Option[TokenHashMaster] = if(p(InsertTokenHashersKey)) {
+    Some(addWidget(new TokenHashMaster))
+  } else {
+    None
+  }
+
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
   // according to their memoryRegionName. Requested addresses will be unified
@@ -363,9 +370,68 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 }
 
 class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(outer) {
+
+  def insertTokenHashers(hashSb: StringBuilder): Unit = {
+    hashSb.append(genConstStatic("TOKENHASH_COUNT", UInt32(hashName.length)))
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_BRIDGENAMES",
+        hashBridgeName.map(CStrLit(_))
+      )
+    )
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_NAMES",
+        hashName.map(CStrLit(_))
+      )
+    )
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_OUTPUTS",
+        hashOutput.map(UInt32(_))
+      )
+    )
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_QUEUEHEADS",
+        hashQueueHead.map(UInt32(_))
+      )
+    )
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_QUEUEOCCUPANCIES",
+        hashQueueOccupancy.map(UInt32(_))
+      )
+    )
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_TOKENCOUNTS0",
+        hashtokenCount0.map(UInt32(_))
+      )
+    )
+
+    hashSb.append(
+      genArray(
+        "TOKENHASH_TOKENCOUNTS1",
+        hashtokenCount1.map(UInt32(_))
+      )
+    )
+
+    Unit
+  }
+
   // Mark the host clock so that ILA wiring and user-registered host
   // transformations can inject hardware synchronous to correct clock.
   HostClockSource.annotate(clock)
+
+  val master  = outer.master
+  val hashMaster  = outer.hashMaster
 
   val ctrl = IO(Flipped(WidgetMMIO()))
   val mem  = IO(Vec(outer.memAXI4Nodes.length, AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
@@ -400,13 +466,56 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val sim   = Module(new SimWrapper(p(SimWrapperKey)))
   val simIo = sim.channelPorts
 
+  val hashSb: StringBuilder = new StringBuilder()
+  val hashBridgeName     = mutable.ArrayBuffer[String]()
+  val hashName           = mutable.ArrayBuffer[String]()
+  val hashOutput         = mutable.ArrayBuffer[Int]()
+  val hashQueueHead      = mutable.ArrayBuffer[Int]()
+  val hashQueueOccupancy = mutable.ArrayBuffer[Int]()
+  val hashtokenCount0    = mutable.ArrayBuffer[Int]()
+  val hashtokenCount1    = mutable.ArrayBuffer[Int]()
+
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
     val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
     bridgeMod.module.hPort.connectChannels2Port(bridgeAnno, simIo)
+
+
+    val base = outer.getBaseAddr(bridgeMod)
+
+    for (meta <- bridgeMod.module.hashRecord) {
+      val mOffset = meta.offset(base)
+      hashBridgeName += mOffset.bridgeName
+      hashName += mOffset.name
+      if(mOffset.output) {
+        hashOutput += 1
+       } else {
+        hashOutput += 0
+      }
+      
+      hashQueueHead += mOffset.queueHead.toInt
+      hashQueueOccupancy += mOffset.queueOccupancy.toInt
+      hashtokenCount0 += mOffset.tokenCount0.toInt
+      hashtokenCount1 += mOffset.tokenCount1.toInt
+    }
+
+    hashMaster match {
+      case Some(hm) => {
+        // Connect "hasher config io" from master to all bridges
+        bridgeMod.module.tokenHasherControlIO.triggerDelay := hm.module.io.triggerDelay
+        bridgeMod.module.tokenHasherControlIO.triggerPeriod := hm.module.io.triggerPeriod
+      }
+      case None => {}
+    }
+
   })
 
-  outer.printStreamSummary(outer.toCPUStreamParams, "Bridge Streams To CPU:")
+  hashMaster match {
+    case Some(hm) => insertTokenHashers(hashSb)
+    case None => {}
+  }
+
+  outer.printStreamSummary(outer.toCPUStreamParams,   "Bridge Streams To CPU:")
   outer.printStreamSummary(outer.fromCPUStreamParams, "Bridge Streams From CPU:")
 
   outer.streamingEngine.map { streamingEngine =>
@@ -442,6 +551,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val confFPGAManaged = fpga_managed_axi4.map(m => (m.params.idBits, m.params.addrBits, m.params.dataBits))
 
   def genHeader(sb: StringBuilder, target: String)(implicit p: Parameters) = {
+    sb.append(hashSb)
     outer.genHeader(sb)
 
     sb.append("#ifdef GET_METASIM_INTERFACE_CONFIG\n")

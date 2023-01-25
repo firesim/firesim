@@ -6,7 +6,7 @@ import midas.core.{HostReadyValid, TargetChannelIO}
 import midas.core.SimUtils
 
 import chisel3._
-import chisel3.util.ReadyValidIO
+import chisel3.util.{ReadyValidIO, Decoupled, DecoupledIO, Cat}
 
 import freechips.rocketchip.util.{DecoupledHelper}
 
@@ -34,6 +34,8 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
   val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
 
   override def cloneType: this.type = new HostPortIO(targetPortProto).asInstanceOf[this.type]
+
+  println("HOSTPORTIO OOOOOOOOOOOOOO")
 
   private[midas] def getClock(): Clock = {
     val allTargetClocks = SimUtils.findClocks(targetPortProto)
@@ -63,6 +65,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
   lazy val name2ReadyValid = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }):_*)
 
   def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
+    println("CONNECTCHANNELS2PORT")
     val local2globalName = bridgeAnno.channelMapping.toMap
     val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
 
@@ -165,6 +168,54 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
         ready = field.ready.toNamed.toTarget
       )
     })
+  }
+
+  def sanatizeName(str: String) = {
+    str.replace("(","_").replace(")","").replace(" ","").replace(".","_").replace(":","").replace("[","").replace("]","").replace("<","_").replace(">","_")
+  }
+
+  def getOutputChannelPorts() = {
+
+    val flt = FlattenData(hBits)
+
+    // fromHost is output
+    // toHost is input
+    
+    // putting :Bits here should be removed
+    val toBeCatOutput = flt.collect({case (field: Bits, ActualDirection.Output) => {
+      field
+    }})
+
+    val wasCatOutput = Cat(toBeCatOutput)
+
+
+    val decOutput = Wire(Output(new DecoupledIO(wasCatOutput.cloneType)))
+    decOutput.ready := fromHost.hReady
+    decOutput.valid := fromHost.hValid
+    decOutput.bits := wasCatOutput
+    Seq( ("Output", decOutput))
+  }
+  
+  def getInputChannelPorts() = {
+
+    val flt = FlattenData(hBits)
+
+    // fromHost is output
+    // toHost is input
+
+    // putting :Bits here should be removed
+    val toBeCatInput = flt.collect({case (field: Bits, ActualDirection.Input) => {
+      field
+    }})
+
+    val wasCatInput = Cat(toBeCatInput)
+
+
+    val decInput = Wire(Output(new DecoupledIO(wasCatInput.cloneType)))
+    decInput.ready := toHost.hReady
+    decInput.valid := toHost.hValid
+    decInput.bits := wasCatInput
+    Seq( ("Input", decInput))
   }
 }
 

@@ -489,3 +489,62 @@ object BRAMQueue {
     q.io.deq
   }
 }
+
+/** Instantiate an XORHash32. Each valid data will be hashed into the lfsr and a new result will be generated
+  *
+  * @param data
+  *   Input data to be hashed
+  *
+  * @param valid
+  *   A new hash will be generaed each valid clock cycle
+  *
+  * @param initial
+  *   The initial value of the lfsr
+  */
+object XORHash32 {
+  // The input is broken up into slices of width 32.
+  val hashWidth = 32
+
+  def foldInput(data: Data): UInt = {
+    val dataWidth = data.getWidth
+
+    // divide with a ceiling round, to get the number of slices
+    val sliceCount = (dataWidth + hashWidth - 1) / hashWidth
+
+    // calculate verilog style ranges (31 downto 0) for each of
+    // the slices. Apply to data and get a Seq of the sliced input
+    val slicedInput = Seq.tabulate(sliceCount)(x => {
+      val width = math.min(dataWidth - (x * hashWidth), hashWidth)
+      val start = x * hashWidth
+      val end   = x * hashWidth + width - 1
+      data.asUInt()(end, start)
+    })
+
+    // XOR all of the input slices ontop of eachother to get a single
+    // 32 bit wide input. In the case of dataWidth <= 32: a single
+    // slice is used with no XOR
+    val foldedData = slicedInput.reduce((x, y) => x ^ y)
+    foldedData
+  }
+
+  def apply(data: Data, valid: Bool, initial: Long = 0): UInt = {
+    // the lfsr register
+    val lfsr = RegInit(initial.U(32.W))
+
+    // this method folds data such that it is never wider than 32
+    val foldedData = foldInput(data)
+
+    // XOR the input into stage 0
+    val stage0 = lfsr ^ foldedData
+
+    // The remaining stages do the "hash" part, and are
+    // all truncated to 32 bits wide
+    val stage1 = (stage0 ^ (stage0 << 13))(31, 0)
+    val stage2 = (stage1 ^ (stage1 >> 17))(31, 0)
+    val stage3 = (stage2 ^ (stage2 << 5))(31, 0)
+    when(valid) {
+      lfsr := stage3
+    }
+    lfsr
+  }
+}

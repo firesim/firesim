@@ -13,6 +13,14 @@ struct PEEKPOKEBRIDGEMODULE_struct {
   uint64_t STEP;
   uint64_t DONE;
   uint64_t PRECISE_PEEKABLE;
+  uint64_t queueHead_reset;
+  uint64_t queueOccupancy_reset;
+  uint64_t tokenCount0_reset;
+  uint64_t tokenCount1_reset;
+  uint64_t queueHead_io_gotPlusArgValue;
+  uint64_t queueOccupancy_io_gotPlusArgValue;
+  uint64_t tokenCount0_io_gotPlusArgValue;
+  uint64_t tokenCount1_io_gotPlusArgValue;
 };
 
 /**

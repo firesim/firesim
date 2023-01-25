@@ -8,7 +8,7 @@
 #include "core/simif.h"
 #include "core/simulation.h"
 #include "core/systematic_scheduler.h"
-
+std::vector<std::string> args_copy;
 class firesim_top_t : public systematic_scheduler_t, public simulation_t {
 public:
   firesim_top_t(simif_t &simif,
@@ -31,6 +31,10 @@ firesim_top_t::firesim_top_t(simif_t &simif,
                              const std::vector<std::string> &args)
     : systematic_scheduler_t(args), simulation_t(registry, args),
       peek_poke(registry.get_widget<peek_poke_t>()) {
+
+  args_copy = args;
+
+  max_cycles = -1;
 
   // Cycles to advance before profiling instrumentation registers in models.
   std::optional<uint64_t> profile_interval;

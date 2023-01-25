@@ -10,7 +10,25 @@
 
 struct PLUSARGSBRIDGEMODULE_struct {
   uint64_t initDone;
-};
+  uint64_t queueHead_outChannel;
+  uint64_t queueOccupancy_outChannel;
+  uint64_t tokenCount0_outChannel;
+  uint64_t tokenCount1_outChannel;
+} PLUSARGSBRIDGEMODULE_struct;
+
+#ifdef asdfasdfPLUSARGSBRIDGEMODULE_checks
+PLUSARGSBRIDGEMODULE_checks;
+#endif // PLUSARGSBRIDGEMODULE_checks
+
+#define INSTANTIATE_PLUSARGS(FUNC, IDX)                                        \
+  FUNC(new plusargs_t(simif,                                                   \
+                      args,                                                    \
+                      PLUSARGSBRIDGEMODULE_##IDX##_substruct_create,           \
+                      PLUSARGSBRIDGEMODULE_##IDX##_name,                       \
+                      PLUSARGSBRIDGEMODULE_##IDX##_default,                    \
+                      PLUSARGSBRIDGEMODULE_##IDX##_width,                      \
+                      PLUSARGSBRIDGEMODULE_##IDX##_slice_count,                \
+                      PLUSARGSBRIDGEMODULE_##IDX##_slice_addrs));
 
 /**
  * @brief PlusArgs Bridge Driver class

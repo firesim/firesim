@@ -261,6 +261,13 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     sb.append(s"));\n")
     sb.append(s"#endif // ${guard}\n")
   }
+
+  // Returns widget-relative word address
+  def getCRAddr(name: String): Int = {
+    crRegistry.lookupAddress(name).getOrElse(
+      throw new RuntimeException(s"Could not find address for name: '${name}' in widget: '${wrapper.wName}'"))
+  }
+
 }
 
 object Widget {
@@ -340,6 +347,20 @@ trait HasWidgets {
     }
   }
 
+  /**
+    * Get the base address for a widget
+    */
+  def getBaseAddr(w: Widget): BigInt = {
+    getBaseAddr(w.getWName)
+  }
+
+  /**
+    * Get the base address for a widget using it's name
+    */
+  def getBaseAddr(widgetName: String): BigInt = {
+    addrMap(widgetName).start
+  }
+
   /** Iterates through each bridge, generating the header fragment. Must be called after bridge address assignment is
     * complete.
     */
@@ -351,6 +372,18 @@ trait HasWidgets {
     widgets.foreach((w: Widget) => println(w.getWName))
   }
 
+  /**
+    * Iterates through all bound widgets requesting default plusArgs if
+    * applicable, which are then serialized to a file.  This is mostly useful
+    * for bridges that do not have defaults baked into the driver, such as
+    * FASED, where plus args _must_ be provided.
+    */
+  def emitDefaultPlusArgsFile(): Unit =
+    GoldenGateOutputFileAnnotation.annotateFromChisel(
+      // Append an extra \n to prevent the file from being empty.
+      body = widgets.map(_.defaultPlusArgs).flatten.mkString("\n") + "\n",
+      fileSuffix = ".runtime.conf"
+    )
   def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {
     val widget = name2inst.get(wName).getOrElse(throw new RuntimeException("Could not find Widget: $wName"))
     getCRAddr(widget, crName)
