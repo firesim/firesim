@@ -149,6 +149,12 @@ public:
       // validate before first tick and for a few after (b/c of the loop)
       // validate();
 
+      poke("io_writeValue", 0xf000 | i);
+      uint32_t readValue = peek("io_readValue");
+      uint32_t readValueFlipped = peek("io_readValueFlipped");
+
+      std::cout << "step " << i << " " << readValue << "  " << readValueFlipped << "\n";
+
       step(1);
     }
 

@@ -231,6 +231,31 @@ class MCRFileMap(bytesPerAddress: Int) {
     }
   }
 
+  def genHeader(prefix: String, base: BigInt, sb: StringBuilder, addrsToExclude: Seq[Int] = Nil): Unit = {
+    // get widget name with no widget number (prefix includes it)
+    val prefix_no_num = prefix.split("_")(0)
+
+    val regs = regList.filter { entry =>
+      val localAddress = name2addr(entry.name)
+
+      val tokenHashReject = entry.name.contains("queueHead_") || entry.name.contains("queueOccupancy_") || entry.name.contains("tokenCount0_") || entry.name.contains("tokenCount1_")
+      !tokenHashReject && entry.substruct && !addrsToExclude.contains(localAddress)
+    }
+
+    // define to mark that a particular instantiation of a widget is present
+    // (e.g. UARTWIDGET_0_PRESENT)
+    sb append s"#define ${prefix}_PRESENT\n"
+
+    // Emit a macro which verifies the structure of the library-defined type.
+    // The macro should be instantiated after the struct definition in the
+    // header of the corresponding bridge.
+    if (regs.nonEmpty) {
+      sb append s"#ifndef ${prefix_no_num}_checks\n"
+      sb append s"#define ${prefix_no_num}_checks \\\n"
+      regs.zipWithIndex foreach { case (entry, i) =>
+        sb append s"static_assert("
+        sb append s"offsetof(${prefix_no_num}_struct, ${entry.name}) == ${i} * sizeof(uint64_t), "
+        sb append s"${'\"'}invalid ${entry.name}${'\"'});\\\n"
   /** Append the C++ representation of the address map to a string builder.
     *
     * @param base
