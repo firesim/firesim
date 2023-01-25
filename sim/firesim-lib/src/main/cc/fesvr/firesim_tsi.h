@@ -34,7 +34,8 @@ protected:
   void load_mem_write(addr_t addr, size_t nbytes, const void *src) override;
   void load_mem_read(addr_t addr, size_t nbytes, void *dst) override;
 
-  // This must be exactly the same as hKey.dataBits
+  // This must be exactly the same as hKey.dataBits in the LoadMem widget
+  // See discussion here: https://github.com/firesim/firesim/pull/1401
   // TODO: Avoid hardcoding this value here
   size_t chunk_align() override { return 8; }
 
