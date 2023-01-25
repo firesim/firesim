@@ -10,10 +10,6 @@
 
 struct PLUSARGSBRIDGEMODULE_struct {
   uint64_t initDone;
-  uint64_t queueHead_outChannel;
-  uint64_t queueOccupancy_outChannel;
-  uint64_t tokenCount0_outChannel;
-  uint64_t tokenCount1_outChannel;
 };
 
 /**
