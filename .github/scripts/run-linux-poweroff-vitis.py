@@ -61,7 +61,7 @@ def run_linux_poweroff_vitis():
                 else:
                     print(f"Workload {workload} successful.")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/.github/scripts/vitis-test", "linux-poweroff-singlenode", "30m")
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m")
 
 if __name__ == "__main__":
     execute(run_linux_poweroff_vitis, hosts=["localhost"])
