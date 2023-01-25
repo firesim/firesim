@@ -36,7 +36,7 @@ public:
     step(1);
     poke("reset", 0);
     step(10000, false);
-    while (!sim.done() && !simulation_complete()) {
+    while (!peek_poke.is_done() && !simulation_complete()) {
       for (auto &ep : assert_endpoints) {
         ep->tick();
       }

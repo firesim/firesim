@@ -32,7 +32,7 @@ void peek_poke_t::poke(std::string_view id, uint32_t value, bool blocking) {
   auto it = inputs.find(id);
   assert(it != inputs.end() && "missing input port");
 
-  if (blocking && !wait_on_ready(10.0)) {
+  if (blocking && !wait_on_done(10.0)) {
     req_timeout = true;
     return;
   }
@@ -47,7 +47,7 @@ uint32_t peek_poke_t::peek(std::string_view id, bool blocking) {
   auto it = outputs.find(id);
   assert(it != outputs.end() && "missing output port");
 
-  if (blocking && !wait_on_ready(10.0)) {
+  if (blocking && !wait_on_done(10.0)) {
     req_timeout = true;
     return 0;
   }
@@ -85,4 +85,15 @@ void peek_poke_t::peek(std::string_view id, mpz_t &value) {
     data[i] = simif.read((size_t)it->second.address + (i * sizeof(uint32_t)));
   }
   mpz_import(value, size, -1, sizeof(uint32_t), 0, 0, data);
+}
+
+bool peek_poke_t::is_done() { return simif.read(mmio_addrs.DONE); }
+
+void peek_poke_t::step(size_t n, bool blocking) {
+  simif.write(mmio_addrs.STEP, n);
+
+  if (blocking) {
+    while (!is_done())
+      ;
+  }
 }

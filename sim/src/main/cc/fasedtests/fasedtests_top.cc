@@ -91,10 +91,11 @@ void fasedtests_top_t::simulation_init() {
 }
 
 int fasedtests_top_t::simulation_run() {
+  auto &peek_poke = sim.get_registry().get_widget<peek_poke_t>();
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
-    sim.take_steps(get_largest_stepsize(), false);
-    while (!sim.done() && !simulation_complete()) {
+    peek_poke.step(get_largest_stepsize(), false);
+    while (!peek_poke.is_done() && !simulation_complete()) {
       for (auto &e : sim.get_registry().get_all_bridges())
         e->tick();
     }

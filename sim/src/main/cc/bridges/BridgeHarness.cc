@@ -21,13 +21,13 @@ void BridgeHarness::simulation_init() {
 int BridgeHarness::simulation_run() {
   // Reset the DUT.
   peek_poke.poke("reset", 1, /*blocking=*/true);
-  sim.take_steps(1, /*blocking=*/true);
+  peek_poke.step(1, /*blocking=*/true);
   peek_poke.poke("reset", 0, /*blocking=*/true);
-  sim.take_steps(1, /*blocking=*/true);
+  peek_poke.step(1, /*blocking=*/true);
 
   // Tick until all requests are serviced.
-  sim.take_steps(get_step_limit(), /*blocking=*/false);
-  for (unsigned i = 0; i < get_tick_limit() && !sim.done(); ++i) {
+  peek_poke.step(get_step_limit(), /*blocking=*/false);
+  for (unsigned i = 0; i < get_tick_limit() && !peek_poke.is_done(); ++i) {
     for (auto &bridge : sim.get_registry().get_all_bridges()) {
       bridge->tick();
     }

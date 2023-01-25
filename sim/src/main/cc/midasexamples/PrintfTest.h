@@ -23,7 +23,7 @@ public:
 
   void run_and_collect_prints(int cycles) {
     step(cycles, false);
-    while (!sim.done()) {
+    while (!peek_poke.is_done()) {
       for (auto &print_endpoint : print_endpoints) {
         print_endpoint->tick();
       }
