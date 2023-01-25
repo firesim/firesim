@@ -297,8 +297,8 @@ jobs:
           test-package: "firesim.firesim"
           test-name: "CITests"
 
-  run-parallel-metasims:
-    name: run-parallel-metasims
+  run-parallel-verilator-metasims:
+    name: run-parallel-verilator-metasims
     # Building the driver can cause concurrency issues with SBT, so serialize
     # this behind the scalatest train. Remove once we're off SBT.
     needs: [run-chipyard-tests]
@@ -307,8 +307,8 @@ jobs:
       TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
-      - name: Run parallel metasimulation tests (deploy on localhost and on AWS instances)
-        run: .github/scripts/run-parallel-metasims.py
+      - name: Run parallel Verilator metasimulation tests (deploy on localhost and on AWS instances)
+        run: .github/scripts/run-parallel-verilator-metasims.py
 
   run-basic-linux-poweroff:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
@@ -335,6 +335,22 @@ jobs:
       - uses: actions/checkout@v3
       - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
         run: .github/scripts/run-linux-poweroff-externally-provisioned.py
+
+  run-parallel-vcs-metasims:
+    name: run-parallel-vcs-metasims
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run parallel VCS metasims
+        run: .github/scripts/run-parallel-vcs-metasims.py
 
   run-basic-linux-poweroff-vitis:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')

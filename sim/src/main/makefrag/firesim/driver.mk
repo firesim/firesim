@@ -49,6 +49,7 @@ DRIVER_CC = \
 	$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top)) \
 	$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 	$(RISCV)/lib/libfesvr.a \
+	$(DROMAJO_LIB_DIR)/lib$(DROMAJO_LIB_NAME).a \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
 
 # Disable missing override warning for testchipip.
@@ -60,5 +61,5 @@ TARGET_CXX_FLAGS += -g \
 	-I$(firesim_lib_dir) \
 	-I$(GENERATED_DIR) \
 	-Wno-inconsistent-missing-override
-TARGET_LD_FLAGS += -L$(RISCV)/lib -L$(CONDA_PREFIX)/lib -L$(DROMAJO_LIB_DIR) -l:libdwarf.so -l:libelf.so -lz -l$(DROMAJO_LIB_NAME)
+TARGET_LD_FLAGS += -L$(CONDA_PREFIX)/lib -l:libdwarf.so -l:libelf.so -lz
 # DOC include end: Bridge Build System Changes
