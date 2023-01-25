@@ -1,14 +1,12 @@
 //See LICENSE for license details.
 package firesim.fasedtests
 
-import chisel3.util.{isPow2, log2Ceil}
+import chisel3.util.isPow2
 
 import freechips.rocketchip.config.{Field, Config}
 import freechips.rocketchip.subsystem.{ExtMem, WithoutTLMonitors, WithNMemoryChannels, MemoryPortParams, MasterPortParams}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy.{AddressSet, RegionType, TransferSizes}
-import freechips.rocketchip.tilelink._
-import freechips.rocketchip.util._
 import firesim.configs._
 
 case object AXI4SlavePort extends Field[AXI4SlavePortParameters]

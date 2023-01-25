@@ -3,12 +3,10 @@
 package midas
 package widgets
 
-import junctions._
 
 import chisel3._
-import chisel3.util.{Decoupled, Counter, log2Up}
+import chisel3.util.{Decoupled, Counter}
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.diplomacy._
 
 class SimulationMasterIO(implicit val p: Parameters) extends WidgetIO()(p){
 }

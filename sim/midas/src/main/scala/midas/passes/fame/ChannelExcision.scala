@@ -2,14 +2,11 @@
 
 package midas.passes.fame
 
-import java.io.{PrintWriter, File}
 
 import firrtl._
 import ir._
 import Mappers._
-import Utils._
-import firrtl.passes.MemPortUtils
-import annotations.{ModuleTarget, ReferenceTarget, Annotation, SingleTargetAnnotation}
+import annotations.{ModuleTarget, ReferenceTarget}
 
 import scala.collection.mutable
 

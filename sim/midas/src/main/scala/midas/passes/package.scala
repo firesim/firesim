@@ -2,16 +2,13 @@ package midas
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes.Pass
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
 
 import annotations._
-import TargetToken.{Instance, OfModule}
 import firrtl.Utils.BoolType
 import firrtl.transforms.BlackBoxInlineAnno
 
-import scala.language.implicitConversions
 
 
 package object passes {

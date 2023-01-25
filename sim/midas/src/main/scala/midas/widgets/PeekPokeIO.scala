@@ -7,14 +7,10 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 import chisel3._
-import chisel3.util._
-import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
+import chisel3.util._ // Deprecated
 import freechips.rocketchip.config.Parameters
 
 import midas.core.SimUtils._
-import midas.core.{SimReadyValid, SimReadyValidIO}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.SerializationUtils._
 
 class PeekPokeWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {

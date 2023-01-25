@@ -10,7 +10,6 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 
 import Console.{UNDERLINED, GREEN, RESET}
-import scala.collection.mutable
 import scala.io.Source
 
 

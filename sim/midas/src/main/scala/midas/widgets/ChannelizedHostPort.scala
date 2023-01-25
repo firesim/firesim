@@ -4,14 +4,12 @@ package midas.widgets
 
 import midas.core.{TargetChannelIO}
 
-import midas.passes.fame.{FAMEChannelInfo, FAMEChannelConnectionAnnotation}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
+import chisel3.experimental.Direction
 import chisel3.experimental.DataMirror.directionOf
 
-import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 

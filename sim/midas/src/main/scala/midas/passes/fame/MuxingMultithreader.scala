@@ -5,9 +5,7 @@ package midas.passes.fame
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.passes.memlib
 import firrtl.passes.MemPortUtils._
-import firrtl.traversals.Foreachers._
 import firrtl.Utils.{BoolType, kind}
 
 import collection.mutable.ArrayBuffer

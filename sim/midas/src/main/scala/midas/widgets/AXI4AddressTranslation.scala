@@ -6,7 +6,6 @@ import chisel3._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
-import scala.math.{min,max}
 
 class AXI4AddressTranslation(offset: BigInt, bridgeAddressSets: Seq[AddressSet], regionName: String)(implicit p: Parameters) extends LazyModule {
   val node = AXI4AdapterNode(

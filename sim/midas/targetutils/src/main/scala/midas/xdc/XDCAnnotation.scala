@@ -3,7 +3,7 @@
 package midas.targetutils.xdc
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
+import chisel3.experimental.ChiselAnnotation
 
 import firrtl.{RenameMap}
 import firrtl.annotations._

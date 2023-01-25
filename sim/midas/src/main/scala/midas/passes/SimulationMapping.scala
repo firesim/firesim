@@ -3,23 +3,17 @@
 package midas
 package passes
 
-import java.io.{File, FileWriter, StringWriter}
 
-import scala.collection.mutable
 
 import firrtl._
-import firrtl.annotations.{CircuitName, ReferenceTarget, ModuleTarget, InstanceTarget}
+import firrtl.annotations.{CircuitName, ModuleTarget, InstanceTarget}
 import firrtl.options.Dependency
-import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
+import firrtl.stage.Forms
 import firrtl.stage.transforms.Compiler
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.passes.LowerTypes.loweredName
-import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, flow, module_type}
-import firrtl.passes.wiring._
+import firrtl.Utils.module_type
 import midas.passes.Utils._
-import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
-import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.core._

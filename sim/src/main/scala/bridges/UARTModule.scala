@@ -7,7 +7,7 @@ import chisel3._
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import freechips.rocketchip.config.Parameters
 
-import sifive.blocks.devices.uart.{UART, UARTParams, UARTPortIO}
+import sifive.blocks.devices.uart.UARTParams
 
 class UARTDUT(implicit val p: Parameters) extends Module {
   val uartParams = UARTParams(address = 0x10013000)

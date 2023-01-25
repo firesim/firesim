@@ -5,7 +5,6 @@ package midas.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import Utils._
 
 /** Connects the host clock to each model in the top-level
   *

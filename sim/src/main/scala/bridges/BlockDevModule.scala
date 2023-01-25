@@ -7,7 +7,6 @@ import chisel3.util._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import freechips.rocketchip.config.Parameters
-import testchipip.{BlockDeviceData, BlockDeviceIO, BlockDeviceInfo, BlockDeviceRequest}
 
 class BlockDevDUT(implicit val p: Parameters) extends Module {
   val rd = Module(new BlockDevBridge)

@@ -3,7 +3,6 @@
 package midas.passes
 
 import firrtl._
-import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils.BoolType

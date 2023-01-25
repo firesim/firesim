@@ -5,7 +5,7 @@ package passes
 
 import firrtl._
 import firrtl.ir._
-import java.io.{File, FileWriter, Writer}
+import java.io.File
 
 object Utils {
   def cat(es: Seq[Expression]): Expression =

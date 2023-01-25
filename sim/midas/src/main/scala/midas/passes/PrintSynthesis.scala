@@ -1,23 +1,17 @@
 package midas
 package passes
 
-import java.io.{File, FileWriter, Writer}
 import scala.collection.mutable
 
 import firrtl._
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, Annotation}
-import firrtl.annotations.{ComponentName} // Deprecated
+import firrtl.annotations.{ReferenceTarget, ModuleTarget, Annotation} // Deprecated
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
-import firrtl.Utils.{zero, to_flip, BoolType}
-import firrtl.WrappedExpression._
+import firrtl.Utils.{zero, BoolType}
 
-import logger.{Logger, LogLevel}
-import freechips.rocketchip.config.{Parameters, Field}
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
-import midas.widgets.{PrintRecordBag, BridgeIOAnnotation, PrintBridgeModule, PrintBridgeParameters, PrintPort}
+import midas.widgets.{BridgeIOAnnotation, PrintBridgeModule, PrintBridgeParameters, PrintPort}
 import midas.targetutils.{SynthPrintfAnnotation, GlobalResetConditionSink}
 
 private[passes] class PrintSynthesis extends firrtl.Transform {

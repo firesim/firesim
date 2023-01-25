@@ -15,7 +15,6 @@ import firrtl.annotations._
 import firrtl.stage.Forms
 import firrtl.transforms.BlackBoxInlineAnno
 import firrtl.transforms.TopWiring._
-import freechips.rocketchip.config.Field
 
 /** Finds all FPGADebug annotations deployed throughout the circuit, and wires them to a single ILA instance at the top
   * of the module hierarchy. The ILA is wrapped in a shim module that preserves the marked signal names and instance

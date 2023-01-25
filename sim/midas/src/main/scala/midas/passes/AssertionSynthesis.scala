@@ -1,7 +1,6 @@
 package midas
 package passes
 
-import java.io.{File, FileWriter, Writer}
 import scala.collection.mutable
 
 import firrtl._
@@ -9,12 +8,11 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
-import firrtl.Utils.{zero, to_flip, BoolType}
+import firrtl.Utils.{zero, BoolType}
 
-import freechips.rocketchip.config.{Parameters, Field}
 
 import midas.passes.Utils.cat
-import midas.widgets.{BridgeIOAnnotation, AssertBridgeRecord, AssertBridgeModule, AssertBridgeParameters}
+import midas.widgets.{BridgeIOAnnotation, AssertBridgeModule, AssertBridgeParameters}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.{ExcludeInstanceAssertsAnnotation, GlobalResetConditionSink}

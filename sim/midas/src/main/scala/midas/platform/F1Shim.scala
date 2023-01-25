@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
+import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.util.HeterogeneousBag
 
 import midas.core.{CPUManagedAXI4Key}

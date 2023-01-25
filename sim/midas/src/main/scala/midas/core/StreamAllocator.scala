@@ -3,7 +3,6 @@
 package midas.core
 
 import freechips.rocketchip.config.Field
-import firrtl.Namespace
 
 /**
   * Does the dirty work of providing an index to each stream, and checking its

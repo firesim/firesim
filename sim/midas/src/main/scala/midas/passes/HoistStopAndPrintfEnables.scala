@@ -5,7 +5,6 @@ package midas.passes
 
 import firrtl._
 import firrtl.Mappers._
-import firrtl.passes._
 import firrtl.ir._
 import firrtl.options.Dependency
 

@@ -3,9 +3,7 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
 
 import midas.targetutils.{PerfCounterOpType, PerfCounterOps}

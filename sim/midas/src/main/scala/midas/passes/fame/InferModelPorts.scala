@@ -3,7 +3,6 @@
 package midas.passes.fame
 
 import firrtl._
-import firrtl.Mappers._
 import firrtl.ir._
 import firrtl.annotations._
 import firrtl.transforms.DontTouchAnnotation

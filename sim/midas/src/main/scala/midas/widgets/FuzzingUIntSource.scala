@@ -2,10 +2,8 @@
 package midas.widgets
 
 import chisel3._
-import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
-import scala.collection.immutable
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
 //example in the FireSim docs

@@ -5,10 +5,7 @@ package midas.passes.fame
 import firrtl._
 import firrtl.ir._
 import Mappers._
-import Utils._
 import annotations._
-import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
-import midas.passes.{PreLinkRenaming, PreLinkRenamingAnnotation}
 
 import collection.mutable
 

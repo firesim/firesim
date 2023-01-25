@@ -7,7 +7,6 @@ import chisel3.experimental.annotate
 
 import freechips.rocketchip.config.Parameters
 
-import midas.widgets.PeekPokeBridge
 import midas.targetutils._
 
 /** A module that wraps a multi-ported, synchronous-read memory.

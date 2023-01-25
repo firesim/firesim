@@ -4,7 +4,6 @@ package firesim.bridges
 import midas.widgets._
 
 import chisel3._
-import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
 class GroundTestBridge extends BlackBox

@@ -2,15 +2,13 @@ package midas
 package platform
 
 import chisel3._
-import chisel3.util._
 import junctions._
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.{Field, Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyRawModuleImp}
-import freechips.rocketchip.util.HeterogeneousBag
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy.LazyRawModuleImp
 
 import midas.core.HostMemChannelKey
-import midas.widgets.{AXI4Printf, CtrlNastiKey}
+import midas.widgets.CtrlNastiKey
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.platform.xilinx._
 

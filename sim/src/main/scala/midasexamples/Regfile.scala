@@ -7,7 +7,6 @@ import chisel3.experimental.annotate
 
 import freechips.rocketchip.config.Parameters
 
-import midas.widgets.PeekPokeBridge
 import midas.targetutils._
 
 class RegfileRead extends Bundle {

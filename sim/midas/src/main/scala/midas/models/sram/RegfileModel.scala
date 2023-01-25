@@ -2,8 +2,6 @@ package midas.models.sram
 
 import chisel3._
 import chisel3.util.{Mux1H, Decoupled, RegEnable, log2Ceil}
-import chisel3.experimental.{DataMirror, requireIsChiselType}
-import collection.immutable.ListMap
 
 class RegfileModelGen(val depth: Int, val dataWidth: Int, val nReads: Int, val nWrites: Int) extends ModelGenerator {
   assert(depth > 0)

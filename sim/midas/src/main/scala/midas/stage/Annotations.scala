@@ -2,7 +2,7 @@
 
 package midas.stage
 
-import firrtl.options.{StageOption, ShellOption, HasShellOptions, CustomFileEmission, Unserializable}
+import firrtl.options.{ShellOption, HasShellOptions, Unserializable}
 import firrtl.annotations.{NoTargetAnnotation, Annotation}
 
 // Prevent configuration annotations from propagating out.

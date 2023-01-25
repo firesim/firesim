@@ -2,16 +2,11 @@
 
 package midas.platform
 
-import firrtl.annotations.{Annotation, CircuitName, ReferenceTarget, ModuleTarget}
-import firrtl.ir.{Circuit, Port}
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.diplomacy.{LazyModule}
 
 import midas.Platform
 import midas.core._
-import midas.passes.fame.{FAMEChannelConnectionAnnotation}
-import midas.widgets.{CStrLit, UInt32, BridgeIOAnnotation}
-import midas.widgets.CppGenerationUtils._
 import midas.targetutils.xdc.SpecifyXDCCircuitPaths
 import midas.{PreLinkCircuitPath, PostLinkCircuitPath}
 

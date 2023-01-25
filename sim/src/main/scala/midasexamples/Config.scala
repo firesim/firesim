@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import midas._
-import midas.widgets._
 import freechips.rocketchip.config._
 import junctions._
 

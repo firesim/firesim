@@ -2,20 +2,13 @@
 
 package midas.passes.fame
 
-import java.io.{PrintWriter, File}
 
 import firrtl._
-import firrtl.ir._
-import firrtl.Utils._
-import firrtl.passes.MemPortUtils
 import firrtl.analyses.InstanceGraph
-import annotations.{InstanceTarget, Annotation, SingleTargetAnnotation}
 
 import midas.targetutils.FirrtlFAMEModelAnnotation
 
 import scala.annotation.tailrec
-import scala.collection.mutable
-import mutable.{LinkedHashSet, LinkedHashMap}
 
 class ExtractModel extends Transform {
   def inputForm = HighForm
