@@ -1,16 +1,16 @@
-#include "simif_token_hashers.h"
-#include "simif.h"
+#include "token_hashers.h"
+#include "core/simif.h"
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
 /**
- * The constructor for simif_token_hashers_t.
+ * The constructor for token_hashers_t.
  *
  * @param [in] p A pointer to the parent instance of simif_t
  */
-simif_token_hashers_t::simif_token_hashers_t(
+token_hashers_t::token_hashers_t(
     simif_t *p,
     const std::vector<std::string> &args,
     const TOKENHASHMASTER_struct &s,
@@ -36,7 +36,7 @@ simif_token_hashers_t::simif_token_hashers_t(
 /**
  * Print debug info about the MMIO internals
  */
-void simif_token_hashers_t::info() {
+void token_hashers_t::info() {
   std::cout << "trigger0 " << trigger0 << "\n";
   std::cout << "trigger1 " << trigger1 << "\n";
   std::cout << "period0 " << period0 << "\n";
@@ -61,10 +61,10 @@ void simif_token_hashers_t::info() {
  * @param [in] period The number of hashes to skip between saving. 0 means save
  * every hash
  */
-void simif_token_hashers_t::set_params(const uint64_t delay,
+void token_hashers_t::set_params(const uint64_t delay,
                                        const uint64_t period) {
 #ifndef TOKENHASHMASTER_0_PRESENT
-  std::cout << "simif_token_hashers_t::set_params() was called but Token "
+  std::cout << "token_hashers_t::set_params() was called but Token "
                "Hashers are not enabled in this build\n";
   return;
 #endif
@@ -84,7 +84,7 @@ void simif_token_hashers_t::set_params(const uint64_t delay,
  * the FIFO's are drained and so occupancy will return 0
  * @retval a vector of vector of hashes
  */
-token_hasher_result_t simif_token_hashers_t::get() {
+token_hasher_result_t token_hashers_t::get() {
   token_hasher_result_t ret;
   for (uint32_t i = 0; i < cnt; i++) {
     ret.push_back({});
@@ -105,7 +105,7 @@ token_hasher_result_t simif_token_hashers_t::get() {
  * Work is only done on the first call, subsequent calls return cached data
  * from the first time.
  */
-token_hasher_result_t simif_token_hashers_t::cached_get() {
+token_hasher_result_t token_hashers_t::cached_get() {
   if (cached_results.size() == 0) {
     cached_results = get();
   }
@@ -117,7 +117,7 @@ token_hasher_result_t simif_token_hashers_t::cached_get() {
  * Get a string of all the hashes. This calls cached_get() internally
  * @retval a std::string with human readable output
  */
-std::string simif_token_hashers_t::get_string() {
+std::string token_hashers_t::get_string() {
   std::ostringstream oss;
   auto got = cached_get();
   uint32_t i = 0;
@@ -137,7 +137,7 @@ std::string simif_token_hashers_t::get_string() {
  * Get a string with a CSV of all the hashes. This calls cached_get() internally
  * @retval a std::string with human readable output
  */
-std::string simif_token_hashers_t::get_csv_string() {
+std::string token_hashers_t::get_csv_string() {
   std::ostringstream oss;
   auto got = cached_get();
   uint32_t i = 0;
@@ -158,7 +158,7 @@ std::string simif_token_hashers_t::get_csv_string() {
   return oss.str();
 }
 
-void simif_token_hashers_t::write_csv_file(const std::string path) {
+void token_hashers_t::write_csv_file(const std::string path) {
   std::ofstream file;
   file.open(path, std::ios::out);
   file << get_csv_string();
@@ -168,14 +168,14 @@ void simif_token_hashers_t::write_csv_file(const std::string path) {
 /**
  * Print all of the hashes to stdout, this calls get_string() internally
  */
-void simif_token_hashers_t::print() { std::cout << get_string(); }
+void token_hashers_t::print() { std::cout << get_string(); }
 
 /**
  * Get the FIFO occupancy for single bridge.
  * @param [in] index The index of the bridge
  * @retval The occupancy of the FIFO holding hashes
  */
-uint32_t simif_token_hashers_t::occupancy(const size_t index) {
+uint32_t token_hashers_t::occupancy(const size_t index) {
   if (index >= cnt) {
     std::cerr << "index: " << index
               << " passed to occupany() is larger than count: " << cnt << "\n";
@@ -191,7 +191,7 @@ uint32_t simif_token_hashers_t::occupancy(const size_t index) {
  * @param [in] index The index of the bridge
  * @retval The number of tokens a bridge has seen
  */
-uint64_t simif_token_hashers_t::tokens(const size_t index) {
+uint64_t token_hashers_t::tokens(const size_t index) {
   if (index >= cnt) {
     std::cerr << "index: " << index
               << " passed to tokens() is larger than count: " << cnt << "\n";
@@ -212,7 +212,7 @@ uint64_t simif_token_hashers_t::tokens(const size_t index) {
  * @retval The number of tokens a bridge has seen
  */
 std::tuple<std::string, std::string>
-simif_token_hashers_t::name(const size_t index) {
+token_hashers_t::name(const size_t index) {
   if (index >= cnt) {
     std::cerr << "index: " << index
               << " passed to name() is larger than count: " << cnt << "\n";
@@ -222,4 +222,4 @@ simif_token_hashers_t::name(const size_t index) {
   return {bridge_names[index], names[index]};
 }
 
-size_t simif_token_hashers_t::count() { return cnt; }
+size_t token_hashers_t::count() { return cnt; }

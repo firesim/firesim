@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
-#ifndef __SIMIF_TOKEN_HASHERS_H
-#define __SIMIF_TOKEN_HASHERS_H
+#ifndef __TOKEN_HASHERS_H
+#define __TOKEN_HASHERS_H
 
 #include <cstddef>
 #include <string>
@@ -19,7 +19,7 @@ TOKENHASHMASTER_checks;
 #endif // TOKENHASHMASTER_checks
 
 #define INSTANTIATE_TOKENHASHMASTER(FUNC, IDX)                                 \
-  FUNC(new simif_token_hashers_t(simif,                                        \
+  FUNC(new token_hashers_t(simif,                                        \
                                  args,                                         \
                                  TOKENHASHMASTER_##IDX##_substruct_create,     \
                                  TOKENHASH_COUNT,                              \
@@ -36,18 +36,18 @@ class simif_t;
 
 typedef std::vector<std::vector<uint32_t>> token_hasher_result_t;
 
-/** \class simif_token_hashers_t
+/** \class token_hashers_t
  *
  *  @brief Class for controlling Token Hashers
  *
  *  Token Hashers allow debugging run-to-run non determinism
  */
-class simif_token_hashers_t {
+class token_hashers_t {
 private:
   simif_t *parent = 0;
 
 public:
-  simif_token_hashers_t(simif_t *p,
+  token_hashers_t(simif_t *p,
                         const std::vector<std::string> &args,
                         const TOKENHASHMASTER_struct &s,
                         const uint32_t cnt,

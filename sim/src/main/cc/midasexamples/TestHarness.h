@@ -6,7 +6,7 @@
 #include "bridges/peek_poke.h"
 #include "core/simif.h"
 #include "core/simulation.h"
-#include "simif_token_hashers.h"
+#include "bridges/token_hashers.h"
 
 /**
  * Base class for simple unit tests.
@@ -81,7 +81,7 @@ protected:
   uint64_t random_seed = 0;
   std::mt19937_64 random;
 
-  std::unique_ptr<simif_token_hashers_t> token_hashers;
+  std::unique_ptr<token_hashers_t> token_hashers;
 
   bool pass = true;
   bool log = true;
