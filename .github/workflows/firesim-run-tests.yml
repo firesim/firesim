@@ -195,7 +195,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run Scalafmt on FireSim Scala main sources
-        run: .github/scripts/run-scalafmt-scalafix-check.py
+        run: .github/scripts/run-scala-lint-check.py
 
   run-check-docs-generated-components:
     name: run-check-docs-generated-components
