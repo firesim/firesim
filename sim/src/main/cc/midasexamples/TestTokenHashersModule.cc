@@ -37,11 +37,7 @@ private:
   }
 
 public:
-  std::unique_ptr<plusargs_t> plusargsinator;
-  void add_bridge_driver(plusargs_t *bridge) override {
-    assert(!plusargsinator && "multiple bridges registered");
-    plusargsinator.reset(bridge);
-  }
+  plusargs_t &plusargsinator;
 
   /**
    * Constructor.
@@ -49,9 +45,8 @@ public:
    * @param [in] argc The standard argc from main()
    * @param [in] argv The standard argv from main()
    */
-  TestTokenHashersModule(const std::vector<std::string> &args, simif_t *simif)
-      : TestHarness(args, simif) {
-
+  TestTokenHashersModule(const std::vector<std::string> &args, simif_t &simif)
+      : TestHarness(args, simif), plusargsinator(get_bridge<plusargs_t>()) {
     parse_key(args);
   }
 
@@ -148,10 +143,8 @@ public:
 
     // for(int i = 0; i < )
 
-    plusargsinator->init();
-
+    plusargsinator.init();
     target_reset();
-
     for (int i = 0; i < loops; i++) {
       // validate before first tick and for a few after (b/c of the loop)
       // validate();

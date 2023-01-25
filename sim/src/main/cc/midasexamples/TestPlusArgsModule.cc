@@ -115,13 +115,6 @@ public:
 
     target_reset();
 
-    // PLUSARGSBRIDGEMODULE_0_substruct_create;
-    // auto pa = PLUSARGSBRIDGEMODULE_0_substruct;
-
-    plusargsinator->init();
-
-    target_reset();
-
     for (int i = 0; i < 16; i++) {
       // validate before first tick and for a few after (b/c of the loop)
       validate();
