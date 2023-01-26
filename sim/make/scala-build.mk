@@ -64,7 +64,7 @@ endef
 find_sources_in_dir = $(shell \
 	find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print \
 	2> /dev/null \
-	| grep -E '$(2)' \
+	| grep -E $(2) \
 )
 
 firesim_source_dirs = \
