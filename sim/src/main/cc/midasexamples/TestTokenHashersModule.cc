@@ -39,7 +39,7 @@ private:
 
 public:
   plusargs_t &plusargsinator;
-  // token_hashers_t &hasher;
+  token_hashers_t &hasher;
 
   /**
    * Constructor.
@@ -48,9 +48,10 @@ public:
    * @param [in] argv The standard argv from main()
    */
   TestTokenHashersModule(const std::vector<std::string> &args, simif_t &simif)
-      : TestHarness(args, simif), plusargsinator(get_bridge<plusargs_t>()
-        
-        ) {
+      : TestHarness(args, simif), plusargsinator(get_bridge<plusargs_t>()),
+      hasher(get_bridge<token_hashers_t>()) 
+      
+      {
     parse_key(args);
 
 
