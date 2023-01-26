@@ -5,7 +5,6 @@ package widgets
 
 
 import chisel3._
-import chisel3.util.{Decoupled, Counter}
 import freechips.rocketchip.config.Parameters
 
 class SimulationMasterIO(implicit val p: Parameters) extends WidgetIO()(p){
