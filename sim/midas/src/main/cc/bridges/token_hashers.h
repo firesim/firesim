@@ -3,6 +3,7 @@
 #ifndef __TOKEN_HASHERS_H
 #define __TOKEN_HASHERS_H
 
+#include "core/bridge_driver.h"
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -18,18 +19,7 @@ typedef struct TOKENHASHMASTER_struct {
 TOKENHASHMASTER_checks;
 #endif // TOKENHASHMASTER_checks
 
-#define INSTANTIATE_TOKENHASHMASTER(FUNC, IDX)                                 \
-  FUNC(new token_hashers_t(simif,                                        \
-                                 args,                                         \
-                                 TOKENHASHMASTER_##IDX##_substruct_create,     \
-                                 TOKENHASH_COUNT,                              \
-                                 TOKENHASH_BRIDGENAMES,                        \
-                                 TOKENHASH_NAMES,                              \
-                                 TOKENHASH_OUTPUTS,                            \
-                                 TOKENHASH_QUEUEHEADS,                         \
-                                 TOKENHASH_QUEUEOCCUPANCIES,                   \
-                                 TOKENHASH_TOKENCOUNTS0,                       \
-                                 TOKENHASH_TOKENCOUNTS1));
+
 
 // forward declare
 class simif_t;
@@ -42,12 +32,12 @@ typedef std::vector<std::vector<uint32_t>> token_hasher_result_t;
  *
  *  Token Hashers allow debugging run-to-run non determinism
  */
-class token_hashers_t {
-private:
-  simif_t *parent = 0;
-
+class token_hashers_t : public bridge_driver_t {
 public:
-  token_hashers_t(simif_t *p,
+/// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  token_hashers_t(simif_t &p,
                         const std::vector<std::string> &args,
                         const TOKENHASHMASTER_struct &s,
                         const uint32_t cnt,
@@ -58,6 +48,13 @@ public:
                         const uint32_t *const queue_occupancies,
                         const uint32_t *const tokencounts0,
                         const uint32_t *const tokencounts1);
+  ~token_hashers_t() override;
+  void init() override;
+  void tick() override {}
+  void finish() override {}
+  bool terminate() override { return false; };
+  int exit_code() override { return 0; };
+  
   void info();
   void set_params(const uint64_t delay, const uint64_t period);
   token_hasher_result_t get();

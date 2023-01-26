@@ -81,8 +81,6 @@ protected:
   uint64_t random_seed = 0;
   std::mt19937_64 random;
 
-  std::unique_ptr<token_hashers_t> token_hashers;
-
   bool pass = true;
   bool log = true;
 

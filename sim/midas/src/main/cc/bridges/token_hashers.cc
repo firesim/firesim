@@ -5,13 +5,15 @@
 #include <iostream>
 #include <sstream>
 
+
+char token_hashers_t::KIND;
+
 /**
  * The constructor for token_hashers_t.
  *
- * @param [in] p A pointer to the parent instance of simif_t
  */
 token_hashers_t::token_hashers_t(
-    simif_t *p,
+    simif_t &sim,
     const std::vector<std::string> &args,
     const TOKENHASHMASTER_struct &s,
     const uint32_t cnt,
@@ -22,7 +24,7 @@ token_hashers_t::token_hashers_t(
     const uint32_t *const queue_occupancies,
     const uint32_t *const tokencounts0,
     const uint32_t *const tokencounts1)
-    : parent(p), trigger0(s.triggerDelay0_TokenHashMaster),
+    : bridge_driver_t(sim, &KIND), trigger0(s.triggerDelay0_TokenHashMaster),
       trigger1(s.triggerDelay1_TokenHashMaster),
       period0(s.triggerPeriod0_TokenHashMaster),
       period1(s.triggerPeriod1_TokenHashMaster), cnt(cnt),
@@ -33,6 +35,9 @@ token_hashers_t::token_hashers_t(
       tokencounts0(tokencounts0, tokencounts0 + cnt),
       tokencounts1(tokencounts1, tokencounts1 + cnt) {}
 
+token_hashers_t::~token_hashers_t() = default;
+
+void token_hashers_t::init() {}
 /**
  * Print debug info about the MMIO internals
  */
@@ -68,11 +73,11 @@ void token_hashers_t::set_params(const uint64_t delay,
                "Hashers are not enabled in this build\n";
   return;
 #endif
-  parent->write(trigger0, (delay & 0xffffffff));
-  parent->write(trigger1, ((delay >> 32) & 0xffffffff));
+  write(trigger0, (delay & 0xffffffff));
+  write(trigger1, ((delay >> 32) & 0xffffffff));
 
-  parent->write(period0, (period & 0xffffffff));
-  parent->write(period1, ((period >> 32) & 0xffffffff));
+  write(period0, (period & 0xffffffff));
+  write(period1, ((period >> 32) & 0xffffffff));
 }
 
 /**
@@ -92,7 +97,7 @@ token_hasher_result_t token_hashers_t::get() {
     std::vector<uint32_t> &data = ret[i];
     data.reserve(occ);
     for (uint32_t j = 0; j < occ; j++) {
-      const uint32_t h = parent->read(queue_heads[i]);
+      const uint32_t h = read(queue_heads[i]);
       data.push_back(h);
     }
   }
@@ -182,7 +187,7 @@ uint32_t token_hashers_t::occupancy(const size_t index) {
     exit(1);
   }
 
-  return parent->read(queue_occupancies[index]);
+  return read(queue_occupancies[index]);
 }
 
 /**
@@ -197,8 +202,8 @@ uint64_t token_hashers_t::tokens(const size_t index) {
               << " passed to tokens() is larger than count: " << cnt << "\n";
     exit(1);
   }
-  uint64_t r0 = parent->read(tokencounts0[index]);
-  uint64_t r1 = parent->read(tokencounts1[index]);
+  uint64_t r0 = read(tokencounts0[index]);
+  uint64_t r1 = read(tokencounts1[index]);
 
   uint64_t val = (r1 << 32) | r0;
 
