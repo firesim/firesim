@@ -33,14 +33,14 @@ SBT_COMMAND ?= shell
 SBT_NON_THIN ?= $(subst $(SBT_CLIENT_FLAG),,$(SBT))
 .PHONY: sbt
 sbt:
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); $(SBT_COMMAND)"
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
 
 ################################################################################
 # Target Configuration
 ################################################################################
 
 # Target project containing the generator of the design.
-TARGET_SBT_PROJECT ?= $(firesim_sbt_project)
+TARGET_SBT_PROJECT ?= $(FIRESIM_SBT_PROJECT)
 
 # If the target project is not the implicit FireSim one, this definition must
 # enumerate all directories containing the sources of the generator.
@@ -85,24 +85,24 @@ firesim_test_srcs = $(foreach dir, $(firesim_source_dirs), \
 # FireSim project. This ensures that SBT is invoked once in parallel builds.
 $(BUILD_DIR)/firesim.build: $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
 	@mkdir -p $(@D)
-	$(SBT_NON_THIN) "set showSuccess := false; project $(1); compile; package"
+	$(SBT_NON_THIN) "set showSuccess := false; project $(FIRESIM_SBT_PROJECT); compile; package"
 	@touch $@
 
 
 FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.classpath
 $(FIRESIM_MAIN_CP): $(BUILD_DIR)/firesim.build
 	@mkdir -p $(@D)
-	cd $(base_dir) && $(call build_classpath,$(firesim_sbt_project),runtime)
+	cd $(base_dir) && $(call build_classpath,$(FIRESIM_SBT_PROJECT),runtime)
 
 
 FIRESIM_TEST_CP := $(BUILD_DIR)/firesim-test.classpath
 $(FIRESIM_TEST_CP): $(BUILD_DIR)/firesim.build
 	@mkdir -p $(@D)
-	cd $(base_dir) && $(call build_classpath,$(firesim_sbt_project),test)
+	cd $(base_dir) && $(call build_classpath,$(FIRESIM_SBT_PROJECT),test)
 
 # If the target project is the main FireSim project, provide the test classpath
 # as it defines the target configs and parameters for designs to elaborate.
-ifneq ($(firesim_sbt_project),$(TARGET_SBT_PROJECT))
+ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
 
 target_srcs = $(foreach dir,$(TARGET_SOURCE_DIRS), \
 	$(call find_sources_in_dir, $(dir), 'src/main/scala'))
@@ -134,7 +134,7 @@ target-classpath: $(TARGET_CP)
 
 .PHONY: test
 test: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(firesim_sbt_project); test"
+	cd $(base_dir) && $(SBT_NON_THIN) ";project $(FIRESIM_SBT_PROJECT); test"
 
 .PHONY: testOnly
 testOnly: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)

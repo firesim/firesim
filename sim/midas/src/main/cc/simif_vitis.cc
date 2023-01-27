@@ -26,6 +26,8 @@ public:
 
   uint32_t is_write_ready();
 
+  FPGAManagedStreamIO &get_fpga_managed_stream_io() override { return *this; }
+
 private:
   uint32_t mmio_read(size_t addr) override { return read(addr); }
 
@@ -122,13 +124,6 @@ uint32_t simif_vitis_t::read(size_t addr) {
   uint32_t value;
   value = kernel_handle.read_register(addr);
   return value & 0xFFFFFFFF;
-}
-
-AXIStreamIO &simif_vitis_t::get_cpu_managed_stream_io() override {
-  std::cerr << "FPGA-to-CPU Bridge streams are not yet supported on "
-               "vitis-based FPGA deployments."
-            << std::endl;
-  exit(1);
 }
 
 uint32_t simif_vitis_t::is_write_ready() {

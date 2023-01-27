@@ -24,10 +24,13 @@ public:
   void fpga_shutdown();
   void fpga_setup(int slot_id);
 
+  CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
+
 private:
   uint32_t mmio_read(size_t addr) override { return read(addr); }
-  size_t cpu_managed_axi4_write(size_t addr, const char *data, size_t size);
-  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size);
+  size_t
+  cpu_managed_axi4_write(size_t addr, const char *data, size_t size) override;
+  size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
   uint64_t get_beat_bytes() const override {
     return config.cpu_managed->beat_bytes();
   }
