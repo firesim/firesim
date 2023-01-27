@@ -3,6 +3,9 @@
 ![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
 ![Github Actions Status](https://github.com/firesim/firesim/actions/workflows/firesim-run-tests.yml/badge.svg)
 
+| We're running the First FireSim and Chipyard User/Developer Workshop at ASPLOS 2023 on March 26, 2023! This workshop will feature a full-day of submitted talks from users and developers in the FireSim and Chipyard community. Learn more and **submit your work** on the [2023 Workshop Page](https://fires.im/workshop-2023/)! |
+|--------|
+
 ## Contents
 
 1. [Using FireSim](#using-firesim)
