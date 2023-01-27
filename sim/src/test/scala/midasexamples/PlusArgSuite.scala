@@ -5,6 +5,7 @@ import java.io.File
 import freechips.rocketchip.config.Config
 import org.scalatest.Suites
 import firesim.TestSuiteUtil._
+import firesim.configs.WithTokenHashers
 
 import firesim.BasePlatformConfig
 
@@ -55,12 +56,12 @@ class PlusArgsGroup29Bit
 // This test piggy-backs off of PlusArgsTest. Because the token hashers apply to all bridges
 // it makes sense to use an existing one
 // "DefaultF1Config_EnableTokenHashersDefault"
-class TokenHashersTest extends TutorialSuite("TokenHashersModule", "PlusArgsModuleTestConfigGroup29Bit", Seq(classOf[EnableTokenHashersDefault])) with PlusArgsKey {
+class TokenHashersTest extends TutorialSuite("TokenHashersModule", "NoConfig", Seq(classOf[WithTokenHashers])) {
   // it should "provide the correct default value, 1 slice" in {
   //   assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
   // }
 
   it should "hash basic" in {
-    assert(run("verilator", true, args = Seq(s"+plusar_v=${BigInt("1eadbfff", 16)}", getKey(0,0))) == 0)
+    assert(run("verilator", true, args = Seq()) == 0)
   }
 }

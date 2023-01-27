@@ -155,6 +155,7 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
       val shouldHash = periodOK & triggerStart
       
       val hash = XORHash32(ch.bits, ch.fire)
+      hash.suggestName(s"hash_${signalName}")
 
       // counter instead of hash to debug 
       val counterAsHash = WideCounter(width = 32, inhibit = !ch.fire).value

@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string_view>
 
+#define HEX32_STRING(n) std::setfill('0') << std::setw(8) << std::hex << (n) << std::dec
+
 /**
  * @brief Token Hashers Bridge Driver Test
  *
@@ -17,29 +19,8 @@
  */
 class TestTokenHashersModule : public TestHarness {
 private:
-  /**
-   * Find the `+plusargs_test_key` and set the appropriate member variables
-   * All macros should be passed to this constructor.
-   *
-   * The value is checked to reject any runtime values that are too big for the
-   * @param [in] args The argv as a vector
-   */
-  void parse_key(const std::vector<std::string> &args) {
-    constexpr std::string_view find_key = "+plusargs_test_key=";
-
-    for (const auto &arg : args) {
-      if (arg.find(find_key) == 0) {
-        const std::string key_string = arg.substr(find_key.length());
-        found_key = true;
-        test_key = std::stoi(key_string);
-        break;
-      }
-    }
-  }
-
-public:
-  plusargs_t &plusargsinator;
   token_hashers_t &hasher;
+public:
 
   /**
    * Constructor.
@@ -48,94 +29,32 @@ public:
    * @param [in] argv The standard argv from main()
    */
   TestTokenHashersModule(const std::vector<std::string> &args, simif_t &simif)
-      : TestHarness(args, simif), plusargsinator(get_bridge<plusargs_t>()),
+      : TestHarness(args, simif),
       hasher(get_bridge<token_hashers_t>()) 
       
       {
-    parse_key(args);
-
 
     token_hashers_t &x = get_bridge<token_hashers_t>();
     x.info();
+    
 
   }
 
-  /**
-   * Validate function, this holds all of the assertions
-   *
-   * The correct assertion is made based on `test_key` (as driven by
-   * `+plusargs_test_key=`). If no test key is provided, this function does
-   * nothing. This check is required due to the way that TestSuiteCommon.scala
-   * will always instantiate and run a test with no PlusArgs.
-   */
-  void validate() {
-    if (!found_key) {
-      return; // bail if no key was passed. run no assertions
-    }
+/**
+ * search through the signals recorded by token_hashers 
+*/
+  void signal_search() {
 
-    mpz_t e0; // expected
-    mpz_init(e0);
+    auto get_one_idx = [&](const std::string &name, size_t &found_idx) {
+      auto find_idx = hasher.search("PeekPokeBridgeModule", name);
+      assert(find_idx.size() == 1 && "Hasher reports multiple signals found, expecting only one");
+      found_idx = find_idx[0];
+      std::cout << name << " was found at idx: "  << found_idx;
+    };
 
-    switch (test_key) {
-    case 0x00:
-      mpz_set_str(e0, "f0123456789abcdef", 16);
-      break;
-    case 0x01:
-      mpz_set_str(e0, "3", 16);
-      break;
-    case 0x02:
-      mpz_set_str(e0, "f00000000", 16);
-      break;
-    case 0x03:
-      mpz_set_str(e0, "f0000000000000000", 16);
-      break;
-    case 0x04:
-      // value passed from scala is too large, but would truncate to this value
-      // scala expects the test to fail, as C++ should exit before this line
-      // runs
-      mpz_set_str(e0, "f0000000000000000", 16);
-      break;
-    case 0x10:
-      mpz_set_str(e0, "4", 16);
-      break;
-    case 0x11:
-      mpz_set_str(e0, "1eadbeef", 16);
-      break;
-
-    default:
-    case -1:
-      std::cerr << "unknown test_key " << test_key << "\n";
-      exit(1);
-      break;
-    }
-
-    expect("io_gotPlusArgValue", e0);
-
-    mpz_clear(e0);
-  }
-
-  /**
-   * Call initial set_params.
-   * @return the number of loops the main for loop should execute
-   */
-  int choose_params() {
-    int loops = 16;
-    if (!found_key) {
-      return loops; // bail if no key was passed. run no assertions
-    }
-    switch (test_key) {
-    case 0x00:
-      // token_hashers->set_params(0, 0);
-      loops = 32;
-      break;
-    default:
-    case -1:
-      std::cerr << "unknown test_key " << test_key << "\n";
-      exit(1);
-      break;
-    }
-
-    return loops;
+    get_one_idx("io_writeValue", write_idx);
+    get_one_idx("io_readValue", read_idx);
+    get_one_idx("io_readValueFlipped", flipped_idx);
   }
 
   /**
@@ -144,42 +63,39 @@ public:
    */
   void run_test() override {
 
-    if (!found_key) {
-      std::cout << "No test key found, will not assert\n";
-    }
 
-    // token_hashers->set_params(0,0);
-    const int loops = choose_params();
+    hasher.set_params(0,0);
+    // const int loops = choose_params();
+    const int loops = 16;
 
-    
 
-    // for(int i = 0; i < )
-
-    plusargsinator.init();
+    // plusargsinator.init();
     target_reset();
     for (int i = 0; i < loops; i++) {
       // validate before first tick and for a few after (b/c of the loop)
       // validate();
 
-      poke("io_writeValue", 0xf000 | i);
+      uint32_t writeValue = 0xf000 | i;
+      poke("io_writeValue", writeValue);
       uint32_t readValue = peek("io_readValue");
       uint32_t readValueFlipped = peek("io_readValueFlipped");
 
-      std::cout << "step " << i << " " << readValue << "  " << readValueFlipped << "\n";
+      std::cout << "step " << i << " wrote " << HEX32_STRING(writeValue) << " read: " << HEX32_STRING(readValue) << "  " << HEX32_STRING(readValueFlipped) << "\n";
 
       step(1);
     }
 
-    // token_hashers->get();
-    // token_hashers->print();
-    // std::cout << token_hashers->get_csv_string();
+    // hasher.get();
+    // hasher.print();
+    std::cout << hasher.get_csv_string();
 
-    // token_hashers->write_csv_file("test-run.csv");
+    // hasher.write_csv_file("test-run.csv");
   }
 
 private:
-  bool found_key = false;
-  int test_key = -1;
+  size_t write_idx;
+  size_t read_idx;
+  size_t flipped_idx;
 };
 
 TEST_MAIN(TestTokenHashersModule)

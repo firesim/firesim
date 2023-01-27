@@ -19,8 +19,6 @@ typedef struct TOKENHASHMASTER_struct {
 TOKENHASHMASTER_checks;
 #endif // TOKENHASHMASTER_checks
 
-
-
 // forward declare
 class simif_t;
 
@@ -34,27 +32,27 @@ typedef std::vector<std::vector<uint32_t>> token_hasher_result_t;
  */
 class token_hashers_t : public bridge_driver_t {
 public:
-/// The identifier for the bridge type used for casts.
+  /// The identifier for the bridge type used for casts.
   static char KIND;
 
   token_hashers_t(simif_t &p,
-                        const std::vector<std::string> &args,
-                        const TOKENHASHMASTER_struct &s,
-                        const uint32_t cnt,
-                        const char *const *bridge_names,
-                        const char *const *names,
-                        const uint32_t *const outputs,
-                        const uint32_t *const queue_heads,
-                        const uint32_t *const queue_occupancies,
-                        const uint32_t *const tokencounts0,
-                        const uint32_t *const tokencounts1);
+                  const std::vector<std::string> &args,
+                  const TOKENHASHMASTER_struct &s,
+                  const uint32_t cnt,
+                  const char *const *bridge_names,
+                  const char *const *names,
+                  const uint32_t *const outputs,
+                  const uint32_t *const queue_heads,
+                  const uint32_t *const queue_occupancies,
+                  const uint32_t *const tokencounts0,
+                  const uint32_t *const tokencounts1);
   ~token_hashers_t() override;
   void init() override;
   void tick() override {}
   void finish() override {}
   bool terminate() override { return false; };
   int exit_code() override { return 0; };
-  
+
   void info();
   void set_params(const uint64_t delay, const uint64_t period);
   token_hasher_result_t get();
@@ -67,6 +65,8 @@ public:
   uint64_t tokens(const size_t index);
   std::tuple<std::string, std::string> name(const size_t index);
   size_t count();
+  std::vector<size_t> search(const std::string &bridge_name,
+                             const std::string &signal_name);
   token_hasher_result_t cached_results;
 
   uint32_t trigger0;

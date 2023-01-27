@@ -228,3 +228,13 @@ token_hashers_t::name(const size_t index) {
 }
 
 size_t token_hashers_t::count() { return cnt; }
+
+std::vector<size_t> token_hashers_t::search(const std::string &bridge_name, const std::string &signal_name) {
+  std::vector<size_t> ret;
+  for (uint32_t i = 0; i < cnt; i++) {
+    if(bridge_names[i] == bridge_name && names[i] == signal_name) {
+      ret.emplace_back(i);
+    }
+  }
+  return ret;
+}
