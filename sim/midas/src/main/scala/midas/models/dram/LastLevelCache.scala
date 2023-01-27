@@ -12,7 +12,6 @@ import freechips.rocketchip.util.{MaskGen, UIntToOH1}
 import chisel3._
 import chisel3.util._
 
-import scala.math.min
 import Console.{UNDERLINED, RESET}
 
 
