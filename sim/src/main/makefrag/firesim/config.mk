@@ -19,11 +19,7 @@ PLATFORM_CONFIG ?= BaseF1Config
 TARGET_SRC_DIRS ?= $(chipyard_dir)/generators/
 
 # Project for the target.
-ifdef FIRESIM_STANDALONE
-	TARGET_SBT_PROJECT := {file:${chipyard_dir}}firechip
-else
-	TARGET_SBT_PROJECT := firechip
-endif
+TARGET_SBT_PROJECT := {file:${chipyard_dir}}firechip
 
 # Directory where sources are located.
 TARGET_SOURCE_DIRS = $(chipyard_dir)/generators

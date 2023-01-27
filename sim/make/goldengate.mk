@@ -50,7 +50,7 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP
 .PHONY: conf
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	cd $(base_dir) && $(SBT) "project $(FIRESIM_SBT_PROJECT)" "runMain midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
