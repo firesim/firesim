@@ -99,12 +99,11 @@ void token_hashers_t::set_params(const uint64_t delay,
  * the FIFO's are drained and so occupancy will return 0
  * @retval a vector of vector of hashes
  */
-token_hasher_result_t token_hashers_t::get() {
+token_hasher_result_t token_hashers_t::live_get() {
   token_hasher_result_t ret;
   for (uint32_t i = 0; i < cnt; i++) {
     ret.push_back({});
     const uint32_t occ = occupancy(i);
-    std::cout << "i = " << i << ", occ = " << occ << std::endl;
     std::vector<uint32_t> &data = ret[i];
     data.reserve(occ);
     for (uint32_t j = 0; j < occ; j++) {
@@ -116,16 +115,21 @@ token_hasher_result_t token_hashers_t::get() {
   return ret;
 }
 
+void token_hashers_t::load_cache() {
+  if (cached_results.size() == 0) {
+    cached_results = live_get();
+  }
+}
+
+void token_hashers_t::reset_cache() { cached_results.resize(0); }
+
 /**
  * Same as get() however multiple calls will alwaus return the same data
  * Work is only done on the first call, subsequent calls return cached data
  * from the first time.
  */
 token_hasher_result_t token_hashers_t::cached_get() {
-  if (cached_results.size() == 0) {
-    cached_results = get();
-  }
-
+  load_cache();
   return cached_results;
 }
 
@@ -179,6 +183,22 @@ void token_hashers_t::write_csv_file(const std::string path) {
   file.open(path, std::ios::out);
   file << get_csv_string();
   file.close();
+}
+
+/**
+ * Get results by index.
+ * @retval a vector of all the hashes. these are cached results
+ */
+std::vector<uint32_t> token_hashers_t::get_idx(const size_t index) {
+  if (index >= cnt) {
+    std::cerr << "index: " << index
+              << " passed to get_idx() is larger than count: " << cnt << "\n";
+    exit(1);
+  }
+
+  load_cache();
+
+  return cached_results[index];
 }
 
 /**

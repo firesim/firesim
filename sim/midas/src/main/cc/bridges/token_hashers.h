@@ -62,11 +62,18 @@ public:
 
   void info();
   void set_params(const uint64_t delay, const uint64_t period);
-  token_hasher_result_t get();
+
+private:
+  token_hasher_result_t live_get();
+
+public:
+  void load_cache();
+  void reset_cache();
   token_hasher_result_t cached_get();
   std::string get_string();
   std::string get_csv_string();
   void write_csv_file(const std::string path);
+  std::vector<uint32_t> get_idx(const size_t index);
   void print();
   uint32_t occupancy(const size_t index);
   uint64_t tokens(const size_t index);
