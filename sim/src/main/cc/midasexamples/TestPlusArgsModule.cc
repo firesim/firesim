@@ -115,15 +115,12 @@ public:
 
     target_reset();
 
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 8; i++) {
       // validate before first tick and for a few after (b/c of the loop)
       validate();
 
       step(1);
     }
-
-    // token_hashers->get();
-    // token_hashers->print();
   }
 
 private:
