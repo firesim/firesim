@@ -6,7 +6,6 @@
 
 #include <iomanip>
 #include <iostream>
-#include <string_view>
 
 #define HEX32_STRING(n) std::setfill('0') << std::setw(8) << std::hex << (n) << std::dec
 
@@ -57,10 +56,6 @@ public:
     for (size_t i = 0; i < count; i++) {
       get_one_idx(names[i], hash_idx[i]);
     }
-
-    // get_one_idx("io_writeValue", write_idx);
-    // get_one_idx("io_readValue", read_idx);
-    // get_one_idx("io_readValueFlipped", flipped_idx);
   }
 
   /**
@@ -99,17 +94,11 @@ public:
   }
 
 private:
-  constexpr static std::array<const char *, 3> names = {
-      "io_writeValue", "io_readValue", "io_readValueFlipped"};
-  size_t hash_idx[3];
-  XORHash32 expected[3];
   constexpr static size_t count = 3;
-  // static_assert((sizeof(hash_idx) / sizeof(size_t)) == count);
-
-  // size_t hash_idx
-  // size_t write_idx;
-  // size_t read_idx;
-  // size_t flipped_idx;
+  constexpr static std::array<const char *, count> names = {
+      "io_writeValue", "io_readValue", "io_readValueFlipped"};
+  std::array<size_t, count> hash_idx;
+  std::array<XORHash32, count> expected;
 };
 
 TEST_MAIN(TestTokenHashersModule)
