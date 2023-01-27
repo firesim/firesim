@@ -525,7 +525,7 @@ class VitisBitBuilder(BitBuilder):
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
-        message_body = "Your bitstream has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.ini to use this hardware configuration."
+        message_body = "Your bitstream has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
 
         rootLogger.info(message_title)
         rootLogger.info(message_body)
