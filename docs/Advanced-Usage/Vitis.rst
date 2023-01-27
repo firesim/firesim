@@ -10,10 +10,9 @@ Setup
 
 First, install and setup Vitis/Vivado/XRT to use the U250.
 
-* Install Vitis/Vivado 2021 or higher (refer to the Xilinx website for the installers)
+* Install Vitis/Vivado 2022.1 (refer to the Xilinx website for the installers)
 * Install XRT depending on the version of Vitis/Vivado (**IMPORTANT**)
-    * Vitis/Vivado 2021.x: build and install XRT manually based off the following commit: https://github.com/Xilinx/XRT/commit/63269b8d4aa04099459c68b283f8512748fb39d6
-    * Vitis/Vivado 2022.x: install XRT normally (refer to the Xilinx website for the installer)
+    * Vitis/Vivado 2022.1: install XRT normally (refer to the Xilinx website for the installer)
 * Install the U250 board package corresponding to the Vitis/Vivado/XRT version (refer to the Xilinx website for the installers)
 
 Verify that the U250 FPGA can be used for emulations.
