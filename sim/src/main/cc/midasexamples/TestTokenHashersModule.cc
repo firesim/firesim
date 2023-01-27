@@ -33,11 +33,13 @@ public:
       hasher(get_bridge<token_hashers_t>()) 
       
       {
+    signal_search();
+    hasher.info();
 
-    token_hashers_t &x = get_bridge<token_hashers_t>();
-    x.info();
-    
-
+    XORHash32 a;
+    std::cout << HEX32_STRING(a.next(0xf000)) << "\n";
+    std::cout << HEX32_STRING(a.next(0xf001)) << "\n";
+    std::cout << HEX32_STRING(a.next(0xf002)) << "\n";
   }
 
 /**
@@ -46,15 +48,19 @@ public:
   void signal_search() {
 
     auto get_one_idx = [&](const std::string &name, size_t &found_idx) {
-      auto find_idx = hasher.search("PeekPokeBridgeModule", name);
+      const auto find_idx = hasher.search("PeekPokeBridgeModule", name);
       assert(find_idx.size() == 1 && "Hasher reports multiple signals found, expecting only one");
       found_idx = find_idx[0];
-      std::cout << name << " was found at idx: "  << found_idx;
+      std::cout << name << " was found at idx: " << found_idx << "\n";
     };
 
-    get_one_idx("io_writeValue", write_idx);
-    get_one_idx("io_readValue", read_idx);
-    get_one_idx("io_readValueFlipped", flipped_idx);
+    for (size_t i = 0; i < count; i++) {
+      get_one_idx(names[i], hash_idx[i]);
+    }
+
+    // get_one_idx("io_writeValue", write_idx);
+    // get_one_idx("io_readValue", read_idx);
+    // get_one_idx("io_readValueFlipped", flipped_idx);
   }
 
   /**
@@ -75,10 +81,10 @@ public:
       // validate before first tick and for a few after (b/c of the loop)
       // validate();
 
-      uint32_t writeValue = 0xf000 | i;
+      const uint32_t writeValue = 0xf000 | i;
       poke("io_writeValue", writeValue);
-      uint32_t readValue = peek("io_readValue");
-      uint32_t readValueFlipped = peek("io_readValueFlipped");
+      const uint32_t readValue = peek("io_readValue");
+      const uint32_t readValueFlipped = peek("io_readValueFlipped");
 
       std::cout << "step " << i << " wrote " << HEX32_STRING(writeValue) << " read: " << HEX32_STRING(readValue) << "  " << HEX32_STRING(readValueFlipped) << "\n";
 
@@ -93,9 +99,17 @@ public:
   }
 
 private:
-  size_t write_idx;
-  size_t read_idx;
-  size_t flipped_idx;
+  constexpr static std::array<const char *, 3> names = {
+      "io_writeValue", "io_readValue", "io_readValueFlipped"};
+  size_t hash_idx[3];
+  XORHash32 expected[3];
+  constexpr static size_t count = 3;
+  // static_assert((sizeof(hash_idx) / sizeof(size_t)) == count);
+
+  // size_t hash_idx
+  // size_t write_idx;
+  // size_t read_idx;
+  // size_t flipped_idx;
 };
 
 TEST_MAIN(TestTokenHashersModule)

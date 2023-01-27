@@ -5,6 +5,16 @@
 #include <iostream>
 #include <sstream>
 
+uint32_t XORHash32::get() { return lfsr; }
+
+uint32_t XORHash32::next(const uint32_t input) {
+  const uint32_t stage0 = lfsr ^ input;
+  const uint32_t stage1 = stage0 ^ (stage0 << 13);
+  const uint32_t stage2 = stage1 ^ (stage1 >> 17);
+  lfsr = stage2 ^ (stage2 << 5);
+
+  return lfsr;
+}
 
 char token_hashers_t::KIND;
 
@@ -94,6 +104,7 @@ token_hasher_result_t token_hashers_t::get() {
   for (uint32_t i = 0; i < cnt; i++) {
     ret.push_back({});
     const uint32_t occ = occupancy(i);
+    std::cout << "i = " << i << ", occ = " << occ << std::endl;
     std::vector<uint32_t> &data = ret[i];
     data.reserve(occ);
     for (uint32_t j = 0; j < occ; j++) {

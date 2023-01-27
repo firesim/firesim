@@ -22,6 +22,13 @@ TOKENHASHMASTER_checks;
 // forward declare
 class simif_t;
 
+class XORHash32 {
+public:
+  uint32_t get();
+  uint32_t next(const uint32_t input);
+  uint32_t lfsr = 0;
+};
+
 typedef std::vector<std::vector<uint32_t>> token_hasher_result_t;
 
 /** \class token_hashers_t
