@@ -1,8 +1,10 @@
+// See LICENSE for license details
 
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 
+#include <array>
 #include <exception>
 #include <memory>
 
