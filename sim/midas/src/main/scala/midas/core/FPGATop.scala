@@ -214,7 +214,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   }
 
   xbar := loadMem.toHostMemory
-  val targetMemoryRegions = sortedRegionTuples.zip(dramOffsets).map({ case ((bridgeSeq, addresses), hostBaseAddr) =>
+  val targetMemoryRegions = Map(sortedRegionTuples.zip(dramOffsets).map({ case ((bridgeSeq, addresses), hostBaseAddr) =>
     val regionName = bridgeSeq.head.memoryRegionName
     val virtualBaseAddr = addresses.map(_.base).min
     val offset = hostBaseAddr - virtualBaseAddr
@@ -225,8 +225,8 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
       (preTranslationPort := AXI4Deinterleaver(bridge.memorySlaveConstraints.supportsRead.max)
                           := bridge.memoryMasterNode)
     }
-    HostMemoryMapping(regionName, offset)
-  })
+    regionName -> offset
+  }):_*)
 
   def printHostDRAMSummary(): Unit = {
     def toIECString(value: BigInt): String = {
@@ -323,9 +323,8 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     (node, params)
   }
 
-  override def genHeader(sb: StringBuilder): Unit = {
-    super.genHeader(sb)
-    targetMemoryRegions.foreach(_.serializeToHeader(sb))
+  def genHeader(sb: StringBuilder): Unit = {
+    super.genWidgetHeaders(sb, targetMemoryRegions)
   }
 
   lazy val module = new FPGATopImp(this)

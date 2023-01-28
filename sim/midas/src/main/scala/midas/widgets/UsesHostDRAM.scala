@@ -2,7 +2,6 @@
 
 package midas.widgets
 
-import midas.widgets.CppGenerationUtils._
 import freechips.rocketchip.amba.axi4.AXI4OutwardNode
 import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
 
@@ -32,10 +31,6 @@ import freechips.rocketchip.diplomacy.{AddressSet, TransferSizes}
   */
 case class MemorySlaveConstraints(address: Seq[AddressSet], supportsRead: TransferSizes, supportsWrite: TransferSizes)
 
-object GetMemoryRegionOffsetConstName {
-  def apply(memoryRegionName: String) = s"${memoryRegionName}_offset"
-}
-
 /**
   * A common trait for referring collateral in the generated header.
   *
@@ -51,7 +46,6 @@ trait HostDramHeaderConsts {
    *
    */
   def memoryRegionName: String
-  def offsetConstName = GetMemoryRegionOffsetConstName(memoryRegionName)
 }
 
 /**
@@ -69,13 +63,6 @@ trait UsesHostDRAM extends HostDramHeaderConsts {
     * See [[MemorySlaveConstraints]] for more explanation.
     */
   def memorySlaveConstraints: MemorySlaveConstraints
-}
-
-private[midas] case class HostMemoryMapping(memoryRegionName: String, hostOffset: BigInt) extends HostDramHeaderConsts {
-  def serializeToHeader(sb: StringBuilder): Unit = {
-    sb.append(genComment(s"Host FPGA memory mapping for region: ${memoryRegionName}"))
-    sb.append(genConstStatic(offsetConstName, Int64(hostOffset)))
-  }
 }
 
 private[midas] object BytesOfDRAMRequired {

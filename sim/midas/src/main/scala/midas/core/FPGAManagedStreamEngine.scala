@@ -247,9 +247,9 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder) {
       val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
 
       def serializeStreamParameters(prefix: String, params: Seq[ToCPUStreamDriverParameters]): Unit = {
         val numStreams = params.size

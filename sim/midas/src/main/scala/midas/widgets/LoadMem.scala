@@ -179,8 +179,8 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   def memDataChunk: Long =
     ((hKey.dataBits - 1) / p(CtrlNastiKey).dataBits) + 1
 
-  override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-    super.genHeader(base, sb)
+  override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+    super.genHeader(base, memoryRegions, sb)
     import CppGenerationUtils._
     sb.append(genConstStatic(s"${getWName.toUpperCase}_mem_data_chunk", UInt32(memDataChunk)))
   }
