@@ -14,7 +14,7 @@ def build_vitis_driver():
     with prefix(f"cd {ci_env['GITHUB_WORKSPACE']}"):
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
             with prefix("cd ./sim"):
-                run("make vitis")
+                run("make PLATFORM=vitis vitis")
 
 if __name__ == "__main__":
     execute(build_vitis_driver, hosts=["localhost"])
