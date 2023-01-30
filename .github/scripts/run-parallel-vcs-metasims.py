@@ -40,7 +40,7 @@ def run_parallel_metasim():
                 :arg: workload (str) - workload yaml (abs path)
                 :arg: timeout (str) - timeout amount for the workload to run
                 """
-                log_tail_length = 100
+                log_tail_length = 300
                 # unique tag based on the ci workflow and filename is needed to ensure
                 # run farm is unique to each linux-poweroff test
                 script_name = Path(__file__).stem

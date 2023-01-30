@@ -36,7 +36,7 @@ def run_linux_poweroff_vitis():
                 run('wget https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_9e1a21.xclbin')
 
             def run_w_timeout(workload_path, workload, timeout):
-                log_tail_length = 100
+                log_tail_length = 300
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
