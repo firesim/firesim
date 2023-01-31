@@ -11,9 +11,6 @@ DESIGN ?=
 PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
 PLATFORM_CONFIG ?= DefaultF1Config
 
-# The name of the generated runtime configuration file
-CONF_NAME ?= $(BASE_FILE_NAME).runtime.conf
-
 # The host platform type, currently only f1 is supported
 PLATFORM ?=
 

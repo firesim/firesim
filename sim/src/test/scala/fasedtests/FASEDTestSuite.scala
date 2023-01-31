@@ -4,6 +4,7 @@ package firesim.fasedtests
 
 import java.io.File
 
+import scala.io.Source
 import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.util.Random
 import org.scalatest.Suites
@@ -75,8 +76,8 @@ abstract class FASEDTest(
       behaviorSpec: Option[String] = None) = {
     val runtimeConfArg: Option[String] = baseRuntimeConfig match {
       case DefaultRuntimeConfig => None
-      case EmptyRuntimeConfig => Some(s"SIM_RUNTIME_CONF=")
-      case CustomRuntimeConfig(path) => Some(s"SIM_RUNTIME_CONF=$path")
+      case EmptyRuntimeConfig => Some(s"COMMON_SIM_ARGS=")
+      case CustomRuntimeConfig(path) => Some(s"COMMON_SIM_ARGS=${Source.fromFile(path).getLines.mkString(" ")}")
     }
     val plusArgs = Seq(s"""EXTRA_SIM_ARGS=${additionalPlusArgs.mkString(" ")}""")
     val logArg = logFile.map { logName => s"LOGFILE=${logName}" }

@@ -24,8 +24,7 @@ fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
 	.synthesis.xdc .implementation.xdc)
 
 # Files used to run FPGA-level metasimulation
-fpga_sim_delivery_files = $(addprefix $(fpga_driver_dir)/$(BASE_FILE_NAME), .runtime.conf) \
-	$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
+fpga_sim_delivery_files = $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(driver_dir) #Could just set up in the shell project
