@@ -119,8 +119,8 @@ trait HasProgrammableRegisters extends Bundle {
   }
 
   // Returns the default values for all registered RuntimeSettings
-  def getDefaults(prefix: String = ""): Seq[(String, String)] = {
-    val localDefaults = registers map { case (elem, reg) => (s"${prefix}${getName(elem)}" -> s"${reg.default}") }
+  def getDefaults(prefix: String = ""): Seq[(String, BigInt)] = {
+    val localDefaults = registers map { case (elem, reg) => (s"${prefix}${getName(elem)}" -> reg.default) }
     localDefaults ++ (elements flatMap {
       case (name, elem: HasProgrammableRegisters) => elem.getDefaults(s"${prefix}${name}_")
       case _ => Seq()

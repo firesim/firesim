@@ -74,7 +74,7 @@ private[midas] case class HostMemoryMapping(memoryRegionName: String, hostOffset
   def serializeToHeader(sb: StringBuilder): Unit = {
     sb.append("#ifdef GET_MEMORY_OFFSET\n")
     sb.append(s"// Host FPGA memory mapping for region: ${memoryRegionName}\n")
-    sb.append(s"const static int64_t ${offsetConstName} = ${Int64(hostOffset).toC}\n")
+    sb.append(s"const static int64_t ${offsetConstName} = ${Int64(hostOffset).toC};\n")
     sb.append("#undef GET_MEMORY_OFFSET\n")
     sb.append("#endif // GET_MEMORY_OFFSET\n")
   }

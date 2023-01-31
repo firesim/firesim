@@ -482,7 +482,10 @@ class FireSimServerNode(FireSimNode):
 
         driver_path = self.get_resolved_server_hardware_config().get_local_driver_path()
         all_paths.append((driver_path, ''))
-        all_paths.append((self.get_resolved_server_hardware_config().get_local_runtime_conf_path(), ''))
+
+        runtime_conf_path = self.get_resolved_server_hardware_config().get_local_runtime_conf_path()
+        if runtime_conf_path is not None:
+            all_paths.append((runtime_conf_path, ''))
 
         # shared libraries
         all_paths += get_local_shared_libraries(driver_path)
@@ -715,7 +718,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         all_paths.append((self.get_job().bootbinary_path(),
                           self.get_bootbin_name()))
 
-        all_paths.append((hw_cfg.get_local_runtime_conf_path(), ''))
+        runtime_conf_path = hw_cfg.get_local_runtime_conf_path()
+        if runtime_conf_path is not None:
+            all_paths.append((runtime_conf_path, ''))
         return all_paths
 
 

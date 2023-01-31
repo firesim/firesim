@@ -23,9 +23,7 @@ autocounter_args = +autocounter-readrate=1000 +autocounter-filename-base=AUTOCOU
 serial_args = +fesvr-step-size=128
 #serial_args =
 
-SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
-mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(serial_args) $(mem_model_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
+COMMON_SIM_ARGS := $(COMMON_SIM_ARGS) $(serial_args) $(nic_args) $(tracer_args) $(blkdev_args) $(autocounter_args)
 
 # Arguments used only at a particular simulation abstraction
 MIDAS_LEVEL_SIM_ARGS ?= +max-cycles=$(TIMEOUT_CYCLES)

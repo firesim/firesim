@@ -557,6 +557,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
       super.genHeader(base, sb)
 
+
       genInclude(sb, "fased_memory_timing_model")
       genConstructor(
           base,
@@ -588,31 +589,15 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         case Some(key) => key.print()
         case None => println("  No LLC Model Instantiated\n")
       }
+
+      println("\nDefault Settings")
+      val functionalModelSettings = funcModelRegs.getDefaults()
+      val timingModelSettings = model.io.mmReg.getDefaults()
+      for ((key, value) <- functionalModelSettings ++ timingModelSettings) {
+        println(s"  +mm_${key}${getWId}=${value}")
+      }
+      print("\n")
     }
-  }
-
-  /**
-    * Disambiguates between multiple fased instances by using wId (this
-    * increments for each instantion of widgets of the same class), which
-    * is defined in Widget
-    */
-  def settingsToString(settings: Seq[(String, String)]): String =
-    settings.map { case (field, value) => s"+mm_${field}_${wId}=${value}" }.mkString("\n")
-
-  /**
-    * Used by the runtime configuration generator, and not the main GG flow.
-    */
-  def getSettings: String = {
-    println("\nGenerating a Midas Memory Model Configuration File")
-    val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
-    val timingModelSettings = module.model.io.mmReg.getTimingModelSettings()
-    settingsToString(functionalModelSettings ++ timingModelSettings)
-  }
-
-  override def defaultPlusArgs: Option[String] = {
-    val functionalModelSettings = module.funcModelRegs.getDefaults()
-    val timingModelSettings = module.model.io.mmReg.getDefaults()
-    Some(settingsToString(functionalModelSettings ++ timingModelSettings))
   }
 }
 

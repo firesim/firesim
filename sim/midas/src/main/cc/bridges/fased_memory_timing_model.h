@@ -83,8 +83,11 @@ public:
   void finish() override;
 
 private:
-  // Saves a map of register names to settings
-  std::unordered_map<std::string, uint32_t> model_configuration;
+  /**
+   * User-provided configuration options.
+   */
+  std::unordered_map<std::string, uint32_t> user_configuration;
+
   std::vector<uint32_t> profile_reg_addrs;
   std::ofstream stats_file;
   std::vector<Histogram> histograms;
@@ -121,7 +124,7 @@ private:
   // plus arg +mm_useHardwareDefaultRuntimeSettings_<idx>, the driver will
   // instead use the hardware reset values (which map to the values emitted in
   // the runtime.conf) and print those values to the log instead.
-  bool require_all_runtime_settings = true;
+  bool useHardwareDefaults = false;
 };
 
 #endif // __FASED_MEMORY_TIMING_MODEL_H
