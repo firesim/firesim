@@ -51,21 +51,21 @@ void token_hashers_t::init() {}
 /**
  * Print debug info about the MMIO internals
  */
-void token_hashers_t::info() {
-  std::cout << "trigger0 " << trigger0 << "\n";
-  std::cout << "trigger1 " << trigger1 << "\n";
-  std::cout << "period0 " << period0 << "\n";
-  std::cout << "period1 " << period1 << "\n";
+void token_hashers_t::info(std::ostream &os) {
+  os << "trigger0 " << trigger0 << "\n";
+  os << "trigger1 " << trigger1 << "\n";
+  os << "period0 " << period0 << "\n";
+  os << "period1 " << period1 << "\n";
 
   for (uint32_t i = 0; i < cnt; i++) {
-    std::cout << "i: " << i << "\n";
-    std::cout << "  bridge: " << bridge_names[i] << "\n";
-    std::cout << "  name: " << names[i] << "\n";
-    std::cout << "  direction: " << (outputs[i] ? "Output" : "Input") << "\n";
-    std::cout << "  queue_head: " << queue_heads[i] << "\n";
-    std::cout << "  queue_occupancy: " << queue_occupancies[i] << "\n";
-    std::cout << "  tokencount0: " << tokencounts0[i] << "\n";
-    std::cout << "  tokencount1: " << tokencounts1[i] << "\n";
+    os << "i: " << i << "\n";
+    os << "  bridge: " << bridge_names[i] << "\n";
+    os << "  name: " << names[i] << "\n";
+    os << "  direction: " << (outputs[i] ? "Output" : "Input") << "\n";
+    os << "  queue_head: " << queue_heads[i] << "\n";
+    os << "  queue_occupancy: " << queue_occupancies[i] << "\n";
+    os << "  tokencount0: " << tokencounts0[i] << "\n";
+    os << "  tokencount1: " << tokencounts1[i] << "\n";
   }
 }
 
@@ -135,53 +135,47 @@ token_hasher_result_t token_hashers_t::cached_get() {
 
 /**
  * Get a string of all the hashes. This calls cached_get() internally
- * @retval a std::string with human readable output
+ * @param [out] os a stream with human readable format. defaults to std::cout
  */
-std::string token_hashers_t::get_string() {
-  std::ostringstream oss;
+void token_hashers_t::get_string(std::ostream &os) {
   auto got = cached_get();
   uint32_t i = 0;
   for (const auto &row : got) {
-    oss << "Bridge " << i << ": " << bridge_names[i] << "->" << names[i]
+    os << "Bridge " << i << ": " << bridge_names[i] << "->" << names[i]
         << "\n";
     for (const auto &data : row) {
-      oss << data << "\n";
+      os << data << "\n";
     }
     i++;
   }
-
-  return oss.str();
 }
 
 /**
  * Get a string with a CSV of all the hashes. This calls cached_get() internally
- * @retval a std::string with human readable output
+ * @param [out] os a stream with comma separated value formatted output
  */
-std::string token_hashers_t::get_csv_string() {
+void token_hashers_t::get_csv_string(std::ostream &os) {
   std::ostringstream oss;
   auto got = cached_get();
   uint32_t i = 0;
-  oss << "Hash index, Name, Hash\n";
-  std::string name;
+  os << "Hash index, Name, Hash\n";
   for (const auto &row : got) {
-    name = (std::ostringstream()
+    const std::string name = (std::ostringstream()
             << "Bridge #" << i << " " << bridge_names[i] << "->" << names[i])
                .str();
     uint32_t j = 0;
     for (const auto &data : row) {
-      oss << j << "," << name << "," << data << "\n";
+      os << j << "," << name << "," << data << "\n";
       j++;
     }
     i++;
   }
-
-  return oss.str();
 }
 
 void token_hashers_t::write_csv_file(const std::string path) {
   std::ofstream file;
   file.open(path, std::ios::out);
-  file << get_csv_string();
+  get_csv_string(file);
   file.close();
 }
 
@@ -200,11 +194,6 @@ std::vector<uint32_t> token_hashers_t::get_idx(const size_t index) {
 
   return cached_results[index];
 }
-
-/**
- * Print all of the hashes to stdout, this calls get_string() internally
- */
-void token_hashers_t::print() { std::cout << get_string(); }
 
 /**
  * Get the FIFO occupancy for single bridge.
@@ -233,10 +222,10 @@ uint64_t token_hashers_t::tokens(const size_t index) {
               << " passed to tokens() is larger than count: " << cnt << "\n";
     exit(1);
   }
-  uint64_t r0 = read(tokencounts0[index]);
-  uint64_t r1 = read(tokencounts1[index]);
+  const uint64_t r0 = read(tokencounts0[index]);
+  const uint64_t r1 = read(tokencounts1[index]);
 
-  uint64_t val = (r1 << 32) | r0;
+  const uint64_t val = (r1 << 32) | r0;
 
   return val;
 }

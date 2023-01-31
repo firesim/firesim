@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <iostream>
 
 typedef struct TOKENHASHMASTER_struct {
   unsigned long triggerDelay0_TokenHashMaster;
@@ -45,14 +46,14 @@ public:
   token_hashers_t(simif_t &p,
                   const std::vector<std::string> &args,
                   const TOKENHASHMASTER_struct &s,
-                  const uint32_t cnt,
+                  uint32_t cnt,
                   const char *const *bridge_names,
                   const char *const *names,
-                  const uint32_t *const outputs,
-                  const uint32_t *const queue_heads,
-                  const uint32_t *const queue_occupancies,
-                  const uint32_t *const tokencounts0,
-                  const uint32_t *const tokencounts1);
+                  const uint32_t *outputs,
+                  const uint32_t *queue_heads,
+                  const uint32_t *queue_occupancies,
+                  const uint32_t *tokencounts0,
+                  const uint32_t *tokencounts1);
   ~token_hashers_t() override;
   void init() override;
   void tick() override {}
@@ -60,8 +61,8 @@ public:
   bool terminate() override { return false; };
   int exit_code() override { return 0; };
 
-  void info();
-  void set_params(const uint64_t delay, const uint64_t period);
+  void info(std::ostream &os = std::cout);
+  void set_params(uint64_t delay, uint64_t period);
 
 private:
   token_hasher_result_t live_get();
@@ -70,14 +71,13 @@ public:
   void load_cache();
   void reset_cache();
   token_hasher_result_t cached_get();
-  std::string get_string();
-  std::string get_csv_string();
+  void get_string(std::ostream &os = std::cout);
+  void get_csv_string(std::ostream &os = std::cout);
   void write_csv_file(const std::string path);
-  std::vector<uint32_t> get_idx(const size_t index);
-  void print();
-  uint32_t occupancy(const size_t index);
-  uint64_t tokens(const size_t index);
-  std::tuple<std::string, std::string> name(const size_t index);
+  std::vector<uint32_t> get_idx(size_t index);
+  uint32_t occupancy(size_t index);
+  uint64_t tokens(size_t index);
+  std::tuple<std::string, std::string> name(size_t index);
   size_t count();
   std::vector<size_t> search(const std::string &bridge_name,
                              const std::string &signal_name);
