@@ -12,6 +12,7 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 
+import scala.collection.mutable
 import scala.collection.immutable.ListMap
 import CppGenerationUtils._
 

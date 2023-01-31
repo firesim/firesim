@@ -8,6 +8,7 @@ import midas.core.{TargetChannelIO}
 import freechips.rocketchip.config.{Parameters, Field, Config}
 
 import chisel3._
+import chisel3.util.{DecoupledIO, Counter}
 import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 import freechips.rocketchip.util.WideCounter
 
