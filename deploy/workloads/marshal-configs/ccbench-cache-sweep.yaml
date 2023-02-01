@@ -1,0 +1,13 @@
+{
+  "name" : "ccbench-cache-sweep",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "post_run_hook" : "plotccbench.py",
+  "host-init" : "build.sh",
+  "jobs" : [
+    {
+      "name": "ccbench-all",
+      "command": "cd /ccbench-cache-sweep/ && ./runccbench.sh",
+    }
+  ]
+}

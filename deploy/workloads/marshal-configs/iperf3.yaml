@@ -1,0 +1,14 @@
+{
+  "name" : "iperf3",
+  "base" : "br-base.json",
+  "jobs" : [
+      {
+          "name" : "iperf3-client",
+          "command" : "sleep 0.1 && iperf3 -c 172.16.0.3 && poweroff",
+      },
+      {
+          "name" : "iperf3-server",
+          "command" : "iperf3 -s",
+      }
+  ]
+}

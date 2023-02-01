@@ -1,0 +1,40 @@
+{
+  "name" : "ping-latency",
+  "base" : "br-base.json",
+  "overlay" : "overlay",
+  "post_run_hook" : "ping-latency-graph.py",
+  "jobs" : [
+    {
+      "name": "pinger",
+      "command": "pinglatency.sh && poweroff -f",
+    },
+    {
+      "name": "pingee",
+      "command": "while true; do sleep 1000; done",
+    },
+    {
+      "name": "idler-1",
+      "command": "while true; do sleep 1000; done",
+    },
+    {
+      "name": "idler-2",
+      "command": "while true; do sleep 1000; done",
+    },
+    {
+      "name": "idler-3",
+      "command": "while true; do sleep 1000; done",
+    },
+    {
+      "name": "idler-4",
+      "command": "while true; do sleep 1000; done",
+    },
+    {
+      "name": "idler-5",
+      "command": "while true; do sleep 1000; done",
+    },
+    {
+      "name": "idler-6",
+      "command": "while true; do sleep 1000; done",
+    }
+  ]
+}
