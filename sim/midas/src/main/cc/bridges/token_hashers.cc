@@ -22,18 +22,17 @@ char token_hashers_t::KIND;
  * The constructor for token_hashers_t.
  *
  */
-token_hashers_t::token_hashers_t(
-    simif_t &sim,
-    const std::vector<std::string> &args,
-    const TOKENHASHMASTER_struct &s,
-    const uint32_t cnt,
-    const char *const *bridge_names,
-    const char *const *names,
-    const uint32_t *const outputs,
-    const uint32_t *const queue_heads,
-    const uint32_t *const queue_occupancies,
-    const uint32_t *const tokencounts0,
-    const uint32_t *const tokencounts1)
+token_hashers_t::token_hashers_t(simif_t &sim,
+                                 const std::vector<std::string> &args,
+                                 const TOKENHASHMASTER_struct &s,
+                                 const uint32_t cnt,
+                                 const char *const *bridge_names,
+                                 const char *const *names,
+                                 const uint32_t *const outputs,
+                                 const uint32_t *const queue_heads,
+                                 const uint32_t *const queue_occupancies,
+                                 const uint32_t *const tokencounts0,
+                                 const uint32_t *const tokencounts1)
     : bridge_driver_t(sim, &KIND), trigger0(s.triggerDelay0_TokenHashMaster),
       trigger1(s.triggerDelay1_TokenHashMaster),
       period0(s.triggerPeriod0_TokenHashMaster),
@@ -76,8 +75,7 @@ void token_hashers_t::info(std::ostream &os) {
  * @param [in] period The number of hashes to skip between saving. 0 means save
  * every hash
  */
-void token_hashers_t::set_params(const uint64_t delay,
-                                       const uint64_t period) {
+void token_hashers_t::set_params(const uint64_t delay, const uint64_t period) {
 #ifndef TOKENHASHMASTER_0_PRESENT
   std::cout << "token_hashers_t::set_params() was called but Token "
                "Hashers are not enabled in this build\n";
@@ -141,8 +139,7 @@ void token_hashers_t::get_string(std::ostream &os) {
   auto got = cached_get();
   uint32_t i = 0;
   for (const auto &row : got) {
-    os << "Bridge " << i << ": " << bridge_names[i] << "->" << names[i]
-        << "\n";
+    os << "Bridge " << i << ": " << bridge_names[i] << "->" << names[i] << "\n";
     for (const auto &data : row) {
       os << data << "\n";
     }
@@ -160,9 +157,10 @@ void token_hashers_t::get_csv_string(std::ostream &os) {
   uint32_t i = 0;
   os << "Hash index, Name, Hash\n";
   for (const auto &row : got) {
-    const std::string name = (std::ostringstream()
-            << "Bridge #" << i << " " << bridge_names[i] << "->" << names[i])
-               .str();
+    const std::string name =
+        (std::ostringstream()
+         << "Bridge #" << i << " " << bridge_names[i] << "->" << names[i])
+            .str();
     uint32_t j = 0;
     for (const auto &data : row) {
       os << j << "," << name << "," << data << "\n";
@@ -236,8 +234,7 @@ uint64_t token_hashers_t::tokens(const size_t index) {
  * @param [in] index The index of the bridge
  * @retval The number of tokens a bridge has seen
  */
-std::tuple<std::string, std::string>
-token_hashers_t::name(const size_t index) {
+std::tuple<std::string, std::string> token_hashers_t::name(const size_t index) {
   if (index >= cnt) {
     std::cerr << "index: " << index
               << " passed to name() is larger than count: " << cnt << "\n";
@@ -249,10 +246,11 @@ token_hashers_t::name(const size_t index) {
 
 size_t token_hashers_t::count() { return cnt; }
 
-std::vector<size_t> token_hashers_t::search(const std::string &bridge_name, const std::string &signal_name) {
+std::vector<size_t> token_hashers_t::search(const std::string &bridge_name,
+                                            const std::string &signal_name) {
   std::vector<size_t> ret;
   for (uint32_t i = 0; i < cnt; i++) {
-    if(bridge_names[i] == bridge_name && names[i] == signal_name) {
+    if (bridge_names[i] == bridge_name && names[i] == signal_name) {
       ret.emplace_back(i);
     }
   }

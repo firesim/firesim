@@ -5,9 +5,9 @@
 
 #include "core/bridge_driver.h"
 #include <cstddef>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 typedef struct TOKENHASHMASTER_struct {
   unsigned long triggerDelay0_TokenHashMaster;

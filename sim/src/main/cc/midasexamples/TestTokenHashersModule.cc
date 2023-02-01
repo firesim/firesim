@@ -6,7 +6,8 @@
 #include <iomanip>
 #include <iostream>
 
-#define HEX32_STRING(n) std::setfill('0') << std::setw(8) << std::hex << (n) << std::dec
+#define HEX32_STRING(n)                                                        \
+  std::setfill('0') << std::setw(8) << std::hex << (n) << std::dec
 
 /**
  * @brief Token Hashers Bridge Driver Test
@@ -17,13 +18,12 @@
 class TestTokenHashersModule : public TestHarness {
 private:
   token_hashers_t &hasher;
-public:
 
+public:
   TestTokenHashersModule(const std::vector<std::string> &args, simif_t &simif)
-      : TestHarness(args, simif),
-      hasher(get_bridge<token_hashers_t>()) 
-      
-      {
+      : TestHarness(args, simif), hasher(get_bridge<token_hashers_t>())
+
+  {
     signal_search();
   }
 
@@ -34,7 +34,8 @@ public:
   void signal_search() {
     auto get_one_idx = [&](const std::string &name, size_t &found_idx) {
       const auto find_idx = hasher.search("PeekPokeBridgeModule", name);
-      assert(find_idx.size() == 1 && "Hasher reports multiple signals found, expecting only one");
+      assert(find_idx.size() == 1 &&
+             "Hasher reports multiple signals found, expecting only one");
       found_idx = find_idx[0];
     };
 
@@ -50,7 +51,7 @@ public:
   void run_test() override {
 
     // set the parameters of the hashers inside the DUT
-    hasher.set_params(0,0);
+    hasher.set_params(0, 0);
 
     target_reset();
 

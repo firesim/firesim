@@ -1,6 +1,6 @@
 // See LICENSE for license details.
-#include <iostream>
 #include "PrintfTest.h"
+#include <iostream>
 
 class TestNarrowPrintfModule : public PrintTest {
 public:
