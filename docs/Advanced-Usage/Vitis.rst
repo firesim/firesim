@@ -83,7 +83,7 @@ Bitstream Build
         custom_runtime_config: null
 
 .. Note:: If for some reason the ``buildbitstream`` failed, you can download a pre-built ``xclbin`` here:
-   https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_9e1a21.xclbin
+   https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_d148b73.xclbin
 
 Running A Simulation
 --------------------

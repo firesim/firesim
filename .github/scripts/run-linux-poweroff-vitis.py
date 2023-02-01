@@ -33,7 +33,7 @@ def run_linux_poweroff_vitis():
             # download prebuilt xclbin to /tmp
             # this CI image is managed by the default CI account
             with prefix('cd /tmp'):
-                run('wget https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_9e1a21.xclbin')
+                run('wget https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_d148b73.xclbin')
 
             def run_w_timeout(workload_path, workload, timeout):
                 log_tail_length = 300
