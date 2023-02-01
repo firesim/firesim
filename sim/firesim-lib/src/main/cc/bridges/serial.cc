@@ -61,7 +61,6 @@ serial_t::serial_t(simif_t &simif,
   printf("\n");
 
   tsi_argc = argc_count + 1;
-  fesvr = new firesim_tsi_t(tsi_argc, tsi_argv, has_mem);
 }
 
 serial_t::~serial_t() {
@@ -75,6 +74,11 @@ serial_t::~serial_t() {
 }
 
 void serial_t::init() {
+  // `ucontext` used by tsi cannot be created in one thread and resumed in
+  // another. To ensure that the tsi process is on the correct thread, it is
+  // built here, as the bridge constructor may be invoked from a thread other
+  // than the one it will run on later in meta-simulations.
+  fesvr = new firesim_tsi_t(tsi_argc, tsi_argv, has_mem);
   write(mmio_addrs.step_size, step_size);
   go();
 }

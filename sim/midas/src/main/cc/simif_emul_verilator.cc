@@ -21,7 +21,7 @@ public:
 
   ~simif_emul_verilator_t();
 
-  int run();
+  int run(simulation_t &sim);
 
   uint64_t get_time() const { return main_time; }
 
@@ -62,7 +62,9 @@ simif_emul_verilator_t::~simif_emul_verilator_t() {
 #endif
 }
 
-int simif_emul_verilator_t::run() {
+int simif_emul_verilator_t::run(simulation_t &sim) {
+  start_driver(sim);
+
   top->clock = 0;
 
   top->reset = 1;
@@ -98,8 +100,9 @@ void simif_emul_verilator_t::tick() {
   top->eval();
 }
 
-int main(int argc, char **argv) {
+std::unique_ptr<simif_t>
+create_simif(const TargetConfig &config, int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_emul_verilator_t(conf_target, args).run();
+  return std::make_unique<simif_emul_verilator_t>(config, args);
 }

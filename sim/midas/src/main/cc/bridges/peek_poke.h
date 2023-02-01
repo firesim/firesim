@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "core/simif.h"
+#include "core/timing.h"
 
 struct PEEKPOKEBRIDGEMODULE_struct {
   uint64_t STEP;
