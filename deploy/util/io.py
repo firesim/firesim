@@ -24,6 +24,7 @@ def firesim_input(prompt: object = None) -> str:
     return res
 
 
+# fixme move inside
 rootLogger = logging.getLogger()
 
 
