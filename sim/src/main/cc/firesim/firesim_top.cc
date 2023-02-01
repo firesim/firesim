@@ -17,7 +17,14 @@ public:
   void simulation_finish() override;
   int simulation_run() override;
 
+  bool simulation_timed_out() override {
+    return !simulation_complete() && peek_poke.is_done() &&
+           finished_scheduled_tasks();
+  }
+
 private:
+  // Reference to the peek-poke bridge.
+  peek_poke_t &peek_poke;
   // profile interval: # of cycles to advance before profiling instrumentation
   // registers in models
   uint64_t profile_interval = -1;
@@ -30,7 +37,8 @@ private:
 };
 
 firesim_top_t::firesim_top_t(const std::vector<std::string> &args, simif_t &sim)
-    : simulation_t(sim, args) {
+    : simulation_t(sim, args),
+      peek_poke(sim.get_registry().get_widget<peek_poke_t>()) {
 
   max_cycles = -1;
   profile_interval = max_cycles;
@@ -85,7 +93,6 @@ void firesim_top_t::simulation_init() {
 }
 
 int firesim_top_t::simulation_run() {
-  auto &peek_poke = sim.get_registry().get_widget<peek_poke_t>();
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
