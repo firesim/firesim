@@ -392,7 +392,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   outer.genCtrlIO(ctrl)
   outer.printMemoryMapSummary()
   outer.printHostDRAMSummary()
-  outer.emitDefaultPlusArgsFile()
 
   val confCtrl = (ctrl.nastiXIdBits, ctrl.nastiXAddrBits, ctrl.nastiXDataBits)
   val memParams = p(HostMemChannelKey).axi4BundleParams

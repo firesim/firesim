@@ -139,18 +139,17 @@ class RuntimeHWConfig:
 
     def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
-        return "FireSim-generated.runtime.conf" if self.customruntimeconfig is None else os.path.basename(self.customruntimeconfig)
+        if self.customruntimeconfig is None:
+            return None
+        return os.path.basename(self.customruntimeconfig)
 
     def get_local_runtime_conf_path(self) -> str:
         """ return relative local path of the runtime conf used to run this sim. """
+        if self.customruntimeconfig is None:
+            return None
         my_deploytriplet = self.get_deploytriplet_for_config()
         drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + self.platform + "/" + my_deploytriplet + "/"
-        my_runtimeconfig = self.customruntimeconfig
-        if my_runtimeconfig is None:
-            runtime_conf_local = drivers_software_base + self.get_local_runtimeconf_binaryname()
-        else:
-            runtime_conf_local = CUSTOM_RUNTIMECONFS_BASE + my_runtimeconfig
-        return runtime_conf_local
+        return CUSTOM_RUNTIMECONFS_BASE + self.customruntimeconfig
 
     def get_additional_required_sim_files(self) -> List[Tuple[str, str]]:
         """ return list of any additional files required to run a simulation.
@@ -229,7 +228,7 @@ class RuntimeHWConfig:
 
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
-        permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"]
+        permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"] if runtimeconf else []
         permissive_driver_args += [run_device_placement]
         permissive_driver_args += [vitis_bit]
         permissive_driver_args += [f"+profile-interval={profile_interval}"]

@@ -4,16 +4,11 @@
 # Midas-Level Sim Recipes#
 ##########################
 
-SIM_RUNTIME_CONF ?= $(GENERATED_DIR)/$(CONF_NAME)
-mem_model_args = $(shell cat $(SIM_RUNTIME_CONF))
-COMMON_SIM_ARGS ?= $(mem_model_args)
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 
 # PointerChaser requires a custom memory initialization
 ifeq ($(DESIGN),PointerChaser)
 LOADMEM ?= $(GENERATED_DIR)/mem_init.hex
-ARGS    ?= `cat $(SIM_RUNTIME_CONF)`
-
 $(LOADMEM): src/main/resources/midasexamples/generate_memory_init.py
 	$< --output_file $@
 else

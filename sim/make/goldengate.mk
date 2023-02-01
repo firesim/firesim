@@ -54,5 +54,4 @@ conf: $(fame_annos)
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
-		-ggcs $(PLATFORM_CONFIG) \
-		-ggrc $(CONF_NAME)"
+		-ggcs $(PLATFORM_CONFIG)"
