@@ -88,14 +88,14 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
       val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
-      val offsetConstName = memoryRegionNameOpt.map(GetMemoryRegionOffsetConstName(_)).getOrElse("0")
+      val offsetConst = memoryRegionNameOpt.map(memoryRegions(_)).getOrElse(BigInt(0))
       sb.append(genMacro(s"${headerWidgetName}_has_memory", memoryRegionNameOpt.isDefined.toString))
-      sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
+      sb.append(genMacro(s"${headerWidgetName}_memory_offset", UInt64(offsetConst)))
     }
   }
 }

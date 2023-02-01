@@ -183,10 +183,10 @@ class PlusArgsBridgeModule(params: PlusArgsBridgeParams)(implicit p: Parameters)
       assert(plusArgValueNext === plusArgValue)
     }
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder) {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
       sb.append(genStatic(s"${headerWidgetName}_name", CStrLit(params.name)))
       sb.append(genStatic(s"${headerWidgetName}_default", CStrLit(s"${params.default}")))
       sb.append(genStatic(s"${headerWidgetName}_docstring", CStrLit(params.docstring)))

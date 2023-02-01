@@ -185,10 +185,10 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets().map(UInt32(_)))
     val formatStrings   = printPort.printRecords.map(_._2.formatString).map(CStrLit)
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
       sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printPort.printRecords.size)))
       sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
       sb.append(genConstStatic(s"${headerWidgetName}_idle_cycles_mask",

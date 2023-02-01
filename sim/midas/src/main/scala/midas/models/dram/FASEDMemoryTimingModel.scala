@@ -554,12 +554,12 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
         val prefix = s"const std::map<std::string, int> $mapName = {\n"
         map.foldLeft(prefix)((str, kvp) => str + s""" {\"${kvp._1}\", ${kvp._2}},\n""") + "};\n"
       }
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
     }
 

@@ -144,8 +144,8 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     genCRFile()
 
     // modify the output header file
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      super.genHeader(base, sb)
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      super.genHeader(base, memoryRegions, sb)
 
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_iaddr_width", UInt32(iaddrWidth)))
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_insn_width", UInt32(insnWidth)))

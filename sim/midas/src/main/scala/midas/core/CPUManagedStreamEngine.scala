@@ -200,9 +200,9 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder) {
       val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
 
       def serializeStreamParameters(prefix: String, params: Seq[StreamDriverParameters]): Unit = {
         val numStreams = params.size

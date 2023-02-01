@@ -64,10 +64,10 @@ class AssertBridgeModule(params: AssertBridgeParameters)(implicit p: Parameters)
     attach(enable, "enable")
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       import CppGenerationUtils._
       val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
       sb.append(genConstStatic(s"${headerWidgetName}_assert_count", UInt32(assertMessages.size)))
       sb.append(genArray(s"${headerWidgetName}_assert_messages", assertMessages.map(CStrLit)))
     }

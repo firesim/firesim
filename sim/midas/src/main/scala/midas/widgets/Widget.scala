@@ -190,7 +190,14 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     crFile
   }
 
-  def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+  /** Emits a header snippet for this widget.
+    * @param base
+    *    The base address of the MMIO region allocated to the widget.
+    * @param memoryRegions
+    *    A mapping of names to allocated FPGA-DRAM regions. This is one mechanism
+    *    for establishing side-channels between two otherwise unconnected bridges or widgets.
+    */
+  def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
     wrapper.headerComment(sb)
     crRegistry.genHeader(wrapper.getWName.toUpperCase, base, sb)
     crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
@@ -276,8 +283,8 @@ trait HasWidgets {
     * Iterates through each bridge, generating the header fragment. Must be
     * called after bridge address assignment is complete.
     */
-  def genHeader(sb: StringBuilder): Unit = {
-    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, sb))
+  def genWidgetHeaders(sb: StringBuilder, memoryRegions: Map[String, BigInt]): Unit = {
+    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, memoryRegions, sb))
   }
 
   def printWidgets: Unit = {

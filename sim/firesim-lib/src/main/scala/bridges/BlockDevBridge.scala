@@ -251,8 +251,8 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      super.genHeader(base, sb)
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      super.genHeader(base, memoryRegions, sb)
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_latency_bits", UInt32(latencyBits)))
       sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_trackers", UInt32(nTrackers)))
     }

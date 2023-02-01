@@ -149,14 +149,14 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       poked := addrs.map(i => crFile.io.mcr.activeWriteToAddress(i)).reduce(_ || _)
     })
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       import CppGenerationUtils._
 
       val name = getWName.toUpperCase
       def genOffsets(signals: Seq[String]): Unit = (signals.zipWithIndex) foreach {
         case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
 
-      super.genHeader(base, sb)
+      super.genHeader(base, memoryRegions, sb)
       sb.append(genComment("Pokeable target inputs"))
       sb.append(genMacro("POKE_SIZE", UInt64(hPort.ins.size)))
       genOffsets(hPort.ins.unzip._1)
