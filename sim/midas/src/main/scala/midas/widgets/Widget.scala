@@ -198,7 +198,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     wrapper.headerComment(sb)
     crRegistry.genHeader(wrapper.getWName.toUpperCase, base, sb)
     crRegistry.genArrayHeader(wrapper.getWName.toUpperCase, base, sb)
-    wrapper.getHeaderFragments(base).foreach { sb.append }
+    wrapper.getHeaderFragments(base).foreach { sb.append(_) }
   }
 }
 

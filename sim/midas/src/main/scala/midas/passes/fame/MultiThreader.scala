@@ -74,7 +74,7 @@ object MultiThreader {
       renameRegs(renameRegs(freshNames, n, ns, cons), n, ns, alt)
     case reg: DefRegister =>
       // One extra register to shadow value for clock-gated registers
-      val regNames = (0 to n.intValue()).map(i => ns.newName(s"${reg.name}_slot_${i}"))
+      val regNames = (0 to n.intValue).map(i => ns.newName(s"${reg.name}_slot_${i}"))
       freshNames.updated(reg.name, regNames)
     case s => freshNames
   }
@@ -120,7 +120,7 @@ object MultiThreader {
     stmt match {
       case mem: DefMemory =>
         assert(mem.readLatency == 0 && mem.writeLatency == 1, "Memories must be transformed with VerilogMemDelays before multithreading")
-        mem.copy(depth = transformDepth(mem.depth, n), readLatency = mem.readLatency * n.intValue())
+        mem.copy(depth = transformDepth(mem.depth, n), readLatency = mem.readLatency * n.intValue)
       case reg: DefRegister =>
         val newRegs: Seq[DefRegister] = freshNames(reg.name).map(alias => updateReg(reg, alias))
         // Muxing happens between first two stages

@@ -7,7 +7,7 @@ rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
 # Scala invocation options
 JVM_MEMORY ?= 16G
-SCALA_VERSION ?= 2.12.10
+SCALA_VERSION ?= 2.13.10
 # Disable the SBT supershell as interacts poorly with scalatest output and breaks
 # the runtime config generator.
 export JAVA_TOOL_OPTIONS ?= -Xmx$(JVM_MEMORY) -Xss8M -Dsbt.supershell=false -Djava.io.tmpdir=$(base_dir)/.java_tmp

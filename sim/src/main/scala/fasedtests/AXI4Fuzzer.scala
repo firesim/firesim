@@ -62,7 +62,8 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
       := fuzz.node)
   }
 
-  lazy val module = new LazyModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends LazyModuleImp(this) {
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 

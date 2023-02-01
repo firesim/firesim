@@ -27,10 +27,11 @@ class SerialBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Br
 }
 
 object SerialBridge {
-  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String])(implicit p: Parameters): SerialBridge = {
+  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String], reset: Bool)(implicit p: Parameters): SerialBridge = {
     val ep = Module(new SerialBridge(memoryRegionNameOpt))
     ep.io.serial <> port
     ep.io.clock := clock
+    ep.io.reset := reset
     ep
   }
 }

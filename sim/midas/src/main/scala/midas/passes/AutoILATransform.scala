@@ -139,7 +139,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     }
 
     val newTop             = possibleTops.head.asInstanceOf[Module]
-    val newPorts           = newTop.ports.toSet -- oldTop.ports.toSet
+    val newPorts           = newTop.ports.filter(!oldTop.ports.contains(_))
     val newPortNames       = newPorts.map(_.name)
     val newTopWithOldPorts = newTop.copy(ports = oldTop.ports)
     val newTopNamespace    = Namespace(newTop)
@@ -227,9 +227,9 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
     // Re-target connect statements, which now reference the removed ports, to ILA wrapper
     def rewireConnects(s: Statement): Statement = s.map(rewireConnects) match {
-      case c @ Connect(_, WRef(portName, _, _, _), rhs) if newPortNames(portName) =>
+      case c @ Connect(_, WRef(portName, _, _, _), rhs) if newPortNames.contains(portName) =>
         c.copy(loc = SubField(WRef(ilaWrapperInstName), portName))
-      case o                                                                      => o
+      case o                                                                               => o
     }
     val rewiredTop = newTopWithOldPorts.copy(
       body = Block(ilaWrapperInst, newTopWithOldPorts.body.map(rewireConnects))
