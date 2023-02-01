@@ -263,10 +263,6 @@
                         <a href="FuzzingUIntSourceTargetIO.html" title="">FuzzingUIntSourceTargetIO</a>
                       </li><li class="current-entities indented2">
                         <span class="separator"></span>
-                        <a class="object" href="GetMemoryRegionOffsetConstName$.html" title=""></a>
-                        <a href="GetMemoryRegionOffsetConstName$.html" title="">GetMemoryRegionOffsetConstName</a>
-                      </li><li class="current-entities indented2">
-                        <span class="separator"></span>
                         <a class="trait" href="HasChannels.html" title=""></a>
                         <a href="HasChannels.html" title="">HasChannels</a>
                       </li><li class="current-entities indented2">
@@ -1163,9 +1159,9 @@
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></dd></dl></div>
     </li><li name="midas.widgets.WidgetImp#genHeader" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="genHeader(base:BigInt,sb:StringBuilder):Unit"></a><a id="genHeader(BigInt,StringBuilder):Unit"></a>
+      <a id="genHeader(base:BigInt,memoryRegions:Map[String,BigInt],sb:StringBuilder):Unit"></a><a id="genHeader(BigInt,Map[String,BigInt],StringBuilder):Unit"></a>
       <span class="permalink">
-      <a href="../../midas/widgets/BridgeModuleImp.html#genHeader(base:BigInt,sb:StringBuilder):Unit" title="Permalink">
+      <a href="../../midas/widgets/BridgeModuleImp.html#genHeader(base:BigInt,memoryRegions:Map[String,BigInt],sb:StringBuilder):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1174,10 +1170,13 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">genHeader</span><span class="params">(<span name="base">base: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="sb">sb: <span class="extype" name="scala.StringBuilder">StringBuilder</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">genHeader</span><span class="params">(<span name="base">base: <span class="extype" name="scala.BigInt">BigInt</span></span>, <span name="memoryRegions">memoryRegions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.BigInt">BigInt</span>]</span>, <span name="sb">sb: <span class="extype" name="scala.StringBuilder">StringBuilder</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.10/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></dd></dl></div>
+      <p class="shortcomment cmt">Emits a header snippet for this widget.</p><div class="fullcomment"><div class="comment cmt"><p>Emits a header snippet for this widget.</p></div><dl class="paramcmts block"><dt class="param">base</dt><dd class="cmt"><p>
+   The base address of the MMIO region allocated to the widget.</p></dd><dt class="param">memoryRegions</dt><dd class="cmt"><p>
+   A mapping of names to allocated FPGA-DRAM regions. This is one mechanism
+   for establishing side-channels between two otherwise unconnected bridges or widgets.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="WidgetImp.html" class="extype" name="midas.widgets.WidgetImp">WidgetImp</a></dd></dl></div>
     </li><li name="midas.widgets.WidgetImp#genROReg" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="genROReg[T&lt;:chisel3.Data](wire:T,name:String,substruct:Boolean):T"></a><a id="genROReg[T&lt;:Data](T,String,Boolean):T"></a>
       <span class="permalink">
