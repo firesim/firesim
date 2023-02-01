@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 
+#include "bridges/master.h"
 #include "bridges/peek_poke.h"
 #include "core/address_map.h"
 #include "core/bridge_driver.h"
@@ -14,6 +15,7 @@ private:
   int error = 0;
   bool done = false;
   peek_poke_t &peek_poke;
+  master_t &master;
   const AddressMap addr_map;
   std::unordered_map<std::string, uint32_t> expected_uarchevent_values;
 
@@ -26,6 +28,7 @@ public:
    */
   test_harness_bridge_t(simif_t &simif,
                         peek_poke_t &peek_poke,
+                        master_t &master,
                         const AddressMap &addr_map,
                         const std::vector<std::string> &args);
   ~test_harness_bridge_t() override = default;

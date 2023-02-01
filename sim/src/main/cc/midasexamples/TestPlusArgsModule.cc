@@ -41,10 +41,14 @@ public:
   /**
    * Constructor.
    *
+   * @param [in] registry Reference to the widget registry holding bridges.
    * @param [in] args The argument list from main
    */
-  TestPlusArgsModule(const std::vector<std::string> &args, simif_t &simif)
-      : TestHarness(args, simif), plusargsinator(get_bridge<plusargs_t>()) {
+  TestPlusArgsModule(widget_registry_t &registry,
+                     const std::vector<std::string> &args,
+                     std::string_view target_name)
+      : TestHarness(registry, args, target_name),
+        plusargsinator(get_bridge<plusargs_t>()) {
     parse_key(args);
   }
 

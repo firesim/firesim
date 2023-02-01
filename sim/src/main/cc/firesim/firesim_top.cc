@@ -1,5 +1,6 @@
 // See LICENSE for license details
 
+#include "bridges/clock.h"
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/heartbeat.h"
 #include "bridges/peek_poke.h"
@@ -10,7 +11,9 @@
 
 class firesim_top_t : public systematic_scheduler_t, public simulation_t {
 public:
-  firesim_top_t(const std::vector<std::string> &args, simif_t &sim);
+  firesim_top_t(simif_t &simif,
+                widget_registry_t &registry,
+                const std::vector<std::string> &args);
   ~firesim_top_t() override = default;
 
   void simulation_init() override;
@@ -36,9 +39,11 @@ private:
   int exit_code();
 };
 
-firesim_top_t::firesim_top_t(const std::vector<std::string> &args, simif_t &sim)
-    : simulation_t(sim, args),
-      peek_poke(sim.get_registry().get_widget<peek_poke_t>()) {
+firesim_top_t::firesim_top_t(simif_t &simif,
+                             widget_registry_t &registry,
+                             const std::vector<std::string> &args)
+    : simulation_t(registry, args),
+      peek_poke(registry.get_widget<peek_poke_t>()) {
 
   max_cycles = -1;
   profile_interval = max_cycles;
@@ -52,26 +57,27 @@ firesim_top_t::firesim_top_t(const std::vector<std::string> &args, simif_t &sim)
     }
   }
 
-  sim.get_registry().add_widget(new heartbeat_t(sim, args));
+  registry.add_widget(
+      new heartbeat_t(simif, registry.get_widget<clockmodule_t>(), args));
 }
 
 bool firesim_top_t::simulation_complete() {
   bool is_complete = false;
-  for (auto &e : sim.get_registry().get_all_bridges()) {
+  for (auto &e : registry.get_all_bridges()) {
     is_complete |= e->terminate();
   }
   return is_complete;
 }
 
 uint64_t firesim_top_t::profile_models() {
-  for (auto &mod : sim.get_registry().get_all_models()) {
+  for (auto &mod : registry.get_all_models()) {
     mod->profile();
   }
   return profile_interval;
 }
 
 int firesim_top_t::exit_code() {
-  for (auto &e : sim.get_registry().get_all_bridges()) {
+  for (auto &e : registry.get_all_bridges()) {
     if (e->exit_code())
       return e->exit_code();
   }
@@ -84,10 +90,10 @@ void firesim_top_t::simulation_init() {
     register_task([this]() { return this->profile_models(); }, 0);
   }
 
-  for (auto *bridge : sim.get_registry().get_all_bridges()) {
+  for (auto *bridge : registry.get_all_bridges()) {
     bridge->init();
   }
-  for (auto *model : sim.get_registry().get_all_models()) {
+  for (auto *model : registry.get_all_models()) {
     model->init();
   }
 }
@@ -97,7 +103,7 @@ int firesim_top_t::simulation_run() {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
     while (!peek_poke.is_done() && !simulation_complete()) {
-      for (auto &e : sim.get_registry().get_all_bridges())
+      for (auto &e : registry.get_all_bridges())
         e->tick();
     }
   }
@@ -106,15 +112,17 @@ int firesim_top_t::simulation_run() {
 }
 
 void firesim_top_t::simulation_finish() {
-  for (auto *bridge : sim.get_registry().get_all_bridges()) {
+  for (auto *bridge : registry.get_all_bridges()) {
     bridge->finish();
   }
-  for (auto *model : sim.get_registry().get_all_models()) {
+  for (auto *model : registry.get_all_models()) {
     model->finish();
   }
 }
 
 std::unique_ptr<simulation_t>
-create_simulation(const std::vector<std::string> &args, simif_t &sim) {
-  return std::make_unique<firesim_top_t>(args, sim);
+create_simulation(simif_t &simif,
+                  widget_registry_t &registry,
+                  const std::vector<std::string> &args) {
+  return std::make_unique<firesim_top_t>(simif, registry, args);
 }

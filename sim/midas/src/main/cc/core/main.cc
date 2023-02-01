@@ -48,24 +48,26 @@
 // The user-defined part of the driver implements this method to return
 // a simulation instance implementing all simulation-specific logic.
 extern std::unique_ptr<simulation_t>
-create_simulation(const std::vector<std::string> &args, simif_t &simif);
+create_simulation(simif_t &simif,
+                  widget_registry_t &registry,
+                  const std::vector<std::string> &args);
 
 // The platform-specific component of the driver implements this method
 // to return a handle to the simulation.
 extern std::unique_ptr<simif_t>
 create_simif(const TargetConfig &config, int argc, char **argv);
 
-// clang-format off
-
 // Entry point of the driver.
 int main(int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
+
+  // Create the hardware interface.
   auto simif_ptr = create_simif(conf_target, argc, argv);
+  auto &simif = *simif_ptr;
 
+  // clang-format off
+  widget_registry_t registry;
   {
-    auto &simif = *simif_ptr;
-    auto &registry = simif_ptr->get_registry();
-
     // DOC include start: Bridge Driver Registration
     // Here we instantiate our driver once for each bridge in the target
     // Golden Gate emits a <BridgeModuleClassName>_<id>_PRESENT macro for each
@@ -76,7 +78,11 @@ int main(int argc, char **argv) {
     #include "constructor.h"
     // DOC include end: Bridge Driver Registration
   }
+  // clang-format on
 
-  auto sim = create_simulation(args, *simif_ptr);
-  return simif_ptr->run(*sim);
+  // Create the simulation instance.
+  auto sim = create_simulation(simif, registry, args);
+
+  // Run the simulation with the given implementation.
+  return simif.run(*sim);
 }

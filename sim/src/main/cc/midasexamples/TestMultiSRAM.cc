@@ -2,8 +2,10 @@
 
 class TestMultiSRAM final : public MultiRegfileTest {
 public:
-  TestMultiSRAM(const std::vector<std::string> &args, simif_t &simif)
-      : MultiRegfileTest(args, simif) {
+  TestMultiSRAM(widget_registry_t &registry,
+                const std::vector<std::string> &args,
+                std::string_view target_name)
+      : MultiRegfileTest(registry, args, target_name) {
     write_first = false;
   }
 };

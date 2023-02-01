@@ -7,9 +7,11 @@ char test_harness_bridge_t::KIND;
 test_harness_bridge_t::test_harness_bridge_t(
     simif_t &simif,
     peek_poke_t &peek_poke,
+    master_t &master,
     const AddressMap &addr_map,
     const std::vector<std::string> &args)
-    : bridge_driver_t(simif, &KIND), peek_poke(peek_poke), addr_map(addr_map) {
+    : bridge_driver_t(simif, &KIND), peek_poke(peek_poke), master(master),
+      addr_map(addr_map) {
 
   for (auto &arg : args) {
     // Record all uarch events we want to validate
@@ -28,26 +30,26 @@ test_harness_bridge_t::test_harness_bridge_t(
 // against expected values
 void test_harness_bridge_t::tick() {
   // Wait for reset to complete.
-  if (simif.actual_tcycle() < 100)
+  if (!master.is_init_done())
     return;
 
   // use a non-blocking sample since this signal is monotonic
   done = peek_poke.sample_value("done");
-  if (done) {
-    error = 0;
-    // Iterate through all uarch values we want to validate
-    for (auto &pair : expected_uarchevent_values) {
-      auto actual_value = read(addr_map.r_addr(pair.first));
-      // If one doesn't match, croak
-      if (actual_value != pair.second) {
-        error = 1;
-        fprintf(stderr,
-                "FASED Test Harness -- %s did not match: Measured %d, Expected "
-                "%d\n",
-                pair.first.c_str(),
-                actual_value,
-                pair.second);
-      }
+  if (!done)
+    return;
+
+  // Iterate through all uarch values we want to validate
+  for (auto &pair : expected_uarchevent_values) {
+    auto actual_value = read(addr_map.r_addr(pair.first));
+    // If one doesn't match, croak
+    if (actual_value != pair.second) {
+      error = 1;
+      fprintf(stderr,
+              "FASED Test Harness -- %s did not match: Measured %d, Expected "
+              "%d\n",
+              pair.first.c_str(),
+              actual_value,
+              pair.second);
     }
   }
 }

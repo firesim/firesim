@@ -1,7 +1,6 @@
 // See LICENSE for license details.
 
 #include "clock.h"
-
 #include "core/simif.h"
 
 char clockmodule_t::KIND;

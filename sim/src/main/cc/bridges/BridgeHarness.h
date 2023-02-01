@@ -17,7 +17,8 @@ class bridge_driver_t;
  */
 class BridgeHarness : public simulation_t {
 public:
-  BridgeHarness(const std::vector<std::string> &args, simif_t &sim);
+  BridgeHarness(widget_registry_t &registry,
+                const std::vector<std::string> &args);
 
   ~BridgeHarness() override;
 
@@ -35,7 +36,9 @@ private:
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
   std::unique_ptr<simulation_t> create_simulation(                             \
-      const std::vector<std::string> &args, simif_t &sim) {                    \
-    return std::make_unique<CLASS_NAME>(args, sim);                            \
+      simif_t &simif,                                                          \
+      widget_registry_t &registry,                                             \
+      const std::vector<std::string> &args) {                                  \
+    return std::make_unique<CLASS_NAME>(registry, args);                       \
   }
 #endif // MIDAEXAMPLES_BRIDGEHARNESS_H

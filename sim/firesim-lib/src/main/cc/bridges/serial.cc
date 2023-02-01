@@ -1,10 +1,12 @@
 // See LICENSE for license details
 
 #include "serial.h"
+#include "bridges/loadmem.h"
 #include "core/simif.h"
 #include "fesvr/firesim_tsi.h"
 
 #include <cassert>
+#include <gmp.h>
 
 char serial_t::KIND;
 
