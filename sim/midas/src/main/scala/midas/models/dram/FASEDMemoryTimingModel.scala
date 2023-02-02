@@ -180,7 +180,7 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
     (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
   )
 
-  def getFuncModelSettings(): Seq[(String, String)] = {
+  def getFuncModelSettings(): Seq[(String, BigInt)] = {
     Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
     setUnboundSettings()
     getSettings()
@@ -584,11 +584,29 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       println("\nDefault Settings")
       val functionalModelSettings = funcModelRegs.getDefaults()
       val timingModelSettings = model.io.mmReg.getDefaults()
-      for ((key, value) <- functionalModelSettings ++ timingModelSettings) {
-        println(s"  +mm_${key}${getWId}=${value}")
+      for (setting <- settingsToString(functionalModelSettings ++ timingModelSettings)) {
+        println(s"  ${setting}")
       }
       print("\n")
     }
+  }
+
+  /**
+    * Disambiguates between multiple fased instances by using wId (this
+    * increments for each instantion of widgets of the same class), which
+    * is defined in Widget
+    */
+  def settingsToString(settings: Seq[(String, BigInt)]): Seq[String] =
+    settings.map { case (field, value) => s"+mm_${field}_${wId}=${value}" }
+
+  /**
+    * Used by the runtime configuration generator, and not the main GG flow.
+    */
+  def getSettings: String = {
+    println("\nGenerating a Midas Memory Model Configuration File")
+    val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
+    val timingModelSettings = module.model.io.mmReg.getTimingModelSettings()
+    settingsToString(functionalModelSettings ++ timingModelSettings).mkString("\n")
   }
 }
 

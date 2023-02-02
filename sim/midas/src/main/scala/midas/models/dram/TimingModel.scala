@@ -44,7 +44,7 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
 
   // Called by MidasMemModel to fetch all programmable settings for the timing
   // model. These are concatenated with functional model settings
-  def getTimingModelSettings(): Seq[(String, String)] = {
+  def getTimingModelSettings(): Seq[(String, BigInt)] = {
     // First invoke the timing model specific method
     requestSettings()
     // Finally set everything that hasn't already been set
