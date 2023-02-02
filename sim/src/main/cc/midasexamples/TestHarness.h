@@ -20,7 +20,9 @@
  */
 class TestHarness : public simulation_t {
 public:
-  TestHarness(const std::vector<std::string> &args, simif_t &sim);
+  TestHarness(widget_registry_t &registry,
+              const std::vector<std::string> &args,
+              std::string_view target_name);
 
   ~TestHarness() override;
 
@@ -48,7 +50,7 @@ public:
 
   /**
    * Returns an upper bound for the cycle reached by the target
-   * If using blocking steps, this will be ~equivalent to actual_tcycle()
+   * If using blocking steps, this will be ~equivalent to the clock tcycle()
    */
   uint64_t cycles() { return t; };
 
@@ -63,7 +65,7 @@ public:
    */
   template <typename T>
   std::vector<T *> get_bridges() {
-    return sim.get_registry().get_bridges<T>();
+    return registry.get_bridges<T>();
   }
 
   /**
@@ -71,11 +73,12 @@ public:
    */
   template <typename T>
   T &get_bridge() {
-    return sim.get_registry().get_widget<T>();
+    return registry.get_widget<T>();
   }
 
 protected:
   peek_poke_t &peek_poke;
+  std::string_view target_name;
 
   /// Random number generator for tests, using a fixed default seed.
   uint64_t random_seed = 0;
@@ -90,7 +93,10 @@ protected:
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
   std::unique_ptr<simulation_t> create_simulation(                             \
-      const std::vector<std::string> &args, simif_t &sim) {                    \
-    return std::make_unique<CLASS_NAME>(args, sim);                            \
+      simif_t &simif,                                                          \
+      widget_registry_t &registry,                                             \
+      const std::vector<std::string> &args) {                                  \
+    return std::make_unique<CLASS_NAME>(                                       \
+        registry, args, simif.get_target_name());                              \
   }
 #endif // MIDAEXAMPLES_TESTHARNESS_H

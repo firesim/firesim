@@ -143,6 +143,11 @@ protected:
   uint64_t memsize;
 
   /**
+   * If +fastloadmem and +loadmem are set, memories are loaded from this file.
+   */
+  std::string load_mem_path;
+
+  /**
    * Advances the simulation by a random number of ticks.
    *
    * The number of ticks is bounded by `maximum_host_delay`.

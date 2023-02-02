@@ -10,10 +10,11 @@
 
 simif_emul_t::simif_emul_t(const TargetConfig &config,
                            const std::vector<std::string> &args)
-    : simif_t(config, args), master(std::make_unique<mmio_t>(config.ctrl)) {
+    : simif_t(config), master(std::make_unique<mmio_t>(config.ctrl)) {
 
   // Parse arguments.
   memsize = 1L << config.mem.addr_bits;
+  bool fastloadmem = false;
   for (auto arg : args) {
     if (arg.find("+waveform=") == 0) {
       waveform = arg.c_str() + 10;
@@ -31,7 +32,17 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
       fuzz_seed = strtoll(arg.c_str() + 11, NULL, 10);
       fprintf(stderr, "Using custom fuzzer seed: %ld\n", fuzz_seed);
     }
+    if (arg.find("+fastloadmem") == 0) {
+      fastloadmem = true;
+    }
+    if (arg.find("+loadmem=") == 0) {
+      load_mem_path = arg.c_str() + 9;
+    }
   }
+
+  if (!fastloadmem)
+    load_mem_path.clear();
+
   fuzz_gen.seed(fuzz_seed);
 
   // Initialise memories.
@@ -68,13 +79,12 @@ void simif_emul_t::start_driver(simulation_t &sim) {
       do_tick();
 
       // Load memories before initialising the simulation.
-      if (fastloadmem && !load_mem_path.empty()) {
+      if (!load_mem_path.empty()) {
         fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
         load_mems(load_mem_path.c_str());
       }
 
       // Run the simulation flow.
-      target_init();
       exit_code = sim.execute_simulation_flow();
 
       // Wake the target thread before returning from the simulation thread.

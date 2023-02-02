@@ -9,6 +9,8 @@
 #include "core/timing.h"
 
 class simif_t;
+class widget_registry_t;
+class clockmodule_t;
 
 /**
  * Interface for a simulation implementation.
@@ -17,11 +19,17 @@ class simif_t;
  * and running finalisation logic at the end.  All simulation implementations
  * (midasexamples, firesim, bridges, fasedtests) derive this interface,
  * implementing the driver-specific logic.
+ *
+ * - To track simulation time, this class automatically interfaces with the
+ *   clock module and incorporates utilities to report performance are based
+ *   off these measures of time.
+ *
+ * - Via the LoadMem widget, this class sets up the initial contents of DRAM.
  */
 class simulation_t {
 public:
-  simulation_t(simif_t &sim, const std::vector<std::string> &args)
-      : args(args), sim(sim) {}
+  simulation_t(widget_registry_t &registry,
+               const std::vector<std::string> &args);
 
   virtual ~simulation_t() = default;
 
@@ -76,23 +84,53 @@ public:
    */
   int execute_simulation_flow();
 
-protected:
-  /**
-   * Saved command-line arguments.
-   */
-  const std::vector<std::string> args;
-  /**
-   * Simulation interface.
-   */
-  simif_t &sim;
-
 private:
+  /**
+   * Waits until the hardware is initialised.
+   *
+   * This method blocks and must be called before any MMIO is performed.
+   */
+  void wait_for_init();
+
+  /**
+   * Initialises the memory system of the simulation.
+   */
+  void init_dram();
+
   // Simulation performance counters.
   void record_start_times();
   void record_end_times();
   void print_simulation_performance_summary();
 
-  midas_time_t start_time, end_time;
+protected:
+  /**
+   * Widget registry.
+   */
+  widget_registry_t &registry;
+
+private:
+  /**
+   * Name of the simulated target.
+   */
+  std::string target_name;
+
+  /**
+   * Reference to the clock widget.
+   */
+  clockmodule_t &clock;
+
+  /**
+   * Path to load DRAM contents from, unless +fastloadmem is set.
+   */
+  std::string load_mem_path;
+
+  /**
+   * If set, will write all zeros to fpga dram before commencing simulation
+   */
+  bool do_zero_out_dram = false;
+
+  midas_time_t start_time;
+  midas_time_t end_time;
   uint64_t start_hcycle = -1;
   uint64_t end_hcycle = 0;
   uint64_t end_tcycle = 0;

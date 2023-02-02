@@ -6,14 +6,15 @@
 #include "bridges/uart.h"
 #include "core/bridge_driver.h"
 
-BridgeHarness::BridgeHarness(const std::vector<std::string> &args, simif_t &sim)
-    : simulation_t(sim, args),
-      peek_poke(sim.get_registry().get_widget<peek_poke_t>()) {}
+BridgeHarness::BridgeHarness(widget_registry_t &registry,
+                             const std::vector<std::string> &args)
+    : simulation_t(registry, args),
+      peek_poke(registry.get_widget<peek_poke_t>()) {}
 
 BridgeHarness::~BridgeHarness() = default;
 
 void BridgeHarness::simulation_init() {
-  for (auto &bridge : sim.get_registry().get_all_bridges()) {
+  for (auto &bridge : registry.get_all_bridges()) {
     bridge->init();
   }
 }
@@ -28,7 +29,7 @@ int BridgeHarness::simulation_run() {
   // Tick until all requests are serviced.
   peek_poke.step(get_step_limit(), /*blocking=*/false);
   for (unsigned i = 0; i < get_tick_limit() && !peek_poke.is_done(); ++i) {
-    for (auto &bridge : sim.get_registry().get_all_bridges()) {
+    for (auto &bridge : registry.get_all_bridges()) {
       bridge->tick();
     }
   }
@@ -38,7 +39,7 @@ int BridgeHarness::simulation_run() {
 }
 
 void BridgeHarness::simulation_finish() {
-  for (auto &bridge : sim.get_registry().get_all_bridges()) {
+  for (auto &bridge : registry.get_all_bridges()) {
     bridge->finish();
   }
 }

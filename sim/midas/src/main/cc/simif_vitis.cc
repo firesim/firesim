@@ -55,7 +55,7 @@ constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
 
 simif_vitis_t::simif_vitis_t(const TargetConfig &config,
                              const std::vector<std::string> &args)
-    : simif_t(config, args) {
+    : simif_t(config) {
   slotid = -1;
   binary_file = "";
 

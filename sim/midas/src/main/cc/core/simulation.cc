@@ -1,22 +1,46 @@
 // See LICENSE for license details.
 
 #include "simulation.h"
+#include "bridges/clock.h"
+#include "bridges/loadmem.h"
+#include "bridges/master.h"
 #include "core/simif.h"
+#include "core/stream_engine.h"
 #include "core/timing.h"
 
 #include <cassert>
 #include <cinttypes>
 #include <cstdio>
 
+simulation_t::simulation_t(widget_registry_t &registry,
+                           const std::vector<std::string> &args)
+    : registry(registry), clock(registry.get_widget<clockmodule_t>()) {
+  bool fastloadmem = false;
+  for (auto &arg : args) {
+    if (arg.find("+fastloadmem") == 0) {
+      fastloadmem = true;
+    }
+    if (arg.find("+loadmem=") == 0) {
+      load_mem_path = arg.c_str() + 9;
+    }
+    if (arg.find("+zero-out-dram") == 0) {
+      do_zero_out_dram = true;
+    }
+  }
+
+  if (fastloadmem)
+    load_mem_path.clear();
+}
+
 void simulation_t::record_start_times() {
-  start_hcycle = sim.actual_hcycle();
+  start_hcycle = clock.hcycle();
   start_time = timestamp();
 }
 
 void simulation_t::record_end_times() {
   end_time = timestamp();
-  end_tcycle = sim.actual_tcycle();
-  end_hcycle = sim.actual_hcycle();
+  end_tcycle = clock.tcycle();
+  end_hcycle = clock.hcycle();
 }
 
 void simulation_t::print_simulation_performance_summary() {
@@ -56,6 +80,12 @@ void simulation_t::print_simulation_performance_summary() {
 }
 
 int simulation_t::execute_simulation_flow() {
+  wait_for_init();
+
+  if (auto *stream = registry.get_stream_engine()) {
+    stream->init();
+  }
+
   simulation_init();
 
   record_start_times();
@@ -84,4 +114,22 @@ int simulation_t::execute_simulation_flow() {
   print_simulation_performance_summary();
 
   return timeout ? EXIT_FAILURE : exit_code;
+}
+
+void simulation_t::wait_for_init() {
+  auto &master = registry.get_widget<master_t>();
+  while (!master.is_init_done())
+    ;
+}
+
+void simulation_t::init_dram() {
+  auto &loadmem = registry.get_widget<loadmem_t>();
+  if (do_zero_out_dram) {
+    fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
+    loadmem.zero_out_dram();
+  }
+
+  if (!load_mem_path.empty()) {
+    loadmem.load_mem_from_file(load_mem_path);
+  }
 }

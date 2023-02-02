@@ -1,9 +1,11 @@
 #ifndef __HEARTBEAT_H
 #define __HEARTBEAT_H
 
+#include "core/bridge_driver.h"
+
 #include <fstream>
 
-#include "core/bridge_driver.h"
+class clockmodule_t;
 
 // Periodically checks that the target is advancing by polling an FPGA-hosted
 // cycle count, which it writes out to a file.  The causes of an apparently
@@ -19,7 +21,9 @@ public:
   /// The identifier for the bridge type used for casts.
   static char KIND;
 
-  heartbeat_t(simif_t &sim, const std::vector<std::string> &args);
+  heartbeat_t(simif_t &sim,
+              clockmodule_t &clock,
+              const std::vector<std::string> &args);
 
   void init() override {}
   void tick() override;
@@ -28,6 +32,7 @@ public:
   void finish() override {}
 
 private:
+  clockmodule_t &clock;
   std::ofstream log;
   time_t start_time;
 

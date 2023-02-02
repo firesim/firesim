@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "master.h"
 #include "core/simif.h"
 
 char master_t::KIND;

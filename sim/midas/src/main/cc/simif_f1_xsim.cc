@@ -41,7 +41,7 @@ private:
 
 simif_f1_xsim_t::simif_f1_xsim_t(const TargetConfig &config,
                                  const std::vector<std::string> &args)
-    : simif_t(config, args) {
+    : simif_t(config) {
   mkfifo(driver_to_xsim, 0666);
   fprintf(stderr, "opening driver to xsim\n");
   driver_to_xsim_fd = open(driver_to_xsim, O_WRONLY);

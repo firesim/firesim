@@ -44,7 +44,7 @@ private:
 
 simif_f1_t::simif_f1_t(const TargetConfig &config,
                        const std::vector<std::string> &args)
-    : simif_t(config, args) {
+    : simif_t(config) {
   slot_id = -1;
 
   for (auto &arg : args) {
