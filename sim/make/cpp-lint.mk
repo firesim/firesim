@@ -24,6 +24,7 @@ clang_tidy_files := $(shell \
 clang_tidy_flags :=\
 	-I$(firesim_base_dir)/midas/src/main/cc \
 	-I$(firesim_base_dir)/firesim-lib/src/main/cc \
+	-I$(firesim_base_dir)/src/main/cc/midasexamples \
 	-I$(testchipip_csrc_dir) \
 	-std=c++17 \
 	-x c++

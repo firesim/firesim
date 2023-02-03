@@ -19,7 +19,9 @@ DRIVER_CC := \
 			bridges/uart.cc \
 			bridges/serial.cc \
 			bridges/blockdev.cc \
+			bridges/tracerv.cc \
 			fesvr/firesim_tsi.cc \
+			$(addsuffix .cc, fesvr/* bridges/tracerv/*) \
 		))
 
 TARGET_CXX_FLAGS := \
@@ -33,4 +35,5 @@ TARGET_CXX_FLAGS := \
 
 TARGET_LD_FLAGS := \
 		-L$(RISCV)/lib \
-		-lfesvr
+		-lfesvr \
+		-l:libdwarf.so -l:libelf.so

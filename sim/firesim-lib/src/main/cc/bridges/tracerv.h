@@ -4,7 +4,7 @@
 
 #include "core/bridge_driver.h"
 #include "core/clock_info.h"
-
+#include <functional>
 #include <vector>
 
 class TraceTracker;
@@ -38,9 +38,9 @@ public:
             const TRACERVBRIDGEMODULE_struct &mmio_addrs,
             int tracerno,
             const std::vector<std::string> &args,
-            const int stream_idx,
-            const int stream_depth,
-            const unsigned int max_core_ipc,
+            int stream_idx,
+            int stream_depth,
+            unsigned int max_core_ipc,
             const ClockInfo &clock_info);
   ~tracerv_t();
 
@@ -49,12 +49,25 @@ public:
   virtual bool terminate() { return false; }
   virtual int exit_code() { return 0; }
   virtual void finish() { flush(); };
+  static void serialize(const uint64_t *OUTBUF,
+                        size_t bytes_received,
+                        FILE *tracefile,
+                        std::function<void(uint64_t, uint64_t)> addInstruction,
+                        int max_core_ipc,
+                        bool human_readable,
+                        bool test_output,
+                        bool fireperf);
+  void write_header(FILE *file);
 
 private:
   const TRACERVBRIDGEMODULE_struct mmio_addrs;
   const int stream_idx;
   const int stream_depth;
+
+public:
   const int max_core_ipc;
+
+private:
   ClockInfo clock_info;
 
   FILE *tracefile;
@@ -86,7 +99,10 @@ private:
 
   size_t process_tokens(int num_beats, int minium_batch_beats);
   int beats_available_stable();
+
+public:
   void flush();
+  static constexpr uint64_t valid_mask = (1ULL << 40);
 };
 
 #endif // __TRACERV_H

@@ -37,6 +37,7 @@ class TracerVTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extend
   */
 class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[TracerVTargetIO], TracerVBridgeModule] {
+  require(numInsns > 0, "TracerVBridge: number of instructions must be larger than 0")
   val io = IO(new TracerVTargetIO(insnWidths, numInsns))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(TracerVKey(insnWidths, numInsns))
@@ -62,11 +63,20 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
 }
 
 object TracerVBridge {
+  def apply(widths: TracedInstructionWidths, numInsns: Int)(implicit p: Parameters): TracerVBridge = {
+    val tracerv = Module(new TracerVBridge(widths, numInsns))
+    tracerv.generateTriggerAnnotations
+    tracerv.io.trace.clock := Module.clock
+    tracerv.io.trace.reset := Module.reset
+    tracerv
+  }
+
   def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
-    val ep = Module(new TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
-    withClockAndReset(tracedInsns.clock, tracedInsns.reset) { ep.generateTriggerAnnotations() }
-    ep.io.trace := tracedInsns
-    ep
+    val tracerv = withClockAndReset(tracedInsns.clock, tracedInsns.reset) {
+      TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns)
+    }
+    tracerv.io.trace := tracedInsns
+    tracerv
   }
 }
 
