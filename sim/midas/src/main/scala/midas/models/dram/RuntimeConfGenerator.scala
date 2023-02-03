@@ -128,11 +128,11 @@ trait HasProgrammableRegisters extends Bundle {
   }
 
   // Returns the requested values for all RuntimSEttings, throws an exception if one is unbound
-  def getSettings(prefix: String = ""): Seq[(String, String)] = {
+  def getSettings(prefix: String = ""): Seq[(String, BigInt)] = {
     val localSettings = registers map { case (elem, reg) => {
       val name = s"${prefix}${getName(elem)}"
       val setting = reg.getOrElse(throw new RuntimeException(s"Runtime Setting ${name} has not been set"))
-      (name -> setting.toString)
+      (name -> setting)
       }
     }
     // Recurse into leaves
