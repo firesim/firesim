@@ -188,6 +188,10 @@ public:
 
     steps(100);
 
+    std::cout << "trace_trigger_start " << tracerv.trace_trigger_start << "\n";
+    std::cout << "trigger_start_pc " << tracerv.trigger_start_pc << "\n";
+    std::cout << "trigger_stop_pc " << tracerv.trigger_stop_pc << "\n";
+
     // write out a file which contains the expected output
     write_expected_file();
 
@@ -201,11 +205,37 @@ public:
    */
   void write_expected_file() {
     const auto select = tracerv.trigger_selector;
+
+    bool force_continue = false;
+
+    // the test for mode 2 starts with this flag on, and clears it later
+    if (tracerv.trigger_selector == 2) {
+      force_continue = true;
+    }
+
     for (const auto &beat : expected_pair) {
       const auto &[cycle, insns] = beat;
 
       // in mode 1 (cycle mode), drop all traces before the trigger matches
       if (tracerv.trigger_selector == 1 && cycle < tracerv.trace_trigger_start) {
+        continue;
+      }
+
+      if (tracerv.trigger_selector == 2) {
+        bool continue_now = false;
+        for (const auto pc : insns) {
+          if (pc == tracerv.trigger_start_pc) {
+            force_continue = false;
+            continue_now = true;
+            break;
+          }
+        }
+        if (continue_now) {
+          continue;
+        }
+      }
+
+      if (force_continue) {
         continue;
       }
       // std::cout << "cycle: " << cycle << "\n";
