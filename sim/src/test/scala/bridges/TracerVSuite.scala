@@ -22,11 +22,11 @@ abstract class TracerVTestBase(
   override def runTest(backend: String, debug: Boolean) {
     // Create an expected file.
     val expected = File.createTempFile("expected", ".txt")
-    // expected.deleteOnExit()
+    expected.deleteOnExit()
 
     // Create the output file. tracerv will always append '-C0' to the end of the path provided in the plusarg
     val output     = File.createTempFile("output", ".txt-C0")
-    // output.deleteOnExit()
+    output.deleteOnExit()
     val outputPath = output.getPath.substring(0, output.getPath.length() - 3)
 
     // group the optional function args together with the correct plusarg string names
@@ -55,9 +55,10 @@ abstract class TracerVTestBase(
 }
 
 class TracerVF1TestCount1 extends TracerVTestBase(BaseConfigs.F1, 1);
-class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
+class TracerVF1TestCount5 extends TracerVTestBase(BaseConfigs.F1, 5, Some(3), Some("1C")); // in hex
+
+// class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
+class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(3), Some("FF0000001C")); // in hex
+
 class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9")); // in decimal // FIMXE test with 0xa
-// class TracerVF1TestCount14 extends TracerVTestBase(BaseConfigs.F1, 14);
-// class TracerVF1TestCount15 extends TracerVTestBase(BaseConfigs.F1, 15);
-// class TracerVF1TestCount32 extends TracerVTestBase(BaseConfigs.F1, 32);
 class TracerVVitisTest    extends TracerVTestBase(BaseConfigs.Vitis, 7);

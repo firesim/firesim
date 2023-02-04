@@ -92,6 +92,12 @@ public:
 
     tracerv.init();
 
+    // std::cout << "tracerv.trace_trigger_start " <<
+    // tracerv.trace_trigger_start << "\n"; std::cout <<
+    // "tracerv.trigger_start_insn " << tracerv.trigger_start_insn << "\n";
+    // std::cout << "tracerv.trigger_start_insn_mask " <<
+    // tracerv.trigger_start_insn_mask << "\n";
+
     // write the header to our expected test output file
     tracerv.write_header(expected);
   }
@@ -231,6 +237,10 @@ public:
     return EXIT_SUCCESS;
   }
 
+  /**
+   * Pass a lambda which will be used with std::copy_if
+   * this writes to expected_pair
+   */
   void filter_one(std::function<bool(const expected_t beat)> fn) {
     std::vector<expected_t> filtered;
     std::copy_if(expected_pair.begin(),
@@ -246,18 +256,18 @@ public:
    */
   void filter_expected_test() {
 
-    // auto filt = std::bind(std::copy_if)
-
     switch (tracerv.trigger_selector) {
     case 0:
       break; // no filter
     case 1:
+      // keep all instructions after a number of cycles
       filter_one([&](const expected_t beat) {
         const auto &[cycle, insns] = beat;
         return cycle >= tracerv.trace_trigger_start;
       });
       break;
     case 2:
+      // match based on PC value, but delay the trigger by 1 cycle
       filter_one([&](const expected_t beat) {
         static bool keep = false;
         const auto &[cycle, insns] = beat;
@@ -268,6 +278,22 @@ public:
           }
         }
         return keep;
+      });
+      break;
+    case 3:
+      // match based on Instruction value, trigger is not sticky
+      filter_one([&](const expected_t beat) {
+        const auto &[cycle, insns] = beat;
+        for (const auto pc : insns) {
+          // std::cout << "cyc: " << cycle << " check " << fold(pc) << " vs " <<
+          // (tracerv.trigger_start_insn & tracerv.trigger_start_insn_mask) <<
+          // "\n";
+          if (fold(pc) ==
+              (tracerv.trigger_start_insn & tracerv.trigger_start_insn_mask)) {
+            return true;
+          }
+        }
+        return false;
       });
       break;
     default:
