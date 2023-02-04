@@ -121,7 +121,9 @@ public:
     return was_done;
   }
 
-  std::vector<std::pair<uint64_t, std::vector<uint64_t>>> expected_pair;
+  using expected_t = std::pair<uint64_t, std::vector<uint64_t>>;
+
+  std::vector<expected_t> expected_pair;
 
   int simulation_run() override {
 
@@ -192,10 +194,59 @@ public:
     std::cout << "trigger_start_pc " << tracerv.trigger_start_pc << "\n";
     std::cout << "trigger_stop_pc " << tracerv.trigger_stop_pc << "\n";
 
+    // if testing a trigger mode, the output need to be filtered
+    filter_expected_test();
+
     // write out a file which contains the expected output
     write_expected_file();
 
     return EXIT_SUCCESS;
+  }
+
+  void filter_one(std::function<bool(const expected_t beat)> fn) {
+    std::vector<expected_t> filtered;
+    std::copy_if(expected_pair.begin(),
+                 expected_pair.end(),
+                 std::back_inserter(filtered),
+                 fn);
+    expected_pair = std::move(filtered);
+  }
+
+  /**
+   * Depending on the mode (0,1,2,3) remove expected traces
+   * to match the behavior of the trigger in scala
+   */
+  void filter_expected_test() {
+
+    // auto filt = std::bind(std::copy_if)
+
+    switch (tracerv.trigger_selector) {
+    case 0:
+      break; // no filter
+    case 1:
+      filter_one([&](const expected_t beat) {
+        const auto &[cycle, insns] = beat;
+        return cycle >= tracerv.trace_trigger_start;
+      });
+      break;
+    case 2:
+      filter_one([&](const expected_t beat) {
+        static bool keep = false;
+        const auto &[cycle, insns] = beat;
+        for (const auto pc : insns) {
+          if (pc == tracerv.trigger_start_pc) {
+            keep = true;
+            return false;
+          }
+        }
+        return keep;
+      });
+      break;
+    default:
+      std::cout << "trigger_selector " << tracerv.trigger_selector
+                << " not handled in filter_expected()" << std::endl;
+      break;
+    }
   }
 
   /**
@@ -206,39 +257,8 @@ public:
   void write_expected_file() {
     const auto select = tracerv.trigger_selector;
 
-    bool force_continue = false;
-
-    // the test for mode 2 starts with this flag on, and clears it later
-    if (tracerv.trigger_selector == 2) {
-      force_continue = true;
-    }
-
     for (const auto &beat : expected_pair) {
       const auto &[cycle, insns] = beat;
-
-      // in mode 1 (cycle mode), drop all traces before the trigger matches
-      if (tracerv.trigger_selector == 1 && cycle < tracerv.trace_trigger_start) {
-        continue;
-      }
-
-      if (tracerv.trigger_selector == 2) {
-        bool continue_now = false;
-        for (const auto pc : insns) {
-          if (pc == tracerv.trigger_start_pc) {
-            force_continue = false;
-            continue_now = true;
-            break;
-          }
-        }
-        if (continue_now) {
-          continue;
-        }
-      }
-
-      if (force_continue) {
-        continue;
-      }
-      // std::cout << "cycle: " << cycle << "\n";
 
       uint64_t buffer[8];
       // Zero initialization is required because hardware beats are
