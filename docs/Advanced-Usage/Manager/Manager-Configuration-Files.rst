@@ -623,7 +623,7 @@ you should not change it unless you are done with your current Run Farm.
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
 ``always_expand_run_farm``
-"""""""""""""""""""""""""
+""""""""""""""""""""""""""
 When ``true`` (the default behavior when not given) the number of instances
 of each type (see ``f1.16xlarges`` etc. below)  are launched every time you
 run ``launchrunfarm``.
