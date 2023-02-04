@@ -204,8 +204,8 @@ public:
     for (const auto &beat : expected_pair) {
       const auto &[cycle, insns] = beat;
 
-      // in mode 1 (PC mode), drop all traces before the trigger matches
-      if (tracerv.trigger_selector == 1 && cycle < tracerv.trigger_start_pc) {
+      // in mode 1 (cycle mode), drop all traces before the trigger matches
+      if (tracerv.trigger_selector == 1 && cycle < tracerv.trace_trigger_start) {
         continue;
       }
       // std::cout << "cycle: " << cycle << "\n";
