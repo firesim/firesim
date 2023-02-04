@@ -38,11 +38,26 @@ static std::string namei(const unsigned x) {
   return ss.str();
 };
 
+static std::string nameinsn(const unsigned x) {
+  std::stringstream ss;
+  ss << "io_insns_" << x << "_insn";
+  return ss.str();
+};
+
 static std::string namev(const unsigned x) {
   std::stringstream ss;
   ss << "io_insns_" << x << "_valid";
   return ss.str();
 };
+
+// a simple way to turn the iaddr values we use
+// in this test into a 5 bit value
+static uint32_t fold(const uint64_t x) {
+  uint32_t a = x & 0x1f;
+  uint32_t b = x >> 8;
+  uint32_t c = x >> 13;
+  return (a ^ b ^ c) & 0x1f;
+}
 
 class TracerVModule : public simulation_t {
 private:
@@ -125,6 +140,18 @@ public:
 
   std::vector<expected_t> expected_pair;
 
+  void write_iaddr(const unsigned i, const uint64_t x) {
+    peek_poke.poke(namei(i), x, true);
+
+    // as a simplification, also write a modified version of
+    // the PC value as the instruction
+    peek_poke.poke(nameinsn(i), fold(x), true);
+  }
+
+  void write_valid(const unsigned i, const bool x) {
+    peek_poke.poke(namev(i), x, true);
+  }
+
   int simulation_run() override {
 
     // Reset the DUT.
@@ -148,8 +175,9 @@ public:
       for (unsigned i = 0; i < iad.size(); i++) {
         // std::cout << "loading " << i << " with " << iad[i] << "," << bit[i]
         // << std::endl;
-        peek_poke.poke(namei(i), iad[i], true);
-        peek_poke.poke(namev(i), bit[i], true);
+
+        write_iaddr(i, iad[i]);
+        write_valid(i, bit[i]);
 
         // calculate what TraverV should output, and save it
         if (bit[i]) {
