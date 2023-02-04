@@ -5,6 +5,7 @@
 #include "core/bridge_driver.h"
 #include "core/clock_info.h"
 #include <functional>
+#include <iostream>
 #include <vector>
 
 class TraceTracker;
@@ -69,8 +70,9 @@ public:
 
 private:
   ClockInfo clock_info;
-
   FILE *tracefile;
+
+public:
   uint64_t cur_cycle;
   uint64_t trace_trigger_start, trace_trigger_end;
   uint32_t trigger_start_insn = 0;
@@ -81,6 +83,7 @@ private:
   uint64_t trigger_start_pc = 0;
   uint64_t trigger_stop_pc = 0;
 
+private:
   // TODO: rename this from linuxbin
   ObjdumpedBinary *linuxbin;
   TraceTracker *trace_tracker;

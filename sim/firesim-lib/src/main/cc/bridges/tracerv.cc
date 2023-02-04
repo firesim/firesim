@@ -50,19 +50,16 @@ tracerv_t::tracerv_t(simif_t &sim,
 
   long outputfmtselect = 0;
 
-  const std::string suffix = std::string("=");
-  const std::string tracefile_arg = std::string("+tracefile") + suffix;
-  const std::string tracestart_arg = std::string("+trace-start") + suffix;
-  const std::string traceend_arg = std::string("+trace-end") + suffix;
-  const std::string traceselect_arg = std::string("+trace-select") + suffix;
+  const std::string tracefile_arg = "+tracefile=";
+  const std::string tracestart_arg = "+trace-start=";
+  const std::string traceend_arg = "+trace-end=";
+  const std::string traceselect_arg = "+trace-select=";
   // Testing: provides a reference file to diff the collected trace against
   const std::string testoutput_arg = std::string("+trace-test-output");
   // Formats the output before dumping the trace to file
   const std::string humanreadable_arg = std::string("+trace-humanreadable");
-
-  const std::string trace_output_format_arg =
-      std::string("+trace-output-format") + suffix;
-  const std::string dwarf_file_arg = std::string("+dwarf-file-name") + suffix;
+  const std::string trace_output_format_arg = "+trace-output-format=";
+  const std::string dwarf_file_arg = "+dwarf-file-name=";
 
   for (auto &arg : args) {
     if (arg.find(tracefile_arg) == 0) {

@@ -200,8 +200,15 @@ public:
    * function.
    */
   void write_expected_file() {
+    const auto select = tracerv.trigger_selector;
     for (const auto &beat : expected_pair) {
       const auto &[cycle, insns] = beat;
+
+      // in mode 1 (PC mode), drop all traces before the trigger matches
+      if (tracerv.trigger_selector == 1 && cycle < tracerv.trigger_start_pc) {
+        continue;
+      }
+      // std::cout << "cycle: " << cycle << "\n";
 
       uint64_t buffer[8];
       // Zero initialization is required because hardware beats are
