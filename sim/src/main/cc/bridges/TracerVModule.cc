@@ -224,9 +224,9 @@ public:
 
     steps(100);
 
-    std::cout << "trace_trigger_start " << tracerv.trace_trigger_start << "\n";
-    std::cout << "trigger_start_pc " << tracerv.trigger_start_pc << "\n";
-    std::cout << "trigger_stop_pc " << tracerv.trigger_stop_pc << "\n";
+    // std::cout << "trace_trigger_start " << tracerv.trace_trigger_start <<
+    // "\n"; std::cout << "trigger_start_pc " << tracerv.trigger_start_pc <<
+    // "\n"; std::cout << "trigger_stop_pc " << tracerv.trigger_stop_pc << "\n";
 
     // if testing a trigger mode, the output need to be filtered
     filter_expected_test();

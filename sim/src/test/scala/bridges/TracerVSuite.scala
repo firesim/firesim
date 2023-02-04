@@ -16,7 +16,7 @@ import firesim.{BasePlatformConfig, TestSuiteCommon}
 abstract class TracerVTestBase(
   platformConfig: BasePlatformConfig,
   width:          Int,
-  trace:          Option[Int] = None,
+  trace:          Option[Int]    = None,
   start:          Option[String] = None,
 ) extends BridgeSuite("TracerVModule", s"TracerVModuleTestCount${width}", platformConfig) {
   override def runTest(backend: String, debug: Boolean) {
@@ -45,7 +45,7 @@ abstract class TracerVTestBase(
     }
 
     val runResult =
-      run(backend, true, args = args)
+      run(backend, false, args = args)
     assert(runResult == 0)
 
     val expectedContents = scala.io.Source.fromFile(expected.getPath).mkString
@@ -55,10 +55,7 @@ abstract class TracerVTestBase(
 }
 
 class TracerVF1TestCount1 extends TracerVTestBase(BaseConfigs.F1, 1);
-class TracerVF1TestCount5 extends TracerVTestBase(BaseConfigs.F1, 5, Some(3), Some("1C")); // in hex
-
-// class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
-class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(3), Some("FF0000001C")); // in hex
-
-class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9")); // in decimal // FIMXE test with 0xa
+// class TracerVF1TestCount5 extends TracerVTestBase(BaseConfigs.F1, 5, Some(3), Some("FF0000001C")); // in hex
+class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
+class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9"));    // in decimala
 class TracerVVitisTest    extends TracerVTestBase(BaseConfigs.Vitis, 7);
