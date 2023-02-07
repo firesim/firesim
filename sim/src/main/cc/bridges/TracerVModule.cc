@@ -89,17 +89,6 @@ public:
       }
     }
     gen.seed(random_seed);
-
-    tracerv.init();
-
-    // std::cout << "tracerv.trace_trigger_start " <<
-    // tracerv.trace_trigger_start << "\n"; std::cout <<
-    // "tracerv.trigger_start_insn " << tracerv.trigger_start_insn << "\n";
-    // std::cout << "tracerv.trigger_start_insn_mask " <<
-    // tracerv.trigger_start_insn_mask << "\n";
-
-    // write the header to our expected test output file
-    tracerv.write_header(expected);
   }
 
   ~TracerVModule() override = default;
@@ -159,6 +148,10 @@ public:
   }
 
   int simulation_run() override {
+    tracerv.init();
+
+    // write the header to our expected test output file
+    tracerv.write_header(expected);
 
     // Reset the DUT.
     peek_poke.poke("reset", 1, /*blocking=*/true);
