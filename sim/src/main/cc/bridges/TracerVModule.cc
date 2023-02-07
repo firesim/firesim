@@ -6,6 +6,7 @@
 #include "core/simif.h"
 #include "core/simulation.h"
 
+#include <algorithm>
 #include <iostream>
 #include <string_view>
 
@@ -237,7 +238,7 @@ public:
    * Pass a lambda which will be used with std::copy_if
    * this writes to expected_pair
    */
-  void filter_one(std::function<bool(const expected_t beat)> fn) {
+  void filter_one(std::function<bool(const expected_t &beat)> fn) {
     std::vector<expected_t> filtered;
     std::copy_if(expected_pair.begin(),
                  expected_pair.end(),
@@ -257,14 +258,14 @@ public:
       break; // no filter
     case 1:
       // keep all instructions after a number of cycles
-      filter_one([&](const expected_t beat) {
+      filter_one([&](const expected_t &beat) {
         const auto &[cycle, insns] = beat;
         return cycle >= tracerv.trace_trigger_start;
       });
       break;
     case 2:
       // match based on PC value, but delay the trigger by 1 cycle
-      filter_one([&](const expected_t beat) {
+      filter_one([&](const expected_t &beat) {
         static bool keep = false;
         const auto &[cycle, insns] = beat;
         for (const auto pc : insns) {
@@ -278,18 +279,12 @@ public:
       break;
     case 3:
       // match based on Instruction value, trigger is not sticky
-      filter_one([&](const expected_t beat) {
+      filter_one([&](const expected_t &beat) {
         const auto &[cycle, insns] = beat;
-        for (const auto pc : insns) {
-          // std::cout << "cyc: " << cycle << " check " << fold(pc) << " vs " <<
-          // (tracerv.trigger_start_insn & tracerv.trigger_start_insn_mask) <<
-          // "\n";
-          if (fold(pc) ==
-              (tracerv.trigger_start_insn & tracerv.trigger_start_insn_mask)) {
-            return true;
-          }
-        }
-        return false;
+        return std::any_of(insns.begin(), insns.end(), [&](uint64_t pc) {
+          return (fold(pc) == (tracerv.trigger_start_insn &
+                               tracerv.trigger_start_insn_mask));
+        });
       });
       break;
     default:
