@@ -238,7 +238,7 @@ public:
    * Pass a lambda which will be used with std::copy_if
    * this writes to expected_pair
    */
-  void filter_one(std::function<bool(const expected_t &beat)> fn) {
+  void filter_one(const std::function<bool(const expected_t &beat)> &fn) {
     std::vector<expected_t> filtered;
     std::copy_if(expected_pair.begin(),
                  expected_pair.end(),
