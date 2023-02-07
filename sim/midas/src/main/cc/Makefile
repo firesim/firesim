@@ -21,7 +21,7 @@ PLATFORM ?= f1
 OUT_DIR ?= $(GEN_DIR)
 CLOCK_PERIOD ?= 1.0
 
-override CXXFLAGS += -Wall -I$(midas_dir)
+override CXXFLAGS += -Wall -I$(midas_dir) -I$(GEN_DIR)
 override LDFLAGS += -L$(GEN_DIR) -lstdc++ -lpthread -lgmp
 
 design_v  := $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
@@ -36,7 +36,7 @@ $(bridge_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h) $(bridge_h)
 	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c -o $@ $< -include $(word 2, $^)
 
-platform_files := simif_$(MAIN)
+platform_files := simif_$(MAIN) main
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files)))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
 
@@ -61,7 +61,7 @@ sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 emul_dir   := $(midas_dir)/emul
 emul_h     := $(driver_h) $(bridge_h) $(emul_dir)/simif_emul.h $(emul_dir)/mmio.h $(emul_dir)/mm.h
 # This includes c sources and static libraries
-emul_cc    := $(DRIVER) $(bridge_cc) $(emul_dir)/simif_emul.cc $(emul_dir)/mmio.cc $(emul_dir)/mm.cc $(emul_dir)/dpi.cc
+emul_cc    := $(DRIVER) $(bridge_cc) $(emul_dir)/simif_emul.cc $(emul_dir)/mmio.cc $(emul_dir)/mm.cc $(emul_dir)/dpi.cc $(midas_dir)/main.cc
 emul_v     := $(design_vh) $(design_v) $(sim_fpga_resource_models)
 
 verilator_conf := rtlsim/ml-verilator-conf.vlt

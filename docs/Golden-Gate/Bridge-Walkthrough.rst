@@ -128,19 +128,6 @@ invocation of tick() may do work corresponding to an arbitrary number of
 target cycles. It's critical that tick be non-blocking, as waiting for work
 from the BridgeModule may deadlock the simulator.
 
-Registering the Driver
-++++++++++++++++++++++
-
-With the Bridge Driver implemented, we now have to register it in the main simulator
-simulator class defined in ``sim/midas/src/main/cc/core/constructor.h``. Here, we
-rely on the C preprocessor macros to instantiate the bridge driver only when
-the corresponding BridgeModule is present:
-
-.. literalinclude:: ../../sim/midas/src/main/cc/core/constructor.h
-    :language: c++
-    :start-after: DOC include start: Bridge Driver Registration
-    :end-before: DOC include end: Bridge Driver Registration
-
 Build-System Modifications
 ++++++++++++++++++++++++++
 

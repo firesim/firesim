@@ -43,5 +43,7 @@ class GroundTestBridgeModule(implicit p: Parameters)
 
     genROReg(success, "success")
     genCRFile()
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {}
   }
 }

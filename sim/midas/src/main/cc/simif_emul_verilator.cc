@@ -36,7 +36,7 @@ private:
 #endif
 };
 
-/// Simulator instance used by DPI.
+/// Simulator instance used to keep track of time.
 simif_emul_verilator_t *simulator = nullptr;
 
 double sc_time_stamp() { return simulator->get_time(); }
@@ -44,6 +44,7 @@ double sc_time_stamp() { return simulator->get_time(); }
 simif_emul_verilator_t::simif_emul_verilator_t(
     const TargetConfig &config, const std::vector<std::string> &args)
     : simif_emul_t(config, args), top(std::make_unique<Vemul>()) {
+
   simulator = this;
 
 #if VM_TRACE

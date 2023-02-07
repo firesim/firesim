@@ -183,22 +183,18 @@ class PlusArgsBridgeModule(params: PlusArgsBridgeParams)(implicit p: Parameters)
       assert(plusArgValueNext === plusArgValue)
     }
 
-    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder) {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, memoryRegions, sb)
-      sb.append(genStatic(s"${headerWidgetName}_name", CStrLit(params.name)))
-      sb.append(genStatic(s"${headerWidgetName}_default", CStrLit(s"${params.default}")))
-      sb.append(genStatic(s"${headerWidgetName}_docstring", CStrLit(params.docstring)))
-      sb.append(genConstStatic(s"${headerWidgetName}_width", UInt32(params.width)))
-      sb.append(genConstStatic(s"${headerWidgetName}_slice_count", UInt32(slices.length)))
-
-      // call getCRAddr to get the registers by name, and then build this C style array
-      sb.append(
-        genArray(
-          s"${headerWidgetName}_slice_addrs",
-          Seq.tabulate(sliceCount)(x => UInt32(base + getCRAddr(s"out${x}"))),
-        )
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+        base,
+        sb,
+        "plusargs_t",
+        "plusargs",
+        Seq(
+          CStrLit(params.name),
+          CStrLit(s"${params.default}"),
+          UInt32(params.width),
+          StdVector("uint32_t", Seq.tabulate(sliceCount)(x => base + getCRAddr(s"out${x}")).map(UInt32(_))),
+        ),
       )
     }
     genCRFile()

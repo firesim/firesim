@@ -6,24 +6,12 @@ char peek_poke_t::KIND;
 
 peek_poke_t::peek_poke_t(simif_t &simif,
                          const PEEKPOKEBRIDGEMODULE_struct &mmio_addrs,
-                         unsigned poke_size,
-                         const uint32_t *input_addrs,
-                         const char *const *input_names,
-                         const uint32_t *input_chunks,
-                         unsigned peek_size,
-                         const uint32_t *output_addrs,
-                         const char *const *output_names,
-                         const uint32_t *output_chunks)
-    : widget_t(simif, &KIND), mmio_addrs(mmio_addrs) {
-  for (unsigned i = 0; i < poke_size; ++i) {
-    inputs.emplace(std::string(input_names[i]),
-                   port{input_addrs[i], input_chunks[i]});
-  }
-  for (unsigned i = 0; i < peek_size; ++i) {
-    outputs.emplace(std::string(output_names[i]),
-                    port{output_addrs[i], output_chunks[i]});
-  }
-}
+                         unsigned index,
+                         const std::vector<std::string> &args,
+                         PortMap &&inputs,
+                         PortMap &&outputs)
+    : widget_t(simif, &KIND), mmio_addrs(mmio_addrs), inputs(std::move(inputs)),
+      outputs(std::move(outputs)) {}
 
 void peek_poke_t::poke(std::string_view id, uint32_t value, bool blocking) {
   req_timeout = false;

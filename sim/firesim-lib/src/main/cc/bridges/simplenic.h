@@ -20,16 +20,16 @@ struct SIMPLENICBRIDGEMODULE_struct {
   uint64_t done;
 };
 
-class simplenic_t : public streaming_bridge_driver_t {
+class simplenic_t final : public streaming_bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.
   static char KIND;
 
   simplenic_t(simif_t &sim,
               StreamEngine &stream,
-              const std::vector<std::string> &args,
               const SIMPLENICBRIDGEMODULE_struct &addrs,
               int simplenicno,
+              const std::vector<std::string> &args,
               int stream_to_cpu_idx,
               int stream_to_cpu_depth,
               int stream_from_cpu_idx,

@@ -27,12 +27,12 @@ public:
   static char KIND;
 
   serial_t(simif_t &simif,
-           const std::vector<std::string> &args,
-           const SERIALBRIDGEMODULE_struct &mmio_addrs,
            loadmem_t &loadmem_widget,
+           const SERIALBRIDGEMODULE_struct &mmio_addrs,
+           int serialno,
+           const std::vector<std::string> &args,
            bool has_mem,
-           int64_t mem_host_offset,
-           int serialno);
+           int64_t mem_host_offset);
   ~serial_t();
   virtual void init();
   virtual void tick();

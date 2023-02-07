@@ -184,9 +184,9 @@ create_handler(const std::vector<std::string> &args, int uartno) {
 }
 
 uart_t::uart_t(simif_t &simif,
-               const std::vector<std::string> &args,
                const UARTBRIDGEMODULE_struct &mmio_addrs,
-               int uartno)
+               int uartno,
+               const std::vector<std::string> &args)
     : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
       handler(create_handler(args, uartno)) {}
 

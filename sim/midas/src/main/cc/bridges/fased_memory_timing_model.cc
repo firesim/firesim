@@ -55,12 +55,13 @@ char FASEDMemoryTimingModel::KIND;
 FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     simif_t &simif,
     const AddressMap &addr_map,
+    unsigned modelno,
     const std::vector<std::string> &args,
     const std::string &stats_file_name,
-    size_t mem_size,
-    const std::string &suffix)
+    size_t mem_size)
     : FpgaModel(&simif, addr_map), widget_t(simif, &KIND), mem_size(mem_size) {
 
+  std::string suffix = "_" + std::to_string(modelno);
   for (auto &arg : args) {
     // Find arguments: +mm_{name}{index}={value}
     if (arg.find("+mm_") != 0 || arg.find(suffix) == std::string::npos) {

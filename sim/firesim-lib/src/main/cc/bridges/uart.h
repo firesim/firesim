@@ -46,9 +46,9 @@ public:
 
   /// Creates a bridge which interacts with standard streams or PTY.
   uart_t(simif_t &simif,
-         const std::vector<std::string> &args,
          const UARTBRIDGEMODULE_struct &mmio_addrs,
-         int uartno);
+         int uartno,
+         const std::vector<std::string> &args);
 
   ~uart_t() override;
 

@@ -22,16 +22,15 @@ char plusargs_t::KIND;
  * @param [in] slice_addrs The MMIO addresses of the slices
  */
 plusargs_t::plusargs_t(simif_t &sim,
-                       const std::vector<std::string> &args,
                        const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
+                       unsigned index,
+                       const std::vector<std::string> &args,
                        const std::string_view name_orig,
                        const char *default_value,
                        const uint32_t bit_width,
-                       const uint32_t slice_count,
-                       const uint32_t *slice_addrs)
+                       const std::vector<uint32_t> &slice_addrs)
     : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs),
-      slice_count(slice_count),
-      slice_addrs(slice_addrs, slice_addrs + slice_count) {
+      slice_addrs(slice_addrs) {
   std::string_view name = name_orig;
 
   // remove all leading white space
@@ -97,10 +96,10 @@ bool plusargs_t::get_overridden() { return overriden; }
  * @params [in] idx The index of the slice
  * @returns the MMIO address
  */
-uint32_t plusargs_t::slice_address(const uint32_t idx) {
-  if (idx >= slice_count) {
+uint32_t plusargs_t::slice_address(uint32_t idx) {
+  if (idx >= slice_addrs.size()) {
     std::cerr << "Index " << idx << " is larger than the number of slices "
-              << slice_count << "\n";
+              << slice_addrs.size() << "\n";
     exit(1);
   }
   return slice_addrs[idx];
@@ -122,7 +121,7 @@ void plusargs_t::init() {
   }
 
   // write out the remaining with zeros
-  for (size_t i = size; i < slice_count; i++) {
+  for (size_t i = size; i < slice_addrs.size(); i++) {
     write(slice_address(i), 0);
   }
 

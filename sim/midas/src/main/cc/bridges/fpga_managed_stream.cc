@@ -1,4 +1,5 @@
 #include "fpga_managed_stream.h"
+#include "core/simif.h"
 
 #include <assert.h>
 #include <cstring>
@@ -57,9 +58,13 @@ void FPGAManagedStreams::FPGAToCPUDriver::flush() {
 }
 
 FPGAManagedStreamWidget::FPGAManagedStreamWidget(
-    FPGAManagedStreamIO &io,
+    simif_t &simif,
+    unsigned index,
+    const std::vector<std::string> &args,
     std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
+  assert(index == 0 && "only one managed stream engine is allowed");
 
+  auto &io = simif.get_fpga_managed_stream_io();
   char *fpga_address_memory_base = io.get_memory_base();
   uint64_t offset = 0;
   for (auto &&params : to_cpu) {

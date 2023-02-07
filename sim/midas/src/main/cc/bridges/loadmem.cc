@@ -10,10 +10,14 @@ char loadmem_t::KIND;
 
 loadmem_t::loadmem_t(simif_t &simif,
                      const LOADMEMWIDGET_struct &mmio_addrs,
+                     unsigned index,
+                     const std::vector<std::string> &args,
                      const AXI4Config &mem_conf,
                      unsigned mem_data_chunk)
     : widget_t(simif, &KIND), mmio_addrs(mmio_addrs), mem_conf(mem_conf),
-      mem_data_chunk(mem_data_chunk) {}
+      mem_data_chunk(mem_data_chunk) {
+  assert(index == 0 && "only one loadmem widget is allowed");
+}
 
 void loadmem_t::load_mem_from_file(const std::string &filename) {
   fprintf(stdout, "[loadmem] start loading\n");

@@ -1,4 +1,4 @@
-//See LICENSE for license details
+// See LICENSE for license details
 package firesim.bridges
 
 import midas.widgets._
@@ -90,13 +90,20 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
     genCRFile()
 
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, memoryRegions, sb)
       val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
       val offsetConst = memoryRegionNameOpt.map(memoryRegions(_)).getOrElse(BigInt(0))
-      sb.append(genMacro(s"${headerWidgetName}_has_memory", memoryRegionNameOpt.isDefined.toString))
-      sb.append(genMacro(s"${headerWidgetName}_memory_offset", UInt64(offsetConst)))
+
+      genConstructor(
+          base,
+          sb,
+          "serial_t",
+          "serial",
+          Seq(
+              CppBoolean(serialBridgeParams.memoryRegionNameOpt.isDefined),
+              UInt32(offsetConst)
+          ),
+          hasLoadMem = true
+      )
     }
   }
 }

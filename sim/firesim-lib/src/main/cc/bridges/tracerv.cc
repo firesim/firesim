@@ -27,19 +27,16 @@ constexpr uint64_t valid_mask = (1ULL << 40);
 
 tracerv_t::tracerv_t(simif_t &sim,
                      StreamEngine &stream,
-                     const std::vector<std::string> &args,
                      const TRACERVBRIDGEMODULE_struct &mmio_addrs,
+                     int tracerno,
+                     const std::vector<std::string> &args,
                      int stream_idx,
                      int stream_depth,
                      const unsigned int max_core_ipc,
-                     const char *const clock_domain_name,
-                     const unsigned int clock_multiplier,
-                     const unsigned int clock_divisor,
-                     int tracerno)
+                     const ClockInfo &clock_info)
     : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_idx(stream_idx), stream_depth(stream_depth),
-      max_core_ipc(max_core_ipc),
-      clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
+      max_core_ipc(max_core_ipc), clock_info(clock_info) {
   // Biancolin: move into elaboration
   assert(this->max_core_ipc <= 7 &&
          "TracerV only supports cores with a maximum IPC <= 7");

@@ -74,10 +74,10 @@ public:
 
   FASEDMemoryTimingModel(simif_t &simif,
                          const AddressMap &addr_map,
+                         unsigned modelno,
                          const std::vector<std::string> &args,
                          const std::string &stats_file_name,
-                         size_t mem_size,
-                         const std::string &suffix);
+                         size_t mem_size);
   void init() override;
   void profile() override;
   void finish() override;
