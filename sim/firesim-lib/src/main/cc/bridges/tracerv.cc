@@ -55,9 +55,9 @@ tracerv_t::tracerv_t(simif_t &sim,
   const std::string traceend_arg = "+trace-end=";
   const std::string traceselect_arg = "+trace-select=";
   // Testing: provides a reference file to diff the collected trace against
-  const std::string testoutput_arg = std::string("+trace-test-output");
+  const std::string testoutput_arg = "+trace-test-output";
   // Formats the output before dumping the trace to file
-  const std::string humanreadable_arg = std::string("+trace-humanreadable");
+  const std::string humanreadable_arg = "+trace-humanreadable";
   const std::string trace_output_format_arg = "+trace-output-format=";
   const std::string dwarf_file_arg = "+dwarf-file-name=";
 
