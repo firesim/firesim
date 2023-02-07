@@ -7,6 +7,7 @@
 #include "core/simulation.h"
 
 #include <iostream>
+#include <string_view>
 
 static std::vector<bool> get_contiguous(const unsigned bits,
                                         const unsigned total) {
@@ -65,10 +66,12 @@ private:
   tracerv_t &tracerv;
 
 public:
-  TracerVModule(const std::vector<std::string> &args, simif_t &simif)
-      : simulation_t(simif, args),
-        peek_poke(sim.get_registry().get_widget<peek_poke_t>()),
-        tracerv(sim.get_registry().get_widget<tracerv_t>()) {
+  TracerVModule(widget_registry_t &registry,
+                const std::vector<std::string> &args,
+                std::string_view target_name)
+      : simulation_t(registry, args),
+        peek_poke(registry.get_widget<peek_poke_t>()),
+        tracerv(registry.get_widget<tracerv_t>()) {
 
     for (auto &arg : args) {
       if (arg.find("+seed=") == 0) {
@@ -112,7 +115,7 @@ public:
     const unsigned timeout = 10000 + s;
     bool was_done = false;
     for (unsigned i = 0; i < timeout; i++) {
-      for (auto *bridge : sim.get_registry().get_all_bridges()) {
+      for (auto *bridge : registry.get_all_bridges()) {
         bridge->tick();
       }
 
@@ -364,8 +367,10 @@ private:
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
   std::unique_ptr<simulation_t> create_simulation(                             \
-      const std::vector<std::string> &args, simif_t &sim) {                    \
-    return std::make_unique<CLASS_NAME>(args, sim);                            \
+      simif_t &simif,                                                          \
+      widget_registry_t &registry,                                             \
+      const std::vector<std::string> &args) {                                  \
+    return std::make_unique<CLASS_NAME>(registry, args, "TracerVModule");      \
   }
 
 TEST_MAIN(TracerVModule)
