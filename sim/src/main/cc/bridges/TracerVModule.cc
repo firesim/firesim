@@ -10,8 +10,7 @@
 #include <iostream>
 #include <string_view>
 
-static std::vector<bool> get_contiguous(const unsigned bits,
-                                        const unsigned total) {
+static std::vector<bool> get_contiguous(unsigned bits, unsigned total) {
   std::vector<bool> ret;
   for (unsigned i = 0; i < total; i++) {
     const bool value = (i < bits);
@@ -21,10 +20,9 @@ static std::vector<bool> get_contiguous(const unsigned bits,
   return ret;
 }
 
-static std::vector<uint64_t> get_iaddrs(const unsigned step,
-                                        const unsigned total) {
-  constexpr uint64_t offset =
-      1024; // should be larger than total but doesn't really matter
+static std::vector<uint64_t> get_iaddrs(unsigned step, unsigned total) {
+  // should be larger than total but doesn't really matter
+  constexpr uint64_t offset = 1024;
   std::vector<uint64_t> ret;
 
   for (unsigned i = 0; i < total; i++) {
@@ -34,30 +32,30 @@ static std::vector<uint64_t> get_iaddrs(const unsigned step,
   return ret;
 }
 
-static std::string namei(const unsigned x) {
+static std::string namei(unsigned i) {
   std::stringstream ss;
-  ss << "io_insns_" << x << "_iaddr";
+  ss << "io_insns_" << i << "_iaddr";
   return ss.str();
 };
 
-static std::string nameinsn(const unsigned x) {
+static std::string nameinsn(unsigned i) {
   std::stringstream ss;
-  ss << "io_insns_" << x << "_insn";
+  ss << "io_insns_" << i << "_insn";
   return ss.str();
 };
 
-static std::string namev(const unsigned x) {
+static std::string namev(unsigned i) {
   std::stringstream ss;
-  ss << "io_insns_" << x << "_valid";
+  ss << "io_insns_" << i << "_valid";
   return ss.str();
 };
 
 // a simple way to turn the iaddr values we use
 // in this test into a 5 bit value
-static uint32_t fold(const uint64_t x) {
-  uint32_t a = x & 0x1f;
-  uint32_t b = x >> 8;
-  uint32_t c = x >> 13;
+static uint32_t fold(uint64_t iaddr) {
+  uint32_t a = iaddr & 0x1f;
+  uint32_t b = iaddr >> 8;
+  uint32_t c = iaddr >> 13;
   return (a ^ b ^ c) & 0x1f;
 }
 
@@ -81,15 +79,8 @@ public:
       }
 
       if (arg.find("+tracerv-expected-output=") == 0) {
-        const std::string fname =
-            arg.c_str() + 25; // 25 is the length of the argument to find
-        expected = fopen(fname.c_str(), "w");
-        if (!expected) {
-          fprintf(stderr,
-                  "Could not open expected test output file: %s\n",
-                  fname.c_str());
-          abort();
-        }
+        // 25 is the length of the argument to find
+        expected_fname = arg.c_str() + 25;
       }
     }
     gen.seed(random_seed);
@@ -154,9 +145,6 @@ public:
   int simulation_run() override {
     tracerv.init();
 
-    // write the header to our expected test output file
-    tracerv.write_header(expected);
-
     // Reset the DUT.
     peek_poke.poke("reset", 1, /*blocking=*/true);
     step(1, /*blocking=*/true);
@@ -176,9 +164,6 @@ public:
       std::vector<uint64_t> valid_i;
       assert(iad.size() == bit.size());
       for (unsigned i = 0; i < iad.size(); i++) {
-        // std::cout << "loading " << i << " with " << iad[i] << "," << bit[i]
-        // << std::endl;
-
         write_iaddr(i, iad[i]);
         write_valid(i, bit[i]);
 
@@ -201,8 +186,9 @@ public:
 
     // loop over tests. choose random valids with a simple pattern of iaddr
     // load into MMIO, and tick the system
-    for (unsigned test_step = 0; test_step < get_total_trace_tests();
-         test_step++) {
+    for (unsigned test_step = 0, total = get_total_trace_tests();
+         test_step < total;
+         ++test_step) {
       const uint64_t pull = rand_next(tracerv_width + 1);
 
       auto pull_iaddr = get_iaddrs(test_step, tracerv_width);
@@ -221,11 +207,10 @@ public:
 
     steps(100);
 
-    // if testing a trigger mode, the output need to be filtered
-    filter_expected_test();
-
     // write out a file which contains the expected output
-    write_expected_file();
+    // when testing trigger mode, the expected output file will be filtered
+    // to match the behavior of the chisel
+    write_expected_file(filter_expected_test());
 
     return EXIT_SUCCESS;
   }
@@ -234,34 +219,36 @@ public:
    * Pass a lambda which will be used with std::copy_if
    * this writes to expected_pair
    */
-  void filter_one(const std::function<bool(const expected_t &beat)> &fn) {
+  std::vector<expected_t>
+  filter_one(const std::function<bool(const expected_t &beat)> &fn) {
     std::vector<expected_t> filtered;
     std::copy_if(expected_pair.begin(),
                  expected_pair.end(),
                  std::back_inserter(filtered),
                  fn);
-    expected_pair = std::move(filtered);
+    return filtered;
   }
 
   /**
    * Depending on the mode (0,1,2,3) remove expected traces
    * to match the behavior of the trigger in scala
    */
-  void filter_expected_test() {
+  std::vector<expected_t> filter_expected_test() {
 
     switch (tracerv.trigger_selector) {
     case 0:
+      return expected_pair;
       break; // no filter
     case 1:
       // keep all instructions after a number of cycles
-      filter_one([&](const expected_t &beat) {
+      return filter_one([&](const expected_t &beat) {
         const auto &[cycle, insns] = beat;
         return cycle >= tracerv.trace_trigger_start;
       });
       break;
     case 2:
       // match based on PC value, but delay the trigger by 1 cycle
-      filter_one([&](const expected_t &beat) {
+      return filter_one([&](const expected_t &beat) {
         static bool keep = false;
         const auto &[cycle, insns] = beat;
         for (const auto pc : insns) {
@@ -275,7 +262,7 @@ public:
       break;
     case 3:
       // match based on Instruction value, trigger is not sticky
-      filter_one([&](const expected_t &beat) {
+      return filter_one([&](const expected_t &beat) {
         const auto &[cycle, insns] = beat;
         return std::any_of(insns.begin(), insns.end(), [&](uint64_t pc) {
           return (fold(pc) == (tracerv.trigger_start_insn &
@@ -288,6 +275,8 @@ public:
                 << " not handled in filter_expected()" << std::endl;
       break;
     }
+
+    return {};
   }
 
   /**
@@ -295,10 +284,22 @@ public:
    * to the expected file pointer. This is done via the tracerv_t::serialize
    * function.
    */
-  void write_expected_file() {
+  void write_expected_file(const std::vector<expected_t> &filtered) {
+
+    FILE *expected = fopen(expected_fname.c_str(), "w");
+    if (!expected) {
+      fprintf(stderr,
+              "Could not open expected test output file: %s\n",
+              expected_fname.c_str());
+      abort();
+    }
+
+    // write the header to our expected test output file
+    tracerv.write_header(expected);
+
     const auto select = tracerv.trigger_selector;
 
-    for (const auto &beat : expected_pair) {
+    for (const auto &beat : filtered) {
       const auto &[cycle, insns] = beat;
 
       uint64_t buffer[8];
@@ -308,13 +309,13 @@ public:
       memset(buffer, 0, sizeof(buffer));
 
       buffer[0] = cycle;
-      assert(insns.size() < 8 && "Internal test error, expected_pair cannot "
+      assert(insns.size() < 8 && "Internal test error, filtered cannot "
                                  "have more than 8 instructions at once");
       for (int i = 0; i < insns.size(); i++) {
         buffer[i + 1] = insns[i] | tracerv_t::valid_mask;
       }
 
-      // because expected_pair doesn't contain the instruction value for non
+      // because filtered doesn't contain the instruction value for non
       // valid instructions only the human readable output will compare
       // correctly
       tracerv_t::serialize(buffer,
@@ -352,8 +353,8 @@ private:
   bool pass = true;
   uint64_t fail_t = 0;
 
-  // expected test output
-  FILE *expected = nullptr;
+  // expected test output filename
+  std::string expected_fname;
 };
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
