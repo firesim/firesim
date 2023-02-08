@@ -27,12 +27,12 @@ abstract class TracerVTestBase(
     // Create the output file. tracerv will always append '-C0' to the end of the path provided in the plusarg
     val output     = File.createTempFile("output", ".txt-C0")
     output.deleteOnExit()
-    val outputPath = output.getPath.substring(0, output.getPath.length() - 3)
+    val outputPath = output.getPath.stripSuffix("-C0")
 
     // group the optional function args together with the correct plusarg string names
     val optionalArgs = Seq(
-      Seq("+trace-select=", trace),
-      Seq("+trace-start=", start),
+      ("+trace-select=", trace),
+      ("+trace-start=", start),
     )
 
     // a seq starting with fixed plusargs, ending with optional plusargs
@@ -40,7 +40,7 @@ abstract class TracerVTestBase(
     val args = Seq(
       s"+tracefile=${outputPath}",
       s"+tracerv-expected-output=${expected.getPath}",
-    ) ++ optionalArgs.collect { case Seq(a, Some(b)) =>
+    ) ++ optionalArgs.collect { case (a, Some(b)) =>
       s"${a}${b}"
     }
 
@@ -55,6 +55,7 @@ abstract class TracerVTestBase(
 }
 
 class TracerVF1TestCount1 extends TracerVTestBase(BaseConfigs.F1, 1);
+// This test is disabled until FireSim issue #1428 is resolved
 // class TracerVF1TestCount5 extends TracerVTestBase(BaseConfigs.F1, 5, Some(3), Some("FF0000001C")); // in hex
 class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
 class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9"));    // in decimala
