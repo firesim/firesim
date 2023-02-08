@@ -24,16 +24,14 @@ def firesim_input(prompt: object = None) -> str:
     return res
 
 
-# fixme move inside
-rootLogger = logging.getLogger()
-
-
 def downloadURI(uri: str, local_dest_path: PathLike) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system.
     Args:
         uri: uri of an object to be fetched
         local_dest_path: path on the local file system to store the uri object
     """    
+
+    rootLogger = logging.getLogger()
 
     # TODO consider using fsspec
     # filecache https://filesystem-spec.readthedocs.io/en/latest/features.html#caching-files-locally

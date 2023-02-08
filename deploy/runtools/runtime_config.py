@@ -28,6 +28,7 @@ from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
 from buildtools.bitbuilder import get_deploy_dir
+import re
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -37,6 +38,9 @@ if TYPE_CHECKING:
 LOCAL_DRIVERS_BASE = "../sim/output/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
+
+# from  https://github.com/pandas-dev/pandas/blob/96b036cbcf7db5d3ba875aac28c4f6a678214bfb/pandas/io/common.py#L73
+_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
 
 rootLogger = logging.getLogger()
 
@@ -63,7 +67,11 @@ class RuntimeHWConfig:
     driver_build_target: str
     driver_type_message: str
     driver_tar: Optional[str]
+    driver_tar_local_path: Optional[Path]
+    driver_tar_is_local: Optional[bool]
 
+    # Members that are initlized here also need to be initilized in
+    # RuntimeBuildRecipeConfig.__init__
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
@@ -73,7 +81,10 @@ class RuntimeHWConfig:
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
         self.local_xclbin = None
-        self.driver_tar = hwconfig_dict.get('driver_tar')
+        self.driver_tar = None
+        self.driver_tar_is_local = None
+        self.driver_tar_local_path = None
+        self.__init_driver_tar(hwconfig_dict)
 
         if self.agfi is not None:
             self.platform = "f1"
@@ -101,6 +112,28 @@ class RuntimeHWConfig:
         self.tarball_built = False
 
         self.additional_required_files = []
+    
+    def __init_driver_tar(self, hwconfig_dict: Dict[str, Any]) -> None:
+        """ Private method to init member variables related to driver_tar. When driver_tar_is_local
+        is True, the driver_tar_local_path path should be used.  When driver_tar_is_local is False, the 
+        driver_tar should be used, and treated as a URI."""
+        self.driver_tar = hwconfig_dict.get('driver_tar')
+
+        if self.driver_tar is None:
+            return
+
+        is_uri = re.match(_RFC_3986_PATTERN, self.driver_tar)
+        if not is_uri:
+            raise Exception(f"when driver_tar is set, it must be a URI. (found '{self.driver_tar}')")
+        
+        if is_uri.group() == "file://":
+            self.driver_tar_is_local = True
+            self.driver_tar_local_path = Path(self.driver_tar[is_uri.end():])
+            if not self.driver_tar_local_path.is_file():
+                raise Exception(f"when driver_tar is set to file://, it must exist. (found '{self.driver_tar}')")
+        else:
+            self.driver_tar_is_local = False
+            
 
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
@@ -358,6 +391,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.agfi = None
         self.xclbin = None
         self.driver_tar = None
+        self.driver_tar_local_path = None
+        self.driver_tar_is_local = None
         self.tarball_built = False
 
         self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']

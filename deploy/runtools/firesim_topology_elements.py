@@ -494,11 +494,15 @@ class FireSimServerNode(FireSimNode):
         all_paths += self.get_job().get_siminputs()
         return all_paths
     
-    def get_tarball_path_pair(self) -> Tuple[str, str]:
+    def get_tarball_path_pair(self) -> Optional[Tuple[str, str]]:
         """ Return local and remote paths of the actual driver tarball, not files inside"""
 
-        if not isinstance(self.server_hardware_config, str) and self.server_hardware_config is not None and self.server_hardware_config.driver_tar is not None:
-            return (self.server_hardware_config.driver_tar, self.get_tar_name())
+        if isinstance(self.server_hardware_config, str):
+            raise Exception("FIXME need to figure out string support")
+        if self.server_hardware_config is not None and self.server_hardware_config.driver_tar is not None:
+            if not self.server_hardware_config.driver_tar_is_local == True:
+                return None
+            return (str(self.server_hardware_config.driver_tar_local_path), self.get_tar_name())
         else:
             return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
 
@@ -517,7 +521,10 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
-        all_paths.append(self.get_tarball_path_pair())
+        # If driver_tar_is_local is None or False, don't copy the tarball here
+        maybe_tarball_path = self.get_tarball_path_pair()
+        if maybe_tarball_path:
+            all_paths.append(maybe_tarball_path)
 
         return all_paths
 
