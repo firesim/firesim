@@ -286,68 +286,73 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val toCPUStreamParams   = bridgesWithToHostCPUStreams.map { _.streamSourceParams }
   val fromCPUStreamParams = bridgesWithFromHostCPUStreams.map { _.streamSinkParams }
 
-  val streamingEngine = addWidget(
-    p(StreamEngineInstantiatorKey)(StreamEngineParameters(toCPUStreamParams.toSeq, fromCPUStreamParams.toSeq), p)
-  )
+  val (streamingEngine, cpuManagedAXI4NodeTuple, fpgaManagedAXI4NodeTuple) =
+    if (toCPUStreamParams.isEmpty && fromCPUStreamParams.isEmpty) { (None, None, None) }
+    else {
+      val streamEngineParams = StreamEngineParameters(toCPUStreamParams.toSeq, fromCPUStreamParams.toSeq)
+      val streamingEngine    = addWidget(p(StreamEngineInstantiatorKey)(streamEngineParams, p))
 
-  require(
-    streamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
-    "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
-  )
-  require(
-    streamingEngine.cpuManagedAXI4NodeOpt.isEmpty || p(CPUManagedAXI4Key).nonEmpty,
-    "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform.",
-  )
+      require(
+        streamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
+        "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
+      )
+      require(
+        streamingEngine.cpuManagedAXI4NodeOpt.isEmpty || p(CPUManagedAXI4Key).nonEmpty,
+        "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform.",
+      )
 
-  val cpuManagedAXI4NodeTuple = p(CPUManagedAXI4Key).map { params =>
-    val node = AXI4MasterNode(
-      Seq(
-        AXI4MasterPortParameters(
-          masters = Seq(
-            AXI4MasterParameters(
-              name      = "cpu-managed-axi4",
-              id        = IdRange(0, 1 << params.idBits),
-              aligned   = false,
-              maxFlight = params.maxFlight,// None = infinite, else is a per-ID cap
+      val cpuManagedAXI4NodeTuple = p(CPUManagedAXI4Key).map { params =>
+        val node = AXI4MasterNode(
+          Seq(
+            AXI4MasterPortParameters(
+              masters = Seq(
+                AXI4MasterParameters(
+                  name      = "cpu-managed-axi4",
+                  id        = IdRange(0, 1 << params.idBits),
+                  aligned   = false,
+                  // None = infinite, else is a per-ID cap
+                  maxFlight = params.maxFlight,
+                )
+              )
             )
           )
         )
-      )
-    )
-    streamingEngine.cpuManagedAXI4NodeOpt.foreach {
-      _ := AXI4Buffer() := node
-    }
-    (node, params)
-  }
+        streamingEngine.cpuManagedAXI4NodeOpt.foreach {
+          _ := AXI4Buffer() := node
+        }
+        (node, params)
+      }
 
-  val fpgaManagedAXI4NodeTuple = p(FPGAManagedAXI4Key).map { params =>
-    val node = AXI4SlaveNode(
-      Seq(
-        AXI4SlavePortParameters(
-          slaves    = Seq(
-            AXI4SlaveParameters(
-              address       = Seq(AddressSet(0, params.size - 1)),
-              resources     = (new MemoryDevice).reg,
-              regionType    = RegionType.UNCACHED, // cacheable
-              executable    = false,
-              supportsWrite = params.writeTransferSizes,
-              supportsRead  = params.readTransferSizes,
-              interleavedId = params.interleavedId,
+      val fpgaManagedAXI4NodeTuple = p(FPGAManagedAXI4Key).map { params =>
+        val node = AXI4SlaveNode(
+          Seq(
+            AXI4SlavePortParameters(
+              slaves    = Seq(
+                AXI4SlaveParameters(
+                  address       = Seq(AddressSet(0, params.size - 1)),
+                  resources     = (new MemoryDevice).reg,
+                  regionType    = RegionType.UNCACHED, // cacheable
+                  executable    = false,
+                  supportsWrite = params.writeTransferSizes,
+                  supportsRead  = params.readTransferSizes,
+                  interleavedId = params.interleavedId,
+                )
+              ),
+              beatBytes = params.dataBits / 8,
             )
-          ),
-          beatBytes = params.dataBits / 8,
+          )
         )
-      )
-    )
 
-    streamingEngine.fpgaManagedAXI4NodeOpt match {
-      case Some(engineNode) =>
-        node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := engineNode
-      case None             =>
-        node := AXI4TieOff()
+        streamingEngine.fpgaManagedAXI4NodeOpt match {
+          case Some(engineNode) =>
+            node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := engineNode
+          case None             =>
+            node := AXI4TieOff()
+        }
+        (node, params)
+      }
+      (Some(streamingEngine), cpuManagedAXI4NodeTuple, fpgaManagedAXI4NodeTuple)
     }
-    (node, params)
-  }
 
   def genHeader(sb: StringBuilder): Unit = {
     super.genWidgetHeaders(sb, targetMemoryRegions)
@@ -403,26 +408,26 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   outer.printStreamSummary(outer.toCPUStreamParams, "Bridge Streams To CPU:")
   outer.printStreamSummary(outer.fromCPUStreamParams, "Bridge Streams From CPU:")
 
-  for (
-    ((sink, src), idx) <- outer.streamingEngine.streamsToHostCPU.zip(outer.bridgesWithToHostCPUStreams).zipWithIndex
-  ) {
-    val allocatedIdx = src.toHostStreamIdx
-    require(
-      allocatedIdx == idx,
-      s"Allocated to-host stream index ${allocatedIdx} does not match stream vector index ${idx}.",
-    )
-    sink <> src.streamEnq
-  }
+  outer.streamingEngine.map { streamingEngine =>
+    val toHost = streamingEngine.streamsToHostCPU
+    for (((sink, src), idx) <- toHost.zip(outer.bridgesWithToHostCPUStreams).zipWithIndex) {
+      val allocatedIdx = src.toHostStreamIdx
+      require(
+        allocatedIdx == idx,
+        s"Allocated to-host stream index ${allocatedIdx} does not match stream vector index ${idx}.",
+      )
+      sink <> src.streamEnq
+    }
 
-  for (
-    ((sink, src), idx) <- outer.bridgesWithFromHostCPUStreams.zip(outer.streamingEngine.streamsFromHostCPU).zipWithIndex
-  ) {
-    val allocatedIdx = sink.fromHostStreamIdx
-    require(
-      allocatedIdx == idx,
-      s"Allocated from-host stream index ${allocatedIdx} does not match stream vector index ${idx}.",
-    )
-    sink.streamDeq <> src
+    val fromHost = streamingEngine.streamsFromHostCPU
+    for (((sink, src), idx) <- outer.bridgesWithFromHostCPUStreams.zip(fromHost).zipWithIndex) {
+      val allocatedIdx = sink.fromHostStreamIdx
+      require(
+        allocatedIdx == idx,
+        s"Allocated from-host stream index ${allocatedIdx} does not match stream vector index ${idx}.",
+      )
+      sink.streamDeq <> src
+    }
   }
 
   outer.genCtrlIO(ctrl)
