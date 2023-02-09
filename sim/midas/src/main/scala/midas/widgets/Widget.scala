@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.DataMirror
 import junctions._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.ParameterizedBundle
 
@@ -17,19 +17,18 @@ import scala.collection.mutable
 case object CtrlNastiKey extends Field[NastiParameters]
 
 // Just NASTI, but pointing at the right key.
-class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p)
-  with HasNastiParameters
+class WidgetMMIO(implicit p: Parameters) extends NastiIO()(p) with HasNastiParameters
 
 object WidgetMMIO {
   def apply()(implicit p: Parameters): WidgetMMIO = {
-    new WidgetMMIO()(p alterPartial ({ case NastiKey => p(CtrlNastiKey) }))
+    new WidgetMMIO()(p.alterPartial({ case NastiKey => p(CtrlNastiKey) }))
   }
 }
 
 // All widgets must implement this interface
 // NOTE: Changing ParameterizedBundle -> Bundle breaks PeekPokeWidgetIO when
 // outNum = 0
-class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p){
+class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
   val ctrl = Flipped(WidgetMMIO())
 }
 abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
@@ -40,24 +39,25 @@ abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   this.suggestName(wName)
 
   def getWName = wName
-  def getWId = wId
+  def getWId   = wId
 
   // Returns widget-relative word address
   def getCRAddr(name: String): Int = {
-    module.crRegistry.lookupAddress(name).getOrElse(
-      throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
+    module.crRegistry
+      .lookupAddress(name)
+      .getOrElse(throw new RuntimeException(s"Could not find CR:${name} in widget: $wName"))
   }
 
   val customSize: Option[BigInt] = None
-  def memRegionSize = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.ctrlWidth/8))))
+  def memRegionSize              = customSize.getOrElse(BigInt(1 << log2Up(module.numRegs * (module.ctrlWidth / 8))))
 
   def printCRs = module.crRegistry.printCRs
 }
 
 abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
-  val ctrlWidth = p(CtrlNastiKey).dataBits
+  val ctrlWidth  = p(CtrlNastiKey).dataBits
   val crRegistry = new MCRFileMap(ctrlWidth / 8)
-  def numRegs = crRegistry.numRegs
+  def numRegs    = crRegistry.numRegs
 
   def io: WidgetIO
 
@@ -72,33 +72,32 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   //   For outputs, direct binds the wire to the map
   def attachIO(io: Record, prefix: String = ""): Unit = {
 
-    /**
-      * For FASED memory timing models, initalize programmable registers to defaults if provided.
-      * See [[midas.models.HasProgrammableRegisters]] for more detail.
+    /** For FASED memory timing models, initalize programmable registers to defaults if provided. See
+      * [[midas.models.HasProgrammableRegisters]] for more detail.
       */
     def getInitValue(field: Bits, parent: Data): Option[UInt] = parent match {
       case p: midas.models.HasProgrammableRegisters if p.regMap.isDefinedAt(field) =>
         Some(p.regMap(field).default.U)
-      case _ => None
+      case _                                                                       => None
     }
 
     def innerAttachIO(node: Data, parent: Data, name: String): Unit = node match {
-      case (b: Bits) => (DataMirror.directionOf(b): @unchecked) match {
-        case ActualDirection.Output => attach(b, s"${name}", ReadOnly, substruct = false)
-        case ActualDirection.Input =>
-          genAndAttachReg(b, name, getInitValue(b, parent), substruct = false)
-      }
+      case (b: Bits)   =>
+        (DataMirror.directionOf(b): @unchecked) match {
+          case ActualDirection.Output => attach(b, s"${name}", ReadOnly, substruct = false)
+          case ActualDirection.Input  =>
+            genAndAttachReg(b, name, getInitValue(b, parent), substruct = false)
+        }
       case (v: Vec[_]) => {
-        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, node, s"${name}_$idx")})
+        (v.zipWithIndex).foreach({ case (elm, idx) => innerAttachIO(elm, node, s"${name}_$idx") })
       }
       case (r: Record) => {
-        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, node, s"${name}_${subName}")})
+        r.elements.foreach({ case (subName, elm) => innerAttachIO(elm, node, s"${name}_${subName}") })
       }
-      case _ => new RuntimeException("Cannot bind to this sort of node...")
+      case _           => new RuntimeException("Cannot bind to this sort of node...")
     }
-    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, io, s"${prefix}${name}")})
+    io.elements.foreach({ case (name, elm) => innerAttachIO(elm, io, s"${prefix}${name}") })
   }
-
 
   def attachDecoupledSink(channel: DecoupledIO[UInt], name: String, substruct: Boolean = true): Int = {
     crRegistry.allocate(DecoupledSinkEntry(channel, name, substruct))
@@ -116,102 +115,103 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
   }
 
   def genAndAttachReg[T <: Data](
-      wire: T,
-      name: String,
-      default: Option[T] = None,
-      masterDriven: Boolean = true,
-      substruct: Boolean = true): T = {
+    wire:         T,
+    name:         String,
+    default:      Option[T] = None,
+    masterDriven: Boolean   = true,
+    substruct:    Boolean   = true,
+  ): T = {
     require(wire.getWidth <= ctrlWidth)
     val reg = default match {
-      case None => Reg(wire.cloneType)
+      case None       => Reg(wire.cloneType)
       case Some(init) => RegInit(init)
     }
     if (masterDriven) wire := reg else reg := wire
     attach(reg, name, substruct = substruct)
-    reg suggestName name
+    reg.suggestName(name)
     reg
   }
 
-  def genWOReg[T <: Data](wire: T, name: String, substruct: Boolean = true): T =
+  def genWOReg[T <: Data](wire:     T, name: String, substruct: Boolean = true): T =
     genAndAttachReg(wire, name, substruct = substruct)
-  def genROReg[T <: Data](wire: T, name: String, substruct: Boolean = true): T =
+  def genROReg[T <: Data](wire:     T, name: String, substruct: Boolean = true): T =
     genAndAttachReg(wire, name, masterDriven = false, substruct = substruct)
 
-  def genWORegInit[T <: Data](wire: T, name: String, default: T, substruct: Boolean = true): T =
+  def genWORegInit[T <: Data](wire: T, name: String, default:   T, substruct: Boolean = true): T =
     genAndAttachReg(wire, name, Some(default), true, substruct = substruct)
-  def genRORegInit[T <: Data](wire: T, name: String, default: T, substruct: Boolean = true): T =
+  def genRORegInit[T <: Data](wire: T, name: String, default:   T, substruct: Boolean = true): T =
     genAndAttachReg(wire, name, Some(default), false, substruct = substruct)
 
-
   def genWideRORegInit[T <: Bits](default: T, name: String, substruct: Boolean = true): T = {
-    val reg = RegInit(default)
-    val shadowReg = Reg(default.cloneType)
+    val reg         = RegInit(default)
+    val shadowReg   = Reg(default.cloneType)
     shadowReg.suggestName(s"${name}_mmreg")
-    val baseAddr = Seq.tabulate((default.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
-      val msb = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
-      val slice = shadowReg(msb, ctrlWidth * i)
-      attach(slice, s"${name}_$i", ReadOnly, substruct)
-    }).head
+    val baseAddr    = Seq
+      .tabulate((default.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
+        val msb   = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
+        val slice = shadowReg(msb, ctrlWidth * i)
+        attach(slice, s"${name}_$i", ReadOnly, substruct)
+      })
+      .head
     // When a read request is made of the low order address snapshot the entire register
     val latchEnable = WireInit(false.B).suggestName(s"${name}_latchEnable")
     attach(latchEnable, s"${name}_latch", WriteOnly, substruct)
-    when (latchEnable) {
+    when(latchEnable) {
       shadowReg := reg
     }
     reg
   }
 
   def genCRFile(): MCRFile = {
-    val crFile = Module(new MCRFile(numRegs)(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
-    crFile.io.mcr := DontCare
+    val crFile = Module(new MCRFile(numRegs)(p.alterPartial({ case NastiKey => p(CtrlNastiKey) })))
+    crFile.io.mcr   := DontCare
     crFile.io.nasti <> io.ctrl
     crRegistry.bindRegs(crFile.io.mcr)
     crFile
   }
 
-
   /** Emits a header snippet for this widget.
     * @param base
-    *    The base address of the MMIO region allocated to the widget.
+    *   The base address of the MMIO region allocated to the widget.
     * @param memoryRegions
-    *    A mapping of names to allocated FPGA-DRAM regions. This is one mechanism
-    *    for establishing side-channels between two otherwise unconnected bridges or widgets.
+    *   A mapping of names to allocated FPGA-DRAM regions. This is one mechanism for establishing side-channels between
+    *   two otherwise unconnected bridges or widgets.
     */
   def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit
 
   /** Emits a call to the construction into the generated header.
     * @param base
-    *    The base address of the MMIO region allocated to the widget.
+    *   The base address of the MMIO region allocated to the widget.
     * @param sb
-    *    The string builder to append to.
+    *   The string builder to append to.
     * @param bridgeDriverClassName
-    *    Name of the bridge driver class.
+    *   Name of the bridge driver class.
     * @param bridgeDriverHeaderName
-    *    Name of the header to get the driver from.
+    *   Name of the header to get the driver from.
     * @param args
-    *    List of C++ literals to pass as arguments.
+    *   List of C++ literals to pass as arguments.
     * @param guard
-    *    Name of the header guard, used to order constructor calls.
+    *   Name of the header guard, used to order constructor calls.
     * @param hasStreams
-    *    Flag indicating that a stream engine reference should be provided.
+    *   Flag indicating that a stream engine reference should be provided.
     * @param hasLoadMem
-    *    Flag indicating that a loadmem widget reference should be provided.
+    *   Flag indicating that a loadmem widget reference should be provided.
     * @param hasMMIOAddrMap
-    *    Flag indicating that an address map should be provided.
+    *   Flag indicating that an address map should be provided.
     */
   def genConstructor(
-      base: BigInt,
-      sb: StringBuilder,
-      bridgeDriverClassName: String,
-      bridgeDriverHeaderName: String,
-      args: Seq[CPPLiteral] = Seq(),
-      guard: String = "GET_BRIDGE_CONSTRUCTOR",
-      hasStreams: Boolean = false,
-      hasLoadMem: Boolean = false,
-      hasMMIOAddrMap: Boolean = false,
+    base:                   BigInt,
+    sb:                     StringBuilder,
+    bridgeDriverClassName:  String,
+    bridgeDriverHeaderName: String,
+    args:                   Seq[CPPLiteral] = Seq(),
+    guard:                  String          = "GET_BRIDGE_CONSTRUCTOR",
+    hasStreams:             Boolean         = false,
+    hasLoadMem:             Boolean         = false,
+    hasMMIOAddrMap:         Boolean         = false,
   ): Unit = {
     val mmioName = wrapper.getWName.toUpperCase.split("_").head
-    val regs = crRegistry.getSubstructRegs
+    val regs     = crRegistry.getSubstructRegs
 
     sb.append(s"""|#ifdef GET_INCLUDES
                   |#include "bridges/${bridgeDriverHeaderName}.h"
@@ -222,7 +222,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     // that the structure defined in C++ matches the widget registers.
     if (regs.nonEmpty) {
       sb.append("#ifdef GET_SUBSTRUCT_CHECKS\n")
-      regs.zipWithIndex foreach { case ((regName, _), i) =>
+      regs.zipWithIndex.foreach { case ((regName, _), i) =>
         sb.append(s"static_assert(")
         sb.append(s"offsetof(${mmioName}_struct, ${regName}) == ${i} * sizeof(uint64_t), ")
         sb.append(s"${'\"'}invalid ${regName}${'\"'});\\\n")
@@ -273,7 +273,7 @@ object Widget {
     // 2) We currently rely on having fixed widget names based on the class
     //    name, in the simulation driver.
     val widgetBasename = m.getClass.getSimpleName
-    val idx = widgetInstCount(widgetBasename)
+    val idx            = widgetInstCount(widgetBasename)
     widgetInstCount(widgetBasename) = idx + 1
     (widgetBasename + "_" + idx, idx)
   }
@@ -287,15 +287,14 @@ object WidgetRegion {
 }
 
 trait HasWidgets {
-  private var _finalized = false
-  private val widgets = mutable.ArrayBuffer[Widget]()
-  private val name2inst = mutable.HashMap[String, Widget]()
+  private var _finalized   = false
+  private val widgets      = mutable.ArrayBuffer[Widget]()
+  private val name2inst    = mutable.HashMap[String, Widget]()
   private lazy val addrMap = new AddrMap({
-    val (_, entries) = (sortedWidgets foldLeft (BigInt(0), Seq[AddrMapEntry]())){
-      case ((start, es), w) =>
-        val name = w.getWName
-        val size = w.memRegionSize
-        (start + size, es :+ AddrMapEntry(name, WidgetRegion(start, size)))
+    val (_, entries) = (sortedWidgets.foldLeft(BigInt(0), Seq[AddrMapEntry]())) { case ((start, es), w) =>
+      val name = w.getWName
+      val size = w.memRegionSize
+      (start + size, es :+ AddrMapEntry(name, WidgetRegion(start, size)))
     }
     entries
   })
@@ -314,19 +313,23 @@ trait HasWidgets {
     val lastWidgetRegion = addrMap.entries.last.region
     val widgetAddressMax = lastWidgetRegion.start + lastWidgetRegion.size
 
-    require(log2Up(widgetAddressMax) <= p(CtrlNastiKey).addrBits,
+    require(
+      log2Up(widgetAddressMax) <= p(CtrlNastiKey).addrBits,
       s"""| Widgets have allocated ${widgetAddressMax >> 2} MMIO Registers, requiring
           | ${widgetAddressMax} bytes of addressible register space.  The ctrl bus
           | is configured to only have ${p(CtrlNastiKey).addrBits} bits of address,
-          | not the required ${log2Up(widgetAddressMax)} bits.""".stripMargin)
+          | not the required ${log2Up(widgetAddressMax)} bits.""".stripMargin,
+    )
 
-    val ctrlInterconnect = Module(new NastiRecursiveInterconnect(
-      nMasters = 1,
-      addrMap = addrMap
-    )(p alterPartial ({ case NastiKey => p(CtrlNastiKey) })))
+    val ctrlInterconnect = Module(
+      new NastiRecursiveInterconnect(
+        nMasters = 1,
+        addrMap  = addrMap,
+      )(p.alterPartial({ case NastiKey => p(CtrlNastiKey) }))
+    )
     ctrlInterconnect.io.masters(0) <> master
-    sortedWidgets.zip(ctrlInterconnect.io.slaves) foreach {
-      case (w: Widget, m) => w.module.io.ctrl <> m
+    sortedWidgets.zip(ctrlInterconnect.io.slaves).foreach { case (w: Widget, m) =>
+      w.module.io.ctrl <> m
     }
   }
 
@@ -337,27 +340,25 @@ trait HasWidgets {
     }
   }
 
-  /**
-    * Iterates through each bridge, generating the header fragment. Must be
-    * called after bridge address assignment is complete.
+  /** Iterates through each bridge, generating the header fragment. Must be called after bridge address assignment is
+    * complete.
     */
   def genWidgetHeaders(sb: StringBuilder, memoryRegions: Map[String, BigInt]): Unit = {
-    widgets foreach ((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, memoryRegions, sb))
+    widgets.foreach((w: Widget) => w.module.genHeader(addrMap(w.getWName).start, memoryRegions, sb))
   }
 
   def printWidgets: Unit = {
-    widgets foreach ((w: Widget) => println(w.getWName))
+    widgets.foreach((w: Widget) => println(w.getWName))
   }
 
   def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {
-    val widget = name2inst.get(wName).getOrElse(
-      throw new RuntimeException("Could not find Widget: $wName"))
+    val widget = name2inst.get(wName).getOrElse(throw new RuntimeException("Could not find Widget: $wName"))
     getCRAddr(widget, crName)
   }
 
   def getCRAddr(w: Widget, crName: String)(implicit channelWidth: Int): BigInt = {
     // TODO: Deal with byte vs word addresses && don't use a name in the hash?
-    val base = (addrMap(w.getWName).start >> log2Up(channelWidth/8))
+    val base = (addrMap(w.getWName).start >> log2Up(channelWidth / 8))
     base + w.getCRAddr(crName)
   }
 }
