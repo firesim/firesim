@@ -47,7 +47,7 @@ def readconfig(config_file):
             name, val = line[4:].split("=", 1)
             d[name] = val
         if line[-11:] == " is not set":
-            d[line[9:-11]] = "n"
+            d[line[6:-11]] = "n"
     return d
 
 def print_config(op, config, value, new_value):
