@@ -2,22 +2,18 @@
 
 package midas.platform
 
-import freechips.rocketchip.config.{Parameters}
-import freechips.rocketchip.diplomacy.{LazyModule}
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.Platform
 import midas.core._
 import midas.targetutils.xdc.SpecifyXDCCircuitPaths
-import midas.{PreLinkCircuitPath, PostLinkCircuitPath}
+import midas.{PostLinkCircuitPath, PreLinkCircuitPath}
 
-/**
-  * Generates the platform wrapper (which includes most of the chisel-generated
-  * RTL that constitutes the simulator, including BridgeModules) using
-  * parameters instance and the required annotations from the transformed
-  * target design.
-  *
+/** Generates the platform wrapper (which includes most of the chisel-generated RTL that constitutes the simulator,
+  * including BridgeModules) using parameters instance and the required annotations from the transformed target design.
   */
-private [midas] object PlatformShim {
+private[midas] object PlatformShim {
   def apply(config: SimWrapperConfig)(implicit p: Parameters): PlatformShim = {
     p(Platform)(p.alterPartial({ case SimWrapperKey => config }))
   }
