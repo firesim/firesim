@@ -680,8 +680,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         hwcfg = serv.get_resolved_server_hardware_config()
         assert hwcfg.xclbin is not None
         if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
-            remote_home_dir = self.parent_node.get_sim_dir()
-            remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
+            remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
             hwcfg.local_xclbin = './local.xclbin'
 
             with cd(remote_sim_dir):
