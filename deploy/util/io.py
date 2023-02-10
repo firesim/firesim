@@ -24,7 +24,7 @@ def firesim_input(prompt: object = None) -> str:
     return res
 
 
-def downloadURI(uri: str, local_dest_path: PathLike) -> None:
+def downloadURI(uri: str, local_dest_path: str) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system.
     Args:
         uri: uri of an object to be fetched

@@ -10,18 +10,20 @@ from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hi
 from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
+from os.path import basename
 from os import PathLike, fspath
 from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from util.streamlogger import StreamLogger
 from util.io import downloadURI
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
-from typing import List, Dict, Optional, Union, TYPE_CHECKING
+from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
+from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
 if TYPE_CHECKING:
-    from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
     from runtools.run_farm import Inst
     from awstools.awstools import MockBoto3Instance
 
@@ -168,6 +170,22 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         return remote_sim_dir
 
+
+    def local_download_uri(self, slotno: int, dir: str) -> Optional[Tuple[str, str]]:
+        """ This function will download the driver_tar URI to the manager
+        under the conditions that driver_tar is: set, and is not "file://" """
+        hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
+
+        if hwcfg.driver_tar is None or hwcfg.driver_tar_is_local != False:
+            # this function should not run if driver_tar is not specified
+            # or if it was specified, but uses "file://"
+            return None
+        
+        destination = pjoin(dir, FireSimServerNode.get_tar_name())
+        downloadURI(hwcfg.driver_tar, destination)
+
+        return (destination, '')
+
     def copy_sim_slot_infrastructure(self, slotno: int) -> None:
         """ copy all the simulation infrastructure to the remote node. """
         if self.instance_assigned_simulations():
@@ -181,12 +199,25 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             run(f"mkdir -p {remote_sim_rsync_dir}")
 
             files_to_copy = serv.get_required_files_local_paths()
-            for local_path, remote_path in files_to_copy:
-                # -z --inplace
-                rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
-                            ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
-                rootLogger.debug(rsync_cap)
-                rootLogger.debug(rsync_cap.stderr)
+
+            with TemporaryDirectory() as uridir:
+                # When a URI needs to be downloaded, this will do the download, 
+                # as well as return a path pair.
+                # When no download is required, None is returned.
+                # All of this code is inside a with block so that the 
+                # download will survive until after the rsync below
+                # at which point the local copy of the downloaded URI is
+                # not needed and removed.
+                maybe_local_uri = self.local_download_uri(slotno, uridir)
+                if maybe_local_uri is not None:
+                    files_to_copy.append(maybe_local_uri)
+
+                for local_path, remote_path in files_to_copy:
+                    # -z --inplace
+                    rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
+                                ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
+                    rootLogger.debug(rsync_cap)
+                    rootLogger.debug(rsync_cap.stderr)
 
             run(f"cp -r {remote_sim_rsync_dir}/* {remote_sim_dir}/", shell=True)
 

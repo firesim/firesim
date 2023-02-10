@@ -556,7 +556,8 @@ class FireSimServerNode(FireSimNode):
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
 
-    def get_tar_name(self) -> str:
+    @classmethod
+    def get_tar_name(cls) -> str:
         """ Get the name of the tarball on the run host"""
         return "driver-bundle.tar.gz"
 
