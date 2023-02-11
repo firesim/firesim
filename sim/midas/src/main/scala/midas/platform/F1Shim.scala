@@ -28,8 +28,21 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
       io_slave.zipWithIndex.foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
     }
 
-    top.module.ctrl            <> io_master
-    AXI4NastiAssigner.toAXI4(top.module.cpu_managed_axi4.get, io_dma)
+    top.module.ctrl <> io_master
+
+    top.module.cpu_managed_axi4 match {
+      case None       =>
+        io_dma.aw.ready := false.B
+        io_dma.ar.ready := false.B
+        io_dma.w.ready  := false.B
+        io_dma.r.valid  := false.B
+        io_dma.r.bits   := DontCare
+        io_dma.b.valid  := false.B
+        io_dma.b.bits   := DontCare
+      case Some(axi4) =>
+        AXI4NastiAssigner.toAXI4(axi4, io_dma)
+    }
+
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...
