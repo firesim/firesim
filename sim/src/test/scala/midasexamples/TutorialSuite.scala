@@ -56,6 +56,7 @@ class CIGroupA
       new AutoCounterCITests,
       new ResetPulseBridgeActiveHighTest,
       new ResetPulseBridgeActiveLowTest,
+      new MemoryCITests,
     )
 
 class CIGroupB

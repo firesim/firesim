@@ -14,7 +14,8 @@ import freechips.rocketchip.config._
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 abstract class LoadMemTest(
-  override val basePlatformConfig: BasePlatformConfig
+  override val basePlatformConfig: BasePlatformConfig,
+  val extraArgs:                   Seq[String] = Seq(),
 ) extends TutorialSuite("LoadMemModule", platformConfigs = Seq(classOf[NoSynthAsserts]))
     with Matchers {
 
@@ -59,7 +60,7 @@ abstract class LoadMemTest(
         run(
           backend,
           debug,
-          args = Seq(s"+n=${numLines} +loadmem=${input.getPath}", s"+test-dump-file=${output.getPath}"),
+          args = Seq(s"+n=${numLines} +loadmem=${input.getPath}", s"+test-dump-file=${output.getPath}") ++ extraArgs,
         ) == 0
       )
       val result = scala.io.Source.fromFile(output.getPath).mkString
@@ -71,8 +72,13 @@ abstract class LoadMemTest(
 class LoadMemF1Test    extends LoadMemTest(BaseConfigs.F1)
 class LoadMemVitisTest extends LoadMemTest(BaseConfigs.Vitis)
 
-class BridgeTests
+class FastLoadMemF1Test    extends LoadMemTest(BaseConfigs.F1, extraArgs = Seq("+fastloadmem"))
+class FastLoadMemVitisTest extends LoadMemTest(BaseConfigs.Vitis, extraArgs = Seq("+fastloadmem"))
+
+class MemoryCITests
     extends Suites(
       new LoadMemF1Test,
       new LoadMemVitisTest,
+      new FastLoadMemF1Test,
+      new FastLoadMemVitisTest,
     )
