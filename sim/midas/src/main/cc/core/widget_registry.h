@@ -56,10 +56,25 @@ public:
    */
   template <typename T>
   T &get_widget() {
+    auto *widget = get_widget_opt<T>();
+    assert(widget && "cannot find widget");
+    return *widget;
+  }
+
+  /**
+   * Return a widget of a particular kind, if it has a single instance.
+   *
+   * @tparam T Type of the widget to fetch
+   * @return Pointer to the widget instance.
+   */
+  template <typename T>
+  T *get_widget_opt() {
     auto it = widgets.find(&T::KIND);
     assert(it != widgets.end() && "no bridges registered");
     assert(it->second.size() == 1 && "multiple bridges registered");
-    return *static_cast<T *>(it->second[0].get());
+    if (it == widgets.end() || it->second.size() != 1)
+      return nullptr;
+    return static_cast<T *>(it->second[0].get());
   }
 
   /**

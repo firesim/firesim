@@ -147,95 +147,96 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName)).reverse
 
   // Allocate memory regions using a base-and-bounds scheme
-  val dramOffsetsRev     = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({ case (offsets, (bridgeSeq, addresses)) =>
+  val dramOffsetsRev       = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({ case (offsets, (bridgeSeq, addresses)) =>
     val requestedCapacity = BytesOfDRAMRequired(addresses)
     val pageAligned4k     = ((requestedCapacity + 4095) >> 12) << 12
     (offsets.head + pageAligned4k) +: offsets
   })
-  val totalDRAMAllocated = dramOffsetsRev.head
-  val dramOffsets        = dramOffsetsRev.tail.reverse
-  val availableDRAM      = p(HostMemNumChannels) * p(HostMemChannelKey).size
+  val totalDRAMAllocated   = dramOffsetsRev.head
+  val dramOffsets          = dramOffsetsRev.tail.reverse
+  val dramBytesPerChannel  = p(HostMemChannelKey).size
+  val availableDRAM        = p(HostMemNumChannels) * dramBytesPerChannel
   require(
     totalDRAMAllocated <= availableDRAM,
     s"Total requested DRAM of ${totalDRAMAllocated}B, exceeds host capacity of ${availableDRAM}B",
   )
+  val dramChannelsRequired = (totalDRAMAllocated + dramBytesPerChannel - 1) / dramBytesPerChannel
 
-  val loadMem          = addWidget(new LoadMemWidget(totalDRAMAllocated))
-  // Host DRAM handling
-  val memChannelParams = p(HostMemChannelKey)
-  // Define multiple single-channel nodes, instead of one multichannel node to more easily
-  // bind a subset to the XBAR.
-  val memAXI4Nodes     = Seq.tabulate(p(HostMemNumChannels)) { channel =>
-    val device = new MemoryDevice
-    val base   = channel * memChannelParams.size
-    AXI4SlaveNode(
-      Seq(
-        AXI4SlavePortParameters(
-          slaves    = Seq(
-            AXI4SlaveParameters(
-              address       = Seq(AddressSet(base, memChannelParams.size - 1)),
-              resources     = device.reg,
-              regionType    = RegionType.UNCACHED, // cacheable
-              executable    = false,
-              supportsWrite = TransferSizes(1, memChannelParams.maxXferBytes),
-              supportsRead  = TransferSizes(1, memChannelParams.maxXferBytes),
-              interleavedId = Some(0),
+  // If the target needs DRAM, build the required channels.
+  val (targetMemoryRegions, memAXI4Nodes): (Map[String, BigInt], Seq[AXI4SlaveNode]) =
+    if (dramChannelsRequired == 0) { (Map(), Seq()) }
+    else {
+      // In keeping with the Nasti implementation, we put all channels on a single XBar.
+      val xbar = AXI4Xbar()
+
+      val memChannelParams = p(HostMemChannelKey)
+
+      // Define multiple single-channel nodes, instead of one multichannel node to more easily
+      // bind a subset to the XBAR.
+      val memAXI4Nodes     = Seq.tabulate(p(HostMemNumChannels)) { channel =>
+        val device = new MemoryDevice
+        val base   = channel * memChannelParams.size
+        AXI4SlaveNode(
+          Seq(
+            AXI4SlavePortParameters(
+              slaves    = Seq(
+                AXI4SlaveParameters(
+                  address       = Seq(AddressSet(base, memChannelParams.size - 1)),
+                  resources     = device.reg,
+                  regionType    = RegionType.UNCACHED, // cacheable
+                  executable    = false,
+                  supportsWrite = TransferSizes(1, memChannelParams.maxXferBytes),
+                  supportsRead  = TransferSizes(1, memChannelParams.maxXferBytes),
+                  interleavedId = Some(0),
+                )
+              ), // slave does not interleave read responses
+              beatBytes = memChannelParams.beatBytes,
             )
-          ), // slave does not interleave read responses
-          beatBytes = memChannelParams.beatBytes,
+          )
         )
-      )
-    )
-  }
+      }
 
-  // In keeping with the Nasti implementation, we put all channels on a single XBar.
-  val xbar = AXI4Xbar()
-
-  private def bindActiveHostChannel(channelNode: AXI4SlaveNode): Unit = p(HostMemIdSpaceKey) match {
-    case Some(AXI4IdSpaceConstraint(idBits, maxFlight)) =>
-      (channelNode := AXI4Buffer()
-        := AXI4UserYanker(Some(maxFlight))
-        := AXI4IdIndexer(idBits)
-        := AXI4Buffer()
-        := xbar)
-    case None                                           =>
-      (channelNode := AXI4Buffer()
-        := xbar)
-  }
-
-  // Connect only as many channels as needed by bridges requesting host DRAM.
-  // Always connect one channel because:
-  // 1) It is still assumed in some places, see loadmem
-  // 2) Almost all simulators we've built to date require at least one channel
-  // 3) In F1, the first DRAM channel cannot be omitted.
-  val dramChannelsRequired =
-    math.max(1, math.ceil(totalDRAMAllocated.toDouble / p(HostMemChannelKey).size.toLong).toInt)
-  for ((node, idx) <- memAXI4Nodes.zipWithIndex) {
-    if (idx < dramChannelsRequired) {
-      bindActiveHostChannel(node)
-    } else {
-      node := AXI4TieOff()
-    }
-  }
-
-  xbar := loadMem.toHostMemory
-  val targetMemoryRegions = Map(
-    sortedRegionTuples
-      .zip(dramOffsets)
-      .map({ case ((bridgeSeq, addresses), hostBaseAddr) =>
-        val regionName         = bridgeSeq.head.memoryRegionName
-        val virtualBaseAddr    = addresses.map(_.base).min
-        val offset             = hostBaseAddr - virtualBaseAddr
-        val preTranslationPort = (xbar
-          :=* AXI4Buffer()
-          :=* AXI4AddressTranslation(offset, addresses, regionName))
-        bridgeSeq.foreach { bridge =>
-          (preTranslationPort := AXI4Deinterleaver(bridge.memorySlaveConstraints.supportsRead.max)
-            := bridge.memoryMasterNode)
+      // Connect only as many channels as needed by bridges requesting host DRAM.
+      for ((node, idx) <- memAXI4Nodes.zipWithIndex) {
+        if (idx < dramChannelsRequired) {
+          p(HostMemIdSpaceKey) match {
+            case Some(AXI4IdSpaceConstraint(idBits, maxFlight)) =>
+              (node := AXI4Buffer()
+                := AXI4UserYanker(Some(maxFlight))
+                := AXI4IdIndexer(idBits)
+                := AXI4Buffer()
+                := xbar)
+            case None                                           =>
+              (node := AXI4Buffer()
+                := xbar)
+          }
+        } else {
+          node := AXI4TieOff()
         }
-        regionName -> offset
-      }): _*
-  )
+      }
+
+      val loadMem = addWidget(new LoadMemWidget(totalDRAMAllocated))
+      xbar := loadMem.toHostMemory
+      val memoryRegions = Map(
+        sortedRegionTuples
+          .zip(dramOffsets)
+          .map({ case ((bridgeSeq, addresses), hostBaseAddr) =>
+            val regionName         = bridgeSeq.head.memoryRegionName
+            val virtualBaseAddr    = addresses.map(_.base).min
+            val offset             = hostBaseAddr - virtualBaseAddr
+            val preTranslationPort = (xbar
+              :=* AXI4Buffer()
+              :=* AXI4AddressTranslation(offset, addresses, regionName))
+            bridgeSeq.foreach { bridge =>
+              (preTranslationPort := AXI4Deinterleaver(bridge.memorySlaveConstraints.supportsRead.max)
+                := bridge.memoryMasterNode)
+            }
+            regionName -> offset
+          }): _*
+      )
+
+      (memoryRegions, memAXI4Nodes)
+    }
 
   def printHostDRAMSummary(): Unit = {
     def toIECString(value: BigInt): String = {
@@ -367,7 +368,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   HostClockSource.annotate(clock)
 
   val ctrl = IO(Flipped(WidgetMMIO()))
-  val mem  = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
+  val mem  = IO(Vec(outer.memAXI4Nodes.length, AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
   val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) =>
     val port = IO(Flipped(AXI4Bundle(params.axi4BundleParams)))
@@ -459,7 +460,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     sb.append(",\n.mem = ")
     printConfig(confMem)
 
-    sb.append(s",\n.mem_num_channels = ${p(HostMemNumChannels)}")
+    sb.append(s",\n.mem_num_channels = ${outer.memAXI4Nodes.length}")
 
     sb.append(",\n.cpu_managed = ")
     confCPUManaged match {
@@ -502,7 +503,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       printMacro("FPGA_MANAGED_AXI4", "PRESENT", 1.toLong)
     }
 
-    for (idx <- 1 to p(HostMemNumChannels)) {
+    for (idx <- 0 to outer.memAXI4Nodes.length) {
       printMacro("MEM", s"HAS_CHANNEL${idx - 1}", 1.toLong)
     }
     printConfig("MEM", confMem)
