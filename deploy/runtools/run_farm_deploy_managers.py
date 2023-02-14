@@ -105,6 +105,13 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
+    @property
+    @classmethod
+    @abc.abstractmethod
+    def sim_command_requires_sudo(self) -> bool:
+        """ Set when the sim start command must be launched with sudo. """
+        raise NotImplementedError
+
     def instance_logger(self, logstr: str, debug: bool = False) -> None:
         """ Log with this host's info as prefix. """
         if debug:
@@ -266,6 +273,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            assert(not type(self).sim_command_requires_sudo or has_sudo())
             server = self.parent_node.sim_slots[slotno]
 
             # make the local job results dir for this sim slot
@@ -274,8 +282,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
-                run("chmod +x sim-run.sh")
-                run("./sim-run.sh")
+                run(server.get_sim_start_command(slotno, type(self).sim_command_requires_sudo))
 
 
     def kill_switch_slot(self, switchslot: int) -> None:
@@ -500,6 +507,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     This is in charge of managing the locations of stuff on remote nodes.
     """
 
+    sim_command_requires_sudo = True
+
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.nbd_tracker = NBDTracker()
@@ -686,6 +695,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
 class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
+    sim_command_requires_sudo = True
+
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
 
@@ -695,10 +706,11 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
             card_bdfs = []
             with settings(warn_only=True), hide('everything'):
-                temp_file = "/tmp/xbutil-examine-out.json"
-                collect = run(f"xbutil examine --format JSON -o {temp_file}")
-                with open(temp_file, "r") as f:
-                    json_dict = json.loads(f.read())
+                # Examine forcibly puts the JSON in an output file (on the remote); The stdout
+                # it produces is difficult to parse so use process substitution
+                # to pipe JSON to stdout instead.
+                xbutil_examine_json = run("xbutil examine --force --format JSON -o >(cat) > /dev/null")
+                json_dict = json.loads(xbutil_examine_json)
                 card_bdfs = [d["bdf"] for d in json_dict["system"]["host"]["devices"]]
 
             for card_bdf in card_bdfs:
