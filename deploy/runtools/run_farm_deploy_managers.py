@@ -180,16 +180,17 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
     def local_download_uri(self, slotno: int, dir: str) -> Optional[Tuple[str, str]]:
         """ This function will download the driver_tar URI to the manager
-        under the conditions that driver_tar is: set, and is not "file://" """
+        when driver_tar is set. """
         hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
 
-        if hwcfg.driver_tar is None or hwcfg.driver_tar_is_local != False:
-            # this function should not run if driver_tar is not specified
-            # or if it was specified, but uses "file://"
+        if hwcfg.driver_tar is None:
             return None
         
         destination = pjoin(dir, FireSimServerNode.get_tar_name())
-        downloadURI(hwcfg.driver_tar, destination)
+        try:
+            downloadURI(hwcfg.driver_tar, destination)
+        except FileNotFoundError as e:
+            raise Exception(f"driver_tar path '{hwcfg.driver_tar}' was not found")
 
         return (destination, '')
 

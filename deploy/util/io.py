@@ -25,7 +25,8 @@ def firesim_input(prompt: object = None) -> str:
 
 
 def downloadURI(uri: str, local_dest_path: str) -> None:
-    """Uses the fsspec library to fetch a file specified in the uri to the local file system.
+    """Uses the fsspec library to fetch a file specified in the uri to the local file system. Will throw if
+    the file is not found.
     Args:
         uri: uri of an object to be fetched
         local_dest_path: path on the local file system to store the uri object

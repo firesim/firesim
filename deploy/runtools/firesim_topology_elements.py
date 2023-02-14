@@ -494,17 +494,18 @@ class FireSimServerNode(FireSimNode):
         all_paths += self.get_job().get_siminputs()
         return all_paths
     
-    def get_tarball_path_pair(self) -> Optional[Tuple[str, str]]:
-        """ Return local and remote paths of the actual driver tarball, not files inside"""
+    def get_built_tarball_path_pair(self) -> Optional[Tuple[str, str]]:
+        """ Return local and remote paths of the actual driver tarball, not files inside.
+        This will only return if the tarball was just built by us. In the case that it 
+        was provided externally through config_hwdb:driver_tar, this returns None. """
+        hwcfg = self.get_resolved_server_hardware_config()
 
-        if isinstance(self.server_hardware_config, str):
-            raise Exception("FIXME need to figure out string support")
-        if self.server_hardware_config is not None and self.server_hardware_config.driver_tar is not None:
-            if not self.server_hardware_config.driver_tar_is_local == True:
-                return None
-            return (str(self.server_hardware_config.driver_tar_local_path), self.get_tar_name())
-        else:
-            return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
+        # the driver is being externally provided
+        # we don't provide the path here
+        if hwcfg.driver_tar is not None:
+            return None
+
+        return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
 
 
 
@@ -521,8 +522,8 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
-        # If driver_tar_is_local is None or False, don't copy the tarball here
-        maybe_tarball_path = self.get_tarball_path_pair()
+        # Only when config_hwdb:driver_tar is None, this will have a value
+        maybe_tarball_path = self.get_built_tarball_path_pair()
         if maybe_tarball_path:
             all_paths.append(maybe_tarball_path)
 
