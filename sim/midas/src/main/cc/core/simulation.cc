@@ -86,6 +86,8 @@ int simulation_t::execute_simulation_flow() {
     stream->init();
   }
 
+  init_dram();
+
   simulation_init();
 
   record_start_times();
