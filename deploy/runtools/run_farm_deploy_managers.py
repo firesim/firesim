@@ -176,8 +176,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         return remote_sim_dir
 
-
-    def local_download_uri(self, slotno: int, dir: str) -> Optional[Tuple[str, str]]:
+    def local_download_tarball_uri(self, slotno: int, dir: str) -> Optional[Tuple[str, str]]:
         """ This function will download the driver_tar URI to the manager
         when driver_tar is set. """
         hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
@@ -215,7 +214,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 # download will survive until after the rsync below
                 # at which point the local copy of the downloaded URI is
                 # not needed and removed.
-                maybe_local_uri = self.local_download_uri(slotno, uridir)
+                maybe_local_uri = self.local_download_tarball_uri(slotno, uridir)
                 if maybe_local_uri is not None:
                     files_to_copy.append(maybe_local_uri)
 

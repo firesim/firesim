@@ -562,6 +562,11 @@ class FireSimServerNode(FireSimNode):
         """ Get the name of the tarball on the run host"""
         return "driver-bundle.tar.gz"
 
+    @classmethod
+    def get_xclbin_name(cls) -> str:
+        """ Get the name of the xclbin on the run host"""
+        return "bitstream.xclbin"
+
     def get_all_rootfs_names(self) -> List[Optional[str]]:
         """ Get all rootfs filenames as a list. """
         return [self.get_rootfs_name()]
