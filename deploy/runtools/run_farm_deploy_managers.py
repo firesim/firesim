@@ -101,6 +101,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
     """
     parent_node: Inst
     nbd_tracker: Optional[NBDTracker]
+    """ A list of URIContainer objects, one for each URI that is able to be specified """
     uri_list: list[URIContainer]
 
     def __init__(self, parent_node: Inst) -> None:
@@ -729,11 +730,14 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     
     @classmethod
     def sim_command_requires_sudo(self) -> bool:
-        """ This sim requires sudo. """
-        return True
+        """ This sim does not require sudo. """
+        return False
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
+
+        # Vitis runs add the additional handling of the xclbin URI
+        self.uri_list.append(URIContainer('xclbin', FireSimServerNode.get_xclbin_name()))
 
     def clear_fpgas(self) -> None:
         if self.instance_assigned_simulations():
@@ -751,24 +755,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             for card_bdf in card_bdfs:
                 run(f"xbutil reset -d {card_bdf} --force")
 
-    def localize_xclbin(self, slotno: int) -> None:
-        """ download xclbin URI to remote node. """
-        assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
-        serv = self.parent_node.sim_slots[slotno]
-        hwcfg = serv.get_resolved_server_hardware_config()
-        assert hwcfg.xclbin is not None
-        if re.match(_RFC_3986_PATTERN, hwcfg.xclbin):
-            remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
-            hwcfg.local_xclbin = './local.xclbin'
-
-            with cd(remote_sim_dir):
-                run(downloadURI, hwcfg.xclbin, hwcfg.local_xclbin)
-
-        else:
-            hwcfg.local_xclbin = hwcfg.xclbin
-
-
-
     def infrasetup_instance(self) -> None:
         """ Handle infrastructure setup for this platform. """
         metasim_enabled = self.parent_node.metasimulation_enabled
@@ -779,7 +765,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.copy_sim_slot_infrastructure(slotno)
-                self.localize_xclbin(slotno)
+                self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
                 # clear/flash fpgas

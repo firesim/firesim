@@ -522,7 +522,7 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
-        # Only when config_hwdb:driver_tar is None, this will have a value
+        # This will only have a value when config_hwdb:driver_tar is None
         maybe_tarball_path = self.get_built_tarball_path_pair()
         if maybe_tarball_path:
             all_paths.append(maybe_tarball_path)

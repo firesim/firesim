@@ -21,6 +21,7 @@ from tempfile import TemporaryDirectory
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
+from runtools.firesim_topology_elements import FireSimServerNode
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
@@ -51,10 +52,8 @@ class RuntimeHWConfig:
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
-    """User-specified, possibly-URI, path to xclbin"""
+    """User-specified, URI path to xclbin"""
     xclbin: Optional[str]
-    """RunFarmHost-local path to xclbin"""
-    local_xclbin: Optional[str]
 
     deploytriplet: Optional[str]
     customruntimeconfig: str
@@ -66,6 +65,7 @@ class RuntimeHWConfig:
     local_driver_base_dir: str
     driver_build_target: str
     driver_type_message: str
+    """User-specified, URI path to driver tarball"""
     driver_tar: Optional[str]
 
     # Members that are initlized here also need to be initilized in
@@ -77,8 +77,7 @@ class RuntimeHWConfig:
             raise Exception(f"Unable to have agfi and xclbin in HWDB entry {name}.")
 
         self.agfi = hwconfig_dict.get('agfi')
-        self.xclbin = hwconfig_dict.get('xclbin')
-        self.local_xclbin = None
+        self.xclbin = self.__validate_uri(hwconfig_dict, 'xclbin')
         self.driver_tar = self.__validate_uri(hwconfig_dict, 'driver_tar')
 
         if self.agfi is not None:
@@ -245,8 +244,8 @@ class RuntimeHWConfig:
         run_device_placement = "+slotid={}".format(slotid)
 
         if self.platform == "vitis":
-            assert self.local_xclbin is not None
-            vitis_bit = "+binary_file={}".format(self.local_xclbin)
+            assert self.xclbin is not None
+            vitis_bit = f"+binary_file={FireSimServerNode.get_xclbin_name()}"
         else:
             vitis_bit = ""
 
