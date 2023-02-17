@@ -7,7 +7,6 @@ import chisel3.util._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import freechips.rocketchip.config.Parameters
-import testchipip.{BlockDeviceData, BlockDeviceIO, BlockDeviceInfo, BlockDeviceRequest}
 
 class BlockDevDUT(implicit val p: Parameters) extends Module {
   val rd = Module(new BlockDevBridge)
@@ -39,6 +38,8 @@ class BlockDevDUT(implicit val p: Parameters) extends Module {
   when(rdev.req.fire) {
     read_pending := true.B
   }
+  rdev.data.valid      := false.B // reads don't present data
+  rdev.data.bits       := DontCare
 
   // After the read is fired, queue up a write as well.
   val write_pending = RegInit(false.B)
@@ -50,6 +51,7 @@ class BlockDevDUT(implicit val p: Parameters) extends Module {
   when(wdev.req.fire) {
     write_pending := true.B
   }
+  wdev.resp.ready      := true.B
 
   // Count writes and mark the read-write requests as finished once a full sector is transferred.
   val write_offset = RegInit(0.U(6.W))

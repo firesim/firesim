@@ -43,7 +43,7 @@ class PrintfModuleDUT(printfPrefix: String = "SYNTHESIZED_PRINT ") extends Modul
   SynthesizePrintf(printf(s"${printfPrefix}CYCLE: %d Char: %c\n", cycle, ch))
 }
 
-class PrintfModuleChild(printfPrefix: String) extends MultiIOModule {
+class PrintfModuleChild(printfPrefix: String) extends Module {
   val c = IO(Input(Bool()))
   val cycle = IO(Input(UInt(16.W)))
 

@@ -4,10 +4,7 @@ package models
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
-import junctions._
-import midas.widgets._
 
-import Console.{UNDERLINED, RESET}
 
 case class FIFOMASConfig(
     dramKey: DramOrganizationParams,
@@ -22,7 +19,7 @@ case class FIFOMASConfig(
 class FIFOMASMMRegIO(val cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
   val registers = dramBaseRegisters
 
-  def requestSettings() {
+  def requestSettings(): Unit = {
     Console.println(s"Configuring a First-Come First-Serve Model")
     setBaseDRAMSettings()
   }
@@ -37,7 +34,7 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
     with HasDRAMMASConstants {
 
   val longName = "FIFO MAS"
-  def printTimingModelGenerationConfig {}
+  def printTimingModelGenerationConfig: Unit = {}
   /**************************** CHISEL BEGINS *********************************/
   import DRAMMasEnums._
 

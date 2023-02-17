@@ -2,8 +2,8 @@ package midas
 package models
 
 // From RC
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.util.{ParameterizedBundle, GenericParameterizedBundle, UIntIsOneOf}
+import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.util.{ParameterizedBundle, UIntIsOneOf}
 import freechips.rocketchip.unittest.UnitTest
 import junctions._
 
@@ -75,7 +75,7 @@ class ProgrammableSubAddr(
     (mask   -> RuntimeSetting(defaultMask,s"${longName} Mask", max = Some((1 << maskBits) - 1)))
   )
 
-  def forceSettings(offsetValue: BigInt, maskValue: BigInt) {
+  def forceSettings(offsetValue: BigInt, maskValue: BigInt): Unit = {
     regMap(offset).set(offsetValue)
     regMap(mask).set(maskValue)
   }

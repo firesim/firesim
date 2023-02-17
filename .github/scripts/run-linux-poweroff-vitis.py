@@ -30,8 +30,13 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
+            # download prebuilt xclbin to /tmp
+            # this CI image is managed by the default CI account
+            with prefix('cd /tmp'):
+                run('wget https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_d148b73.xclbin')
+
             def run_w_timeout(workload_path, workload, timeout):
-                log_tail_length = 100
+                log_tail_length = 300
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
@@ -56,7 +61,7 @@ def run_linux_poweroff_vitis():
                 else:
                     print(f"Workload {workload} successful.")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/.github/scripts/vitis-test", "linux-poweroff-singlenode", "30m")
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m")
 
 if __name__ == "__main__":
     execute(run_linux_poweroff_vitis, hosts=["localhost"])

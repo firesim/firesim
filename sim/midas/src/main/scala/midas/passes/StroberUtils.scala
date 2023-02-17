@@ -5,7 +5,6 @@ package midas.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.annotations._
 import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, LinkedHashSet}
 
 /**

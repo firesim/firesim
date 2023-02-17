@@ -1,14 +1,10 @@
 package midas
 package models
 
-import freechips.rocketchip.config._
 
 import chisel3._
 
-import org.json4s._
 
-import Console.{UNDERLINED, GREEN, RESET}
-import java.io.{File, FileWriter}
 
 // Hacky utilities to get console input from user.
 trait HasConsoleUtils {
@@ -26,21 +22,21 @@ trait HasConsoleUtils {
         }
         if (max != None && value > max.get) {
           Console.printf(s"Request integer ${value} exceeds maximum ${max.get}")
-          inner
+          inner()
         } else if (min != None && value < min.get) {
           Console.printf(s"Request integer ${value} is less than minimum ${min.get}")
-          inner
+          inner()
         }
       } catch {
         case e: java.lang.NumberFormatException => {
           Console.println("Please give me an integer!")
-          value = inner
+          value = inner()
         }
         case e: java.io.EOFException => { value = default }
       }
       value
     }
-    inner
+    inner()
   }
 
   // Select from list of possibilities
@@ -75,7 +71,7 @@ trait IsRuntimeSetting extends HasConsoleUtils {
   private var _isSet = false
   private var _value: BigInt = 0
 
-  def set(value: BigInt) {
+  def set(value: BigInt): Unit = {
     require(!_isSet, "Trying to set a programmable register that has already been set.")
     _value = value;
     _isSet = true
@@ -86,7 +82,7 @@ trait IsRuntimeSetting extends HasConsoleUtils {
   def getOrElse(alt: =>BigInt): BigInt = if (_isSet) _value else alt
 
   // This prompts the user via the console for setting
-  def requestSetting(field: Data) {
+  def requestSetting(field: Data): Unit = {
     set(requestInput(query, default, Some(min), max))
   }
 }
@@ -123,8 +119,8 @@ trait HasProgrammableRegisters extends Bundle {
   }
 
   // Returns the default values for all registered RuntimeSettings
-  def getDefaults(prefix: String = ""): Seq[(String, String)] = {
-    val localDefaults = registers map { case (elem, reg) => (s"${prefix}${getName(elem)}" -> s"${reg.default}") }
+  def getDefaults(prefix: String = ""): Seq[(String, BigInt)] = {
+    val localDefaults = registers map { case (elem, reg) => (s"${prefix}${getName(elem)}" -> reg.default) }
     localDefaults ++ (elements flatMap {
       case (name, elem: HasProgrammableRegisters) => elem.getDefaults(s"${prefix}${name}_")
       case _ => Seq()
@@ -132,11 +128,11 @@ trait HasProgrammableRegisters extends Bundle {
   }
 
   // Returns the requested values for all RuntimSEttings, throws an exception if one is unbound
-  def getSettings(prefix: String = ""): Seq[(String, String)] = {
+  def getSettings(prefix: String = ""): Seq[(String, BigInt)] = {
     val localSettings = registers map { case (elem, reg) => {
       val name = s"${prefix}${getName(elem)}"
       val setting = reg.getOrElse(throw new RuntimeException(s"Runtime Setting ${name} has not been set"))
-      (name -> setting.toString)
+      (name -> setting)
       }
     }
     // Recurse into leaves
@@ -147,10 +143,10 @@ trait HasProgrammableRegisters extends Bundle {
   }
 
   // Requests the users input for all unset RuntimeSettings
-  def setUnboundSettings(prefix: String = "test") {
+  def setUnboundSettings(prefix: String = "test"): Unit = {
     // Set all local registers
     registers foreach {
-      case (elem, reg) if !reg.isSet  => reg.requestSetting(elem)
+      case (elem, reg) if !reg.isSet() => reg.requestSetting(elem)
       case _ => None
     }
     // Traverse into leaf bundles and set them

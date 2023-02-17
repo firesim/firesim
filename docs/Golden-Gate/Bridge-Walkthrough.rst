@@ -21,7 +21,11 @@ Source code for the UART Bridge lives in the following directories:
     │                 ├-cc/brides/uart.cc # Bridge Driver source
     │                 └-cc/brides/uart.h  # Bridge Driver header
     ├-src/main/cc/firesim/firesim_top.cc  # Driver instantiation in the main simulation driver
-    └-src/main/makefrag/firesim/Makefrag  # Build system modifications to compile Bridge Driver code
+    └-src/main/makefrag/firesim/          # Target-specific build rules
+        ├ build.mk                        # Definition of the Chisel elaboration step
+        ├ config.mk                       # Target-specific configuration and path setup
+        ├ driver.mk                       # Build rules for the driver
+        └ run.mk                          # Custom run commands for meta-simulation
 
 Target Side
 +++++++++++
@@ -106,7 +110,7 @@ Bridge Drivers extend the ``bridge_driver_t`` interface, which declares 5 virtua
 a concrete bridge driver must implement:
 
 
-.. literalinclude:: ../../sim/midas/src/main/cc/bridges/bridge_driver.h
+.. literalinclude:: ../../sim/midas/src/main/cc/core/bridge_driver.h
     :language: c++
     :start-after: DOC include start: Bridge Driver Interface
     :end-before: DOC include end: Bridge Driver Interface
@@ -124,19 +128,6 @@ invocation of tick() may do work corresponding to an arbitrary number of
 target cycles. It's critical that tick be non-blocking, as waiting for work
 from the BridgeModule may deadlock the simulator.
 
-Registering the Driver
-++++++++++++++++++++++
-
-With the Bridge Driver implemented, we now have to register it in the main simulator
-simulator class defined in ``sim/src/main/cc/firesim/firesim_top.cc``. Here, we
-rely on the C preprocessor macros to instantiate the bridge driver only when
-the corresponding BridgeModule is present:
-
-.. literalinclude:: ../../sim/src/main/cc/firesim/firesim_top.cc
-    :language: c++
-    :start-after: DOC include start: Bridge Driver Registration
-    :end-before: DOC include end: Bridge Driver Registration
-
 Build-System Modifications
 ++++++++++++++++++++++++++
 
@@ -144,14 +135,15 @@ The final consideration in adding your bridge concerns the build system. You
 should be able to host the Scala sources for your bridge with rest of your
 target RTL: SBT will make sure those classes are available on the runtime
 classpath. If you're hosting your bridge driver sources outside of the existing
-directories, you'll need to modify your target-project Makefrag to include them. The default
-Chipyard/Rocket Chip-based one lives here:
-``sim/src/main/makefrag/firesim/Makefrag``
+directories, you'll need to modify your target-project make fragments to include
+them. The default Chipyard/Rocket Chip-based one lives here:
+``sim/src/main/makefrag/firesim/``
 
 Here the main order of business is to add header and source files to
-``DRIVER_H`` and ``DRIVER_CC`` respectively, by modifying the lines below:
+``DRIVER_H`` and ``DRIVER_CC`` respectively in `driver.mk`, by modifying the
+lines below:
 
-.. literalinclude:: ../../sim/src/main/makefrag/firesim/Makefrag
+.. literalinclude:: ../../sim/src/main/makefrag/firesim/driver.mk
     :language: make
     :start-after: DOC include start: Bridge Build System Changes
     :end-before: DOC include end: Bridge Build System Changes

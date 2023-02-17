@@ -2,6 +2,8 @@
 #include <iomanip>
 #include <iostream>
 
+char plusargs_t::KIND;
+
 /**
  * The default value is passed here (via the FireSim-generated.const.h).
  * All macros should be passed to this constructor.
@@ -19,16 +21,16 @@
  * @param [in] slice_count The number of MMIO used to represent the value
  * @param [in] slice_addrs The MMIO addresses of the slices
  */
-plusargs_t::plusargs_t(simif_t *sim,
-                       const std::vector<std::string> &args,
+plusargs_t::plusargs_t(simif_t &sim,
                        const PLUSARGSBRIDGEMODULE_struct &mmio_addrs,
+                       unsigned index,
+                       const std::vector<std::string> &args,
                        const std::string_view name_orig,
                        const char *default_value,
                        const uint32_t bit_width,
-                       const uint32_t slice_count,
-                       const uint32_t *slice_addrs)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), slice_count(slice_count),
-      slice_addrs(slice_addrs, slice_addrs + slice_count) {
+                       const std::vector<uint32_t> &slice_addrs)
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs),
+      slice_addrs(slice_addrs) {
   std::string_view name = name_orig;
 
   // remove all leading white space
@@ -80,7 +82,7 @@ plusargs_t::plusargs_t(simif_t *sim,
   }
 }
 
-plusargs_t::~plusargs_t() {}
+plusargs_t::~plusargs_t() = default;
 
 /**
  * Check if the overriden value was driven.
@@ -94,10 +96,10 @@ bool plusargs_t::get_overridden() { return overriden; }
  * @params [in] idx The index of the slice
  * @returns the MMIO address
  */
-uint32_t plusargs_t::slice_address(const uint32_t idx) {
-  if (idx >= slice_count) {
+uint32_t plusargs_t::slice_address(uint32_t idx) {
+  if (idx >= slice_addrs.size()) {
     std::cerr << "Index " << idx << " is larger than the number of slices "
-              << slice_count << "\n";
+              << slice_addrs.size() << "\n";
     exit(1);
   }
   return slice_addrs[idx];
@@ -111,7 +113,7 @@ uint32_t plusargs_t::slice_address(const uint32_t idx) {
 void plusargs_t::init() {
   size_t size;
   const uint32_t *const slice_value =
-      (uint32_t *)mpz_export(NULL, &size, -1, sizeof(uint32_t), 0, 0, value);
+      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
 
   // write out slices that we have data for using mpz
   for (size_t i = 0; i < size; i++) {
@@ -119,7 +121,7 @@ void plusargs_t::init() {
   }
 
   // write out the remaining with zeros
-  for (size_t i = size; i < slice_count; i++) {
+  for (size_t i = size; i < slice_addrs.size(); i++) {
     write(slice_address(i), 0);
   }
 

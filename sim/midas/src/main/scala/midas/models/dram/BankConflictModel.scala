@@ -4,8 +4,6 @@ package models
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.GenericParameterizedBundle
-import junctions._
 import midas.widgets._
 
 import Console.{UNDERLINED, RESET}
@@ -42,7 +40,7 @@ class BankConflictMMRegIO(cfg: BankConflictConfig)(implicit p: Parameters)
                                       max = Some((1 << (cfg.maxLatencyBits-1)) - 1)))
   )
 
-  def requestSettings() {
+  def requestSettings(): Unit = {
     Console.println(s"${UNDERLINED}Generating runtime configuration for Bank-Conflict Model${RESET}")
   }
 }
@@ -69,12 +67,11 @@ object BankConflictConstants {
   val bankIdle :: bankBusy :: bankPrecharge :: Nil = Enum(nBankStates)
 }
 
-import BankConflictConstants._
 
 class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
 
   val longName = "Bank Conflict"
-  def printTimingModelGenerationConfig {}
+  def printTimingModelGenerationConfig: Unit = {}
   /**************************** CHISEL BEGINS *********************************/
   // This is the absolute number of banks the model can account for
   lazy val io = IO(new BankConflictIO(cfg))

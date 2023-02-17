@@ -6,7 +6,6 @@ import scala.collection.immutable.ListMap
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 
 import freechips.rocketchip.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
@@ -115,7 +114,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
                                       dummyPredicate)
     // Hack: include toHost.hValid to prevent individual wire channels from dequeuing before
     // all sub-channels have valid tokens
-    hPort.toHost.hReady := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
     // We don't generate tokens
     hPort.fromHost.hValid := true.B
     val tFire = tFireHelper.fire(dummyPredicate)
@@ -125,7 +124,7 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
     }
 
     // PAYLOAD HANDLING
-    val valid = printPort.hasEnabledPrint
+    val valid = printPort.hasEnabledPrint()
     val printsAsUInt = Cat(printPort.printRecords.map(_._2.asUInt).reverse)
     val data = Cat(printsAsUInt, valid) | 0.U(pow2Bits.W)
 
@@ -173,32 +172,34 @@ class PrintBridgeModule(key: PrintBridgeParameters)(implicit p: Parameters)
       bufferReady := widthAdapter.io.in.ready
     }
 
-    // HEADER GENERATION
-    // The LSB corresponding to the enable bit of the print
-    val widths = (printPort.printRecords.map(_._2.getWidth))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      val offsets = printPort.printRecords.map(_._2.getWidth).foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) =>
+        UInt32(offsets.head.value + width) +: offsets}).tail.reverse
 
-    // C-types for emission
-    val baseOffsets = widths.foldLeft(Seq(UInt32(reservedBits)))({ case (offsets, width) => 
-      UInt32(offsets.head.value + width) +: offsets}).tail.reverse
-
-    val argumentCounts  = printPort.printRecords.map(_._2.args.size).map(UInt32(_))
-    val argumentWidths  = printPort.printRecords.flatMap(_._2.argumentWidths).map(UInt32(_))
-    val argumentOffsets = printPort.printRecords.map(_._2.argumentOffsets.map(UInt32(_)))
-    val formatStrings   = printPort.printRecords.map(_._2.formatString).map(CStrLit)
-
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_print_count", UInt32(printPort.printRecords.size)))
-      sb.append(genConstStatic(s"${headerWidgetName}_token_bytes", UInt32(pow2Bits / 8)))
-      sb.append(genConstStatic(s"${headerWidgetName}_idle_cycles_mask",
-                               UInt32(((1 << idleCycleBits) - 1) << reservedBits)))
-      sb.append(genArray(s"${headerWidgetName}_print_offsets", baseOffsets))
-      sb.append(genArray(s"${headerWidgetName}_format_strings", formatStrings))
-      sb.append(genArray(s"${headerWidgetName}_argument_counts", argumentCounts))
-      sb.append(genArray(s"${headerWidgetName}_argument_widths", argumentWidths))
-      emitClockDomainInfo(headerWidgetName, sb)
+      genConstructor(
+          base,
+          sb,
+          "synthesized_prints_t",
+          "synthesized_prints",
+          Seq(
+              StdVector("synthesized_prints_t::Print",
+                printPort.printRecords.zip(offsets).map({ case ((_, p), offset) =>
+                  CppStruct("synthesized_prints_t::Print", Seq(
+                    "print_offset" -> offset,
+                    "format_string" -> CStrLit(p.formatString),
+                    "argument_widths" -> StdVector("unsigned", p.argumentWidths.map(UInt32(_)))
+                  ))
+                })
+              ),
+              UInt32(pow2Bits / 8),
+              UInt32(((1 << idleCycleBits) - 1) << reservedBits),
+              UInt32(toHostStreamIdx),
+              UInt32(toHostCPUQueueDepth),
+              Verbatim(clockDomainInfo.toC)
+          ),
+          hasStreams = true,
+          hasMMIOAddrMap = false
+      )
     }
     genCRFile()
   }

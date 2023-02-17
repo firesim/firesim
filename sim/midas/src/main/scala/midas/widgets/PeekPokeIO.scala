@@ -7,19 +7,13 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 import chisel3._
-import chisel3.util._
-import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, AnnotationException}
+import chisel3.util._ // Deprecated
 import freechips.rocketchip.config.Parameters
 
 import midas.core.SimUtils._
-import midas.core.{SimReadyValid, SimReadyValidIO}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.SerializationUtils._
 
 class PeekPokeWidgetIO(implicit val p: Parameters) extends WidgetIO()(p) {
-  val step = Flipped(Decoupled(UInt(ctrl.nastiXDataBits.W)))
-  val idle = Output(Bool())
 }
 
 case class PeekPokeKey(
@@ -51,8 +45,13 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val tCycle = genWideRORegInit(0.U(64.W), tCycleName, false)
     val tCycleAdvancing = WireInit(false.B)
 
-    // needs back pressure from reset queues
-    io.idle := cycleHorizon === 0.U
+    // Simulation control.
+    val step = Wire(Decoupled(UInt(p(CtrlNastiKey).dataBits.W)))
+    genAndAttachQueue(step, "STEP")
+    val done = Wire(Input(Bool()))
+    genRORegInit(done, "DONE", 0.U)
+
+    done := cycleHorizon === 0.U
 
     def genWideReg(name: String, field: Bits): Seq[UInt] = Seq.tabulate(
         (field.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
@@ -126,8 +125,7 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
     val outputAddrs = hPort.outs.map(elm => bindOutputs(elm._1, elm._2))
 
     // Every output one token "ahead" (current cycle value available) <=> entire PeekPoke state "precisely" peekable
-    genRORegInit((io.idle +: outputPrecisePeekableFlags).reduce(_ && _), "PRECISE_PEEKABLE", 0.U)
-    genRORegInit(io.idle, "READY", 0.U)
+    genRORegInit((done +: outputPrecisePeekableFlags).reduce(_ && _), "PRECISE_PEEKABLE", 0.U)
 
     val tCycleWouldAdvance = channelDecouplingFlags.reduce(_ && _)
     // tCycleWouldAdvance will be asserted if all inputs have been poked; but only increment
@@ -138,11 +136,11 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       tCycleAdvancing := true.B
     }
 
-    when (io.step.fire) {
-      cycleHorizon := io.step.bits
+    when (step.fire) {
+      cycleHorizon := step.bits
     }
     // Do not allow the block to be stepped further, unless it has gone idle
-    io.step.ready := io.idle
+    step.ready := done
 
     val crFile = genCRFile()
     // Now that we've bound registers, snoop the poke register addresses for writes
@@ -151,27 +149,26 @@ class PeekPokeBridgeModule(key: PeekPokeKey)(implicit p: Parameters) extends Bri
       poked := addrs.map(i => crFile.io.mcr.activeWriteToAddress(i)).reduce(_ || _)
     })
 
-    override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-      import CppGenerationUtils._
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      def genPortLists(names: Seq[String], addrs: Seq[Seq[Int]]): CPPLiteral = {
+        StdMap("peek_poke_t::Port", names.zip(addrs).map({ case (name, addr) =>
+          name -> CppStruct("peek_poke_t::Port", Seq(
+            "address" -> UInt64(base + addr.head),
+            "chunks" -> UInt32(addr.size)
+          ))
+        }))
+      }
 
-      val name = getWName.toUpperCase
-      def genOffsets(signals: Seq[String]): Unit = (signals.zipWithIndex) foreach {
-        case (name, idx) => sb.append(genConstStatic(name, UInt32(idx)))}
-
-      super.genHeader(base, sb)
-      sb.append(genComment("Pokeable target inputs"))
-      sb.append(genMacro("POKE_SIZE", UInt64(hPort.ins.size)))
-      genOffsets(hPort.ins.unzip._1)
-      sb.append(genArray("INPUT_ADDRS", inputAddrs.map(off => UInt32(base + off.head)).toSeq))
-      sb.append(genArray("INPUT_NAMES", hPort.ins.unzip._1 map CStrLit))
-      sb.append(genArray("INPUT_CHUNKS", inputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
-
-      sb.append(genComment("Peekable target outputs"))
-      sb.append(genMacro("PEEK_SIZE", UInt64(hPort.outs.size)))
-      genOffsets(hPort.outs.unzip._1)
-      sb.append(genArray("OUTPUT_ADDRS", outputAddrs.map(off => UInt32(base + off.head)).toSeq))
-      sb.append(genArray("OUTPUT_NAMES", hPort.outs.unzip._1 map CStrLit))
-      sb.append(genArray("OUTPUT_CHUNKS", outputAddrs.map(addrSeq => UInt32(addrSeq.size)).toSeq))
+      genConstructor(
+          base,
+          sb,
+          "peek_poke_t",
+          "peek_poke",
+          Seq(
+            genPortLists(hPort.ins.unzip._1, inputAddrs),
+            genPortLists(hPort.outs.unzip._1, outputAddrs)
+          )
+      )
     }
   }
 }

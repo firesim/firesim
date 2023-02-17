@@ -5,7 +5,6 @@ import midas.widgets._
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, UARTParams}
@@ -59,10 +58,11 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
 
 // DOC include start: UART Bridge Companion Object
 object UARTBridge {
-  def apply(clock: Clock, uart: UARTPortIO)(implicit p: Parameters): UARTBridge = {
+  def apply(clock: Clock, uart: UARTPortIO, reset: Bool)(implicit p: Parameters): UARTBridge = {
     val ep = Module(new UARTBridge(uart.c))
     ep.io.uart <> uart
     ep.io.clock := clock
+    ep.io.reset := reset
     ep
   }
 }
@@ -198,5 +198,9 @@ class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModul
     // the simulation control bus (AXI4-lite)
     genCRFile()
     // DOC include end: UART Bridge Footer
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(base, sb, "uart_t", "uart")
+    }
   }
 }

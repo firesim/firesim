@@ -4,7 +4,8 @@
 #include "bridges/blockdev.h"
 #include "bridges/peek_poke.h"
 #include "bridges/uart.h"
-#include "simif.h"
+#include "core/simif.h"
+#include "core/simulation.h"
 
 class bridge_driver_t;
 
@@ -16,12 +17,10 @@ class bridge_driver_t;
  */
 class BridgeHarness : public simulation_t {
 public:
-  BridgeHarness(const std::vector<std::string> &args, simif_t *simif);
+  BridgeHarness(widget_registry_t &registry,
+                const std::vector<std::string> &args);
 
-  virtual ~BridgeHarness();
-
-  void add_bridge_driver(bridge_driver_t *bridge);
-  void add_bridge_driver(peek_poke_t *bridge);
+  ~BridgeHarness() override;
 
   void simulation_init() override;
   int simulation_run() override;
@@ -32,14 +31,14 @@ protected:
   virtual unsigned get_tick_limit() const = 0;
 
 private:
-  simif_t *simif;
-  std::vector<std::unique_ptr<bridge_driver_t>> bridges;
-  std::unique_ptr<peek_poke_t> peek_poke;
+  peek_poke_t &peek_poke;
 };
 
 #define TEST_MAIN(CLASS_NAME)                                                  \
   std::unique_ptr<simulation_t> create_simulation(                             \
-      const std::vector<std::string> &args, simif_t *simif) {                  \
-    return std::make_unique<CLASS_NAME>(args, simif);                          \
+      simif_t &simif,                                                          \
+      widget_registry_t &registry,                                             \
+      const std::vector<std::string> &args) {                                  \
+    return std::make_unique<CLASS_NAME>(registry, args);                       \
   }
 #endif // MIDAEXAMPLES_BRIDGEHARNESS_H

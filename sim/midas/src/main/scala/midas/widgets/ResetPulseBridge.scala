@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
-import scala.collection.immutable
 
 /**
   * The [[ResetPulseBridge]] drives a bool pulse from time zero for a
@@ -75,12 +74,17 @@ class ResetPulseBridgeModule(cfg: ResetPulseBridgeParameters)(implicit p: Parame
       remainingPulseLength := Mux(pulseComplete, 0.U, remainingPulseLength - 1.U)
     }
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_max_pulse_length", UInt32(cfg.maxPulseLength)))
-      sb.append(genConstStatic(s"${headerWidgetName}_default_pulse_length", UInt32(cfg.defaultPulseLength)))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "reset_pulse_t",
+          "reset_pulse",
+          Seq(
+            UInt32(cfg.maxPulseLength),
+            UInt32(cfg.defaultPulseLength)
+          )
+      )
     }
     genCRFile()
   }

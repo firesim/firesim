@@ -3,41 +3,34 @@
 #include "BridgeHarness.h"
 
 #include "bridges/blockdev.h"
-#include "bridges/bridge_driver.h"
+#include "bridges/tracerv.h"
 #include "bridges/uart.h"
+#include "core/bridge_driver.h"
 
-BridgeHarness::BridgeHarness(const std::vector<std::string> &args,
-                             simif_t *simif)
-    : simulation_t(*simif, args), simif(simif) {}
+BridgeHarness::BridgeHarness(widget_registry_t &registry,
+                             const std::vector<std::string> &args)
+    : simulation_t(registry, args),
+      peek_poke(registry.get_widget<peek_poke_t>()) {}
 
-BridgeHarness::~BridgeHarness() {}
-
-void BridgeHarness::add_bridge_driver(bridge_driver_t *bridge) {
-  bridges.emplace_back(bridge);
-}
-
-void BridgeHarness::add_bridge_driver(peek_poke_t *bridge) {
-  peek_poke.reset(bridge);
-}
+BridgeHarness::~BridgeHarness() = default;
 
 void BridgeHarness::simulation_init() {
-#include "constructor.h"
-  for (auto &bridge : bridges) {
+  for (auto &bridge : registry.get_all_bridges()) {
     bridge->init();
   }
 }
 
 int BridgeHarness::simulation_run() {
   // Reset the DUT.
-  peek_poke->poke("reset", 1, /*blocking=*/true);
-  simif->take_steps(1, /*blocking=*/true);
-  peek_poke->poke("reset", 0, /*blocking=*/true);
-  simif->take_steps(1, /*blocking=*/true);
+  peek_poke.poke("reset", 1, /*blocking=*/true);
+  peek_poke.step(1, /*blocking=*/true);
+  peek_poke.poke("reset", 0, /*blocking=*/true);
+  peek_poke.step(1, /*blocking=*/true);
 
   // Tick until all requests are serviced.
-  simif->take_steps(get_step_limit(), /*blocking=*/false);
-  for (unsigned i = 0; i < get_tick_limit() && !simif->done(); ++i) {
-    for (auto &bridge : bridges) {
+  peek_poke.step(get_step_limit(), /*blocking=*/false);
+  for (unsigned i = 0; i < get_tick_limit() && !peek_poke.is_done(); ++i) {
+    for (auto &bridge : registry.get_all_bridges()) {
       bridge->tick();
     }
   }
@@ -47,7 +40,7 @@ int BridgeHarness::simulation_run() {
 }
 
 void BridgeHarness::simulation_finish() {
-  for (auto &bridge : bridges) {
+  for (auto &bridge : registry.get_all_bridges()) {
     bridge->finish();
   }
 }

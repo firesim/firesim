@@ -2,13 +2,16 @@
 #ifndef __TRACERV_H
 #define __TRACERV_H
 
-#include "bridges/bridge_driver.h"
-#include "bridges/clock_info.h"
-#include "bridges/tracerv/trace_tracker.h"
-#include "bridges/tracerv/tracerv_processing.h"
+#include "core/bridge_driver.h"
+#include "core/clock_info.h"
+#include <functional>
+#include <iostream>
 #include <vector>
 
-typedef struct TRACERVBRIDGEMODULE_struct {
+class TraceTracker;
+class ObjdumpedBinary;
+
+struct TRACERVBRIDGEMODULE_struct {
   uint64_t initDone;
   uint64_t traceEnable;
   uint64_t hostTriggerPCStartHigh;
@@ -24,21 +27,22 @@ typedef struct TRACERVBRIDGEMODULE_struct {
   uint64_t hostTriggerEndInst;
   uint64_t hostTriggerEndInstMask;
   uint64_t triggerSelector;
-} TRACERVBRIDGEMODULE_struct;
+};
 
-class tracerv_t : public streaming_bridge_driver_t {
+class tracerv_t final : public streaming_bridge_driver_t {
 public:
-  tracerv_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  tracerv_t(simif_t &sim,
             StreamEngine &stream,
-            const std::vector<std::string> &args,
             const TRACERVBRIDGEMODULE_struct &mmio_addrs,
-            const int stream_idx,
-            const int stream_depth,
-            const unsigned int max_core_ipc,
-            const char *const clock_domain_name,
-            const unsigned int clock_multiplier,
-            const unsigned int clock_divisor,
-            int tracerno);
+            int tracerno,
+            const std::vector<std::string> &args,
+            int stream_idx,
+            int stream_depth,
+            unsigned int max_core_ipc,
+            const ClockInfo &clock_info);
   ~tracerv_t();
 
   virtual void init();
@@ -46,15 +50,29 @@ public:
   virtual bool terminate() { return false; }
   virtual int exit_code() { return 0; }
   virtual void finish() { flush(); };
+  static void serialize(const uint64_t *OUTBUF,
+                        size_t bytes_received,
+                        FILE *tracefile,
+                        std::function<void(uint64_t, uint64_t)> addInstruction,
+                        int max_core_ipc,
+                        bool human_readable,
+                        bool test_output,
+                        bool fireperf);
+  void write_header(FILE *file);
 
 private:
   const TRACERVBRIDGEMODULE_struct mmio_addrs;
   const int stream_idx;
   const int stream_depth;
-  const int max_core_ipc;
-  ClockInfo clock_info;
 
+public:
+  const int max_core_ipc;
+
+private:
+  ClockInfo clock_info;
   FILE *tracefile;
+
+public:
   uint64_t cur_cycle;
   uint64_t trace_trigger_start, trace_trigger_end;
   uint32_t trigger_start_insn = 0;
@@ -65,6 +83,7 @@ private:
   uint64_t trigger_start_pc = 0;
   uint64_t trigger_stop_pc = 0;
 
+private:
   // TODO: rename this from linuxbin
   ObjdumpedBinary *linuxbin;
   TraceTracker *trace_tracker;
@@ -83,7 +102,10 @@ private:
 
   size_t process_tokens(int num_beats, int minium_batch_beats);
   int beats_available_stable();
+
+public:
   void flush();
+  static constexpr uint64_t valid_mask = (1ULL << 40);
 };
 
 #endif // __TRACERV_H

@@ -3,18 +3,12 @@ package firesim.bridges
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
-import freechips.rocketchip.rocket.TracedInstruction
-import freechips.rocketchip.tile.TileKey
 
-import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWidths}
+import testchipip.{TileTraceIO, TracedInstructionWidths}
 
 import midas.widgets._
-import testchipip.{StreamIO, StreamChannel}
-import junctions.{NastiIO, NastiKey}
 
 //******
 //* MISC
@@ -128,7 +122,7 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     val numTokenForAll = ((numTraces - 1) / totalTracesPerToken) + 1
 
     // only inc the counter when the something is sent (this implies that the input is valid and output is avail on the other side)
-    val counterFire = streamEnq.fire()
+    val counterFire = streamEnq.fire
     val (cnt, wrap) = Counter(counterFire, numTokenForAll)
 
     val paddedTracesAligned = paddedTraces.map(t => t.asUInt.pad(outDataSzBits/totalTracesPerToken))
@@ -150,15 +144,15 @@ class DromajoBridgeModule(key: DromajoKey)(implicit p: Parameters) extends Bridg
     genCRFile()
 
     // modify the output header file
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      super.genHeader(base, sb)
-
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_iaddr_width", UInt32(iaddrWidth)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_insn_width", UInt32(insnWidth)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_wdata_width", UInt32(wdataWidth)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_cause_width", UInt32(causeWidth)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_tval_width", UInt32(tvalWidth)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_traces", UInt32(numTraces)))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(base, sb, "dromajo_t", "dromajo", Seq(
+        UInt32(iaddrWidth),
+        UInt32(insnWidth),
+        UInt32(wdataWidth),
+        UInt32(causeWidth),
+        UInt32(tvalWidth),
+        UInt32(numTraces)
+      ))
     }
 
     // general information printout

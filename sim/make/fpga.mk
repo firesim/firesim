@@ -24,8 +24,7 @@ fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
 	.synthesis.xdc .implementation.xdc)
 
 # Files used to run FPGA-level metasimulation
-fpga_sim_delivery_files = $(addprefix $(fpga_driver_dir)/$(BASE_FILE_NAME), .runtime.conf) \
-	$(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
+fpga_sim_delivery_files = $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(driver_dir) #Could just set up in the shell project
@@ -61,29 +60,6 @@ $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/st
 fpga: export CL_DIR := $(fpga_work_dir)
 fpga: $(fpga_delivery_files) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
 	cd $(fpga_build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
-
-
-#############################
-# FPGA-level RTL Simulation #
-#############################
-
-# Run XSIM DUT
-.PHONY: xsim-dut
-xsim-dut: replace-rtl $(fpga_work_dir)/stamp
-	cd $(verif_dir)/scripts && $(MAKE) C_TEST=test_firesim
-
-# Compile XSIM Driver #
-xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
-
-$(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) -D SIMULATION_XSIM -D NO_MAIN
-$(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
-$(xsim): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
-	$(MAKE) -C $(simif_dir) f1 PLATFORM=f1 DRIVER_NAME=$(DESIGN) GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
-	GEN_DIR=$(GENERATED_DIR) OUT_DIR=$(GENERATED_DIR) DRIVER="$(DRIVER_CC)" \
-	TOP_DIR=$(chipyard_dir)
-
-.PHONY: xsim
-xsim: $(xsim)
 
 #########################
 # Cleaning Recipes      #

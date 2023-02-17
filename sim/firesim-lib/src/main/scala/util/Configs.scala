@@ -1,9 +1,8 @@
 //See LICENSE for license details.
 package firesim.util
 
-import java.io.{File, FileWriter}
 
-import freechips.rocketchip.config.{Field, Config}
+import freechips.rocketchip.config.Config
 
 class WithILADepth(depth: Int) extends Config((site, here, up) => {
     case midas.ILADepthKey => depth

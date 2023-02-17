@@ -7,7 +7,7 @@ import freechips.rocketchip.config.Parameters
 
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
-class RegisterModule extends MultiIOModule {
+class RegisterModule extends Module {
   def dataType = UInt(32.W)
   val in = IO(Input(dataType))
   val out = IO(Output(dataType))

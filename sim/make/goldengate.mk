@@ -26,8 +26,8 @@ $(simulator_verilog) $(header) $(fame_annos): $(simulator_verilog).intermediate 
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
-$(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL_DEPS)
-	$(call run_scala_main,$(firesim_sbt_project),midas.stage.GoldenGateMain,\
+$(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP)
+	java -cp $$(cat $(FIRESIM_MAIN_CP)) midas.stage.GoldenGateMain \
 		-i $(FIRRTL_FILE) \
 		-td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
@@ -35,7 +35,7 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL
 		-ggcs $(PLATFORM_CONFIG) \
 		--output-filename-base $(BASE_FILE_NAME) \
 		--no-dedup \
-	)
+
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 	xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
 
@@ -50,9 +50,8 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(SCALA_BUILDTOOL
 .PHONY: conf
 conf: $(fame_annos)
 	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && $(SBT) "project $(firesim_sbt_project)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	cd $(base_dir) && $(SBT) "project $(FIRESIM_SBT_PROJECT)" "runMain midas.stage.RuntimeConfigGeneratorMain \
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
-		-ggcs $(PLATFORM_CONFIG) \
-		-ggrc $(CONF_NAME)"
+		-ggcs $(PLATFORM_CONFIG)"

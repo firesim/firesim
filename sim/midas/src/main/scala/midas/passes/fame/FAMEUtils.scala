@@ -4,10 +4,7 @@ package midas.passes.fame
 
 import firrtl._
 import ir._
-import Utils._
-import Mappers._
 import traversals.Foreachers._
-import graph.DiGraph
 import analyses.InstanceGraph
 import transforms.CheckCombLoops
 

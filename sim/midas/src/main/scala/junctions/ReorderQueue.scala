@@ -1,7 +1,6 @@
 package junctions
 
 import Chisel._
-import freechips.rocketchip.config.Parameters
 
 class ReorderQueueWrite[T <: Data](dType: T, tagWidth: Int) extends Bundle {
   val data = dType.cloneType

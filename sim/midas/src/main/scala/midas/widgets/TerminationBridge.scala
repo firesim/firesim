@@ -4,7 +4,6 @@ package midas.widgets
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
-import midas.widgets._
 import midas.targetutils._
 import freechips.rocketchip.util.{DecoupledHelper}
 
@@ -134,7 +133,7 @@ class TerminationBridgeModule(params: TerminationBridgeParams)(implicit p: Param
 
     val tFireHelper = DecoupledHelper(terminationCode.valid, statusDone.valid, noTermination)
 
-    when(tFireHelper.fire) {
+    when(tFireHelper.fire()) {
       tokenCounter := tokenCounter + 1.U
     }
 
@@ -146,13 +145,19 @@ class TerminationBridgeModule(params: TerminationBridgeParams)(implicit p: Param
     //MMIO to indicate one of the target defined termination messages
     genROReg(terminationCode.bits, "out_terminationCode")
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_message_count", UInt32((params.conditionInfo).size)))
-      sb.append(genArray(s"${headerWidgetName}_message_type", (params.conditionInfo).map(x => UInt32(if(x.isErr) 1 else 0))))
-      sb.append(genArray(s"${headerWidgetName}_message", (params.conditionInfo).map(x => CStrLit(x.message))))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "termination_t",
+          "termination",
+          Seq(
+            StdVector("termination_message_t", params.conditionInfo.map {
+              case TerminationCondition(isErr, msg) =>
+                Verbatim(s"termination_message_t{${if (isErr) "true" else "false"}, ${CStrLit(msg).toC}}")
+            })
+          )
+      )
     }
     genCRFile()
   }

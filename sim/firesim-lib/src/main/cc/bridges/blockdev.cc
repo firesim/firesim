@@ -6,6 +6,8 @@
 #include <string.h>
 #include <string>
 
+char blockdev_t::KIND;
+
 /* Block Device Endpoint Driver
  *
  * This works in conjunction with
@@ -16,7 +18,7 @@
 
 /* Uncomment to get DEBUG printing
  * TODO: better logging mechanism so that we don't need this */
-//#define BLKDEV_DEBUG
+// #define BLKDEV_DEBUG
 
 #ifdef BLKDEV_DEBUG
 #define blkdev_printf(...)                                                     \
@@ -33,20 +35,20 @@
  * Setup software driver state:
  * Check if we have been given a file to use as a disk, record size and
  * number of sectors to pass to widget */
-blockdev_t::blockdev_t(simif_t *sim,
+blockdev_t::blockdev_t(simif_t &sim,
+                       const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
+                       int blkdevno,
                        const std::vector<std::string> &args,
                        uint32_t num_trackers,
-                       uint32_t latency_bits,
-                       const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
-                       int blkdevno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs) {
-  this->_file = NULL;
-  this->logfile = NULL;
+                       uint32_t latency_bits)
+    : bridge_driver_t(sim, &KIND), mmio_addrs(mmio_addrs) {
+  this->_file = nullptr;
+  this->logfile = nullptr;
   _ntags = num_trackers;
   long size;
   long mem_filesize = 0;
 
-  const char *logname = NULL;
+  const char *logname = nullptr;
 
   // construct arg parsing strings here. We basically append the bridge_driver
   // number to each of these base strings, to get args like +blkdev0 etc.
@@ -99,7 +101,7 @@ blockdev_t::blockdev_t(simif_t *sim,
 
   if (logname) {
     logfile = fopen(logname, "w");
-    if (logfile == NULL) {
+    if (logfile == nullptr) {
       fprintf(stderr, "Could not open %s\n", logname);
       abort();
     }
@@ -122,7 +124,7 @@ blockdev_t::blockdev_t(simif_t *sim,
     }
   } else if (mem_filesize > 0) {
     size = mem_filesize << SECTOR_SHIFT;
-    _file = fmemopen(NULL, size, "r+");
+    _file = fmemopen(nullptr, size, "r+");
     if (!_file) {
       perror("fmemopen");
       abort();

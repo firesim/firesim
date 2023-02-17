@@ -6,7 +6,9 @@
 #include <functional>
 #include <string>
 
-#include "bridges/stream_engine.h"
+#include "core/stream_engine.h"
+
+class simif_t;
 
 /**
  * An abstraction over the low-level hardware interface on which streams rely.
@@ -16,7 +18,7 @@
  */
 class CPUManagedStreamIO {
 public:
-  virtual ~CPUManagedStreamIO() {}
+  virtual ~CPUManagedStreamIO() = default;
 
   /**
    * Reads from the MMIO control interface.
@@ -50,19 +52,19 @@ namespace CPUManagedStreams {
  * This will be replaced by a protobuf-derived class, and re-used across both
  * Scala and C++.
  */
-typedef struct StreamParameters {
+struct StreamParameters {
   std::string stream_name;
   uint64_t dma_addr;
   uint64_t count_addr;
   uint32_t fpga_buffer_size;
 
-  StreamParameters(std::string stream_name,
+  StreamParameters(const std::string &stream_name,
                    uint64_t dma_addr,
                    uint64_t count_addr,
                    int fpga_buffer_size)
       : stream_name(stream_name), dma_addr(dma_addr), count_addr(count_addr),
-        fpga_buffer_size(fpga_buffer_size){};
-} StreamParameters;
+        fpga_buffer_size(fpga_buffer_size) {}
+};
 
 /**
  * @brief Base class for CPU-managed streams
@@ -80,13 +82,13 @@ typedef struct StreamParameters {
  */
 class CPUManagedDriver {
 public:
-  CPUManagedDriver(StreamParameters params, CPUManagedStreamIO &io)
-      : params(params), io(io) {}
+  CPUManagedDriver(StreamParameters &&params, CPUManagedStreamIO &io)
+      : params(std::move(params)), io(io) {}
 
-  virtual ~CPUManagedDriver() {}
+  virtual ~CPUManagedDriver() = default;
 
 private:
-  StreamParameters params;
+  const StreamParameters params;
   CPUManagedStreamIO &io;
 
 public:
@@ -118,15 +120,14 @@ public:
 class FPGAToCPUDriver final : public CPUManagedDriver,
                               public FPGAToCPUStreamDriver {
 public:
-  FPGAToCPUDriver(StreamParameters params, CPUManagedStreamIO &io)
-      : CPUManagedDriver(params, io) {}
+  FPGAToCPUDriver(StreamParameters &&params, CPUManagedStreamIO &io)
+      : CPUManagedDriver(std::move(params), io) {}
 
-  virtual size_t
-  pull(void *dest, size_t num_bytes, size_t required_bytes) override;
+  size_t pull(void *dest, size_t num_bytes, size_t required_bytes) override;
   // The CPU-managed stream engine makes all beats available to the bridge,
   // hence the NOP.
-  virtual void flush() override{};
-  virtual void init() override{};
+  void flush() override {}
+  void init() override {}
 };
 
 /**
@@ -139,14 +140,13 @@ public:
 class CPUToFPGADriver final : public CPUManagedDriver,
                               public CPUToFPGAStreamDriver {
 public:
-  CPUToFPGADriver(StreamParameters params, CPUManagedStreamIO &io)
-      : CPUManagedDriver(params, io) {}
+  CPUToFPGADriver(StreamParameters &&params, CPUManagedStreamIO &io)
+      : CPUManagedDriver(std::move(params), io) {}
 
-  virtual size_t
-  push(void *src, size_t num_bytes, size_t required_bytes) override;
+  size_t push(void *src, size_t num_bytes, size_t required_bytes) override;
   // On a push all beats are delivered to the FPGA, so a NOP is sufficient here.
-  virtual void flush() override{};
-  virtual void init() override{};
+  void flush() override {}
+  void init() override {}
 };
 
 } // namespace CPUManagedStreams
@@ -161,7 +161,12 @@ public:
    *
    * @param io Reference to a functor implementing low-level IO.
    */
-  CPUManagedStreamWidget(CPUManagedStreamIO &io);
+  CPUManagedStreamWidget(
+      simif_t &simif,
+      unsigned index,
+      const std::vector<std::string> &args,
+      std::vector<CPUManagedStreams::StreamParameters> &&from_cpu,
+      std::vector<CPUManagedStreams::StreamParameters> &&to_cpu);
 };
 
 #endif // __BRIDGES_CPU_MANAGED_STREAM_H

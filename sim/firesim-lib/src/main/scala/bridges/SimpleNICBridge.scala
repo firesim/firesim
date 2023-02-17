@@ -4,16 +4,12 @@ package bridges
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.util._
 
 import midas.widgets._
-import testchipip.{StreamIO, StreamChannel}
+import testchipip.StreamChannel
 import icenet.{NICIOvonly, RateLimiterSettings}
-import icenet.IceNIC._
-import junctions.{NastiIO, NastiKey}
 
 object TokenQueueConsts {
   val TOKENS_PER_BIG_TOKEN = 7
@@ -95,7 +91,7 @@ class BigTokenToNICTokenAdapter extends Module {
   val xactHelper = DecoupledHelper(io.htnt.ready, io.pcie_in.valid)
 
   val loopIter = RegInit(0.U(32.W))
-  when (io.htnt.fire()) {
+  when (io.htnt.fire) {
     loopIter := Mux(loopIter === 6.U, 0.U, loopIter + 1.U)
   }
 
@@ -138,7 +134,7 @@ class NICTokenToBigTokenAdapter extends Module {
 
   // debug check to help check we're not losing tokens somewhere
   val token_trace_counter = RegInit(0.U(43.W))
-  when (io.pcie_out.fire()) {
+  when (io.pcie_out.fire) {
     token_trace_counter := token_trace_counter + 1.U
   } .otherwise {
     token_trace_counter := token_trace_counter
@@ -169,7 +165,7 @@ class HostToNICTokenGenerator(nTokens: Int)(implicit p: Parameters) extends Modu
   val s_init :: s_seed :: s_forward :: Nil = Enum(3)
   val state = RegInit(s_init)
 
-  val (_, seedDone) = Counter(state === s_seed && io.out.fire(), nTokens)
+  val (_, seedDone) = Counter(state === s_seed && io.out.fire, nTokens)
 
   io.out.valid := state === s_seed || (state === s_forward && io.in.valid)
   io.out.bits.data_in_valid := state === s_forward && io.in.bits.data_out_valid
@@ -202,7 +198,7 @@ class SimpleNICBridgeModule(implicit p: Parameters)
     val target = hPort.hBits.nic
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
                                       hPort.fromHost.hReady)
-    val tFire = tFireHelper.fire
+    val tFire = tFireHelper.fire()
 
     if (p(LoopbackNIC)) {
       val tokenGen = Module(new HostToNICTokenGenerator(10))
@@ -260,5 +256,21 @@ class SimpleNICBridgeModule(implicit p: Parameters)
     genROReg(!tFire, "done")
 
     genCRFile()
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "simplenic_t",
+          "simplenic",
+          Seq(
+            UInt32(toHostStreamIdx),
+            UInt32(toHostCPUQueueDepth),
+            UInt32(fromHostStreamIdx),
+            UInt32(fromHostCPUQueueDepth),
+          ),
+          hasStreams = true
+      )
+    }
   }
 }

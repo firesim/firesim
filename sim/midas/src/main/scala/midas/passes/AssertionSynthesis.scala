@@ -1,7 +1,6 @@
 package midas
 package passes
 
-import java.io.{File, FileWriter, Writer}
 import scala.collection.mutable
 
 import firrtl._
@@ -9,12 +8,11 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.WrappedExpression._
-import firrtl.Utils.{zero, to_flip, BoolType}
+import firrtl.Utils.{zero, BoolType}
 
-import freechips.rocketchip.config.{Parameters, Field}
 
-import Utils._
-import midas.widgets.{BridgeIOAnnotation, AssertBridgeRecord, AssertBridgeModule, AssertBridgeParameters}
+import midas.passes.Utils.cat
+import midas.widgets.{BridgeIOAnnotation, AssertBridgeModule, AssertBridgeParameters}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.{ExcludeInstanceAssertsAnnotation, GlobalResetConditionSink}
@@ -136,7 +134,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
       val mT = cT.module(m.name)
       val mInfo = new ModuleAssertInfo(m, meta, mT)
       // Connect asserts
-      if (mInfo.hasAsserts) {
+      if (mInfo.hasAsserts()) {
         val namespace = Namespace(m)
         val tpe = mInfo.assertUInt
         val port = Port(NoInfo, namespace.newName("midasAsserts"), Output, tpe)
@@ -184,7 +182,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
     val mInfo = new ModuleAssertInfo(topModule, meta, topMT)
     println(s"[Golden Gate] total # of assertions synthesized: ${mInfo.assertWidth}")
 
-    if (!mInfo.hasAsserts) state else {
+    if (!mInfo.hasAsserts()) state else {
       // Step 4: Associate each assertion with a source clock
       val postWiredState = state.copy(circuit = c.copy(modules = mods), form = MidForm)
       val loweredState = Seq(new ResolveAndCheck, new HighFirrtlToMiddleFirrtl, new MiddleFirrtlToLowFirrtl).foldLeft(postWiredState)((state, xform) => xform.transform(state))

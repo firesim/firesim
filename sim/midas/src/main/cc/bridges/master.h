@@ -3,39 +3,34 @@
 #ifndef __MASTER_H
 #define __MASTER_H
 
+#include "core/widget.h"
+
 #include <cstdint>
+#include <string>
+#include <vector>
 
 class simif_t;
 
-typedef struct SIMULATIONMASTER_struct {
-  uint64_t STEP;
-  uint64_t DONE;
+struct SIMULATIONMASTER_struct {
   uint64_t INIT_DONE;
-} SIMULATIONMASTER_struct;
+};
 
-SIMULATIONMASTER_checks;
-
-class master_t final {
+class master_t final : public widget_t {
 public:
-  master_t(simif_t *sim, const SIMULATIONMASTER_struct &mmio_addrs);
+  /// The identifier for the bridge type.
+  static char KIND;
+
+  master_t(simif_t &simif,
+           const SIMULATIONMASTER_struct &mmio_addrs,
+           unsigned index,
+           const std::vector<std::string> &args);
 
   /**
    * Check whether the device is initialised.
    */
   bool is_init_done();
 
-  /**
-   * Check whether the simulation is complete.
-   */
-  bool is_done();
-
-  /**
-   * Request the simulation to advance a given number of steps.
-   */
-  void step(size_t n, bool blocking);
-
 private:
-  simif_t *sim;
   const SIMULATIONMASTER_struct mmio_addrs;
 };
 

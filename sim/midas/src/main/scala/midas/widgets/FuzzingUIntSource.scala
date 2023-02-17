@@ -2,10 +2,8 @@
 package midas.widgets
 
 import chisel3._
-import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
-import scala.collection.immutable
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
 //example in the FireSim docs
@@ -33,5 +31,7 @@ class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Param
     hPort.fromHost.hValid := true.B
     hPort.toHost.hReady := true.B
     hPort.hBits.uint := chisel3.util.random.LFSR(key.width, hPort.fromHost.hReady)
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {}
   }
 }

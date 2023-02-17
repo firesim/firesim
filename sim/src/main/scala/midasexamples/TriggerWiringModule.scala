@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
-import midas.targetutils.{TriggerSource, TriggerSink}
 import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import freechips.rocketchip.config.Parameters
 import chisel3._
@@ -11,7 +10,7 @@ import chisel3.util._
 
 import scala.collection.mutable
 
-class TriggerSinkModule extends MultiIOModule {
+class TriggerSinkModule extends Module {
   val reference = IO(Input(Bool()))
   // DOC include start: TriggerSink Usage
   // Note: this can be any reference you wish to have driven by the trigger.
@@ -25,7 +24,7 @@ class TriggerSinkModule extends MultiIOModule {
   assert(reference === sinkBool)
 }
 
-class TriggerSourceModule extends MultiIOModule {
+class TriggerSourceModule extends Module {
   val referenceCredit = IO(Output(Bool()))
   val referenceDebit = IO(Output(Bool()))
   private val lfsr = random.LFSR(16)
@@ -46,7 +45,7 @@ class TriggerSourceModule extends MultiIOModule {
   referenceDebit := ~reset.asBool && stop
 }
 
-class LevelSensitiveTriggerSourceModule extends MultiIOModule {
+class LevelSensitiveTriggerSourceModule extends Module {
   val referenceCredit = IO(Output(Bool()))
   val referenceDebit = IO(Output(Bool()))
   private val enable = random.LFSR(16)(0)
@@ -61,7 +60,7 @@ class LevelSensitiveTriggerSourceModule extends MultiIOModule {
   referenceDebit  := enLast && !enable
 }
 
-class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends MultiIOModule {
+class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends Module {
   def counterType = UInt(16.W)
   val inputCredits = IO(Input(Vec(numCredits, Bool())))
   val inputDebits  = IO(Input(Vec(numCredits, Bool())))
@@ -138,8 +137,8 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
   class ReferenceImpl {
     val refTotalCredit = Reg(UInt(32.W))
     val refTotalDebit  = Reg(UInt(32.W))
-    val refCreditNext  = refTotalCredit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffCredits))(_ + _).last
-    val refDebitNext   = refTotalDebit + DensePrefixSum(refSourceCounts.map(_.syncAndDiffDebits))(_ + _).last
+    val refCreditNext  = refTotalCredit + DensePrefixSum(refSourceCounts.toSeq.map(_.syncAndDiffCredits))(_ + _).last
+    val refDebitNext   = refTotalDebit + DensePrefixSum(refSourceCounts.toSeq.map(_.syncAndDiffDebits))(_ + _).last
     refTotalCredit := refCreditNext
     refTotalDebit  := refDebitNext
     val refTriggerEnable = refCreditNext =/= refDebitNext

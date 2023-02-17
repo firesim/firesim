@@ -1,36 +1,30 @@
+#include "synthesized_prints.h"
+
+#include <cassert>
+
 #include <iomanip>
 #include <iostream>
 
-#include "synthesized_prints.h"
+char synthesized_prints_t::KIND;
 
 synthesized_prints_t::synthesized_prints_t(
-    simif_t *sim,
+    simif_t &sim,
     StreamEngine &stream,
-    const std::vector<std::string> &args,
     const PRINTBRIDGEMODULE_struct &mmio_addrs,
-    unsigned int print_count,
+    unsigned printno,
+    const std::vector<std::string> &args,
+    const std::vector<Print> &prints,
     unsigned int token_bytes,
     unsigned int idle_cycles_mask,
-    const unsigned int *print_offsets,
-    const char *const *format_strings,
-    const unsigned int *argument_counts,
-    const unsigned int *argument_widths,
     unsigned int stream_idx,
     unsigned int stream_depth,
-    const char *const clock_domain_name,
-    const unsigned int clock_multiplier,
-    const unsigned int clock_divisor,
-    int printno)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
-      print_count(print_count), token_bytes(token_bytes),
-      idle_cycles_mask(idle_cycles_mask), print_offsets(print_offsets),
-      format_strings(format_strings), argument_counts(argument_counts),
-      argument_widths(argument_widths), stream_idx(stream_idx),
-      stream_depth(stream_depth),
-      clock_info(clock_domain_name, clock_multiplier, clock_divisor),
-      printno(printno) {
+    const ClockInfo &clock_info)
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
+      prints(prints), token_bytes(token_bytes),
+      idle_cycles_mask(idle_cycles_mask), stream_idx(stream_idx),
+      stream_depth(stream_depth), clock_info(clock_info), printno(printno) {
   assert((token_bytes & (token_bytes - 1)) == 0);
-  assert(print_count > 0);
+  assert(!prints.empty() && "print bridge must have prints");
 
   auto printfilename = default_filename + std::to_string(printno);
 
@@ -95,22 +89,21 @@ synthesized_prints_t::synthesized_prints_t(
   this->printstream = &(this->printfile);
   this->clock_info.emit_file_header(*(this->printstream));
 
-  widths.resize(print_count);
+  widths.resize(prints.size());
   // Used to reconstruct the relative position of arguments in the flattened
   // argument_widths array
-  size_t arg_base_offset = 0;
   size_t print_bit_offset =
       1; // The lsb of the current print in the packed token
 
-  for (size_t p_idx = 0; p_idx < print_count; p_idx++) {
+  for (size_t p_idx = 0; p_idx < prints.size(); p_idx++) {
+    auto &print = prints[p_idx];
 
     auto print_args = new print_vars_t;
     size_t print_width = 1; // A running total of argument widths for this
                             // print, including an enable bit
 
     // Iterate through the arguments for this print
-    for (size_t arg_idx = 0; arg_idx < argument_counts[p_idx]; arg_idx++) {
-      size_t arg_width = argument_widths[arg_base_offset + arg_idx];
+    for (auto arg_width : print.argument_widths) {
       widths[p_idx].push_back(arg_width);
 
       mpz_t *mask = (mpz_t *)malloc(sizeof(mpz_t));
@@ -128,7 +121,6 @@ synthesized_prints_t::synthesized_prints_t(
     size_t aligned_msw = (print_width + print_bit_offset) / gmp_align_bits;
     size_t rounded_size = aligned_msw - aligned_offset + 1;
 
-    arg_base_offset += argument_counts[p_idx];
     masks.push_back(print_args);
     sizes.push_back(rounded_size);
     aligned_offsets.push_back(aligned_offset);
@@ -139,7 +131,7 @@ synthesized_prints_t::synthesized_prints_t(
 };
 
 synthesized_prints_t::~synthesized_prints_t() {
-  for (size_t i = 0; i < print_count; i++) {
+  for (size_t i = 0; i < prints.size(); i++) {
     delete masks[i];
   }
 }
@@ -165,10 +157,10 @@ void synthesized_prints_t::print_format(const char *fmt,
   while (*fmt) {
     if (*fmt == '%' && fmt[1] != '%') {
       mpz_t *value = vars->data[k];
-      char *v = NULL;
+      char *v = nullptr;
       if (fmt[1] == 's' || fmt[1] == 'c') {
         size_t size;
-        v = (char *)mpz_export(NULL, &size, 1, sizeof(char), 0, 0, *value);
+        v = (char *)mpz_export(nullptr, &size, 1, sizeof(char), 0, 0, *value);
         for (size_t j = 0; j < size; j++)
           printstream->put(v[j]);
         fmt++;
@@ -267,7 +259,7 @@ bool synthesized_prints_t::current_print_enabled(gmp_align_t *buf,
 
 // Finds enabled prints in a token
 void synthesized_prints_t::show_prints(char *buf) {
-  for (size_t i = 0; i < print_count; i++) {
+  for (size_t i = 0; i < prints.size(); i++) {
     gmp_align_t *data = ((gmp_align_t *)buf) + aligned_offsets[i];
     // First bit is enable
     if (current_print_enabled(data, bit_offset[i])) {
@@ -277,7 +269,7 @@ void synthesized_prints_t::show_prints(char *buf) {
       mpz_fdiv_q_2exp(print, print, bit_offset[i] + 1);
 
       print_vars_t vars;
-      size_t num_args = argument_counts[i];
+      size_t num_args = prints[i].argument_widths.size();
       for (size_t arg = 0; arg < num_args; arg++) {
         mpz_t *var = (mpz_t *)malloc(sizeof(mpz_t));
         mpz_t *mask = masks[i]->data[arg];
@@ -288,7 +280,7 @@ void synthesized_prints_t::show_prints(char *buf) {
         // print = print >> width
         mpz_fdiv_q_2exp(print, print, widths[i][arg]);
       }
-      print_format(format_strings[i], &vars, masks[i]);
+      print_format(prints[i].format_string, &vars, masks[i]);
       mpz_clear(print);
     }
   }

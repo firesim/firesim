@@ -4,7 +4,6 @@ package junctions
 
 import Chisel._
 import scala.math.{min, max}
-import scala.collection.mutable.ArraySeq
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.util.{DecoupledHelper, ParameterizedBundle, HellaPeekingArbiter}
 import freechips.rocketchip.config.{Parameters, Field}

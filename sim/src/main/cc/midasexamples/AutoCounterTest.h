@@ -4,21 +4,27 @@
 #define MIDASEXAMPLES_AUTOCOUNTERMODULE_H
 
 #include "TestHarness.h"
+#include "bridges/autocounter.h"
 
 class AutoCounterTest : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  virtual ~AutoCounterTest() {}
+  ~AutoCounterTest() override = default;
 
-  std::vector<std::unique_ptr<autocounter_t>> autocounter_endpoints;
-  void add_bridge_driver(autocounter_t *bridge) override {
-    autocounter_endpoints.emplace_back(bridge);
+  const std::vector<autocounter_t *> autocounter_endpoints =
+      get_bridges<autocounter_t>();
+
+  void simulation_init() override {
+    assert(!autocounter_endpoints.empty() && "missing counters");
+    for (auto &autocounter_endpoint : autocounter_endpoints) {
+      autocounter_endpoint->init();
+    }
   }
 
   void run_and_collect(int cycles) {
     step(cycles, false);
-    while (!simif->done()) {
+    while (!peek_poke.is_done()) {
       for (auto &autocounter_endpoint : autocounter_endpoints) {
         autocounter_endpoint->tick();
       }

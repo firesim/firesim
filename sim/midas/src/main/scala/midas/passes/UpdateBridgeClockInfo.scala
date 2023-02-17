@@ -2,10 +2,9 @@
 
 package midas.passes
 
-import midas.widgets.{RationalClock, BridgeIOAnnotation}
+import midas.widgets.BridgeIOAnnotation
 
 import firrtl._
-import firrtl.annotations._
 
 /**
   * Determines which clock each bridge is synchronous with, and updates that bridge's IO annotation

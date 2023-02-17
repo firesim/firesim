@@ -3,23 +3,17 @@
 package midas
 package passes
 
-import java.io.{File, FileWriter, StringWriter}
 
-import scala.collection.mutable
 
 import firrtl._
-import firrtl.annotations.{CircuitName, ReferenceTarget, ModuleTarget, InstanceTarget}
+import firrtl.annotations.{CircuitName, ModuleTarget, InstanceTarget}
 import firrtl.options.Dependency
-import firrtl.stage.{FirrtlCircuitAnnotation, Forms}
+import firrtl.stage.Forms
 import firrtl.stage.transforms.Compiler
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.passes.LowerTypes.loweredName
-import firrtl.Utils.{BoolType, splitRef, mergeRef, create_exps, flow, module_type}
-import firrtl.passes.wiring._
-import Utils._
-import chisel3.stage.{ChiselGeneratorAnnotation, NoRunFirrtlCompilerAnnotation}
-import freechips.rocketchip.config.Parameters
+import firrtl.Utils.module_type
+import midas.passes.Utils._
 import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.core._
@@ -38,10 +32,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
         |// and encodes all required bridge metadata to instantiate bridge drivers.
         |""".stripMargin,
       fileSuffix = ".const.h")
-    csb append "#ifndef __%s_H\n".format(targetName.toUpperCase)
-    csb append "#define __%s_H\n".format(targetName.toUpperCase)
     c.genHeader(csb.getBuilder, targetName)
-    csb append "#endif  // __%s_H\n".format(targetName.toUpperCase)
 
     val vsb = new OutputFileBuilder(
       """// Golden Gate-generated Verilog Header

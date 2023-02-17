@@ -3,13 +3,10 @@ package widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
 
 import midas.targetutils.{PerfCounterOpType, PerfCounterOps}
-import midas.widgets.CppGenerationUtils.{genConstStatic, genArray}
 
 trait AutoCounterConsts {
   val counterWidth = 64
@@ -96,7 +93,7 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     val initDone = RegInit(false.B)
 
     val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
     // We only sink tokens, so tie off the return channel
     hPort.fromHost.hValid := true.B
 
@@ -146,8 +143,8 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     hPort.toHost.hReady := targetFire
 
     val (lowCountAddrs, highCountAddrs) = (for ((counter, label) <- btht_queue.io.deq.bits.zip(labels)) yield {
-      val lowAddr = attach(counter(hostCounterLowWidth-1, 0), s"autocounter_low_${label}", ReadOnly)
-      val highAddr = attach(counter >> hostCounterLowWidth, s"autocounter_high_${label}", ReadOnly)
+      val lowAddr = attach(counter(hostCounterLowWidth-1, 0), s"autocounter_low_${label}", ReadOnly, false)
+      val highAddr = attach(counter >> hostCounterLowWidth, s"autocounter_high_${label}", ReadOnly, false)
       (lowAddr, highAddr)
     }).unzip
 
@@ -162,22 +159,30 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     attach(btht_queue.io.deq.valid, "countersready", ReadOnly)
     Pulsify(genWORegInit(btht_queue.io.deq.ready, "readdone", false.B), 1)
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      headerComment(sb)
-      // Exclude counter addresses as their names can vary across AutoCounter instances, but 
-      // we only generate a single struct typedef
-      val headerWidgetName = wName.toUpperCase
-      crRegistry.genHeader(headerWidgetName, base, sb, lowCountAddrs ++ highCountAddrs)
-      crRegistry.genArrayHeader(headerWidgetName, base, sb)
-      emitClockDomainInfo(headerWidgetName, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_event_count",  UInt32(allEventMetadata.size)))
-      sb.append(genArray(s"${headerWidgetName}_event_types",  allEventMetadata.map { m => CStrLit(m.opType.toString) }))
-      sb.append(genArray(s"${headerWidgetName}_event_labels", allEventMetadata.map { m => CStrLit(m.label) } ))
-      sb.append(genArray(s"${headerWidgetName}_event_descriptions", allEventMetadata.map { m => CStrLit(m.description) } ))
-      sb.append(genArray(s"${headerWidgetName}_event_addr_hi", highCountAddrs.map { offset => UInt32(base + offset) } ))
-      sb.append(genArray(s"${headerWidgetName}_event_addr_lo", lowCountAddrs.map {  offset => UInt32(base + offset) } ))
-      sb.append(genArray(s"${headerWidgetName}_event_widths", allEventMetadata.map { m => UInt32(m.width) } ))
-      sb.append(genArray(s"${headerWidgetName}_accumulator_widths", allEventMetadata.map { m => UInt32(m.counterWidth) } ))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "autocounter_t",
+          "autocounter",
+          Seq(
+              StdVector("autocounter_t::Counter",
+                allEventMetadata.zip(highCountAddrs).zip(lowCountAddrs) map { case ((m, hi), lo) =>
+                  CppStruct("autocounter_t::Counter", Seq(
+                    "type" -> CStrLit(m.opType.toString),
+                    "event_label" -> CStrLit(m.label),
+                    "event_msg" -> CStrLit(m.description),
+                    "bit_width" -> UInt32(m.width),
+                    "accumulator_width" -> UInt32(m.counterWidth),
+                    "event_addr_hi" -> UInt32(base + hi),
+                    "event_addr_lo" -> UInt32(base + lo)
+                  ))
+              }),
+              Verbatim(clockDomainInfo.toC)
+          ),
+          hasLoadMem = false,
+          hasMMIOAddrMap = true
+      )
     }
     genCRFile()
   }

@@ -1,31 +1,37 @@
 #ifndef __SYNTHESIZED_ASSERTIONS_H
 #define __SYNTHESIZED_ASSERTIONS_H
 
-#include "bridge_driver.h"
+#include "core/bridge_driver.h"
 
-typedef struct ASSERTBRIDGEMODULE_struct {
+struct ASSERTBRIDGEMODULE_struct {
   uint64_t id;
   uint64_t fire;
   uint64_t cycle_low;
   uint64_t cycle_high;
   uint64_t resume;
   uint64_t enable;
-} ASSERTBRIDGEMODULE_struct;
+};
 
-class synthesized_assertions_t : public bridge_driver_t {
+class synthesized_assertions_t final : public bridge_driver_t {
 public:
-  synthesized_assertions_t(simif_t *sim,
-                           const std::vector<std::string> &args,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  synthesized_assertions_t(simif_t &sim,
                            const ASSERTBRIDGEMODULE_struct &mmio_addrs,
-                           const char *const *msgs);
-  ~synthesized_assertions_t();
-  virtual void init();
-  virtual void tick();
-  virtual void finish(){};
+                           unsigned index,
+                           const std::vector<std::string> &args,
+                           std::vector<const char *> &&msgs);
+  ~synthesized_assertions_t() override;
+
+  void init() override;
+  void tick() override;
+  void finish() override {}
+
   void
   resume(); // Clears any set assertions, and allows the simulation to advance
-  virtual bool terminate() { return assert_fired; };
-  virtual int exit_code() { return (assert_fired) ? assert_id + 1 : 0; };
+  bool terminate() override { return assert_fired; };
+  int exit_code() override { return (assert_fired) ? assert_id + 1 : 0; };
 
 private:
   bool assert_fired = false;
@@ -33,7 +39,7 @@ private:
   int assert_id;
   uint64_t assert_cycle;
   const ASSERTBRIDGEMODULE_struct mmio_addrs;
-  const char *const *msgs;
+  std::vector<const char *> msgs;
 };
 
 #endif //__SYNTHESIZED_ASSERTIONS_H

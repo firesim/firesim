@@ -7,7 +7,7 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.config.{Parameters, Field}
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem.{ExtMem, MasterPortParams}
 
 import scala.math.{max, min}
@@ -179,10 +179,15 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   def memDataChunk: Long =
     ((hKey.dataBits - 1) / p(CtrlNastiKey).dataBits) + 1
 
-  override def genHeader(base: BigInt, sb: StringBuilder): Unit = {
-    super.genHeader(base, sb)
-    import CppGenerationUtils._
-    sb.append(genConstStatic(s"${getWName.toUpperCase}_mem_data_chunk", UInt32(memDataChunk)))
+  override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+    genConstructor(
+        base,
+        sb,
+        "loadmem_t",
+        "loadmem",
+        Seq(Verbatim("conf_target.mem"), UInt32(memDataChunk)),
+        "GET_CORE_CONSTRUCTOR"
+    )
   }
   }
 }

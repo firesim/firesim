@@ -164,7 +164,6 @@ vpp_config_overlay_args = $(addprefix --config ,$(vpp_config_overlays))
 
 # FPGA-level simulation support
 driver_bin = FireSim-vitis
-runtime_conf = FireSim-generated.runtime.conf
 
 # Hardware Emulation Configuration -- specifies the platform to model during simulation
 # See https://www.xilinx.com/html_docs/xilinx2021_1/vitis_doc/emconfigutil.html
@@ -175,7 +174,7 @@ $(SIM_RUN_DIR)/emconfig.json:
 # Populate the run directory. Vitis wants certain files to reside in the same
 # directory as the application binary, keep things separated by building up a
 # fresh location that can be cleanly removed.
-delivered_sim_inputs = $(addprefix $(SIM_RUN_DIR)/, $(driver_bin) $(runtime_conf))
+delivered_sim_inputs = $(addprefix $(SIM_RUN_DIR)/, $(driver_bin))
 $(SIM_RUN_DIR)/%: $(DRIVER_DIR)/%
 	mkdir -p $(@D)
 	cp -f $< $@
@@ -194,10 +193,9 @@ run-sim: $(SIM_BINARY_CONTAINER) $(delivered_sim_inputs) $(emconfig)
 	@echo "debug_mode=$(DEBUG_MODE)"                               >> $(SIM_RUN_DIR)/xrt.ini # wave dump at end
 	cd $(SIM_RUN_DIR) && XCL_EMULATION_MODE=hw_emu ./$(driver_bin) \
     +permissive \
-		$(shell cat $(SIM_RUN_DIR)/$(runtime_conf)) \
-        +fesvr-step-size=128 \
-        +device_index=0 \
-        +binary_file=$(SIM_BINARY_CONTAINER) \
+    +fesvr-step-size=128 \
+    +device_index=0 \
+    +binary_file=$(SIM_BINARY_CONTAINER) \
     +permissive-off \
     +prog0=$(RISCV)/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-simple </dev/null
 

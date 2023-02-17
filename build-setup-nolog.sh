@@ -171,10 +171,10 @@ if [ "$IS_LIBRARY" = false ]; then
 
     SKIP_TOOLCHAIN_ARG=""
     if [ "$SKIP_TOOLCHAIN" = true ]; then
-        SKIP_TOOLCHAIN_ARG="--skip-toolchain-extra"
+        SKIP_TOOLCHAIN_ARG="-s 3"
     fi
     # default to normal riscv-tools toolchain
-    ./build-setup.sh --skip-validate --skip-conda $SKIP_TOOLCHAIN_ARG
+    ./build-setup.sh --force $SKIP_TOOLCHAIN_ARG -s 1 -s 4 -s 5 -s 6 -s 7 -s 8 -s 9
 
     # Deinitialize Chipyard's FireSim submodule so that fuzzy finders, IDEs,
     # etc., don't get confused by source duplication.

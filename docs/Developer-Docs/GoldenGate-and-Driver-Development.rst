@@ -157,6 +157,20 @@ C/C++ guidelines
 
 The C++ sources are formatted using ``clang-format`` and all submitted pull-requests
 must be formatted prior to being accepted and merged. The sources follow the coding
-style defined `here <https://github.com/firesim/firesim/blob/main/.clang_format>`_.
+style defined `here <https://github.com/firesim/firesim/blob/main/.clang-format>`_.
+Additionally, ``clang-tidy`` is also run on CI to lint and validate C++ sources.
+The tool follows the guidelines and configuration of LLVM.
 
 ``git clang-format`` can be used before committing to ensure that files are properly formatted.
+``make -C sim clang-tidy`` can be used to run ``clang-tidy``. `make -C sim clang-tidy-fix`
+automatically applies most fixes, but some errors and warnings require user intervention.
+
+Scala guidelines
+++++++++++++++++
+
+The Scala sources are formatted using both ``Scalafmt`` and ``Scalafix``. All submitted
+pull-requests must be formatted prior to being accepted and merged. The configuration files
+are found here: `Scalafmt config <https://github.com/firesim/firesim/blob/main/sim/.scalafix.conf>`_, 
+`Scalafix config <https://github.com/firesim/firesim/blob/main/sim/.scalafmt.conf>`_. Run 
+``make -C sim scala-lint-check`` to check your code for compliance. Run ``make -C sim scala-lint`` to
+automatically apply fixes.

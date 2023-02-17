@@ -1,7 +1,7 @@
 package midas.models.sram
 
 import chisel3._
-import chisel3.util.{PriorityEncoderOH, DecoupledIO, log2Ceil}
+import chisel3.util.DecoupledIO
 
 object BankedAsyncMemChiselModel {
   /**

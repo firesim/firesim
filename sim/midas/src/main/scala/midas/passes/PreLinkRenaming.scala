@@ -6,8 +6,6 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
-import Utils._
-import java.io.{File, FileWriter, StringWriter}
 
 // This transform renames a wrapper circuit's modules and annotations in
 // preparation for linking (eg. PlatformMapping). Subsumes Utils.renameMods

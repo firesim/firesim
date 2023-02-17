@@ -1,7 +1,10 @@
-# FireSim: Easy-to-use, Scalable, FPGA-accelerated Cycle-accurate Hardware Simulation
+# FireSim: Fast and Effortless FPGA-accelerated Hardware Simulation with On-Prem and Cloud Flexibility
 
 ![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
 ![Github Actions Status](https://github.com/firesim/firesim/actions/workflows/firesim-run-tests.yml/badge.svg)
+
+| We're running the First FireSim and Chipyard User/Developer Workshop at ASPLOS 2023 on March 26, 2023! This workshop will feature a full-day of submitted talks from users and developers in the FireSim and Chipyard community. Learn more and **submit your work** on the [2023 Workshop Page](https://fires.im/workshop-2023/)! |
+|--------|
 
 ## Contents
 
@@ -14,18 +17,28 @@
 
 ## Using FireSim
 
-To get started with using FireSim, see the tutorials on the FireSim documentation
-site: https://docs.fires.im/. You can also find slides from tutorials that we run at various conferences/events here: https://fires.im/tutorial/.
+To get started with FireSim, you can find our extensive documentation and getting-started guide at
+[docs.fires.im](https://docs.fires.im). The FireSim codebase is open-source at
+[github.com/firesim/firesim](https://github.com/firesim/firesim) and we welcome pull requests and issues.
+You can also get help from the FireSim user community on our [User Forum](https://groups.google.com/forum/#!forum/firesim). 
+Additionally, we frequently run tutorials at various conferences
+and events; for overview purposes, you can find the most recent slide decks at [fires.im/tutorial-recent](https://fires.im/tutorial-recent) (you should still follow [docs.fires.im](https://docs.fires.im) for the most up to date getting-started guide).
 
-Another good overview (in video format) is our tutorial from the Chisel Community Conference on [YouTube](https://www.youtube.com/watch?v=S3OriQnJXYQ).
+Another good overview from a recent seminar (in video format) can be found [on YouTube](https://www.youtube.com/watch?v=UlYOsRBhtY8).
 
 ## What is FireSim?
 
-FireSim is an [open-source](https://github.com/firesim/firesim) cycle-accurate
-FPGA-accelerated full-system hardware simulation platform that runs on cloud FPGAs (Amazon EC2 F1).
-FireSim is actively developed in the [Berkeley Architecture Research
-Group][ucb-bar] in the [Electrical Engineering and Computer Sciences
-Department][eecs] at the [University of California, Berkeley][berkeley].
+FireSim is an [open-source](https://github.com/firesim/firesim)
+FPGA-accelerated full-system hardware simulation platform that makes
+it easy to validate, profile, and debug RTL hardware implementations
+at 10s to 100s of MHz. FireSim simplifies co-simulating 
+ASIC RTL with cycle-accurate hardware and software models for other system components (e.g. I/Os). FireSim can productively 
+scale from individual SoC simulations hosted on on-prem FPGAs (e.g., a single Xilinx Alveo board attached to a desktop) 
+to massive datacenter-scale simulations harnessing hundreds of cloud FPGAs (e.g., on Amazon EC2 F1).
+
+**Who's using and developing FireSim?** FireSim users across academia and industry have written over 25 papers using FireSim in many areas, including computer architecture, systems, networking, circuits, security, and more (see the [Publications page](https://fires.im/publications/)). FireSim has also been used in the development of shipping commercial silicon. FireSim was originally developed in the [Electrical Engineering and Computer Sciences
+Department][eecs] at the [University of California, Berkeley][berkeley], but now has industrial and academic contributors from all over the world.
+
 You can learn more about FireSim in the following places:
 
 * **FireSim website**: https://fires.im
@@ -40,22 +53,25 @@ You can learn more about FireSim in the following places:
 ## What can I simulate with FireSim?
 
 FireSim can simulate arbitrary hardware designs written in
-[Chisel](https://chisel.eecs.berkeley.edu).  With FireSim, you
-can write your own RTL (processors, accelerators, etc.) and run it at
-near-FPGA-prototype speeds on cloud FPGAs, while obtaining cycle-accurate
-performance results (i.e. matching what you would find if you taped-out
-a chip). Depending on the hardware design and the simulation scale,
-FireSim simulations run at **10s to 100s of MHz**. You can also integrate
-custom software models for components that you don't want/need to write as RTL.
+[Chisel](https://chisel.eecs.berkeley.edu) or Verilog.
+With FireSim, users can write their own RTL (processors, accelerators, etc.) and
+run it at near-FPGA-prototype speeds on cloud or on-prem FPGAs, while obtaining
+performance results that match an ASIC implementation of the same design. 
+Depending on the hardware design and the simulation scale,
+FireSim simulations run at 10s to 100s of MHz. Users can also integrate
+custom software models for components that they don't need or want to write as RTL.
+To help construct a closed and deterministic simulated environment around a design, FireSim includes
+validated and high-performance HW/SW models for I/Os like DRAM, Ethernet, Disks, UART, and more.
+The [User Publications page][userpubs] links to a selection of papers written by FireSim users.
 
 FireSim was originally developed to simulate datacenters by combining
 open RTL for RISC-V processors with a custom cycle-accurate network simulation.
 By default, FireSim provides all the RTL and models necessary
-to **cycle-exactly** simulate from **one to thousands of multi-core compute
-nodes**, derived directly from **silicon-proven** and **open** target-RTL
-([RISC-V][riscv] [Rocket Chip][rocket-chip] and [BOOM][boom]), with an optional
-**cycle-accurate network simulation** tying them together. FireSim also
-provides a [Linux distribution](https://github.com/firesim/firesim-software)
+to cycle-exactly simulate from one to thousands of multi-core compute
+nodes, derived directly from silicon-proven and open target-RTL
+([RISC-V][riscv] [Rocket Chip][rocket-chip], [BOOM][boom], and [Chipyard][chipyard]), with an optional
+cycle-accurate network simulation tying them together. FireSim also
+provides a [Linux distribution](https://github.com/firesim/firemarshal)
 that is compatible with the RISC-V systems it simulates and
 [automates](https://docs.fires.im/en/latest/Advanced-Usage/Workloads/Defining-Custom-Workloads.html)
 the process of including new workloads into this Linux distribution.
@@ -145,3 +161,5 @@ You can find other publications, including publications that *use* FireSim on th
 [riscv]: https://riscv.org/
 [rocket-chip]: https://github.com/freechipsproject/rocket-chip
 [boom]: https://github.com/ucb-bar/riscv-boom
+[userpubs]: /publications.md#userpapers
+[chipyard]: https://github.com/ucb-bar/chipyard

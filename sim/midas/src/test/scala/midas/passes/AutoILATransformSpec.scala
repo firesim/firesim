@@ -64,8 +64,8 @@ class AutoILATransformSpec extends MiddleTransformSpec with FirrtlRunners {
          |  extmodule ila_wrapper :
          |    input clock : Clock
          |    input ila_b : UInt<8>
-         |    input ila_mod_a : UInt<1>
          |    input ila_a : UInt<1>
+         |    input ila_mod_a : UInt<1>
          |    defname = ila_wrapper
          |  module Mod:
          |   output a : UInt<1>

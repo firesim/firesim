@@ -195,7 +195,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run Scalafmt on FireSim Scala main sources
-        run: .github/scripts/run-scalafmt-check.py
+        run: .github/scripts/run-scala-lint-check.py
 
   run-check-docs-generated-components:
     name: run-check-docs-generated-components
@@ -297,6 +297,19 @@ jobs:
           test-package: "firesim.firesim"
           test-name: "CITests"
 
+  run-parallel-verilator-metasims:
+    name: run-parallel-verilator-metasims
+    # Building the driver can cause concurrency issues with SBT, so serialize
+    # this behind the scalatest train. Remove once we're off SBT.
+    needs: [run-chipyard-tests]
+    runs-on: aws-${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run parallel Verilator metasimulation tests (deploy on localhost and on AWS instances)
+        run: .github/scripts/run-parallel-verilator-metasims.py
+
   run-basic-linux-poweroff:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     name: run-basic-linux-poweroff
@@ -323,23 +336,40 @@ jobs:
       - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
         run: .github/scripts/run-linux-poweroff-externally-provisioned.py
 
-# AJG: disable temporarily due to local CI machine issues
-#  run-basic-linux-poweroff-vitis:
-#    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
-#    name: run-basic-linux-poweroff-vitis
-#    runs-on: local-fpga
-#    env:
-#      TERM: xterm-256-color
-#    steps:
-#      # This forces a fresh clone of the repo during the `checkout` step
-#      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-#      - name: Delete old checkout
-#        run: |
-#          rm -rf ${{ github.workspace }}/* || true
-#          rm -rf ${{ github.workspace }}/.* || true
-#      - uses: actions/checkout@v3
-#      - name: Run simple linux poweroff test w/ vitis
-#        run: .github/scripts/run-linux-poweroff-vitis.py
+  run-parallel-vcs-metasims-and-vitis-driver:
+    name: run-parallel-vcs-metasims-and-vitis-driver
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run parallel VCS metasims
+        run: .github/scripts/run-parallel-vcs-metasims.py
+      - name: Build Vitis driver
+        run: .github/scripts/build-vitis-driver.py
+
+  run-basic-linux-poweroff-vitis:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    name: run-basic-linux-poweroff-vitis
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run simple linux poweroff test w/ vitis
+        run: .github/scripts/run-linux-poweroff-vitis.py
 
   documentation-check:
     name: documentation-check
@@ -368,8 +398,8 @@ jobs:
           cat /tmp/sphinx-err*.log
       - uses: ./.github/actions/job-end
 
-  clang-format:
-    name: clang-format
+  cpp-lint:
+    name: cpp-lint
     runs-on: ubuntu-20.04
     steps:
       # Clone the repository (shallow to save time).
@@ -379,11 +409,18 @@ jobs:
           fetch-depth: 2
           submodules: false
 
-      # Install clang-format
-      - name: Install clang-format
+      # Checkout chipyard submodules.
+      - name: Checkout chipyard
+        run: |
+          git submodule update --init target-design/chipyard
+          cd target-design/chipyard
+          git submodule update --init generators/testchipip
+
+      # Install clang linters
+      - name: Install Clang linters
         run: |
           sudo apt update
-          sudo apt install clang-format -y
+          sudo apt install clang-format clang-tidy-12 parallel -y
 
       # Run 'clang-format', comparing against the base commit hash.
       # If anything got reformatted, fail and output a patch.
@@ -402,3 +439,10 @@ jobs:
             git checkout .
             exit 1
           fi
+
+      # Run clang-tidy on the entire codebase. Error will be logged.
+      - name: Run clang-tidy
+        run: |
+          export FIRESIM_ENV_SOURCED=1
+          export FIRESIM_STANDALONE=1
+          make -C sim clang-tidy

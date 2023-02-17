@@ -2,19 +2,15 @@
 
 package midas.widgets
 
-import midas.core.{TargetChannelIO, SimUtils}
-import midas.core.SimUtils.{RVChTuple}
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel, RTRenamer}
+import midas.core.TargetChannelIO
 
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DensePrefixSum
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
+import chisel3.experimental.{ChiselAnnotation, annotate}
 
-import firrtl.{RenameMap}
-import firrtl.annotations.{Annotation, ModuleTarget, ReferenceTarget}
 
 /**
   * Defines a generated clock as a rational multiple of some reference clock. The generated
@@ -35,6 +31,10 @@ case class RationalClock(name: String, multiplier: Int, divisor: Int) {
   def equalFrequency(that: RationalClock): Boolean =
     this.simplify.multiplier == that.simplify.multiplier &&
     this.simplify.divisor == that.simplify.divisor
+
+  def toC(): String = {
+    s"ClockInfo{${CStrLit(name).toC}, ${UInt32(multiplier).toC}, ${UInt32(divisor).toC}}"
+  }
 }
 
 sealed trait ClockBridgeConsts {
@@ -125,7 +125,7 @@ object RationalClockBridge {
 class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with ClockBridgeConsts {
   val clocks = new DecoupledIO(Vec(numClocks, Bool()))
 
-  def bridgeChannels = Seq()
+  def bridgeChannels() = Seq()
 
   def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit =
     targetIO.clockElement._2 <> clocks
@@ -170,6 +170,10 @@ class ClockBridgeModule(params: ClockParameters)(implicit p: Parameters)
     tCycleFastest := tCycleFastest + 1.U
   }
   genCRFile()
+
+  override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+    genConstructor(base, sb, "clockmodule_t", "clock", Seq())
+  }
 }
 
 /**

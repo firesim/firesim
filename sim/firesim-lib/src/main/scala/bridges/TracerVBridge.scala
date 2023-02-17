@@ -3,19 +3,13 @@ package firesim.bridges
 
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util._
-import freechips.rocketchip.rocket.TracedInstruction
-import freechips.rocketchip.tile.TileKey
 
-import testchipip.{TileTraceIO, DeclockedTracedInstruction, TracedInstructionWidths}
+import testchipip.{TileTraceIO, TracedInstructionWidths}
 
 import midas.targetutils.TriggerSource
 import midas.widgets._
-import testchipip.{StreamIO, StreamChannel}
-import junctions.{NastiIO, NastiKey}
 
 case class TracerVKey(
   insnWidths: TracedInstructionWidths, // Widths of variable length fields in each TI
@@ -43,6 +37,7 @@ class TracerVTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extend
   */
 class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends BlackBox
     with Bridge[HostPortIO[TracerVTargetIO], TracerVBridgeModule] {
+  require(numInsns > 0, "TracerVBridge: number of instructions must be larger than 0")
   val io = IO(new TracerVTargetIO(insnWidths, numInsns))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(TracerVKey(insnWidths, numInsns))
@@ -68,11 +63,20 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int) extends 
 }
 
 object TracerVBridge {
+  def apply(widths: TracedInstructionWidths, numInsns: Int)(implicit p: Parameters): TracerVBridge = {
+    val tracerv = Module(new TracerVBridge(widths, numInsns))
+    tracerv.generateTriggerAnnotations
+    tracerv.io.trace.clock := Module.clock
+    tracerv.io.trace.reset := Module.reset
+    tracerv
+  }
+
   def apply(tracedInsns: TileTraceIO)(implicit p:Parameters): TracerVBridge = {
-    val ep = Module(new TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns))
-    withClockAndReset(tracedInsns.clock, tracedInsns.reset) { ep.generateTriggerAnnotations }
-    ep.io.trace := tracedInsns
-    ep
+    val tracerv = withClockAndReset(tracedInsns.clock, tracedInsns.reset) {
+      TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns)
+    }
+    tracerv.io.trace := tracedInsns
+    tracerv
   }
 }
 
@@ -200,7 +204,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
 
     val tFireHelper = DecoupledHelper(streamEnq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
 
-    val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire)
+    val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire())
     hPort.hBits.triggerDebit := !trigger && triggerReg
     hPort.hBits.triggerCredit := trigger && !triggerReg
 
@@ -212,17 +216,26 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
 
     streamEnq.valid := tFireHelper.fire(streamEnq.ready, trigger) && traceEnable
 
-    when (tFireHelper.fire) {
+    when (tFireHelper.fire()) {
       trace_cycle_counter := trace_cycle_counter + 1.U
     }
 
     genCRFile()
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_max_core_ipc", UInt32(traces.size)))
-      emitClockDomainInfo(headerWidgetName, sb)
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "tracerv_t",
+          "tracerv",
+          Seq(
+              UInt32(toHostStreamIdx),
+              UInt32(toHostCPUQueueDepth),
+              UInt32(traces.size),
+              Verbatim(clockDomainInfo.toC)
+          ),
+          hasStreams = true
+      )
     }
   }
 }

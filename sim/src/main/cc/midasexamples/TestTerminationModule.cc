@@ -1,19 +1,16 @@
 // See LICENSE for license details.
 
 #include "TestHarness.h"
+#include "bridges/termination.h"
 
+#include <cstring>
 #include <iostream>
-#include <string.h>
 
 class TestTerminationModule final : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  std::unique_ptr<termination_t> terminator;
-  void add_bridge_driver(termination_t *bridge) override {
-    assert(!terminator && "multiple bridges registered");
-    terminator.reset(bridge);
-  }
+  termination_t &terminator = get_bridge<termination_t>();
 
   void run_test() override {
     poke("reset", 1);
@@ -30,9 +27,9 @@ public:
     int termination_code = random() % 8;
     lv_validinCycle = lv_validinCycle + validinCycle;
     lv_msginCycle = lv_msginCycle + msginCycle;
-    poke(io_validInCycle, lv_validinCycle);
-    poke(io_msgInCycle, lv_msginCycle);
-    poke(io_doneErrCode, termination_code);
+    poke("io_validInCycle", lv_validinCycle);
+    poke("io_msgInCycle", lv_msginCycle);
+    poke("io_doneErrCode", termination_code);
     step(reset_length);
     poke("reset", 0);
     if (termination_code % 2 != 0) {
@@ -43,13 +40,13 @@ public:
       msgid = 2;
     }
     step(lv_validinCycle + 2, false);
-    while (!terminator->terminate()) {
-      terminator->tick();
+    while (!terminator.terminate()) {
+      terminator.tick();
     }
-    int str_match = terminator->exit_message() == failure_msg_list[msgid];
-    expect(terminator->cycle_count() == (lv_validinCycle + reset_length),
+    int str_match = terminator.exit_message() == failure_msg_list[msgid];
+    expect(terminator.cycle_count() == (lv_validinCycle + reset_length),
            "Code Exits at precise time");
-    expect(terminator->exit_code() == failure_cond_list[msgid],
+    expect(terminator.exit_code() == failure_cond_list[msgid],
            "Error Code Verified");
     expect(str_match, "Error Message Verified");
   };

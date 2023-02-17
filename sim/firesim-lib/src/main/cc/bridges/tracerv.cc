@@ -1,11 +1,14 @@
 // See LICENSE for license details
 
 #include "tracerv.h"
+#include "bridges/tracerv/trace_tracker.h"
+#include "bridges/tracerv/tracerv_processing.h"
 
-#include <inttypes.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cinttypes>
+#include <climits>
+#include <cstdio>
+#include <cstring>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -14,33 +17,30 @@
 
 #include <sys/mman.h>
 
+char tracerv_t::KIND;
+
 // put FIREPERF in a mode that writes a simple log for processing later.
 // useful for iterating on software side only without re-running on FPGA.
 // #define FIREPERF_LOGGER
 
-constexpr uint64_t valid_mask = (1ULL << 40);
-
-tracerv_t::tracerv_t(simif_t *sim,
+tracerv_t::tracerv_t(simif_t &sim,
                      StreamEngine &stream,
-                     const std::vector<std::string> &args,
                      const TRACERVBRIDGEMODULE_struct &mmio_addrs,
+                     int tracerno,
+                     const std::vector<std::string> &args,
                      int stream_idx,
                      int stream_depth,
-                     const unsigned int max_core_ipc,
-                     const char *const clock_domain_name,
-                     const unsigned int clock_multiplier,
-                     const unsigned int clock_divisor,
-                     int tracerno)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+                     unsigned int max_core_ipc,
+                     const ClockInfo &clock_info)
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_idx(stream_idx), stream_depth(stream_depth),
-      max_core_ipc(max_core_ipc),
-      clock_info(clock_domain_name, clock_multiplier, clock_divisor) {
+      max_core_ipc(max_core_ipc), clock_info(clock_info) {
   // Biancolin: move into elaboration
   assert(this->max_core_ipc <= 7 &&
          "TracerV only supports cores with a maximum IPC <= 7");
-  const char *tracefilename = NULL;
-  const char *dwarf_file_name = NULL;
-  this->tracefile = NULL;
+  const char *tracefilename = nullptr;
+  const char *dwarf_file_name = nullptr;
+  this->tracefile = nullptr;
 
   this->trace_trigger_start = 0;
   this->trace_trigger_end = ULONG_MAX;
@@ -50,19 +50,16 @@ tracerv_t::tracerv_t(simif_t *sim,
 
   long outputfmtselect = 0;
 
-  std::string suffix = std::string("=");
-  std::string tracefile_arg = std::string("+tracefile") + suffix;
-  std::string tracestart_arg = std::string("+trace-start") + suffix;
-  std::string traceend_arg = std::string("+trace-end") + suffix;
-  std::string traceselect_arg = std::string("+trace-select") + suffix;
+  const std::string tracefile_arg = "+tracefile=";
+  const std::string tracestart_arg = "+trace-start=";
+  const std::string traceend_arg = "+trace-end=";
+  const std::string traceselect_arg = "+trace-select=";
   // Testing: provides a reference file to diff the collected trace against
-  std::string testoutput_arg = std::string("+trace-test-output");
+  const std::string testoutput_arg = "+trace-test-output";
   // Formats the output before dumping the trace to file
-  std::string humanreadable_arg = std::string("+trace-humanreadable");
-
-  std::string trace_output_format_arg =
-      std::string("+trace-output-format") + suffix;
-  std::string dwarf_file_arg = std::string("+dwarf-file-name") + suffix;
+  const std::string humanreadable_arg = "+trace-humanreadable";
+  const std::string trace_output_format_arg = "+trace-output-format=";
+  const std::string dwarf_file_arg = "+dwarf-file-name=";
 
   for (auto &arg : args) {
     if (arg.find(tracefile_arg) == 0) {
@@ -118,7 +115,7 @@ tracerv_t::tracerv_t(simif_t *sim,
       fprintf(stderr, "Could not open Trace log file: %s\n", tracefilename);
       abort();
     }
-    fputs(this->clock_info.file_header().c_str(), this->tracefile);
+    write_header(tracefile);
 
     // This must be kept consistent with config_runtime.ini's output_format.
     // That file's comments are the single source of truth for this.
@@ -227,61 +224,93 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
   // does not create a tracefile when trace_enable is disabled, but the
   // TracerV bridge still exists, and no tracefile is created by default.
   if (this->tracefile) {
-    if (this->human_readable || this->test_output) {
-      for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
-        if (this->test_output) {
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 7]);
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 6]);
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 5]);
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 4]);
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 3]);
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 2]);
-          fprintf(this->tracefile, "%016lx", OUTBUF[i + 1]);
-          fprintf(this->tracefile, "%016lx\n", OUTBUF[i + 0]);
-          // At least one valid instruction
-        } else {
-          for (int q = 0; q < max_core_ipc; q++) {
-            if (OUTBUF[i + q + 1] & valid_mask) {
-              fprintf(this->tracefile,
-                      "Cycle: %016" PRId64 " I%d: %016" PRIx64 "\n",
-                      OUTBUF[i + 0],
-                      q,
-                      OUTBUF[i + q + 1] & (~valid_mask));
-            } else {
-              break;
-            }
-          }
-        }
-      }
-    } else if (this->fireperf) {
+    std::function<void(uint64_t, uint64_t)> addInstruction = NULL;
 
-      for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
-        uint64_t cycle_internal = OUTBUF[i + 0];
+    if (fireperf) {
+      addInstruction = std::bind(&TraceTracker::addInstruction,
+                                 this->trace_tracker,
+                                 std::placeholders::_1,
+                                 std::placeholders::_2);
+    }
+    serialize(OUTBUF,
+              bytes_received,
+              tracefile,
+              addInstruction,
+              max_core_ipc,
+              human_readable,
+              test_output,
+              fireperf);
+  }
+  return bytes_received;
+}
 
-        for (int q = 0; q < max_core_ipc; q++) {
-          if (OUTBUF[i + 1 + q] & valid_mask) {
-            uint64_t iaddr =
-                (uint64_t)((((int64_t)(OUTBUF[i + 1 + q])) << 24) >> 24);
-            this->trace_tracker->addInstruction(iaddr, cycle_internal);
-#ifdef FIREPERF_LOGGER
-            fprintf(this->tracefile, "%016llx", iaddr);
-            fprintf(this->tracefile, "%016llx\n", cycle_internal);
-#endif // FIREPERF_LOGGER
+void tracerv_t::serialize(
+    const uint64_t *const OUTBUF,
+    const size_t bytes_received,
+    FILE *tracefile,
+    std::function<void(uint64_t, uint64_t)> addInstruction,
+    const int max_core_ipc,
+    const bool human_readable,
+    const bool test_output,
+    const bool fireperf) {
+  const int max_consider = std::min(max_core_ipc, 7);
+  if (human_readable || test_output) {
+    for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
+      if (test_output) {
+        fprintf(tracefile, "%016lx", OUTBUF[i + 7]);
+        fprintf(tracefile, "%016lx", OUTBUF[i + 6]);
+        fprintf(tracefile, "%016lx", OUTBUF[i + 5]);
+        fprintf(tracefile, "%016lx", OUTBUF[i + 4]);
+        fprintf(tracefile, "%016lx", OUTBUF[i + 3]);
+        fprintf(tracefile, "%016lx", OUTBUF[i + 2]);
+        fprintf(tracefile, "%016lx", OUTBUF[i + 1]);
+        fprintf(tracefile, "%016lx\n", OUTBUF[i + 0]);
+        // At least one valid instruction
+      } else {
+        for (int q = 0; q < max_consider; q++) {
+          if (OUTBUF[i + q + 1] & valid_mask) {
+            fprintf(tracefile,
+                    "Cycle: %016" PRId64 " I%d: %016" PRIx64 "\n",
+                    OUTBUF[i + 0],
+                    q,
+                    OUTBUF[i + q + 1] & (~valid_mask));
+          } else {
+            break;
           }
-        }
-      }
-    } else {
-      for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
-        // this stores as raw binary. stored as little endian.
-        // e.g. to get the same thing as the human readable above,
-        // flip all the bytes in each 512-bit line.
-        for (int q = 0; q < 8; q++) {
-          fwrite(OUTBUF + (i + q), sizeof(uint64_t), 1, this->tracefile);
         }
       }
     }
+  } else if (fireperf) {
+
+    for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
+      uint64_t cycle_internal = OUTBUF[i + 0];
+
+      for (int q = 0; q < max_consider; q++) {
+        if (OUTBUF[i + 1 + q] & valid_mask) {
+          uint64_t iaddr =
+              (uint64_t)((((int64_t)(OUTBUF[i + 1 + q])) << 24) >> 24);
+          addInstruction(iaddr, cycle_internal);
+#ifdef FIREPERF_LOGGER
+          fprintf(tracefile, "%016llx", iaddr);
+          fprintf(tracefile, "%016llx\n", cycle_internal);
+#endif // FIREPERF_LOGGER
+        }
+      }
+    }
+  } else {
+    for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
+      // this stores as raw binary. stored as little endian.
+      // e.g. to get the same thing as the human readable above,
+      // flip all the bytes in each 512-bit line.
+      for (int q = 0; q < 8; q++) {
+        fwrite(OUTBUF + (i + q), sizeof(uint64_t), 1, tracefile);
+      }
+    }
   }
-  return bytes_received;
+}
+
+void tracerv_t::write_header(FILE *file) {
+  fputs(this->clock_info.file_header().c_str(), file);
 }
 
 void tracerv_t::tick() {

@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <vector>
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 
-typedef struct BLOCKDEVBRIDGEMODULE_struct {
+struct BLOCKDEVBRIDGEMODULE_struct {
   uint64_t read_latency;
   uint64_t write_latency;
   uint64_t bdev_nsectors;
@@ -35,7 +35,7 @@ typedef struct BLOCKDEVBRIDGEMODULE_struct {
   uint64_t bdev_reqs_pending;
   uint64_t bdev_wack_stalled;
   uint64_t bdev_rresp_stalled;
-} BLOCKDEVBRIDGEMODULE_struct;
+};
 
 #define SECTOR_SIZE 512
 #define SECTOR_SHIFT 9
@@ -63,24 +63,27 @@ struct blkdev_write_tracker {
 
 class blockdev_t : public bridge_driver_t {
 public:
-  blockdev_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  blockdev_t(simif_t &sim,
+             const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
+             int blkdevno,
              const std::vector<std::string> &args,
              uint32_t num_trackers,
-             uint32_t latency_bits,
-             const BLOCKDEVBRIDGEMODULE_struct &mmio_addrs,
-             int blkdevno);
-  ~blockdev_t();
+             uint32_t latency_bits);
+  ~blockdev_t() override;
 
   uint32_t nsectors(void) { return _nsectors; }
   uint32_t max_request_length(void) { return MAX_REQ_LEN; }
 
   void send();
   void recv();
-  virtual void init();
-  virtual void tick();
-  virtual bool terminate() { return false; }
-  virtual int exit_code() { return 0; }
-  virtual void finish(){};
+  void init() override;
+  void tick() override;
+  bool terminate() override { return false; }
+  int exit_code() override { return 0; }
+  void finish() override {}
 
 private:
   const BLOCKDEVBRIDGEMODULE_struct mmio_addrs;
@@ -92,7 +95,7 @@ private:
   uint32_t _ntags;
   uint32_t _nsectors;
   FILE *_file, *logfile;
-  char *filename = NULL;
+  char *filename = nullptr;
   std::queue<blkdev_request> requests;
   std::queue<blkdev_data> req_data;
   std::queue<blkdev_data> read_responses;

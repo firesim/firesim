@@ -25,7 +25,7 @@ def run_linux_poweroff_externally_provisioned():
             :arg: timeout (str) - timeout amount for the workload to run
             """
             workload_full = workload_path + "/" + workload
-            log_tail_length = 100
+            log_tail_length = 300
             script_name = Path(__file__).stem
             rf_prefix = f"{ci_env['GITHUB_RUN_ID']}-{script_name}"
 

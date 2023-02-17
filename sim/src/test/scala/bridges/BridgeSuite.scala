@@ -144,4 +144,8 @@ class BridgeTests
       new UARTVitisTest,
       new BlockDevF1Test,
       new BlockDevVitisTest,
+      new TracerVF1TestCount1,
+      new TracerVF1TestCount6,
+      new TracerVF1TestCount7,
+      new TracerVVitisTest,
     )

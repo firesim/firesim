@@ -11,7 +11,7 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
-import firrtl.Utils.{zero, BoolType}
+import firrtl.Utils.BoolType
 
 import scala.collection.mutable
 
@@ -47,7 +47,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
                                  (mod: DefModule): DefModule = mod match {
     case m: Module if sourceModuleMap.isDefinedAt(m.name) =>
       val annos = sourceModuleMap(m.name)
-      val mT = annos.head.enclosingModuleTarget
+      val mT = annos.head.enclosingModuleTarget()
       val moduleNS = Namespace(mod)
       val addedStmts = annos.flatMap({ anno =>
         if (anno.reset.nonEmpty) {
@@ -85,7 +85,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
                 (s: Statement): Statement = s.map(onStmtSink(sinkAnnos, addedAnnos, ns)) match {
     case node@DefNode(_,name,_) if sinkAnnos.isDefinedAt(name) =>
       val sinkAnno = sinkAnnos(name)
-      val mT = sinkAnno.enclosingModuleTarget
+      val mT = sinkAnno.enclosingModuleTarget()
       val triggerSyncName = ns.newName("trigger_sync")
       val triggerSync = RegZeroPreset(NoInfo, triggerSyncName, BoolType, WRef(sinkAnno.clock.ref))
       addedAnnos += SinkAnnotation(mT.ref(triggerSyncName).toNamed, sinkWiringKey)
@@ -120,7 +120,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     } else {
       // Step 1) Gate credits and debits with their associated reset, if provided
       val updatedAnnos = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
-      val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule)
+      val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq }
       val gatedCircuit = state.circuit.map(gateEventsWithReset(srcAnnoMap, updatedAnnos))
       val (gatedCredits, gatedDebits) = updatedAnnos.partition(_.sourceType)
 
@@ -226,11 +226,11 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       val triggerSource = DefNode(NoInfo, triggerName, Neq(totalCredit, totalDebit))
       val triggerSourceRT = ModuleTarget(topModName, topModName).ref(triggerName)
       addedStmts += triggerSource
-      val topModWithTrigger = wiredTopModule.copy(ports = prexistingPorts, body = Block(portRemovedBody,  addedStmts:_*))
+      val topModWithTrigger = wiredTopModule.copy(ports = prexistingPorts, body = Block(portRemovedBody,  addedStmts.toSeq:_*))
       val updatedCircuit = wiredState.circuit.copy(modules = topModWithTrigger +: otherModules)
 
       // Step 8) Wire the generated trigger to all sinks using the WiringTranform
-      val sinkModuleMap = sinkAnnos.groupBy(_.target.module)
+      val sinkModuleMap = sinkAnnos.groupBy(_.target.module).map { case (k, v) => k -> v.toSeq }
       val wiringAnnos = new mutable.ArrayBuffer[Annotation]
       wiringAnnos += SourceAnnotation(triggerSourceRT.toNamed, sinkWiringKey)
       val preSinkWiringCircuit = updatedCircuit.map(onModuleSink(sinkModuleMap, wiringAnnos))

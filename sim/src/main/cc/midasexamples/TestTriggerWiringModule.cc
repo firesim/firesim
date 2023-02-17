@@ -1,15 +1,14 @@
 // See LICENSE for license details.
 
 #include "TestHarness.h"
+#include "bridges/synthesized_assertions.h"
 
 class TestTriggerWiringModule final : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  std::vector<std::unique_ptr<synthesized_assertions_t>> assert_endpoints;
-  void add_bridge_driver(synthesized_assertions_t *bridge) override {
-    assert_endpoints.emplace_back(bridge);
-  }
+  const std::vector<synthesized_assertions_t *> assert_endpoints =
+      get_bridges<synthesized_assertions_t>();
 
   bool simulation_complete() {
     bool is_complete = false;
@@ -37,7 +36,7 @@ public:
     step(1);
     poke("reset", 0);
     step(10000, false);
-    while (!simif->done() && !simulation_complete()) {
+    while (!peek_poke.is_done() && !simulation_complete()) {
       for (auto &ep : assert_endpoints) {
         ep->tick();
       }

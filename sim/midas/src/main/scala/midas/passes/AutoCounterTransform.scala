@@ -4,30 +4,21 @@ package midas.passes
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes._
-import firrtl.passes.wiring._
-import firrtl.Utils.{throwInternalError, BoolType, one, zero}
+import firrtl.Utils.{BoolType, one, zero}
 import firrtl.annotations._
-import firrtl.analyses.InstanceGraph
-import firrtl.transforms.TopWiring._
 import freechips.rocketchip.util.property
-import freechips.rocketchip.util.WideCounter
-import freechips.rocketchip.config.{Parameters, Field}
 import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
 import midas.widgets._
 import midas.targetutils._
-import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Or, Negate, Neq}
+import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Neq}
 
 import java.io._
-import scala.io.Source
 import collection.mutable
 
 class FireSimPropertyLibrary extends property.BasePropertyLibrary {
-  import chisel3._
-  import chisel3.experimental.DataMirror.internal.isSynthesizable
   import chisel3.internal.sourceinfo.{SourceInfo}
   import chisel3.experimental.{annotate,ChiselAnnotation}
-  def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo) {
+  def generateProperty(prop_param: property.BasePropertyParameters)(implicit sourceInfo: SourceInfo): Unit = {
     //requireIsHardware(prop_param.cond, "condition covered for counter is not hardware!")
     if (!(prop_param.cond.isLit) && chisel3.experimental.DataMirror.internal.isSynthesizable(prop_param.cond)) {
       annotate(new ChiselAnnotation {
@@ -62,7 +53,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
                                  (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
       val coverAnnos = coverTupleAnnoMap(m.name)
-      val mT = coverAnnos.head.enclosingModuleTarget
+      val mT = coverAnnos.head.enclosingModuleTarget()
       val moduleNS = Namespace(mod)
       val addedStmts = coverAnnos.flatMap({ anno =>
         val eventName = moduleNS.newName(anno.label)
@@ -79,7 +70,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
                                 (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
       val coverAnnos = coverTupleAnnoMap(m.name)
-      val mT = coverAnnos.head.enclosingModuleTarget
+      val mT = coverAnnos.head.enclosingModuleTarget()
       val moduleNS = Namespace(mod)
       val addedStmts = new mutable.ArrayBuffer[Statement]
 
@@ -124,7 +115,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
           def printEnable = Neq(WRef(target.ref), WRef(reg))
           generatePrintf(label, clock, WRef(target.ref), printEnable, target.ref + "_identity_print")
       }
-      m.copy(body = Block(m.body, addedStmts:_*))
+      m.copy(body = Block(m.body, addedStmts.toSeq:_*))
     case o => o
   }
 
@@ -226,7 +217,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     }
 
     val updatedCircuit = c.copy(modules = c.modules.map({
-      case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts, body = Block(m.body, addedStmts:_*))
+      case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts, body = Block(m.body, addedStmts.toSeq:_*))
       case o => o
     }))
 
@@ -267,12 +258,12 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     covermodulesnames.foreach({ i => println(s"  ${i}") })
 
     //collect annotations for manually annotated AutoCounter perf counters
-    val filteredCounterAnnos =  counterAnnos.filter(_.shouldBeIncluded(covermodulesnames))
+    val filteredCounterAnnos =  counterAnnos.filter(_.shouldBeIncluded(covermodulesnames.toSeq))
     println(s"[AutoCounter] selected ${filteredCounterAnnos.length} signals for instrumentation")
     filteredCounterAnnos.foreach({ i => println(s"  ${i}") })
 
     // group the selected signal by modules, and attach label from the cover point to each signal
-    val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule)
+    val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq }
 
     if (!selectedsignals.isEmpty) {
       println(s"[AutoCounter] signals are:")
@@ -284,8 +275,8 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       // Common preprocessing: gate all annotated events with their associated reset
       val updatedAnnos = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
       val updatedModules = state.circuit.modules.map((gateEventsWithReset(selectedsignals, updatedAnnos)))
-      val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule)
-      val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos)
+      val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq}
+      val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos.toSeq)
 
       val preppedState = (new ResolveAndCheck).runTransform(gatedState)
 

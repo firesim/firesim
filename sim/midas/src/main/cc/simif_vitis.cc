@@ -1,4 +1,3 @@
-#include "simif_vitis.h"
 #include <cassert>
 
 #include <fcntl.h>
@@ -6,6 +5,44 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include "bridges/fpga_managed_stream.h"
+#include "core/simif.h"
+
+#include "experimental/xrt_device.h"
+#include "experimental/xrt_ip.h"
+#include "experimental/xrt_kernel.h"
+
+class simif_vitis_t final : public simif_t, public FPGAManagedStreamIO {
+public:
+  simif_vitis_t(const TargetConfig &config,
+                const std::vector<std::string> &args);
+  ~simif_vitis_t() {}
+
+  void write(size_t addr, uint32_t data) override;
+  uint32_t read(size_t addr) override;
+
+  uint32_t is_write_ready();
+
+  FPGAManagedStreamIO &get_fpga_managed_stream_io() override { return *this; }
+
+private:
+  uint32_t mmio_read(size_t addr) override { return read(addr); }
+
+  void mmio_write(size_t addr, uint32_t value) override {
+    return write(addr, value);
+  }
+
+  char *get_memory_base() override;
+
+private:
+  int slotid;
+  std::string binary_file;
+  xrt::device device_handle;
+  xrt::uuid uuid;
+  xrt::ip kernel_handle;
+  xrt::run run_handle;
+};
 
 constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
 /**
@@ -18,7 +55,7 @@ constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
 
 simif_vitis_t::simif_vitis_t(const TargetConfig &config,
                              const std::vector<std::string> &args)
-    : simif_t(config, args) {
+    : simif_t(config) {
   slotid = -1;
   binary_file = "";
 
@@ -99,7 +136,8 @@ char *simif_vitis_t::get_memory_base() {
   abort();
 }
 
-int main(int argc, char **argv) {
+std::unique_ptr<simif_t>
+create_simif(const TargetConfig &config, int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return simif_vitis_t(conf_target, args).run();
+  return std::make_unique<simif_vitis_t>(config, args);
 }

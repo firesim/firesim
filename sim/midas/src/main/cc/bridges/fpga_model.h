@@ -3,8 +3,8 @@
 #ifndef __FPGA_MODEL_H
 #define __FPGA_MODEL_H
 
-#include "address_map.h"
-#include "simif.h"
+#include "core/address_map.h"
+#include "core/simif.h"
 
 /**
  * Base class for (handwritten) FPGA-hosted models
@@ -24,8 +24,9 @@ private:
   simif_t *sim;
 
 public:
-  FpgaModel(simif_t *s, AddressMap addr_map) : sim(s), addr_map(addr_map){};
-  virtual ~FpgaModel() {}
+  FpgaModel(simif_t *s, const AddressMap &addr_map)
+      : sim(s), addr_map(addr_map) {}
+  virtual ~FpgaModel() = default;
 
   virtual void init() = 0;
   virtual void profile() = 0;
@@ -34,19 +35,23 @@ public:
   const AddressMap &get_addr_map() const { return addr_map; }
 
 protected:
-  AddressMap addr_map;
+  const AddressMap addr_map;
 
   void write(size_t addr, uint32_t data) { sim->write(addr, data); }
 
   uint32_t read(size_t addr) { return sim->read(addr); }
 
-  void write(std::string reg, uint32_t data) {
+  void write(const std::string &reg, uint32_t data) {
     sim->write(addr_map.w_addr(reg), data);
   }
 
-  uint32_t read(std::string reg) { return sim->read(addr_map.r_addr(reg)); }
+  uint32_t read(const std::string &reg) {
+    return sim->read(addr_map.r_addr(reg));
+  }
 
-  uint64_t read64(std::string msw, std::string lsw, uint32_t upper_word_mask) {
+  uint64_t read64(const std::string &msw,
+                  const std::string &lsw,
+                  uint32_t upper_word_mask) {
     uint64_t data = ((uint64_t)(read(msw) & upper_word_mask)) << 32;
     return data | read(lsw);
   }

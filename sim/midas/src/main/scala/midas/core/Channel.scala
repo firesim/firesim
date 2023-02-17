@@ -5,8 +5,7 @@ package core
 
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.unittest._
-import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue}
-import freechips.rocketchip.tilelink.LFSR64 // Better than chisel's
+import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue} // Better than chisel's
 
 import chisel3._
 import chisel3.util._
@@ -192,7 +191,7 @@ class ReadyValidChannel[T <: Data](
     (enqRevFired || io.enq.rev.hReady),
     (deqFwdFired || io.deq.fwd.hReady))
 
-  val targetFire = finishing.fire
+  val targetFire = finishing.fire()
   val enqBitsLast = RegEnable(enqFwdQ.io.deq.bits.bits, targetFire)
   // enqRev
   io.enq.rev.hValid := !enqRevFired

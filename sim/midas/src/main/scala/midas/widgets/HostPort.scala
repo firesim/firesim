@@ -4,11 +4,9 @@ package midas.widgets
 
 import midas.core.{HostReadyValid, TargetChannelIO}
 import midas.core.SimUtils
-import midas.passes.fame.{FAMEChannelConnectionAnnotation,DecoupledForwardChannel, PipeChannel, DecoupledReverseChannel, WireChannel}
 
 import chisel3._
 import chisel3.util.ReadyValidIO
-import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
 
 import freechips.rocketchip.util.{DecoupledHelper}
 
@@ -69,19 +67,19 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
     val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
 
     // Bind payloads to HostPort, and collect channels
-    for ((field, localName) <- inputWireChannels) {
+    for ((field, localName) <- inputWireChannels()) {
       val tokenChannel = targetIO.wireOutputPortMap(local2globalName(localName))
       field := tokenChannel.bits
       toHostChannels += tokenChannel
     }
 
-    for ((field, localName) <- outputWireChannels) {
+    for ((field, localName) <- outputWireChannels()) {
       val tokenChannel = targetIO.wireInputPortMap(local2globalName(localName))
       tokenChannel.bits := field
       fromHostChannels += tokenChannel
     }
 
-    for ((field, localName) <- inputRVChannels) {
+    for ((field, localName) <- inputRVChannels()) {
       val (fwdChPort, revChPort) = targetIO.rvOutputPortMap(local2globalName(localName + "_fwd"))
       field.valid := fwdChPort.bits.valid
       revChPort.bits := field.ready
@@ -93,7 +91,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
       toHostChannels += fwdChPort
     }
 
-    for ((field, localName) <- outputRVChannels) {
+    for ((field, localName) <- outputRVChannels()) {
       val (fwdChPort, revChPort) = targetIO.rvInputPortMap(local2globalName(localName + "_fwd"))
       fwdChPort.bits.valid := field.valid
       field.ready := revChPort.bits
@@ -109,21 +107,21 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
 
     // Dequeue from toHost channels only if all toHost tokens are available,
     // and the bridge consumes it
-    val toHostHelper   = DecoupledHelper((toHost.hReady +: toHostChannels.map(_.valid)):_*)
+    val toHostHelper   = DecoupledHelper((toHost.hReady +: toHostChannels.map(_.valid)).toSeq:_*)
     toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
 
     // Enqueue into the toHost channels only once all toHost channels can accept the token
-    val fromHostHelper = DecoupledHelper((fromHost.hValid +: fromHostChannels.map(_.ready)):_*)
+    val fromHostHelper = DecoupledHelper((fromHost.hValid +: fromHostChannels.map(_.ready)).toSeq:_*)
     fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
 
     // Tie off the target clock; these should be unused in the BridgeModule
     SimUtils.findClocks(hBits).map(_ := false.B.asClock)
   }
 
-  def bridgeChannels: Seq[BridgeChannel] = {
+  def bridgeChannels(): Seq[BridgeChannel] = {
     val clockRT = getClock.toNamed.toTarget
 
-    inputWireChannels.map({ case (field, chName) =>
+    inputWireChannels().map({ case (field, chName) =>
       PipeBridgeChannel(
           chName,
           clock = clockRT,
@@ -132,7 +130,7 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
           latency = 1
       )
     }) ++
-    outputWireChannels.map({ case (field, chName) =>
+    outputWireChannels().map({ case (field, chName) =>
       PipeBridgeChannel(
           chName,
           clock = clockRT,

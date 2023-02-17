@@ -4,7 +4,6 @@
 package junctions
 
 import Chisel._
-import freechips.rocketchip.config._
 import scala.collection.mutable.HashMap
 
 case class MemAttr(prot: Int, cacheable: Boolean = false)
@@ -97,7 +96,7 @@ class AddrMap(
       prot |= r.attr.prot
       cacheable &&= r.attr.cacheable
     }
-    (base - start, rebasedEntries, MemAttr(prot, cacheable))
+    (base - start, rebasedEntries.toSeq, MemAttr(prot, cacheable))
   }
 
   val flatten: Seq[AddrMapEntry] = {

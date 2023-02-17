@@ -1,4 +1,0 @@
-vitis-test:
-    xclbin: /scratch/buildbot/prebuilt-xclbins/firesim.xclbin
-    deploy_triplet_override: FireSim-FireSimRocketConfig-BaseVitisConfig
-    custom_runtime_config: null

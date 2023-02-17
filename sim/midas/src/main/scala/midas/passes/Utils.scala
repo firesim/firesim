@@ -5,7 +5,7 @@ package passes
 
 import firrtl._
 import firrtl.ir._
-import java.io.{File, FileWriter, Writer}
+import java.io.File
 
 object Utils {
   def cat(es: Seq[Expression]): Expression =
@@ -17,7 +17,7 @@ object Utils {
 
   // Takes a circuit state and writes it out to the target-directory by selecting
   // an appropriate emitter for its form
-  def writeState(state: CircuitState, name: String) {
+  def writeState(state: CircuitState, name: String): Unit = {
     val td = state.annotations.collectFirst({ case TargetDirAnnotation(value) => value })
     val file = td match {
       case Some(dir) => new File(dir, name)

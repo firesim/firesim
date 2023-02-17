@@ -22,7 +22,6 @@ import midas.widgets._
 import scala.math.min
 import Console.{UNDERLINED, RESET}
 
-import java.io.{File, FileWriter}
 
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
@@ -181,7 +180,7 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
     (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
   )
 
-  def getFuncModelSettings(): Seq[(String, String)] = {
+  def getFuncModelSettings(): Seq[(String, BigInt)] = {
     Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
     setUnboundSettings()
     getSettings()
@@ -201,7 +200,7 @@ case class CompleteConfig(
     axi4Widths: NastiParameters,
     axi4Edge: Option[AXI4EdgeSummary] = None,
     memoryRegionName: Option[String] = None) extends HasSerializationHints {
-  def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
+  def typeHints: Seq[Class[_]] = Seq(userProvided.getClass)
 }
 
 class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
@@ -255,7 +254,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
   val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
   // End: Implementation of UsesHostDRAM
 
-  lazy val module = new BridgeModuleImp(this) {
+  lazy val module = new Impl
+  class Impl extends BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
     val hPort = IO(HostPort(new FASEDTargetIO))
     val toHostDRAM: AXI4Bundle = toHostDRAMNode.out.head._1
@@ -322,19 +322,19 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
                                       hPort.fromHost.hReady,
                                       ingressReady, bReady, rReady, tResetReady)
 
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
 
     val gate = Module(new AbstractClockGate)
     gate.I := clock
     gate.CE := targetFire
 
     val model = withClock(gate.O)(cfg.elaborate())
-    printGenerationConfig
+    printGenerationConfig()
 
     // HACK: Feeding valid back on ready and ready back on valid until we figure out
     // channel tokenization
-    hPort.toHost.hReady := tFireHelper.fire
-    hPort.fromHost.hValid := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
+    hPort.fromHost.hValid := tFireHelper.fire()
     ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
     model.tNasti <> tNasti
@@ -555,14 +555,18 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      def genCPPmap(mapName: String, map: Map[String, BigInt]): String = {
-        val prefix = s"const std::map<std::string, int> $mapName = {\n"
-        map.foldLeft(prefix)((str, kvp) => str + s""" {\"${kvp._1}\", ${kvp._2}},\n""") + "};\n"
-      }
-      import midas.widgets.CppGenerationUtils._
-      super.genHeader(base, sb)
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_target_addr_bits", UInt32(p(NastiKey).addrBits)))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "FASEDMemoryTimingModel",
+          "fased_memory_timing_model",
+          Seq(
+            CStrLit(s"memory_stats${getWId}.csv"),
+            Verbatim(s"1L << ${UInt32(p(NastiKey).addrBits).toC}")
+          ),
+          hasMMIOAddrMap = true
+      )
     }
 
     // Prints out key elaboration time settings
@@ -581,6 +585,14 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         case Some(key) => key.print()
         case None => println("  No LLC Model Instantiated\n")
       }
+
+      println("\nDefault Settings")
+      val functionalModelSettings = funcModelRegs.getDefaults()
+      val timingModelSettings = model.io.mmReg.getDefaults()
+      for (setting <- settingsToString(functionalModelSettings ++ timingModelSettings)) {
+        println(s"  ${setting}")
+      }
+      print("\n")
     }
   }
 
@@ -589,8 +601,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     * increments for each instantion of widgets of the same class), which
     * is defined in Widget
     */
-  def settingsToString(settings: Seq[(String, String)]): String =
-    settings.map { case (field, value) => s"+mm_${field}_${wId}=${value}" }.mkString("\n")
+  def settingsToString(settings: Seq[(String, BigInt)]): Seq[String] =
+    settings.map { case (field, value) => s"+mm_${field}_${wId}=${value}" }
 
   /**
     * Used by the runtime configuration generator, and not the main GG flow.
@@ -599,13 +611,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     println("\nGenerating a Midas Memory Model Configuration File")
     val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
     val timingModelSettings = module.model.io.mmReg.getTimingModelSettings()
-    settingsToString(functionalModelSettings ++ timingModelSettings)
-  }
-
-  override def defaultPlusArgs: Option[String] = {
-    val functionalModelSettings = module.funcModelRegs.getDefaults()
-    val timingModelSettings = module.model.io.mmReg.getDefaults()
-    Some(settingsToString(functionalModelSettings ++ timingModelSettings))
+    settingsToString(functionalModelSettings ++ timingModelSettings).mkString("\n")
   }
 }
 

@@ -1,6 +1,8 @@
 // See LICENSE for license details
 
 #include "uart.h"
+#include "core/simif.h"
+
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -13,6 +15,8 @@
 
 #ifndef _WIN32
 #include <unistd.h>
+
+char uart_t::KIND;
 
 // name length limit for ptys
 #define SLAVENAMELEN 256
@@ -44,8 +48,8 @@ void sighand(int s) {
  */
 class uart_fd_handler : public uart_handler {
 public:
-  uart_fd_handler() {}
-  virtual ~uart_fd_handler();
+  uart_fd_handler() = default;
+  ~uart_fd_handler() override;
 
   std::optional<char> get() override;
   void put(char data) override;
@@ -98,7 +102,7 @@ public:
     sigIntHandler.sa_handler = sighand;
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
+    sigaction(SIGINT, &sigIntHandler, nullptr);
     printf("UART0 is here (stdin/stdout).\n");
     inputfd = STDIN_FILENO;
     outputfd = STDOUT_FILENO;
@@ -161,7 +165,7 @@ create_handler(const std::vector<std::string> &args, int uartno) {
   std::string out_arg = std::string("+uart-out") + std::to_string(uartno) + "=";
 
   std::string in_name, out_name;
-  for (auto arg : args) {
+  for (const auto &arg : args) {
     if (arg.find(in_arg) == 0) {
       in_name = const_cast<char *>(arg.c_str()) + in_arg.length();
     }
@@ -179,14 +183,14 @@ create_handler(const std::vector<std::string> &args, int uartno) {
   return std::make_unique<uart_pty_handler>(uartno);
 }
 
-uart_t::uart_t(simif_t *sim,
-               const std::vector<std::string> &args,
+uart_t::uart_t(simif_t &simif,
                const UARTBRIDGEMODULE_struct &mmio_addrs,
-               int uartno)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs),
+               int uartno,
+               const std::vector<std::string> &args)
+    : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
       handler(create_handler(args, uartno)) {}
 
-uart_t::~uart_t() {}
+uart_t::~uart_t() = default;
 
 void uart_t::send() {
   if (data.in.fire()) {

@@ -3,13 +3,9 @@
 package firesim.midasexamples
 
 import chisel3._
-import chisel3.util._
-import chisel3.util.Enum
 import freechips.rocketchip.config.{Config, Field, Parameters}
 
 import midas.widgets._
-
-import midas.widgets.ResetPulseBridge
 
 /** Defines a test group with the id of 0
   */

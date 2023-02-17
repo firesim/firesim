@@ -10,7 +10,6 @@ import midas.targetutils.{AutoCounterCoverModuleAnnotation}
 import firesim.midasexamples.AutoCounterWrappers.{PerfCounter, cover}
 
 
-import scala.collection.mutable
 
 /**
   * Demonstrates how to instantiate autocounters, and validates those

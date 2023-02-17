@@ -6,7 +6,9 @@
 #include <functional>
 #include <string>
 
-#include "bridges/stream_engine.h"
+#include "core/stream_engine.h"
+
+class simif_t;
 
 /**
  * An abstraction over the low-level hardware interface on which streams rely.
@@ -40,7 +42,7 @@ namespace FPGAManagedStreams {
  * This will be replaced by a protobuf-derived class, and re-used across both
  * Scala and C++.
  */
-typedef struct StreamParameters {
+struct StreamParameters {
   std::string stream_name;
   uint32_t buffer_capacity;
   uint64_t toHostPhysAddrHighAddr;
@@ -51,7 +53,7 @@ typedef struct StreamParameters {
   uint64_t toHostStreamFlushAddr;
   uint64_t toHostStreamFlushDoneAddr;
 
-  StreamParameters(std::string stream_name,
+  StreamParameters(const std::string &stream_name,
                    uint32_t buffer_capacity,
                    uint64_t toHostPhysAddrHighAddr,
                    uint64_t toHostPhysAddrLowAddr,
@@ -67,8 +69,8 @@ typedef struct StreamParameters {
         bytesConsumedAddr(bytesConsumedAddr),
         toHostStreamDoneInitAddr(toHostStreamDoneInitAddr),
         toHostStreamFlushAddr(toHostStreamFlushAddr),
-        toHostStreamFlushDoneAddr(toHostStreamFlushDoneAddr){};
-} StreamParameters;
+        toHostStreamFlushDoneAddr(toHostStreamFlushDoneAddr) {}
+};
 
 /**
  * @brief Implements streams sunk by the driver (sourced by the FPGA)
@@ -80,17 +82,16 @@ typedef struct StreamParameters {
  */
 class FPGAToCPUDriver : public FPGAToCPUStreamDriver {
 public:
-  FPGAToCPUDriver(StreamParameters params,
+  FPGAToCPUDriver(StreamParameters &&params,
                   void *buffer_base,
                   uint64_t buffer_base_fpga,
                   FPGAManagedStreamIO &io)
-      : params(params), buffer_base(buffer_base),
+      : params(std::move(params)), buffer_base(buffer_base),
         buffer_base_fpga(buffer_base_fpga), io(io) {}
 
-  virtual size_t
-  pull(void *dest, size_t num_bytes, size_t required_bytes) override;
-  virtual void flush() override;
-  virtual void init() override;
+  size_t pull(void *dest, size_t num_bytes, size_t required_bytes) override;
+  void flush() override;
+  void init() override;
 
   size_t mmio_read(size_t addr) { return io.mmio_read(addr); };
   void mmio_write(size_t addr, uint32_t data) { io.mmio_write(addr, data); };
@@ -117,7 +118,11 @@ public:
    *
    * @param io Reference to a functor implementing the low-level IO.
    */
-  FPGAManagedStreamWidget(FPGAManagedStreamIO &io);
+  FPGAManagedStreamWidget(
+      simif_t &simif,
+      unsigned index,
+      const std::vector<std::string> &args,
+      std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
 };
 
 #endif // __BRIDGES_FPGA_MANAGED_STREAM_H

@@ -11,14 +11,13 @@ class PassthroughModelDriver : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  void add_bridge_driver(synthesized_assertions_t *bridge) override {}
-
   int latency = 1;
   int length = 1 << 16;
-  void run_test() {
+
+  void run_test() override {
     target_reset();
     step(length);
   }
 };
 
-#endif MIDASEXAMPLES_PASSTHROUGHMODELS_H
+#endif // MIDASEXAMPLES_PASSTHROUGHMODELS_H

@@ -1,11 +1,10 @@
-//See LICENSE for license details
+// See LICENSE for license details
 package firesim.bridges
 
 import midas.widgets._
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 
 import testchipip.{SerialIO, SerialAdapter}
@@ -28,10 +27,11 @@ class SerialBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Br
 }
 
 object SerialBridge {
-  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String])(implicit p: Parameters): SerialBridge = {
+  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String], reset: Bool)(implicit p: Parameters): SerialBridge = {
     val ep = Module(new SerialBridge(memoryRegionNameOpt))
     ep.io.serial <> port
     ep.io.clock := clock
+    ep.io.reset := reset
     ep
   }
 }
@@ -89,14 +89,21 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
-      val offsetConstName = memoryRegionNameOpt.map(GetMemoryRegionOffsetConstName(_)).getOrElse("0")
-      sb.append(genMacro(s"${headerWidgetName}_has_memory", memoryRegionNameOpt.isDefined.toString))
-      sb.append(genMacro(s"${headerWidgetName}_memory_offset", offsetConstName))
+      val offsetConst = memoryRegionNameOpt.map(memoryRegions(_)).getOrElse(BigInt(0))
+
+      genConstructor(
+          base,
+          sb,
+          "serial_t",
+          "serial",
+          Seq(
+              CppBoolean(serialBridgeParams.memoryRegionNameOpt.isDefined),
+              UInt32(offsetConst)
+          ),
+          hasLoadMem = true
+      )
     }
   }
 }

@@ -2,28 +2,30 @@
 #ifndef __GROUNDTEST_H
 #define __GROUNDTEST_H
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 
-typedef struct GROUNDTESTBRIDGEMODULE_struct {
+struct GROUNDTESTBRIDGEMODULE_struct {
   uint64_t success;
-} GROUNDTESTBRIDGEMODULE_struct;
+};
 
 class groundtest_t : public bridge_driver_t {
 public:
-  groundtest_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  groundtest_t(simif_t &sim,
                const std::vector<std::string> &args,
                const GROUNDTESTBRIDGEMODULE_struct &mmio_addrs);
-  ~groundtest_t();
+  ~groundtest_t() override;
 
-  virtual void init();
-  virtual void tick();
-  virtual bool terminate() { return _success; }
-  virtual int exit_code() { return 0; }
-  virtual void finish(){};
+  void init() override;
+  void tick() override;
+  bool terminate() override { return _success; }
+  int exit_code() override { return 0; }
+  void finish() override {}
 
 private:
   bool _success = false;
-  simif_t *sim;
   const GROUNDTESTBRIDGEMODULE_struct mmio_addrs;
 };
 

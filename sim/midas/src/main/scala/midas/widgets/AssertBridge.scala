@@ -4,7 +4,6 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 
 import scala.collection.immutable.ListMap
 
@@ -50,7 +49,7 @@ class AssertBridgeModule(params: AssertBridgeParameters)(implicit p: Parameters)
     val stallN = (!assertFire || resume || !enable)
 
     val tFireHelper = DecoupledHelper(q.io.deq.valid, stallN)
-    val targetFire = tFireHelper.fire
+    val targetFire = tFireHelper.fire()
     q.io.deq.ready := tFireHelper.fire(q.io.deq.valid)
     when (targetFire) {
       cycles := cycles + 1.U
@@ -65,12 +64,14 @@ class AssertBridgeModule(params: AssertBridgeParameters)(implicit p: Parameters)
     attach(enable, "enable")
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      import CppGenerationUtils._
-      val headerWidgetName = getWName.toUpperCase
-      super.genHeader(base, sb)
-      sb.append(genConstStatic(s"${headerWidgetName}_assert_count", UInt32(assertMessages.size)))
-      sb.append(genArray(s"${headerWidgetName}_assert_messages", assertMessages.map(CStrLit)))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "synthesized_assertions_t",
+          "synthesized_assertions",
+          Seq(StdVector("const char *", assertMessages.map(CStrLit(_))))
+      )
     }
   }
 }

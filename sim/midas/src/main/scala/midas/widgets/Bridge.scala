@@ -8,9 +8,7 @@ import midas.core.{TargetChannelIO}
 import freechips.rocketchip.config.{Parameters, Field}
 
 import chisel3._
-import chisel3.util._
-import chisel3.experimental.{BaseModule, Direction, ChiselAnnotation, annotate}
-import firrtl.annotations.{ReferenceTarget, ModuleTarget, JsonProtocol, HasSerializationHints}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
 import scala.reflect.runtime.{universe => ru}
 
@@ -33,14 +31,6 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
     (implicit p: Parameters) extends WidgetImp(wrapper) {
   def hPort: HostPortType
   def clockDomainInfo: RationalClock = p(TargetClockInfo).get
-  def emitClockDomainInfo(headerWidgetName: String, sb: StringBuilder): Unit = {
-    import CppGenerationUtils._
-    val RationalClock(domainName, mul, div) = clockDomainInfo
-    sb.append(genStatic(s"${headerWidgetName}_clock_domain_name", CStrLit(domainName)))
-    sb.append(genConstStatic(s"${headerWidgetName}_clock_multiplier", UInt32(mul)))
-    sb.append(genConstStatic(s"${headerWidgetName}_clock_divisor", UInt32(div)))
-  }
-
 }
 
 trait Bridge[HPType <: Record with HasChannels, WidgetType <: BridgeModule[HPType]] {
@@ -63,7 +53,7 @@ trait Bridge[HPType <: Record with HasChannels, WidgetType <: BridgeModule[HPTyp
     annotate(new ChiselAnnotation { def toFirrtl = {
         BridgeAnnotation(
           self.toNamed.toTarget,
-          bridgeIO.bridgeChannels,
+          bridgeIO.bridgeChannels(),
           widgetClass = widgetClassSymbol.fullName,
           widgetConstructorKey = constructorArg)
       }

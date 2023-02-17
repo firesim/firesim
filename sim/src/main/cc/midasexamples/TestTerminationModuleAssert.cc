@@ -1,16 +1,13 @@
 // See LICENSE for license details.
 
 #include "TestHarness.h"
+#include "bridges/termination.h"
 
 class TestTerminationModuleAssert final : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  std::unique_ptr<termination_t> terminator;
-  void add_bridge_driver(termination_t *bridge) override {
-    assert(!terminator && "multiple bridges registered");
-    terminator.reset(bridge);
-  }
+  termination_t &terminator = get_bridge<termination_t>();
 
   int expected_cycle_at_bridge = 0;
 
@@ -18,9 +15,9 @@ public:
   void step_assume_continue(int count) {
     step(count, false);
     expected_cycle_at_bridge += count;
-    while (!simif->done()) {
-      terminator->tick();
-      assert(!terminator->terminate() && "Unexpected termination signaled.");
+    while (!peek_poke.is_done()) {
+      terminator.tick();
+      assert(!terminator.terminate() && "Unexpected termination signaled.");
     }
   }
 
@@ -30,9 +27,9 @@ public:
     // Call this repeated to give the sim time to have a poke propagate to the
     // bridge
     for (int i = 0; i < tick_attempts; i++) {
-      terminator->tick();
+      terminator.tick();
     }
-    expect(terminator->terminate(),
+    expect(terminator.terminate(),
            "Termination bridge correctly calls for termination.");
   }
 
@@ -58,9 +55,9 @@ public:
     poke("io_shouldBeTrue", 0);
     step_once_and_wait_on_terminate();
 
-    expect(terminator->cycle_count() == expected_cycle_at_bridge,
+    expect(terminator.cycle_count() == expected_cycle_at_bridge,
            "Termination bridge provides correct exit cycle");
-    expect(terminator->exit_code() == 1,
+    expect(terminator.exit_code() == 1,
            "Termination bridge returns non-zero when used in assert mode");
   };
 };

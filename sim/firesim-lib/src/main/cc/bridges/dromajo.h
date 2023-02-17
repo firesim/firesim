@@ -2,28 +2,40 @@
 #ifndef __DROMAJO_H
 #define __DROMAJO_H
 
-#include "bridges/bridge_driver.h"
+#include "core/bridge_driver.h"
 #include "dromajo_cosim.h"
 #include <string>
 #include <vector>
 
-#ifdef DROMAJOBRIDGEMODULE_0_PRESENT
+struct DROMAJOBRIDGEMODULE_struct {};
 
-typedef struct DROMAJOBRIDGEMODULE_struct {
+struct dromajo_config_t {
+  const char *resetVector;
+  const char *mmioStart;
+  const char *mmioEnd;
+  const char *memSize;
+  const char *plicBase;
+  const char *plicSize;
+  const char *clintBase;
+  const char *clintSize;
+};
 
-} DROMAJOBRIDGEMODULE_struct;
-
-class dromajo_t : public bridge_driver_t {
+class dromajo_t : public streaming_bridge_driver_t {
 public:
-  dromajo_t(simif_t *sim,
+  /// The identifier for the bridge type used for casts.
+  static char KIND;
+
+  dromajo_t(simif_t &sim,
+            StreamEngine &stream,
             std::vector<std::string> &args,
+            const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
+            const dromajo_config_t &config,
             int iaddr_width,
             int insn_width,
             int wdata_width,
             int cause_width,
             int tval_width,
             int num_traces,
-            const DROMAJOBRIDGEMODULE_struct &mmio_addrs,
             int stream_idx,
             int stream_depth);
   ~dromajo_t();
@@ -36,6 +48,7 @@ public:
 
 private:
   const DROMAJOBRIDGEMODULE_struct mmio_addrs;
+  const dromajo_config_t config;
   simif_t *_sim;
 
   int invoke_dromajo(uint8_t *buf);
@@ -67,9 +80,6 @@ private:
 
   // other misc members
   uint32_t _num_traces;
-  long _dma_addr;
-  const unsigned int stream_count_address;
-  const unsigned int stream_full_address;
   uint8_t _trace_idx;
   bool dromajo_failed;
   int dromajo_exit_code;
@@ -81,6 +91,10 @@ private:
   std::string dromajo_bootrom;
   std::string dromajo_bin;
   dromajo_cosim_state_t *dromajo_state;
+
+  // stream config
+  int stream_idx;
+  int stream_depth;
 };
-#endif // DROMAJOBRIDGEMODULE_0_PRESENT
+
 #endif // __DROMAJO_H

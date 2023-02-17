@@ -1,7 +1,6 @@
 package midas.platform.xilinx
 
 import chisel3._
-import midas.stage.GoldenGateOutputFileAnnotation
 
 object ResetSynchronizer {
 

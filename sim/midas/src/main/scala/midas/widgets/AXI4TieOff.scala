@@ -13,15 +13,15 @@ import freechips.rocketchip.amba.axi4._
 class AXI4TieOff(implicit p: Parameters) extends LazyModule {
   val node = AXI4MasterNode(Seq(AXI4MasterPortParameters(Seq(AXI4MasterParameters(name = "TiedOff")))))
   lazy val module = new LazyModuleImp(this) {
-    for ((axi4out, _) <- node.out) { 
+    for ((axi4out, _) <- node.out) {
       axi4out.ar.valid := false.B
-      axi4out.ar.bits := DontCare
+      axi4out.ar.bits  := DontCare
       axi4out.aw.valid := false.B
-      axi4out.aw.bits := DontCare
-      axi4out.w.valid := false.B
-      axi4out.w.bits := DontCare
-      axi4out.r.ready := false.B
-      axi4out.b.ready := false.B
+      axi4out.aw.bits  := DontCare
+      axi4out.w.valid  := false.B
+      axi4out.w.bits   := DontCare
+      axi4out.r.ready  := false.B
+      axi4out.b.ready  := false.B
     }
   }
 }

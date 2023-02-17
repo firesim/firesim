@@ -3,16 +3,20 @@
 #ifndef __EMUL_MM_H
 #define __EMUL_MM_H
 
+#include "core/config.h"
+
 #include <cstring>
 #include <queue>
 #include <stdint.h>
 
+#include "core/config.h"
+
 class mm_t {
 public:
   mm_t(const AXI4Config conf)
-      : conf(conf), word_size(conf.beat_bytes()), data(0), size(0) {}
+      : conf(conf), word_size(conf.beat_bytes()), data(nullptr), size(0) {}
 
-  virtual void init(size_t sz, int line_size);
+  virtual void init(size_t sz, int lsz);
 
   virtual bool ar_ready() = 0;
   virtual bool aw_ready() = 0;
@@ -72,63 +76,57 @@ protected:
 };
 
 struct mm_rresp_t {
-  uint64_t id;
+  uint64_t id = 0;
   std::vector<char> data;
-  bool last;
+  bool last = false;
 
-  mm_rresp_t(uint64_t id, std::vector<char> data, bool last) {
-    this->id = id;
-    this->data = data;
-    this->last = last;
-  }
+  mm_rresp_t() = default;
 
-  mm_rresp_t() {
-    this->id = 0;
-    this->last = false;
-  }
+  mm_rresp_t(uint64_t id, const std::vector<char> &data, bool last)
+      : id(id), data(data), last(last) {}
 };
 
 class mm_magic_t final : public mm_t {
 public:
-  mm_magic_t(const AXI4Config &conf) : mm_t(conf), store_inflight(false){};
+  mm_magic_t(const AXI4Config &conf) : mm_t(conf), store_inflight(false) {}
 
-  virtual void init(size_t sz, int line_size);
+  void init(size_t sz, int lsz) override;
 
-  virtual bool ar_ready() { return true; }
-  virtual bool aw_ready() { return !store_inflight; }
-  virtual bool w_ready() { return store_inflight; }
-  virtual bool b_valid() { return !bresp.empty(); }
-  virtual uint64_t b_resp() { return 0; }
-  virtual uint64_t b_id() { return b_valid() ? bresp.front() : 0; }
-  virtual bool r_valid() { return !rresp.empty(); }
-  virtual uint64_t r_resp() { return 0; }
-  virtual uint64_t r_id() { return r_valid() ? rresp.front().id : 0; }
-  virtual void *r_data() {
+  bool ar_ready() override { return true; }
+  bool aw_ready() override { return !store_inflight; }
+  bool w_ready() override { return store_inflight; }
+  bool b_valid() override { return !bresp.empty(); }
+  uint64_t b_resp() override { return 0; }
+  uint64_t b_id() override { return b_valid() ? bresp.front() : 0; }
+  bool r_valid() override { return !rresp.empty(); }
+  uint64_t r_resp() override { return 0; }
+  uint64_t r_id() override { return r_valid() ? rresp.front().id : 0; }
+  void *r_data() override {
     return r_valid() ? &rresp.front().data[0] : &dummy_data[0];
   }
-  virtual bool r_last() { return r_valid() ? rresp.front().last : false; }
+  bool r_last() override { return r_valid() ? rresp.front().last : false; }
 
-  virtual void tick(bool reset,
+  void tick(bool reset,
 
-                    bool ar_valid,
-                    uint64_t ar_addr,
-                    uint64_t ar_id,
-                    uint64_t ar_size,
-                    uint64_t ar_len,
+            bool ar_valid,
+            uint64_t ar_addr,
+            uint64_t ar_id,
+            uint64_t ar_size,
+            uint64_t ar_len,
 
-                    bool aw_valid,
-                    uint64_t aw_addr,
-                    uint64_t aw_id,
-                    uint64_t aw_size,
-                    uint64_t aw_len,
+            bool aw_valid,
+            uint64_t aw_addr,
+            uint64_t aw_id,
+            uint64_t aw_size,
+            uint64_t aw_len,
 
-                    bool w_valid,
-                    uint64_t w_strb,
-                    const std::vector<uint32_t> &w_data,
-                    bool w_last,
+            bool w_valid,
+            uint64_t w_strb,
+            const std::vector<uint32_t> &w_data,
+            bool w_last,
 
-                    bool r_ready,
-                    bool b_ready);
+            bool r_ready,
+            bool b_ready) override;
 
 protected:
   bool store_inflight;

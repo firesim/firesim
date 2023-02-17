@@ -6,7 +6,6 @@ import firrtl._
 import firrtl.analyses.InstanceGraph
 import firrtl.annotations._
 import firrtl.ir._
-import firrtl.Mappers._
 import firrtl.transforms.DontTouchAllTargets
 import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
 import firrtl.options.Dependency
@@ -116,7 +115,7 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
     }
 
     def getSourceSinkPair(iMaps: Map[String, Map[Instance, OfModule]]):
-      (ReferenceTarget, ReferenceTarget) = absoluteSourceRT(iMaps) -> portRT
+      (ReferenceTarget, ReferenceTarget) = absoluteSourceRT(iMaps) -> portRT()
   }
 
   def execute(state: CircuitState): CircuitState = {
@@ -190,7 +189,7 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
 
     val updatedCircuit = c.copy(modules = c.modules.map({
       case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts,
-                                                   body  = Block(m.body, addedConnects:_*))
+                                                   body  = Block(m.body, addedConnects.toSeq:_*))
       case o => o
     }))
 

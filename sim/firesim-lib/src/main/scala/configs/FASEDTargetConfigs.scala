@@ -1,11 +1,9 @@
 //See LICENSE for license details.
 package firesim.configs
 
-import freechips.rocketchip.config.{Parameters, Config, Field}
+import freechips.rocketchip.config.{Config, Field}
 
-import midas.{HostTransforms, TargetTransforms}
 import midas.models._
-import firesim.bridges._
 
 case object MemModelKey extends Field[BaseConfig]
 case object BaseParamsKey extends Field[BaseParams]

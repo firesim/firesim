@@ -10,7 +10,6 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 
 import Console.{UNDERLINED, GREEN, RESET}
-import scala.collection.mutable
 import scala.io.Source
 
 
@@ -85,7 +84,7 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
     tWTR  -> JSONSetting(8,   "Write-To-Read Turnaround Time",  { _("TWTR") })
   )
 
-  def setDependentRegisters(lut: Map[String, JSONField], freqMHz: BigInt) {
+  def setDependentRegisters(lut: Map[String, JSONField], freqMHz: BigInt): Unit = {
     val periodPs = 1000000.0/freqMHz.toFloat
     // Generate a lookup table of timings in units of tCK (as all programmable
     // timings in the model are in units of the controller clock frequency
@@ -176,7 +175,7 @@ abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with Ha
       numBanks: BigInt,
       numRows: BigInt,
       numBytesPerLine: BigInt,
-      pageSize: BigInt) {
+      pageSize: BigInt): Unit = {
 
     case class SubAddr(
         shortName: String,
@@ -185,8 +184,8 @@ abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with Ha
         count: BigInt) {
       require(isPow2(count))
       val bits = log2Ceil(count)
-      def set(offset: Int) { field.foreach( _.forceSettings(offset, count - 1) ) }
-      def legendEntry = s"  ${shortName} -> ${longName}"
+      def set(offset: Int): Unit = { field.foreach( _.forceSettings(offset, count - 1) ) }
+      def legendEntry: String = s"  ${shortName} -> ${longName}"
     }
 
     val ranks       = SubAddr("L", "Rank Address Bits", Some(rankAddr), numRanks)
@@ -309,7 +308,7 @@ class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
   val rankAddrOH = UInt(key.dramKey.maxRanks.W)
   val rankAddr = UInt(key.dramKey.rankBits.W)
 
-  def decode(from: XactionSchedulerEntry, mmReg: BaseDRAMMMRegIO) {
+  def decode(from: XactionSchedulerEntry, mmReg: BaseDRAMMMRegIO): Unit = {
     xaction := from.xaction
     bankAddr := mmReg.bankAddr.getSubAddr(from.addr)
     bankAddrOH := UIntToOH(bankAddr)

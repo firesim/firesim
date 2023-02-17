@@ -1,6 +1,6 @@
 import Tests._
 
-val chiselVersion = "3.5.2"
+val chiselVersion = "3.5.5"
 
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
@@ -9,14 +9,16 @@ apiDirectory := "latest"
 lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
-  scalaVersion := "2.12.10",
-  scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
+  scalaVersion := "2.13.10",
+  scalacOptions ++= Seq("-deprecation","-unchecked","-Ywarn-unused"),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   libraryDependencies += "edu.berkeley.cs" %% "chisel3" % chiselVersion,
   addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full),
+  // Scalafix
+  semanticdbEnabled := true,
+  semanticdbVersion := scalafixSemanticdb.revision,
   // ScalaDoc
   autoAPIMappings  := true,
   exportJars := true,

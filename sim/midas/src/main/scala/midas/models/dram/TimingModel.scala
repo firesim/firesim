@@ -2,13 +2,11 @@ package midas
 package models
 
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.ParameterizedBundle
 import junctions._
 
 import chisel3._
 import chisel3.util._
 
-import midas.core._
 import midas.widgets._
 
 import Console.{UNDERLINED, RESET}
@@ -46,7 +44,7 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
 
   // Called by MidasMemModel to fetch all programmable settings for the timing
   // model. These are concatenated with functional model settings
-  def getTimingModelSettings(): Seq[(String, String)] = {
+  def getTimingModelSettings(): Seq[(String, BigInt)] = {
     // First invoke the timing model specific method
     requestSettings()
     // Finally set everything that hasn't already been set
@@ -77,7 +75,7 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   // chisel elaboration
   protected def printTimingModelGenerationConfig: Unit
 
-  def printGenerationConfig {
+  def printGenerationConfig: Unit = {
     println("  Timing Model Class: " + longName)
     printTimingModelGenerationConfig
   }

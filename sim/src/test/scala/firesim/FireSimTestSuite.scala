@@ -27,8 +27,8 @@ abstract class FireSimTestSuite(
   override val targetName:         String,
   override val targetConfigs:      String,
   override val basePlatformConfig: BasePlatformConfig,
-  platformConfigs:                 String = "",
-  N:                               Int    = 8,
+  override val platformConfigs:    Seq[Class[_ <: Config]] = Seq(),
+  N:                               Int                     = 8,
 ) extends TestSuiteCommon("firesim") {
 
   import scala.concurrent.duration._
@@ -123,7 +123,7 @@ class RocketF1Tests
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
       BaseConfigs.F1,
-      "WithSynthAsserts",
+      Seq(classOf[WithSynthAsserts]),
     )
 
 class MultiRocketF1Tests
@@ -131,7 +131,7 @@ class MultiRocketF1Tests
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
       BaseConfigs.F1,
-      "WithSynthAsserts_WithModelMultiThreading",
+      Seq(classOf[WithSynthAsserts], classOf[WithModelMultiThreading]),
     )
 
 class BoomF1Tests
@@ -153,7 +153,7 @@ class RocketVitisTests
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
       BaseConfigs.Vitis,
-      "WithSynthAsserts",
+      Seq(classOf[WithSynthAsserts]),
     )
 
 class MultiRocketVitisTests
@@ -161,7 +161,7 @@ class MultiRocketVitisTests
       "FireSim",
       "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
       BaseConfigs.Vitis,
-      "WithSynthAsserts_WithModelMultiThreading",
+      Seq(classOf[WithSynthAsserts], classOf[WithModelMultiThreading]),
     )
 
 class BoomVitisTests

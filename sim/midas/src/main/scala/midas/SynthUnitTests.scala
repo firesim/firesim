@@ -6,8 +6,8 @@ import midas.core._
 
 import chisel3._
 
-import freechips.rocketchip.config.{Parameters, Config, Field}
-import freechips.rocketchip.unittest.{UnitTests, TestHarness}
+import freechips.rocketchip.config.{Parameters, Config}
+import freechips.rocketchip.unittest.UnitTests
 import midas.models.{CounterTableUnitTest, LatencyHistogramUnitTest, AddressRangeCounterUnitTest}
 
 

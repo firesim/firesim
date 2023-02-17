@@ -1,23 +1,30 @@
 // See LICENSE for license details
 
 #include "serial.h"
-#include <assert.h>
+#include "bridges/loadmem.h"
+#include "core/simif.h"
+#include "fesvr/firesim_tsi.h"
 
-serial_t::serial_t(simif_t *sim,
-                   const std::vector<std::string> &args,
+#include <cassert>
+#include <gmp.h>
+
+char serial_t::KIND;
+
+serial_t::serial_t(simif_t &simif,
+                   loadmem_t &loadmem_widget,
                    const SERIALBRIDGEMODULE_struct &mmio_addrs,
                    int serialno,
+                   const std::vector<std::string> &args,
                    bool has_mem,
                    int64_t mem_host_offset)
-    : bridge_driver_t(sim), mmio_addrs(mmio_addrs), sim(sim), has_mem(has_mem),
+    : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
+      loadmem_widget(loadmem_widget), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
 
   std::string num_equals = std::to_string(serialno) + std::string("=");
   std::string prog_arg = std::string("+prog") + num_equals;
   std::vector<std::string> args_vec;
   args_vec.push_back("firesim_tsi");
-  char **argv_arr;
-  int argc_count = 0;
 
   // This particular selection is vestigial. You may change it freely.
   step_size = 2004765L;
@@ -33,35 +40,47 @@ serial_t::serial_t(simif_t *sim,
       std::string token;
       while (std::getline(ss, token, ' ')) {
         args_vec.push_back(token);
-        argc_count = argc_count + 1;
       }
     } else if (arg.find(std::string("+prog")) == 0) {
       // Eliminate arguments for other fesvrs
     } else {
       args_vec.push_back(arg);
-      argc_count = argc_count + 1;
     }
   }
 
-  argv_arr = new char *[args_vec.size()];
+  int argc_count = args_vec.size() - 1;
+  tsi_argv = new char *[args_vec.size()];
   for (size_t i = 0; i < args_vec.size(); ++i) {
-    (argv_arr)[i] = new char[(args_vec)[i].size() + 1];
-    std::strcpy((argv_arr)[i], (args_vec)[i].c_str());
+    tsi_argv[i] = new char[args_vec[i].size() + 1];
+    std::strcpy(tsi_argv[i], args_vec[i].c_str());
   }
 
   // debug for command line arguments
   printf("command line for program %d. argc=%d:\n", serialno, argc_count);
   for (int i = 0; i < argc_count; i++) {
-    printf("%s ", (argv_arr)[i + 1]);
+    printf("%s ", tsi_argv[i + 1]);
   }
   printf("\n");
 
-  fesvr = new firesim_tsi_t(argc_count + 1, argv_arr, has_mem);
+  tsi_argc = argc_count + 1;
 }
 
-serial_t::~serial_t() { delete fesvr; }
+serial_t::~serial_t() {
+  delete fesvr;
+  if (tsi_argv) {
+    for (int i = 0; i < tsi_argc; ++i) {
+      delete[] tsi_argv[i];
+    }
+    delete[] tsi_argv;
+  }
+}
 
 void serial_t::init() {
+  // `ucontext` used by tsi cannot be created in one thread and resumed in
+  // another. To ensure that the tsi process is on the correct thread, it is
+  // built here, as the bridge constructor may be invoked from a thread other
+  // than the one it will run on later in meta-simulations.
+  fesvr = new firesim_tsi_t(tsi_argc, tsi_argv, has_mem);
   write(mmio_addrs.step_size, step_size);
   go();
 }
@@ -89,13 +108,12 @@ void serial_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   mpz_t buf;
   mpz_init(buf);
   while (loadmem.size > 0) {
-    auto &driver = sim->get_loadmem();
-    driver.read_mem(loadmem.addr + mem_host_offset, buf);
+    loadmem_widget.read_mem(loadmem.addr + mem_host_offset, buf);
 
     // If the read word is 0; mpz_export seems to return an array with length 0
     size_t beats_requested =
-        (loadmem.size / sizeof(uint32_t) > driver.get_mem_data_chunk())
-            ? driver.get_mem_data_chunk()
+        (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk())
+            ? loadmem_widget.get_mem_data_chunk()
             : loadmem.size / sizeof(uint32_t);
     // The number of beats exported from buf; may be less than beats requested.
     size_t non_zero_beats;
@@ -129,7 +147,7 @@ void serial_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
              0,
              0,
              buf);
-  sim->get_loadmem().write_mem_chunk(
+  loadmem_widget.write_mem_chunk(
       loadmem.addr + mem_host_offset, data, loadmem.size);
   mpz_clear(data);
 }
@@ -164,3 +182,6 @@ void serial_t::tick() {
     go();
   }
 }
+
+bool serial_t::terminate() { return fesvr->done(); }
+int serial_t::exit_code() { return fesvr->exit_code(); }

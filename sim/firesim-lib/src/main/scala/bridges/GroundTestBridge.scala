@@ -4,7 +4,6 @@ package firesim.bridges
 import midas.widgets._
 
 import chisel3._
-import chisel3.util._
 import freechips.rocketchip.config.Parameters
 
 class GroundTestBridge extends BlackBox
@@ -44,5 +43,7 @@ class GroundTestBridgeModule(implicit p: Parameters)
 
     genROReg(success, "success")
     genCRFile()
+
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {}
   }
 }

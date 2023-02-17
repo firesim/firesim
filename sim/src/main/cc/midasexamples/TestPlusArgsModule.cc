@@ -1,10 +1,11 @@
 // See LICENSE for license details.
 
-#include "TestHarness.h"
-
 #include <iomanip>
 #include <iostream>
 #include <string_view>
+
+#include "TestHarness.h"
+#include "bridges/plusargs.h"
 
 /**
  * @brief PlusArgs Bridge Driver Test
@@ -35,19 +36,19 @@ private:
   }
 
 public:
-  std::unique_ptr<plusargs_t> plusargsinator;
-  void add_bridge_driver(plusargs_t *bridge) override {
-    assert(!plusargsinator && "multiple bridges registered");
-    plusargsinator.reset(bridge);
-  }
+  plusargs_t &plusargsinator;
 
   /**
    * Constructor.
    *
+   * @param [in] registry Reference to the widget registry holding bridges.
    * @param [in] args The argument list from main
    */
-  TestPlusArgsModule(const std::vector<std::string> &args, simif_t *simif)
-      : TestHarness(args, simif) {
+  TestPlusArgsModule(widget_registry_t &registry,
+                     const std::vector<std::string> &args,
+                     std::string_view target_name)
+      : TestHarness(registry, args, target_name),
+        plusargsinator(get_bridge<plusargs_t>()) {
     parse_key(args);
   }
 
@@ -78,8 +79,6 @@ public:
       mpz_set_str(e0, "f00000000", 16);
       break;
     case 0x03:
-      mpz_set_str(e0, "f0000000000000000", 16);
-      break;
     case 0x04:
       // value passed from scala is too large, but would truncate to this value
       // scala expects the test to fail, as C++ should exit before this line
@@ -110,12 +109,11 @@ public:
    * These extra assertion make sure that the value does not change or glitch.
    */
   void run_test() override {
-
     if (!found_key) {
       std::cout << "No test key found, will not assert\n";
     }
 
-    plusargsinator->init();
+    plusargsinator.init();
     target_reset();
 
     for (int i = 0; i < 8; i++) {

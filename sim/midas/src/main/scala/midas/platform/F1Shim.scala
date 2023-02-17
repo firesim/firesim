@@ -4,11 +4,11 @@ package platform
 import chisel3._
 import chisel3.util._
 import junctions._
-import freechips.rocketchip.config.{Parameters, Field}
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
+import freechips.rocketchip.config.{Field, Parameters}
+import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.util.HeterogeneousBag
 
-import midas.core.{CPUManagedAXI4Key}
+import midas.core.CPUManagedAXI4Key
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
 
@@ -16,19 +16,33 @@ case object AXIDebugPrint extends Field[Boolean]
 
 class F1Shim(implicit p: Parameters) extends PlatformShim {
   lazy val module = new LazyModuleImp(this) {
-    val io_master = IO(Flipped(new NastiIO()(p alterPartial { case NastiKey => p(CtrlNastiKey) })))
-    val io_dma    = IO(Flipped(new NastiIO()(p alterPartial {
-      case NastiKey => NastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams) })))
-    val io_slave = IO(HeterogeneousBag(top.module.mem.map(x => x.cloneType)))
+    val io_master = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey => p(CtrlNastiKey) })))
+    val io_dma    = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey =>
+      NastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams)
+    })))
+    val io_slave  = IO(HeterogeneousBag(top.module.mem.map(x => x.cloneType)))
 
     if (p(AXIDebugPrint)) {
       AXI4Printf(io_master, "master")
-      AXI4Printf(io_dma,    "dma")
-      io_slave.zipWithIndex foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
+      AXI4Printf(io_dma, "dma")
+      io_slave.zipWithIndex.foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
     }
 
     top.module.ctrl <> io_master
-    AXI4NastiAssigner.toAXI4(top.module.cpu_managed_axi4.get, io_dma)
+
+    top.module.cpu_managed_axi4 match {
+      case None       =>
+        io_dma.aw.ready := false.B
+        io_dma.ar.ready := false.B
+        io_dma.w.ready  := false.B
+        io_dma.r.valid  := false.B
+        io_dma.r.bits   := DontCare
+        io_dma.b.valid  := false.B
+        io_dma.b.bits   := DontCare
+      case Some(axi4) =>
+        AXI4NastiAssigner.toAXI4(axi4, io_dma)
+    }
+
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...
@@ -48,6 +62,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
           |`define USE_DDR_CHANNEL_B ${channelInUse(2)}
           |`define USE_DDR_CHANNEL_D ${channelInUse(3)}
           |""".stripMargin,
-      fileSuffix = ".defines.vh")
+      fileSuffix = ".defines.vh",
+    )
   }
 }

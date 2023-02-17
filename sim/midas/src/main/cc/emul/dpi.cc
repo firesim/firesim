@@ -1,58 +1,66 @@
+// See LICENSE for license details
 
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 
+#include <array>
 #include <exception>
 #include <memory>
 
 #include <signal.h>
 
-#include <svdpi.h>
+#include "emul/mm.h"
+#include "emul/mmio.h"
+#include "emul/simif_emul.h"
 
-#include "simif_emul.h"
-
-#ifdef VCS
-#include "vc_hdrs.h"
-#else
-#include "Vemul.h"
-#endif
+extern simif_emul_t *emulator;
 
 /**
  * Helper to encode sequential elements into a packed structure.
+ *
+ * The writer does not use DPI methods as bit-sequence writes starting from
+ * an uninitialised array can mix in uninitialised bits into the result. Since
+ * Valgrind does not do bit-level taint tracking, this results in false
+ * positives. Instead, the methods are specialised to only append values.
  */
 class StructWriter {
 public:
-  StructWriter(svBitVecVal *vec) : vec(vec) {}
+  StructWriter(uint32_t *vec) : vec(reinterpret_cast<uint64_t *>(vec)) {}
 
-  void putScalar(bool value) {
-    svPutBitselBit(vec, offset, value);
-    offset += 1;
-  }
+  void putScalar(bool value) { putScalarOrVector(value, 1); }
 
-  void putScalarOrVector(uint64_t value, int width) {
+  void putScalarOrVector(uint64_t value, unsigned width) {
     assert(width >= 1 && width <= 64);
-    if (width == 1) {
-      svPutBitselBit(vec, offset, value);
-    } else if (width <= 32) {
-      svPutPartselBit(vec, value, offset, width);
-    } else {
-      svPutPartselBit(vec, value, offset, 32);
-      svPutPartselBit(vec, value >> 32, offset + 32, width - 32);
-    }
+
+    unsigned idx = offset / 64;
+    unsigned off = offset % 64;
     offset += width;
+
+    if (off == 0) {
+      vec[idx] = value;
+      return;
+    }
+
+    unsigned remaining = 64 - off;
+    if (remaining >= width) {
+      vec[idx] |= value << off;
+      return;
+    }
+
+    vec[idx] |= value << off;
+    vec[idx + 1] = value >> remaining;
   }
 
-  void putVector(void *data, int width) {
+  void putVector(void *data, unsigned width) {
     for (size_t i = 0; i < width; i++) {
-      svPutPartselBit(vec, ((uint32_t *)data)[i], offset, 32);
-      offset += 32;
+      putScalarOrVector(((uint32_t *)data)[i], 32);
     }
   }
 
 private:
   size_t offset = 0;
-  svBitVecVal *vec;
+  uint64_t *vec;
 };
 
 /**
@@ -60,44 +68,47 @@ private:
  */
 class StructReader {
 public:
-  StructReader(const svBitVecVal *vec) : vec(vec) {}
+  StructReader(const uint32_t *vec)
+      : vec(reinterpret_cast<const uint64_t *>(vec)) {}
 
-  bool getScalar() { return svGetBitselBit(vec, offset++); }
+  bool getScalar() { return getScalarOrVector(1); }
 
-  uint64_t getScalarOrVector(int width) {
+  uint64_t getScalarOrVector(unsigned width) {
     assert(width >= 1 && width <= 64);
-    if (width == 1) {
-      return svGetBitselBit(vec, offset++);
-    }
-    if (width <= 32) {
-      svBitVecVal elem;
-      svGetPartselBit(&elem, vec, offset, width);
-      offset += width;
-      return elem;
-    }
-    svBitVecVal lo, hi;
-    svGetPartselBit(&lo, vec, offset, 32);
-    svGetPartselBit(&hi, vec, offset + 32, width - 32);
+
+    unsigned idx = offset / 64;
+    unsigned off = offset % 64;
     offset += width;
-    return lo | (((uint64_t)hi) << 32);
+
+    unsigned remaining = 64 - off;
+    if (remaining >= width) {
+      uint64_t value = (vec[idx] >> off) & ((1ull << width) - 1ull);
+      return value;
+    }
+
+    unsigned rest = width - remaining;
+
+    uint64_t lo = vec[idx] >> off;
+    uint64_t hi = vec[idx + 1] & ((1ull << rest) - 1ull);
+
+    return lo | (hi << (64 - off));
   }
 
-  std::vector<uint32_t> getVector(int width) {
+  std::vector<uint32_t> getVector(unsigned width) {
     std::vector<uint32_t> buffer(width);
     for (size_t i = 0; i < width; i++) {
-      svGetPartselBit(&buffer[i], vec, offset, 32);
-      offset += 32;
+      buffer[i] = getScalarOrVector(32);
     }
     return buffer;
   }
 
 private:
   size_t offset = 0;
-  const svBitVecVal *vec;
+  const uint64_t *vec;
 };
 
 namespace AXI4 {
-void rev_tick(bool rst, mm_t &mem, const svBitVecVal *io) {
+void rev_tick(bool rst, mm_t &mem, const uint32_t *io) {
   const AXI4Config &conf = mem.get_config();
   StructReader r(io);
   auto b_ready = r.getScalar();
@@ -136,7 +147,7 @@ void rev_tick(bool rst, mm_t &mem, const svBitVecVal *io) {
            b_ready);
 }
 
-void fwd_tick(bool rst, mmio_t &mmio, const svBitVecVal *io) {
+void fwd_tick(bool rst, mmio_t &mmio, const uint32_t *io) {
   const AXI4Config &conf = mmio.get_config();
   StructReader r(io);
   auto b_id = r.getScalarOrVector(conf.id_bits);
@@ -163,7 +174,7 @@ void fwd_tick(bool rst, mmio_t &mmio, const svBitVecVal *io) {
             b_valid);
 }
 
-void fwd_put(mm_t &mem, svBitVecVal *io) {
+void fwd_put(mm_t &mem, uint32_t *io) {
   const AXI4Config &conf = mem.get_config();
   StructWriter w(io);
   w.putScalarOrVector(mem.b_id(), conf.id_bits);
@@ -179,7 +190,7 @@ void fwd_put(mm_t &mem, svBitVecVal *io) {
   w.putScalar(mem.ar_ready());
 }
 
-void rev_put(mmio_t &mmio, svBitVecVal *io) {
+void rev_put(mmio_t &mmio, uint32_t *io) {
   const AXI4Config &conf = mmio.get_config();
   StructWriter w(io);
   w.putScalar(mmio.b_ready());
@@ -203,40 +214,26 @@ void rev_put(mmio_t &mmio, svBitVecVal *io) {
 
 extern simif_emul_t *simulator;
 
-static bool tick() {
-  bool finished = simulator->to_sim();
-#ifdef VCS
-  if (finished) {
-    int exit_code = simulator->end();
-    delete simulator;
-    simulator = nullptr;
-    if (exit_code)
-      exit(exit_code);
-  }
-#endif
-  return finished;
-}
-
 extern "C" {
 void simulator_tick(
-    /* INPUT  */ const svBit reset,
-    /* OUTPUT */ svBit *fin,
+    /* INPUT  */ const uint8_t reset,
+    /* OUTPUT */ uint8_t *fin,
 
-    /* INPUT  */ const svBitVecVal *ctrl_in,
-    /* INPUT  */ const svBitVecVal *cpu_managed_axi4_in,
-    /* INPUT  */ const svBitVecVal *fpga_managed_axi4_in,
-    /* INPUT  */ const svBitVecVal *mem_0_in,
-    /* INPUT  */ const svBitVecVal *mem_1_in,
-    /* INPUT  */ const svBitVecVal *mem_2_in,
-    /* INPUT  */ const svBitVecVal *mem_3_in,
+    /* INPUT  */ const uint32_t *ctrl_in,
+    /* INPUT  */ const uint32_t *cpu_managed_axi4_in,
+    /* INPUT  */ const uint32_t *fpga_managed_axi4_in,
+    /* INPUT  */ const uint32_t *mem_0_in,
+    /* INPUT  */ const uint32_t *mem_1_in,
+    /* INPUT  */ const uint32_t *mem_2_in,
+    /* INPUT  */ const uint32_t *mem_3_in,
 
-    /* OUTPUT */ svBitVecVal *ctrl_out,
-    /* OUTPUT */ svBitVecVal *cpu_managed_axi4_out,
-    /* OUTPUT */ svBitVecVal *fpga_managed_axi4_out,
-    /* OUTPUT */ svBitVecVal *mem_0_out,
-    /* OUTPUT */ svBitVecVal *mem_1_out,
-    /* OUTPUT */ svBitVecVal *mem_2_out,
-    /* OUTPUT */ svBitVecVal *mem_3_out) {
+    /* OUTPUT */ uint32_t *ctrl_out,
+    /* OUTPUT */ uint32_t *cpu_managed_axi4_out,
+    /* OUTPUT */ uint32_t *fpga_managed_axi4_out,
+    /* OUTPUT */ uint32_t *mem_0_out,
+    /* OUTPUT */ uint32_t *mem_1_out,
+    /* OUTPUT */ uint32_t *mem_2_out,
+    /* OUTPUT */ uint32_t *mem_3_out) {
   try {
     // The driver ucontext is initialized before spawning the VCS
     // context, so these pointers should be initialized.
@@ -246,9 +243,9 @@ void simulator_tick(
     mmio_t *cpu_managed_axi4 = simulator->get_cpu_managed_axi4();
     mm_t *fpga_managed_axi4 = simulator->get_fpga_managed_axi4();
 
-    std::array<svBitVecVal *, 4> mem_out{
+    std::array<uint32_t *, 4> mem_out{
         mem_0_out, mem_1_out, mem_2_out, mem_3_out};
-    std::array<const svBitVecVal *, 4> mem_in{
+    std::array<const uint32_t *, 4> mem_in{
         mem_0_in, mem_1_in, mem_2_in, mem_3_in};
 
     AXI4::fwd_tick(reset, *simulator->master, ctrl_in);
@@ -263,9 +260,7 @@ void simulator_tick(
       AXI4::rev_tick(reset, *simulator->slave[i], mem_in[i]);
     }
 
-    *fin = tick();
-    if (*fin)
-      return;
+    *fin = simulator->to_sim();
 
     AXI4::rev_put(*simulator->master, ctrl_out);
     if (cpu_managed_axi4) {
@@ -278,6 +273,15 @@ void simulator_tick(
       AXI4::fwd_put(*simulator->slave[i], mem_out[i]);
     }
 
+#ifdef VCS
+    if (*fin) {
+      int exit_code = simulator->end();
+      delete simulator;
+      simulator = nullptr;
+      if (exit_code)
+        exit(exit_code);
+    }
+#endif
   } catch (std::exception &e) {
     fprintf(stderr, "Caught Exception headed for VCS: %s.\n", e.what());
     abort();

@@ -117,7 +117,7 @@ case class BridgeAnnotation(
     )
   }
 
-  def typeHints() = bridgeChannels.map(_.getClass) ++ (widgetConstructorKey match {
+  def typeHints = bridgeChannels.map(_.getClass) ++ (widgetConstructorKey match {
     // If the key has extra type hints too, grab them as well
     case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
     case Some(key) => Seq(key.getClass)
@@ -158,7 +158,7 @@ private[midas] case class BridgeIOAnnotation(
     widgetConstructorKey: Option[_ <: AnyRef] = None)
     extends SingleTargetAnnotation[ReferenceTarget] with FAMEAnnotation with HasSerializationHints {
 
-  def typeHints() = widgetConstructorKey match {
+  def typeHints = widgetConstructorKey match {
     // If the key has extra type hints too, grab them as well
     case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
     case Some(key) => Seq(key.getClass)

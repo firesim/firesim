@@ -9,7 +9,7 @@ class ShiftRegisterTest : public TestHarness {
 public:
   using TestHarness::TestHarness;
 
-  void run_test() {
+  void run_test() override {
     std::vector<uint32_t> reg(4);
     target_reset();
     for (int i = 0; i < 64; i++) {

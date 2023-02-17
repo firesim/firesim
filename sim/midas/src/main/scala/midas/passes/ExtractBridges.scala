@@ -2,7 +2,7 @@
 
 package midas.passes
 
-import midas.widgets.{BridgeAnnotation, ClockBridgeModule, FindScaledPeriodGCD}
+import midas.widgets.{BridgeAnnotation, ClockBridgeModule}
 import midas.widgets.{PipeBridgeChannel, ClockBridgeChannel, ReadyValidBridgeChannel}
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation, RTRenamer}
 import midas.passes.fame.{PipeChannel, TargetClockChannel, DecoupledReverseChannel, DecoupledForwardChannel}
@@ -11,13 +11,10 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes.{InferTypes, ResolveKinds}
 import firrtl.traversals.Foreachers._
-import firrtl.transforms.TopWiring.{TopWiringAnnotation, TopWiringTransform, TopWiringOutputFilesAnnotation}
-import firrtl.passes.wiring.{Wiring, WiringInfo}
+import firrtl.passes.wiring.WiringInfo
 import firrtl.annotations._
-import Utils._
 
 import scala.collection.mutable
-import java.io.{File, FileWriter, StringWriter}
 
 private[passes] class BridgeExtraction extends firrtl.Transform {
 

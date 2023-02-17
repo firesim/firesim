@@ -4,14 +4,12 @@ package midas.widgets
 
 import midas.core.{TargetChannelIO}
 
-import midas.passes.fame.{FAMEChannelInfo, FAMEChannelConnectionAnnotation}
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Direction, ChiselAnnotation, annotate}
+import chisel3.experimental.Direction
 import chisel3.experimental.DataMirror.directionOf
 
-import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 
@@ -48,7 +46,7 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   private val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], PipeChannelMetadata)]()
 
   // These will only be called after the record has been finalized.
-  lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)):_*)
+  lazy private val fieldToChannelMap = Map((channels.map(t => t._1 -> t._2)).toSeq:_*)
   private def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName  }).toMap
 
   private def getLeafDirs(token: Data): Seq[Direction] = token match {
@@ -117,7 +115,7 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
     }
   }
 
-  def bridgeChannels = channels.map({ case (targetField, ch, meta) =>
+  def bridgeChannels() = channels.toSeq.map({ case (targetField, ch, meta) =>
     val name = reverseElementMap(ch)
     checkFieldDirection(targetField, meta.bridgeSunk)
     if (meta.bridgeSunk) {

@@ -4,12 +4,17 @@
 #define __LOADMEM_H
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include <gmp.h>
 
+#include "core/config.h"
+#include "core/widget.h"
+
 class simif_t;
 
-typedef struct LOADMEMWIDGET_struct {
+struct LOADMEMWIDGET_struct {
   uint64_t W_ADDRESS_H;
   uint64_t W_ADDRESS_L;
   uint64_t W_LENGTH;
@@ -19,14 +24,17 @@ typedef struct LOADMEMWIDGET_struct {
   uint64_t R_ADDRESS_H;
   uint64_t R_ADDRESS_L;
   uint64_t R_DATA;
-} LOADMEMWIDGET_struct;
+};
 
-LOADMEMWIDGET_checks;
-
-class loadmem_t final {
+class loadmem_t final : public widget_t {
 public:
-  loadmem_t(simif_t *sim,
+  /// The identifier for the bridge type.
+  static char KIND;
+
+  loadmem_t(simif_t &simif,
             const LOADMEMWIDGET_struct &mmio_addrs,
+            unsigned index,
+            const std::vector<std::string> &args,
             const AXI4Config &mem_conf,
             unsigned mem_data_chunk);
 
@@ -43,7 +51,6 @@ public:
   unsigned get_mem_data_chunk() const { return mem_data_chunk; }
 
 private:
-  simif_t *sim;
   const LOADMEMWIDGET_struct mmio_addrs;
   const AXI4Config mem_conf;
   const unsigned mem_data_chunk;

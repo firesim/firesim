@@ -4,9 +4,6 @@ package models
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.util.ParameterizedBundle
-import junctions._
-import midas.widgets._
 
 import Console.{UNDERLINED, RESET}
 
@@ -23,7 +20,7 @@ class LatencyPipeMMRegIO(cfg: BaseConfig)(implicit p: Parameters) extends SplitT
     (readLatency  -> RuntimeSetting(30,"Read latency", min = 1))
   )
 
-  def requestSettings() {
+  def requestSettings(): Unit = {
     Console.println(s"${UNDERLINED}Generating a runtime configuration for a latency-bandwidth pipe${RESET}")
   }
 }
@@ -46,7 +43,7 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   lazy val io = IO(new LatencyPipeIO(cfg))
 
   val longName = "Latency Bandwidth Pipe"
-  def printTimingModelGenerationConfig {}
+  def printTimingModelGenerationConfig: Unit = {}
   /**************************** CHISEL BEGINS *********************************/
   // Configuration values
   val readLatency = io.mmReg.readLatency

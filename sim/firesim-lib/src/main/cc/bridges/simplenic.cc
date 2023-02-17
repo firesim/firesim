@@ -2,9 +2,11 @@
 
 #include "simplenic.h"
 
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+
 #include <iostream>
-#include <stdio.h>
-#include <string.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -12,6 +14,8 @@
 #include <unistd.h>
 
 #include <sys/mman.h>
+
+char simplenic_t::KIND;
 
 // DO NOT MODIFY PARAMS BELOW THIS LINE
 #define TOKENS_PER_BIGTOKEN 7
@@ -47,24 +51,24 @@ static void simplify_frac(int n, int d, int *nn, int *dd) {
     fflush(this->niclog);                                                      \
   }
 
-simplenic_t::simplenic_t(simif_t *sim,
+simplenic_t::simplenic_t(simif_t &sim,
                          StreamEngine &stream,
-                         const std::vector<std::string> &args,
                          const SIMPLENICBRIDGEMODULE_struct &mmio_addrs,
                          int simplenicno,
+                         const std::vector<std::string> &args,
                          const int stream_to_cpu_idx,
                          const int stream_to_cpu_depth,
                          const int stream_from_cpu_idx,
                          const int stream_from_cpu_depth)
-    : streaming_bridge_driver_t(sim, stream), mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_to_cpu_idx(stream_to_cpu_idx),
       stream_from_cpu_idx(stream_from_cpu_idx) {
-  const char *niclogfile = NULL;
-  const char *shmemportname = NULL;
+  const char *niclogfile = nullptr;
+  const char *shmemportname = nullptr;
   int netbw = MAX_BANDWIDTH, netburst = 8;
 
   this->loopback = false;
-  this->niclog = NULL;
+  this->niclog = nullptr;
   this->mac_lendian = 0;
   this->LINKLATENCY = 0;
 
@@ -89,7 +93,7 @@ simplenic_t::simplenic_t(simif_t *sim,
     }
     if (arg.find(macaddr_arg) == 0) {
       int mac_octets[6];
-      char *macstring = NULL;
+      char *macstring = nullptr;
       macstring = const_cast<char *>(arg.c_str()) + macaddr_arg.length();
       char trailingjunk;
 
@@ -171,7 +175,7 @@ simplenic_t::simplenic_t(simif_t *sim,
   int shmemfd;
 
   if (!loopback) {
-    assert(shmemportname != NULL);
+    assert(shmemportname != nullptr);
     for (int j = 0; j < 2; j++) {
       printf("Using non-slot-id associated shmemportname:\n");
       sprintf(name, "/port_nts%s_%d", shmemportname, j);
@@ -179,7 +183,7 @@ simplenic_t::simplenic_t(simif_t *sim,
       printf("opening/creating shmem region\n%s\n", name);
       shmemfd = shm_open(name, O_RDWR | O_CREAT, S_IRWXU);
       ftruncate(shmemfd, BUFBYTES + EXTRABYTES);
-      pcis_read_bufs[j] = (char *)mmap(NULL,
+      pcis_read_bufs[j] = (char *)mmap(nullptr,
                                        BUFBYTES + EXTRABYTES,
                                        PROT_READ | PROT_WRITE,
                                        MAP_SHARED,
@@ -192,7 +196,7 @@ simplenic_t::simplenic_t(simif_t *sim,
       printf("opening/creating shmem region\n%s\n", name);
       shmemfd = shm_open(name, O_RDWR | O_CREAT, S_IRWXU);
       ftruncate(shmemfd, BUFBYTES + EXTRABYTES);
-      pcis_write_bufs[j] = (char *)mmap(NULL,
+      pcis_write_bufs[j] = (char *)mmap(nullptr,
                                         BUFBYTES + EXTRABYTES,
                                         PROT_READ | PROT_WRITE,
                                         MAP_SHARED,
@@ -211,8 +215,8 @@ simplenic_t::~simplenic_t() {
   if (this->niclog)
     fclose(this->niclog);
   if (loopback) {
-    for (int j = 0; j < 2; j++)
-      free(pcis_read_bufs[j]);
+    for (auto &pcis_read_buf : pcis_read_bufs)
+      free(pcis_read_buf);
   } else {
     for (int j = 0; j < 2; j++) {
       munmap(pcis_read_bufs[j], BUFBYTES + EXTRABYTES);
@@ -262,7 +266,6 @@ void simplenic_t::init() {
            token_bytes_produced / BUFWIDTH);
     exit(1);
   }
-  return;
 }
 
 // #define TOKENVERIFY

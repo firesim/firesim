@@ -3,13 +3,12 @@ package firesim.bridges
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{DataMirror, Direction}
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
-import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceInfo, HasBlockDeviceParameters, BlockDeviceKey, BlockDeviceConfig}
+import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceKey, BlockDeviceConfig}
 
 class BlockDevBridgeTargetIO(implicit val p: Parameters) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO)
@@ -74,7 +73,7 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
                                        rRespStallN,
                                        wAckStallN)):_*)
 
-    val tFire = tFireHelper.fire
+    val tFire = tFireHelper.fire()
     // Decoupled helper can't exclude two bools unfortunately...
     val targetReset = channelCtrlSignals.reduce(_ && _) && hPort.hBits.reset
 
@@ -83,8 +82,8 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     rRespBuf.reset  := reset.asBool || targetReset
     wAckBuf.reset  := reset.asBool || targetReset
 
-    hPort.toHost.hReady := tFireHelper.fire
-    hPort.fromHost.hValid := tFireHelper.fire
+    hPort.toHost.hReady := tFireHelper.fire()
+    hPort.fromHost.hValid := tFireHelper.fire()
 
     reqBuf.io.enq.bits := target.req.bits
     reqBuf.io.enq.valid := target.req.valid && tFireHelper.fire(reqBuf.io.enq.ready)
@@ -252,10 +251,14 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
 
     genCRFile()
 
-    override def genHeader(base: BigInt, sb: StringBuilder) {
-      super.genHeader(base, sb)
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_latency_bits", UInt32(latencyBits)))
-      sb.append(CppGenerationUtils.genMacro(s"${getWName.toUpperCase}_num_trackers", UInt32(nTrackers)))
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      genConstructor(
+          base,
+          sb,
+          "blockdev_t",
+          "blockdev",
+          Seq(UInt32(nTrackers), UInt32(latencyBits))
+      )
     }
   }
 }

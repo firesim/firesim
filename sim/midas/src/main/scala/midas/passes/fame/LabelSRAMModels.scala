@@ -62,7 +62,7 @@ class LabelSRAMModels extends Transform {
         m.copy(body = m.body.map(onStmt))
       case m => m
     })
-    val transformedCircuit = circ.copy(modules = memModules ++ transformedModules)
+    val transformedCircuit = circ.copy(modules = (memModules ++ transformedModules).toSeq)
     // At this point, the FIRRTLMemModelAnnotations are no longer used, so remove them for cleanup.
     val filteredAnnos = state.annotations.filterNot(_.isInstanceOf[FirrtlMemModelAnnotation])
     state.copy(circuit = transformedCircuit, annotations = filteredAnnos ++ memModelAnnotations)
