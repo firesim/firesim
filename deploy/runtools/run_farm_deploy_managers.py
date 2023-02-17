@@ -61,6 +61,38 @@ class NBDTracker:
 
         return self.allocated_dict[imagename]
 
+class URIContainer:
+    """A class which contains the details for downloading a single URI. InstanceDeployManager
+    contains a list of this class. """
+
+    """a property name on RuntimeHWConfig"""
+    hwcfg_prop: str
+    """ the final filename inside sim_slot_x, this is a filename, not a path"""
+    destination_name: str
+
+    def __init__(self, hwcfg_prop: str, destination_name: str):
+        self.hwcfg_prop = hwcfg_prop
+        self.destination_name = destination_name
+
+    def local_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        # lookup the uri on hwcfg using the property
+        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+
+        # download locally, using the same filename for the remote
+        destination = pjoin(local_dir, self.destination_name)
+        try:
+            downloadURI(uri, destination)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
+
+        # return a path with the 2nd tuple as empty, this will cause rsync to
+        # name the remote file the same as the local name
+        return (destination, '')
+
 class InstanceDeployManager(metaclass=abc.ABCMeta):
     """Class used to represent different "run platforms" and how to start/stop and setup simulations.
 
@@ -69,6 +101,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
     """
     parent_node: Inst
     nbd_tracker: Optional[NBDTracker]
+    uri_list: list[URIContainer]
 
     def __init__(self, parent_node: Inst) -> None:
         """
@@ -80,6 +113,9 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         # Set this to self.nbd_tracker = NBDTracker() in the __init__ of your
         # subclass if your system supports the NBD kernel module.
         self.nbd_tracker = None
+
+        self.uri_list = list()
+        self.uri_list.append(URIContainer('driver_tar', FireSimServerNode.get_tar_name()))
 
     @abc.abstractmethod
     def infrasetup_instance(self) -> None:
@@ -176,21 +212,18 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         return remote_sim_dir
 
-    def local_download_tarball_uri(self, slotno: int, dir: str) -> Optional[Tuple[str, str]]:
-        """ This function will download the driver_tar URI to the manager
-        when driver_tar is set. """
+    def local_download_all_uri(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
+        """ Download all URI's. This function should be called in a TemporaryDirectory()
+        context."""
+
         hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
-
-        if hwcfg.driver_tar is None:
-            return None
         
-        destination = pjoin(dir, FireSimServerNode.get_tar_name())
-        try:
-            downloadURI(hwcfg.driver_tar, destination)
-        except FileNotFoundError as e:
-            raise Exception(f"driver_tar path '{hwcfg.driver_tar}' was not found")
-
-        return (destination, '')
+        ret = list()
+        for container in self.uri_list:
+            maybe_file = container.local_download(dir, hwcfg)
+            if maybe_file is not None:
+                ret.append(maybe_file)
+        return ret
 
     def copy_sim_slot_infrastructure(self, slotno: int) -> None:
         """ copy all the simulation infrastructure to the remote node. """
@@ -207,16 +240,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             files_to_copy = serv.get_required_files_local_paths()
 
             with TemporaryDirectory() as uridir:
-                # When a URI needs to be downloaded, this will do the download, 
-                # as well as return a path pair.
-                # When no download is required, None is returned.
+                # Download all URIs needed. When no download is required, 
+                # an empty list is returned.
                 # All of this code is inside a with block so that the 
-                # download will survive until after the rsync below
-                # at which point the local copy of the downloaded URI is
-                # not needed and removed.
-                maybe_local_uri = self.local_download_tarball_uri(slotno, uridir)
-                if maybe_local_uri is not None:
-                    files_to_copy.append(maybe_local_uri)
+                # downloads will survive until after the rsync below,
+                # at which point the local copies are not needed and removed.
+                files_to_copy.extend(self.local_download_all_uri(slotno, uridir))
 
                 for local_path, remote_path in files_to_copy:
                     # -z --inplace

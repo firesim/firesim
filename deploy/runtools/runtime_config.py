@@ -79,8 +79,7 @@ class RuntimeHWConfig:
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
         self.local_xclbin = None
-        self.driver_tar = None
-        self.__init_driver_tar(hwconfig_dict)
+        self.driver_tar = self.__validate_uri(hwconfig_dict, 'driver_tar')
 
         if self.agfi is not None:
             self.platform = "f1"
@@ -109,16 +108,19 @@ class RuntimeHWConfig:
 
         self.additional_required_files = []
     
-    def __init_driver_tar(self, hwconfig_dict: Dict[str, Any]) -> None:
-        """ Private method to init driver_tar. """
-        self.driver_tar = hwconfig_dict.get('driver_tar')
+    def __validate_uri(self, hwconfig_dict: Dict[str, Any], prop: str) -> Optional[str]:
+        """ Private method to init / validate any URI. """
 
-        if self.driver_tar is None:
-            return
+        uri = hwconfig_dict.get(prop)
 
-        is_uri = re.match(_RFC_3986_PATTERN, self.driver_tar)
+        if uri is None:
+            return None
+
+        is_uri = re.match(_RFC_3986_PATTERN, uri)
         if not is_uri:
-            raise Exception(f"when driver_tar is set, it must be a URI. (found '{self.driver_tar}')")
+            raise Exception(f"when {prop} is set, it must be a URI. (found '{uri}')")
+        
+        return str(uri)
 
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
