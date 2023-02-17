@@ -22,7 +22,7 @@ public:
   uint32_t is_write_ready();
   void check_rc(int rc, char *infostr);
   void fpga_shutdown();
-  void fpga_setup(int slot_id);
+  void fpga_setup(int slot_id, const std::string &agfi);
 
   CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
 
@@ -35,8 +35,6 @@ private:
     return config.cpu_managed->beat_bytes();
   }
 
-  //    int rc;
-  int slot_id;
   int edma_write_fd;
   int edma_read_fd;
   pci_bar_handle_t pci_bar_handle;
@@ -45,18 +43,29 @@ private:
 simif_f1_t::simif_f1_t(const TargetConfig &config,
                        const std::vector<std::string> &args)
     : simif_t(config) {
-  slot_id = -1;
 
+  int slot_id = -1;
+  std::string agfi;
   for (auto &arg : args) {
     if (arg.find("+slotid=") == 0) {
       slot_id = atoi((arg.c_str()) + 8);
+      continue;
+    }
+    if (arg.find("+agfi=") == 0) {
+      agfi += arg.c_str() + 6;
+      if (agfi.find("agfi-") != 0 && agfi.size() != 22) {
+        throw std::runtime_error("invalid AGFI: " + agfi);
+      }
+      continue;
     }
   }
+
   if (slot_id == -1) {
     fprintf(stderr, "Slot ID not specified. Assuming Slot 0\n");
     slot_id = 0;
   }
-  fpga_setup(slot_id);
+
+  fpga_setup(slot_id, agfi);
 }
 
 void simif_f1_t::check_rc(int rc, char *infostr) {
@@ -80,18 +89,45 @@ void simif_f1_t::fpga_shutdown() {
   close(edma_read_fd);
 }
 
-void simif_f1_t::fpga_setup(int slot_id) {
-  /*
-   * pci_vendor_id and pci_device_id values below are Amazon's and available
-   * to use for a given FPGA slot.
-   * Users may replace these with their own if allocated to them by PCI SIG
-   */
-  uint16_t pci_vendor_id = 0x1D0F; /* Amazon PCI Vendor ID */
-  uint16_t pci_device_id =
-      0xF000; /* PCI Device ID preassigned by Amazon for F1 applications */
+/**
+ * Amazon PCI Vendor ID.
+ */
+constexpr uint16_t pci_vendor_id = 0x1D0F;
 
+/**
+ * Amazon PCI Device ID pre-assigned by for F1 applications.
+ */
+constexpr uint16_t pci_device_id = 0xF000;
+
+void simif_f1_t::fpga_setup(int slot_id, const std::string &agfi) {
   int rc = fpga_mgmt_init();
   check_rc(rc, "fpga_mgmt_init FAILED");
+
+  // If an AGFI was specified, re-load the image.
+  if (!agfi.empty()) {
+    fprintf(stderr, "Flashing AGFI: %s\n", agfi.c_str());
+
+    // Clear the existing image. Wait up to 10 seconds.
+    rc = fpga_mgmt_clear_local_image_sync(slot_id, 10, 1000, nullptr);
+    check_rc(rc, "Cannot clear image");
+
+    // Load the image.
+    std::unique_ptr<char[]> data(new char[agfi.size() + 1]);
+    memcpy(data.get(), agfi.c_str(), agfi.size() + 1);
+    rc = fpga_mgmt_load_local_image(slot_id, data.get());
+    check_rc(rc, "Cannot load AGFI");
+
+    // Wait and poll as long as the slot is busy.
+    int status;
+    do {
+      sleep(1);
+
+      struct fpga_mgmt_image_info info = {0};
+      rc = fpga_mgmt_describe_local_image(slot_id, &info, 0);
+      check_rc(rc, "Unable to get AFI information from slot.");
+      status = info.status;
+    } while (status == FPGA_STATUS_BUSY);
+  }
 
   /* check AFI status */
   struct fpga_mgmt_image_info info = {0};
