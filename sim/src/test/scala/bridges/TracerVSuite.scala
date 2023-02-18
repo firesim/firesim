@@ -19,38 +19,40 @@ abstract class TracerVTestBase(
   trace:          Option[Int]    = None,
   start:          Option[String] = None,
 ) extends BridgeSuite("TracerVModule", s"TracerVModuleTestCount${width}", platformConfig) {
-  override def runTest(backend: String, debug: Boolean) {
-    // Create an expected file.
-    val expected = File.createTempFile("expected", ".txt")
-    expected.deleteOnExit()
+  override def defineTests(backend: String, debug: Boolean) {
+    it should "dump traced instructions" in {
+      // Create an expected file.
+      val expected = File.createTempFile("expected", ".txt")
+      expected.deleteOnExit()
 
-    // Create the output file. tracerv will always append '-C0' to the end of the path provided in the plusarg
-    val output     = File.createTempFile("output", ".txt-C0")
-    output.deleteOnExit()
-    val outputPath = output.getPath.stripSuffix("-C0")
+      // Create the output file. tracerv will always append '-C0' to the end of the path provided in the plusarg
+      val output     = File.createTempFile("output", ".txt-C0")
+      output.deleteOnExit()
+      val outputPath = output.getPath.stripSuffix("-C0")
 
-    // group the optional function args together with the correct plusarg string names
-    val optionalArgs = Seq(
-      ("+trace-select=", trace),
-      ("+trace-start=", start),
-    )
+      // group the optional function args together with the correct plusarg string names
+      val optionalArgs = Seq(
+        ("+trace-select=", trace),
+        ("+trace-start=", start),
+      )
 
-    // a seq starting with fixed plusargs, ending with optional plusargs
-    // the optional plusargs are properly constructed or dropped
-    val args = Seq(
-      s"+tracefile=${outputPath}",
-      s"+tracerv-expected-output=${expected.getPath}",
-    ) ++ optionalArgs.collect { case (a, Some(b)) =>
-      s"${a}${b}"
+      // a seq starting with fixed plusargs, ending with optional plusargs
+      // the optional plusargs are properly constructed or dropped
+      val args = Seq(
+        s"+tracefile=${outputPath}",
+        s"+tracerv-expected-output=${expected.getPath}",
+      ) ++ optionalArgs.collect { case (a, Some(b)) =>
+        s"${a}${b}"
+      }
+
+      val runResult =
+        run(backend, false, args = args)
+      assert(runResult == 0)
+
+      val expectedContents = scala.io.Source.fromFile(expected.getPath).mkString
+      val outputContents   = scala.io.Source.fromFile(output.getPath).mkString
+      outputContents should equal(expectedContents)
     }
-
-    val runResult =
-      run(backend, false, args = args)
-    assert(runResult == 0)
-
-    val expectedContents = scala.io.Source.fromFile(expected.getPath).mkString
-    val outputContents   = scala.io.Source.fromFile(output.getPath).mkString
-    outputContents should equal(expectedContents)
   }
 }
 

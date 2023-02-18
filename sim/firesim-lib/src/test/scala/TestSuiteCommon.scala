@@ -6,39 +6,35 @@ import scala.io.Source
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import freechips.rocketchip.config.Config
 
-/**
-  * A base class that captures the platform-specific parts of the configuration of a test.
+/** A base class that captures the platform-specific parts of the configuration of a test.
   *
-  * @param platformName Name of the target platform (f1 or vitis)
-  * @param configs List of platform-specific configuration classes
+  * @param platformName
+  *   Name of the target platform (f1 or vitis)
+  * @param configs
+  *   List of platform-specific configuration classes
   */
 abstract class BasePlatformConfig(val platformName: String, val configs: Seq[Class[_ <: Config]])
 
-/**
-  * An base class for implementing FireSim integration tests that call out to the Make 
-  * buildsystem. These tests typically have three steps whose results are tracked by scalatest:
-  * 1) Elaborate the target and compile it through golden gate (ElaborateAndCompile)
-  * 2) Compile a metasimulator for the generated RTL (compileMlSimulator)
-  * 3) Run the metasimulator. Running a metasimualtion is somewaht
-  *    target-specific and is handled differently by different subclasses.
+/** An base class for implementing FireSim integration tests that call out to the Make buildsystem. These tests
+  * typically have three steps whose results are tracked by scalatest: 1) Elaborate the target and compile it through
+  * golden gate (ElaborateAndCompile) 2) Compile a metasimulator for the generated RTL (compileMlSimulator) 3) Run the
+  * metasimulator. Running a metasimualtion is somewaht target-specific and is handled differently by different
+  * subclasses.
   *
-  * Some tests inspect the simulation outputs, or run other simulators. See the
-  * [[TutorialSuite]] for examples of that.
+  * Some tests inspect the simulation outputs, or run other simulators. See the [[TutorialSuite]] for examples of that.
   *
   * NB: Not thread-safe.
   */
 abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
 
   def commonMakeArgs: Seq[String]
-  def targetName: String
-  def targetConfigs: String = "NoConfig"
+  def targetName:     String
+  def targetConfigs: String         = "NoConfig"
   def platformMakeArgs: Seq[String] = Seq()
-
-  val replayBackends = Seq("rtl")
 
   // Check if we are running out of Chipyard by checking for the existence of a firesim/sim directory
   val firesimDir = {
-    val cwd = System.getProperty("user.dir")
+    val cwd             = System.getProperty("user.dir")
     val firesimAsLibDir = new File(cwd, "sims/firesim/sim")
     if (firesimAsLibDir.exists()) {
       firesimAsLibDir
@@ -50,9 +46,10 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   var ciSkipElaboration: Boolean = false
   var transitiveFailure: Boolean = false
 
-	override def withFixture(test: NoArgTest) = {
-		// Perform setup
-    ciSkipElaboration = test.configMap.getOptional[String]("ci-skip-elaboration")
+  override def withFixture(test: NoArgTest) = {
+    // Perform setup
+    ciSkipElaboration = test.configMap
+      .getOptional[String]("ci-skip-elaboration")
       .map { _.toBoolean }
       .getOrElse(false)
     if (transitiveFailure) {
@@ -60,9 +57,9 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
     } else {
       super.withFixture(test)
     }
-	}
+  }
 
-  implicit def toStr(f: File): String = f.toString replace (File.separator, "/")
+  implicit def toStr(f: File): String = f.toString.replace(File.separator, "/")
 
   // Defines a make target that will build all prerequistes for downstream
   // tests that require a Scala invocation.
@@ -74,8 +71,8 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
 
   // Runs make passing default args to specify the right target design, project and platform
   def make(makeArgs: String*): Int = {
-    val cmd = makeCommand(makeArgs:_*)
-    println("Running: %s".format(cmd mkString " "))
+    val cmd = makeCommand(makeArgs: _*)
+    println("Running: %s".format(cmd.mkString(" ")))
     cmd.!
   }
 
@@ -83,7 +80,7 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   // is used to prevent re-invoking make on a target with a dependency on the
   // result of this recipe. Which would lead to a second failure.
   def makeCriticalDependency(makeArgs: String*): Int = {
-    val returnCode = make(makeArgs:_*)
+    val returnCode = make(makeArgs: _*)
     transitiveFailure = returnCode != 0
     returnCode
   }
@@ -100,16 +97,7 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
       // Under CI, if make failed during elaboration we catch it here without
       // attempting to rebuild
       val target = (if (ciSkipElaboration) Seq("-q") else Seq()) ++ elaborateMakeTarget
-      assert(makeCriticalDependency(target:_*) == 0)
-    }
-  }
-
-  // Compiles a MIDAS-level RTL simulator of the target
-  def compileMlSimulator(b: String, debug: Boolean = false) {
-    if (isCmdAvailable(b)) {
-      it should s"compile sucessfully to ${b}" + { if (debug) " with waves enabled" else "" } in {
-        assert(makeCriticalDependency(s"$b%s".format(if (debug) "-debug" else "")) == 0)
-      }
+      assert(makeCriticalDependency(target: _*) == 0)
     }
   }
 }
@@ -118,20 +106,70 @@ abstract class TestSuiteCommon(targetProject: String) extends TestSuiteBase {
   def platformConfigs: Seq[Class[_ <: Config]] = Seq()
   def basePlatformConfig: BasePlatformConfig
 
+  def run(
+    backend:  String,
+    debug:    Boolean      = false,
+    logFile:  Option[File] = None,
+    waveform: Option[File] = None,
+    args:     Seq[String]  = Nil,
+  ) = {
+    val makeArgs = Seq(
+      s"run-$backend%s".format(if (debug) "-debug" else ""),
+      "LOGFILE=%s".format(logFile.map(toStr).getOrElse("")),
+      "WAVEFORM=%s".format(waveform.map(toStr).getOrElse("")),
+      "ARGS=%s".format(args.mkString(" ")),
+    )
+    if (isCmdAvailable(backend)) {
+      make(makeArgs: _*)
+    } else 0
+  }
+
   def platformConfigString = (platformConfigs ++ basePlatformConfig.configs).map(_.getSimpleName).mkString("_")
 
   override val platformMakeArgs = Seq(s"PLATFORM=${basePlatformConfig.platformName}")
-  override val commonMakeArgs = Seq(s"TARGET_PROJECT=${targetProject}",
-                           s"DESIGN=${targetName}",
-                           s"TARGET_CONFIG=${targetConfigs}",
-                           s"PLATFORM_CONFIG=${platformConfigString}")
+  override val commonMakeArgs   = Seq(
+    s"TARGET_PROJECT=${targetProject}",
+    s"DESIGN=${targetName}",
+    s"TARGET_CONFIG=${targetConfigs}",
+    s"PLATFORM_CONFIG=${platformConfigString}",
+  )
 
   val targetTuple = s"${targetName}-${targetConfigs}-${platformConfigString}"
 
   // These mirror those in the make files; invocation of the MIDAS compiler
   // is the one stage of the tests we don't invoke the Makefile for
-  lazy val genDir  = new File(firesimDir, s"generated-src/${basePlatformConfig.platformName}/${targetTuple}")
-  lazy val outDir  = new File(firesimDir, s"output/${basePlatformConfig.platformName}/${targetTuple}")
+  lazy val genDir = new File(firesimDir, s"generated-src/${basePlatformConfig.platformName}/${targetTuple}")
+  lazy val outDir = new File(firesimDir, s"output/${basePlatformConfig.platformName}/${targetTuple}")
 
   def mkdirs() { genDir.mkdirs; outDir.mkdirs }
+
+  // Compiles a MIDAS-level RTL simulator of the target
+  def compileMlSimulator(b: String, debug: Boolean) {
+    if (isCmdAvailable(b)) {
+      it should s"compile sucessfully to ${b}" + { if (debug) " with waves enabled" else "" } in {
+        assert(makeCriticalDependency(s"$b%s".format(if (debug) "-debug" else "")) == 0)
+      }
+    }
+  }
+
+  /** Method to be implemented by tests, providing an invocation to a simulation run and checks.
+    */
+  def defineTests(backend: String, debug: Boolean): Unit
+
+  // Overrideable methods to specify test configurations.
+  def simulators: Seq[String]  = Seq("verilator", "vcs")
+  def debugFlags: Seq[Boolean] = Seq(false)
+
+  // Define test rules across the matrix of simulators and debug flags.
+  mkdirs()
+  for (simulator <- simulators) {
+    if (isCmdAvailable(simulator)) {
+      for (debugFlag <- debugFlags) {
+        behavior.of(s"$targetName with ${simulator}${if (debugFlag) "-debug" else ""}")
+        elaborateAndCompile()
+        compileMlSimulator(simulator, debugFlag)
+        defineTests(simulator, debugFlag)
+      }
+    }
+  }
 }

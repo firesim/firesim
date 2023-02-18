@@ -54,10 +54,13 @@ TARGET_SOURCE_DIRS ?=
 # while showing error messages, then it runs sbt again with errors disabled to
 # capture the classpath from the output (errors are dumped to stdout otherwise).
 define build_classpath
-	$(SBT_NON_THIN) \
+	bash -c '\
+	export TMP=$(shell mktemp); \
+	($(SBT_NON_THIN) \
 		--error \
 		"set showSuccess := false; project $(1); compile; package; export $(2):fullClasspath" \
-		| head -n 1 | tr -d '\n' > $@
+		> $$TMP || (cat $$TMP | head -n -1 && rm $$TMP && exit 1)) && \
+	((cat $$TMP | head -n 1 | tr -d "\n" > $@) 2> /dev/null || true; rm -f $$TMP)'
 endef
 
 # Helpers to identify all source files of the FireSim project.

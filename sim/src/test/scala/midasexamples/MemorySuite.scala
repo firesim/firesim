@@ -15,30 +15,8 @@ import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 abstract class LoadMemTest(
   override val basePlatformConfig: BasePlatformConfig
-) extends TestSuiteCommon("midasexamples")
+) extends TutorialSuite("LoadMemModule", platformConfigs = Seq(classOf[NoSynthAsserts]))
     with Matchers {
-
-  override def targetConfigs   = "NoConfig"
-  override def targetName      = "LoadMemModule"
-  override def platformConfigs = Seq(classOf[NoSynthAsserts])
-
-  def run(
-    backend:  String,
-    debug:    Boolean      = false,
-    logFile:  Option[File] = None,
-    waveform: Option[File] = None,
-    args:     Seq[String]  = Nil,
-  ) = {
-    val makeArgs = Seq(
-      s"run-$backend%s".format(if (debug) "-debug" else ""),
-      "LOGFILE=%s".format(logFile.map(toStr).getOrElse("")),
-      "WAVEFORM=%s".format(waveform.map(toStr).getOrElse("")),
-      "ARGS=%s".format(args.mkString(" ")),
-    )
-    if (isCmdAvailable(backend)) {
-      make(makeArgs: _*)
-    } else 0
-  }
 
   /** Helper to generate tests strings.
     */
@@ -59,50 +37,33 @@ abstract class LoadMemTest(
     * @param debug
     *   When true, captures waves from the simulation
     */
-  def runTest(backend: String, debug: Boolean) {
-    // Generate a random string spanning 2 sectors with a fixed seed.
-    val numLines = 128
-    val data     = getTestInput(numLines)
+  override def defineTests(backend: String, debug: Boolean) {
+    it should "read data provided by LoadMem" in {
+      // Generate a random string spanning 2 sectors with a fixed seed.
+      val numLines = 128
+      val data     = getTestInput(numLines)
 
-    // Create an input file.
-    val input       = File.createTempFile("input", ".txt")
-    //input.deleteOnExit()
-    val inputWriter = new BufferedWriter(new FileWriter(input))
-    inputWriter.write(data)
-    inputWriter.flush()
-    inputWriter.close()
+      // Create an input file.
+      val input       = File.createTempFile("input", ".txt")
+      input.deleteOnExit()
+      val inputWriter = new BufferedWriter(new FileWriter(input))
+      inputWriter.write(data)
+      inputWriter.flush()
+      inputWriter.close()
 
-    // Pre-allocate space in the output.
-    val output       = File.createTempFile("output", ".txt")
-    //output.deleteOnExit()
-    val outputWriter = new BufferedWriter(new FileWriter(output))
-    for (i <- 1 to data.size) {
-      outputWriter.write('x')
-    }
-    outputWriter.flush()
-    outputWriter.close()
+      // Create an output file.
+      val output = File.createTempFile("output", ".txt")
 
-    val runResult =
-      run(backend, debug, args = Seq(s"+n=${numLines} +loadmem=${input.getPath}", s"+test-dump-file=${output.getPath}"))
-    assert(runResult == 0)
-    val result    = scala.io.Source.fromFile(output.getPath).mkString
-    result should equal(data + "\n")
-  }
-
-  mkdirs()
-  behavior.of(s"$targetName")
-  elaborateAndCompile()
-  for (backend <- Seq("vcs", "verilator")) {
-    compileMlSimulator(backend)
-
-    val testEnvStr = s"pass in ${backend} MIDAS-level simulation"
-
-    if (isCmdAvailable(backend)) {
-      it should testEnvStr in {
-        runTest(backend, false)
-      }
-    } else {
-      ignore should testEnvStr in {}
+      // Run the test and compare the two files.
+      assert(
+        run(
+          backend,
+          debug,
+          args = Seq(s"+n=${numLines} +loadmem=${input.getPath}", s"+test-dump-file=${output.getPath}"),
+        ) == 0
+      )
+      val result = scala.io.Source.fromFile(output.getPath).mkString
+      result should equal(data + "\n")
     }
   }
 }

@@ -5,10 +5,7 @@ package firesim.midasexamples
 import org.scalatest.Suites
 
 class WireInterconnectF1Test  extends TutorialSuite("WireInterconnect")
-class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock") {
-  runTest("verilator", true)
-  runTest("vcs", true)
-}
+class TrivialMulticlockF1Test extends TutorialSuite("TrivialMulticlock")
 
 class TriggerWiringModuleF1Test extends TutorialSuite("TriggerWiringModule")
 

@@ -11,6 +11,7 @@ import firesim.BasePlatformConfig
 
 abstract class AutoCounterSuite(
   targetName:         String,
+  checks:             Seq[(String, String)],
   targetConfigs:      String                  = "NoConfig",
   platformConfigs:    Seq[Class[_ <: Config]] = Seq(),
   basePlatformConfig: BasePlatformConfig      = BaseConfigs.F1,
@@ -19,7 +20,7 @@ abstract class AutoCounterSuite(
 
   /** Compares an AutoCounter output CSV against a reference generated using in-circuit printfs.
     */
-  def checkAutoCounterCSV(filename: String, stdoutPrefix: String) {
+  def checkAutoCounterCSV(backend: String, filename: String, stdoutPrefix: String) {
     it should s"produce a csv file (${filename}) that matches in-circuit printf output" in {
       val scrubWhitespace = raw"\s*(.*)\s*".r
       def splitAtCommas(s: String) = {
@@ -32,7 +33,7 @@ abstract class AutoCounterSuite(
           .map(scrubWhitespace.findFirstMatchIn(_).get.group(1))
       }
 
-      val refLogFile = new File(outDir, s"/${targetName}.${backendSimulator}.out")
+      val refLogFile = new File(outDir, s"/${targetName}.${backend}.out")
       val acFile     = new File(genDir, s"/${filename}")
 
       val refVersion :: refClockInfo :: refLabelLine :: refDescLine :: refOutput =
@@ -65,35 +66,54 @@ abstract class AutoCounterSuite(
       }
     }
   }
+
+  override def defineTests(backend: String, debug: Boolean) {
+    it should "run in the simulator" in {
+      assert(run(backend, debug, args = simulationArgs) == 0)
+    }
+    for ((filename, prefix) <- checks) {
+      checkAutoCounterCSV(backend, filename, prefix)
+    }
+  }
 }
 
 class AutoCounterModuleF1Test
     extends AutoCounterSuite(
       "AutoCounterModule",
+      Seq(("autocounter0.csv", "AUTOCOUNTER_PRINT ")),
       simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
-    ) {
-  checkAutoCounterCSV("autocounter0.csv", "AUTOCOUNTER_PRINT ")
-}
+    )
+
 class AutoCounter32bRolloverTest
     extends AutoCounterSuite(
       "AutoCounter32bRollover",
+      Seq(("autocounter0.csv", "AUTOCOUNTER_PRINT ")),
       simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
-    ) {
-  checkAutoCounterCSV("autocounter0.csv", "AUTOCOUNTER_PRINT ")
-}
+    )
+
 class AutoCounterCoverModuleF1Test
     extends AutoCounterSuite(
       "AutoCounterCoverModule",
+      Seq(("autocounter0.csv", "AUTOCOUNTER_PRINT ")),
       simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
-    ) {
-  checkAutoCounterCSV("autocounter0.csv", "AUTOCOUNTER_PRINT ")
-}
+    )
+
+class MulticlockAutoCounterF1Test
+    extends AutoCounterSuite(
+      "MulticlockAutoCounterModule",
+      Seq(
+        ("autocounter0.csv", "AUTOCOUNTER_PRINT "),
+        ("autocounter1.csv", "AUTOCOUNTER_PRINT_SLOWCLOCK "),
+      ),
+      simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
+    )
 
 class AutoCounterGlobalResetConditionF1Test
-    extends AutoCounterSuite(
+    extends TutorialSuite(
       "AutoCounterGlobalResetCondition",
-      simulationArgs                                    = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
+      simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
     ) {
+
   def assertCountsAreZero(filename: String, clockDivision: Int) {
     s"Counts reported in ${filename}" should "always be zero" in {
       val log                  = new File(genDir, s"/${filename}")
@@ -110,17 +130,14 @@ class AutoCounterGlobalResetConditionF1Test
       }
     }
   }
-  assertCountsAreZero("autocounter0.csv", clockDivision = 1)
-  assertCountsAreZero("autocounter1.csv", clockDivision = 2)
-}
 
-class MulticlockAutoCounterF1Test
-    extends AutoCounterSuite(
-      "MulticlockAutoCounterModule",
-      simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
-    ) {
-  checkAutoCounterCSV("autocounter0.csv", "AUTOCOUNTER_PRINT ")
-  checkAutoCounterCSV("autocounter1.csv", "AUTOCOUNTER_PRINT_SLOWCLOCK ")
+  override def defineTests(backend: String, debug: Boolean) {
+    it should "run in the simulator" in {
+      assert(run(backend, debug, args = simulationArgs) == 0)
+    }
+    assertCountsAreZero("autocounter0.csv", clockDivision = 1)
+    assertCountsAreZero("autocounter1.csv", clockDivision = 2)
+  }
 }
 
 class AutoCounterCITests
