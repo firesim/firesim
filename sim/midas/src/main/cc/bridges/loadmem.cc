@@ -20,13 +20,14 @@ loadmem_t::loadmem_t(simif_t &simif,
 }
 
 void loadmem_t::load_mem_from_file(const std::string &filename) {
-  fprintf(stdout, "[loadmem] start loading\n");
+  const size_t chunk = mem_conf.data_bits / 4;
+
+  fprintf(stdout, "[loadmem] start loading, chunk = %ld\n", chunk);
   std::ifstream file(filename.c_str());
   if (!file) {
     fprintf(stderr, "Cannot open %s\n", filename.c_str());
     exit(EXIT_FAILURE);
   }
-  const size_t chunk = mem_conf.data_bits / 4;
   size_t addr = 0;
   std::string line;
   mpz_t data;
