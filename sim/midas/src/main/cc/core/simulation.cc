@@ -115,6 +115,10 @@ int simulation_t::execute_simulation_flow() {
 
   print_simulation_performance_summary();
 
+  fprintf(stderr,
+          "after print_simulation_performance_summary(), timeout was %d\n",
+          (int)timeout);
+
   return timeout ? EXIT_FAILURE : exit_code;
 }
 
