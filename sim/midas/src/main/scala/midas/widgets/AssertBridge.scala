@@ -14,7 +14,6 @@ class AssertBridgeRecord(assertPortName: String, resetPortName: String, numAsser
   val asserts = Output(UInt(numAsserts.W))
   val underGlobalReset = Output(Bool())
   val elements = ListMap(assertPortName -> asserts, resetPortName -> underGlobalReset)
-  override def cloneType = new AssertBridgeRecord(assertPortName, resetPortName, numAsserts).asInstanceOf[this.type]
 }
 
 case class AssertBridgeParameters(assertPortName: String, resetPortName: String, assertMessages: Seq[String])

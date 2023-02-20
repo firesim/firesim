@@ -56,7 +56,6 @@ class AutoCounterBundle(
     (triggerName, triggerEnable) +:
     (resetPortName, underGlobalReset) +:
     events):_*)
-  override def cloneType = new AutoCounterBundle(eventMetadata, triggerName, resetPortName).asInstanceOf[this.type]
 }
 
 case class AutoCounterParameters(eventMetadata: Seq[EventMetadata], triggerName: String, resetPortName: String)

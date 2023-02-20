@@ -33,8 +33,6 @@ class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with
 
   val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
 
-  override def cloneType: this.type = new HostPortIO(targetPortProto).asInstanceOf[this.type]
-
   private[midas] def getClock(): Clock = {
     val allTargetClocks = SimUtils.findClocks(targetPortProto)
     require(allTargetClocks.nonEmpty,
