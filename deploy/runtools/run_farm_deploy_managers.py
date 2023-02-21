@@ -144,7 +144,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def sim_command_requires_sudo(self) -> bool:
+    def sim_command_requires_sudo(cls) -> bool:
         """ Set when the sim start command must be launched with sudo. """
         raise NotImplementedError
 
@@ -537,7 +537,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     """
 
     @classmethod
-    def sim_command_requires_sudo(self) -> bool:
+    def sim_command_requires_sudo(cls) -> bool:
         """ This sim requires sudo. """
         return True
 
@@ -729,7 +729,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
     
     @classmethod
-    def sim_command_requires_sudo(self) -> bool:
+    def sim_command_requires_sudo(cls) -> bool:
         """ This sim does not require sudo. """
         return False
 

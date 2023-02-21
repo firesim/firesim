@@ -30,8 +30,6 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
-            # No download, edit config_hwdb.yaml directly and specify URI there
-
             def run_w_timeout(workload_path, workload, timeout):
                 log_tail_length = 300
                 rc = 0
