@@ -302,16 +302,13 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
-            assert(not self.sim_command_requires_sudo() or has_sudo())
             server = self.parent_node.sim_slots[slotno]
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, has_sudo())
-            put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
-                run(server.get_sim_start_command(slotno, self.sim_command_requires_sudo()))
+                run(server.get_sim_start_command(slotno, (self.sim_command_requires_sudo() and has_sudo())))
 
 
     def kill_switch_slot(self, switchslot: int) -> None:
