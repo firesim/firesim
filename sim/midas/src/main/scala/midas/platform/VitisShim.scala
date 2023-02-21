@@ -78,18 +78,24 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     ctrl_cdc.io.m_axi.driveStandardAXI4(axi4ToNasti.io.axi4, hostClock, hostSyncReset)
     top.module.ctrl <> axi4ToNasti.io.nasti
 
-    val host_mem_cdc = Module(new AXI4ClockConverter(hostMemAXI4BundleParams, "host_mem_cdc"))
-    host_mem_cdc.io.s_axi.drivenByStandardAXI4(top.module.mem(0), hostClock, hostSyncReset)
-    host_mem_cdc.io.s_axi_aclk    := hostClock
-    host_mem_cdc.io.s_axi_aresetn := (!hostSyncReset).asAsyncReset
-    host_mem_cdc.io.s_axi.araddr  := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).ar.bits.addr
-    host_mem_cdc.io.s_axi.awaddr  := 0x4000000000L.U(VitisConstants.axi4MAddressBits.W) + top.module.mem(0).aw.bits.addr
-    host_mem_cdc.io.s_axi.arcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
-    host_mem_cdc.io.s_axi.awcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
+    if (top.module.mem.nonEmpty) {
+      val addrWidth = VitisConstants.axi4MAddressBits.W
 
-    host_mem_0                    <> host_mem_cdc.io.m_axi
-    host_mem_cdc.io.m_axi_aclk    := ap_clk
-    host_mem_cdc.io.m_axi_aresetn := ap_rst_n
+      val host_mem_cdc = Module(new AXI4ClockConverter(hostMemAXI4BundleParams, "host_mem_cdc"))
+      host_mem_cdc.io.s_axi.drivenByStandardAXI4(top.module.mem(0), hostClock, hostSyncReset)
+      host_mem_cdc.io.s_axi_aclk    := hostClock
+      host_mem_cdc.io.s_axi_aresetn := (!hostSyncReset).asAsyncReset
+      host_mem_cdc.io.s_axi.araddr  := 0x4000000000L.U(addrWidth) + top.module.mem(0).ar.bits.addr
+      host_mem_cdc.io.s_axi.awaddr  := 0x4000000000L.U(addrWidth) + top.module.mem(0).aw.bits.addr
+      host_mem_cdc.io.s_axi.arcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
+      host_mem_cdc.io.s_axi.awcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
+
+      host_mem_0                    <> host_mem_cdc.io.m_axi
+      host_mem_cdc.io.m_axi_aclk    := ap_clk
+      host_mem_cdc.io.m_axi_aresetn := ap_rst_n
+    } else {
+      host_mem_0.tieoffAsManager
+    }
 
     top.module.fpga_managed_axi4.map { axi4 =>
       axi4.ar.ready := false.B

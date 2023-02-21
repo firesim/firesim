@@ -190,8 +190,10 @@ simif_emul_t::FPGAManagedStreamIOImpl::FPGAManagedStreamIOImpl(
 }
 
 void simif_emul_t::load_mems(const char *fname) {
-  slave[0]->load_mem(0, fname);
   // TODO: allow file to be split across slaves
+  if (!slave.empty()) {
+    slave[0]->load_mem(0, fname);
+  }
 }
 
 int simif_emul_t::end() {

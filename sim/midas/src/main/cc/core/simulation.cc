@@ -125,13 +125,20 @@ void simulation_t::wait_for_init() {
 }
 
 void simulation_t::init_dram() {
-  auto &loadmem = registry.get_widget<loadmem_t>();
-  if (do_zero_out_dram) {
-    fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
-    loadmem.zero_out_dram();
-  }
+  if (auto *loadmem = registry.get_widget_opt<loadmem_t>()) {
+    if (do_zero_out_dram) {
+      fprintf(stderr,
+              "Zeroing out FPGA DRAM. This will take a few seconds...\n");
+      loadmem->zero_out_dram();
+    }
 
-  if (!load_mem_path.empty()) {
-    loadmem.load_mem_from_file(load_mem_path);
+    if (!load_mem_path.empty()) {
+      loadmem->load_mem_from_file(load_mem_path);
+    }
+  } else {
+    if (do_zero_out_dram || !load_mem_path.empty()) {
+      fprintf(stderr,
+              "Skipping memory initialization: target does not use DRAM\n");
+    }
   }
 }
