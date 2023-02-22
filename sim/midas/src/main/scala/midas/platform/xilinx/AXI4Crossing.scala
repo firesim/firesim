@@ -172,33 +172,33 @@ class XilinxAXI4Bundle(val bundleParams: AXI4BundleParameters, val isAXI4Lite: B
   }
 
   def tieoffAsManager(): Unit = {
-    awid.foreach { _ := 0.U }
-    awaddr  := 0.U
-    awlen.foreach { _ := 0.U }
-    awsize.foreach { _ := 0.U }
-    awburst.foreach { _ := 0.U }
-    awlock.foreach { _ := 0.U }
-    awcache.foreach { _ := 0.U }
-    awprot  := 0.U
-    awqos.foreach { _ := 0.U }
+    awid.foreach { _ := DontCare }
+    awaddr  := DontCare
+    awlen.foreach { _ := DontCare }
+    awsize.foreach { _ := DontCare }
+    awburst.foreach { _ := DontCare }
+    awlock.foreach { _ := DontCare }
+    awcache.foreach { _ := DontCare }
+    awprot  := DontCare
+    awqos.foreach { _ := DontCare }
     awvalid := false.B
 
-    wdata  := 0.U
-    wstrb  := 0.U
-    wlast.foreach { _ := 0.U }
+    wdata  := DontCare
+    wstrb  := DontCare
+    wlast.foreach { _ := DontCare }
     wvalid := false.B
 
     bready := false.B
 
-    arid.foreach { _ := 0.U }
-    araddr  := 0.U
-    arlen.foreach { _ := 0.U }
-    arsize.foreach { _ := 0.U }
-    arburst.foreach { _ := 0.U }
-    arlock.foreach { _ := 0.U }
-    arcache.foreach { _ := 0.U }
-    arprot  := 0.U
-    arqos.foreach { _ := 0.U }
+    arid.foreach { _ := DontCare }
+    araddr  := DontCare
+    arlen.foreach { _ := DontCare }
+    arsize.foreach { _ := DontCare }
+    arburst.foreach { _ := DontCare }
+    arlock.foreach { _ := DontCare }
+    arcache.foreach { _ := DontCare }
+    arprot  := DontCare
+    arqos.foreach { _ := DontCare }
     arvalid := false.B
 
     rready := false.B
