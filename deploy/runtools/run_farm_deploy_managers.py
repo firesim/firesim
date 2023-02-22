@@ -62,7 +62,7 @@ class NBDTracker:
         return self.allocated_dict[imagename]
 
 class URIContainer:
-    """A class which contains the details for downloading a single URI. InstanceDeployManager
+    """ A class which contains the details for downloading a single URI. InstanceDeployManager
     contains a list of this class. """
 
     """a property name on RuntimeHWConfig"""
