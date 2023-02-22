@@ -37,9 +37,9 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
         io_dma.ar.ready := false.B
         io_dma.w.ready  := false.B
         io_dma.r.valid  := false.B
-        io_dma.r.bits   := 0.U
+        io_dma.r.bits   := DontCare
         io_dma.b.valid  := false.B
-        io_dma.b.bits   := 0.U
+        io_dma.b.bits   := DontCare
       case Some(axi4) =>
         AXI4NastiAssigner.toAXI4(axi4, io_dma)
     }
@@ -47,11 +47,11 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     // Using last-connect semantics, first cap off all channels and then connect the ones used.
     for (slave <- io_slave) {
       slave.aw.valid := false.B
-      slave.aw.bits  := 0.U
+      slave.aw.bits  := DontCare
       slave.ar.valid := false.B
-      slave.ar.bits  := 0.U
+      slave.ar.bits  := DontCare
       slave.w.valid  := false.B
-      slave.w.bits   := 0.U
+      slave.w.bits   := DontCare
       slave.r.ready  := false.B
       slave.b.ready  := false.B
     }
