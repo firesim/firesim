@@ -315,7 +315,7 @@ jobs:
     name: run-basic-linux-poweroff
     # Building the driver can cause concurrency issues with SBT, so serialize
     # this behind the scalatest train. Remove once we're off SBT.
-    needs: [build-default-workloads, run-chipyard-tests]
+    needs: [build-default-workloads, run-chipyard-tests, run-parallel-verilator-metasims]
     runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
