@@ -1,7 +1,6 @@
 run_farm:
   base_recipe: run-farm-recipes/aws_ec2.yaml
   recipe_arg_overrides:
-    default_simulation_dir: /home/centos/linux-poweroff
     run_farm_tag: linuxpoweroffnic
     run_farm_hosts_to_use:
       - f1.16xlarge: 1
