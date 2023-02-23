@@ -16,8 +16,10 @@
 # aforementioned sources. This should removed once we remove the global
 # -include of the generated header.
 VCS ?= vcs -full64
-override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
-	-notice -line +lint=all,noVCDE,noONGS,noUI -quiet -debug_acc+pp+dmptf -debug_region+cell+encrypt +no_notifier -cpp $(CXX) \
+vcs_flags := \
+	$(VCS_FLAGS) \
+	-quiet -timescale=1ps/1ps +v2k +rad +vcs+initreg+random +vcs+lic+wait \
+	-notice -line -quiet -debug_acc+pp+dmptf -debug_region+cell+encrypt +no_notifier -cpp $(CXX) \
 	-top $(TB) \
 	-Mdir=$(GEN_DIR)/$(DRIVER_NAME)-debug.csrc \
 	+vc+list \
@@ -26,25 +28,58 @@ override VCS_FLAGS := -quiet -timescale=1ns/1ps +v2k +rad +vcs+initreg+random +v
 	-sverilog \
 	-assert svaext \
 	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
 	+define+RANDOMIZE_GARBAGE_ASSIGN \
 	+define+RANDOMIZE_INVALID_ASSIGN \
 	+define+STOP_COND=!$(TB).reset \
 	+define+PRINTF_COND=!$(TB).reset \
-	$(VCS_FLAGS)
+	+define+RANDOM=32\'b0 \
+	$(vcs_flags)
 
 vcs_v := $(emul_v) $(vcs_wrapper_v)
 vcs_cc := $(emul_cc) $(vcs_harness)
+
+################################################################################
+
+vcs_rtl_flags := \
+	$(vcs_flags) \
+	+lint=all,noVCDE,noONGS,noUI
 
 $(OUT_DIR)/$(DRIVER_NAME): $(vcs_v) $(vcs_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DRIVER_NAME).csrc
 	rm -rf $(OUT_DIR)/$(DRIVER_NAME).daidir
-	$(VCS) $(VCS_FLAGS) \
-	-o $@ $(vcs_v) $(vcs_cc)
+	$(VCS) $(vcs_rtl_flags) -o $@ $(vcs_v) $(vcs_cc)
 
 $(OUT_DIR)/$(DRIVER_NAME)-debug: $(vcs_v) $(vcs_cc) $(emul_h)
 	mkdir -p $(OUT_DIR)
 	rm -rf $(GEN_DIR)/$(DRIVER_NAME)-debug.csrc
 	rm -rf $(OUT_DIR)/$(DRIVER_NAME)-debug.daidir
-	$(VCS) $(VCS_FLAGS) +define+DEBUG \
-	-o $@ $(vcs_v) $(vcs_cc)
+	$(VCS) $(vcs_rtl_flags) +define+DEBUG -o $@ $(vcs_v) $(vcs_cc)
+
+################################################################################
+
+vcs_post_synth_flags := \
+	$(vcs_flags) \
+	+lint=none +warn=none \
+	-y ${XILINX_VIVADO}/data/verilog/src/unisims \
+	-y ${XILINX_VIVADO}/data/verilog/src/unimacro \
+	-y ${XILINX_VIVADO}/data/verilog/src/retarget \
+	-y ${XILINX_VIVADO}/ids_lite/ISE/verilog/src/XilinxCoreLib \
+	+incdir+${XILINX_VIVADO}/verilog/src \
+	+libext+.v \
+	${XILINX_VIVADO}/data/verilog/src/glbl.v \
+	-top glbl
+
+$(OUT_DIR)/$(DRIVER_NAME)-post-synth: $(vcs_v) $(vcs_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/$(DRIVER_NAME)-post-synth.csrc
+	rm -rf $(OUT_DIR)/$(DRIVER_NAME)-post-synth.daidir
+	$(VCS) $(vcs_post_synth_flags) -o $@ $(vcs_v) $(vcs_cc)
+
+$(OUT_DIR)/$(DRIVER_NAME)-post-synth-debug: $(vcs_v) $(vcs_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/$(DRIVER_NAME)-post-synth-debug.csrc
+	rm -rf $(OUT_DIR)/$(DRIVER_NAME)-post-synth-debug.daidir
+	$(VCS) $(vcs_post_synth_flags) +define+DEBUG -o $@ $(vcs_v) $(vcs_cc)

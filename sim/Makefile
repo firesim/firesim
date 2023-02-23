@@ -53,6 +53,7 @@ include make/scala-build.mk
 
 include $(TARGET_PROJECT_MAKEFRAG)/build.mk
 include make/goldengate.mk
+include make/post-synth.mk
 
 include $(TARGET_PROJECT_MAKEFRAG)/driver.mk
 include make/library.mk

@@ -9,6 +9,7 @@ header := $(GENERATED_DIR)/$(BASE_FILE_NAME).const.h
 
 # The midas-generated simulator RTL which will be baked into the FPGA shell project
 simulator_verilog := $(GENERATED_DIR)/$(BASE_FILE_NAME).sv
+simulator_xdc := $(GENERATED_DIR)/$(BASE_FILE_NAME).synthesis.xdc
 
 # Pre-simulation-mapping annotations which includes all Bridge Annotations
 # extracted used to generate new runtime configurations.
@@ -21,7 +22,7 @@ compile: $(simulator_verilog)
 # empty recipe to help make understand multiple targets come from single recipe invocation
 # without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
 .SECONDARY: $(simulator_verilog).intermediate
-$(simulator_verilog) $(header) $(fame_annos): $(simulator_verilog).intermediate ;
+$(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos): $(simulator_verilog).intermediate ;
 
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
