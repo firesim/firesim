@@ -17,7 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from util.streamlogger import StreamLogger
-from util.io import downloadURI
+from util.io import downloadURICached
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
@@ -75,6 +75,8 @@ class URIContainer:
         self.destination_name = destination_name
 
     def local_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Cached download of the URI contained in this class to a user-specified
+        destination. """
         # lookup the uri on hwcfg using the property
         uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
 
@@ -85,13 +87,28 @@ class URIContainer:
         # download locally, using the same filename for the remote
         destination = pjoin(local_dir, self.destination_name)
         try:
-            downloadURI(uri, destination)
+            downloadURICached(uri, destination)
         except FileNotFoundError as e:
             raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
 
         # return a path with the 2nd tuple as empty, this will cause rsync to
         # name the remote file the same as the local name
         return (destination, '')
+
+    def warmup(self, hwcfg):
+        """ Warms up the cache by optionally doing a download. No user-definable path is written to."""
+        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+
+        try:
+            downloadURICached(uri, None)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
+
+
 
 class InstanceDeployManager(metaclass=abc.ABCMeta):
     """Class used to represent different "run platforms" and how to start/stop and setup simulations.
@@ -212,6 +229,16 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         assert remote_sim_dir[-1] == '/', f"Return value of get_remote_sim_dir_for_slot({slotno}) must end with '/'."
 
         return remote_sim_dir
+
+    def warmup_URI_cache(self):
+        """ Does a download to warmup the cache For all URIs used. """
+        if not self.instance_assigned_simulations():
+            return
+
+        for slotno in range(len(self.parent_node.sim_slots)):
+            hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
+            for container in self.uri_list:
+                container.warmup(hwcfg)
 
     def local_download_all_uri(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
         """ Download all URI's. This function should be called in a TemporaryDirectory()

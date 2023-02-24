@@ -424,6 +424,12 @@ class FireSimTopologyWithPasses:
         self.pass_build_required_drivers()
         self.pass_build_required_switches()
 
+        def serial_warmup_cache(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
+            my_node.instance_deploy_manager.warmup_URI_cache()
+
         @parallel
         def infrasetup_node_wrapper(run_farm: RunFarm) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
@@ -433,6 +439,7 @@ class FireSimTopologyWithPasses:
 
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_run_farm_ips)
+        execute(serial_warmup_cache, self.run_farm, hosts=all_run_farm_ips)
         execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
     def build_driver_passes(self) -> None:
