@@ -12,11 +12,12 @@
 set strategy                [lindex $argv  0]
 set desired_host_frequency  [lindex $argv  1]
 set output                  [lindex $argv  2]
-set firesim_xdc             [lindex $argv  3]
-set firesim_sv              [lindex $argv  4]
+set synth_xdc               [lindex $argv  3]
+set firesim_xdc             [lindex $argv  4]
+set firesim_sv              [lindex $argv  5]
 
-set device_type         "xcvu9p-flgb2104-2-i"
-set uram_option         2
+set device_type             "xcvu9p-flgb2104-2-i"
+set uram_option             2
 
 ################################################################################
 # Read design files
@@ -87,6 +88,11 @@ switch $strategy {
         set synth_options "-keep_equivalent_registers -flatten_hierarchy rebuilt $synth_uram_option -retiming"
         set synth_directive "default"
     }
+    "QUICK" {
+        puts "QUICK strategy."
+        set synth_options "$synth_uram_option"
+        set synth_directive "runtimeoptimized"
+    }
     default {
         puts "$strategy is NOT a valid strategy."
         exit 1
@@ -98,13 +104,23 @@ switch $strategy {
 ################################################################################
 
 read_verilog -sv [list $firesim_sv]
-read_xdc [list $firesim_xdc]
+read_xdc [list $firesim_xdc $synth_xdc]
+
+# Ignore start/end module synthesis
+set_msg_config -id {Synth 8-6155}        -suppress
+set_msg_config -id {Synth 8-6157}        -suppress
+# Ignore assertions
+set_msg_config -id {Synth 8-2898}        -suppress
+# Upgrade XDC 'Critical Warnings' to 'Errors'
+set_msg_config -id {Common 17-55}        -new_severity {ERROR}
 
 ################################################################################
 # CL Synthesis
 ################################################################################
 
 update_compile_order -fileset sources_1
+
+set_param general.maxThreads 1
 
 eval [concat synth_design -top FPGATop -verilog_define XSDB_SLV_DIS -part $device_type -mode out_of_context $synth_options -directive $synth_directive]
 set failval [catch {exec grep "FAIL" failfast.csv}]
@@ -114,7 +130,7 @@ if { $failval==0 } {
 }
 
 write_checkpoint -force $output.dcp
-write_verilog -force -mode design $output
+write_verilog -force -mode funcsim $output
 report_utilization -hierarchical -hierarchical_percentages -file $output.rpt
 
 close_project

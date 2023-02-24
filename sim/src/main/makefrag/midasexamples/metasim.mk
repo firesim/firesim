@@ -27,8 +27,12 @@ run-verilator-debug run-verilator: run-verilator% : $(GENERATED_DIR)/V$(DESIGN)%
 	$(loadmem) \
 	+waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
 
-run-vcs run-vcs-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
+run-vcs run-vcs-post-synth run-vcs-debug run-vcs-post-synth-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
-	cd $(GENERATED_DIR) && ./$(notdir $<) $(vcs_args) $(COMMON_SIM_ARGS) $(ARGS) \
-	$(loadmem) \
-	+waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)
+	cd $(GENERATED_DIR) && ./$(notdir $<) \
+		$(vcs_args) \
+		$(COMMON_SIM_ARGS) \
+		$(ARGS) \
+		$(loadmem) \
+		+waveform=$(call waveform,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%),vpd) \
+		2> $(call logfile,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%))

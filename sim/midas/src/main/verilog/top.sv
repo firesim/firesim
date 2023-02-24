@@ -107,15 +107,6 @@ import "DPI-C" function void simulator_tick
   output mem_fwd_t                                    mem_3_fwd
 );
 
-// Vivado gate-level models go through a setup phase through `glbl.v`. This delay 
-// ensures that the libraries initialise themselves beforehand. It effectively 
-// waits for sufficient time to elapse before the Vivado model delivers the reset 
-// signal to the relevant components. It is hard-wired here to ensure that the 
-// waveforms of RTL and gate-level simulations are identical.
-`ifndef VERILATOR
-`define VIVADO_INIT_DELAY 150ns
-`endif
-
 module emul(
 `ifdef VERILATOR
   input bit clock,
@@ -125,18 +116,26 @@ module emul(
 );
 `ifndef VERILATOR
   // Generate a single clock signal as long as the simulation is running.
-  bit clock;
-  reg fin = 1'b0;
+  bit clock = 1'b0;
+  bit fin = 1'b0;
+  bit reset = 1'b1;
   initial begin
-    #`VIVADO_INIT_DELAY;
     while (!fin) begin
       clock = #(`CLOCK_PERIOD * 1000 / 2.0) ~clock;
     end
   end
 
-  reg reset = 1'b1;
   initial begin
-    #(`VIVADO_INIT_DELAY + `CLOCK_PERIOD * 1000 * 9.0) reset = 1'b0;
+    // Wait for the Vivado internal reset signal for gate-level sims.
+    `ifdef GATE_LEVEL_SIM
+    reset = 1'b0;
+    repeat (2) @(posedge clock); #0.001
+    reset = 1'b1;
+    while (glbl.GSR) @(posedge clock);
+    `endif
+
+    // Maintain 10 reset cycles. This should be identical to Verilator.
+    #(`CLOCK_PERIOD * 1000 * 9.0) reset = 1'b0;
   end
 `endif
 
