@@ -622,13 +622,13 @@ you should not change it unless you are done with your current Run Farm.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 
-``always_expand_runfarm``
-"""""""""""""""""""""""""
-When ``yes`` (the default behavior when not given) the number of instances
+``always_expand_run_farm``
+""""""""""""""""""""""""""
+When ``true`` (the default behavior when not given) the number of instances
 of each type (see ``f1.16xlarges`` etc. below)  are launched every time you
 run ``launchrunfarm``.
 
-When ``no``, ``launchrunfarm`` looks for already existing instances that
+When ``false``, ``launchrunfarm`` looks for already existing instances that
 match ``run_farm_tag`` and treat ``f1.16xlarges`` (and other 'instance-type'
 values below) as a total count.
 
