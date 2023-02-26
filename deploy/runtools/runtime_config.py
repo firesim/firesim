@@ -21,7 +21,7 @@ from tempfile import TemporaryDirectory
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
-from runtools.firesim_topology_elements import FireSimServerNode
+from runtools.run_farm_deploy_managers import InstanceDeployManager
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
@@ -245,7 +245,7 @@ class RuntimeHWConfig:
 
         if self.platform == "vitis":
             assert self.xclbin is not None
-            vitis_bit = f"+binary_file={FireSimServerNode.get_xclbin_name()}"
+            vitis_bit = f"+binary_file={InstanceDeployManager.get_xclbin_name()}"
         else:
             vitis_bit = ""
 

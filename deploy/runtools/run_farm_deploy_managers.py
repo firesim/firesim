@@ -22,7 +22,6 @@ from awstools.awstools import terminate_instances, get_instance_ids_for_instance
 from runtools.utils import has_sudo
 
 from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
-from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
 if TYPE_CHECKING:
     from runtools.run_farm import Inst
     from awstools.awstools import MockBoto3Instance
@@ -164,7 +163,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         self.nbd_tracker = None
 
         self.uri_list = list()
-        self.uri_list.append(URIContainer('driver_tar', FireSimServerNode.get_tar_name()))
+        self.uri_list.append(URIContainer('driver_tar', self.get_tar_name()))
 
     @abc.abstractmethod
     def infrasetup_instance(self, uridir: str) -> None:
@@ -320,7 +319,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             options = "-xf"
 
             with cd(remote_sim_dir):
-                run(f"tar {options} {serv.get_tar_name()}")
+                run(f"tar {options} {self.get_tar_name()}")
 
     def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
         """ copy all the switch infrastructure to the remote node. """
@@ -570,6 +569,15 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         assert False
 
+    @classmethod
+    def get_tar_name(cls) -> str:
+        """ Get the name of the tarball on the run host"""
+        return "driver-bundle.tar.gz"
+
+    @classmethod
+    def get_xclbin_name(cls) -> str:
+        """ Get the name of the xclbin on the run host"""
+        return "bitstream.xclbin"
 
 def remote_kmsg(message: str) -> None:
     """ This will let you write whatever is passed as message into the kernel
@@ -787,7 +795,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         super().__init__(parent_node)
 
         # Vitis runs add the additional handling of the xclbin URI
-        self.uri_list.append(URIContainer('xclbin', FireSimServerNode.get_xclbin_name()))
+        self.uri_list.append(URIContainer('xclbin', self.get_xclbin_name()))
 
     def clear_fpgas(self) -> None:
         if self.instance_assigned_simulations():

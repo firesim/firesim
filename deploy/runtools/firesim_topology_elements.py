@@ -12,6 +12,7 @@ from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
+from runtools.run_farm_deploy_managers import InstanceDeployManager
 from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.workload import JobConfig
@@ -505,7 +506,7 @@ class FireSimServerNode(FireSimNode):
         if hwcfg.driver_tar is not None:
             return None
 
-        return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
+        return (str(self.get_resolved_server_hardware_config().local_tarball_path(InstanceDeployManager.get_tar_name())), InstanceDeployManager.get_tar_name())
 
 
 
@@ -556,16 +557,6 @@ class FireSimServerNode(FireSimNode):
             # prefix rootfs name with the job name to disambiguate in supernode
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
-
-    @classmethod
-    def get_tar_name(cls) -> str:
-        """ Get the name of the tarball on the run host"""
-        return "driver-bundle.tar.gz"
-
-    @classmethod
-    def get_xclbin_name(cls) -> str:
-        """ Get the name of the xclbin on the run host"""
-        return "bitstream.xclbin"
 
     def get_all_rootfs_names(self) -> List[Optional[str]]:
         """ Get all rootfs filenames as a list. """

@@ -18,6 +18,7 @@ from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
+from runtools.run_farm_deploy_managers import InstanceDeployManager
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
     from runtools.run_farm import RunFarm
@@ -405,7 +406,7 @@ class FireSimTopologyWithPasses:
                     continue # skip building or tarballing if we have a prebuilt one
 
                 resolved_cfg.build_sim_driver()
-                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), server.get_tar_name())
+                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), InstanceDeployManager.get_tar_name())
 
         servers = self.firesimtopol.get_dfs_order_servers()
         execute(build_drivers_helper, servers, hosts=['localhost'])
