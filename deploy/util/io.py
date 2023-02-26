@@ -47,31 +47,3 @@ def downloadURI(uri: str, local_dest_path: str) -> None:
     rootLogger.debug(f"Downloading '{uri}' to '{lpath}'")
     fs, rpath = url_to_fs(uri)
     fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
-
-def downloadURICached(uri: str, local_dest_path: Optional[str]) -> None:
-    """Uses the fsspec library to fetch a file specified in the uri to the local file system. Will throw if
-    the file is not found. The result is cached; multiple identical invocations will result in a single download.
-    simpelcache is used, which is guarenteed to be threadsafe:
-    https://filesystem-spec.readthedocs.io/en/stable/features.html#caching-files-locally
-
-    Args:
-        uri: uri of an object to be fetched
-        local_dest_path: path on the local file system to store the uri object. When None a download
-        occurs only to warmup the cache.
-    """
-    if local_dest_path is not None:
-        lpath = Path(local_dest_path)
-        if lpath.exists():
-            rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
-        rootLogger.debug(f"Potentially cached download '{uri}' to '{lpath}'")
-    else:
-        rootLogger.debug(f"Warmup cache download of '{uri}'")
-        
-
-    # This does the actual download. A path to the local file is returned,
-    # not a file handle
-    local_path = open_local(f"simplecache::{uri}")
-    
-    # copy to requested location
-    if local_dest_path is not None:
-        local(f"""cp "{local_path}" "{local_dest_path}" """, capture=True)

@@ -14,10 +14,10 @@ from os.path import basename
 from os import PathLike, fspath
 from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
-from tempfile import TemporaryDirectory
+import hashlib
 
 from util.streamlogger import StreamLogger
-from util.io import downloadURICached
+from util.io import downloadURI
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
@@ -74,40 +74,71 @@ class URIContainer:
         self.hwcfg_prop = hwcfg_prop
         self.destination_name = destination_name
 
-    def local_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+    # this filename will be used when pre-downloading
+    @classmethod
+    def hashed_name(cls, uri) -> str:
+        m = hashlib.sha256()
+        m.update(bytes(uri, 'utf-8'))
+        return m.hexdigest()
+
+    def __choose_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Return a deterministic path, given a parent folder and a RuntimeHWConfig object """
+        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+
+        # choose a repeatable, path based on the hash of the URI
+        destination = pjoin(local_dir, self.hashed_name(uri))
+        
+        return (uri, destination)
+
+    # download to a hashed destination name
+    # if the file exists this will not overwrite. Use this inside a 
+    # TemporaryDirectory() scope
+    def local_pre_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
         """ Cached download of the URI contained in this class to a user-specified
-        destination. """
-        # lookup the uri on hwcfg using the property
-        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+        destination. If the file exists this will NOT overwrite. """
 
+        # resolve the URI and the path '/{dir}/{hash}' we should download to
+        both = self.__choose_path(local_dir, hwcfg)
+        
         # do nothing if there isn't a URI
-        if uri is None:
+        if both is None:
             return None
+        
+        (uri, destination) = both
 
-        # download locally, using the same filename for the remote
-        destination = pjoin(local_dir, self.destination_name)
+        # When it exists, return the same information, but skip the download
+        if Path(destination).exists():
+            rootLogger.debug(f"Skipping download of uri: '{uri}'")
+            return (uri, destination)
+
         try:
-            downloadURICached(uri, destination)
+            downloadURI(uri, destination)
         except FileNotFoundError as e:
             raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
 
-        # return a path with the 2nd tuple as empty, this will cause rsync to
-        # name the remote file the same as the local name
-        return (destination, '')
+        # return, this is not passed to rsync
+        return (uri, destination)
 
-    def warmup(self, hwcfg):
-        """ Warms up the cache by optionally doing a download. No user-definable path is written to."""
-        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+    def get_rsync_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Does not download. Returns the rsync path required to send an already downloaded
+        URI to the runhost. """
 
+        # resolve the URI and the path '/{dir}/{hash}' we should download to
+        both = self.__choose_path(local_dir, hwcfg)
+        
         # do nothing if there isn't a URI
-        if uri is None:
+        if both is None:
             return None
+        
+        (uri, destination) = both
 
-        try:
-            downloadURICached(uri, None)
-        except FileNotFoundError as e:
-            raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
-
+        # because the local file has a nonsense name (the hash)
+        # we are required to specifcy the destination name to rsync
+        return (destination, self.destination_name)
 
 
 class InstanceDeployManager(metaclass=abc.ABCMeta):
@@ -136,7 +167,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         self.uri_list.append(URIContainer('driver_tar', FireSimServerNode.get_tar_name()))
 
     @abc.abstractmethod
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         """Run platform specific implementation of how to setup simulations.
 
         Anything that should only be executed if prepping for an actual FPGA-based
@@ -230,30 +261,30 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         return remote_sim_dir
 
-    def warmup_URI_cache(self):
-        """ Does a download to warmup the cache For all URIs used. """
+    def fetch_all_URI(self, dir: str) -> None:
+        """ Downloads all URI. Local filenames use a hash which will be re-calculated later. Duplicate downloads
+        are skipped via an exists() check on the filesystem. """
         if not self.instance_assigned_simulations():
             return
 
         for slotno in range(len(self.parent_node.sim_slots)):
             hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
             for container in self.uri_list:
-                container.warmup(hwcfg)
-
-    def local_download_all_uri(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
-        """ Download all URI's. This function should be called in a TemporaryDirectory()
-        context."""
+                container.local_pre_download(dir, hwcfg)
+    
+    def get_local_uri_path(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
+        """ Get all paths of local URIs that were previously downloaded. """
 
         hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
         
         ret = list()
         for container in self.uri_list:
-            maybe_file = container.local_download(dir, hwcfg)
+            maybe_file = container.get_rsync_path(dir, hwcfg)
             if maybe_file is not None:
                 ret.append(maybe_file)
         return ret
 
-    def copy_sim_slot_infrastructure(self, slotno: int) -> None:
+    def copy_sim_slot_infrastructure(self, slotno: int, uridir: str) -> None:
         """ copy all the simulation infrastructure to the remote node. """
         if self.instance_assigned_simulations():
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
@@ -267,20 +298,15 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             files_to_copy = serv.get_required_files_local_paths()
 
-            with TemporaryDirectory() as uridir:
-                # Download all URIs needed. When no download is required, 
-                # an empty list is returned.
-                # All of this code is inside a with block so that the 
-                # downloads will survive until after the rsync below,
-                # at which point the local copies are not needed and removed.
-                files_to_copy.extend(self.local_download_all_uri(slotno, uridir))
+            # append any URI paths to the end of this list
+            files_to_copy.extend(self.get_local_uri_path(slotno, uridir))
 
-                for local_path, remote_path in files_to_copy:
-                    # -z --inplace
-                    rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
-                                ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
-                    rootLogger.debug(rsync_cap)
-                    rootLogger.debug(rsync_cap.stderr)
+            for local_path, remote_path in files_to_copy:
+                # -z --inplace
+                rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
+                            ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
+                rootLogger.debug(rsync_cap)
+                rootLogger.debug(rsync_cap.stderr)
 
             run(f"cp -r {remote_sim_rsync_dir}/* {remote_sim_dir}/", shell=True)
 
@@ -701,7 +727,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 run("sudo pkill -SIGKILL fpga-local-cmd")
 
 
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this instance. """
 
         metasim_enabled = self.parent_node.metasimulation_enabled
@@ -711,7 +737,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
-                self.copy_sim_slot_infrastructure(slotno)
+                self.copy_sim_slot_infrastructure(slotno, uridir)
                 self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
@@ -779,7 +805,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             for card_bdf in card_bdfs:
                 run(f"xbutil reset -d {card_bdf} --force")
 
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
         metasim_enabled = self.parent_node.metasimulation_enabled
 
@@ -788,7 +814,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
-                self.copy_sim_slot_infrastructure(slotno)
+                self.copy_sim_slot_infrastructure(slotno, uridir)
                 self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
@@ -810,9 +836,9 @@ class AzureInstanceDeployManager(VitisInstanceDeployManager):
         super().__init__(parent_node)
 
 
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         run("sudo yum install -y screen")
         # Ensures that the default shell (thus all successive `run` commands) see XRT related tooling.
         run("echo 'if [ -z ${XILINX_XRT+1} ]; then source /opt/xilinx/xrt/setup.sh &> /dev/null; fi' >> ~/.bash_profile")
 
-        super().infrasetup_instance()
+        super().infrasetup_instance(uridir)

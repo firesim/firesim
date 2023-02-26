@@ -11,6 +11,7 @@ import sys
 from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 from functools import reduce
+from tempfile import TemporaryDirectory
 
 from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
 from runtools.firesim_topology_core import FireSimTopology
@@ -424,23 +425,27 @@ class FireSimTopologyWithPasses:
         self.pass_build_required_drivers()
         self.pass_build_required_switches()
 
-        def serial_warmup_cache(run_farm: RunFarm) -> None:
+        def serial_fetch_URI(run_farm: RunFarm, dir: str) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
-            my_node.instance_deploy_manager.warmup_URI_cache()
+            my_node.instance_deploy_manager.fetch_all_URI(dir)
 
         @parallel
-        def infrasetup_node_wrapper(run_farm: RunFarm) -> None:
+        def infrasetup_node_wrapper(run_farm: RunFarm, dir: str) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
-            my_node.instance_deploy_manager.infrasetup_instance()
+            my_node.instance_deploy_manager.infrasetup_instance(dir)
 
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_run_farm_ips)
-        execute(serial_warmup_cache, self.run_farm, hosts=all_run_farm_ips)
-        execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips)
+
+        # Both steps occur within the context of a tempdir.
+        # This allows URI's to survive until after deploy, and cleanup upon error
+        with TemporaryDirectory() as uridir:
+            execute(serial_fetch_URI, self.run_farm, hosts=all_run_farm_ips, dir=uridir)
+            execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips, dir=uridir)
 
     def build_driver_passes(self) -> None:
         """ Only run passes to build drivers. """
