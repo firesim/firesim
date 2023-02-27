@@ -23,28 +23,11 @@ dependencies:
     # bundle FireSim driver with deps into installer shell-script
     - constructor
 
-    # Lock down the CPP deps so future updates are tightly controlled
-    - ld_impl_linux-64==2.39
-    - libdeflate==1.14
-    - libtool==2.4.6
-    - lz4-c==1.9.3
-    - libnghttp2==1.47.0
-    - libprotobuf==3.21.11
-    - krb5==1.19.3
-    - libllvm15==15.0.6
-    - libtiff==4.4.0
-    - openssl==3.0.7
-    - pkginfo==1.9.2
-    - harfbuzz==5.3.0
-    - aws-sam-translator==1.55.0
-    - fontconfig==2.14.1
-
-
     - gcc
     - gxx
     - sysroot_linux-64>=2.17 # needed to match pre-built CI XRT glibc version
     - conda-gcc-specs
-    - binutils==2.39
+    - binutils
 
     - dromajo # from ucb-bar channel - https://github.com/riscv-boom/dromajo
     - riscv-tools # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
@@ -64,12 +47,12 @@ dependencies:
     - python>=3.8
     - bc
     - sphinx
-    - sphinx_rtd_theme==1.1.1
+    - sphinx_rtd_theme
     - unzip
     - patch
     - which
     - sed
-    - diffutils==3.8
+    - diffutils
     - bash
     - gzip
     - bzip2
@@ -82,12 +65,12 @@ dependencies:
 
     - make
     - bash-completion
-    - sbt==1.8.0
+    - sbt
     - ca-certificates
     - mosh
     - gmp
     - mpfr
-    - mpc==1.2.1
+    - mpc
     - zlib
     - vim
     - git
@@ -98,7 +81,7 @@ dependencies:
     - libusb1
     - ncurses
     - cmake
-    - graphviz==6.0.2
+    - graphviz
     - expect
     - dtc
       # Pull in a newer build of verilator 4.226 that defaults to C++17 for verilation
@@ -138,27 +121,8 @@ dependencies:
     - boto3-stubs==1.21.6
     - botocore-stubs==1.24.7
     - mypy-boto3-s3==1.21.0
-    - types-requests==2.28.11.5
-    - requests==2.28.1
-    - types-urllib3==1.26.25.4
-    - urllib3==1.26.13
+    - types-requests
     - types-pytz
-    - pyrsistent==0.19.2
-    - sphinxcontrib-applehelp==1.0.2
-    - sphinxcontrib-htmlhelp==2.0.0
-    - websocket-client==1.4.2
-    - zipp==3.11.0
-    - paramiko==2.12.0
-    - importlib_metadata==4.11.4
-    - werkzeug==2.2.2
-    - markupsafe==2.1.1
-    - iniconfig==1.1.1
-    - filelock==3.8.2
-    - crashtest==0.3.1
-    - cloudpickle==2.2.0
-    - attrs==22.1.0
-    - alabaster==0.7.12
-    - networkx==2.8.8
     - fsspec==2023.1.0
     - s3fs==0.4.2
     - aiohttp==3.8.4
