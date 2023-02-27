@@ -26,12 +26,12 @@ public:
 
   void init() override;
   void tick() override;
-  void finish() override {}
 
-  void
-  resume(); // Clears any set assertions, and allows the simulation to advance
   bool terminate() override { return assert_fired; };
   int exit_code() override { return (assert_fired) ? assert_id + 1 : 0; };
+
+  // Clears any set assertions, and allows the simulation to advance
+  void resume();
 
 private:
   bool assert_fired = false;

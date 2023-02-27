@@ -24,10 +24,6 @@ public:
 
   // Bridge interface
   void init() override;
-  void tick() override {}
-  bool terminate() override { return false; };
-  int exit_code() override { return 0; };
-  void finish() override {}
 
   unsigned get_max_pulse_length() const { return max_pulse_length; }
 

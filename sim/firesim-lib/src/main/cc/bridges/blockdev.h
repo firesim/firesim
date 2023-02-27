@@ -77,13 +77,11 @@ public:
   uint32_t nsectors(void) { return _nsectors; }
   uint32_t max_request_length(void) { return MAX_REQ_LEN; }
 
-  void send();
-  void recv();
   void init() override;
   void tick() override;
-  bool terminate() override { return false; }
-  int exit_code() override { return 0; }
-  void finish() override {}
+
+  void send();
+  void recv();
 
 private:
   const BLOCKDEVBRIDGEMODULE_struct mmio_addrs;

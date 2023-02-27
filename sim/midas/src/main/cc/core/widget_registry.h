@@ -87,20 +87,12 @@ public:
   }
 
   /**
-   * Returns all models in the deterministic order of their construction.
-   */
-  const std::vector<FASEDMemoryTimingModel *> &get_all_models() {
-    return all_models;
-  }
-
-  /**
    * Returns a pointer to the stream engine widget, if one exists.
    */
   StreamEngine *get_stream_engine() { return stream_engine.get(); }
 
   void add_widget(widget_t *widget);
   void add_widget(bridge_driver_t *widget);
-  void add_widget(FASEDMemoryTimingModel *widget);
   void add_widget(StreamEngine *widget);
 
 private:
@@ -117,11 +109,6 @@ private:
    * List of all bridges, maintained in a deterministic order.
    */
   std::vector<bridge_driver_t *> all_bridges;
-
-  /**
-   * List of all models, maintained in a deterministic order.
-   */
-  std::vector<FASEDMemoryTimingModel *> all_models;
 };
 
 #endif // __BRIDGE_REGISTRY_H

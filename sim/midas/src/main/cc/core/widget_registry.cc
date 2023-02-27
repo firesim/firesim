@@ -19,11 +19,6 @@ void widget_registry_t::add_widget(bridge_driver_t *widget) {
   all_bridges.push_back(widget);
 }
 
-void widget_registry_t::add_widget(FASEDMemoryTimingModel *widget) {
-  widgets[widget->kind].emplace_back(widget);
-  all_models.push_back(widget);
-}
-
 void widget_registry_t::add_widget(StreamEngine *widget) {
   stream_engine.reset(widget);
 }

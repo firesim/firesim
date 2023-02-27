@@ -70,7 +70,7 @@ bool firesim_top_t::simulation_complete() {
 }
 
 uint64_t firesim_top_t::profile_models() {
-  for (auto &mod : registry.get_all_models()) {
+  for (auto &mod : registry.get_bridges<FASEDMemoryTimingModel>()) {
     mod->profile();
   }
   return profile_interval;
@@ -93,19 +93,21 @@ void firesim_top_t::simulation_init() {
   for (auto *bridge : registry.get_all_bridges()) {
     bridge->init();
   }
-  for (auto *model : registry.get_all_models()) {
-    model->init();
-  }
 }
 
 int firesim_top_t::simulation_run() {
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
+    fprintf(stderr, "X\n");
     while (!peek_poke.is_done() && !simulation_complete()) {
-      for (auto &e : registry.get_all_bridges())
+      for (auto &e : registry.get_all_bridges()) {
+        fprintf(stderr, "A\n");
         e->tick();
+        fprintf(stderr, "B\n");
+      }
     }
+    fprintf(stderr, "Y\n");
   }
 
   return exit_code();
@@ -114,9 +116,6 @@ int firesim_top_t::simulation_run() {
 void firesim_top_t::simulation_finish() {
   for (auto *bridge : registry.get_all_bridges()) {
     bridge->finish();
-  }
-  for (auto *model : registry.get_all_models()) {
-    model->finish();
   }
 }
 

@@ -19,34 +19,51 @@ public:
   using widget_t::widget_t;
 
   ~bridge_driver_t() override = default;
-  ;
-  // Initialize BridgeModule state -- this can't be done in the constructor
-  // currently
-  virtual void init() = 0;
-  // Does work that allows the Bridge to advance in simulation time (one or more
-  // cycles) The standard FireSim driver calls the tick methods of all
-  // registered bridge drivers. Bridges whose BridgeModule is free-running need
-  // not implement this method
-  virtual void tick() = 0;
-  // Indicates the simulation should terminate.
-  // Tie off to false if the brige will never call for the simulation to
-  // teriminate.
-  virtual bool terminate() = 0;
-  // If the bridge driver calls for termination, encode a cause here. 0 = PASS
-  // All other codes are bridge-implementation defined
-  virtual int exit_code() = 0;
-  // The analog of init(), this provides a final opportunity to interact with
-  // the FPGA before destructors are called at the end of simulation. Useful
-  // for doing end-of-simulation clean up that requires calling
-  // {read,write,push,pull}.
-  virtual void finish() = 0;
-  // DOC include end: Bridge Driver Interface
+
+  /**
+   * Initialize the bridge state.
+   *
+   * This method can be overriden to initialise the hardware through MMIO.
+   */
+  virtual void init() {}
+
+  /**
+   * Final post-run cleanup.
+   *
+   * The analog of init(), this provides a final opportunity to interact with
+   * the FPGA before destructors are called at the end of simulation. Useful
+   * for doing end-of-simulation clean up that requires communication with
+   * the hardware through MMIO or streams.
+   */
+  virtual void finish() {}
+
+  /**
+   * Does work that allows the bridge to advance in simulation time.
+   *
+   * Progresses for one or more cycles. The standard FireSim driver calls the
+   * tick methods of all registered bridge drivers. Bridges whose BridgeModule
+   * is free-running need not implement this method
+   */
+  virtual void tick() {}
+
+  /**
+   * Returns true if the bridge requests explicit termination.
+   */
+  virtual bool terminate() { return false; }
+
+  /**
+   * If the bridge driver calls for termination, encode a cause here.
+   *
+   * 0 = PASS. All other codes are bridge-implementation defined
+   */
+  virtual int exit_code() { return 0; }
 
 protected:
   void write(size_t addr, uint32_t data);
 
   uint32_t read(size_t addr);
 };
+// DOC include end: Bridge Driver Interface
 
 /**
  * Bridge driver which interacts with the BridgeModule through streams.

@@ -2,7 +2,6 @@
 
 #include "bridges/clock.h"
 #include "bridges/fased_memory_timing_model.h"
-#include "bridges/fpga_model.h"
 #include "bridges/peek_poke.h"
 #include "bridges/reset_pulse.h"
 #include "core/bridge_driver.h"
@@ -58,12 +57,11 @@ fasedtests_top_t::fasedtests_top_t(simif_t &simif,
     }
   }
 
-  auto *model = registry.get_all_models()[0];
   registry.add_widget(
       new test_harness_bridge_t(simif,
                                 registry.get_widget<peek_poke_t>(),
                                 registry.get_widget<master_t>(),
-                                model->get_addr_map(),
+                                registry.get_bridges<FASEDMemoryTimingModel>(),
                                 args));
 }
 
@@ -76,7 +74,7 @@ bool fasedtests_top_t::simulation_complete() {
 }
 
 uint64_t fasedtests_top_t::profile_models() {
-  for (auto &mod : registry.get_all_models()) {
+  for (auto &mod : registry.get_bridges<FASEDMemoryTimingModel>()) {
     mod->profile();
   }
   return profile_interval;
@@ -99,9 +97,6 @@ void fasedtests_top_t::simulation_init() {
   for (auto *bridge : registry.get_all_bridges()) {
     bridge->init();
   }
-  for (auto *model : registry.get_all_models()) {
-    model->init();
-  }
 }
 
 int fasedtests_top_t::simulation_run() {
@@ -120,9 +115,6 @@ int fasedtests_top_t::simulation_run() {
 void fasedtests_top_t::simulation_finish() {
   for (auto *bridge : registry.get_all_bridges()) {
     bridge->finish();
-  }
-  for (auto *model : registry.get_all_models()) {
-    model->finish();
   }
 }
 
