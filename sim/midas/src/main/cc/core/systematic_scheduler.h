@@ -4,6 +4,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
+#include <string>
 #include <vector>
 
 // Maximum step size in MIDAS's master is capped to width of the simulation bus
@@ -26,23 +28,28 @@ class systematic_scheduler_t {
   };
 
 public:
+  systematic_scheduler_t(const std::vector<std::string> &args);
+
   // Adds a new task to scheduler.
-  void register_task(task_t &&task, uint64_t first_cycle);
+  void register_task(uint64_t first_cycle, task_t &&task);
   // Calculates the next simulation step by taking the min of all
   // tasks.next_cycle
   uint32_t get_largest_stepsize();
   // Assumption: The simulator is idle. (simif::done() == true)
   // Invokes all tasks that wish to be executed on our current target cycle
   void run_scheduled_tasks();
-  // Unless overriden, assume the simulator will run (effectively) forever
-  uint64_t max_cycles = -1;
   // Returns true if no further tasks are scheduled before specified horizon
   // (max_cycles).
   bool finished_scheduled_tasks() { return current_cycle == max_cycles; };
 
 private:
+  // Unless overriden, assume the simulator will run (effectively) forever.
+  std::optional<uint64_t> max_cycles = std::nullopt;
+
   uint64_t default_step_size = MAX_MIDAS_STEP;
+
   uint64_t current_cycle = 0;
+
   std::vector<task_tuple_t> tasks;
 };
 #endif // __SYSTEMATIC_SCHEDULER_H
