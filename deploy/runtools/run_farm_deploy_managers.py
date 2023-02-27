@@ -10,7 +10,7 @@ from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hi
 from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
-from os.path import basename
+from os.path import basename, expanduser
 from os import PathLike, fspath
 from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
@@ -80,9 +80,36 @@ class URIContainer:
         m.update(bytes(uri, 'utf-8'))
         return m.hexdigest()
 
-    def __choose_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
-        """ Return a deterministic path, given a parent folder and a RuntimeHWConfig object """
+    def __resolve_vanilla_path(self, hwcfg) -> Optional[str]:
+        """ Allows fallback to a vanilla path. Relative paths are resolved realtive to firesim/deploy/. 
+        This will convert a vanilla path to a URI, or return None."""
         uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+        
+        # if already a URI, exit early returning unmodified string
+        is_uri = re.match(_RFC_3986_PATTERN, uri)
+        if is_uri:
+            return uri
+
+        # expanduser() is required to get ~ home directory expansion working
+        # relative paths are relative to firesim/deploy
+        expanded = Path(expanduser(uri))
+
+        try:
+            # strict=True will throw if the file doesn't exist
+            resolved = expanded.resolve(strict=True)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} file fallback at path '{uri}' or '{expanded}' was not found")
+
+        return f"file://{resolved}"
+
+    def __choose_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Return a deterministic path, given a parent folder and a RuntimeHWConfig object. The URI
+        as generated from hwcfg is also returned. """
+        uri: Optional[str] = self.__resolve_vanilla_path(hwcfg)
 
         # do nothing if there isn't a URI
         if uri is None:

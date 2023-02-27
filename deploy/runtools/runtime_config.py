@@ -40,9 +40,6 @@ LOCAL_DRIVERS_BASE = "../sim/output/"
 LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/"
 CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
-# from  https://github.com/pandas-dev/pandas/blob/96b036cbcf7db5d3ba875aac28c4f6a678214bfb/pandas/io/common.py#L73
-_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
-
 rootLogger = logging.getLogger()
 
 class RuntimeHWConfig:
@@ -77,8 +74,8 @@ class RuntimeHWConfig:
             raise Exception(f"Unable to have agfi and xclbin in HWDB entry {name}.")
 
         self.agfi = hwconfig_dict.get('agfi')
-        self.xclbin = self.__validate_uri(hwconfig_dict, 'xclbin')
-        self.driver_tar = self.__validate_uri(hwconfig_dict, 'driver_tar')
+        self.xclbin = hwconfig_dict.get('xclbin')
+        self.driver_tar = hwconfig_dict.get('driver_tar')
 
         if self.agfi is not None:
             self.platform = "f1"
@@ -107,20 +104,6 @@ class RuntimeHWConfig:
 
         self.additional_required_files = []
     
-    def __validate_uri(self, hwconfig_dict: Dict[str, Any], prop: str) -> Optional[str]:
-        """ Private method to init / validate any URI. """
-
-        uri = hwconfig_dict.get(prop)
-
-        if uri is None:
-            return None
-
-        is_uri = re.match(_RFC_3986_PATTERN, uri)
-        if not is_uri:
-            raise Exception(f"when {prop} is set, it must be a URI. (found '{uri}')")
-        
-        return str(uri)
-
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
         to the AWS AGFI API."""
