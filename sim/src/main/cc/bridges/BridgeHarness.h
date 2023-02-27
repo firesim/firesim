@@ -22,9 +22,7 @@ public:
 
   ~BridgeHarness() override;
 
-  void simulation_init() override;
   int simulation_run() override;
-  void simulation_finish() override;
 
 protected:
   virtual unsigned get_step_limit() const = 0;

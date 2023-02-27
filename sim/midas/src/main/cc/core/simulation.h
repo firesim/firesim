@@ -55,14 +55,14 @@ public:
    * The software-only and the software-hardware phases of initialisation should
    * be further split in the future.
    */
-  virtual void simulation_init() {}
+  virtual void simulation_init();
 
   /**
    * Simulation finalization.
    *
    * Should call the `finish` method on all registered bridges.
    */
-  virtual void simulation_finish() {}
+  virtual void simulation_finish();
 
   /**
    * Return true if the simulation timed out.

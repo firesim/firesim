@@ -4,6 +4,7 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
+#include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/stream_engine.h"
 #include "core/timing.h"
@@ -77,6 +78,18 @@ void simulation_t::print_simulation_performance_summary() {
   fprintf(stderr,
           "Note: The latter three figures are based on the fastest "
           "target clock.\n");
+}
+
+void simulation_t::simulation_init() {
+  for (auto *bridge : registry.get_all_bridges()) {
+    bridge->init();
+  }
+}
+
+void simulation_t::simulation_finish() {
+  for (auto *bridge : registry.get_all_bridges()) {
+    bridge->finish();
+  }
 }
 
 int simulation_t::execute_simulation_flow() {

@@ -8,11 +8,9 @@ char test_harness_bridge_t::KIND;
 test_harness_bridge_t::test_harness_bridge_t(
     simif_t &simif,
     peek_poke_t &peek_poke,
-    master_t &master,
     const std::vector<FASEDMemoryTimingModel *> &models,
     const std::vector<std::string> &args)
-    : bridge_driver_t(simif, &KIND), peek_poke(peek_poke), master(master),
-      models(models) {
+    : bridge_driver_t(simif, &KIND), peek_poke(peek_poke), models(models) {
 
   for (auto &arg : args) {
     // Record all uarch events we want to validate
@@ -26,14 +24,7 @@ test_harness_bridge_t::test_harness_bridge_t(
   }
 }
 
-// This periodically peeks a done bit on the DUT. After it's been asserted,
-// it then reads uarch event counts from the FASED instance and compares them
-// against expected values
 void test_harness_bridge_t::tick() {
-  // Wait for reset to complete.
-  if (!master.is_init_done())
-    return;
-
   // use a non-blocking sample since this signal is monotonic
   done = peek_poke.sample_value("done");
   if (!done)

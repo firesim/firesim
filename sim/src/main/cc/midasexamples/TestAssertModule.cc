@@ -1,15 +1,14 @@
 // See LICENSE for license details.
 
-#include "AssertTest.h"
 #include "TestHarness.h"
+#include "bridges/synthesized_assertions.h"
 
-class TestAssertModule final : public AssertTest {
+class TestAssertModule final : public TestHarness {
 public:
-  using AssertTest::AssertTest;
+  using TestHarness::TestHarness;
 
   void run_test() override {
-    assert(assert_endpoints.size() == 1 && "expected one assert");
-    auto &assert_endpoint = *assert_endpoints[0];
+    auto &assert = get_bridge<synthesized_assertions_t>();
 
     int assertions_thrown = 0;
     poke("reset", 1);
@@ -44,11 +43,10 @@ public:
         break;
       }
 
-      auto &assert_endpoint = *assert_endpoints[0];
       while (!peek_poke.is_done()) {
-        assert_endpoint.tick();
-        if (assert_endpoint.terminate()) {
-          assert_endpoint.resume();
+        assert.tick();
+        if (assert.terminate()) {
+          assert.resume();
           assertions_thrown++;
         }
       }

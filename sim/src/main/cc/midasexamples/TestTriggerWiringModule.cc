@@ -28,10 +28,6 @@ public:
 
   void run_test() override {
     int assertions_thrown = 0;
-
-    for (auto &ep : assert_endpoints)
-      ep->init();
-
     poke("reset", 1);
     step(1);
     poke("reset", 0);
