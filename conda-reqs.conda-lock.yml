@@ -5123,14 +5123,14 @@ package:
     paramiko-ng: '*'
     six: '>=1.10.0'
   hash:
-    sha256: 7fe3dfd0d9d5d0dd7e650b42fc7d62ec5d643ac4275a77f483ec2b57f19c3e58
+    sha256: 8edfd97ff58ca616cdd6e77bc42d3f71d27842197f13771c77cf0b553f3b4311
   manager: pip
   name: fab-classic
   optional: false
   platform: linux-64
   source: null
-  url: https://files.pythonhosted.org/packages/86/f4/c301effc438788c184bbd0c08a586135f325581e6c4cf9f1d40229f9894b/fab_classic-1.19.1-py2.py3-none-any.whl
-  version: 1.19.1
+  url: https://files.pythonhosted.org/packages/6b/0f/efc537eebfd2a2c470250c0ac8bd8a05ffc13d95a7fb22021367890d7c46/fab_classic-1.19.2-py2.py3-none-any.whl
+  version: 1.19.2
 - category: main
   dependencies:
     asttokens: '>=2,<3'
