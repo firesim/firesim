@@ -62,6 +62,7 @@ $(OUT_DIR)/$(DRIVER_NAME)-debug: $(vcs_v) $(vcs_cc) $(emul_h)
 
 vcs_post_synth_flags := \
 	$(vcs_flags) \
+	+define+GATE_LEVEL_SIM \
 	+lint=none +warn=none \
 	-y ${XILINX_VIVADO}/data/verilog/src/unisims \
 	-y ${XILINX_VIVADO}/data/verilog/src/unimacro \

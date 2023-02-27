@@ -6,6 +6,8 @@ import scala.io.Source
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
 import freechips.rocketchip.config.Config
 
+import scala.collection.mutable
+
 /** A base class that captures the platform-specific parts of the configuration of a test.
   *
   * @param platformName
@@ -145,10 +147,8 @@ abstract class TestSuiteCommon(targetProject: String) extends TestSuiteBase {
 
   // Compiles a MIDAS-level RTL simulator of the target
   def compileMlSimulator(b: String, debug: Boolean) {
-    if (isCmdAvailable(b)) {
-      it should s"compile sucessfully to ${b}" + { if (debug) " with waves enabled" else "" } in {
-        assert(makeCriticalDependency(s"$b%s".format(if (debug) "-debug" else "")) == 0)
-      }
+    it should s"compile sucessfully to ${b}" + { if (debug) " with waves enabled" else "" } in {
+      assert(makeCriticalDependency(s"$b%s".format(if (debug) "-debug" else "")) == 0)
     }
   }
 
@@ -156,20 +156,41 @@ abstract class TestSuiteCommon(targetProject: String) extends TestSuiteBase {
     */
   def defineTests(backend: String, debug: Boolean): Unit
 
-  // Overrideable methods to specify test configurations.
-  def simulators: Seq[String]  = Seq("verilator", "vcs")
+  // Overrideable method to specify test configurations.
+  def simulators: Seq[String] = {
+    val buffer = mutable.ArrayBuffer[String]()
+
+    if (isCmdAvailable("verilator")) {
+      if (System.getenv("TEST_DISABLE_VERILATOR") == null) {
+        buffer += "verilator"
+      }
+    }
+
+    if (isCmdAvailable("vcs")) {
+      if (System.getenv("TEST_DISABLE_VCS") == null) {
+        buffer += "vcs"
+      }
+
+      if (isCmdAvailable("vivado")) {
+        if (System.getenv("TEST_DISABLE_VIVADO") == null) {
+          buffer += "vcs-post-synth"
+        }
+      }
+    }
+
+    buffer.toSeq
+  }
+
   def debugFlags: Seq[Boolean] = Seq(false)
 
   // Define test rules across the matrix of simulators and debug flags.
   mkdirs()
   for (simulator <- simulators) {
-    if (isCmdAvailable(simulator)) {
-      for (debugFlag <- debugFlags) {
-        behavior.of(s"$targetName with ${simulator}${if (debugFlag) "-debug" else ""}")
-        elaborateAndCompile()
-        compileMlSimulator(simulator, debugFlag)
-        defineTests(simulator, debugFlag)
-      }
+    for (debugFlag <- debugFlags) {
+      behavior.of(s"$targetName with ${simulator}${if (debugFlag) "-debug" else ""}")
+      elaborateAndCompile()
+      compileMlSimulator(simulator, debugFlag)
+      defineTests(simulator, debugFlag)
     }
   }
 }
