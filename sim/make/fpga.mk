@@ -43,6 +43,7 @@ $(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/sta
 	cp -f $(GENERATED_DIR)/$(@F) $@
 
 $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM): $($(PLATFORM))
+	mkdir -p $(@D)
 	cp -f $< $@
 
 # Goes as far as setting up the build directory without running the cad job
