@@ -100,6 +100,11 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/ci-shared.yaml
+          activate-environment: cienv
+          miniforge-version: latest
       - name: Install Python CI requirements
         uses: ./.github/actions/repo-setup-aws
       - name: Launch AWS instance used for the FireSim manager (instance info found here)
