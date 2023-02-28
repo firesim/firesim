@@ -250,8 +250,8 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
     val maybeFire = !allValidMux
     val maybeEnq  = anyValidMux
 
-    val do_enq_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, anyValidMux)
-    val do_fire_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, maybeFire)
+    val do_enq_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, anyValidMux, traceEnable)
+    val do_fire_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, maybeFire, traceEnable)
 
     // Note, if we dequeue a token that wins out over the increment below
     when(do_fire_helper.fire()) {
@@ -260,7 +260,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
       counter := counter + 1.U
     }
 
-    streamEnq.valid := do_enq_helper.fire(streamEnq.ready)
+    streamEnq.valid := do_enq_helper.fire(streamEnq.ready, trigger)
     hPort.toHost.hReady := do_fire_helper.fire(hPort.toHost.hValid)
 
     when (hPort.toHost.fire) {
