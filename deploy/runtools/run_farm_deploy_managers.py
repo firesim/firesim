@@ -61,8 +61,7 @@ class NBDTracker:
         return self.allocated_dict[imagename]
 
 class URIContainer:
-    """ A class which contains the details for downloading a single URI. InstanceDeployManager
-    contains a list of this class. """
+    """ A class which contains the details for downloading a single URI. """
 
     """a property name on RuntimeHWConfig"""
     hwcfg_prop: str
@@ -80,7 +79,7 @@ class URIContainer:
         m.update(bytes(uri, 'utf-8'))
         return m.hexdigest()
 
-    def __resolve_vanilla_path(self, hwcfg) -> Optional[str]:
+    def _resolve_vanilla_path(self, hwcfg) -> Optional[str]:
         """ Allows fallback to a vanilla path. Relative paths are resolved realtive to firesim/deploy/. 
         This will convert a vanilla path to a URI, or return None."""
         uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
@@ -106,10 +105,10 @@ class URIContainer:
 
         return f"file://{resolved}"
 
-    def __choose_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+    def _choose_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
         """ Return a deterministic path, given a parent folder and a RuntimeHWConfig object. The URI
         as generated from hwcfg is also returned. """
-        uri: Optional[str] = self.__resolve_vanilla_path(hwcfg)
+        uri: Optional[str] = self._resolve_vanilla_path(hwcfg)
 
         # do nothing if there isn't a URI
         if uri is None:
@@ -126,7 +125,7 @@ class URIContainer:
         If the file exists this will NOT overwrite. """
 
         # resolve the URI and the path '/{dir}/{hash}' we should download to
-        both = self.__choose_path(local_dir, hwcfg)
+        both = self._choose_path(local_dir, hwcfg)
         
         # do nothing if there isn't a URI
         if both is None:
@@ -152,7 +151,7 @@ class URIContainer:
         URI to the runhost. """
 
         # resolve the URI and the path '/{dir}/{hash}' we should download to
-        both = self.__choose_path(local_dir, hwcfg)
+        both = self._choose_path(local_dir, hwcfg)
         
         # do nothing if there isn't a URI
         if both is None:
@@ -296,7 +295,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             for container in self.uri_list:
                 container.local_pre_download(dir, hwcfg)
     
-    def get_local_uri_path(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
+    def get_local_uri_paths(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
         """ Get all paths of local URIs that were previously downloaded. """
 
         hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
@@ -322,8 +321,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             files_to_copy = serv.get_required_files_local_paths()
 
-            # append any URI paths to the end of this list
-            files_to_copy.extend(self.get_local_uri_path(slotno, uridir))
+            # Append required URI paths to the end of this list
+            files_to_copy.extend(self.get_local_uri_paths(slotno, uridir))
 
             for local_path, remote_path in files_to_copy:
                 # -z --inplace
@@ -383,9 +382,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()))
+            put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
-                run(server.get_sim_start_command(slotno, (self.sim_command_requires_sudo() and has_sudo())))
+                run("chmod +x sim-run.sh")
+                run("./sim-run.sh")
 
 
     def kill_switch_slot(self, switchslot: int) -> None:
