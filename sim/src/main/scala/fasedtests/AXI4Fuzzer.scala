@@ -67,7 +67,7 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
     val done = IO(Output(Bool()))
     val error = IO(Output(Bool()))
 
-    done := fuzzers.map(_.module.io.finished).reduce(_ && _)
+    done := !reset.asBool && fuzzers.map(_.module.io.finished).reduce(_ && _)
     error := false.B
     for ((axi4, edge) <- slave.in) {
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,

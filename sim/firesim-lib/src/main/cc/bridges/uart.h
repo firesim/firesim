@@ -53,18 +53,6 @@ public:
   ~uart_t() override;
 
   void tick() override;
-  // Our UART bridge's initialzation and teardown procedures don't
-  // require interaction with the FPGA (i.e., MMIO), and so we don't need
-  // to define init and finish methods (we can do everything in the
-  // ctor/dtor)
-  void init() override {}
-  void finish() override {}
-
-  // Our UART bridge never calls for the simulation to terminate
-  bool terminate() override { return false; }
-
-  // ... and thus, never returns a non-zero exit code
-  int exit_code() override { return 0; }
 
 private:
   const UARTBRIDGEMODULE_struct mmio_addrs;

@@ -38,8 +38,6 @@ public:
 
   void init() override;
   void tick() override;
-  bool terminate() override { return false; };
-  int exit_code() override { return 0; }
   void finish() override {}
 
 private:

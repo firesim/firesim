@@ -3,22 +3,60 @@
 #ifndef __FASED_MEMORY_TIMING_MODEL_H
 #define __FASED_MEMORY_TIMING_MODEL_H
 
-/* This is the widget driver for FASED memory-timing models
- *
- * FASED instances are FPGA-hosted and only rely on this driver to:
- * 1) set runtime-configurable timing parameters before simulation commences
- * 2) poll instrumentation registers
- *
- */
-
-#include "bridges/fpga_model.h"
-#include "core/widget.h"
+#include "core/address_map.h"
+#include "core/bridge_driver.h"
 
 #include <fstream>
 #include <set>
 #include <unordered_map>
 
-struct FASEDMEMORYTIMINGMODEL_struct {};
+/**
+ * Base class for (handwritten) FPGA-hosted models
+ *
+ * These models have two important methods:
+ *
+ * 1) init: Which sets their runtime configuration. Ex. The latency of
+ * latency pipe
+ *
+ * 2) profile: Which gives a default means to read all readable registers in
+ * the model, including programmable registers and instrumentation.
+ *
+ */
+class FpgaModel {
+private:
+  simif_t *sim;
+
+public:
+  FpgaModel(simif_t *s, const AddressMap &addr_map)
+      : sim(s), addr_map(addr_map) {}
+  virtual ~FpgaModel() = default;
+
+  virtual void init() = 0;
+  virtual void profile() = 0;
+  virtual void finish() = 0;
+
+protected:
+  const AddressMap &addr_map;
+
+  void write(size_t addr, uint32_t data) { sim->write(addr, data); }
+
+  uint32_t read(size_t addr) { return sim->read(addr); }
+
+  void write(const std::string &reg, uint32_t data) {
+    sim->write(addr_map.w_addr(reg), data);
+  }
+
+  uint32_t read(const std::string &reg) {
+    return sim->read(addr_map.r_addr(reg));
+  }
+
+  uint64_t read64(const std::string &msw,
+                  const std::string &lsw,
+                  uint32_t upper_word_mask) {
+    uint64_t data = ((uint64_t)(read(msw) & upper_word_mask)) << 32;
+    return data | read(lsw);
+  }
+};
 
 // MICRO HACKS.
 constexpr int HISTOGRAM_SIZE = 1024;
@@ -67,22 +105,35 @@ private:
   std::string addr = name + "Hist_addr";
 };
 
-class FASEDMemoryTimingModel : public FpgaModel, public widget_t {
+struct FASEDMEMORYTIMINGMODEL_struct {};
+
+/**
+ * This is the bridge driver for FASED memory-timing models
+ *
+ * FASED instances are FPGA-hosted and only rely on this driver to:
+ * 1) set runtime-configurable timing parameters before simulation commences
+ * 2) poll instrumentation registers
+ */
+class FASEDMemoryTimingModel : public bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.
   static char KIND;
 
   FASEDMemoryTimingModel(simif_t &simif,
-                         const AddressMap &addr_map,
+                         AddressMap &&addr_map,
                          unsigned modelno,
                          const std::vector<std::string> &args,
                          const std::string &stats_file_name,
                          size_t mem_size);
   void init() override;
-  void profile() override;
   void finish() override;
+  void profile();
+
+  const AddressMap &get_addr_map() const { return addr_map; }
 
 private:
+  const AddressMap addr_map;
+
   /**
    * User-provided configuration options.
    */

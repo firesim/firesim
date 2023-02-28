@@ -16,7 +16,7 @@ private:
   bool done = false;
   peek_poke_t &peek_poke;
   master_t &master;
-  const AddressMap addr_map;
+  const std::vector<FASEDMemoryTimingModel *> models;
   std::unordered_map<std::string, uint32_t> expected_uarchevent_values;
 
 public:
@@ -29,7 +29,7 @@ public:
   test_harness_bridge_t(simif_t &simif,
                         peek_poke_t &peek_poke,
                         master_t &master,
-                        const AddressMap &addr_map,
+                        const std::vector<FASEDMemoryTimingModel *> &models,
                         const std::vector<std::string> &args);
   ~test_harness_bridge_t() override = default;
 
