@@ -29,7 +29,6 @@ from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
 from buildtools.bitbuilder import get_deploy_dir
-import re
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -103,7 +102,7 @@ class RuntimeHWConfig:
         self.tarball_built = False
 
         self.additional_required_files = []
-    
+
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. This memoizes the request
         to the AWS AGFI API."""

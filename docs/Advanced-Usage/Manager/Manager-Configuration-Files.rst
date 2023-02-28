@@ -526,7 +526,7 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A Uniform Resource Identifier (URI) which specifies a protocol supported either `directly
     by the fsspec library <https://filesystem-spec.readthedocs.io/en/latest/api.html#built-in-implementations>`_ or
     by `one of the many third party extension libraries which build on fsspec. <https://filesystem-spec.readthedocs.io/en/latest/api.html#other-known-implementations>`_
-  * A filesystem path available to the run farm host.
+  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 Please note that while use use the ``fsspec`` library to handle many different URI protocols, many
 of them require additional dependencies that FireSim itself does not require you to install.
@@ -575,6 +575,11 @@ to the relative name of the config. For example,
 
 ``driver_tar``
 """""""""""""""""""""""""""""
+They key can be one of:
+  * A Uniform Resource Identifier (URI) which specifies a protocol supported either `directly
+    by the fsspec library <https://filesystem-spec.readthedocs.io/en/latest/api.html#built-in-implementations>`_ or
+    by `one of the many third party extension libraries which build on fsspec. <https://filesystem-spec.readthedocs.io/en/latest/api.html#other-known-implementations>`_
+  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 When this key is present, the local driver will not build from source.
 Instead, during `firesim infrasetup`, this file will be deployed and extracted
@@ -583,7 +588,7 @@ be a `.tar`, `.tar.gz`, `.tar.bz2` or any other format that GNU tar (version 1.2
 can automatically detect. The purpose of this feature is to enable advanced CI
 configurations where the driver build step is decoupled. For now this can
 only accept a path to a file on the manager's local filesystem.
-In a future update, full URI support will be added.
+This key can also be a URI.
 
 
 
