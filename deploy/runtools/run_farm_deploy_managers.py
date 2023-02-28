@@ -120,12 +120,10 @@ class URIContainer:
         
         return (uri, destination)
 
-    # download to a hashed destination name
-    # if the file exists this will not overwrite. Use this inside a 
-    # TemporaryDirectory() scope
     def local_pre_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
         """ Cached download of the URI contained in this class to a user-specified
-        destination. If the file exists this will NOT overwrite. """
+        destination folder. The destination name is a SHA256 hash of the URI.
+        If the file exists this will NOT overwrite. """
 
         # resolve the URI and the path '/{dir}/{hash}' we should download to
         both = self.__choose_path(local_dir, hwcfg)
