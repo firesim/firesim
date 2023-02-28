@@ -14,12 +14,6 @@ BridgeHarness::BridgeHarness(widget_registry_t &registry,
 
 BridgeHarness::~BridgeHarness() = default;
 
-void BridgeHarness::simulation_init() {
-  for (auto &bridge : registry.get_all_bridges()) {
-    bridge->init();
-  }
-}
-
 int BridgeHarness::simulation_run() {
   // Reset the DUT.
   peek_poke.poke("reset", 1, /*blocking=*/true);
@@ -37,10 +31,4 @@ int BridgeHarness::simulation_run() {
 
   // Cleanup.
   return EXIT_SUCCESS;
-}
-
-void BridgeHarness::simulation_finish() {
-  for (auto &bridge : registry.get_all_bridges()) {
-    bridge->finish();
-  }
 }

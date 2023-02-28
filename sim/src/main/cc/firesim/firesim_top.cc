@@ -16,8 +16,6 @@ public:
                 const std::vector<std::string> &args);
   ~firesim_top_t() override = default;
 
-  void simulation_init() override;
-  void simulation_finish() override;
   int simulation_run() override;
 
   bool simulation_timed_out() override {
@@ -59,6 +57,11 @@ firesim_top_t::firesim_top_t(simif_t &simif,
 
   registry.add_widget(
       new heartbeat_t(simif, registry.get_widget<clockmodule_t>(), args));
+
+  // Add functions you'd like to periodically invoke on a paused simulator here.
+  if (profile_interval != -1) {
+    register_task([this]() { return this->profile_models(); }, 0);
+  }
 }
 
 bool firesim_top_t::simulation_complete() {
@@ -84,39 +87,18 @@ int firesim_top_t::exit_code() {
   return 0;
 }
 
-void firesim_top_t::simulation_init() {
-  // Add functions you'd like to periodically invoke on a paused simulator here.
-  if (profile_interval != -1) {
-    register_task([this]() { return this->profile_models(); }, 0);
-  }
-
-  for (auto *bridge : registry.get_all_bridges()) {
-    bridge->init();
-  }
-}
-
 int firesim_top_t::simulation_run() {
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
-    fprintf(stderr, "X\n");
     while (!peek_poke.is_done() && !simulation_complete()) {
       for (auto &e : registry.get_all_bridges()) {
-        fprintf(stderr, "A\n");
         e->tick();
-        fprintf(stderr, "B\n");
       }
     }
-    fprintf(stderr, "Y\n");
   }
 
   return exit_code();
-}
-
-void firesim_top_t::simulation_finish() {
-  for (auto *bridge : registry.get_all_bridges()) {
-    bridge->finish();
-  }
 }
 
 std::unique_ptr<simulation_t>

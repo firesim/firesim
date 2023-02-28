@@ -11,11 +11,6 @@ public:
   void run_test() override {
     int assertions_thrown = 0;
 
-    const auto &assert_endpoints = get_bridges<synthesized_assertions_t>();
-
-    for (auto &ep : assert_endpoints)
-      ep->init();
-
     poke("reset", 0);
     poke("fullrate_pulseLength", 2);
     poke("fullrate_cycle", 186);
@@ -24,7 +19,7 @@ public:
 
     step(256, false);
     while (!peek_poke.is_done()) {
-      for (auto &ep : assert_endpoints) {
+      for (auto &ep : get_bridges<synthesized_assertions_t>()) {
         ep->tick();
         if (ep->terminate()) {
           ep->resume();

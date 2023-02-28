@@ -16,8 +16,6 @@ public:
                    const std::vector<std::string> &args);
   ~fasedtests_top_t() override = default;
 
-  void simulation_init() override;
-  void simulation_finish() override;
   int simulation_run() override;
 
   bool simulation_timed_out() override {
@@ -60,9 +58,13 @@ fasedtests_top_t::fasedtests_top_t(simif_t &simif,
   registry.add_widget(
       new test_harness_bridge_t(simif,
                                 registry.get_widget<peek_poke_t>(),
-                                registry.get_widget<master_t>(),
                                 registry.get_bridges<FASEDMemoryTimingModel>(),
                                 args));
+
+  // Add functions you'd like to periodically invoke on a paused simulator here.
+  if (profile_interval != -1) {
+    register_task([this]() { return this->profile_models(); }, 0);
+  }
 }
 
 bool fasedtests_top_t::simulation_complete() {
@@ -88,34 +90,17 @@ int fasedtests_top_t::exit_code() {
   return 0;
 }
 
-void fasedtests_top_t::simulation_init() {
-  // Add functions you'd like to periodically invoke on a paused simulator here.
-  if (profile_interval != -1) {
-    register_task([this]() { return this->profile_models(); }, 0);
-  }
-
-  for (auto *bridge : registry.get_all_bridges()) {
-    bridge->init();
-  }
-}
-
 int fasedtests_top_t::simulation_run() {
   while (!simulation_complete() && !finished_scheduled_tasks()) {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
     while (!peek_poke.is_done() && !simulation_complete()) {
-      for (auto &e : registry.get_all_bridges())
+      for (auto &e : registry.get_all_bridges()) {
         e->tick();
+      }
     }
   }
-
   return exit_code();
-}
-
-void fasedtests_top_t::simulation_finish() {
-  for (auto *bridge : registry.get_all_bridges()) {
-    bridge->finish();
-  }
 }
 
 std::unique_ptr<simulation_t>

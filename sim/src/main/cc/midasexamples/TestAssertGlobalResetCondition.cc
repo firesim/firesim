@@ -1,16 +1,17 @@
 // See LICENSE for license details.
 
-#include "AssertTest.h"
+#include "TestHarness.h"
+#include "bridges/synthesized_assertions.h"
 
-class TestAssertGlobalResetCondition final : public AssertTest {
+class TestAssertGlobalResetCondition final : public TestHarness {
 public:
-  using AssertTest::AssertTest;
+  using TestHarness::TestHarness;
 
   void run_test() override {
     target_reset(2);
     step(40000, false);
     while (!peek_poke.is_done()) {
-      for (auto &ep : assert_endpoints) {
+      for (auto &ep : get_bridges<synthesized_assertions_t>()) {
         ep->tick();
         if (ep->terminate()) {
           abort();

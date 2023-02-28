@@ -113,7 +113,6 @@ public:
       std::cout << "No test key found, will not assert\n";
     }
 
-    plusargsinator.init();
     target_reset();
 
     for (int i = 0; i < 8; i++) {
