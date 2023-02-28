@@ -1,3 +1,6 @@
+#ifndef __TRACE_TRACKER_H_
+#define __TRACE_TRACKER_H_
+
 #include "tracerv_processing.h"
 
 //#define INDENT_SPACES
@@ -58,3 +61,5 @@ public:
   TraceTracker(std::string binary_with_dwarf, FILE *tracefile);
   void addInstruction(uint64_t inst_addr, uint64_t cycle);
 };
+
+#endif

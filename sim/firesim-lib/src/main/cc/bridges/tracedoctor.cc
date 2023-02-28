@@ -112,13 +112,16 @@ tracedoctor_t::tracedoctor_t(
     bufferTokenThreshold = bufferTokenCapacity - streamDepth;
 
     if (traceEnabled) {
-        if (traceThreads == 0) {
+        if (traceThreads < 0) {
+            traceThreads = workers.size();
+        } else if (traceThreads == 0) {
             fprintf(stdout, "TraceDoctor@%d: multithreading disabled, reduce to single buffer depth\n", info.tracerId);
             bufferDepth = 1;
         } else if (traceThreads > workers.size()) {
             traceThreads = workers.size();
             fprintf(stdout, "TraceDoctor@%d: unbalanced thread number, reducing to %d threads\n", info.tracerId, traceThreads);
         }
+
         for (unsigned int i = 0; i < bufferDepth; i++) {
             std::shared_ptr<referencedBuffer> buffer = std::make_shared<referencedBuffer>();
             buffer->data = (char *) aligned_alloc(sysconf(_SC_PAGESIZE), bufferTokenCapacity * info.tokenBytes);
@@ -219,7 +222,7 @@ bool tracedoctor_t::process_tokens(unsigned int const tokens, bool flush) {
   unsigned int tokensReceived = 0;
 
   // Only if multi threading is enabled, check if buffer is still used
-  while (traceThreads && buffer->refs > 0);
+  while (traceThreads > 0 && buffer->refs > 0);
 
   // This buffer must have been processed as refs is 0
   // and it holds tokens that exceed the bufferTokenThreshold
@@ -245,7 +248,7 @@ bool tracedoctor_t::process_tokens(unsigned int const tokens, bool flush) {
   // If we have exceeded the bufferTokenThreshold we cannot fit another drain
   // into this buffer and we should process it (normal usage that means it is full)
   if (buffer->tokens > bufferTokenThreshold || flush) {
-    if (traceThreads) {
+    if (traceThreads > 0) {
       buffer->refs = workers.size();
 
       workerQueueLock.lock();

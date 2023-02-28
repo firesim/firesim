@@ -198,7 +198,7 @@ private:
 
     bool traceEnabled = false;
     unsigned int traceTrigger = 0;
-    unsigned int traceThreads = 0;
+    int traceThreads = -1;
     bool exit = false;
 
     std::shared_ptr<protectedWorker> getWorker(std::string workername, std::vector<std::string> &args, struct traceInfo &info);

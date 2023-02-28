@@ -45,7 +45,7 @@ tracedoctor_worker::tracedoctor_worker(std::string const name, std::vector<std::
     }
 
     if (localRequiredFiles != 0) {
-      throw std::invalid_argument("TraceDoctor Worker " + tracerName + " requires " + std::to_string(requiredFiles));
+      throw std::invalid_argument("TraceDoctor Worker " + tracerName + " requires " + std::to_string(requiredFiles) + "file, provide it via e.g. 'file:output.csv'");
     }
 
     for (auto &a : filesToOpen) {

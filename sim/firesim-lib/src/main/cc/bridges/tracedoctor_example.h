@@ -2,6 +2,7 @@
 #define __TRACEDOCTOR_EXAMPLE_H_
 
 #include "tracedoctor_worker.h"
+#include "tracerv/trace_tracker.h"
 
 class tracedoctor_tracerv : public tracedoctor_worker {
 private:
@@ -16,7 +17,8 @@ private:
     uint64_t instr5;
   };
 
-  bool binary;
+  enum tracerv_mode {TRACERV_CSV, TRACERV_BINARY, TRACERV_FIREPERF} mode;
+  TraceTracker *tracerv_tracker;
 public:
   tracedoctor_tracerv(std::vector<std::string> const args, struct traceInfo const info);
   ~tracedoctor_tracerv();

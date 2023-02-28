@@ -2,35 +2,50 @@
 
 /*
  * This is an example how to implement a TracerV like trace with TraceDoctor
- * This example does not cover fireperf (though including it here is easy)
- * and it traces all instructions at commit with a valid bit vector
 */
 
 tracedoctor_tracerv::tracedoctor_tracerv(std::vector<std::string> const args, struct traceInfo const info)
-    : tracedoctor_worker("TracerV", args, info, 1), binary(false)
+    : tracedoctor_worker("TracerV", args, info, 1), mode(TRACERV_CSV), tracerv_tracker(NULL)
 {
+  std::string dwarfFileName = "";
+
   for (auto &a: args) {
-    if (a == "binary") {
-      binary = true;
-      continue;
+    if (a == "csv") {
+      mode = TRACERV_CSV;
+    } else if (a == "binary") {
+      mode = TRACERV_BINARY;
+    } else if (a == "fireperf") {
+      mode = TRACERV_FIREPERF;
+    } else if (a.rfind("dwarf-file-name", 0) == 0 && a.find(":") != std::string::npos) {
+      dwarfFileName = a.substr(a.find(":"));
     }
   }
 
-  if (!binary) {
+  if (mode == TRACERV_CSV) {
     fprintf(std::get<freg_descriptor>(fileRegister[0]), "cycle;instr0;instr1;instr2;instr3;instr4;instr5\n");
+  } else if (mode == TRACERV_FIREPERF) {
+    if (dwarfFileName.empty()) {
+      throw std::invalid_argument("No dwarf-file-name given to the fireperf option! Specify options like 'fireperf,dwarf-file-name:bin.elf'");
+    }
+    tracerv_tracker = new TraceTracker(dwarfFileName, std::get<freg_descriptor>(fileRegister[0]));
   }
 
-  fprintf(stdout, "%s: file(%s), binary(%d)\n", tracerName.c_str(), std::get<freg_name>(fileRegister[0]).c_str(), binary);
+  fprintf(stdout, "%s: file(%s), csv(%d), binary(%d), fireperf(%d)\n",
+          tracerName.c_str(),
+          std::get<freg_name>(fileRegister[0]).c_str(),
+          mode == TRACERV_CSV,
+          mode == TRACERV_BINARY,
+          mode == TRACERV_FIREPERF);
 }
 
 tracedoctor_tracerv::~tracedoctor_tracerv() {
-    fprintf(stdout, "%s: file(%s)\n", tracerName.c_str(), std::get<freg_name>(fileRegister[0]).c_str());
+  if (tracerv_tracker) {
+    delete tracerv_tracker;
+  }
 }
 
 void tracedoctor_tracerv::tick(char const * const data, unsigned int tokens) {
-  if (binary) {
-    fwrite(data, 1, tokens * info.tokenBytes, std::get<freg_descriptor>(fileRegister[0]));
-  } else {
+  if (mode == TRACERV_CSV) {
     struct traceLayout const * const traceTokens = (struct traceLayout const * const) data;
     for (unsigned int i = 0; i < tokens; i++) {
       struct traceLayout const traceToken = traceTokens[i];
@@ -43,6 +58,25 @@ void tracedoctor_tracerv::tick(char const * const data, unsigned int tokens) {
               (traceToken.valids & 0b010000) ? traceToken.instr4 : 0,
               (traceToken.valids & 0b100000) ? traceToken.instr5 : 0
       );
+    }
+  } else if (mode == TRACERV_BINARY) {
+    fwrite(data, 1, tokens * info.tokenBytes, std::get<freg_descriptor>(fileRegister[0]));
+  } else {
+    struct traceLayout const * const traceTokens = (struct traceLayout const * const) data;
+    for (unsigned int i = 0; i < tokens; i++) {
+      struct traceLayout const traceToken = traceTokens[i];
+      if (traceToken.valids & 0b000001)
+        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr0) << 24) >> 24), traceToken.timestamp);
+      if (traceToken.valids & 0b000010)
+        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr1) << 24) >> 24), traceToken.timestamp);
+      if (traceToken.valids & 0b000100)
+        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr2) << 24) >> 24), traceToken.timestamp);
+      if (traceToken.valids & 0b001000)
+        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr3) << 24) >> 24), traceToken.timestamp);
+      if (traceToken.valids & 0b010000)
+        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr4) << 24) >> 24), traceToken.timestamp);
+      if (traceToken.valids & 0b100000)
+        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr5) << 24) >> 24), traceToken.timestamp);
     }
   }
 }
