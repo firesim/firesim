@@ -2,7 +2,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, call
 from botocore.exceptions import ClientError
 import pytest
-import os
 
 from moto import mock_s3
 import boto3
@@ -44,14 +43,14 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
         file_uri = f"file://{test_file_path}"
 
     if test_dest_file_path.exists():
-        os.remove(str(test_dest_file_path))
+        test_dest_file_path.unlink(missing_ok=True)
 
     downloadURI(
         uri=file_uri,
         local_dest_path=test_dest_file_path
     )
 
-    assert os.path.exists(test_dest_file_path), f"{test_dest_file_path} was not created."
+    assert test_dest_file_path.exists(), f"{test_dest_file_path} was not created."
 
     logger_mock.debug.assert_called_once_with(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
 
@@ -65,5 +64,4 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
         call(f"Overwriting {test_dest_file_path.resolve()}"),
         call(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
     ])
-
-    os.remove(str(test_dest_file_path))
+    test_dest_file_path.unlink(missing_ok=True)
