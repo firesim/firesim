@@ -28,13 +28,13 @@ def firesim_input(prompt: object = None) -> str:
 
 rootLogger = logging.getLogger()
 
-def downloadURI(uri: str, local_dest_path: str, retries: int = 4) -> None:
+def downloadURI(uri: str, local_dest_path: str, tries: int = 4) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system. Will throw if
     the file is not found.
     Args:
         uri: uri of an object to be fetched
         local_dest_path: path on the local file system to store the uri object
-        retries: The number of times to retry. A 1 second sleep will occur after each failure.
+        tries: The number of times to try the download. A 1 second sleep will occur after each failure.
     """    
 
     # TODO consider using fsspec
@@ -46,16 +46,18 @@ def downloadURI(uri: str, local_dest_path: str, retries: int = 4) -> None:
     lpath = Path(local_dest_path)
     if lpath.exists():
         rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
-    rootLogger.debug(f"Downloading '{uri}' to '{lpath}'")
 
-    for attempt in range(retries):
+    assert tries > 0, "tries argument must be larger than 0"
+    for attempt in range(tries):
+        rootLogger.debug(f"Download attempt {attempt+1} of {tries}: '{uri}' to '{lpath}'")
         try:
             fs, rpath = url_to_fs(uri)
             fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
         except Exception as e:
-            if attempt < retries -1:
+            if attempt < tries -1:
                 time.sleep(1) # Sleep only after a failure
                 continue
             else:
-                raise # retries have been exhausted, raise the last exception
-        break # successful download
+                raise # tries have been exhausted, raise the last exception
+        rootLogger.debug(f"Successfully fetched '{uri}' to '{lpath}'")
+        break
