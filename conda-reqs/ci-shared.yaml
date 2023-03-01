@@ -1,0 +1,42 @@
+channels:
+    - conda-forge
+    - ucb-bar
+    - nodefaults
+
+# non-standard key used in conda-lock: https://github.com/conda-incubator/conda-lock#platform-specification
+platforms:
+    - linux-64
+
+dependencies:
+    # https://conda-forge.org/feedstock-outputs/
+    #   filterable list of all conda-forge packages
+    # https://conda-forge.org/#contribute
+    #   instructions on adding a recipe
+    # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
+    #   documentation on package_spec syntax for constraining versions
+    - boto3
+    - boto3-stubs
+    - mypy-boto3-s3
+    - mypy-boto3-ec2
+    - botocore-stubs
+
+    - pytz
+    - types-pytz
+
+    - pyyaml
+    - types-pyyaml
+
+    - requests
+    - types-requests
+
+    - azure-identity
+    - azure-mgmt-compute # ci-only
+    - azure-mgmt-network # ci-only
+    - azure-mgmt-resource>=18 # ci-only
+
+    - fsspec
+
+    - pip
+    - pip:
+        - fab-classic>=1.19.2
+        - azure-mgmt-resourcegraph # ci-only
