@@ -498,8 +498,25 @@ def makeBBL(config, nodisk=False):
 
 def makeOpenSBI(config, nodisk=False):
     payload = config['linux']['source'] / 'arch' / 'riscv' / 'boot' / 'Image'
+    size = payload.stat().st_size
+
+    # Sometimes static variables can exceed the size of the flat image
+    # Look in the vmlinux ELF for the max address, and use that if its greater
+    vmlinux = config['linux']['source'] / 'vmlinux'
+    # don't use wlutil.run, since we need to process the stdout
+    proc = sp.Popen(['readelf', '--segments', '--wide', vmlinux], stdout=sp.PIPE, universal_newlines=True)
+    proc.wait()
+    for line in iter(proc.stdout.readline, ''):
+        line = line.strip()
+        if "LOAD" in line:
+            cols = line.split()
+            base = int(cols[3], 16)
+            memsize = int(cols[5], 16)
+            if base + memsize > size:
+                size = base + memsize
+
     # Align to next MiB
-    payloadSize = ((payload.stat().st_size + 0xfffff) // 0x100000) * 0x100000
+    payloadSize = ((size + 0xfffff) // 0x100000) * 0x100000
     makeArgsOpts = ['PLATFORM=generic',
                     'FW_PAYLOAD_PATH=' + str(payload),
                     'FW_PAYLOAD_FDT_ADDR=0x$(shell printf "%X" '
