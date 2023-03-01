@@ -125,7 +125,7 @@ dependencies:
     - types-pytz
     - pip
     - pip:
-        - fab-classic==1.19.1
+        - fab-classic==1.19.2
         - mypy-boto3-ec2==1.21.9
         - sure==2.0.0
         - pylddwrap==1.2.1
