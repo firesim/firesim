@@ -506,7 +506,7 @@ class FireSimServerNode(FireSimNode):
         if hwcfg.driver_tar is not None:
             return None
 
-        return (str(self.get_resolved_server_hardware_config().local_tarball_path(InstanceDeployManager.get_tar_name())), InstanceDeployManager.get_tar_name())
+        return (str(self.get_resolved_server_hardware_config().local_tarball_path(InstanceDeployManager.get_driver_tar_filename())), InstanceDeployManager.get_driver_tar_filename())
 
 
 

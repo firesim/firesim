@@ -406,7 +406,7 @@ class FireSimTopologyWithPasses:
                     continue # skip building or tarballing if we have a prebuilt one
 
                 resolved_cfg.build_sim_driver()
-                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), InstanceDeployManager.get_tar_name())
+                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), InstanceDeployManager.get_driver_tar_filename())
 
         servers = self.firesimtopol.get_dfs_order_servers()
         execute(build_drivers_helper, servers, hosts=['localhost'])

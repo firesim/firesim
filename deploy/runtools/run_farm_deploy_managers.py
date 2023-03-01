@@ -187,7 +187,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         self.nbd_tracker = None
 
         self.uri_list = list()
-        self.uri_list.append(URIContainer('driver_tar', self.get_tar_name()))
+        self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
 
     @abc.abstractmethod
     def infrasetup_instance(self, uridir: str) -> None:
@@ -343,7 +343,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             options = "-xf"
 
             with cd(remote_sim_dir):
-                run(f"tar {options} {self.get_tar_name()}")
+                run(f"tar {options} {self.get_driver_tar_filename()}")
 
     def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
         """ copy all the switch infrastructure to the remote node. """
@@ -597,14 +597,9 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         assert False
 
     @classmethod
-    def get_tar_name(cls) -> str:
-        """ Get the name of the tarball on the run host"""
+    def get_driver_tar_filename(cls) -> str:
+        """ Get the name of the tarball inside the sim_slot_X directory on the run host. """
         return "driver-bundle.tar.gz"
-
-    @classmethod
-    def get_xclbin_name(cls) -> str:
-        """ Get the name of the xclbin on the run host"""
-        return "bitstream.xclbin"
 
 def remote_kmsg(message: str) -> None:
     """ This will let you write whatever is passed as message into the kernel
@@ -817,12 +812,17 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def sim_command_requires_sudo(cls) -> bool:
         """ This sim does not require sudo. """
         return False
+    
+    @classmethod
+    def get_xclbin_filename(cls) -> str:
+        """ Get the name of the xclbin inside the sim_slot_X directory on the run host. """
+        return "bitstream.xclbin"
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
 
         # Vitis runs add the additional handling of the xclbin URI
-        self.uri_list.append(URIContainer('xclbin', self.get_xclbin_name()))
+        self.uri_list.append(URIContainer('xclbin', self.get_xclbin_filename()))
 
     def clear_fpgas(self) -> None:
         if self.instance_assigned_simulations():
@@ -833,8 +833,15 @@ class VitisInstanceDeployManager(InstanceDeployManager):
                 # Examine forcibly puts the JSON in an output file (on the remote); The stdout
                 # it produces is difficult to parse so use process substitution
                 # to pipe JSON to stdout instead.
-                xbutil_examine_json = run("xbutil examine --force --format JSON -o >(cat) > /dev/null")
-                json_dict = json.loads(xbutil_examine_json)
+                # combine_stderr=False allows separate stdout and stderr streams
+                xbutil_examine_json = run("xbutil examine --force --format JSON -o >(cat) > /dev/null", pty=False, combine_stderr=False)
+                if xbutil_examine_json.stderr != '':
+                    rootLogger.critical(f"xbutil returned:\n{xbutil_examine_json.stderr}")
+                try:
+                    json_dict = json.loads(xbutil_examine_json.stdout)
+                except json.JSONDecodeError as e:
+                    rootLogger.critical(f"JSONDecodeError when parsing output from xbutil.")
+                    raise e
                 card_bdfs = [d["bdf"] for d in json_dict["system"]["host"]["devices"]]
 
             for card_bdf in card_bdfs:
