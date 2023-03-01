@@ -4,6 +4,7 @@ from fsspec.core import url_to_fs, open_local # type: ignore
 from pathlib import Path
 from fabric.api import local # type: ignore
 from typing import Optional
+import time
 
 def firesim_input(prompt: object = None) -> str:
     """wrap builtins.input() understanding the idiocyncracies of firesim+fabric+logging
@@ -27,12 +28,13 @@ def firesim_input(prompt: object = None) -> str:
 
 rootLogger = logging.getLogger()
 
-def downloadURI(uri: str, local_dest_path: str) -> None:
+def downloadURI(uri: str, local_dest_path: str, retries: int = 4) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system. Will throw if
     the file is not found.
     Args:
         uri: uri of an object to be fetched
         local_dest_path: path on the local file system to store the uri object
+        retries: The number of times to retry. A 1 second sleep will occur after each failure.
     """    
 
     # TODO consider using fsspec
@@ -45,5 +47,15 @@ def downloadURI(uri: str, local_dest_path: str) -> None:
     if lpath.exists():
         rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
     rootLogger.debug(f"Downloading '{uri}' to '{lpath}'")
-    fs, rpath = url_to_fs(uri)
-    fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
+
+    for attempt in range(retries):
+        try:
+            fs, rpath = url_to_fs(uri)
+            fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
+        except Exception as e:
+            if attempt < retries -1:
+                time.sleep(1) # Sleep only after a failure
+                continue
+            else:
+                raise # retries have been exhausted, raise the last exception
+        break # successful download
