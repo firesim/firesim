@@ -43,7 +43,7 @@ public:
   bool finished_scheduled_tasks() { return current_cycle == max_cycles; };
 
 private:
-  // Unless overriden, assume the simulator will run (effectively) forever.
+  // Unless overriden, assume the simulator will run indefinitely.
   std::optional<uint64_t> max_cycles = std::nullopt;
 
   uint64_t default_step_size = MAX_MIDAS_STEP;
