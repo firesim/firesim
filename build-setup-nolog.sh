@@ -6,52 +6,70 @@
 set -e
 set -o pipefail
 
-unamestr=$(uname)
-RDIR=$(pwd)
+FDIR=$(pwd)
 
-FASTINSTALL=false
 IS_LIBRARY=false
 SKIP_TOOLCHAIN=false
-SKIP_VALIDATE=false
+FORCE_FLAG=""
+VERBOSE=false
+VERBOSE_FLAG=""
 TOOLCHAIN=riscv-tools
 USE_PINNED_DEPS=true
+SKIP_LIST=()
 
 function usage
 {
-    echo "usage: build-setup.sh [OPTIONS]"
-    echo "options:"
-    echo "   --skip-toolchain-extra: if set, skips building extra RISC-V toolchain collateral i.e Spike,"
-    echo "                   PK, RISC-V tests, libgloss and installing it to $RISCV (including cloning or building)."
-    echo "   --library: if set, initializes submodules assuming FireSim is being used"
+    echo "Usage: build-setup.sh [OPTIONS]"
+    echo ""
+    echo "Helper script to fully initialize repository that wraps other scripts."
+    echo "By default it initializes/installs things in the following order:"
+    echo "   ?. Conda environment"
+    echo "   ?. FireSim submodules"
+    echo "   ?. All Chipyard Setup"
+    echo "     ?. Toolchain collateral (Spike, PK, tests, libgloss)"
+    echo "     ?. Chipyard Ctags"
+    echo "     ?. Chipyard pre-compile sources"
+    echo "     ?. FireMarshal"
+    echo "     ?. FireMarshal pre-compile default buildroot Linux sources"
+    echo "   ?. EC2 specific-setup"
+    echo "   ?. FireSim Ctags"
+    echo ""
+    echo "**See above for options to skip parts of the setup. Skipping parts of the setup is not guaranteed to be tested/working.**"
+    echo ""
+    echo "Options:"
+    echo "   --help -h  : Display this message"
+    echo "   --force -f : Skip all prompts and checks"
+    echo "   --verbose -v : Verbose printout"
+    echo "   --use-unpinned-deps -ud: Use unpinned conda environment"
+    echo "   --skip -s : Skip step N in the list above. Use multiple times to skip multiple steps ('-s N -s M ...')."
+    echo "   --library -l : if set, initializes submodules assuming FireSim is being used"
     echo "            as a library submodule. Implies --skip-toolchain-extra"
-    echo "   --skip-validate: if set, skips checking if user is on release tagged branch"
-    echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
 }
 
-if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "-H" ]; then
-    usage
-    exit 3
-fi
-
-while test $# -gt 0
+while [ "$1" != "" ];
 do
    case "$1" in
-        --library)
+        --library | -l)
             IS_LIBRARY=true;
             SKIP_TOOLCHAIN=true;
             ;;
-        --skip-toolchain-extra)
-            SKIP_TOOLCHAIN=true;
+        --force | -f)
+            FORCE_FLAG=$1;
             ;;
-        --skip-validate)
-            SKIP_VALIDATE=true;
-            ;;
-        --unpinned-deps)
+        --use-unpinned-deps | -ud)
             USE_PINNED_DEPS=false;
             ;;
-        -h | -H | --help)
+        -h | --help)
             usage
             exit
+            ;;
+        --verbose | -v)
+            VERBOSE_FLAG=$1
+            set -x
+            ;;
+        --skip | -s)
+            shift
+            SKIP_LIST+=(${1})
             ;;
         --*) echo "ERROR: bad option $1"
             usage
@@ -65,13 +83,41 @@ do
     shift
 done
 
+
+#######################################
+# Return true if the arg is not
+# found in the SKIP_LIST
+#######################################
+run_step() {
+    local value=$1
+    [[ ! " ${SKIP_LIST[*]} " =~ " ${value} " ]]
+}
+
+#######################################
+# Save bash options. Must be called
+# before a corresponding `restore_bash_options`.
+#######################################
+function save_bash_options
+{
+    OLDSTATE=$(set +o)
+}
+
+#######################################
+# Restore bash options. Must be called
+# after a corresponding `save_bash_options`.
+#######################################
+function restore_bash_options
+{
+    set +vx; eval "$OLDSTATE"
+}
+
 # before doing anything verify that you are on a release branch/tag
-set +e
+save_bash_options
 tag=$(git describe --exact-match --tags)
 tag_ret_code="$?"
-set -e
+restore_bash_options
 if [ "$tag_ret_code" -ne 0 ]; then
-    if [ "$SKIP_VALIDATE" = false ]; then
+    if [ -z "$FORCE_FLAG" ]; then
         read -p "WARNING: You are not on an official release of FireSim."$'\n'"Type \"y\" to continue if this is intended, otherwise see https://docs.fires.im/en/stable/Initial-Setup/Setting-up-your-Manager-Instance.html#setting-up-the-firesim-repo: " validate
         [[ "$validate" == [yY] ]] || exit 5
         echo "Setting up non-official FireSim release"
@@ -128,136 +174,157 @@ conda activate --help >& /dev/null || source $(conda info --base)/etc/profile.d/
 \0
 END_CONDA_ACTIVATE
 
-if [ "$IS_LIBRARY" = true ]; then
-    # the chipyard conda environment should be installed already and be sufficient
-    if [ -z "${CONDA_DEFAULT_ENV+x}" ]; then
-        echo "ERROR: No conda environment detected. If using Chipyard, did you source 'env.sh'."
-        exit 5
+if run_step "1"; then
+    if [ "$IS_LIBRARY" = true ]; then
+        # the chipyard conda environment should be installed already and be sufficient
+        if [ -z "${CONDA_DEFAULT_ENV+x}" ]; then
+            echo "ERROR: No conda environment detected. If using Chipyard, did you source 'env.sh'."
+            exit 5
+        fi
+    else
+        # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
+        LOCKFILE="$FDIR/conda-reqs.conda-lock.yml"
+        YAMLFILE="$FDIR/conda-reqs.yaml"
+        if [ "$USE_PINNED_DEPS" = false ]; then
+            # auto-gen the lockfile
+            conda-lock -f "$YAMLFILE" --lockfile "$LOCKFILE"
+        fi
+        conda-lock install -p $FDIR/.conda-env $LOCKFILE
+        source $FDIR/.conda-env/etc/profile.d/conda.sh
+        conda activate $FDIR/.conda-env
+        env_append "$CONDA_ACTIVATE_PREAMBLE"
+        env_append "conda activate $FDIR/.conda-env"
     fi
-else
-    # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
-    LOCKFILE="$RDIR/conda-reqs.conda-lock.yml"
-    YAMLFILE="$RDIR/conda-reqs.yaml"
-    if [ "$USE_PINNED_DEPS" = false ]; then
-        # auto-gen the lockfile
-        conda-lock -f "$YAMLFILE" --lockfile "$LOCKFILE"
-    fi
-    conda-lock install -p $RDIR/.conda-env $LOCKFILE
-    source $RDIR/.conda-env/etc/profile.d/conda.sh
-    conda activate $RDIR/.conda-env
-    env_append "$CONDA_ACTIVATE_PREAMBLE"
-    env_append "conda activate $RDIR/.conda-env"
 fi
 
-git config submodule.target-design/chipyard.update none
-git submodule update --init --recursive #--jobs 8
+if run_step "2"; then
+    git config submodule.target-design/chipyard.update none
+    git submodule update --init --recursive #--jobs 8
+fi
 
 # Chipyard setup
-if [ "$IS_LIBRARY" = false ]; then
-    # This checks if firemarshal has already been configured by someone. If
-    # not, we will provide our own config. This must be checked before calling
-    # init-submodules-no-riscv-tools.sh because that will configure
-    # firemarshal.
-    marshal_cfg="$RDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml"
-    if [ ! -f "$marshal_cfg" ]; then
-      first_init=true
+if run_step "2"; then
+    if [ "$IS_LIBRARY" = false ]; then
+        # This checks if firemarshal has already been configured by someone. If
+        # not, we will provide our own config. This must be checked before calling
+        # init-submodules-no-riscv-tools.sh because that will configure
+        # firemarshal.
+        marshal_cfg="$FDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml"
+        if [ ! -f "$marshal_cfg" ]; then
+          first_init=true
+        else
+          first_init=false
+        fi
+
+        git config --unset submodule.target-design/chipyard.update
+        git submodule update --init target-design/chipyard
+        cd $FDIR/target-design/chipyard
+
+        if run_step "?"; then
+            SKIP_TOOLCHAIN_ARG="-s 3"
+        fi
+        if run_step "?"; then
+            SKIP_CY_CTAGS="-s 4"
+        fi
+        if run_step "?"; then
+            SKIP_CY_PRECOMPILE="-s 5"
+        fi
+        if run_step "?"; then
+            SKIP_FM_SETUP="-s 8"
+        fi
+        if run_step "?"; then
+            SKIP_FM_PRECOMPILE_BR="-s 9"
+        fi
+        # default to normal riscv-tools toolchain
+        ./build-setup.sh --force -s 1 -s 6 -s 7 $SKIP_TOOLCHAIN_ARG $SKIP_CY_CTAGS $SKIP_CY_PRECOMPILE $SKIP_FM_SETUP $SKIP_FM_PRECOMPILE_BR
+
+        # Deinitialize Chipyard's FireSim submodule so that fuzzy finders, IDEs,
+        # etc., don't get confused by source duplication.
+        git submodule deinit sims/firesim
+        cd $FDIR
+
+        # Configure firemarshal to know where our firesim installation is.
+        # If this is a fresh init of chipyard, we can safely overwrite the marshal
+        # config, otherwise we have to assume the user might have changed it
+        if [ $first_init = true ]; then
+          echo "firesim-dir: '../../../../'" > $marshal_cfg
+        fi
+        env_append "export FIRESIM_STANDALONE=1"
+
+        # FireMarshal setup
+        target_chipyard_dir="$FDIR/target-design/chipyard"
+
+        # setup marshal symlink
+        ln -sf ../target-design/chipyard/software/firemarshal $FDIR/sw/firesim-software
+
+        env_append "export PATH=$FDIR/sw/firesim-software:\$PATH"
+
+        env_append "source $FDIR/scripts/fix-open-files.sh"
     else
-      first_init=false
+        # FireMarshal setup
+        target_chipyard_dir="$FDIR/../.."
+
+        # setup marshal symlink
+        ln -sf ../../../software/firemarshal $FDIR/sw/firesim-software
+
+        # Source CY env.sh in library-mode
+        env_append "source $target_chipyard_dir/env.sh"
     fi
-
-    git config --unset submodule.target-design/chipyard.update
-    git submodule update --init target-design/chipyard
-    cd $RDIR/target-design/chipyard
-
-    SKIP_TOOLCHAIN_ARG=""
-    if [ "$SKIP_TOOLCHAIN" = true ]; then
-        SKIP_TOOLCHAIN_ARG="-s 3"
-    fi
-    # default to normal riscv-tools toolchain
-    ./build-setup.sh --force $SKIP_TOOLCHAIN_ARG -s 1 -s 4 -s 5 -s 6 -s 7 -s 8 -s 9
-
-    # Deinitialize Chipyard's FireSim submodule so that fuzzy finders, IDEs,
-    # etc., don't get confused by source duplication.
-    git submodule deinit sims/firesim
-    cd $RDIR
-
-    # Configure firemarshal to know where our firesim installation is.
-    # If this is a fresh init of chipyard, we can safely overwrite the marshal
-    # config, otherwise we have to assume the user might have changed it
-    if [ $first_init = true ]; then
-      echo "firesim-dir: '../../../../'" > $marshal_cfg
-    fi
-    env_append "export FIRESIM_STANDALONE=1"
-
-    # FireMarshal setup
-    target_chipyard_dir="$RDIR/target-design/chipyard"
-
-    # setup marshal symlink
-    ln -sf ../target-design/chipyard/software/firemarshal $RDIR/sw/firesim-software
-
-    env_append "export PATH=$RDIR/sw/firesim-software:\$PATH"
-
-    env_append "source $RDIR/scripts/fix-open-files.sh"
-else
-    # FireMarshal setup
-    target_chipyard_dir="$RDIR/../.."
-
-    # setup marshal symlink
-    ln -sf ../../../software/firemarshal $RDIR/sw/firesim-software
-
-    # Source CY env.sh in library-mode
-    env_append "source $target_chipyard_dir/env.sh"
 fi
 
-cd "$RDIR"
+cd "$FDIR"
 
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
-if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
+if run_step "4"; then
+    if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 
-    (
-	# ensure that we're using the system toolchain to build the kernel modules
-	# newer gcc has --enable-default-pie and older kernels think the compiler
-	# is broken unless you pass -fno-pie but then I was encountering a weird
-	# error about string.h not being found
-	export PATH=/usr/bin:$PATH
+        (
+            # ensure that we're using the system toolchain to build the kernel modules
+            # newer gcc has --enable-default-pie and older kernels think the compiler
+            # is broken unless you pass -fno-pie but then I was encountering a weird
+            # error about string.h not being found
+            export PATH=/usr/bin:$PATH
 
-	cd "$RDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-	make
+            cd "$FDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+            make
 
-	# the only ones missing are libguestfs-tools
-	sudo yum install -y libguestfs-tools bc
+            # the only ones missing are libguestfs-tools
+            sudo yum install -y libguestfs-tools bc
 
-	# Setup for using qcow2 images
-	cd "$RDIR"
-	./scripts/install-nbd-kmod.sh
-    )
+            # Setup for using qcow2 images
+            cd "$FDIR"
+            ./scripts/install-nbd-kmod.sh
+        )
 
-    (
-	if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
-	    # don't set it if it isn't already set but strip out -DNDEBUG because
-	    # the sdk software has assertion-only variable usage that will end up erroring
-	    # under NDEBUG with -Wall and -Werror
-	    export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
-	fi
+        (
+            if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
+                # don't set it if it isn't already set but strip out -DNDEBUG because
+                # the sdk software has assertion-only variable usage that will end up erroring
+                # under NDEBUG with -Wall and -Werror
+                export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+            fi
 
 
-	# Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
-	# pull down some IP, so we don't have to waste time doing it each time on
-	# worker instances
-	AWSFPGA="$RDIR/platforms/f1/aws-fpga"
-	cd "$AWSFPGA"
-	bash -c "source ./sdk_setup.sh"
-	bash -c "source ./hdk_setup.sh"
-    )
+            # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
+            # pull down some IP, so we don't have to waste time doing it each time on
+            # worker instances
+            AWSFPGA="$FDIR/platforms/f1/aws-fpga"
+            cd "$AWSFPGA"
+            bash -c "source ./sdk_setup.sh"
+            bash -c "source ./hdk_setup.sh"
+        )
 
+    fi
 fi
 
-cd "$RDIR"
-set +e
-./gen-tags.sh
-set -e
+cd "$FDIR"
+if run_step "5"; then
+    set +e
+    ./gen-tags.sh
+    set -e
+fi
 
 read -r -d '\0' NDEBUG_CHECK <<'END_NDEBUG'
 # Ensure that we don't have -DNDEBUG anywhere in our environment
