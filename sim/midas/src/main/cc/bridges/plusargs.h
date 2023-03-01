@@ -35,11 +35,8 @@ public:
              uint32_t bit_width,
              const std::vector<uint32_t> &slice_addrs);
   ~plusargs_t() override;
+
   void init() override;
-  void tick() override {}
-  void finish() override {}
-  bool terminate() override { return false; };
-  int exit_code() override { return 0; };
   uint32_t slice_address(uint32_t idx);
 
   bool get_overridden();

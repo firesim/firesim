@@ -6,9 +6,9 @@ import chisel3.util._
 import junctions._
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.LazyModuleImp
-import freechips.rocketchip.util.HeterogeneousBag
+import freechips.rocketchip.amba.axi4.AXI4Bundle
 
-import midas.core.CPUManagedAXI4Key
+import midas.core.{CPUManagedAXI4Key, HostMemChannelKey, HostMemNumChannels}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
 
@@ -20,7 +20,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     val io_dma    = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey =>
       NastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams)
     })))
-    val io_slave  = IO(HeterogeneousBag(top.module.mem.map(x => x.cloneType)))
+    val io_slave  = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
     if (p(AXIDebugPrint)) {
       AXI4Printf(io_master, "master")
@@ -30,6 +30,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
 
     top.module.ctrl <> io_master
 
+    // Connect the CPU-managed stream engine if the target has one. Otherwise, cap off the connection.
     top.module.cpu_managed_axi4 match {
       case None       =>
         io_dma.aw.ready := false.B
@@ -43,6 +44,17 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
         AXI4NastiAssigner.toAXI4(axi4, io_dma)
     }
 
+    // Using last-connect semantics, first cap off all channels and then connect the ones used.
+    for (slave <- io_slave) {
+      slave.aw.valid := false.B
+      slave.aw.bits  := DontCare
+      slave.ar.valid := false.B
+      slave.ar.bits  := DontCare
+      slave.w.valid  := false.B
+      slave.w.bits   := DontCare
+      slave.r.ready  := false.B
+      slave.b.ready  := false.B
+    }
     io_slave.zip(top.module.mem).foreach({ case (io, bundle) => io <> bundle })
 
     // Biancolin: It would be good to put in writing why ID is being reassigned...

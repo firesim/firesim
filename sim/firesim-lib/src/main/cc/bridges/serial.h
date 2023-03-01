@@ -38,7 +38,6 @@ public:
   virtual void tick();
   virtual bool terminate();
   virtual int exit_code();
-  virtual void finish() {}
 
 private:
   const SERIALBRIDGEMODULE_struct mmio_addrs;

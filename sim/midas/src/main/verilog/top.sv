@@ -116,19 +116,26 @@ module emul(
 );
 `ifndef VERILATOR
   // Generate a single clock signal as long as the simulation is running.
-  bit clock;
-  reg fin = 1'b0;
+  bit clock = 1'b0;
+  bit fin = 1'b0;
+  bit reset = 1'b1;
   initial begin
-    clock = 1'b0;
     while (!fin) begin
-      clock = #(`CLOCK_PERIOD / 2.0) ~clock;
+      clock = #(`CLOCK_PERIOD * 1000 / 2.0) ~clock;
     end
   end
 
-  reg reset;
   initial begin
+    // Wait for the Vivado internal reset signal for gate-level sims.
+    `ifdef GATE_LEVEL_SIM
+    reset = 1'b0;
+    repeat (2) @(posedge clock); #0.001
     reset = 1'b1;
-    #(`CLOCK_PERIOD * 9.0) reset = 1'b0;
+    while (glbl.GSR) @(posedge clock);
+    `endif
+
+    // Maintain 10 reset cycles. This should be identical to Verilator.
+    #(`CLOCK_PERIOD * 1000 * 9.0) reset = 1'b0;
   end
 `endif
 

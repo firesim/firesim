@@ -12,9 +12,6 @@ public:
     // registers on each reset * maximum clock division.
     step(4);
     poke("reset", 0);
-    for (auto &print_endpoint : print_endpoints) {
-      print_endpoint->init();
-    }
     run_and_collect_prints(1000);
   };
 };

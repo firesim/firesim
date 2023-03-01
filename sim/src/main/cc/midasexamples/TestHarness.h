@@ -3,20 +3,16 @@
 
 #include <random>
 
-#include "bridges/autocounter.h"
 #include "bridges/peek_poke.h"
-#include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/simulation.h"
 
 /**
  * Base class for simple unit tests.
  *
- * In the constructor, macros for all bridges are invoked to create bridge
- * instances and pass them to an overload of the `add_bridge_driver` function.
- * By default, no bridge is allowed to be registered. If a test case wishes
- * to take control of bridges, it can override the appropriate method and
- * intercept the bridge for later use.
+ * By default, it initializes/finalizes all registered bridges and allows the
+ * test to interact with them inbetween. Assumes the existence of a peek-poke
+ * bridge. Provides convenience methods for interacting with the DUT.
  */
 class TestHarness : public simulation_t {
 public:

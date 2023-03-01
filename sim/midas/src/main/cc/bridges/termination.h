@@ -30,9 +30,8 @@ public:
                 const std::vector<termination_message_t> &messages);
 
   ~termination_t() override;
-  void init() override {}
+
   void tick() override;
-  void finish() override {}
   bool terminate() override { return test_done; }
   int exit_code() override { return fail; }
 

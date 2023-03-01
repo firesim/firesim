@@ -25,11 +25,9 @@ public:
               clockmodule_t &clock,
               const std::vector<std::string> &args);
 
-  void init() override {}
   void tick() override;
   bool terminate() override { return has_timed_out; };
   int exit_code() override { return (has_timed_out) ? 1 : 0; };
-  void finish() override {}
 
 private:
   clockmodule_t &clock;

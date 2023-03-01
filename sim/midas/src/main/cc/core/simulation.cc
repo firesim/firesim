@@ -4,6 +4,7 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
+#include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/stream_engine.h"
 #include "core/timing.h"
@@ -79,6 +80,18 @@ void simulation_t::print_simulation_performance_summary() {
           "target clock.\n");
 }
 
+void simulation_t::simulation_init() {
+  for (auto *bridge : registry.get_all_bridges()) {
+    bridge->init();
+  }
+}
+
+void simulation_t::simulation_finish() {
+  for (auto *bridge : registry.get_all_bridges()) {
+    bridge->finish();
+  }
+}
+
 int simulation_t::execute_simulation_flow() {
   wait_for_init();
 
@@ -125,13 +138,20 @@ void simulation_t::wait_for_init() {
 }
 
 void simulation_t::init_dram() {
-  auto &loadmem = registry.get_widget<loadmem_t>();
-  if (do_zero_out_dram) {
-    fprintf(stderr, "Zeroing out FPGA DRAM. This will take a few seconds...\n");
-    loadmem.zero_out_dram();
-  }
+  if (auto *loadmem = registry.get_widget_opt<loadmem_t>()) {
+    if (do_zero_out_dram) {
+      fprintf(stderr,
+              "Zeroing out FPGA DRAM. This will take a few seconds...\n");
+      loadmem->zero_out_dram();
+    }
 
-  if (!load_mem_path.empty()) {
-    loadmem.load_mem_from_file(load_mem_path);
+    if (!load_mem_path.empty()) {
+      loadmem->load_mem_from_file(load_mem_path);
+    }
+  } else {
+    if (do_zero_out_dram || !load_mem_path.empty()) {
+      fprintf(stderr,
+              "Skipping memory initialization: target does not use DRAM\n");
+    }
   }
 }

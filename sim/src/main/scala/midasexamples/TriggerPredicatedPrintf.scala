@@ -9,10 +9,11 @@ import freechips.rocketchip.config.Parameters
 
 import midas.targetutils.{TriggerSource, TriggerSink, SynthesizePrintf}
 
-trait TriggerPredicatedPrintfConsts {
-  val assertTriggerCycle   = 100
-  val deassertTriggerCycle = 1000
+object TriggerPredicatedPrintfConsts {
+  val assertTriggerCycle: Int   = 100
+  val deassertTriggerCycle: Int = 1000
 }
+
 /**
   * An example module that uses the trigger system to enable a printf in a
   * desired region of interest.
@@ -24,7 +25,8 @@ trait TriggerPredicatedPrintfConsts {
   * instances of this module.
   */
 class TriggerPredicatedPrintfDUT(printfPrefix: String = "SYNTHESIZED_PRINT ") 
-    extends Module with TriggerPredicatedPrintfConsts{
+    extends Module {
+  import TriggerPredicatedPrintfConsts._
 
   val io = IO(new Bundle{})
   // An inner class to reduce namespace bloat in midasexamples package

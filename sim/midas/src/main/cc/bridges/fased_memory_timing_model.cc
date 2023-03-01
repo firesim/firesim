@@ -54,12 +54,13 @@ char FASEDMemoryTimingModel::KIND;
 
 FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     simif_t &simif,
-    const AddressMap &addr_map,
+    AddressMap &&addr_map,
     unsigned modelno,
     const std::vector<std::string> &args,
     const std::string &stats_file_name,
     size_t mem_size)
-    : FpgaModel(&simif, addr_map), widget_t(simif, &KIND), mem_size(mem_size) {
+    : bridge_driver_t(simif, &KIND), addr_map(std::move(addr_map)),
+      mem_size(mem_size) {
 
   std::string suffix = "_" + std::to_string(modelno);
   for (auto &arg : args) {
@@ -167,7 +168,7 @@ void FASEDMemoryTimingModel::init() {
     // the initial value. Otherwise, error out.
     if (!user_configuration.empty()) {
       if (useHardwareDefaults) {
-        auto init_val = read(key);
+        auto init_val = simif.read(addr_map.r_addr(key));
         fprintf(stderr,
                 "[FASED] Using hardware default of %u for configuration "
                 "register %s\n",

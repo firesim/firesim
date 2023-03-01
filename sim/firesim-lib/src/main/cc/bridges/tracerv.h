@@ -47,9 +47,8 @@ public:
 
   virtual void init();
   virtual void tick();
-  virtual bool terminate() { return false; }
-  virtual int exit_code() { return 0; }
   virtual void finish() { flush(); };
+
   static void serialize(const uint64_t *OUTBUF,
                         size_t bytes_received,
                         FILE *tracefile,

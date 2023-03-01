@@ -56,10 +56,23 @@ public:
    */
   template <typename T>
   T &get_widget() {
+    auto *widget = get_widget_opt<T>();
+    assert(widget && "cannot find widget");
+    return *widget;
+  }
+
+  /**
+   * Return a widget of a particular kind, if it has a single instance.
+   *
+   * @tparam T Type of the widget to fetch
+   * @return Pointer to the widget instance.
+   */
+  template <typename T>
+  T *get_widget_opt() {
     auto it = widgets.find(&T::KIND);
-    assert(it != widgets.end() && "no bridges registered");
-    assert(it->second.size() == 1 && "multiple bridges registered");
-    return *static_cast<T *>(it->second[0].get());
+    if (it == widgets.end() || it->second.size() != 1)
+      return nullptr;
+    return static_cast<T *>(it->second[0].get());
   }
 
   /**
@@ -74,20 +87,12 @@ public:
   }
 
   /**
-   * Returns all models in the deterministic order of their construction.
-   */
-  const std::vector<FASEDMemoryTimingModel *> &get_all_models() {
-    return all_models;
-  }
-
-  /**
    * Returns a pointer to the stream engine widget, if one exists.
    */
   StreamEngine *get_stream_engine() { return stream_engine.get(); }
 
   void add_widget(widget_t *widget);
   void add_widget(bridge_driver_t *widget);
-  void add_widget(FASEDMemoryTimingModel *widget);
   void add_widget(StreamEngine *widget);
 
 private:
@@ -104,11 +109,6 @@ private:
    * List of all bridges, maintained in a deterministic order.
    */
   std::vector<bridge_driver_t *> all_bridges;
-
-  /**
-   * List of all models, maintained in a deterministic order.
-   */
-  std::vector<FASEDMemoryTimingModel *> all_models;
 };
 
 #endif // __BRIDGE_REGISTRY_H

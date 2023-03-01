@@ -143,8 +143,6 @@ public:
   }
 
   int simulation_run() override {
-    tracerv.init();
-
     // Reset the DUT.
     peek_poke.poke("reset", 1, /*blocking=*/true);
     step(1, /*blocking=*/true);

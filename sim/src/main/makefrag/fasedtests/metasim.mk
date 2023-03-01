@@ -24,21 +24,24 @@ xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 logfile = $(if $(LOGFILE),$(abspath $(LOGFILE)),$(OUTPUT_DIR)/$1.out)
 waveform = $(if $(WAVEFORM),$(abspath $(WAVEFORM)),$(OUTPUT_DIR)/$1.$2)
 
-run-verilator: $(verilator)
+run-verilator run-verilator-debug: run-verilator%: $(GENERATED_DIR)/V$(DESIGN)%
 	mkdir -p $(OUTPUT_DIR)
-	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> $(call logfile,verilator)
+	cd $(<D) && ./$(<F) \
+		$(COMMON_SIM_ARGS) \
+		$(MIDAS_LEVEL_SIM_ARGS) \
+		$(EXTRA_SIM_ARGS) \
+		+waveform=$(call waveform,verilator$(<:$(GENERATED_DIR)/V$(DESIGN)%=%),vcd) \
+		2> $(call logfile,verilator$(<:$(GENERATED_DIR)/V$(DESIGN)%=%))
 
-run-verilator-debug: $(verilator_debug)
+run-vcs run-vcs-post-synth run-vcs-debug run-vcs-post-synth-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
 	mkdir -p $(OUTPUT_DIR)
-	cd $(<D) && ./$(<F) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=$(call waveform,verilator,vcd) 2> $(call logfile,verilator)
-
-run-vcs: $(vcs)
-	mkdir -p $(OUTPUT_DIR)
-	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) 2> $(call logfile,vcs)
-
-run-vcs-debug: $(vcs_debug)
-	mkdir -p $(OUTPUT_DIR)
-	cd $(<D) && ./$(<F) $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +waveform=$(call waveform,vcs,vpd) 2> $(call logfile,vcs)
+	cd $(GENERATED_DIR) && ./$(notdir $<) \
+		$(vcs_args) \
+		$(COMMON_SIM_ARGS) \
+		$(ARGS) \
+		$(loadmem) \
+		+waveform=$(call waveform,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%),vpd) \
+		2> $(call logfile,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%))
 
 .PHONY: run-xsim
 run-xsim: $(xsim)

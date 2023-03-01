@@ -170,6 +170,39 @@ class XilinxAXI4Bundle(val bundleParams: AXI4BundleParameters, val isAXI4Lite: B
       }
     }
   }
+
+  def tieoffAsManager(): Unit = {
+    awid.foreach { _ := DontCare }
+    awaddr  := DontCare
+    awlen.foreach { _ := DontCare }
+    awsize.foreach { _ := DontCare }
+    awburst.foreach { _ := DontCare }
+    awlock.foreach { _ := DontCare }
+    awcache.foreach { _ := DontCare }
+    awprot  := DontCare
+    awqos.foreach { _ := DontCare }
+    awvalid := false.B
+
+    wdata  := DontCare
+    wstrb  := DontCare
+    wlast.foreach { _ := DontCare }
+    wvalid := false.B
+
+    bready := false.B
+
+    arid.foreach { _ := DontCare }
+    araddr  := DontCare
+    arlen.foreach { _ := DontCare }
+    arsize.foreach { _ := DontCare }
+    arburst.foreach { _ := DontCare }
+    arlock.foreach { _ := DontCare }
+    arcache.foreach { _ := DontCare }
+    arprot  := DontCare
+    arqos.foreach { _ := DontCare }
+    arvalid := false.B
+
+    rready := false.B
+  }
 }
 
 class AXI4ClockConverter(
