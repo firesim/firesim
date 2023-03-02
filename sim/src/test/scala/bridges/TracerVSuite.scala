@@ -60,5 +60,5 @@ class TracerVF1TestCount1 extends TracerVTestBase(BaseConfigs.F1, 1);
 // This test is disabled until FireSim issue #1428 is resolved
 // class TracerVF1TestCount5 extends TracerVTestBase(BaseConfigs.F1, 5, Some(3), Some("FF0000001C")); // in hex
 class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
-class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("8"));    // in decimala DELME These changes should not be merged
+class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9"));    // in decimala
 class TracerVVitisTest    extends TracerVTestBase(BaseConfigs.Vitis, 7);
