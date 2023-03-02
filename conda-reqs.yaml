@@ -16,7 +16,6 @@ dependencies:
     - git
     - gitpython
     - humanfriendly
-    - e2fsprogs
     - ctags
     - bison
     - flex
