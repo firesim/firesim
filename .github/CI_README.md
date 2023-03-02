@@ -41,6 +41,12 @@ Currently, the only way to access any running instance that is created from the 
 
 If the instance is stopped, then you must request a AWS IAM user account from the FireSim developers to access the EC2 console and restart the instance.
 
+Prior CI Jobs for Pull Requests
+------------------------------
+
+The default behavior is that a new commit to a PR will cancel any existing workflows that are still running. This is to save resources and is done by the `cancel-prior-workflows` job. If you wish to 
+allow all prior workflows to keep running, add the `ci:persist-prior-workflows` tag to your PR. Please use this tag sparingly, and with caution.
+
 GitHub Secrets
 --------------
 * **AWS_ACCESS_KEY_ID**: Passed to `aws configure` on CI containers + manager instances
