@@ -52,7 +52,10 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
 
     assert test_dest_file_path.exists(), f"{test_dest_file_path} was not created."
 
-    logger_mock.debug.assert_called_once_with(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
+    logger_mock.debug.assert_has_calls([
+        call(f"Download attempt 1 of 4: '{file_uri}' to '{test_dest_file_path}'"),
+        call(f"Successfully fetched '{file_uri}' to '{test_dest_file_path}'")
+    ])
 
     downloadURI(
         uri=file_uri,
@@ -60,8 +63,10 @@ def test_download_uri(mocker,protocol_type,test_dest_file_path):
     )
 
     logger_mock.debug.assert_has_calls([
-        call(f"Downloading '{file_uri}' to '{test_dest_file_path}'"),
+        call(f"Download attempt 1 of 4: '{file_uri}' to '{test_dest_file_path}'"),
+        call(f"Successfully fetched '{file_uri}' to '{test_dest_file_path}'"),
         call(f"Overwriting {test_dest_file_path.resolve()}"),
-        call(f"Downloading '{file_uri}' to '{test_dest_file_path}'")
+        call(f"Download attempt 1 of 4: '{file_uri}' to '{test_dest_file_path}'"),
+        call(f"Successfully fetched '{file_uri}' to '{test_dest_file_path}'")
     ])
     test_dest_file_path.unlink(missing_ok=True)

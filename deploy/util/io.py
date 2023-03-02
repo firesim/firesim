@@ -46,12 +46,12 @@ def downloadURI(uri: str, local_dest_path: str, tries: int = 4) -> None:
     lpath = Path(local_dest_path)
     if lpath.exists():
         rootLogger.debug(f"Overwriting {lpath.resolve(strict=False)}")
+    fs, rpath = url_to_fs(uri)
 
     assert tries > 0, "tries argument must be larger than 0"
     for attempt in range(tries):
         rootLogger.debug(f"Download attempt {attempt+1} of {tries}: '{uri}' to '{lpath}'")
         try:
-            fs, rpath = url_to_fs(uri)
             fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
         except Exception as e:
             if attempt < tries -1:
