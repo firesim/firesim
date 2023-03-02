@@ -9,6 +9,7 @@ Manager Usage (the ``firesim`` command)
    Manager-Overview
    Manager-Command-Line-Args
    Manager-Tasks
+   Manager-URI-Paths
    Manager-Configuration-Files
    Manager-Environment-Variables
    Manager-Topology-Definitions

@@ -522,11 +522,9 @@ key/value in the same recipe).
 ``xclbin``
 """""""""""""""
 
-This represents a path to a bitstream (FPGA Image) used by this hardware configuration.
-This path must be local to the run farm host that the simulation runs on.
-Only used in Vitis FireSim configurations (an ``agfi`` key/value cannot exist with this
-key/value in the same recipe)
-
+Indicates where the bitstream (FPGA Image) is located, may be one of:
+  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
+  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 ``deploy_triplet_override``
 """""""""""""""""""""""""""""
@@ -555,6 +553,9 @@ to the relative name of the config. For example,
 
 ``driver_tar``
 """""""""""""""""""""""""""""
+They key can be one of:
+  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
+  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 When this key is present, the local driver will not build from source.
 Instead, during `firesim infrasetup`, this file will be deployed and extracted
@@ -563,7 +564,7 @@ be a `.tar`, `.tar.gz`, `.tar.bz2` or any other format that GNU tar (version 1.2
 can automatically detect. The purpose of this feature is to enable advanced CI
 configurations where the driver build step is decoupled. For now this can
 only accept a path to a file on the manager's local filesystem.
-In a future update, full URI support will be added.
+This key can also be a URI.
 
 
 

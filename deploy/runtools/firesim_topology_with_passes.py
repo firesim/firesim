@@ -11,12 +11,14 @@ import sys
 from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 from functools import reduce
+from tempfile import TemporaryDirectory
 
 from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
 from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
+from runtools.run_farm_deploy_managers import InstanceDeployManager
 from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
 if TYPE_CHECKING:
     from runtools.run_farm import RunFarm
@@ -404,7 +406,7 @@ class FireSimTopologyWithPasses:
                     continue # skip building or tarballing if we have a prebuilt one
 
                 resolved_cfg.build_sim_driver()
-                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), server.get_tar_name())
+                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), InstanceDeployManager.get_driver_tar_filename())
 
         servers = self.firesimtopol.get_dfs_order_servers()
         execute(build_drivers_helper, servers, hosts=['localhost'])
@@ -424,16 +426,27 @@ class FireSimTopologyWithPasses:
         self.pass_build_required_drivers()
         self.pass_build_required_switches()
 
-        @parallel
-        def infrasetup_node_wrapper(run_farm: RunFarm) -> None:
+        def serial_fetch_URI(run_farm: RunFarm, dir: str) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
-            my_node.instance_deploy_manager.infrasetup_instance()
+            my_node.instance_deploy_manager.fetch_all_URI(dir)
+
+        @parallel
+        def infrasetup_node_wrapper(run_farm: RunFarm, dir: str) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
+            my_node.instance_deploy_manager.infrasetup_instance(dir)
 
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_run_farm_ips)
-        execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips)
+
+        # Both steps occur within the context of a tempdir.
+        # This allows URI's to survive until after deploy, and cleanup upon error
+        with TemporaryDirectory() as uridir:
+            execute(serial_fetch_URI, self.run_farm, hosts=all_run_farm_ips, dir=uridir)
+            execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips, dir=uridir)
 
     def build_driver_passes(self) -> None:
         """ Only run passes to build drivers. """

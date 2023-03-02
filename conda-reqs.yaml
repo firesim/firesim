@@ -123,6 +123,9 @@ dependencies:
     - mypy-boto3-s3==1.21.0
     - types-requests
     - types-pytz
+    - fsspec==2023.1.0
+    - s3fs==0.4.2
+    - aiohttp==3.8.4
     - pip
     - pip:
         - fab-classic==1.19.2

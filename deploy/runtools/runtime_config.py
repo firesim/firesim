@@ -21,6 +21,7 @@ from tempfile import TemporaryDirectory
 from awstools.awstools import aws_resource_names
 from awstools.afitools import get_firesim_tagval_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
+from runtools.run_farm_deploy_managers import VitisInstanceDeployManager
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
@@ -47,6 +48,7 @@ class RuntimeHWConfig:
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
+    """User-specified, URI path to xclbin"""
     xclbin: Optional[str]
 
     deploytriplet: Optional[str]
@@ -59,8 +61,11 @@ class RuntimeHWConfig:
     local_driver_base_dir: str
     driver_build_target: str
     driver_type_message: str
+    """User-specified, URI path to driver tarball"""
     driver_tar: Optional[str]
 
+    # Members that are initlized here also need to be initilized in
+    # RuntimeBuildRecipeConfig.__init__
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
@@ -222,7 +227,7 @@ class RuntimeHWConfig:
 
         if self.platform == "vitis":
             assert self.xclbin is not None
-            vitis_bit = "+binary_file={}".format(self.xclbin)
+            vitis_bit = f"+binary_file={VitisInstanceDeployManager.get_xclbin_filename()}"
         else:
             vitis_bit = ""
 
