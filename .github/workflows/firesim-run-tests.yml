@@ -108,8 +108,7 @@ jobs:
         with:
           environment-file: conda-reqs/ci-shared.yaml
           miniforge-version: latest
-      - name: Install Python CI requirements
-        uses: ./.github/actions/repo-setup-aws
+      - uses: ./.github/actions/repo-setup-aws
       - name: Launch AWS instance used for the FireSim manager (instance info found here)
         run: ./.github/scripts/launch-manager-instance.py
       - name: Setup N Github Actions Runners on AWS instance
