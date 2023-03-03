@@ -29,7 +29,7 @@ def cull_aws_instances(current_time: datetime.datetime) -> None:
 
     run_farm_ci_instances = aws_platform_lib.find_run_farm_ci_instances()
     instances_to_terminate = find_timed_out_resources(FPGA_INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, map(lambda x: (x, x['LaunchTime']), run_farm_ci_instances))
-    run_farm_instances_to_terminate = list(set(instances_to_terminate))
+    run_farm_instances_to_terminate = list(instances_to_terminate)
     print("Terminated Run Farm Instances:")
     for inst in run_farm_instances_to_terminate:
         client.terminate_instances(InstanceIds=[inst['InstanceId']])
@@ -37,7 +37,7 @@ def cull_aws_instances(current_time: datetime.datetime) -> None:
 
     all_ci_instances = aws_platform_lib.find_all_ci_instances()
     instances_to_terminate = find_timed_out_resources(INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, map(lambda x: (x, x['LaunchTime']), all_ci_instances))
-    manager_instances_to_terminate = list(set(instances_to_terminate))
+    manager_instances_to_terminate = list(instances_to_terminate)
     print("Terminated Manager Instances:")
     for inst in manager_instances_to_terminate:
         deregister_runners(ci_env['PERSONAL_ACCESS_TOKEN'], f"aws-{ci_env['GITHUB_RUN_ID']}")
