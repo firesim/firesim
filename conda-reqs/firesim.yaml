@@ -30,7 +30,7 @@ dependencies:
     - binutils
 
     - dromajo # from ucb-bar channel - https://github.com/riscv-boom/dromajo
-    - riscv-tools # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
+    - riscv-tools=1.0.1 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
 
     # firemarshal deps
     - qemu # from ucb-bar channel - https://github.com/ucb-bar/qemu-feedstock
