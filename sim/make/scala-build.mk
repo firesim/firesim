@@ -30,10 +30,9 @@
 ################################################################################
 
 SBT_COMMAND ?= shell
-SBT_NON_THIN ?= $(subst $(SBT_CLIENT_FLAG),,$(SBT))
 .PHONY: sbt
 sbt:
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
 
 ################################################################################
 # Target Configuration
@@ -56,7 +55,7 @@ TARGET_SOURCE_DIRS ?=
 define build_classpath
 	bash -c '\
 	export TMP=$(shell mktemp); \
-	($(SBT_NON_THIN) \
+	($(SBT) \
 		--error \
 		"set showSuccess := false; project $(1); compile; package; export $(2):fullClasspath" \
 		> $$TMP || (cat $$TMP | head -n -1 && rm $$TMP && exit 1)) && \
@@ -88,7 +87,7 @@ firesim_test_srcs = $(foreach dir, $(firesim_source_dirs), \
 # FireSim project. This ensures that SBT is invoked once in parallel builds.
 $(BUILD_DIR)/firesim.build: $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
 	@mkdir -p $(@D)
-	$(SBT_NON_THIN) "set showSuccess := false; project $(FIRESIM_SBT_PROJECT); compile; package"
+	$(SBT) "set showSuccess := false; project $(FIRESIM_SBT_PROJECT); compile; package"
 	@touch $@
 
 
@@ -112,7 +111,7 @@ target_srcs = $(foreach dir,$(TARGET_SOURCE_DIRS), \
 
 $(BUILD_DIR)/target.build: $(BUILD_DIR)/firesim.build $(target_srcs)
 	@mkdir -p $(@D)
-	$(SBT_NON_THIN) "set showSuccess := false; project $(TARGET_SBT_PROJECT); compile; package"
+	$(SBT) "set showSuccess := false; project $(TARGET_SBT_PROJECT); compile; package"
 	@touch $@
 
 TARGET_CP := $(BUILD_DIR)/target.classpath
@@ -137,7 +136,7 @@ target-classpath: $(TARGET_CP)
 
 .PHONY: test
 test: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(FIRESIM_SBT_PROJECT); test"
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); test"
 
 .PHONY: testOnly
 testOnly: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
