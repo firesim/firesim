@@ -1,0 +1,40 @@
+channels:
+    - conda-forge
+    - ucb-bar
+    - nodefaults
+
+# remove non-standard conda-lock 'platforms' key to use this file with conda-incubator/setup-miniconda GH action
+
+dependencies:
+    # https://conda-forge.org/feedstock-outputs/
+    #   filterable list of all conda-forge packages
+    # https://conda-forge.org/#contribute
+    #   instructions on adding a recipe
+    # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
+    #   documentation on package_spec syntax for constraining versions
+    - boto3
+    - boto3-stubs
+    - mypy-boto3-s3
+    - mypy_boto3_ec2
+    - botocore-stubs
+
+    - pytz
+    - types-pytz
+
+    - pyyaml
+    - types-pyyaml
+
+    - requests
+    - types-requests
+
+    - azure-identity
+    - azure-mgmt-compute # ci-only
+    - azure-mgmt-network # ci-only
+    - azure-mgmt-resource>=18 # ci-only
+
+    - fsspec
+
+    - pip
+    - pip:
+        - fab-classic>=1.19.2
+        - azure-mgmt-resourcegraph # ci-only
