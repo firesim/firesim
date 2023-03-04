@@ -1,1 +1,2 @@
+<stdin>:99.24-107.7: Warning (interrupt_provider): /soc/plic@c000000: Missing #address-cells in interrupt provider
 success!

@@ -1,7 +1,7 @@
 CC=riscv64-unknown-elf-gcc
 OBJDUMP=riscv64-unknown-elf-objdump
 OBJCOPY=riscv64-unknown-elf-objcopy
-CFLAGS=-mcmodel=medany -std=gnu99 -O2 -fno-common -fno-builtin-printf -Wall
+CFLAGS=-mcmodel=medany -std=gnu99 -O2 -fno-common -fno-builtin -Wall
 LDFLAGS=-static -nostdlib -nostartfiles -lgcc
 
 PROGRAMS = rocc-test 
