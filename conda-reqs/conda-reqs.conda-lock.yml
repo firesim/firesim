@@ -4890,14 +4890,14 @@ package:
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<1.27'
   hash:
-    md5: 3faabd8720a81a91566e6c01bf7bbacb
-    sha256: c677cba87c7027ccf264574a87130bf44f69be008315d2a840ae6cfaa61b7e44
+    md5: b29b8549b9c00592db444944d8b90fdd
+    sha256: 38a4779628f2760317578383beef0d99541de12cd311d0d0ebbc720b571c5e08
   manager: conda
   name: botocore
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.27.59-pyhd8ed1ab_0.tar.bz2
-  version: 1.27.59
+  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.29.84-pyhd8ed1ab_0.conda
+  version: 1.29.84
 - category: main
   dependencies:
     cairo: '>=1.16.0,<2.0a0'
@@ -5158,7 +5158,7 @@ package:
   version: 5.1.1
 - category: main
   dependencies:
-    botocore: 1.27.59
+    botocore: 1.29.84
     colorama: '>=0.2.5,<0.4.5'
     docutils: '>=0.10,<0.17'
     python: '>=3.9,<3.10.0a0'
@@ -5167,14 +5167,14 @@ package:
     rsa: '>=3.1.2,<4.8'
     s3transfer: '>=0.6.0,<0.7.0'
   hash:
-    md5: fa62dd9ed5d234c493ff14914d43f332
-    sha256: 61483c628f9751a038d5634ce8ba2ed7ab484ffad50a7e7da13c2e3b30f93eae
+    md5: bb6c4008338bdfecd1b2e41f47924041
+    sha256: 569adbe5fde71e83ef8181d229b6ce61712335448af76becd4636de404dba383
   manager: conda
   name: awscli
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/awscli-1.25.60-py39hf3d152e_0.tar.bz2
-  version: 1.25.60
+  url: https://conda.anaconda.org/conda-forge/linux-64/awscli-1.27.84-py39hf3d152e_0.conda
+  version: 1.27.84
 - category: main
   dependencies:
     azure-core: '>=1.24.0,<2.0.0'
@@ -5190,19 +5190,19 @@ package:
   version: 1.3.2
 - category: main
   dependencies:
-    botocore: '>=1.27.59,<1.28.0'
+    botocore: '>=1.29.84,<1.30.0'
     jmespath: '>=0.7.1,<2.0.0'
     python: '>=3.7'
     s3transfer: '>=0.6.0,<0.7.0'
   hash:
-    md5: ffb13a0a5fc8e17ce396f4dfcdf5dab5
-    sha256: 89fd09bdc9d9a608387fd80b19fd084f26309d7857bd9a3957216a718f58b3de
+    md5: 5f27da0e335d3ee6bd805061ebc910fd
+    sha256: 5a2f083f1633978fa08f4d8ff78f8290ab48086444303af846cc87dde4ee3462
   manager: conda
   name: boto3
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/boto3-1.24.59-pyhd8ed1ab_0.tar.bz2
-  version: 1.24.59
+  url: https://conda.anaconda.org/conda-forge/noarch/boto3-1.26.84-pyhd8ed1ab_0.conda
+  version: 1.26.84
 - category: main
   dependencies:
     cachecontrol: 0.12.11 pyhd8ed1ab_1
@@ -5280,21 +5280,6 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/noarch/msrest-0.7.1-pyhd8ed1ab_0.tar.bz2
   version: 0.7.1
-- category: main
-  dependencies:
-    aiobotocore: '>=2.4.2,<2.4.3'
-    aiohttp: ''
-    fsspec: 2023.1.0
-    python: '>=3.8'
-  hash:
-    md5: cbc15661566c64d2496cae1b517ac13b
-    sha256: aa6dced5161db3ca8d42ccf9fa4d77020737e5c4687a8a0e483bf3f1082f505f
-  manager: conda
-  name: s3fs
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/s3fs-2023.1.0-pyhd8ed1ab_0.conda
-  version: 2023.1.0
 - category: main
   dependencies:
     python: '>=2.7'
@@ -5463,6 +5448,20 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/noarch/mypy_boto3_ec2-1.26.84-pyhd8ed1ab_0.conda
   version: 1.26.84
+- category: main
+  dependencies:
+    boto3: ''
+    fsspec: '>=0.6.0'
+    python: '>=3.5'
+  hash:
+    md5: ead328eb12f01d88706126ba061e7a69
+    sha256: 7a4cb574ff7edf773e5e4c396733dcb08ffcfd6e4f8b27e5b84b35fd4666ef5b
+  manager: conda
+  name: s3fs
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/noarch/s3fs-0.4.2-py_0.tar.bz2
+  version: 0.4.2
 - category: main
   dependencies:
     docutils: <0.19
