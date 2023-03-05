@@ -1,7 +1,7 @@
-Building Your Own Hardware Designs (FireSim FPGA Images)
-===========================================================
+Building Your Own Hardware Designs (FireSim Amazon FPGA Images)
+===============================================================
 
-This section will guide you through building an AFI image for a FireSim
+This section will guide you through building an Amazon FPGA Image (AFI) image for a FireSim
 simulation.
 
 Amazon S3 Setup

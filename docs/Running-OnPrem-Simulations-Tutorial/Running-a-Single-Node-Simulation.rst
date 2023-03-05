@@ -53,6 +53,9 @@ We'll need to modify a couple of these lines.
 
 First, let's tell the manager to use the single U250 FPGA.
 You'll notice that in the ``run_farm`` mapping which describes and specifies the machines to run simulations on.
+First notice that the ``base_recipe`` maps to ``run-farm-recipes/externally_provisioned.yaml``.
+This indicates to the FireSim manager that the machines allocated to run simulations will be provided by the user through IP addresses
+instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
 Let's modify the ``default_platform`` to be ``VitisInstanceDeployManager`` so that we can launch simulations using Vitis/XRT.
 Next, modify the ``default_simulation_dir`` to a directory that you want to store temporary simulation collateral to.
 When running simulations, this directory is used to store any temporary files that the simulator creates (e.g. a uartlog emitted by a Linux simulation).
@@ -120,6 +123,19 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
 	workload_name: linux-uniform.json
 	terminate_on_completion: no
 	suffix_tag: null
+
+Next, let's provide the pre-built hardware target design U250 FPGA image (called a xclbin) to the FireSim manager.
+This is done by adding an entry to the ``config_hwdb.yaml``, a database of built FPGA image metadata (e.g. pointer to FPGA image files).
+In the ``config_hwdb.yaml``, add the following lines pointing to a pre-built FPGA xclbin:
+
+::
+
+    firesim_rocket_singlecore_no_nic:
+        xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_d148b73.xclbin
+        deploy_triplet_override: FireSim-FireSimRocketConfig-BaseVitisConfig
+        custom_runtime_config: null
+
+Notice how this entry has the same name (``firesim_rocket_singlecore_no_nic``) given in the ``target_config`` section ``default_hw_config`` mapping.
 
 Launching a Simulation!
 -----------------------------

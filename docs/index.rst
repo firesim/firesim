@@ -25,7 +25,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
    Initial-OnPrem-Setup/index
    Running-OnPrem-Simulations-Tutorial/index
-   Building-a-FireSim-AFI
+   Building-a-FireSim-Xclbin
 
 
 .. toctree::
