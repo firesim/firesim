@@ -14,9 +14,19 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    :caption: AWS EC2 F1 Tutorial:
    :numbered:
 
-   Initial-Setup/index
-   Running-Simulations-Tutorial/index
+   Initial-AWS-Setup/index
+   Running-AWS-Simulations-Tutorial/index
    Building-a-FireSim-AFI
+
+.. toctree::
+   :maxdepth: 3
+   :caption: On-Premise FPGA Tutorial:
+   :numbered:
+
+   Initial-OnPrem-Setup/index
+   Running-OnPrem-Simulations-Tutorial/index
+   Building-a-FireSim-AFI
+
 
 .. toctree::
    :maxdepth: 3
@@ -31,7 +41,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
-   Advanced-Usage/Vitis.rst
 
 .. toctree::
    :maxdepth: 3
