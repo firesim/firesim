@@ -11,6 +11,7 @@ SCALA_VERSION ?= 2.13.10
 # Disable the SBT supershell as interacts poorly with scalatest output and breaks
 # the runtime config generator.
 export JAVA_TOOL_OPTIONS ?= -Xmx$(JVM_MEMORY) -Xss8M -Dsbt.supershell=false -Djava.io.tmpdir=$(base_dir)/.java_tmp
+export SBT_OPTS ?= -Dsbt.ivy.home=$(base_dir)/.ivy2 -Dsbt.global.base=$(base_dir)/.sbt -Dsbt.boot.directory=$(base_dir)/.sbt/boot/
 
 sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
 SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
@@ -25,7 +26,7 @@ endif
 
 # Use java -jar approach by default so that SBT thin-client sees the JAVA flags
 # Workaround for behavior reported here: https://github.com/sbt/sbt/issues/6468
-SBT_BIN ?= java -jar $(rocketchip_dir)/sbt-launch.jar
+SBT_BIN ?= java -jar $(rocketchip_dir)/sbt-launch.jar $(SBT_OPTS)
 SBT = $(SBT_BIN) $(SBT_CLIENT_FLAG)
 
 define run_scala_main
