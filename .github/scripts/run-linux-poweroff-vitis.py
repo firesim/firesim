@@ -30,7 +30,7 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
-            def run_w_timeout(workload_path, workload, timeout):
+            def run_w_timeout(workload_path, workload, timeout, num_passes):
                 log_tail_length = 300
                 rc = 0
                 with settings(warn_only=True):
@@ -54,9 +54,16 @@ def run_linux_poweroff_vitis():
                     print(f"Workload {workload} failed.")
                     sys.exit(rc)
                 else:
-                    print(f"Workload {workload} successful.")
+                    print(f"Workload run {workload} successful. Checking uartlogs...")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m")
+                    # verify that linux booted and the pass printout was given
+                    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "*** PASSED ***" $LAST_DIR/*/uartlog; fi""")
+                    out_count = out.count('\n')
+                    assert out_count == num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
+
+                    print(f"Workload run {workload} successful.")
+
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m", 1)
 
 if __name__ == "__main__":
     execute(run_linux_poweroff_vitis, hosts=["localhost"])
