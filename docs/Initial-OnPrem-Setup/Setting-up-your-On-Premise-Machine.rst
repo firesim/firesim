@@ -20,7 +20,7 @@ We require the following programs/packages installed from the Xilinx website in 
 * Xilinx U250 board package (corresponding with Vitis 2022.1)
 
 Setup Validation
-----------------
+~~~~~~~~~~~~~~~~
 
 After installing the U250 FPGA using the Xilinx instructions and installing the specific versions of Vitis/XRT, let's verify that the U250 FPGA can be used for emulations.
 Ensure that you can run the following XRT commands without errors:
@@ -34,6 +34,26 @@ The ``xbutil validate`` command runs simple tests to ensure that the FPGA can be
 
 .. Warning:: Anytime the host computer is rebooted you may need to re-run parts of the setup process (i.e. re-flash the shell).
      Before continuing to FireSim simulations after a host computer reboot, ensure that the previously mentioned ``xbutil`` command is successful.
+
+Finally, ensure that the XRT/Vitis tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
+The environment variables should be visible to any non-interactive shells that are spawned.
+You can check this by ensuring that the output of the following command shows that the XRT/Vitis tools are present in the environment variables (i.e. ``XILINX_XRT``):
+
+.. parsed-literal::
+
+    ssh localhost printenv
+
+Other Miscellaneous Setup
+-------------------------
+
+Additionally, you should be able to run ``ssh localhost`` without needing a password.
+The FireSim manager program runs all commands by ``ssh``-ing into a BuildFarm/RunFarm machine given an IP address then running the command.
+To do so non-interactively it needs passwordless access to the machines to build/run on.
+In the case of this tutorial, our local machine or ``localhost``.
+
+Finally, if you are running this tutorial without ``sudo`` access you should also install the ``guestmount`` program and ensure it runs properly.
+This is needed by a variety of FireSim programs that mount disk images to copy in/out results of simulations.
+Most likely you will need to follow the instructions here to ensure ``guestmount`` doesn't error: https://askubuntu.com/questions/1046828/how-to-run-libguestfs-tools-tools-such-as-virt-make-fs-without-sudo.
 
 Setting up the FireSim Repo
 ---------------------------
@@ -53,7 +73,7 @@ Run:
 
 .. parsed-literal::
 
-   ./scripts/machine-launch-script.sh
+   source ./scripts/machine-launch-script.sh
 
 This will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim`` that is used.
 **Ensure that you log out of the machine / exit out of the terminal after this step so that ``.bashrc`` modifications can apply**.

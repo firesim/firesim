@@ -1,5 +1,3 @@
-.. _onprem-single-node-sim:
-
 Running a Single Node Simulation
 ===================================
 
@@ -26,9 +24,9 @@ distribution. You can do this like so:
 
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/br-base-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/br-base.img`` - a disk image for
+-  ``firesim/sw/firesim-software/images/br-base/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
@@ -150,7 +148,7 @@ First, we will tell the manager to launch our Run Farm with a single machine cal
 
 ::
 
-    firesim launchrunfarm
+	firesim launchrunfarm
 
 In this case, since we are already running the machine with the FPGA (``localhost``),
 this command should not launch any machine and should be quick.
@@ -159,7 +157,14 @@ You should expect output like the following:
 
 ::
 
-    TBD
+	$ firesim launchrunfarm
+	FireSim Manager. Docs: https://docs.fires.im
+	Running: launchrunfarm
+
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	WARNING: Skipping launchrunfarm since run hosts are externally provisioned.
+	The full log of this run is:
+	.../firesim/deploy/logs/2023-03-06--00-20-37-launchrunfarm-24T0KOGRHBMSHAV5.log
 
 Setting up the simulation infrastructure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -171,14 +176,24 @@ let's run:
 
 ::
 
-    firesim infrasetup
+	firesim infrasetup
 
 
 For a complete run, you should expect output like the following:
 
 ::
 
-	TBD
+	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
+	Running: infrasetup
+
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	Building FPGA software driver for FireSim-FireSimRocketConfig-BaseVitisConfig
+	...
+	[localhost] Checking if host instance is up...
+	[localhost] Copying FPGA simulation infrastructure for slot: 0.
+	[localhost] Clearing all FPGA Slots.
+	The full log of this run is:
+	.../firesim/deploy/logs/2023-03-06--01-22-46-infrasetup-35ZP4WUOX8KUYBF3.log
 
 Many of these tasks will take several minutes, especially on a clean copy of
 the repo.  The console output here contains the "user-friendly" version of the
@@ -205,7 +220,14 @@ nodes every 10s. When you do this, you will initially see output like:
 
 ::
 
-	TBD
+	$ firesim runworkload
+	FireSim Manager. Docs: https://docs.fires.im
+	Running: runworkload
+
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	Creating the directory: .../firesim/deploy/results-workload/2023-03-06--01-25-34-linux-uniform/
+	[localhost] Checking if host instance is up...
+	[localhost] Starting FPGA simulation for slot: 0.
 
 If you don't look quickly, you might miss it, since it will get replaced with a
 live status page:
@@ -383,7 +405,14 @@ Which should present you with the following:
 
 ::
 
-	TBD
+	$ firesim terminaterunfarm
+	FireSim Manager. Docs: https://docs.fires.im
+	Running: terminaterunfarm
+
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	WARNING: Skipping terminaterunfarm since run hosts are externally provisioned.
+	The full log of this run is:
+	.../firesim/deploy/logs/2023-03-06--01-34-45-terminaterunfarm-YFXAJCRGF8KF4LQ3.log
 
 Since we are re-using an existing machine that is already booted, this command should do nothing and be quick.
 
