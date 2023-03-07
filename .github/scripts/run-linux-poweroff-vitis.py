@@ -15,7 +15,7 @@ def run_linux_poweroff_vitis():
     # repo should already be checked out
 
     with prefix(f"cd {ci_env['GITHUB_WORKSPACE']}"):
-        run("./build-setup.sh -f") # full setup
+        run("./build-setup.sh -f -v") # full setup
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
             # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
             with prefix('cd sw/firesim-software'):
