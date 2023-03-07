@@ -108,6 +108,14 @@ class PlatformLib(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def find_build_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        """
+        Returns all build farm instance types that have the
+        `workflow_tag` in the cluster name.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_manager_ip(self, workflow_tag: str) -> str:
         """ Returns ip of the manager specified by the tag """
         raise NotImplementedError
@@ -154,6 +162,10 @@ class PlatformLib(metaclass=abc.ABCMeta):
         """ Check if run farm instances are running past a `timeout` minutes designated time. If so, then terminate them. """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def check_and_terminate_build_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
+        """ Check if build farm instances are running past a `timeout` minutes designated time. If so, then terminate them. """
+        raise NotImplementedError
 
 class AWSPlatformLib(PlatformLib):
     client: Optional[EC2Client]
@@ -208,6 +220,14 @@ class AWSPlatformLib(PlatformLib):
         instances_filter = [
                 {'Name': 'tag:fsimcluster', 'Values': [f'*{workflow_tag}*']},
                 {'Name': 'instance-type', 'Values': ['f1.2xlarge', 'f1.4xlarge', 'f1.16xlarge']},
+                ]
+        ci_instances = get_instances_with_filter(instances_filter, allowed_states = ['pending', 'running', 'stopping', 'stopped'])
+        return ci_instances
+
+    def find_build_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        # on AWS build farm instances are marked with 'fsimbuildcluster'
+        instances_filter = [
+                {'Name': 'tag:fsimbuildcluster', 'Values': [f'*{workflow_tag}*']},
                 ]
         ci_instances = get_instances_with_filter(instances_filter, allowed_states = ['pending', 'running', 'stopping', 'stopped'])
         return ci_instances
@@ -313,6 +333,26 @@ class AWSPlatformLib(PlatformLib):
             issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id,
                     f"Uncaught {len(instances_to_terminate)} FPGA instance shutdown(s) detected for CI run: {ci_env['GITHUB_RUN_ID']}. Verify CI state before submitting PR.")
 
+    def check_and_terminate_build_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
+        # We need this in case terminate is called in setup-self-hosted-workflow before aws-configure is run
+        if self.client is None:
+            self.client = boto3.client('ec2')
+
+        instances = self.find_build_farm_ci_instances(workflow_tag)
+        instances_to_terminate = find_timed_out_resources(
+                timeout,
+                datetime.datetime.utcnow().replace(tzinfo=pytz.UTC),
+                map(lambda x: (x, x['LaunchTime']), instances))
+
+        for inst in instances_to_terminate:
+            print(f"Uncaught build farm instance shutdown detected for inst: {inst}")
+            self.client.terminate_instances(InstanceIds=[inst['InstanceId']])
+            print(f"Terminated build farm instance {inst['InstanceId']}")
+
+        # post comment after instances are terminated just in case there is an issue with posting
+        if len(instances_to_terminate) > 0:
+            issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id,
+                    f"Uncaught {len(instances_to_terminate)} build instance shutdown(s) detected for CI run: {ci_env['GITHUB_RUN_ID']}. Verify CI state before submitting PR.")
 
 class AzurePlatformLib(PlatformLib):
     def __init__(self, deregister_runners: Callable[[str, str], None]):
@@ -464,5 +504,11 @@ class AzurePlatformLib(PlatformLib):
     def check_and_terminate_run_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
         raise NotImplementedError
 
+    def check_and_terminate_build_farm_instances(self, timeout: int, workflow_tag: str, issue_id: int) -> None:
+        raise NotImplementedError
+
     def find_run_farm_ci_instances(self, workflow_tag: str = '*') -> List:
+        raise NotImplementedError
+
+    def find_build_farm_ci_instances(self, workflow_tag: str = '*') -> List:
         raise NotImplementedError
