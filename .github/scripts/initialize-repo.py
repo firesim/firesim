@@ -15,7 +15,7 @@ def initialize_repo():
         run("git clone {} {}".format(ci_env['GITHUB_WORKSPACE'], manager_fsim_dir))
 
     with cd(manager_fsim_dir):
-        run("./build-setup.sh --skip-validate")
+        run("./build-setup.sh -f --ci")
 
     # Initialize marshal submodules early because it appears some form of
     # contention between submodule initialization and the jgit SBT plugin

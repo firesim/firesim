@@ -6,7 +6,7 @@ runs:
   steps:
     - run: |
         source /etc/profile.d/conda.sh
-        ./build-setup.sh --skip-validate
+        ./build-setup.sh -f
         # All actions that run in a GH-hosted container source env.sh before
         # running their jobs. This ensures conda is in the runner's path, which
         # is not the case by default.

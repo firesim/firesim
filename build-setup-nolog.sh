@@ -23,16 +23,17 @@ function usage
     echo ""
     echo "Helper script to fully initialize repository that wraps other scripts."
     echo "By default it initializes/installs things in the following order:"
-    echo "   ?. Conda environment"
-    echo "   ?. FireSim submodules"
-    echo "   ?. All Chipyard Setup"
-    echo "     ?. Toolchain collateral (Spike, PK, tests, libgloss)"
-    echo "     ?. Chipyard Ctags"
-    echo "     ?. Chipyard pre-compile sources"
-    echo "     ?. FireMarshal"
-    echo "     ?. FireMarshal pre-compile default buildroot Linux sources"
-    echo "   ?. EC2 specific-setup"
-    echo "   ?. FireSim Ctags"
+    echo "   1. Conda environment"
+    echo "   2. FireSim submodules"
+    echo "   3. All Chipyard Setup"
+    echo "     4. Toolchain collateral (Spike, PK, tests, libgloss)"
+    echo "     5. Chipyard Ctags"
+    echo "     6. Chipyard pre-compile sources"
+    echo "     7. FireMarshal"
+    echo "     8. FireMarshal pre-compile default buildroot Linux sources"
+    echo "   9. EC2 specific-setup"
+    echo "   10. FireSim Ctags"
+    echo "   11. FireSim pre-compile scala sources"
     echo ""
     echo "**See above for options to skip parts of the setup. Skipping parts of the setup is not guaranteed to be tested/working.**"
     echo ""
@@ -43,7 +44,8 @@ function usage
     echo "   --use-unpinned-deps -ud: Use unpinned conda environment"
     echo "   --skip -s : Skip step N in the list above. Use multiple times to skip multiple steps ('-s N -s M ...')."
     echo "   --library -l : if set, initializes submodules assuming FireSim is being used"
-    echo "            as a library submodule. Implies --skip-toolchain-extra"
+    echo "            as a library submodule. Implies skip for 1, 3-8"
+    echo "   --ci -c : minimal steps needed for ci to run properly. Implies skip for 5-8, 10-11"
 }
 
 while [ "$1" != "" ];
@@ -52,6 +54,9 @@ do
         --library | -l)
             IS_LIBRARY=true;
             SKIP_TOOLCHAIN=true;
+            ;;
+        --ci | -c)
+            SKIP_LIST+=(5 6 7 8 10 11)
             ;;
         --force | -f)
             FORCE_FLAG=$1;
@@ -113,6 +118,7 @@ function restore_bash_options
 
 # before doing anything verify that you are on a release branch/tag
 save_bash_options
+set +e
 tag=$(git describe --exact-match --tags)
 tag_ret_code="$?"
 restore_bash_options
@@ -163,16 +169,16 @@ env_append "export FIRESIM_ENV_SOURCED=1"
 # Provide a sourceable snippet that can be used in subshells that may not have
 # inhereted conda functions that would be brought in under a login shell that
 # has run conda init (e.g., VSCode, CI)
-read -r -d '\0' CONDA_ACTIVATE_PREAMBLE <<'END_CONDA_ACTIVATE'
+read -r -d '\0' CONDA_ACTIVATE_PREAMBLE <<ENDCONDAACTIVATE
 if ! type conda >& /dev/null; then
     echo "::ERROR:: you must have conda in your environment first"
-    return 1  # don't want to exit here because this file is sourced
+    return 1  # do not want to exit here because this file is sourced
 fi
 
-# if we're sourcing this in a sub process that has conda in the PATH but not as a function, init it again
+# if we are sourcing this in a sub process that has conda in the PATH but not as a function, init it again
 conda activate --help >& /dev/null || source $(conda info --base)/etc/profile.d/conda.sh
 \0
-END_CONDA_ACTIVATE
+ENDCONDAACTIVATE
 
 if run_step "1"; then
     if [ "$IS_LIBRARY" = true ]; then
@@ -203,36 +209,27 @@ if run_step "2"; then
 fi
 
 # Chipyard setup
-if run_step "2"; then
-    if [ "$IS_LIBRARY" = false ]; then
-        # This checks if firemarshal has already been configured by someone. If
-        # not, we will provide our own config. This must be checked before calling
-        # init-submodules-no-riscv-tools.sh because that will configure
-        # firemarshal.
-        marshal_cfg="$FDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml"
-        if [ ! -f "$marshal_cfg" ]; then
-          first_init=true
-        else
-          first_init=false
-        fi
+if [ "$IS_LIBRARY" = false ]; then
+    target_chipyard_dir="$FDIR/target-design/chipyard"
 
+    if run_step "3"; then
         git config --unset submodule.target-design/chipyard.update
         git submodule update --init target-design/chipyard
         cd $FDIR/target-design/chipyard
 
-        if run_step "?"; then
+        if run_step "4"; then
             SKIP_TOOLCHAIN_ARG="-s 3"
         fi
-        if run_step "?"; then
+        if run_step "5"; then
             SKIP_CY_CTAGS="-s 4"
         fi
-        if run_step "?"; then
+        if run_step "6"; then
             SKIP_CY_PRECOMPILE="-s 5"
         fi
-        if run_step "?"; then
+        if run_step "7"; then
             SKIP_FM_SETUP="-s 8"
         fi
-        if run_step "?"; then
+        if run_step "8"; then
             SKIP_FM_PRECOMPILE_BR="-s 9"
         fi
         # default to normal riscv-tools toolchain
@@ -243,32 +240,31 @@ if run_step "2"; then
         git submodule deinit sims/firesim
         cd $FDIR
 
+        env_append "export FIRESIM_STANDALONE=1"
+        env_append "source $FDIR/scripts/fix-open-files.sh"
+    fi
+else
+    target_chipyard_dir="$FDIR/../.."
+
+    # Source CY env.sh in library-mode
+    env_append "source $target_chipyard_dir/env.sh"
+fi
+
+# FireMarshal setup
+if run_step "7"; then
+    ln -sf $target_chipyard_dir/software/firemarshal $FDIR/sw/firesim-software
+    env_append "export PATH=$FDIR/sw/firesim-software:\$PATH"
+
+    # This checks if firemarshal has already been configured by someone. If
+    # not, we will provide our own config. This must be checked before calling
+    # init-submodules-no-riscv-tools.sh because that will configure
+    # firemarshal.
+    marshal_cfg="$FDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml"
+    if [ ! -f "$marshal_cfg" ]; then
         # Configure firemarshal to know where our firesim installation is.
         # If this is a fresh init of chipyard, we can safely overwrite the marshal
         # config, otherwise we have to assume the user might have changed it
-        if [ $first_init = true ]; then
-          echo "firesim-dir: '../../../../'" > $marshal_cfg
-        fi
-        env_append "export FIRESIM_STANDALONE=1"
-
-        # FireMarshal setup
-        target_chipyard_dir="$FDIR/target-design/chipyard"
-
-        # setup marshal symlink
-        ln -sf ../target-design/chipyard/software/firemarshal $FDIR/sw/firesim-software
-
-        env_append "export PATH=$FDIR/sw/firesim-software:\$PATH"
-
-        env_append "source $FDIR/scripts/fix-open-files.sh"
-    else
-        # FireMarshal setup
-        target_chipyard_dir="$FDIR/../.."
-
-        # setup marshal symlink
-        ln -sf ../../../software/firemarshal $FDIR/sw/firesim-software
-
-        # Source CY env.sh in library-mode
-        env_append "source $target_chipyard_dir/env.sh"
+      echo "firesim-dir: '../../../../'" > $marshal_cfg
     fi
 fi
 
@@ -277,7 +273,7 @@ cd "$FDIR"
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
-if run_step "4"; then
+if run_step "9"; then
     if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
 
         (
@@ -320,13 +316,23 @@ if run_step "4"; then
 fi
 
 cd "$FDIR"
-if run_step "5"; then
+if run_step "10"; then
     set +e
     ./gen-tags.sh
     set -e
 fi
 
-read -r -d '\0' NDEBUG_CHECK <<'END_NDEBUG'
+if run_step "11"; then
+    pushd "$FDIR/sim"
+    (
+        eval "$env_string" # source the current environment
+        make firesim-main-classpath
+        make target-classpath
+    )
+    popd
+fi
+
+read -r -d '\0' NDEBUG_CHECK <<ENDNDEBUG
 # Ensure that we don't have -DNDEBUG anywhere in our environment
 
 # check and fixup the known place where conda will put it
@@ -339,7 +345,7 @@ fi
 env | grep -v 'CONDA_.*_BACKUP' | grep -- -DNDEBUG && echo "::WARNING:: you still seem to have -DNDEBUG in your environment. This is known to cause problems."
 true # ensure env.sh exits 0
 \0
-END_NDEBUG
+ENDNDEBUG
 env_append "$NDEBUG_CHECK"
 
 # Write out the generated env.sh indicating successful completion.
