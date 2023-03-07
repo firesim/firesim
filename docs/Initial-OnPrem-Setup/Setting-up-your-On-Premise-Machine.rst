@@ -76,7 +76,7 @@ Run:
    source ./scripts/machine-launch-script.sh
 
 This will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim`` that is used.
-**Ensure that you log out of the machine / exit out of the terminal after this step so that ``.bashrc`` modifications can apply**.
+**Ensure that you log out of the machine / exit out of the terminal after this step so that** ``.bashrc`` **modifications can apply**.
 
 .. Warning:: If you already have Conda installed, you can look at the help text of ``machine-launch-script.sh`` to see extra options given
    to avoid re-installation. We recommend you re-install Conda in favor of Miniforge Conda (a minimal installation of Conda).
@@ -94,15 +94,43 @@ other dependencies.
 
 Next, run:
 
-::
+.. parsed-literal::
 
     source sourceme-f1-manager.sh --skip-ssh-setup
 
 This will have initialized the AWS shell, added the RISC-V tools to your
 path. Sourcing this the first time will take some time -- however each time after that should be instantaneous.
 
-**Every time you want to use FireSim, you should ``cd`` into
+**Every time you want to use FireSim, you should** ``cd`` **into
 your FireSim directory and source this file again with the argument given.**
+
+Final Environment Check
+-----------------------
+
+Finally, lets verify that the environment variables are correctly setup for the tutorial. Run:
+
+.. parsed-literal::
+
+   echo $PATH
+
+You should see that both the Xilinx Vitis and XRT tools are located in the ``PATH`` are are **after**
+the conda environment path. Next run:
+
+.. parsed-literal::
+
+   echo $LD_LIBRARY_PATH
+
+You should see that the XRT tools are located on your ``LD_LIBRARY_PATH`` and that there
+is no trailing ``:`` (otherwise compilation will error later).
+
+Finally verify that the same properties hold when running locally through ``ssh``. Run:
+
+.. parsed-literal::
+
+   ssh localhost printenv
+
+Inspect that both the ``PATH`` and ``LD_LIBRARY_PATH`` are setup similarly to running
+locally (without ``ssh localhost``).
 
 Completing Setup Using the Manager
 ----------------------------------
@@ -110,7 +138,7 @@ Completing Setup Using the Manager
 The FireSim manager contains a command that will finish the rest of the FireSim setup process.
 To run it, do the following:
 
-::
+.. parsed-literal::
 
     firesim managerinit --platform vitis
 
