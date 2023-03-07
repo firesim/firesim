@@ -188,12 +188,10 @@ if run_step "1"; then
             exit 5
         fi
     else
-        # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
-        LOCKFILE="$FDIR/conda-reqs.conda-lock.yml"
-        YAMLFILE="$FDIR/conda-reqs.yaml"
+        LOCKFILE="$RDIR/conda-reqs/conda-reqs.conda-lock.yml"
         if [ "$USE_PINNED_DEPS" = false ]; then
             # auto-gen the lockfile
-            conda-lock -f "$YAMLFILE" --lockfile "$LOCKFILE"
+            conda-lock -f "$RDIR/conda-reqs/firesim.yaml" -f "$RDIR/conda-reqs/ci-shared.yaml" --lockfile "$LOCKFILE"
         fi
         conda-lock install -p $FDIR/.conda-env $LOCKFILE
         source $FDIR/.conda-env/etc/profile.d/conda.sh

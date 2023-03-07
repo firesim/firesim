@@ -28,8 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TERM: xterm-256-color
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/ci-shared.yaml
+          miniforge-version: latest
       - uses: ./.github/actions/repo-setup-aws
       - run: .github/scripts/cull-old-ci-instances.py
       - if: ${{ failure() }}
@@ -46,7 +53,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TERM: xterm-256-color
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/ci-shared.yaml
+          miniforge-version: latest
       - uses: ./.github/actions/repo-setup-aws
       - run: .github/scripts/cull-old-ci-runners.py

@@ -14,4 +14,3 @@ runs:
         with:
           key: ${{ env.FIRESIM_PEM }}
           known_hosts: unnecessary
-      - uses: ./.github/actions/install-ci-python-reqs

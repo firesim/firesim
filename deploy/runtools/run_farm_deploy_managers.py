@@ -10,16 +10,26 @@ from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hi
 from fabric.contrib.project import rsync_project # type: ignore
 import time
 from os.path import join as pjoin
+from os.path import basename, expanduser
+from os import PathLike, fspath
+from fsspec.core import url_to_fs # type: ignore
+from pathlib import Path
+import hashlib
 
+from util.streamlogger import StreamLogger
+from util.io import downloadURI
+from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo
 
-from typing import List, Dict, Optional, Union, TYPE_CHECKING
+from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
-    from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
     from runtools.run_farm import Inst
     from awstools.awstools import MockBoto3Instance
 
 rootLogger = logging.getLogger()
+
+# from  https://github.com/pandas-dev/pandas/blob/96b036cbcf7db5d3ba875aac28c4f6a678214bfb/pandas/io/common.py#L73
+_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
 
 class NBDTracker:
     """Track allocation of NBD devices on an instance. Used for mounting
@@ -50,6 +60,110 @@ class NBDTracker:
 
         return self.allocated_dict[imagename]
 
+class URIContainer:
+    """ A class which contains the details for downloading a single URI. """
+
+    """a property name on RuntimeHWConfig"""
+    hwcfg_prop: str
+    """ the final filename inside sim_slot_x, this is a filename, not a path"""
+    destination_name: str
+
+    def __init__(self, hwcfg_prop: str, destination_name: str):
+        self.hwcfg_prop = hwcfg_prop
+        self.destination_name = destination_name
+
+    # this filename will be used when pre-downloading
+    @classmethod
+    def hashed_name(cls, uri) -> str:
+        m = hashlib.sha256()
+        m.update(bytes(uri, 'utf-8'))
+        return m.hexdigest()
+
+    def _resolve_vanilla_path(self, hwcfg) -> Optional[str]:
+        """ Allows fallback to a vanilla path. Relative paths are resolved realtive to firesim/deploy/. 
+        This will convert a vanilla path to a URI, or return None."""
+        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+        
+        # if already a URI, exit early returning unmodified string
+        is_uri = re.match(_RFC_3986_PATTERN, uri)
+        if is_uri:
+            return uri
+
+        # expanduser() is required to get ~ home directory expansion working
+        # relative paths are relative to firesim/deploy
+        expanded = Path(expanduser(uri))
+
+        try:
+            # strict=True will throw if the file doesn't exist
+            resolved = expanded.resolve(strict=True)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} file fallback at path '{uri}' or '{expanded}' was not found")
+
+        return f"file://{resolved}"
+
+    def _choose_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Return a deterministic path, given a parent folder and a RuntimeHWConfig object. The URI
+        as generated from hwcfg is also returned. """
+        uri: Optional[str] = self._resolve_vanilla_path(hwcfg)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+
+        # choose a repeatable, path based on the hash of the URI
+        destination = pjoin(local_dir, self.hashed_name(uri))
+        
+        return (uri, destination)
+
+    def local_pre_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Cached download of the URI contained in this class to a user-specified
+        destination folder. The destination name is a SHA256 hash of the URI.
+        If the file exists this will NOT overwrite. """
+
+        # resolve the URI and the path '/{dir}/{hash}' we should download to
+        both = self._choose_path(local_dir, hwcfg)
+        
+        # do nothing if there isn't a URI
+        if both is None:
+            return None
+        
+        (uri, destination) = both
+
+        # When it exists, return the same information, but skip the download
+        if Path(destination).exists():
+            rootLogger.debug(f"Skipping download of uri: '{uri}'")
+            return (uri, destination)
+
+        try:
+            downloadURI(uri, destination)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
+
+        # return, this is not passed to rsync
+        return (uri, destination)
+
+    def get_rsync_path(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
+        """ Does not download. Returns the rsync path required to send an already downloaded
+        URI to the runhost. """
+
+        # resolve the URI and the path '/{dir}/{hash}' we should download to
+        both = self._choose_path(local_dir, hwcfg)
+        
+        # do nothing if there isn't a URI
+        if both is None:
+            return None
+        
+        (uri, destination) = both
+
+        # because the local file has a nonsense name (the hash)
+        # we are required to specifcy the destination name to rsync
+        return (destination, self.destination_name)
+
+
 class InstanceDeployManager(metaclass=abc.ABCMeta):
     """Class used to represent different "run platforms" and how to start/stop and setup simulations.
 
@@ -58,6 +172,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
     """
     parent_node: Inst
     nbd_tracker: Optional[NBDTracker]
+    """ A list of URIContainer objects, one for each URI that is able to be specified """
+    uri_list: list[URIContainer]
 
     def __init__(self, parent_node: Inst) -> None:
         """
@@ -70,8 +186,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         # subclass if your system supports the NBD kernel module.
         self.nbd_tracker = None
 
+        self.uri_list = list()
+        self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
+
     @abc.abstractmethod
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         """Run platform specific implementation of how to setup simulations.
 
         Anything that should only be executed if prepping for an actual FPGA-based
@@ -92,6 +211,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         override this to do nothing.
 
         """
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def sim_command_requires_sudo(cls) -> bool:
+        """ Set when the sim start command must be launched with sudo. """
         raise NotImplementedError
 
     def instance_logger(self, logstr: str, debug: bool = False) -> None:
@@ -159,10 +284,33 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         return remote_sim_dir
 
-    def copy_sim_slot_infrastructure(self, slotno: int) -> None:
+    def fetch_all_URI(self, dir: str) -> None:
+        """ Downloads all URI. Local filenames use a hash which will be re-calculated later. Duplicate downloads
+        are skipped via an exists() check on the filesystem. """
+        if not self.instance_assigned_simulations():
+            return
+
+        for slotno in range(len(self.parent_node.sim_slots)):
+            hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
+            for container in self.uri_list:
+                container.local_pre_download(dir, hwcfg)
+    
+    def get_local_uri_paths(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
+        """ Get all paths of local URIs that were previously downloaded. """
+
+        hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
+        
+        ret = list()
+        for container in self.uri_list:
+            maybe_file = container.get_rsync_path(dir, hwcfg)
+            if maybe_file is not None:
+                ret.append(maybe_file)
+        return ret
+
+    def copy_sim_slot_infrastructure(self, slotno: int, uridir: str) -> None:
         """ copy all the simulation infrastructure to the remote node. """
         if self.instance_assigned_simulations():
-            assert slotno < len(self.parent_node.sim_slots)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             serv = self.parent_node.sim_slots[slotno]
 
             self.instance_logger(f"""Copying {self.sim_type_message} simulation infrastructure for slot: {slotno}.""")
@@ -172,6 +320,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             run(f"mkdir -p {remote_sim_rsync_dir}")
 
             files_to_copy = serv.get_required_files_local_paths()
+
+            # Append required URI paths to the end of this list
+            files_to_copy.extend(self.get_local_uri_paths(slotno, uridir))
+
             for local_path, remote_path in files_to_copy:
                 # -z --inplace
                 rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
@@ -191,7 +343,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             options = "-xf"
 
             with cd(remote_sim_dir):
-                run(f"tar {options} {serv.get_tar_name()}")
+                run(f"tar {options} {self.get_driver_tar_filename()}")
 
     def copy_switch_slot_infrastructure(self, switchslot: int) -> None:
         """ copy all the switch infrastructure to the remote node. """
@@ -225,12 +377,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
             remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
-            assert slotno < len(self.parent_node.sim_slots)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, has_sudo())
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()))
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -254,7 +406,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """ kill the simulation in slot slotno. """
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Killing {self.sim_type_message} simulation for slot: {slotno}.""")
-            assert slotno < len(self.parent_node.sim_slots)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
             with warn_only():
                 if has_sudo():
@@ -444,6 +596,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
         assert False
 
+    @classmethod
+    def get_driver_tar_filename(cls) -> str:
+        """ Get the name of the tarball inside the sim_slot_X directory on the run host. """
+        return "driver-bundle.tar.gz"
 
 def remote_kmsg(message: str) -> None:
     """ This will let you write whatever is passed as message into the kernel
@@ -459,6 +615,11 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     This is in charge of managing the locations of stuff on remote nodes.
     """
+
+    @classmethod
+    def sim_command_requires_sudo(cls) -> bool:
+        """ This sim requires sudo. """
+        return True
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -596,7 +757,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 run("sudo pkill -SIGKILL fpga-local-cmd")
 
 
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this instance. """
 
         metasim_enabled = self.parent_node.metasimulation_enabled
@@ -606,7 +767,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
-                self.copy_sim_slot_infrastructure(slotno)
+                self.copy_sim_slot_infrastructure(slotno, uridir)
                 self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
@@ -646,8 +807,22 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
 class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
+    
+    @classmethod
+    def sim_command_requires_sudo(cls) -> bool:
+        """ This sim does not require sudo. """
+        return False
+    
+    @classmethod
+    def get_xclbin_filename(cls) -> str:
+        """ Get the name of the xclbin inside the sim_slot_X directory on the run host. """
+        return "bitstream.xclbin"
+
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
+
+        # Vitis runs add the additional handling of the xclbin URI
+        self.uri_list.append(URIContainer('xclbin', self.get_xclbin_filename()))
 
     def clear_fpgas(self) -> None:
         if self.instance_assigned_simulations():
@@ -655,16 +830,24 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
             card_bdfs = []
             with settings(warn_only=True), hide('everything'):
-                temp_file = "/tmp/xbutil-examine-out.json"
-                collect = run(f"xbutil examine --format JSON -o {temp_file}")
-                with open(temp_file, "r") as f:
-                    json_dict = json.loads(f.read())
+                # Examine forcibly puts the JSON in an output file (on the remote); The stdout
+                # it produces is difficult to parse so use process substitution
+                # to pipe JSON to stdout instead.
+                # combine_stderr=False allows separate stdout and stderr streams
+                xbutil_examine_json = run("xbutil examine --force --format JSON -o >(cat) > /dev/null", pty=False, combine_stderr=False)
+                if xbutil_examine_json.stderr != '':
+                    rootLogger.critical(f"xbutil returned:\n{xbutil_examine_json.stderr}")
+                try:
+                    json_dict = json.loads(xbutil_examine_json.stdout)
+                except json.JSONDecodeError as e:
+                    rootLogger.critical(f"JSONDecodeError when parsing output from xbutil.")
+                    raise e
                 card_bdfs = [d["bdf"] for d in json_dict["system"]["host"]["devices"]]
 
             for card_bdf in card_bdfs:
                 run(f"xbutil reset -d {card_bdf} --force")
 
-    def infrasetup_instance(self) -> None:
+    def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
         metasim_enabled = self.parent_node.metasimulation_enabled
 
@@ -673,7 +856,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
             # copy sim infrastructure
             for slotno in range(len(self.parent_node.sim_slots)):
-                self.copy_sim_slot_infrastructure(slotno)
+                self.copy_sim_slot_infrastructure(slotno, uridir)
+                self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
                 # clear/flash fpgas

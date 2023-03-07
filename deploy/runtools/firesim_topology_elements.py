@@ -12,6 +12,7 @@ from runtools.switch_model_config import AbstractSwitchToSwitchConfig
 from runtools.utils import get_local_shared_libraries
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
+from runtools.run_farm_deploy_managers import InstanceDeployManager
 from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.workload import JobConfig
@@ -494,13 +495,18 @@ class FireSimServerNode(FireSimNode):
         all_paths += self.get_job().get_siminputs()
         return all_paths
     
-    def get_tarball_path_pair(self) -> Tuple[str, str]:
-        """ Return local and remote paths of the actual driver tarball, not files inside"""
+    def get_built_tarball_path_pair(self) -> Optional[Tuple[str, str]]:
+        """ Return local and remote paths of the actual driver tarball, not files inside.
+        This will only return if the tarball was just built by us. In the case that it 
+        was provided externally through config_hwdb:driver_tar, this returns None. """
+        hwcfg = self.get_resolved_server_hardware_config()
 
-        if not isinstance(self.server_hardware_config, str) and self.server_hardware_config is not None and self.server_hardware_config.driver_tar is not None:
-            return (self.server_hardware_config.driver_tar, self.get_tar_name())
-        else:
-            return (str(self.get_resolved_server_hardware_config().local_tarball_path(self.get_tar_name())), self.get_tar_name())
+        # the driver is being externally provided
+        # we don't provide the path here
+        if hwcfg.driver_tar is not None:
+            return None
+
+        return (str(self.get_resolved_server_hardware_config().local_tarball_path(InstanceDeployManager.get_driver_tar_filename())), InstanceDeployManager.get_driver_tar_filename())
 
 
 
@@ -517,7 +523,10 @@ class FireSimServerNode(FireSimNode):
 
         all_paths.append((self.get_job().bootbinary_path(), self.get_bootbin_name()))
 
-        all_paths.append(self.get_tarball_path_pair())
+        # This will only have a value when config_hwdb:driver_tar is None
+        maybe_tarball_path = self.get_built_tarball_path_pair()
+        if maybe_tarball_path:
+            all_paths.append(maybe_tarball_path)
 
         return all_paths
 
@@ -548,10 +557,6 @@ class FireSimServerNode(FireSimNode):
             # prefix rootfs name with the job name to disambiguate in supernode
             # cases
             return self.get_job_name() + "-" + rootfs_path.split("/")[-1]
-
-    def get_tar_name(self) -> str:
-        """ Get the name of the tarball on the run host"""
-        return "driver-bundle.tar.gz"
 
     def get_all_rootfs_names(self) -> List[Optional[str]]:
         """ Get all rootfs filenames as a list. """
