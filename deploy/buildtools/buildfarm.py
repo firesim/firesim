@@ -241,11 +241,13 @@ class AWSEC2(BuildFarm):
     """Build farm to manage AWS EC2 instances as the build hosts.
 
     Attributes:
+        build_farm_tag: tag given to instances launched in this build farm
         instance_type: instance object type
         build_instance_market: instance market type
         spot_interruption_behavior: if spot instance, the interruption behavior
         spot_max_price: if spot instance, the max price
     """
+    build_farm_tag: str
     instance_type: str
     build_instance_market: str
     spot_interruption_behavior: str
@@ -263,6 +265,17 @@ class AWSEC2(BuildFarm):
     def _parse_args(self) -> None:
         """Parse build host arguments."""
         # get aws specific args
+        build_farm_tag_prefix = "" if 'FIRESIM_BUILDFARM_PREFIX' not in os.environ else os.environ['FIRESIM_BUILDFARM_PREFIX']
+        if build_farm_tag_prefix != "":
+            build_farm_tag_prefix += "-"
+
+        self.build_farm_tag = build_farm_tag_prefix + self.args['build_farm_tag']
+
+        aws_resource_names_dict = aws_resource_names()
+        if aws_resource_names_dict['buildfarmprefix'] is not None:
+            # if specified, further prefix buildfarmtag
+            self.build_farm_tag = aws_resource_names_dict['buildfarmprefix'] + "-" + self.build_farm_tag
+
         self.instance_type = self.args['instance_type']
         self.build_instance_market = self.args['build_instance_market']
         self.spot_interruption_behavior = self.args['spot_interruption_behavior']
@@ -278,16 +291,6 @@ class AWSEC2(BuildFarm):
         Args:
             build_config: Build config to request build host for.
         """
-
-        # get access to the runfarmprefix, which we will apply to build
-        # instances too now.
-        aws_resource_names_dict = aws_resource_names()
-        # just duplicate the runfarmprefix for now. This can be None,
-        # in which case we give an empty build farm prefix
-        build_farm_prefix = aws_resource_names_dict['runfarmprefix']
-
-        buildfarmprefix = '' if build_farm_prefix is None else build_farm_prefix
-
         inst_obj = launch_instances(
             self.instance_type,
             1,
@@ -303,7 +306,7 @@ class AWSEC2(BuildFarm):
                     },
                 },
             ],
-            tags={ 'fsimbuildcluster': buildfarmprefix },
+            tags={ 'fsimbuildcluster': self.build_farm_tag },
             randomsubnet=True)[0]
 
         self.build_hosts.append(EC2BuildHost(build_config=build_config, inst_obj=inst_obj, dest_build_dir=self.dest_build_dir))
