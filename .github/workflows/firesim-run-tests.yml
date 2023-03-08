@@ -405,7 +405,6 @@ jobs:
   run-xclbin-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
     name: run-xclbin-buildbitstream
-    needs: [build-f1-driver] # delay until known working scala compile
     runs-on: aws-${{ github.run_id }}
     env:
       TERM: xterm-256-color
