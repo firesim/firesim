@@ -30,13 +30,13 @@ dependencies:
     - binutils
 
     - dromajo # from ucb-bar channel - https://github.com/riscv-boom/dromajo
-    - riscv-tools # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
+    - riscv-tools=1.0.1 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
 
     # firemarshal deps
     - qemu # from ucb-bar channel - https://github.com/ucb-bar/qemu-feedstock
     - rsync
     - psutil
-    - doit=0.35.0
+    - doit>=0.34.0
     - gitpython
     - humanfriendly
     - e2fsprogs
@@ -101,23 +101,23 @@ dependencies:
     # conda environment, pip's dependency resolution can conflict with
     # conda and create broken environments.  It's best to use the conda
     # packages so that the environment is consistent
-    - colorama==0.4.3
-    - argcomplete==1.12.3
-    - python-graphviz==0.19
-    - pyparsing==3.0.6
-    - numpy==1.19.5
-    - kiwisolver==1.3.1
-    - matplotlib-base==3.3.4
-    - pandas==1.1.5
-    - awscli==1.22.21
-    - pytest==6.2.5
-    - pytest-dependency==0.5.1
-    - pytest-mock==3.7.0
-    - moto==3.1.0
-    - mypy==0.931
+    - colorama
+    - argcomplete
+    - python-graphviz
+    - pyparsing
+    - numpy
+    - kiwisolver
+    - matplotlib-base
+    - pandas
+    - awscli
+    - pytest
+    - pytest-dependency
+    - pytest-mock
+    - moto
+    - mypy
     - s3fs
     - aiohttp
     - pip
     - pip:
-        - sure==2.0.0
-        - pylddwrap==1.2.1
+        - sure
+        - pylddwrap

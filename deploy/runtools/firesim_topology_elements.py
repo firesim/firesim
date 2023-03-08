@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import abc
+import sys
 from fabric.contrib.project import rsync_project # type: ignore
 from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
@@ -13,7 +14,7 @@ from runtools.utils import get_local_shared_libraries
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
-from typing import Optional, List, Tuple, Sequence, Union, TYPE_CHECKING
+from typing import Optional, List, Tuple, Sequence, Union, Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.workload import JobConfig
     from runtools.run_farm import Inst
@@ -392,12 +393,15 @@ class FireSimServerNode(FireSimNode):
         dest_sim_dir = self.get_host_instance().get_sim_dir()
         dest_sim_slot_dir = f"{dest_sim_dir}/sim_slot_{slotno}/"
 
+        def pos_hash(o: Any) -> int:
+            return hash(o) % ((sys.maxsize + 1) * 2)
+
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
             if sudo:
                 run(f"sudo mount -o loop {img} {mnt}")
                 run(f"sudo chown -R $(whoami) {mnt}")
             else:
-                run(f"""screen -S guestmount-wait -dm bash -c "guestmount -o uid=$(id -u) -o gid=$(id -g) --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
+                run(f"""screen -S guestmount-wait-{pos_hash(mnt)} -dm bash -c "guestmount -o uid=$(id -u) -o gid=$(id -g) --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
                 try:
                     run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""", timeout=60*10)
                 except CommandTimeout:
@@ -408,7 +412,7 @@ class FireSimServerNode(FireSimNode):
                 run(f"sudo umount {mnt}")
             else:
                 pid = run(f"cat {tmp_dir}/guestmount.pid")
-                run("screen -XS guestmount-wait quit")
+                run(f"screen -XS guestmount-wait-{pos_hash(mnt)} quit")
                 run(f"guestunmount {mnt}")
                 run(f"tail --pid={pid} -f /dev/null")
                 run(f"rm -f {tmp_dir}/guestmount.pid")
@@ -418,7 +422,7 @@ class FireSimServerNode(FireSimNode):
         if rfsname is not None:
             is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = dest_sim_slot_dir + "mountpoint"
-            
+
             run("""{} mkdir -p {}""".format("sudo" if sudo else "", mountpoint))
 
             if is_qcow2:
@@ -476,8 +480,8 @@ class FireSimServerNode(FireSimNode):
         return self.get_resolved_server_hardware_config().get_kill_simulation_command()
 
     def get_tarball_files_paths(self) -> List[Tuple[str, str]]:
-        """ Return local and remote paths of all stuff destined for the driver tarball 
-        The returned paths in the tuple are [local_path, remote_path]. When remote_path 
+        """ Return local and remote paths of all stuff destined for the driver tarball
+        The returned paths in the tuple are [local_path, remote_path]. When remote_path
         is an empty string the local filename is used."""
         all_paths = []
 
@@ -494,10 +498,10 @@ class FireSimServerNode(FireSimNode):
 
         all_paths += self.get_job().get_siminputs()
         return all_paths
-    
+
     def get_built_tarball_path_pair(self) -> Optional[Tuple[str, str]]:
         """ Return local and remote paths of the actual driver tarball, not files inside.
-        This will only return if the tarball was just built by us. In the case that it 
+        This will only return if the tarball was just built by us. In the case that it
         was provided externally through config_hwdb:driver_tar, this returns None. """
         hwcfg = self.get_resolved_server_hardware_config()
 
