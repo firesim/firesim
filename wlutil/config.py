@@ -488,9 +488,9 @@ class Config(collections.abc.MutableMapping):
                 self.cfg['firesim']['simulation_inputs'] = [pathlib.Path(f) for f in self.cfg['firesim']['simulation_inputs']]
 
         if 'out-dir' in self.cfg:
-            self.cfg['out-dir'] = wlutil.getOpt('image-dir') / self.cfg['out-dir']
+            self.cfg['out-dir'] = wlutil.getOpt('image-dir') / wlutil.getOpt('board-dir').name / self.cfg['out-dir']
         else:
-            self.cfg['out-dir'] = wlutil.getOpt('image-dir') / self.cfg['name']
+            self.cfg['out-dir'] = wlutil.getOpt('image-dir') / wlutil.getOpt('board-dir').name / self.cfg['name']
 
         # This object handles setting up the 'run' and 'command' options
         if 'run' in self.cfg:
