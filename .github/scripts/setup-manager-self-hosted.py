@@ -17,9 +17,9 @@ from ci_variables import ci_env
 def wait_machine_launch_complete():
     # Catch any exception that occurs so that we can gracefully teardown
     with settings(warn_only=True):
-        rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f /machine-launchstatus)").return_code
+        rc = run("timeout 20m grep -q '.*machine launch script complete.*' <(tail -f /tmp/machine-launchstatus)").return_code
         if rc != 0:
-            run("cat /machine-launchstatus.log")
+            run("cat /tmp/machine-launchstatus.log")
             raise Exception("machine-launch-script.sh failed to run")
 
 def setup_self_hosted_runners(platform_lib: PlatformLib):

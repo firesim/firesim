@@ -39,7 +39,15 @@ rootLogger = logging.getLogger()
 # https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
-f1_ami_name = "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+def get_f1_ami_name() -> str:
+    cuser = local("whoami", capture=True)
+    if cuser == "centos":
+        return "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+    elif cuser == "amzn":
+        return "FPGA Developer AMI(AL2) - 1.11.3-62ddb7b2-2f1e-4c38-a111-9093dcb1656f"
+    else:
+        assert False, "Unknown user given by 'whoami' (expected centos/amzn). Are you running on AWS EC2?"
+        return ""
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
@@ -225,7 +233,7 @@ def get_f1_ami_id() -> str:
     """ Get the AWS F1 Developer AMI by looking up the image name -- should be region independent.
     """
     client = boto3.client('ec2')
-    response = client.describe_images(Filters=[{'Name': 'name', 'Values': [f1_ami_name]}])
+    response = client.describe_images(Filters=[{'Name': 'name', 'Values': [get_f1_ami_name()]}])
     assert len(response['Images']) == 1
     return response['Images'][0]['ImageId']
 
