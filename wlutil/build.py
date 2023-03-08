@@ -561,26 +561,26 @@ def makeBin(config, nodisk=False):
             return doit.exceptions.TaskFailed(err)
 
         initramfsIncludes.append(wlutil.getOpt('initramfs-dir') / 'drivers')
-        with tempfile.TemporaryDirectory() as cpioDir:
-            cpioDir = pathlib.Path(cpioDir)
-            initramfsPath = ""
-            if nodisk:
-                initramfsIncludes += [wlutil.getOpt('initramfs-dir') / "nodisk"]
-                with wlutil.mountImg(config['img'], wlutil.getOpt('mnt-dir')):
-                    initramfsIncludes += [wlutil.getOpt('mnt-dir')]
-                    # This must be done while in the mountImg context
-                    initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
-            else:
-                initramfsIncludes += [wlutil.getOpt('initramfs-dir') / "disk"]
+        config['out-dir'].mkdir(parents=True, exist_ok=True)
+        cpioDir = config['out-dir']
+        cpioDir = pathlib.Path(cpioDir)
+        initramfsPath = ""
+        if nodisk:
+            initramfsIncludes += [wlutil.getOpt('initramfs-dir') / "nodisk"]
+            with wlutil.mountImg(config['img'], wlutil.getOpt('mnt-dir')):
+                initramfsIncludes += [wlutil.getOpt('mnt-dir')]
+                # This must be done while in the mountImg context
                 initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
+        else:
+            initramfsIncludes += [wlutil.getOpt('initramfs-dir') / "disk"]
+            initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
 
-            makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
-            generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
-            wlutil.run(['make'] + wlutil.getOpt('linux-make-args') + ['vmlinux', 'Image', '-j' + str(wlutil.getOpt('jlevel'))], cwd=config['linux']['source'])
-            # copy files needed to build linux (busybox copying is put here so that it is shown per linux build)
-            config['out-dir'].mkdir(parents=True, exist_ok=True)
-            shutil.copy(config['linux']['source'] / '.config', config['out-dir'] / 'linux_config')
-            shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
+        makeInitramfsKfrag(initramfsPath, cpioDir / "initramfs.kfrag")
+        generateKConfig(config['linux']['config'] + [cpioDir / "initramfs.kfrag"], config['linux']['source'])
+        wlutil.run(['make'] + wlutil.getOpt('linux-make-args') + ['vmlinux', 'Image', '-j' + str(wlutil.getOpt('jlevel'))], cwd=config['linux']['source'])
+        # copy files needed to build linux (busybox copying is put here so that it is shown per linux build)
+        shutil.copy(config['linux']['source'] / '.config', config['out-dir'] / 'linux_config')
+        shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
 
         if 'use-bbl' in config.get('firmware', {}) and config['firmware']['use-bbl']:
             fw = makeBBL(config, nodisk)
