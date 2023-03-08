@@ -803,7 +803,7 @@ Here is an example of this configuration file:
    :language: yaml
 
 ``build_farm_tag``
-""""""""""""""""
+""""""""""""""""""
 
 Use ``build_farm_tag`` to differentiate between different Build Farms used across **multiple FireSim repositories**.
 The instances launched by the ``buildbitstream`` command will be tagged with

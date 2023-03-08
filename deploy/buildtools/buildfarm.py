@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import abc
 import pprint
+import os
 
 from awstools.awstools import aws_resource_names, launch_instances, wait_on_instance_launches, get_instance_ids_for_instances, terminate_instances
 
