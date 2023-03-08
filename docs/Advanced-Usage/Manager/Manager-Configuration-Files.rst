@@ -805,11 +805,10 @@ Here is an example of this configuration file:
 ``build_farm_tag``
 """"""""""""""""
 
-Use ``build_farm_tag`` to differentiate between different Build Farms in FireSim.
-Having multiple ``config_build.yaml`` files with different ``build_farm_tag``
-values allows you to run many groups of builds at once from the same manager instance.
+Use ``build_farm_tag`` to differentiate between different Build Farms used across **multiple FireSim repositories**.
 The instances launched by the ``buildbitstream`` command will be tagged with
 this value.
+Mainly for CI use.
 
 Per AWS restrictions, this tag can be no longer than 255 characters.
 

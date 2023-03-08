@@ -20,4 +20,4 @@ This is useful for separating run farms between multiple copies of FireSim.
 --------------------------
 
 This environment variable is used to prefix all Build Farm tags with some prefix in the AWS EC2 case.
-This is useful for separating build farms between multiple copies of FireSim.
+This is mainly for CI use only.
