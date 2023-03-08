@@ -36,7 +36,7 @@ def run_linux_poweroff_vitis():
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
-                    rc = run(f"timeout {timeout} {workload_path}/run-workload.sh {workload_path}/config_runtime.yaml {workload_path}/config_hwdb.yaml {workload_path}/config_build_recipes.yaml &> {workload}.log", pty=False).return_code
+                    rc = run(f"timeout {timeout} {workload_path}/run-workload.sh {workload_path}/config_runtime.yaml &> {workload}.log", pty=False).return_code
                     print(f" Printing last {log_tail_length} lines of log. See {workload}.log for full info.")
                     run(f"tail -n {log_tail_length} {workload}.log")
 

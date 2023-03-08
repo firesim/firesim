@@ -13,6 +13,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  AWS_BUCKET_NAME: firesim-ci-vitis-xclbins
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -379,6 +380,57 @@ jobs:
       - uses: actions/checkout@v3
       - name: Run simple linux poweroff test w/ vitis
         run: .github/scripts/run-linux-poweroff-vitis.py
+
+  run-agfi-buildbitstream:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
+    name: run-agfi-buildbitstream
+    needs: [build-f1-driver] # delay until known working scala compile
+    runs-on: aws-${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run buildbitstream command and update sample AGFIs
+        run: .github/scripts/run-agfi-buildbitstream.py
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          # must align with `manager_fsim_dir/MANAGER_FIRESIM_LOCATION`
+          cwd: '/home/centos/firesim'
+          add-paths: |
+            'deploy/sample-backup-configs/sample_config_hwdb.ini'
+          commit-message: "Update AGFI(s)"
+          branch-suffix: short-commit-hash
+          title: "Update AGFI(s) for ${{ env.GITHUB_REF_NAME }}"
+
+  run-xclbin-buildbitstream:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
+    name: run-xclbin-buildbitstream
+    needs: [build-f1-driver] # delay until known working scala compile
+    runs-on: aws-${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/ci-shared.yaml
+          miniforge-version: latest
+      - uses: ./.github/actions/repo-setup-aws
+      - name: Run buildbitstream command and update sample xclbins
+        run: .github/scripts/run-xclbin-buildbitstream.py
+      - uses: peter-evans/create-pull-request@v4
+        with:
+          add-paths: |
+            'deploy/sample-backup-configs/sample_config_hwdb.ini'
+          commit-message: "Update xclbin(s)"
+          branch-suffix: short-commit-hash
+          title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"
 
   documentation-check:
     name: documentation-check

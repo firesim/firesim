@@ -47,6 +47,7 @@ class CIEnvironment(TypedDict):
     AWS_ACCESS_KEY_ID: str
     AWS_SECRET_ACCESS_KEY: str
     AWS_DEFAULT_REGION: str
+    AWS_BUCKET_NAME: str
     AZURE_CLIENT_ID: str
     AZURE_CLIENT_SECRET: str
     AZURE_TENANT_ID: str
@@ -84,6 +85,7 @@ ci_env: CIEnvironment = {
     'AWS_ACCESS_KEY_ID': get_ci_value('AWS_ACCESS_KEY_ID'),
     'AWS_SECRET_ACCESS_KEY': get_ci_value('AWS_SECRET_ACCESS_KEY'),
     'AWS_DEFAULT_REGION': get_ci_value('AWS_DEFAULT_REGION'),
+    'AWS_BUCKET_NAME': get_ci_value('AWS_BUCKET_NAME'),
     'AZURE_CLIENT_ID': get_ci_value('AZURE_CLIENT_ID'),
     'AZURE_CLIENT_SECRET': get_ci_value('AZURE_CLIENT_SECRET'),
     'AZURE_TENANT_ID': get_ci_value('AZURE_TENANT_ID'),
