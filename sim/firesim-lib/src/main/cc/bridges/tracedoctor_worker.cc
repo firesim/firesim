@@ -32,7 +32,7 @@ tracedoctor_worker::tracedoctor_worker(std::string const name, std::vector<std::
 
     for (auto &a: args) {
       std::vector<std::string> c = strSplit(a, ":");
-      if (c[0].compare("file") == 0 && c.size() > 1) {
+      if (c[0].compare("file") == 0 && c.size() > 1 && localRequiredFiles > 0) {
         filesToOpen.push_back(c[1]);
         localRequiredFiles--;
       } else if (c[0].compare("compressionThreads") == 0 && c.size() > 1) {
@@ -40,8 +40,6 @@ tracedoctor_worker::tracedoctor_worker(std::string const name, std::vector<std::
       } else if (c[0].compare("compressionLevel") == 0 && c.size() > 1) {
         compressionLevel = std::stoul(c[1], nullptr, 0);
       }
-      if (localRequiredFiles == 0)
-        break;
     }
 
     if (localRequiredFiles != 0) {

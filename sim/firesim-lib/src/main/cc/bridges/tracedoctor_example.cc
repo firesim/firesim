@@ -17,7 +17,7 @@ tracedoctor_tracerv::tracedoctor_tracerv(std::vector<std::string> const args, st
     } else if (a == "fireperf") {
       mode = TRACERV_FIREPERF;
     } else if (a.rfind("dwarf-file-name", 0) == 0 && a.find(":") != std::string::npos) {
-      dwarfFileName = a.substr(a.find(":"));
+      dwarfFileName = a.substr(a.find(":") + 1);
     }
   }
 
@@ -66,17 +66,17 @@ void tracedoctor_tracerv::tick(char const * const data, unsigned int tokens) {
     for (unsigned int i = 0; i < tokens; i++) {
       struct traceLayout const traceToken = traceTokens[i];
       if (traceToken.valids & 0b000001)
-        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr0) << 24) >> 24), traceToken.timestamp);
+        tracerv_tracker->addInstruction(traceToken.instr0, traceToken.timestamp);
       if (traceToken.valids & 0b000010)
-        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr1) << 24) >> 24), traceToken.timestamp);
+        tracerv_tracker->addInstruction(traceToken.instr1, traceToken.timestamp);
       if (traceToken.valids & 0b000100)
-        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr2) << 24) >> 24), traceToken.timestamp);
+        tracerv_tracker->addInstruction(traceToken.instr2, traceToken.timestamp);
       if (traceToken.valids & 0b001000)
-        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr3) << 24) >> 24), traceToken.timestamp);
+        tracerv_tracker->addInstruction(traceToken.instr3, traceToken.timestamp);
       if (traceToken.valids & 0b010000)
-        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr4) << 24) >> 24), traceToken.timestamp);
+        tracerv_tracker->addInstruction(traceToken.instr4, traceToken.timestamp);
       if (traceToken.valids & 0b100000)
-        tracerv_tracker->addInstruction((uint64_t) ((((int64_t) traceToken.instr5) << 24) >> 24), traceToken.timestamp);
+        tracerv_tracker->addInstruction(traceToken.instr5, traceToken.timestamp);
     }
   }
 }

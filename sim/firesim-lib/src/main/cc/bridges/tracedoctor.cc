@@ -117,7 +117,7 @@ tracedoctor_t::tracedoctor_t(
         } else if (traceThreads == 0) {
             fprintf(stdout, "TraceDoctor@%d: multithreading disabled, reduce to single buffer depth\n", info.tracerId);
             bufferDepth = 1;
-        } else if (traceThreads > workers.size()) {
+        } else if ((unsigned int) traceThreads > workers.size()) {
             traceThreads = workers.size();
             fprintf(stdout, "TraceDoctor@%d: unbalanced thread number, reducing to %d threads\n", info.tracerId, traceThreads);
         }
@@ -133,7 +133,7 @@ tracedoctor_t::tracedoctor_t(
 
         if (traceThreads > 0) {
             fprintf(stdout, "TraceDoctor@%d: spawning %u worker threads\n", info.tracerId, traceThreads);
-            for (unsigned int i = 0; i < traceThreads; i++) {
+            for (unsigned int i = 0; i < (unsigned int) traceThreads; i++) {
                 workerThreads.emplace_back(std::move(std::thread(&tracedoctor_t::work, this, i)));
             }
         }
