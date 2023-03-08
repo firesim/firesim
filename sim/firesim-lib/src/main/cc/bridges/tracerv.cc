@@ -274,8 +274,6 @@ void tracerv_t::serialize(
                     OUTBUF[i + 0],
                     q,
                     OUTBUF[i + q + 1] & (~valid_mask));
-          } else {
-            break;
           }
         }
       }
