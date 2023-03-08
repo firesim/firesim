@@ -121,7 +121,7 @@ class Builder:
         else:
             self.name = 'br'
 
-        self.outputDir = wlutil.getOpt('image-dir') / self.name
+        self.outputDir = wlutil.getOpt('image-dir') / wlutil.getOpt('board-dir').name / self.name
         self.outputImg = self.outputDir / (self.name + ".img")
 
     def getWorkload(self):
