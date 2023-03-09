@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 from pathlib import Path
 
 from fabric.api import prefix, settings, run, execute # type: ignore
@@ -26,11 +27,10 @@ def run_agfi_buildbitstream():
             sys.exit(rc)
         else:
             # parse the output yamls, replace the sample hwdb's agfi line only
+            sample_hwdb_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_hwdb.ini"
+
             hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
             built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x))]
-
-            sample_hwdb_postfix = "deploy/sample-backup-configs/sample_config_hwdb.ini"
-            sample_hwdb_filename = f"{manager_fsim_dir}/{sample_hwdb_postfix}"
             for hwdb in built_hwdb_entries:
                 sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 
@@ -44,8 +44,12 @@ def run_agfi_buildbitstream():
                         elif match_agfi == True and ("agfi:" in line.strip().split(' ')[0]):
                             # only replace this agfi
                             match_agfi = False
+
+                            new_agfi_line = open(f"{hwdb_entry_dir}/{hwdb}").read().split("\n")[1]
+                            print(f"Replacing {line.strip()} with {new_agfi_line}")
+
                             # print out the agfi line
-                            sample_hwdb_file.write(open(f"{hwdb_entry_dir}/{hwdb}").read().split("\n")[1] + '\n')
+                            sample_hwdb_file.write(new_agfi_line + '\n')
                         else:
                             # if no match print other lines
                             sample_hwdb_file.write(line + '\n')
@@ -53,6 +57,7 @@ def run_agfi_buildbitstream():
                     if match_agfi == True:
                         sys.exit("::ERROR:: Unable to find matching AGFI key for HWDB entry")
 
+            print(f"Printing {sample_hwdb_filename}...")
             run(f"cat {sample_hwdb_filename}")
 
             # share agfis
@@ -67,6 +72,9 @@ def run_agfi_buildbitstream():
                         sample_build_file.write(line.replace('#', '') + "\n")
                     else:
                         sample_build_file.write(line + "\n")
+
+            print(f"Printing {sample_build_filename}...")
+            run(f"cat {sample_build_filename}")
 
             run(f"firesim shareagfi -a {sample_hwdb_filename} -b {sample_build_filename}")
 

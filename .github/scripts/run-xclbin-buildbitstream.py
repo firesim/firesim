@@ -61,6 +61,7 @@ def run_xclbin_buildbitstream():
                     else:
                         byf.write(line + '\n')
 
+            run(f"Printing {build_yaml}...")
             run(f"cat {build_yaml}")
 
             rc = 0
@@ -75,7 +76,6 @@ def run_xclbin_buildbitstream():
                 hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
                 built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x))]
 
-                # TODO: setup aws credentials
                 hwdb_to_link = {}
                 for hwdb in built_hwdb_entries:
                     with open(f"{hwdb_entry_dir}/{hwdb}") as hwdbef:
@@ -87,12 +87,12 @@ def run_xclbin_buildbitstream():
                                 if not upload_file(file_path, ci_env['AWS_BUCKET_NAME'], file_name):
                                     print(f"Unable to upload the xclbin for {hwdb}")
                                 else:
-                                    print(f"Uploaded xclbin for {hwdb}")
+                                    link = f"https://{ci_env['AWS_BUCKET_NAME']}.s3.{ci_env['AWS_DEFAULT_REGION']}.amazonaws.com/{file_name}"
+                                    print(f"Uploaded xclbin for {hwdb} to {link}")
                                     hwdb_to_link[hwdb] = f"https://{ci_env['AWS_BUCKET_NAME']}.s3.{ci_env['AWS_DEFAULT_REGION']}.amazonaws.com/{file_name}"
 
                 # parse the output yamls, replace the sample hwdb's xclbin line only
-                sample_hwdb_postfix = "deploy/sample-backup-configs/sample_config_hwdb.ini"
-                sample_hwdb_filename = f"{manager_fsim_dir}/{sample_hwdb_postfix}"
+                sample_hwdb_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_hwdb.ini"
                 for hwdb in built_hwdb_entries:
                     sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 
@@ -106,14 +106,21 @@ def run_xclbin_buildbitstream():
                             elif match_xclbin == True and ("xclbin:" in line.strip().split(' ')[0]):
                                 # only replace this xclbin
                                 match_xclbin = False
+
+                                new_xclbin_line = f"    xclbin: {hwdb_to_link[hwdb]}"
+                                print(f"Replacing {line.strip()} with {new_xclbin_line}")
+
                                 # print out the xclbin line
-                                sample_hwdb_file.write(f"    xclbin: {hwdb_to_link[hwdb]}" + '\n')
+                                sample_hwdb_file.write(new_xclbin_line + '\n')
                             else:
                                 # if no match print other lines
                                 sample_hwdb_file.write(line + '\n')
 
                         if match_xclbin == True:
                             sys.exit("::ERROR:: Unable to find matching xclbin key for HWDB entry")
+
+                print(f"Printing {sample_hwdb_filename}...")
+                run(f"cat {sample_hwdb_filename}")
 
 if __name__ == "__main__":
     execute(run_xclbin_buildbitstream, hosts=["localhost"])
