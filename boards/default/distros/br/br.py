@@ -22,7 +22,7 @@ SYSLOGD_ARGS=-n
 KLOGD_ARGS=-n
 
 start() {
-    echo "launching firesim workload run/command" && /firesim.sh $args && echo "firesim workload run/command done"
+    echo "launching firemarshal workload run/command" && /firemarshal.sh $args && echo "firemarshal workload run/command done"
 }
 
 case "$$1" in
@@ -221,16 +221,16 @@ class Builder:
     def generateBootScriptOverlay(script, args):
         # How this works:
         # The buildroot repo has a pre-built overlay with a custom S99run
-        # script that init will run last. This script will run the /firesim.sh
+        # script that init will run last. This script will run the /firemarshal.sh
         # script at boot. We just overwrite this script.
-        scriptDst = overlay / 'firesim.sh'
+        scriptDst = overlay / 'firemarshal.sh'
         if script is not None:
             shutil.copy(script, scriptDst)
         else:
             scriptDst.unlink()
             # Create a blank init script because overlays won't let us delete stuff
             # Alternatively: we could consider replacing the default.target
-            # symlink to disable the firesim target entirely
+            # symlink to disable the firemarshal target entirely
             scriptDst.touch()
 
         scriptDst.chmod(0o755)
@@ -248,10 +248,10 @@ class Builder:
         inBody = False
         for line in lines:
             if not inBody:
-                if re.match("launching firesim workload run/command", line):
+                if re.match("launching firemarshal workload run/command", line):
                     inBody = True
             else:
-                if re.match("firesim workload run/command done", line):
+                if re.match("firemarshal workload run/command done", line):
                     break
                 stripped.append(line)
 
