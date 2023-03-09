@@ -162,7 +162,7 @@ def aws_resource_names() -> Dict[str, Any]:
 
     Returns dict with at least:
         'vpcname', 'securitygroupname', 'keyname', 's3bucketname', 'snsname',
-        'runfarmprefix'.
+        'runfarmprefix', 'buildfarmprefix'.
 
     Note that these tags are NOT used to enforce the usage of these resources,
     rather just to configure the manager. Enforcement is done in IAM
@@ -178,6 +178,7 @@ def aws_resource_names() -> Dict[str, Any]:
         's3bucketname' :     None,
         'snsname'      :     'FireSim',
         'runfarmprefix':     None,
+        'buildfarmprefix':   None,
     }
 
     resptags = get_localhost_instance_tags()
@@ -194,6 +195,7 @@ def aws_resource_names() -> Dict[str, Any]:
         base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
         base_dict['snsname']           = resptags['firesim-tutorial-username']
         base_dict['runfarmprefix']     = resptags['firesim-tutorial-username']
+        base_dict['buildfarmprefix']   = resptags['firesim-tutorial-username']
 
     return base_dict
 
