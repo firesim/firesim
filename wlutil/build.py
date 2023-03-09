@@ -1,6 +1,5 @@
 import doit
 import shutil
-import tempfile
 import logging
 import os
 import subprocess as sp
