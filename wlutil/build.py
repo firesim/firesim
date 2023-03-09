@@ -391,6 +391,8 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
     cpios = []
     for src in srcs:
         dst = cpioDir / (src.name + '.cpio')
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(dst)
         wlutil.toCpio(src, dst)
         cpios.append(dst)
 
@@ -399,6 +401,8 @@ def makeInitramfs(srcs, cpioDir, includeDevNodes=False):
 
     # Generate final cpio
     finalPath = cpioDir / 'initramfs.cpio'
+    with contextlib.suppress(FileNotFoundError):
+        os.remove(finalPath)
     with open(finalPath, 'wb') as finalF:
         for cpio in cpios:
             with open(cpio, 'rb') as srcF:
