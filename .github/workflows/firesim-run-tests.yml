@@ -405,7 +405,7 @@ jobs:
   run-xclbin-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
     name: run-xclbin-buildbitstream
-    runs-on: aws-${{ github.run_id }}
+    runs-on: local-fpga
     env:
       TERM: xterm-256-color
     steps:
@@ -416,10 +416,6 @@ jobs:
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          environment-file: conda-reqs/ci-shared.yaml
-          miniforge-version: latest
       - uses: ./.github/actions/repo-setup-aws
       - name: Run buildbitstream command and update sample xclbins
         run: .github/scripts/run-xclbin-buildbitstream.py
