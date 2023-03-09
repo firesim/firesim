@@ -62,15 +62,18 @@ def main(platform: Platform, issue_id: int):
 
                 # check that select instances are terminated on time
                 platform_lib.check_and_terminate_run_farm_instances(45, ci_env['GITHUB_RUN_ID'], issue_id)
+                platform_lib.check_and_terminate_build_farm_instances(12, ci_env['GITHUB_RUN_ID'], issue_id)
 
                 if state_status in ['completed']:
                     if state_concl in TERMINATE_STATES:
                         platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
+                        platform_lib.check_and_terminate_build_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
                         platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl in STOP_STATES:
-                        # if we stop then we should terminate the run farm instances
+                        # if we stop then we should terminate the run/build farm instances
                         platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
+                        platform_lib.check_and_terminate_build_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
                         platform_lib.stop_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
                         return
                     elif state_concl not in NOP_STATES:
@@ -93,6 +96,7 @@ def main(platform: Platform, issue_id: int):
         issue_post(ci_env['PERSONAL_ACCESS_TOKEN'], issue_id, post_str)
 
         platform_lib.check_and_terminate_run_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
+        platform_lib.check_and_terminate_build_farm_instances(0, ci_env['GITHUB_RUN_ID'], issue_id)
         platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
 
         post_str = f"Instances for CI run {ci_env['GITHUB_RUN_ID']} were supposedly terminated. Verify termination manually.\n"

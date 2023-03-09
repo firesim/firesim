@@ -802,6 +802,16 @@ Here is an example of this configuration file:
 .. literalinclude:: /../deploy/build-farm-recipes/aws_ec2.yaml
    :language: yaml
 
+``build_farm_tag``
+""""""""""""""""""
+
+Use ``build_farm_tag`` to differentiate between different Build Farms used across **multiple FireSim repositories**.
+The instances launched by the ``buildbitstream`` command will be tagged with
+this value.
+Mainly for CI use.
+
+Per AWS restrictions, this tag can be no longer than 255 characters.
+
 ``instance_type``
 """"""""""""""""""
 

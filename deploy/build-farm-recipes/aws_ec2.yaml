@@ -19,6 +19,8 @@
 build_farm_type: AWSEC2
 args:
     # managerinit arg start
+    # tag to apply to build farm hosts
+    build_farm_tag: mainbuildfarm
     # instance type to use per build
     instance_type: z1d.2xlarge
     # instance market to use per build (ondemand, spot)
