@@ -57,7 +57,7 @@ def buildBusybox(config):
     shutil.copy(wlutil.getOpt('wlutil-dir') / 'busybox-config', wlutil.getOpt('busybox-dir') / '.config')
     wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=wlutil.getOpt('busybox-dir'))
     shutil.copy(wlutil.getOpt('busybox-dir') / 'busybox', wlutil.getOpt('initramfs-dir') / 'disk' / 'bin/')
-
+    shutil.copy(wlutil.getOpt('busybox-dir') / 'busybox', wlutil.getOpt('initramfs-dir') / 'nodisk' / 'bin/')
     return True
 
 
@@ -173,7 +173,8 @@ def addDep(loader, config):
     loader.addTask({
         'name': 'build_busybox',
         'actions': [(buildBusybox, [config])],
-        'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox'],
+        'targets': [wlutil.getOpt('initramfs-dir') / 'disk' / 'bin' / 'busybox',
+                    wlutil.getOpt('initramfs-dir') / 'nodisk' / 'bin' / 'busybox'],
         'file_dep': [wlutil.getOpt('wlutil-dir') / 'busybox-config'],
         'uptodate': [wlutil.config_changed(wlutil.checkGitStatus(wlutil.getOpt('busybox-dir'))),
                      wlutil.config_changed(wlutil.getToolVersions())]
@@ -568,7 +569,7 @@ def makeBin(config, nodisk=False):
         if nodisk:
             initramfsIncludes += [wlutil.getOpt('initramfs-dir') / "nodisk"]
             with wlutil.mountImg(config['img'], wlutil.getOpt('mnt-dir')):
-                initramfsIncludes += [wlutil.getOpt('mnt-dir')]
+                initramfsIncludes = [wlutil.getOpt('mnt-dir')] + initramfsIncludes
                 # This must be done while in the mountImg context
                 initramfsPath = makeInitramfs(initramfsIncludes, cpioDir, includeDevNodes=True)
         else:

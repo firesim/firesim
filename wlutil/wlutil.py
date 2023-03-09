@@ -426,6 +426,8 @@ def initialize():
     for d in initramfs_disk_dirs:
         if not (ctx['initramfs-dir'] / 'disk' / d).exists():
             (ctx['initramfs-dir'] / 'disk' / d).mkdir(parents=True)
+        if not (ctx['initramfs-dir'] / 'nodisk' / d).exists():
+            (ctx['initramfs-dir'] / 'nodisk' / d).mkdir(parents=True)
 
 
 def getCtx():
