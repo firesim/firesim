@@ -12,7 +12,7 @@ def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
 
     with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
-        def run_w_timeout(workload, timeout):
+        def run_w_timeout(workload, timeout, num_passes):
             """ Run workload with a specific timeout
 
             :arg: workload (str) - workload yaml (abs path)
@@ -45,10 +45,17 @@ def run_linux_poweroff():
                     run(f"firesim terminaterunfarm -q -c {workload}")
                     sys.exit(rc)
                 else:
-                    print(f"Workload {workload} successful.")
+                    print(f"Workload run {workload} successful. Checking uartlogs...")
 
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-all-no-nic.yaml", "45m")
-        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-nic.yaml", "45m")
+                    # verify that linux booted and the pass printout was given
+                    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "*** PASSED ***" $LAST_DIR/*/uartlog; fi""")
+                    out_count = out.count('\n')
+                    assert out_count == num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
+
+                    print(f"Workload run {workload} successful.")
+
+        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-all-no-nic.yaml", "45m", 2)
+        run_w_timeout(f"{manager_fsim_dir}/deploy/workloads/linux-poweroff-nic.yaml", "45m", 1)
 
 if __name__ == "__main__":
     set_fabric_firesim_pem()
