@@ -54,6 +54,12 @@ jobs:
     if: needs.change-filters.outputs.run-core == 'true'
     runs-on: self-hosted
     steps:
+      - name: Delete old checkout
+        run: |
+            ls -alh .
+            rm -rf ${{ env.REMOTE_WORK_DIR }}/* || true
+            rm -rf ${{ env.REMOTE_WORK_DIR }}/.* || true
+      
       - uses: actions/checkout@v3
       - name: Setup repo copy
         run: |
