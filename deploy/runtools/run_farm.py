@@ -160,8 +160,7 @@ class RunFarm(metaclass=abc.ABCMeta):
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None:
         self.args = args
         self.metasimulation_enabled = metasimulation_enabled
-        cuser = os.environ["USER"]
-        self.default_simulation_dir = self.args.get("default_simulation_dir", f"/home/{cuser}")
+        self.default_simulation_dir = self.args.get("default_simulation_dir", f"/home/{os.environ['USER']}")
         self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS = dict()
         self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS = dict()
         self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK = dict()

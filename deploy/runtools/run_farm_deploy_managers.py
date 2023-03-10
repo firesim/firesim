@@ -190,9 +190,6 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         self.uri_list = list()
         self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
 
-    def get_current_user(self) -> str:
-        return os.environ["USER"]
-
     @abc.abstractmethod
     def infrasetup_instance(self, uridir: str) -> None:
         """Run platform specific implementation of how to setup simulations.
@@ -241,7 +238,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             ### XXX Centos Specific
             run('sudo yum -y install qemu-img')
             # copy over kernel module
-            put('../build/nbd.ko', f'/home/{self.get_current_user()}/nbd.ko', mirror_local_mode=True)
+            put('../build/nbd.ko', f"/home/{os.environ['USER']}/nbd.ko", mirror_local_mode=True)
 
     def load_nbd_module(self) -> None:
         """ If NBD is available and qcow2 support is required, load the nbd
@@ -250,7 +247,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("Loading NBD Kernel Module.")
             self.unload_nbd_module()
-            run(f"""sudo insmod /home/{self.get_current_user()}/nbd.ko nbds_max={self.nbd_tracker.NBDS_MAX}""")
+            run(f"""sudo insmod /home/{os.environ['USER']}/nbd.ko nbds_max={self.nbd_tracker.NBDS_MAX}""")
 
     def unload_nbd_module(self) -> None:
         """ If NBD is available and qcow2 support is required, unload the nbd
@@ -641,7 +638,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             with warn_only():
                 run('git clone https://github.com/aws/aws-fpga')
                 run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
-            with cd(f'/home/{self.get_current_user()}/aws-fpga'):
+            with cd(f"/home/{os.environ['USER']}/aws-fpga"):
                 run('source sdk_setup.sh')
 
     def fpga_node_xdma(self) -> None:
@@ -650,10 +647,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
         """
         if self.instance_assigned_simulations():
             self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
-            run(f'mkdir -p /home/{self.get_current_user()}/xdma/')
+            run(f"mkdir -p /home/{os.environ['USER']}/xdma/")
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
-                f'/home/{self.get_current_user()}/xdma/', mirror_local_mode=True)
-            with cd(f'/home/{self.get_current_user()}/xdma/linux_kernel_drivers/xdma/'), \
+                f"/home/{os.environ['USER']}/xdma/", mirror_local_mode=True)
+            with cd(f"/home/{os.environ['USER']}/xdma/linux_kernel_drivers/xdma/"), \
                 prefix("export PATH=/usr/bin:$PATH"):
                 # prefix only needed if conda env is earlier in PATH
                 # see build-setup-nolog.sh for explanation.
@@ -742,7 +739,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             # now load xdma
             self.instance_logger("Loading XDMA Driver Kernel Module.")
             # TODO: can make these values automatically be chosen based on link lat
-            run(f"sudo insmod /home/{self.get_current_user()}/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
+            run(f"sudo insmod /home/{os.environ['USER']}/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self) -> None:
         """ start the vivado hw_server and virtual jtag on simulation instance. """
