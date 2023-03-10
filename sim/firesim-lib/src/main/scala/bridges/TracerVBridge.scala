@@ -215,10 +215,6 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
     
     // divide with a ceiling round, to get the total number of arms
     val armCount = (traces.length + armWidth - 1) / armWidth
-    val armCountU = (armCount).U
-
-    // A sequence with the number of traces in each arm
-    val armWidths = Seq.tabulate(armCount)(x => math.min(traces.length - (x * armWidth), armWidth))
 
     // A Seq of Seq which represents each arm of the mux
     val allTraceArms = traces.grouped(armWidth).toSeq
