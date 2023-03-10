@@ -1,6 +1,6 @@
 vitis_test:
     DESIGN: FireSim
-    TARGET_CONFIG: FireSimRocketConfig
+    TARGET_CONFIG: FireSimRocketMMIOOnlyConfig
     PLATFORM_CONFIG: BaseVitisConfig
     deploy_triplet: null
     platform_config_args:
