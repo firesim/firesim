@@ -10,10 +10,10 @@
 #include <iostream>
 #include <string_view>
 
-static std::vector<bool> get_contiguous(unsigned bits, unsigned total) {
+static std::vector<bool> get_valids(unsigned seed, unsigned total) {
   std::vector<bool> ret;
   for (unsigned i = 0; i < total; i++) {
-    const bool value = (i < bits);
+    const bool value = seed & (1 << i);
     ret.emplace_back(value);
   }
 
@@ -170,12 +170,16 @@ public:
         // calculate what TraverV should output, and save it
         if (bit[i]) {
           valid_i.emplace_back(iad[i]);
+        } else {
+          // write a magic value to signify an invalid instruction
+          // this magic value is test only and is not passed to the DUT
+          valid_i.emplace_back(-1);
         }
       }
 
       // place instructions onto the vector 7 at a time
       for (size_t i = 0; i < valid_i.size(); i += 7) {
-        auto last = std::min(valid_i.size(), i + 7);
+        const auto last = std::min(valid_i.size(), i + 7);
         std::vector<uint64_t> chunk =
             std::vector<uint64_t>(valid_i.begin() + i, valid_i.begin() + last);
         expected_pair.emplace_back(std::make_pair(e_cycle, chunk));
@@ -189,10 +193,10 @@ public:
     for (unsigned test_step = 0, total = get_total_trace_tests();
          test_step < total;
          ++test_step) {
-      const uint64_t pull = rand_next(tracerv_width + 1);
+      const uint64_t pull = rand_next();
 
-      auto pull_iaddr = get_iaddrs(test_step, tracerv_width);
-      auto pull_bits = get_contiguous(pull, tracerv_width);
+      const auto pull_bits = get_valids(pull, tracerv_width);
+      const auto pull_iaddr = get_iaddrs(test_step, tracerv_width);
 
       load(pull_iaddr, pull_bits);
       steps(1);
@@ -312,7 +316,12 @@ public:
       assert(insns.size() < 8 && "Internal test error, filtered cannot "
                                  "have more than 8 instructions at once");
       for (int i = 0; i < insns.size(); i++) {
-        buffer[i + 1] = insns[i] | tracerv_t::valid_mask;
+        // valid instruction, or invalid placeholder
+        if (insns[i] != -1) {
+          buffer[i + 1] = insns[i] | tracerv_t::valid_mask;
+        } else {
+          buffer[i + 1] = 0;
+        }
       }
 
       // because filtered doesn't contain the instruction value for non
@@ -341,7 +350,7 @@ public:
   /**
    * Returns the next available random number, modulo limit.
    */
-  uint64_t rand_next(uint64_t limit) { return gen() % limit; }
+  uint64_t rand_next() { return gen(); }
 
 private:
   unsigned get_total_trace_tests() const { return 128; }

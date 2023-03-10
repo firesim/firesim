@@ -240,17 +240,17 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
     
     // a parallel set of arms to a parallel mux, true if any instructions in the arm are valid (OR reduction)
     val anyValid = allTraceArms.map(arm=>arm.map(trace => trace.valid).reduce((a,b) => (a|b)))
-    val anyValidMux = MuxLookup(counter, false.B, Seq.tabulate(armCount)(x=>x.U->anyValid(x)))
-    
-    val allValid = allTraceArms.map(arm=>arm.map(trace => trace.valid).reduce((a,b) => (a&b)))
-    val allValidMux = MuxLookup(counter, false.B, Seq.tabulate(armCount)(x=>x.U->allValid(x)))
 
+    // all of the valids of the larger indexed arms are OR reduced
+    val anyValidRemain = Seq.tabulate(armCount)(idx=>(idx until armCount).map(x=>anyValid(x)).reduce((a,b) => (a|b)))
+    val anyValidRemainMux = MuxLookup(counter, false.B, Seq.tabulate(armCount)(x=>x.U->anyValidRemain(x)))
+    
     streamEnq.bits := streamMux
 
-    val maybeFire = !allValidMux || (counter === (armCount-1).U)
-    val maybeEnq  = anyValidMux
+    val maybeFire = !anyValidRemainMux || (counter === (armCount-1).U)
+    val maybeEnq  = anyValidRemainMux
 
-    val do_enq_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, anyValidMux, traceEnable)
+    val do_enq_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, maybeEnq, traceEnable)
     val do_fire_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, maybeFire)
 
     // Note, if we dequeue a token that wins out over the increment below
