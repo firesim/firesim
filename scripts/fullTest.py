@@ -114,7 +114,7 @@ categoryTests = {
 }
 
 
-def runTests(testNames, categoryName, marshalArgs=[], cmdArgs=[]):
+def runTests(testNames, categoryName, marshalArgs=[], cmdArgs=[], doTests=True):
     """Run the tests named in testNames. Logging will use categoryName to
     identify this set of tests. marshalArgs and cmdArgs are the arguments to
     pass to 'marshal' and 'marshal test', respectively."""
@@ -130,7 +130,8 @@ def runTests(testNames, categoryName, marshalArgs=[], cmdArgs=[]):
         try:
             # These log at level DEBUG (go to log file but not stdout)
             wlutil.run([marshalBin] + marshalArgs + ['clean', tPath], check=True)
-            wlutil.run([marshalBin] + marshalArgs + ['test'] + cmdArgs + [tPath], check=True)
+            cmd = 'test' if doTests else 'build'
+            wlutil.run([marshalBin] + marshalArgs + [cmd] + cmdArgs + [tPath], check=True)
         except sp.CalledProcessError as e:
             log.log(logging.INFO, "FAIL")
             failures.append(("[{}]: {}".format(categoryName, tName), e))
@@ -182,17 +183,18 @@ if __name__ == "__main__":
 
     parser.add_argument("-c", "--categories", nargs="+", default=list(categories),
                         help="Specify which categorie(s) of test to run. By default, all tests will be run")
-
+    parser.add_argument("-s", "--skiptests", action="store_true")
+    parser.set_defaults(skiptests=False)
     # TODO: add a 'from-failures' option to only run tests that failed a previous run
 
     args = parser.parse_args()
-
     allFailures = []
     for category in args.categories:
         if category != 'special':
             allFailures += runTests(categoryTests[category], category,
                                     marshalArgs=categoryArgs[category][0],
-                                    cmdArgs=categoryArgs[category][1])
+                                    cmdArgs=categoryArgs[category][1],
+                                    doTests=not args.skiptests)
         else:
             allFailures += runSpecial(categoryTests["special"], "SPECIAL")
 

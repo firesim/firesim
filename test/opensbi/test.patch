@@ -16,13 +16,12 @@ diff -ruN opensbi/include/sbi/sbi_version.h newopensbi/include/sbi/sbi_version.h
  #ifndef __SBI_VERSION_H__
  #define __SBI_VERSION_H__
  
--#define OPENSBI_VERSION_MAJOR 0
-+#define OPENSBI_VERSION_MAJOR 42
-+
 +#ifdef MARSHAL_TEST
++#define OPENSBI_VERSION_MAJOR 42
 +#define OPENSBI_VERSION_MINOR 17
 +#else
- #define OPENSBI_VERSION_MINOR 8
+ #define OPENSBI_VERSION_MAJOR 1
+ #define OPENSBI_VERSION_MINOR 2
 +#endif
  
  /**

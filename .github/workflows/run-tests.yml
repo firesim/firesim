@@ -102,7 +102,7 @@ jobs:
           cd ${{ env.REMOTE_WORK_DIR }}
           eval "$(conda shell.bash hook)"
           conda activate $PWD/.conda-env
-          ./scripts/fullTest.py -c baremetal qemu smoke special
+          ./scripts/fullTest.py -c baremetal qemu smoke special -s
       - name: Dump log
         if: ${{ always() }}
         run: |
