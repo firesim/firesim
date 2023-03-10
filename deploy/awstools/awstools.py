@@ -41,13 +41,12 @@ rootLogger = logging.getLogger()
 # by running scripts/update_test_amis.py
 def get_f1_ami_name() -> str:
     cuser = local("whoami", capture=True)
-    if cuser == "centos":
-        return "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
-    elif cuser == "amzn":
+    if cuser == "amzn":
         return "FPGA Developer AMI(AL2) - 1.11.3-62ddb7b2-2f1e-4c38-a111-9093dcb1656f"
     else:
-        assert False, "Unknown user given by 'whoami' (expected centos/amzn). Are you running on AWS EC2?"
-        return ""
+        if cuser != "centos":
+            print("Unknown user given by 'whoami' (expected centos/amzn). Defaulting to AWS EC2 AMI.")
+        return "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
