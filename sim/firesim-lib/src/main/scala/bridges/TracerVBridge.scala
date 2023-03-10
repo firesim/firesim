@@ -210,7 +210,7 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
 
     hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
 
-    // the maximum widht of a single arm, this is determined by the 512 bit width of a single beat
+    // the maximum width of a single arm, this is determined by the 512 bit width of a single beat
     val armWidth = 7
     
     // divide with a ceiling round, to get the total number of arms
