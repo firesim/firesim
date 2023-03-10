@@ -10,7 +10,9 @@
 #include <iostream>
 #include <string_view>
 
-static std::vector<bool> get_valids(unsigned seed, unsigned total) {
+static std::vector<bool> get_valids(uint64_t seed, unsigned total) {
+  assert(total <= 64 && "This test does not support more than 64 IPC");
+
   std::vector<bool> ret;
   for (unsigned i = 0; i < total; i++) {
     const bool value = seed & (1 << i);
