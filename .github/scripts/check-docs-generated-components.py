@@ -11,8 +11,8 @@ def run_docs_generated_components_check():
     with cd(manager_fsim_dir), prefix('source sourceme-f1-manager.sh'):
         with prefix("cd deploy"):
             run("cat config_runtime.yaml")
-            run("cat ../docs/Running-AWS-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
-            run("diff config_runtime.yaml ../docs/Running-AWS-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
+            run("cat ../docs/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
+            run("diff config_runtime.yaml ../docs/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
             run("firesim --help")
             run("cat ../docs/Advanced-Usage/Manager/HELP_OUTPUT")
             run("firesim --help &> TEMP_HELP_OUTPUT")

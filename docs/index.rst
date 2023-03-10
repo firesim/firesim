@@ -14,8 +14,8 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    :caption: AWS EC2 F1 Tutorial:
    :numbered:
 
-   Initial-AWS-Setup/index
-   Running-AWS-Simulations-Tutorial/index
+   Initial-Setup/index
+   Running-Simulations-Tutorial/index
    Building-a-FireSim-AFI
 
 .. toctree::

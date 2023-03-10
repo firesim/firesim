@@ -1,7 +1,7 @@
 Non-Source Dependency Management
 ================================
 
-In :doc:`/Initial-AWS-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
+In :doc:`/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
 of ``scripts/machine-launch-script.sh`` into the EC2 Management Console and
 that script installed many dependencies that FireSim needs using
 `conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
