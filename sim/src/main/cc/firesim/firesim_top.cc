@@ -44,7 +44,7 @@ firesim_top_t::firesim_top_t(simif_t &simif,
       new heartbeat_t(simif, registry.get_widget<clockmodule_t>(), args));
 
   // Add functions you'd like to periodically invoke on a paused simulator here.
-  if (profile_interval) {
+  if (profile_interval && *profile_interval != -1) {
     register_task(0, [&] {
       for (auto &mod : registry.get_bridges<FASEDMemoryTimingModel>()) {
         mod->profile();
