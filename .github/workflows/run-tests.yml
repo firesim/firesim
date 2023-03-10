@@ -59,6 +59,8 @@ jobs:
             ls -alh .
             rm -rf ${{ env.REMOTE_WORK_DIR }}/* || true
             rm -rf ${{ env.REMOTE_WORK_DIR }}/.* || true
+            rm -rf ${{ github.workspace }}/* || true
+            rm -rf ${{ github.workspace }}/.* || true
       
       - uses: actions/checkout@v3
       - name: Setup repo copy
