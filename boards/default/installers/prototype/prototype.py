@@ -1,12 +1,11 @@
 import logging
-import pathlib
 import wlutil
-import shutil
+
 
 def install(targetCfg, opts):
     log = logging.getLogger()
 
-    if targetCfg['nodisk'] == False:
+    if targetCfg['nodisk'] is False:
         raise NotImplementedError("nodisk builds are the only workload type supported by the install command")
 
     nodiskPath = str(targetCfg['bin']) + '-nodisk'
