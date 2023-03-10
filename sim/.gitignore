@@ -9,6 +9,8 @@ firrtl_black_box_resource_files.f
 lib/firrtl.jar
 *.swp
 .bsp/
+.ivy2/
+.sbt/
 
 # VSCode related files
 .vscode/*
