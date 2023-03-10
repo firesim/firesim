@@ -50,7 +50,7 @@ firesim_top_t::firesim_top_t(simif_t &simif,
 
   // Add functions you'd like to periodically invoke on a paused simulator here.
   if (profile_interval) {
-    register_task(0, [&, profile_interval] { // capture profile_interval by copy otherwise you will get a invalid optional
+    register_task(0, [&, profile_interval] { // capture profile_interval by value, since its lifetime is bound to firesim_top_t's constructor
       for (auto &mod : registry.get_bridges<FASEDMemoryTimingModel>()) {
         mod->profile();
       }
