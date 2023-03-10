@@ -37,6 +37,11 @@ firesim_top_t::firesim_top_t(simif_t &simif,
   for (auto &arg : args) {
     if (arg.find("+profile-interval=") == 0) {
       profile_interval = atoi(arg.c_str() + 18);
+
+      if (*profile_interval == 0) {
+        fprintf(stderr, "Must provide a profile interval > 0\n");
+        exit(1);
+      }
     }
   }
 
@@ -45,7 +50,7 @@ firesim_top_t::firesim_top_t(simif_t &simif,
 
   // Add functions you'd like to periodically invoke on a paused simulator here.
   if (profile_interval) {
-    register_task(0, [&] {
+    register_task(0, [&, profile_interval] { // capture profile_interval by copy otherwise you will get a invalid optional
       for (auto &mod : registry.get_bridges<FASEDMemoryTimingModel>()) {
         mod->profile();
       }
