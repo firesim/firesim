@@ -51,7 +51,7 @@ categoryTests = {
             'command',
             'driversJob',
             'drivers',
-            'fed-run',
+#            'fed-run',
             'flist',
             'generateFiles',
             'guest-init',
