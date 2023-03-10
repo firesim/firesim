@@ -12,6 +12,7 @@ import time
 from os.path import join as pjoin
 from os.path import basename, expanduser
 from os import PathLike, fspath
+import os
 from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
 import hashlib
@@ -190,7 +191,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
 
     def get_current_user(self) -> str:
-        return local("whoami", capture=True)
+        return os.environ["USER"]
 
     @abc.abstractmethod
     def infrasetup_instance(self, uridir: str) -> None:
