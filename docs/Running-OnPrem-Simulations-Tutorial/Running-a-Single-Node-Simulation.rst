@@ -420,3 +420,9 @@ Congratulations on running your first FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`).
+
+.. warning:: Currently, FireSim simulations with bridges that use DMA are not supported (i.e. TracerV, NIC, Dromajo, Printfs).
+
+.. warning:: In some cases, simulation may fail because you might need to update the U250 DRAM offset that is currently hard coded in the FireSim driver code.
+	To verify this, run ``xclbinutil --info --input <YOURXCLBIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset, and replace the ``u250_dram_expected_offset`` in
+	``sim/midas/src/main/cc/simif_vitis.cc`` with the offset obtained from ``xclbinutil``.

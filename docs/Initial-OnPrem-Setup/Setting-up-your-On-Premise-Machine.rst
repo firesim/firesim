@@ -123,7 +123,7 @@ the conda environment path. Next run:
 You should see that the XRT tools are located on your ``LD_LIBRARY_PATH`` and that there
 is no trailing ``:`` (otherwise compilation will error later).
 
-Finally verify that the same properties hold when running locally through ``ssh``. Run:
+Finally verify that Xilinx Vitis and XRT tools are found when running locally through ``ssh``. Run:
 
 .. parsed-literal::
 
