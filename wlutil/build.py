@@ -208,7 +208,7 @@ def addDep(loader, config):
         else:
             targets = [str(config['bin'])]
 
-        moddeps = [config.get('pk-src')]
+        moddeps = []
         if 'firmware' in config:
             moddeps.append(config['firmware']['source'])
 
@@ -481,25 +481,6 @@ def makeModules(cfg):
     wlutil.run(['depmod', '-b', str(wlutil.getOpt('initramfs-dir') / "drivers"), kernelVersion])
 
 
-def makeBBL(config, nodisk=False):
-    # BBL doesn't seem to detect changes in its configuration and won't rebuild if the payload path changes
-    bblBuild = config['firmware']['source'] / 'build'
-    if bblBuild.exists():
-        shutil.rmtree(bblBuild)
-    bblBuild.mkdir()
-
-    configureArgs = ['--host=riscv64-unknown-elf',
-                     '--with-payload=' + str(config['linux']['source'] / 'vmlinux')]
-
-    if 'bbl-build-args' in config['firmware']:
-        configureArgs += config['firmware']['bbl-build-args']
-
-    wlutil.run(['../configure'] + configureArgs, cwd=bblBuild)
-    wlutil.run(['make', '-j' + str(wlutil.getOpt('jlevel'))], cwd=bblBuild)
-
-    return bblBuild / 'bbl'
-
-
 def makeOpenSBI(config, nodisk=False):
     payload = config['linux']['source'] / 'arch' / 'riscv' / 'boot' / 'Image'
     size = payload.stat().st_size
@@ -586,10 +567,7 @@ def makeBin(config, nodisk=False):
         shutil.copy(config['linux']['source'] / '.config', config['out-dir'] / 'linux_config')
         shutil.copy(wlutil.getOpt('busybox-dir') / '.config', config['out-dir'] / 'busybox_config')
 
-        if 'use-bbl' in config.get('firmware', {}) and config['firmware']['use-bbl']:
-            fw = makeBBL(config, nodisk)
-        else:
-            fw = makeOpenSBI(config, nodisk)
+        fw = makeOpenSBI(config, nodisk)
 
         config['bin'].parent.mkdir(parents=True, exist_ok=True)
         config['dwarf'].parent.mkdir(parents=True, exist_ok=True)

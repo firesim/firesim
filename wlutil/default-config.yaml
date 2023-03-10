@@ -8,12 +8,6 @@ board-dir : '../boards/firechip'
 # Stores all outputs (binaries and images)
 image-dir : '../images'
 
-# Default linux source
-# linux-dir : '../riscv-linux'
-#
-# # Default pk source
-# pk-dir : '../boards/default/firmware/opensbi'
-
 # Runtime Logs
 log-dir : '../logs' 
 

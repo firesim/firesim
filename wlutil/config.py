@@ -96,7 +96,6 @@ configDistro = [
 configDeprecated = [
         'linux-config',
         'linux-src',
-        'pk-src'
         ]
 
 # This is a comprehensive list of all options set during config parsing
@@ -105,22 +104,22 @@ configDerived = [
         'out-dir',  # Path to outputs (filesystem images, binaries, extra metadata)
         'img',  # Path to output filesystem image
         'img-sz',  # Desired size of image in bytes (optional)
-        'bin',  # Path to output binary (e.g. bbl-vmlinux)
-        'dwarf',  # Additional debugging symbols for the kernel (bbl strips them from 'bin')
+        'bin',  # Path to output binary
+        'dwarf',  # Additional debugging symbols for the kernel
         'base-img',  # The filesystem image to use when building this workload
         'base-format',  # The format of base-img
         'cfg-file',  # Path to this workloads raw config file
         'initramfs',  # boolean: should we use an initramfs with this config?
         'jobs',  # After parsing, jobs is a collections.OrderedDict containing 'Config' objects for each job.
         'base-deps',  # A list of tasks that this workload needs from its base (a potentially empty list)
-        'firmware-src',  # A convenience field that points to whatever firmware is configured (see 'use-bbl' to determine which it is)
+        'firmware-src',  # A convenience field that points to whatever firmware is configured
         'use-parent-bin',  # Child would build the exact same binary as the parent, just copy it instead of rebuilding.
         'img-hardcoded',  # The workload hard-coded an image, we will blindly use it.
         ]
 
 # These are the user-defined options that should be converted to absolute
 # paths (from workload-relative). Derived options are already absolute.
-configToAbs = ['overlay', 'bbl-src', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
+configToAbs = ['overlay', 'cfg-file', 'bin', 'img', 'spike', 'qemu']
 
 
 # These are the options that should be inherited from base configs (if not
@@ -131,8 +130,6 @@ configInherit = [
         'runSpec',
         'files',
         'outputs',
-        'bbl-src',
-        'bbl-build-args',
         'opensbi-src',
         'opensbi-build-args',
         'builder',
@@ -169,9 +166,6 @@ configLinux = [
 
 # Members of the 'firmware' option
 configFirmware = [
-        "use-bbl",  # Use bbl as firmware instead of openSBI
-        "bbl-src",  # Alternative source directory for bbl
-        "bbl-build-args",  # Additional arguments to configure script for bbl. User provides string, cannonical form is list.
         "opensbi-src",  # Alternative source directory for openSBI
         "opensbi-build-args",  # Additional arguments to make for openSBI. User provides string, cannonical form is list.
         ]
@@ -279,13 +273,6 @@ def translateDeprecated(config):
     elif 'linux-config' in config or 'linux-src' in config:
         log.warning("The deprecated 'linux-config' and 'linux-src' options are mutually exclusive with the 'linux' option; ignoring")
 
-    # Firmware stuff
-    if 'pk-src' in config:
-        if 'firmware' not in config:
-            config['firmware'] = {'bbl-src': config['pk-src']}
-        else:
-            log.warning("The deprecated 'pk-src' option is mutually exclusive with the 'firmware' option; ignoring")
-
     # Now that they're translated, remove all deprecated options from config
     for opt in configDeprecated:
         config.pop(opt, None)
@@ -371,11 +358,11 @@ def initFirmwareOpts(config):
     if 'firmware' not in config:
         return
 
-    for opt in ['bbl-src', 'opensbi-src']:
+    for opt in ['opensbi-src']:
         if opt in config['firmware']:
             config['firmware'][opt] = cleanPath(config['firmware'][opt], config['workdir'])
 
-    for opt in ['bbl-build-args', 'opensbi-build-args']:
+    for opt in ['opensbi-build-args']:
         if opt in config['firmware']:
             config['firmware'][opt] = config['firmware'][opt].split()
 
@@ -389,14 +376,11 @@ def inheritFirmwareOpts(config, baseCfg):
         for k, v in baseCfg['firmware'].items():
             if k not in config['firmware']:
                 config['firmware'][k] = copy.copy(v)
-            elif k in ['bbl-build-args', 'opensbi-build-args']:
+            elif k in ['opensbi-build-args']:
                 config['firmware'][k] = baseCfg['firmware'][k] + config['firmware'][k]
 
     if 'firmware' in config:
-        if config['firmware'].get('use-bbl', False):
-            config['firmware']['source'] = config['firmware']['bbl-src']
-        else:
-            config['firmware']['source'] = config['firmware']['opensbi-src']
+        config['firmware']['source'] = config['firmware']['opensbi-src']
 
 
 class Config(collections.abc.MutableMapping):

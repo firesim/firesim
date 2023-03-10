@@ -12,11 +12,6 @@ def install(targetCfg, opts):
     nodiskPath = str(targetCfg['bin']) + '-nodisk'
     outputPath = nodiskPath + '-flat'
 
-    if targetCfg['firmware']['use-bbl'] == False:
-        wlutil.run(['riscv64-unknown-elf-objcopy', '-S', '-O', 'binary', '--change-addresses', '-0x80000000',
-            nodiskPath, outputPath])
-    else:
-        print("Copy BBL's flattened binary to " + outputPath)
-        shutil.copy(str(targetCfg['firmware']['bbl-src']) + '/build/bbl.bin', outputPath)
-
+    wlutil.run(['riscv64-unknown-elf-objcopy', '-S', '-O', 'binary', '--change-addresses', '-0x80000000',
+                nodiskPath, outputPath])
     log.info("Workload flattened and \"installed\" to " + outputPath)

@@ -49,7 +49,6 @@ ctx = None
 # List of marshal submodules (those enabled by init-submodules.sh)
 marshalSubmods = [
         'linux-dir',
-        'bbl-dir',
         'opensbi-dir',
         'busybox-dir',
         'buildroot-dir',
@@ -128,7 +127,6 @@ def cleanPaths(opts, baseDir=pathlib.Path('.')):
         'image-dir',
         'linux-dir',
         'firesim-dir',
-        'bbl-dir',
         'opensbi-dir',
         'log-dir',
         'res-dir',
@@ -204,9 +202,6 @@ derivedOpts = [
 
         # Linux source to use by default (can be overwritten by user config). Derived from board-dir.
         'linux-dir',
-
-        # Default pk/bbl source to use by default (can be overwritten by user config). Derived from board-dir.
-        'bbl-dir',
 
         # Default OpenSBI source to use by default (can be overwritten by user config). Derived from board-dir.
         'opensbi-dir',
@@ -339,7 +334,6 @@ class marshalCtx(collections.abc.MutableMapping):
         self['rootfs-margin'] = humanfriendly.parse_size(str(self['rootfs-margin']))
 
         self['driver-dirs'] = list(self['board-dir'].glob('drivers/*'))
-        self['bbl-dir'] = self['board-dir'] / 'firmware' / 'riscv-pk'
         self['opensbi-dir'] = self['board-dir'] / 'firmware' / 'opensbi'
         self['linux-dir'] = self['board-dir'] / 'linux'
         self['installers'] = self['board-dir'] / 'installers'

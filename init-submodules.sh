@@ -7,7 +7,6 @@
 
 git submodule update --init \
   boards/default/linux \
-  boards/default/firmware/riscv-pk \
   boards/default/firmware/opensbi \
   wlutil/busybox \
   boards/default/distros/br/buildroot \

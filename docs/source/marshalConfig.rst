@@ -70,11 +70,6 @@ your workload configuration directly (see :ref:`workload-linux-src`).
 ^^^^^^^^^^^^^^^^^^^
 Location of the firesim repository to use for the :ref:`command-install` command.
 
-``pk-dir``
-^^^^^^^^^^^^^^^^^
-Default proxy-kernel source directory. The RISC-V proxy kernel repository
-provides code for the Berkeley Boot Loader ('bbl').
-
 ``log-dir``
 ^^^^^^^^^^^^^^^^^^^
 Default directory to use when writing logs from FireMarshal runs.

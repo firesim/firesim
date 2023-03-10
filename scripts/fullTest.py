@@ -46,9 +46,6 @@ categoryTests = {
         # These is the most complete 'general' tests and is the way most people
         # will use Marshal
         "qemu": [
-            'bbl',
-            'bbl-src',
-            'bbl-args',
             'opensbi-src',
             'opensbi-args',
             'command',
@@ -88,7 +85,6 @@ categoryTests = {
            'overlay',
            'post_run_hook',
            'simArgs',
-           'bbl'
            ],
 
         # A hopefully minimal and fast(ish) set of tests to make sure nothing

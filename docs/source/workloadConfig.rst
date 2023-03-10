@@ -162,10 +162,6 @@ The specified module directory must contain a Makefile that can be invoked as:
 
 It outputs one or more .ko files to be loaded. See test/kmod/ for an example.
 
-pk-src (Deprecated)
-^^^^^^^^^^^^^^^^^^^^
-See the ‘firmware/bbl-src’ option for the new equivalent.
-
 firmware
 ^^^^^^^^^^^^^^^^^^^
 Firmware-related options
@@ -178,22 +174,6 @@ opensbi.
 opensbi-build-args
 +++++++++++++++++++++
 Additional command line arguments to the 'make' command used to build opensbi.
-
-bbl-src
-++++++++++++++++++
-Path to riscv-pk source directory to use for this workload. This provides the
-bootloader (bbl). Defaults to the riscv-pk source included with the board.
-
-bbl-build-args
-++++++++++++++++++
-Additional arguments to be passed to the configure script for bbl. Arguments
-will be appended to any system defaults.
-
-use-bbl
-++++++++++++++++++
-Use BBL as the firmware rather than the default OpenSBI. If you specified
-'bbl-src', that will be used, otherwise the default implementation from the
-board will be used.
 
 host-init
 ^^^^^^^^^^^^^^

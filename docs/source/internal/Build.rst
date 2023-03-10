@@ -92,8 +92,8 @@ Linux Kernel Generation and Linking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 With all of the dependencies finished, we can finally compile the Linux kernel
 and link it with the bootloader. While each workload can use a custom kernel
-source, all workloads use the same bootloader (for now), located at
-``riscv-pk/``. The final linked bbl+linux+initramfs is coppied into
+source, all workloads use the same bootloader.
+The final linked sbi+linux+initramfs is coppied into
 ``images/workloadName-bin``.
 
 Build Rootfs

@@ -11,8 +11,6 @@
       "config" : "linux-config"
   },
   "firmware" : {
-      "use-bbl" : false,
-      "bbl-src" : "../../firmware/riscv-pk",
       "opensbi-src" : "../../firmware/opensbi"
   }
 }
