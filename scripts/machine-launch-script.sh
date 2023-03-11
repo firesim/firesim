@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MACHINE_LAUNCH_DIR=/tmp
+
 CONDA_INSTALL_PREFIX=/opt/conda
 CONDA_INSTALLER_VERSION=4.12.0-0
 CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
@@ -108,14 +110,16 @@ set -o pipefail
     OS_FLAVOR=$(grep '^ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"')
     OS_VERSION=$(grep '^VERSION_ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"')
 
-    echo "machine launch script started" > machine-launchstatus
-    chmod ugo+r machine-launchstatus
+    echo "machine launch script started" > "$MACHINE_LAUNCH_DIR/machine-launchstatus"
+    chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus"
 
     # platform-specific setup
     case "$OS_FLAVOR" in
         ubuntu)
             ;;
         centos)
+            ;;
+        amzn)
             ;;
         *)
             echo "::ERROR:: Unknown OS flavor '$OS_FLAVOR'. Unable to do platform-specific setup."
@@ -287,8 +291,7 @@ set -o pipefail
     # emergency fix for buildroot open files limit issue on centos:
     echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
 
-} 2>&1 | tee machine-launchstatus.log
-chmod ugo+r machine-launchstatus.log
+} 2>&1 | tee "$MACHINE_LAUNCH_DIR/machine-launchstatus.log"
+chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus.log"
 
-
-echo "machine launch script completed" >>machine-launchstatus
+echo "machine launch script completed" >> "$MACHINE_LAUNCH_DIR/machine-launchstatus"

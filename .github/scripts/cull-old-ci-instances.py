@@ -20,6 +20,8 @@ sys.path.append(ci_env['GITHUB_WORKSPACE'] + "/deploy")
 INSTANCE_LIFETIME_LIMIT_HOURS = 8
 # The number of hours a fpga instance may exist since its initial launch time
 FPGA_INSTANCE_LIFETIME_LIMIT_HOURS = 1
+# The number of hours a build instance may exist since its initial launch time
+BUILD_INSTANCE_LIFETIME_LIMIT_HOURS = 14
 
 def cull_aws_instances(current_time: datetime.datetime) -> None:
     # Grab all instances with a CI-generated tag
@@ -35,6 +37,14 @@ def cull_aws_instances(current_time: datetime.datetime) -> None:
         client.terminate_instances(InstanceIds=[inst['InstanceId']])
         print("  " + inst['InstanceId'])
 
+    build_farm_ci_instances = aws_platform_lib.find_build_farm_ci_instances()
+    instances_to_terminate = find_timed_out_resources(BUILD_INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, map(lambda x: (x, x['LaunchTime']), build_farm_ci_instances))
+    build_farm_instances_to_terminate = list(instances_to_terminate)
+    print("Terminated Build Farm Instances:")
+    for inst in build_farm_instances_to_terminate:
+        client.terminate_instances(InstanceIds=[inst['InstanceId']])
+        print("  " + inst['InstanceId'])
+
     all_ci_instances = aws_platform_lib.find_all_ci_instances()
     instances_to_terminate = find_timed_out_resources(INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, map(lambda x: (x, x['LaunchTime']), all_ci_instances))
     manager_instances_to_terminate = list(instances_to_terminate)
@@ -44,16 +54,19 @@ def cull_aws_instances(current_time: datetime.datetime) -> None:
         aws_platform_lib.platform_terminate_instances([inst['InstanceId']])
         print("  " + inst['InstanceId'])
 
-    if len(manager_instances_to_terminate) > 0 or len(run_farm_instances_to_terminate) > 0:
+    if len(manager_instances_to_terminate) > 0 or len(run_farm_instances_to_terminate) > 0 or len(build_farm_instances_to_terminate) > 0:
         exit(1)
 
 def cull_azure_resources(current_time: datetime.datetime) -> None:
     azure_platform_lib = get_platform_lib(Platform.AZURE)
     all_azure_ci_vms = azure_platform_lib.find_all_ci_instances()
     run_farm_azure_ci_vms = azure_platform_lib.find_run_farm_ci_instances()
+    build_farm_azure_ci_vms = azure_platform_lib.find_build_farm_ci_instances()
 
     vms_to_terminate = find_timed_out_resources(FPGA_INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, \
         map(lambda x: (x, datetime.datetime.strptime(x['LaunchTime'],'%Y-%m-%d %H:%M:%S.%f%z')), run_farm_azure_ci_vms))
+    vms_to_terminate = find_timed_out_resources(BUILD_INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, \
+        map(lambda x: (x, datetime.datetime.strptime(x['LaunchTime'],'%Y-%m-%d %H:%M:%S.%f%z')), build_farm_azure_ci_vms))
     vms_to_terminate += find_timed_out_resources(INSTANCE_LIFETIME_LIMIT_HOURS * 60, current_time, \
         map(lambda x: (x, datetime.datetime.strptime(x['LaunchTime'],'%Y-%m-%d %H:%M:%S.%f%z')), all_azure_ci_vms))
     vms_to_terminate = list(set(vms_to_terminate))

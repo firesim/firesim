@@ -31,7 +31,7 @@ class StreamLogger:
     __unbuffered: bool
     __flush_on_new_line: bool
 
-    def __init__(self, name: str, logger: logging.Logger = None, unbuffered: bool = False,
+    def __init__(self, name: str, logger: Optional[logging.Logger] = None, unbuffered: bool = False,
             flush_on_new_line: bool = True) -> None:
         """
         ``name``: The stream name to incercept ('stdout' or 'stderr')

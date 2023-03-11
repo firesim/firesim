@@ -84,11 +84,11 @@ before, so we need to first ssh into the instance and make sure the
 setup is complete.
 
 In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``) and wait until the
-``/machine-launchstatus`` file contains all the following text:
+``/tmp/machine-launchstatus`` file contains all the following text:
 
 ::
 
-    $ cat /machine-launchstatus
+    $ cat /tmp/machine-launchstatus
     machine launch script started
     machine launch script completed
 

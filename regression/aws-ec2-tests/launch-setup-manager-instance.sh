@@ -27,7 +27,7 @@ $SCRIPT_DIR/../../deploy/awstools/awstools.py \
 rm -rf machine-launch-script.sh
 
 # make sure managerinit finishes properly
-run "timeout 10m grep -q \".*machine launch script complete.*\" <(tail -f machine-launchstatus)"
+run "timeout 10m grep -q \".*machine launch script complete.*\" <(tail -f /tmp/machine-launchstatus)"
 
 # setup the repo (similar to ci)
 

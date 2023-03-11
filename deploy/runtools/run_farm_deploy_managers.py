@@ -12,6 +12,7 @@ import time
 from os.path import join as pjoin
 from os.path import basename, expanduser
 from os import PathLike, fspath
+import os
 from fsspec.core import url_to_fs # type: ignore
 from pathlib import Path
 import hashlib
@@ -80,14 +81,14 @@ class URIContainer:
         return m.hexdigest()
 
     def _resolve_vanilla_path(self, hwcfg) -> Optional[str]:
-        """ Allows fallback to a vanilla path. Relative paths are resolved realtive to firesim/deploy/. 
+        """ Allows fallback to a vanilla path. Relative paths are resolved realtive to firesim/deploy/.
         This will convert a vanilla path to a URI, or return None."""
         uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
 
         # do nothing if there isn't a URI
         if uri is None:
             return None
-        
+
         # if already a URI, exit early returning unmodified string
         is_uri = re.match(_RFC_3986_PATTERN, uri)
         if is_uri:
@@ -116,7 +117,7 @@ class URIContainer:
 
         # choose a repeatable, path based on the hash of the URI
         destination = pjoin(local_dir, self.hashed_name(uri))
-        
+
         return (uri, destination)
 
     def local_pre_download(self, local_dir: str, hwcfg) -> Optional[Tuple[str, str]]:
@@ -126,11 +127,11 @@ class URIContainer:
 
         # resolve the URI and the path '/{dir}/{hash}' we should download to
         both = self._choose_path(local_dir, hwcfg)
-        
+
         # do nothing if there isn't a URI
         if both is None:
             return None
-        
+
         (uri, destination) = both
 
         # When it exists, return the same information, but skip the download
@@ -152,11 +153,11 @@ class URIContainer:
 
         # resolve the URI and the path '/{dir}/{hash}' we should download to
         both = self._choose_path(local_dir, hwcfg)
-        
+
         # do nothing if there isn't a URI
         if both is None:
             return None
-        
+
         (uri, destination) = both
 
         # because the local file has a nonsense name (the hash)
@@ -237,7 +238,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             ### XXX Centos Specific
             run('sudo yum -y install qemu-img')
             # copy over kernel module
-            put('../build/nbd.ko', '/home/centos/nbd.ko', mirror_local_mode=True)
+            put('../build/nbd.ko', f"/home/{os.environ['USER']}/nbd.ko", mirror_local_mode=True)
 
     def load_nbd_module(self) -> None:
         """ If NBD is available and qcow2 support is required, load the nbd
@@ -246,7 +247,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("Loading NBD Kernel Module.")
             self.unload_nbd_module()
-            run("""sudo insmod /home/centos/nbd.ko nbds_max={}""".format(self.nbd_tracker.NBDS_MAX))
+            run(f"""sudo insmod /home/{os.environ['USER']}/nbd.ko nbds_max={self.nbd_tracker.NBDS_MAX}""")
 
     def unload_nbd_module(self) -> None:
         """ If NBD is available and qcow2 support is required, unload the nbd
@@ -278,7 +279,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """ Returns the path on the remote for a given slot number. """
         remote_home_dir = self.parent_node.get_sim_dir()
         remote_sim_dir = f"{remote_home_dir}/sim_slot_{slotno}/"
-        
+
         # so that callers can reliably concatenate folders to the returned value
         assert remote_sim_dir[-1] == '/', f"Return value of get_remote_sim_dir_for_slot({slotno}) must end with '/'."
 
@@ -294,12 +295,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
             for container in self.uri_list:
                 container.local_pre_download(dir, hwcfg)
-    
+
     def get_local_uri_paths(self, slotno: int, dir: str) -> list[Tuple[str, str]]:
         """ Get all paths of local URIs that were previously downloaded. """
 
         hwcfg = self.parent_node.sim_slots[slotno].get_resolved_server_hardware_config()
-        
+
         ret = list()
         for container in self.uri_list:
             maybe_file = container.get_rsync_path(dir, hwcfg)
@@ -637,7 +638,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             with warn_only():
                 run('git clone https://github.com/aws/aws-fpga')
                 run('cd aws-fpga && git checkout ' + aws_fpga_upstream_version)
-            with cd('/home/centos/aws-fpga'):
+            with cd(f"/home/{os.environ['USER']}/aws-fpga"):
                 run('source sdk_setup.sh')
 
     def fpga_node_xdma(self) -> None:
@@ -646,10 +647,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
         """
         if self.instance_assigned_simulations():
             self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
-            run('mkdir -p /home/centos/xdma/')
+            run(f"mkdir -p /home/{os.environ['USER']}/xdma/")
             put('../platforms/f1/aws-fpga/sdk/linux_kernel_drivers',
-                '/home/centos/xdma/', mirror_local_mode=True)
-            with cd('/home/centos/xdma/linux_kernel_drivers/xdma/'), \
+                f"/home/{os.environ['USER']}/xdma/", mirror_local_mode=True)
+            with cd(f"/home/{os.environ['USER']}/xdma/linux_kernel_drivers/xdma/"), \
                 prefix("export PATH=/usr/bin:$PATH"):
                 # prefix only needed if conda env is earlier in PATH
                 # see build-setup-nolog.sh for explanation.
@@ -738,7 +739,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             # now load xdma
             self.instance_logger("Loading XDMA Driver Kernel Module.")
             # TODO: can make these values automatically be chosen based on link lat
-            run("sudo insmod /home/centos/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
+            run(f"sudo insmod /home/{os.environ['USER']}/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1")
 
     def start_ila_server(self) -> None:
         """ start the vivado hw_server and virtual jtag on simulation instance. """
@@ -807,12 +808,12 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
 class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
-    
+
     @classmethod
     def sim_command_requires_sudo(cls) -> bool:
         """ This sim does not require sudo. """
         return False
-    
+
     @classmethod
     def get_xclbin_filename(cls) -> str:
         """ Get the name of the xclbin inside the sim_slot_X directory on the run host. """

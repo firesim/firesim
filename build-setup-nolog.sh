@@ -139,7 +139,7 @@ else
     LOCKFILE="$RDIR/conda-reqs/conda-reqs.conda-lock.yml"
     if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
-        conda-lock -f "$RDIR/conda-reqs/firesim.yaml" -f "$RDIR/conda-reqs/ci-shared.yaml" --lockfile "$LOCKFILE"
+        conda-lock -f "$RDIR/conda-reqs/firesim.yaml" -f "$RDIR/conda-reqs/ci-shared.yaml" -p linux-64 --lockfile "$LOCKFILE"
     fi
     conda-lock install -p $RDIR/.conda-env $LOCKFILE
     source $RDIR/.conda-env/etc/profile.d/conda.sh
