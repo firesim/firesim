@@ -17,15 +17,17 @@
  */
 class TestTokenHashersModule : public TestHarness {
 private:
-  token_hashers_t &hasher;
+  token_hashers_t &hasher = get_bridge<token_hashers_t>();
 
 public:
-  TestTokenHashersModule(const std::vector<std::string> &args, simif_t &simif)
-      : TestHarness(args, simif), hasher(get_bridge<token_hashers_t>())
+using TestHarness::TestHarness;
 
-  {
-    signal_search();
-  }
+  // TestTokenHashersModule(const std::vector<std::string> &args, simif_t &simif)
+  //     : TestHarness(args, simif), hasher(get_bridge<token_hashers_t>())
+
+  // {
+    
+  // }
 
   /**
    * Search through the signals recorded by token_hashers. Save the indices
@@ -49,6 +51,7 @@ public:
    * iterates over the captured data, calculates expected values, and asserts
    */
   void run_test() override {
+    signal_search();
 
     // set the parameters of the hashers inside the DUT
     hasher.set_params(0, 0);

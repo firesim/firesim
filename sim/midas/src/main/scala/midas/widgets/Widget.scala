@@ -378,12 +378,12 @@ trait HasWidgets {
     * for bridges that do not have defaults baked into the driver, such as
     * FASED, where plus args _must_ be provided.
     */
-  def emitDefaultPlusArgsFile(): Unit =
-    GoldenGateOutputFileAnnotation.annotateFromChisel(
-      // Append an extra \n to prevent the file from being empty.
-      body = widgets.map(_.defaultPlusArgs).flatten.mkString("\n") + "\n",
-      fileSuffix = ".runtime.conf"
-    )
+  // def emitDefaultPlusArgsFile(): Unit =
+  //   GoldenGateOutputFileAnnotation.annotateFromChisel(
+  //     // Append an extra \n to prevent the file from being empty.
+  //     body = widgets.map(_.defaultPlusArgs).flatten.mkString("\n") + "\n",
+  //     fileSuffix = ".runtime.conf"
+  //   )
   def getCRAddr(wName: String, crName: String)(implicit channelWidth: Int): BigInt = {
     val widget = name2inst.get(wName).getOrElse(throw new RuntimeException("Could not find Widget: $wName"))
     getCRAddr(widget, crName)

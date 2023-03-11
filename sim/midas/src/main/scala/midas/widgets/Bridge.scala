@@ -102,7 +102,7 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
     tokenHashersDirection(hPort.getOutputChannelPorts(), true)
     tokenHashersDirection(hPort.getInputChannelPorts(), false)
 
-    Unit  
+    ()
   }
 
   def tokenHashersDirection(list: Seq[(String,DecoupledIO[Data])], output: Boolean) = {

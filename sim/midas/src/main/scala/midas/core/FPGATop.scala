@@ -14,7 +14,7 @@ import freechips.rocketchip.diplomacy._
 
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
-import CppGenerationUtils._
+// import CppGenerationUtils._
 
 /** The following [[Field]] s capture the parameters of the four AXI4 bus types presented to a simulator (in
   * [[FPGATop]]). A [[PlatformShim]] is free to adapt these widths, apply address offsets, etc..., but the values set
@@ -373,58 +373,58 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(outer) {
 
   def insertTokenHashers(hashSb: StringBuilder): Unit = {
-    hashSb.append(genConstStatic("TOKENHASH_COUNT", UInt32(hashName.length)))
+    // hashSb.append(genConstStatic("TOKENHASH_COUNT", UInt32(hashName.length)))
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_BRIDGENAMES",
-        hashBridgeName.map(CStrLit(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_BRIDGENAMES",
+    //     hashBridgeName.map(CStrLit(_))
+    //   )
+    // )
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_NAMES",
-        hashName.map(CStrLit(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_NAMES",
+    //     hashName.map(CStrLit(_))
+    //   )
+    // )
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_OUTPUTS",
-        hashOutput.map(UInt32(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_OUTPUTS",
+    //     hashOutput.map(UInt32(_))
+    //   )
+    // )
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_QUEUEHEADS",
-        hashQueueHead.map(UInt32(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_QUEUEHEADS",
+    //     hashQueueHead.map(UInt32(_))
+    //   )
+    // )
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_QUEUEOCCUPANCIES",
-        hashQueueOccupancy.map(UInt32(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_QUEUEOCCUPANCIES",
+    //     hashQueueOccupancy.map(UInt32(_))
+    //   )
+    // )
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_TOKENCOUNTS0",
-        hashtokenCount0.map(UInt32(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_TOKENCOUNTS0",
+    //     hashtokenCount0.map(UInt32(_))
+    //   )
+    // )
 
-    hashSb.append(
-      genArray(
-        "TOKENHASH_TOKENCOUNTS1",
-        hashtokenCount1.map(UInt32(_))
-      )
-    )
+    // hashSb.append(
+    //   genArray(
+    //     "TOKENHASH_TOKENCOUNTS1",
+    //     hashtokenCount1.map(UInt32(_))
+    //   )
+    // )
 
-    Unit
+    ()
   }
 
   // Mark the host clock so that ILA wiring and user-registered host
