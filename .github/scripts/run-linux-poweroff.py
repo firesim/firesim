@@ -48,8 +48,11 @@ def run_linux_poweroff():
                     print(f"Workload run {workload} successful. Checking uartlogs...")
 
                     # verify that linux booted and the pass printout was given
-                    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "*** PASSED ***" $LAST_DIR/*/uartlog; fi""")
-                    out_count = out.count('\n') - 1
+                    match_key = "*** PASSED ***"
+                    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "{match_key}" $LAST_DIR/*/uartlog; fi""")
+                    out_split = [e for e in out.split('\n') if match_key in e]
+                    print(f"DEBUG: out_split = {out_split}")
+                    out_count = len(out_split)
                     assert out_count == num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
 
                     print(f"Workload run {workload} successful.")
