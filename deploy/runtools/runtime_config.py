@@ -236,7 +236,8 @@ class RuntimeHWConfig:
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"] if runtimeconf else []
         permissive_driver_args += [run_device_placement]
         permissive_driver_args += [vitis_bit]
-        permissive_driver_args += [f"+profile-interval={profile_interval}"]
+        if profile_interval != -1:
+            permissive_driver_args += [f"+profile-interval={profile_interval}"]
         permissive_driver_args += [zero_out_dram]
         permissive_driver_args += [disable_asserts]
         permissive_driver_args += command_macs

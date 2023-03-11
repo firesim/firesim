@@ -88,7 +88,7 @@ def run_linux_poweroff_externally_provisioned():
 
                     # verify that linux booted and the pass printout was given
                     out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "*** PASSED ***" $LAST_DIR/*/uartlog; fi""")
-                    out_count = out.count('\n')
+                    out_count = out.count('\n') - 1
                     assert out_count == num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
 
                     print(f"Workload run {workload} successful.")
