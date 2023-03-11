@@ -41,6 +41,9 @@ class TokenHashMasterIO(implicit val p: Parameters) extends WidgetIO()(p){
 
 class TokenHashMaster(implicit p: Parameters) extends Widget()(p) {
   lazy val module = new WidgetImp(this) {
+    override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
+      ()
+    }
     val io = IO(new TokenHashMasterIO)
 
     val delay0  = genWORegInit(Wire(UInt(32.W)), s"triggerDelay0_${name}", 16.U)

@@ -185,7 +185,7 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
       hashRecord += meta
     })
 
-    Unit
+    ()
   }
 }
 

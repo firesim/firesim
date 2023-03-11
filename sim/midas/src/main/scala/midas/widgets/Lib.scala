@@ -256,6 +256,9 @@ class MCRFileMap(bytesPerAddress: Int) {
         sb append s"static_assert("
         sb append s"offsetof(${prefix_no_num}_struct, ${entry.name}) == ${i} * sizeof(uint64_t), "
         sb append s"${'\"'}invalid ${entry.name}${'\"'});\\\n"
+    }
+  }
+}
   /** Append the C++ representation of the address map to a string builder.
     *
     * @param base

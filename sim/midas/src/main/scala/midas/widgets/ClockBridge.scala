@@ -129,7 +129,7 @@ class ClockTokenVector(numClocks: Int) extends Bundle with HasChannels with Cloc
 
   def tokenHashers() = {
     println("CALLED tokenHashers from ClockTokenVector")
-    Unit
+    ()
   }
 
   def getOutputChannelPorts() = Seq()
