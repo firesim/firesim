@@ -13,11 +13,16 @@ On-Premise FPGA support currently only supports Xilinx Alveo U250 FPGAs (further
 Requirements
 ~~~~~~~~~~~~
 
+We require a base machine that is able to support the U250 FPGA and running Xilinx Vivado/Vitis.
+Please refer to the minimum system requirements given in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements.
+Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Card-Installation-Procedures
+
 We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:
 
 * Xilinx Vitis 2022.1
-* Xilinx XRT (corresponding with Vitis 2022.1)
-* Xilinx U250 board package (corresponding with Vitis 2022.1)
+  * Installation link: https://www.xilinx.com/products/design-tools/vitis/vitis-whats-new.html#20221
+* Xilinx XRT and U250 board package (corresponding with Vitis 2022.1)
+  * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
 
 Setup Validation
 ~~~~~~~~~~~~~~~~

@@ -85,7 +85,7 @@ Note ``topology`` is set to
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
 ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
-Let's modify the ``default_hw_config`` (the target design) to ``firesim_rocket_singlecore_no_nic``.
+Let's modify the ``default_hw_config`` (the target design) to ``vitis_firesim_rocket_singlecore_no_nic``.
 This new hardware configuration does not
 have a NIC and is pre-built for the U250 FPGA.
 This hardware configuration models a Single-core Rocket Chip SoC and **no** network interface card.
@@ -114,26 +114,13 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
         switching_latency: 10
         net_bandwidth: 200
         profile_interval: -1
-        default_hw_config: firesim_rocket_singlecore_no_nic
+        default_hw_config: vitis_firesim_rocket_singlecore_no_nic
         plusarg_passthrough: ""
 
     workload:
 	workload_name: linux-uniform.json
 	terminate_on_completion: no
 	suffix_tag: null
-
-Next, let's provide the pre-built hardware target design U250 FPGA image (called a xclbin) to the FireSim manager.
-This is done by adding an entry to the ``config_hwdb.yaml``, a database of built FPGA image metadata (e.g. pointer to FPGA image files).
-In the ``config_hwdb.yaml``, add the following lines pointing to a pre-built FPGA xclbin:
-
-::
-
-    firesim_rocket_singlecore_no_nic:
-        xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_d148b73.xclbin
-        deploy_triplet_override: FireSim-FireSimRocketConfig-BaseVitisConfig
-        custom_runtime_config: null
-
-Notice how this entry has the same name (``firesim_rocket_singlecore_no_nic``) given in the ``target_config`` section ``default_hw_config`` mapping.
 
 Launching a Simulation!
 -----------------------------
@@ -421,8 +408,10 @@ check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`).
 
-.. warning:: Currently, FireSim simulations with bridges that use DMA are not supported (i.e. TracerV, NIC, Dromajo, Printfs).
+.. warning:: Currently, FireSim simulations with bridges that use the Vitis PCI-E DMA interface are not supported (i.e. TracerV, NIC, Dromajo, Printfs).
+	This will be added in a future FireSim release.
 
-.. warning:: In some cases, simulation may fail because you might need to update the U250 DRAM offset that is currently hard coded in the FireSim driver code.
-	To verify this, run ``xclbinutil --info --input <YOURXCLBIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset, and replace the ``u250_dram_expected_offset`` in
-	``sim/midas/src/main/cc/simif_vitis.cc`` with the offset obtained from ``xclbinutil``.
+.. warning:: In some cases, simulation may fail because you might need to update the U250 DRAM offset that is currently hard coded in both the FireSim Vitis/XRT driver code and platform shim.
+	To verify this, run ``xclbinutil --info --input <YOURXCLBIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset. If it differs from the hardcoded ``0x40000000`` given in
+	driver code (``u250_dram_expected_offset`` variable in ``sim/midas/src/main/cc/simif_vitis.cc``) and platform shim (``araddr``/``awaddr`` offset in
+	``sim/midas/src/main/scala/midas/platform/VitisShim.scala``) replace both areas with the new offset given by ``xclbinutil`` and regenerate the bitstream.

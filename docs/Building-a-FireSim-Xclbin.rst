@@ -7,27 +7,11 @@ simulation.
 Build Recipes
 ---------------
 
-First lets specify a build recipe (i.e. hardware configuration) that we will build an U250 FPGA xclbin for.
-In the ``config_build_recipes.yaml`` file, add the following build recipe to your ``config_build_recipes.yaml`` file.
-
-::
-
-    firesim_rocket_singlecore_no_nic:
-        DESIGN: FireSim
-        TARGET_CONFIG: FireSimRocketConfig
-        PLATFORM_CONFIG: BaseVitisConfig
-        deploy_triplet: null
-        platform_config_args:
-            fpga_frequency: 140
-            build_strategy: TIMING
-        post_build_hook: null
-        metasim_customruntimeconfig: null
-        bit_builder_recipe: bit-builder-recipes/vitis.yaml
-
-
+We already provide for you a build recipe (i.e. hardware configuration) called ``vitis_firesim_rocket_singlecore_no_nic`` that was used to pre-build a U250 FPGA xclbin for.
+You can find this in the ``config_build_recipes.yaml`` file.
 This configuration is a simple singlecore Rocket configuration with a single DRAM channel and no debugging features.
 
-Next, lets build the build recipe added and specify the Build Farm to run on.
+Next, lets build the bitstream corresponding to the build recipe and specify the Build Farm to run on.
 In the ``deploy/config_build.ini`` file, you will notice at least two mappings: ``build_farm`` and ``builds_to_run``.
 Let's first finishing setting up the the ``build_farm`` mapping which specifies the build machines that are available to build FPGA images.
 First notice that the ``base_recipe`` maps to ``build-farm-recipes/externally_provisioned.yaml``.
@@ -44,8 +28,8 @@ section currently contains several lines, which
 indicates to the build system that you want to run all of these builds on the machines provided, with the parameters listed in the relevant section of the
 ``deploy/config_build_recipes.ini`` file.
 
-To start out, let's build our simple design, ``firesim_rocket_singlecore_no_nic``, that we previously added.
-To do so, comment out all of the other build entries in ``deploy/config_build.ini``, and add ``firesim_rocket_singlecore_no_nic``.
+To start out, let's build our simple design, ``vitis_firesim_rocket_singlecore_no_nic``, that we previously added.
+To do so, comment out all of the other build entries in ``deploy/config_build.ini``, and uncomment the ``- vitis_firesim_rocket_singlecore_no_nic`` line.
 So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
@@ -54,7 +38,8 @@ end up with something like this (a line beginning with a ``#`` is a comment):
    builds_to_run:
        # this section references builds defined in config_build_recipes.ini
        # if you add a build here, it will be built when you run buildbitstream
-       - firesim_rocket_singlecore_no_nic
+       # Many other commented lines...
+       - vitis_firesim_rocket_singlecore_no_nic
 
 
 Running a Build
