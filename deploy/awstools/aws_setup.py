@@ -58,7 +58,9 @@ def aws_setup():
         {u'PrefixListIds': [], u'FromPort': 60000, u'IpRanges': [{u'Description': 'mosh', u'CidrIp': '0.0.0.0/0'}], u'ToPort': 61000, u'IpProtocol': 'udp', u'UserIdGroupPairs': [], u'Ipv6Ranges': [{u'Description': 'mosh', u'CidrIpv6': '::/0'}]},
         {u'PrefixListIds': [], u'FromPort': 22, u'IpRanges': [{u'CidrIp': '0.0.0.0/0'}], u'ToPort': 22, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
         {u'PrefixListIds': [], u'FromPort': 10000, u'IpRanges': [{u'Description': 'firesim network model', u'CidrIp': '0.0.0.0/0'}], u'ToPort': 11000, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': [{u'Description': 'firesim network model', u'CidrIpv6': '::/0'}]},
-        {u'PrefixListIds': [], u'FromPort': 3389, u'IpRanges': [{u'Description': 'remote desktop', u'CidrIp': '0.0.0.0/0'}], u'ToPort': 3389, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': [{u'CidrIpv6': '::/0', u'Description': 'rdp'}]}])
+        {u'PrefixListIds': [], u'FromPort': 3389, u'IpRanges': [{u'Description': 'remote desktop', u'CidrIp': '0.0.0.0/0'}], u'ToPort': 3389, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': [{u'CidrIpv6': '::/0', u'Description': 'rdp'}]},
+        {u'PrefixListIds': [], u'FromPort': 8443, u'IpRanges': [{u'Description': 'nice dcv (ipv4)', u'CidrIp': '0.0.0.0/0'}], u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': [{u'Description': 'nice dcv (ipv6)', u'CidrIpv6': '::/0'}]},
+    ])
 
     print("Success!")
 
