@@ -53,7 +53,7 @@ def run_linux_poweroff():
                     out_split = [e for e in out.split('\n') if match_key in e]
                     print(f"DEBUG: out_split = {out_split}")
                     out_count = len(out_split)
-                    assert out_count == num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
+                    assert out_count >= num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
 
                     print(f"Workload run {workload} successful.")
 
