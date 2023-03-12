@@ -30,6 +30,8 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
+            run("firesim managerinit --platform vitis")
+
             def run_w_timeout(workload_path, workload, timeout, num_passes):
                 log_tail_length = 300
                 rc = 0
