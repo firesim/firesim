@@ -85,6 +85,8 @@
     `BIND_AXI_FWD(name, name``_fwd) \
     `BIND_AXI_REV(name, name``_rev)
 
+import "DPI-C" function void inverted_main ();
+
 import "DPI-C" function void simulator_tick
 (
   input  bit                                          reset,
@@ -138,6 +140,10 @@ module emul(
     #(`CLOCK_PERIOD * 1000 * 9.0) reset = 1'b0;
   end
 `endif
+
+initial begin
+    inverted_main();
+end
 
 `ifndef VERILATOR
 `ifdef DEBUG

@@ -62,6 +62,7 @@ include make/driver.mk
 include make/fpga.mk
 include make/verilator.mk
 include make/vcs.mk
+include make/xcelium.mk
 include make/xsim.mk
 
 include $(TARGET_PROJECT_MAKEFRAG)/metasim.mk
@@ -75,7 +76,7 @@ include make/cpp-lint.mk
 #########################
 .PHONY: mostlyclean
 mostlyclean:
-	rm -rf $(verilator) $(verilator_debug) $(vcs) $(vcs_debug) $($(PLATFORM)) $(OUTPUT_DIR)
+	rm -rf $(verilator) $(verilator_debug) $(vcs) $(vcs_debug) $(xcelium) $(xcelium_debug) $($(PLATFORM)) $(OUTPUT_DIR)
 
 .PHONY: clean
 clean:

@@ -40,6 +40,10 @@ vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
+
+xcelium = $(GENERATED_DIR)/X$(DESIGN)
+xcelium_debug = $(GENERATED_DIR)/X$(DESIGN)-debug
+
 sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
 
 run-verilator: $(verilator)
@@ -61,6 +65,27 @@ run-vcs-debug: $(vcs_debug)
 	cd $(dir $<) && \
 	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
 	$(disasm) $(sim_binary_basename).out
+
+# $(vcs_args)
+
+# run-xcelium: $(xcelium)
+# 	cd $(dir $<) && \
+# 	$(xcelium) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+# 	$(disasm) $(sim_binary_basename).out
+#
+
+run-xcelium-debug: $(xcelium_debug)
+	cd $(dir $<) && \
+	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+	$(disasm) $(sim_binary_basename).out
+
+run-xcelium: $(xcelium)
+	cd $(dir $<) && \
+	$(xcelium) +permissive $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+
+
+
+
 
 .PHONY: run-xsim
 run-xsim: $(xsim)

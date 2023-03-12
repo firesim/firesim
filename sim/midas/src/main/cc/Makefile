@@ -102,3 +102,17 @@ vcs-post-synth: $(OUT_DIR)/$(DRIVER_NAME)-post-synth
 vcs-post-synth-debug: $(OUT_DIR)/$(DRIVER_NAME)-post-synth-debug
 
 .PHONY: vcs vcs-debug vcs-post-synth vcs-post-synth-debug
+
+
+# Add an extra wrapper source for XCELIUM simulators
+xcelium_wrapper_v := $(v_dir)/top.sv
+xcelium_harness := $(midas_dir)/simif_emul_vcs.cc
+XCELIUM_FLAGS := -e vcs_main
+include rtlsim/Makefrag-xcelium
+
+$(xcelium_harness): ;
+
+xcelium: $(xc_sim_name)
+xcelium-debug: $(OUT_DIR)/$(DRIVER_NAME)-debug
+
+.PHONY: xcelium xcelium-debug

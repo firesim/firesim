@@ -9,10 +9,12 @@
 #include <memory>
 
 #include <signal.h>
+#include <vpi_user.h>
 
 #include "emul/mm.h"
 #include "emul/mmio.h"
 #include "emul/simif_emul.h"
+#include "main.h"
 
 extern simif_emul_t *emulator;
 
@@ -215,6 +217,17 @@ void rev_put(mmio_t &mmio, uint32_t *io) {
 extern simif_emul_t *simulator;
 
 extern "C" {
+
+void inverted_main() {
+
+    s_vpi_vlog_info info;
+    if (!vpi_get_vlog_info(&info)) {
+        abort();
+    }
+
+    real_main(info.argc, info.argv);
+}
+
 void simulator_tick(
     /* INPUT  */ const uint8_t reset,
     /* OUTPUT */ uint8_t *fin,
