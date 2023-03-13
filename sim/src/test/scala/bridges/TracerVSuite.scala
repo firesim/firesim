@@ -56,9 +56,12 @@ abstract class TracerVTestBase(
   }
 }
 
-class TracerVF1TestCount1 extends TracerVTestBase(BaseConfigs.F1, 1);
+class TracerVF1TestCount1  extends TracerVTestBase(BaseConfigs.F1, 1);
 // This test is disabled until FireSim issue #1428 is resolved
 // class TracerVF1TestCount5 extends TracerVTestBase(BaseConfigs.F1, 5, Some(3), Some("FF0000001C")); // in hex
-class TracerVF1TestCount6 extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
-class TracerVF1TestCount7 extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9"));    // in decimala
-class TracerVVitisTest    extends TracerVTestBase(BaseConfigs.Vitis, 7);
+class TracerVF1TestCount6  extends TracerVTestBase(BaseConfigs.F1, 6, Some(2), Some("3000")); // in hex
+class TracerVF1TestCount7  extends TracerVTestBase(BaseConfigs.F1, 7, Some(1), Some("9"));    // in decimal
+class TracerVF1TestCount9  extends TracerVTestBase(BaseConfigs.F1, 9);
+class TracerVVitisTest     extends TracerVTestBase(BaseConfigs.Vitis, 14);
+class TracerVF1TestCount14 extends TracerVTestBase(BaseConfigs.F1, 14, Some(1), Some("10"));  // in decimal
+class TracerVF1TestCount15 extends TracerVTestBase(BaseConfigs.F1, 15, Some(2), Some("4000"));
