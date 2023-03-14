@@ -19,7 +19,7 @@ metadata:
   - url: nodefaults
     used_env_vars: []
   content_hash:
-    linux-64: e0315c74ad99cc083d285f3a88feb67bc5e98509e557f89e19c1e26b42ed2ea8
+    linux-64: ec12a8e0c5dfe11ace8dde301bb27940fbfc2f97498857b7686d3e7f023ee8b5
   platforms:
   - linux-64
   sources:
@@ -852,14 +852,14 @@ package:
     ca-certificates: ''
     libgcc-ng: '>=12'
   hash:
-    md5: e043403cd18faf815bf7705ab6c1e092
-    sha256: cd981c5c18463bc7a164fcf45c5cf697d58852b780b4dfa5e83c18c1fda6d7cd
+    md5: 2d833be81a21128e317325a01326d36f
+    sha256: d378afcec34b86fef4da3ebd622b3e614cb3f71e54b6a5a10adb1d23745ecc72
   manager: conda
   name: openssl
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.0.8-h0b41bf4_0.conda
-  version: 3.0.8
+  url: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.1.0-h0b41bf4_0.conda
+  version: 3.1.0
 - category: main
   dependencies:
     libgcc-ng: '>=9.3.0'
@@ -2154,14 +2154,14 @@ package:
   dependencies:
     python: '>=3.7'
   hash:
-    md5: 1addc115923d646ca19ed90edc413506
-    sha256: 739c48f62747c942aa733041d36a2c1af41c2ecf2a59f1fec90cd7200e01be9a
+    md5: eca7396b6eaec18e000a4eaa1abfef94
+    sha256: 50d8ecfe84778f61150527972199c4bd4f77cb86519db6d0adc179b7842ed8bb
   manager: conda
   name: filelock
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/filelock-3.9.0-pyhd8ed1ab_0.conda
-  version: 3.9.0
+  url: https://conda.anaconda.org/conda-forge/noarch/filelock-3.9.1-pyhd8ed1ab_0.conda
+  version: 3.9.1
 - category: main
   dependencies:
     expat: '>=2.5.0,<3.0a0'
@@ -4891,14 +4891,14 @@ package:
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<1.27'
   hash:
-    md5: 3faabd8720a81a91566e6c01bf7bbacb
-    sha256: c677cba87c7027ccf264574a87130bf44f69be008315d2a840ae6cfaa61b7e44
+    md5: f5f163a412ecc6be50ef913cf3de6ad6
+    sha256: 1172449dfba0f4bba3adb2a0c9878878fdf7c4cc22c0f6c3ebbc42d3b11bfda4
   manager: conda
   name: botocore
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.27.59-pyhd8ed1ab_0.tar.bz2
-  version: 1.27.59
+  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.29.90-pyhd8ed1ab_0.conda
+  version: 1.29.90
 - category: main
   dependencies:
     cairo: '>=1.16.0,<2.0a0'
@@ -5159,7 +5159,7 @@ package:
   version: 5.1.1
 - category: main
   dependencies:
-    botocore: 1.27.59
+    botocore: 1.29.90
     colorama: '>=0.2.5,<0.4.5'
     docutils: '>=0.10,<0.17'
     python: '>=3.10,<3.11.0a0'
@@ -5168,14 +5168,14 @@ package:
     rsa: '>=3.1.2,<4.8'
     s3transfer: '>=0.6.0,<0.7.0'
   hash:
-    md5: 7fca00e32e7d64340bebb17799aafd16
-    sha256: 118e95635796784bb1d0072d65be0fc1151ba7aca7118a5c79764ff2667301ad
+    md5: f22d497dccdfef2df007457017d9caf2
+    sha256: 564d3ad709000c3b043c68e42e0614732c34ad6cd94179ba5162109df800d6e3
   manager: conda
   name: awscli
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/awscli-1.25.60-py310hff52083_0.tar.bz2
-  version: 1.25.60
+  url: https://conda.anaconda.org/conda-forge/linux-64/awscli-1.27.90-py310hff52083_0.conda
+  version: 1.27.90
 - category: main
   dependencies:
     azure-core: '>=1.24.0,<2.0.0'
@@ -5191,19 +5191,19 @@ package:
   version: 1.3.2
 - category: main
   dependencies:
-    botocore: '>=1.27.59,<1.28.0'
+    botocore: '>=1.29.90,<1.30.0'
     jmespath: '>=0.7.1,<2.0.0'
     python: '>=3.7'
     s3transfer: '>=0.6.0,<0.7.0'
   hash:
-    md5: ffb13a0a5fc8e17ce396f4dfcdf5dab5
-    sha256: 89fd09bdc9d9a608387fd80b19fd084f26309d7857bd9a3957216a718f58b3de
+    md5: a57ff13af4774f422569fe6630d73c08
+    sha256: 045c5d6441b6b6790d0e9a826bee129b6f6c14ce65e8c50556b8a109a84d9912
   manager: conda
   name: boto3
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/boto3-1.24.59-pyhd8ed1ab_0.tar.bz2
-  version: 1.24.59
+  url: https://conda.anaconda.org/conda-forge/noarch/boto3-1.26.90-pyhd8ed1ab_0.conda
+  version: 1.26.90
 - category: main
   dependencies:
     cachecontrol: 0.12.11 pyhd8ed1ab_1
@@ -5281,21 +5281,6 @@ package:
   platform: linux-64
   url: https://conda.anaconda.org/conda-forge/noarch/msrest-0.7.1-pyhd8ed1ab_0.tar.bz2
   version: 0.7.1
-- category: main
-  dependencies:
-    aiobotocore: '>=2.4.2,<2.4.3'
-    aiohttp: ''
-    fsspec: 2023.3.0
-    python: '>=3.8'
-  hash:
-    md5: 53b2e3e80df2a18eb74d53729b9464f2
-    sha256: 2737102a9d3d538dccf22fc32e32e2ec608d69c2a002a1f137091b9611bf5d6e
-  manager: conda
-  name: s3fs
-  optional: false
-  platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/s3fs-2023.3.0-pyhd8ed1ab_0.conda
-  version: 2023.3.0
 - category: main
   dependencies:
     python: '>=2.7'
@@ -5464,6 +5449,20 @@ package:
   version: 1.26.87
 - category: main
   dependencies:
+    boto3: ''
+    fsspec: '>=0.6.0'
+    python: '>=3.5'
+  hash:
+    md5: ead328eb12f01d88706126ba061e7a69
+    sha256: 7a4cb574ff7edf773e5e4c396733dcb08ffcfd6e4f8b27e5b84b35fd4666ef5b
+  manager: conda
+  name: s3fs
+  optional: false
+  platform: linux-64
+  url: https://conda.anaconda.org/conda-forge/noarch/s3fs-0.4.2-py_0.tar.bz2
+  version: 0.4.2
+- category: main
+  dependencies:
     docutils: <0.19
     python: '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*'
     sphinx: '>=1.6,<7'
@@ -5489,14 +5488,14 @@ package:
     pyyaml: '>5.4'
     sarif-om: ~=1.0.4
   hash:
-    md5: a607f8ae4533e3b4a8f351b485daee03
-    sha256: 7c1ac284f75362698321857ac6b63f53dbc7bbfe61d70ff70eecf41ae5161012
+    md5: b77c6c465ed0b1214bb464f5603c5b96
+    sha256: 453798fdb8af369b8c181de2598ab36c48202eb2861552b11198188e649dec3d
   manager: conda
   name: cfn-lint
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/cfn-lint-0.74.1-pyhd8ed1ab_0.conda
-  version: 0.74.1
+  url: https://conda.anaconda.org/conda-forge/noarch/cfn-lint-0.74.3-pyhd8ed1ab_0.conda
+  version: 0.74.3
 - category: main
   dependencies:
     aws-xray-sdk: '!=0.96,>=0.93'
