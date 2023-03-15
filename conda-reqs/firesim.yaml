@@ -83,7 +83,9 @@ dependencies:
     - graphviz
     - expect
     - dtc
-    - verilator==5.006
+      # Pull in a newer build of verilator 4.226 that defaults to C++17 for verilation
+      # See https://github.com/verilator/verilator/issues/3588
+    - verilator==4.226=he0ac6c6_1
     - screen
     - elfutils
     - libdwarf-dev==0.0.0.20190110_28_ga81397fc4 # from ucb-bar channel - using mainline libdwarf-feedstock
