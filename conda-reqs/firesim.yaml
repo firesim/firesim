@@ -30,7 +30,7 @@ dependencies:
     - binutils
 
     - dromajo # from ucb-bar channel - https://github.com/riscv-boom/dromajo
-    - riscv-tools=1.0.1 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
+    - riscv-tools=1.0.3 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
 
     # firemarshal deps
     - qemu # from ucb-bar channel - https://github.com/ucb-bar/qemu-feedstock
@@ -39,7 +39,6 @@ dependencies:
     - doit>=0.34.0
     - gitpython
     - humanfriendly
-    - e2fsprogs
     - ctags
     - bison
     - flex
@@ -115,7 +114,7 @@ dependencies:
     - pytest-mock
     - moto
     - mypy
-    - s3fs
+    - s3fs==0.4.2
     - aiohttp
     - pip
     - pip:

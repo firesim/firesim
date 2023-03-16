@@ -12,7 +12,7 @@ positional arguments:
   {managerinit,infrasetup,boot,kill,runworkload,buildbitstream,builddriver,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
                         Management task to run.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c RUNTIMECONFIGFILE, --runtimeconfigfile RUNTIMECONFIGFILE
                         Optional custom runtime/workload config file. Defaults
