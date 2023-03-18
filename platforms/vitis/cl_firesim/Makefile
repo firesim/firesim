@@ -18,11 +18,13 @@ endif
 # taken from https://stackoverflow.com/questions/26145267/how-do-i-force-a-target-to-be-rebuilt-if-a-variable-is-set
 # variable argument to DEPENDABLE_VAR can be used as a prerequisite
 define DEPENDABLE_VAR
+
 .PHONY: phony
 $1: phony
-    @if [[ `cat $1 2>&1` != '$($1)' ]]; then \
-        echo -n $($1) > $1 ; \
-    fi
+	@if [[ `cat $1 2>&1` != '$($1)' ]]; then \
+		echo -n $($1) > $1 ; \
+	fi
+
 endef
 
 # Builds through vitis use the same tool (v++) for building xclbins destined
