@@ -114,8 +114,8 @@ class AutoCounterGlobalResetConditionF1Test
       simulationArgs = Seq("+autocounter-readrate=1000", "+autocounter-filename-base=autocounter"),
     ) {
 
-  def assertCountsAreZero(filename: String, clockDivision: Int) {
-    s"Counts reported in ${filename}" should "always be zero" in {
+  def assertCountsAreZero(filename: String, clockDivision: Int, backend: String) {
+    s"Counts reported in ${filename} in ${backend}" should "always be zero" in {
       val log                  = new File(genDir, s"/${filename}")
       val versionLine :: lines = extractLines(log, "", headerLines = 0).toList
       val sampleLines          = lines.drop(AutoCounterVerificationConstants.headerLines - 1)
@@ -135,8 +135,8 @@ class AutoCounterGlobalResetConditionF1Test
     it should "run in the simulator" in {
       assert(run(backend, debug, args = simulationArgs) == 0)
     }
-    assertCountsAreZero("autocounter0.csv", clockDivision = 1)
-    assertCountsAreZero("autocounter1.csv", clockDivision = 2)
+    assertCountsAreZero("autocounter0.csv", clockDivision = 1, backend)
+    assertCountsAreZero("autocounter1.csv", clockDivision = 2, backend)
   }
 }
 
