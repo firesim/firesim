@@ -52,18 +52,7 @@ $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(DRIVER) $(driver_h) $(platform_o) $(bri
 driver: $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM)
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
-override CXXFLAGS += -std=c++17 -include $(design_h)
-# Force verilator to obey our -std=c++17 from CXXFLAGS if it thinks it needs to add a -std argument to the compiler
-# by default, it will capture a -std argument during it's build using heuristics to try and match
-# the system-package for SystemC.
-# 1. we don't use SystemC
-# 2. the heuristics Verilator uses to capture -std at configure are incorrect for us
-# 3. Verilator output compiles and links for us fine with std=c++17
-# VERILATOR_FLAGS could do this with
-#   VERILATOR_FLAGS += -MAKEFLAGS CFG_CXXFLAGS_STD_NEWEST=
-# but we don't pass --build to it, we invoke the make build ourselves
-# see also https://github.com/verilator/verilator/issues/3588
-VERILATOR_MAKEFLAGS += CFG_CXXFLAGS_STD_NEWEST=
+override CXXFLAGS += -std=c++20 -include $(design_h)
 
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
