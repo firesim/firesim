@@ -117,9 +117,6 @@ tracedoctor_t::tracedoctor_t(
         } else if (traceThreads == 0) {
             fprintf(stdout, "TraceDoctor@%d: multithreading disabled, reduce to single buffer depth\n", info.tracerId);
             bufferDepth = 1;
-        } else if ((unsigned int) traceThreads > workers.size()) {
-            traceThreads = workers.size();
-            fprintf(stdout, "TraceDoctor@%d: unbalanced thread number, reducing to %d threads\n", info.tracerId, traceThreads);
         }
 
         for (unsigned int i = 0; i < bufferDepth; i++) {
@@ -177,39 +174,49 @@ void tracedoctor_t::init() {
 
 
 void tracedoctor_t::work(unsigned int thread_index) {
-    while (true) {
-        // We need this to synchronize the worker threads taking and processing
-        // the jobs in order in regard to every worker
-        Lock2<locktype_t, locktype_t> workerSync(workerQueueLock, workerSyncLock);
-        workerQueueCond.wait(workerSync, [this](){return exit || !workerQueue.empty();});
-        if (workerQueue.empty()) {
-            return;
-        }
-        // Pick up a job and its worker
-        auto job = workerQueue.front();
-        workerQueue.pop();
-        // Unlock the workerQueueLock, the main thread might now
-        // put new jobs into the queue, however no other thread
-        // is yet allowed to take another job out of it
-        workerSync.unlock_1();
+  std::thread::id threadId = std::this_thread::get_id();
 
-        // Pick up the worker and takes its ownership
-        auto &worker = job.first;
-        worker->lock.lock();
-        // From here on it is save to release the other threads
-        // as no other thread can now execute a job on this worker
-        workerSync.unlock_2();
-
-        auto &buffer = job.second;
-        worker->worker->tick(buffer->data, buffer->tokens);
-        // Release the ownership of this worker so that the next buffer
-        // can be given to it by the next worker thread
-        worker->lock.unlock();
-
-        // Decrement the buffer reference and if it is not referenced anymore
-        // put it back to the spare buffers
-        buffer->refs--;
+  while (true) {
+    // Condition on the queue, we get notified either on exit or when a job is inserted
+    std::unique_lock<locktype_t> queueLock(workerQueueLock);
+    workerQueueCond.wait(queueLock, [this](){return exit || !workerQueue.empty();});
+    if (workerQueue.empty()) {
+      return;
     }
+
+    // Pick up the first job and remove it out of the queue
+    auto job = workerQueue.front();
+    workerQueue.pop();
+
+    // Worker and Buffer
+    auto &worker = job.first;
+    auto &buffer = job.second;
+
+    // Lock the worker and unlock the queue so that other threads can proceed
+    std::unique_lock<locktype_t> workerLock(worker->lock);
+    queueLock.unlock();
+
+    // Put our threadId into the queue of the worker
+    worker->queue.push(threadId);
+
+    // Wait until our id is at the front of the queue
+    worker->cond.wait(workerLock, [&worker, &threadId](){return worker->queue.front() == threadId; });
+    // Unlock the worker (other threads can enqueue on this worker)
+    workerLock.unlock();
+
+    // Process the worker and buffer
+    worker->worker->tick(buffer->data, buffer->tokens);
+    // Decrement the buffer references, if zero it will be put to the spare buffers
+    buffer->refs--;
+
+    // Lock the worker again, remove our id out of the queue
+    workerLock.lock();
+    worker->queue.pop();
+
+    // Unlock worker, notify other threads
+    workerLock.unlock();
+    worker->cond.notify_all();
+  }
 }
 
 

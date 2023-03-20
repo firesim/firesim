@@ -115,12 +115,14 @@ public:
     }
 };
 
-#define locktype_t spinlock
-//#define locktype_t std::mutex
+// #define locktype_t spinlock
+#define locktype_t std::mutex
 
 
 struct protectedWorker {
     locktype_t lock;
+    std::condition_variable cond;
+    std::queue<std::thread::id> queue;
     std::shared_ptr<tracedoctor_worker> worker;
 };
 
@@ -158,10 +160,10 @@ private:
     // Add you workers here:
     std::map<std::string,
              std::function<std::shared_ptr<tracedoctor_worker>(std::vector<std::string> &, struct traceInfo &)>> workerRegister = {
-        {"dummy",    [](std::vector<std::string> &args, struct traceInfo &info){
+        {"dummy",       [](std::vector<std::string> &args, struct traceInfo &info){
                       (void) args; return std::make_shared<tracedoctor_worker>("Dummy", args, info, TDWORKER_NO_FILES);
                   }},
-        {"filer",     [](std::vector<std::string> &args, struct traceInfo &info){
+        {"filer",       [](std::vector<std::string> &args, struct traceInfo &info){
                       return std::make_shared<tracedoctor_filedumper>(args, info);
                   }},
         {"tracerv",     [](std::vector<std::string> &args, struct traceInfo &info){
@@ -179,8 +181,7 @@ private:
     std::vector<std::shared_ptr<referencedBuffer>> buffers;
 
     locktype_t workerQueueLock;
-    locktype_t workerSyncLock;
-    std::condition_variable_any workerQueueCond;
+    std::condition_variable workerQueueCond;
     std::queue<std::pair<std::shared_ptr<protectedWorker>, std::shared_ptr<referencedBuffer>>> workerQueue;
 
     unsigned int bufferIndex = 0;
