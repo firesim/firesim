@@ -116,8 +116,8 @@ public:
     }
 };
 
-// #define locktype_t spinlock
-#define locktype_t std::mutex
+#define locktype_t spinlock
+// #define locktype_t std::mutex
 
 
 struct protectedWorker {
@@ -183,7 +183,7 @@ private:
     std::vector<std::shared_ptr<referencedBuffer>> buffers;
 
     locktype_t workQueueLock;
-    std::condition_variable workQueueCond;
+    std::condition_variable_any workQueueCond;
     std::vector<std::queue<std::shared_ptr<referencedBuffer>>> workQueues;
     bool workQueuesMaybeEmpty = true;
 
