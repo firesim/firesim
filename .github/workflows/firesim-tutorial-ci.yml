@@ -115,6 +115,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install FireSim pem
         run: ./.github/scripts/install-firesim-pem.py
+      - name: Setup copy of FireSim repo (used in workflow monitor)
+        run: git clone ${{ env.GITHUB_WORKSPACE }} ${{ env.MANAGER_FIRESIM_LOCATION }}
       - name: Setup Workflow monitor
         if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
         uses: ./.github/actions/setup-workflow-monitor
@@ -136,4 +138,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run tutorial commands
-        run: .github/scripts/run-tutorial.py
+        run: |
+          cd ${{ env.MANAGER_FIRESIM_LOCATION }}
+          ./scripts/full-tutorial-run.sh
+          .github/scripts/run-tutorial.py
