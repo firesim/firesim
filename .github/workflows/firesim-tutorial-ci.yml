@@ -1,0 +1,139 @@
+name: firesim-tutorial-ci
+
+on:
+  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
+  pull_request:
+    branches:
+      - main
+      - stable
+
+env:
+  PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_DEFAULT_REGION: ${{ secrets.AZURE_DEFAULT_REGION }}
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  AZURE_CI_SUBNET_ID : ${{ secrets.AZURE_CI_SUBNET_ID }}
+  AZURE_CI_NSG_ID : ${{ secrets.AZURE_CI_NSG_ID }}
+  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
+  FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
+  MANAGER_FIRESIM_LOCATION: "~/firesim"
+  LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+  CI_LABEL_DEBUG: ${{ contains(github.event.pull_request.labels.*.name, 'ci:debug') }}
+  CI_LABEL_PERSIST: ${{ contains(github.event.pull_request.labels.*.name, 'ci:persist-prior-workflows') }}
+
+jobs:
+  cancel-prior-workflows:
+    name: cancel-prior-workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Cancel previous workflow runs
+        if: ${{ (env.CI_LABEL_PERSIST != 'true') }}
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-20.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+      both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # If any of the files changed match, do a doc build
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # If all files match to this filter, skip the main ci pipeline
+            skip-manager:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+              - '.github/ISSUE_TEMPLATE/**'
+
+            # If conda requirements was modified ensure the lock file is re-generated
+            conda-reqs:
+                - 'conda-reqs/firesim.yaml'
+                - 'conda-reqs/ci-shared.yaml'
+
+            # If conda requirements was modified ensure the lock file is re-generated
+            conda-lock:
+                - 'conda-reqs/conda-reqs.conda-lock.yml'
+
+  launch-aws-ec2-manager-and-setup-gha-self-hosted-runners:
+    name: Launch a AWS EC2 manager and setup GitHub Actions self-hosted runners on it
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-manager == 'true' && contains(github.event.pull_request.labels.*.name, 'ci:tutorial-deploy')
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/ci-shared.yaml
+          miniforge-version: latest
+      - uses: ./.github/actions/repo-setup-aws
+      - name: Launch AWS instance used for the FireSim manager (instance info found here)
+        run: ./.github/scripts/launch-manager-instance.py
+      - name: Setup N Github Actions Runners on AWS instance
+        run: ./.github/scripts/setup-manager-self-hosted.py aws
+      - name: Catch potentially orphaned manager
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
+        uses: ./.github/actions/change-workflow-instance-states
+        with:
+          new-state: terminate
+          github-token: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
+
+  setup-manager:
+    name: Initial manager setup (copy .pem, build-setup, credentials, submodules, daemons)
+    needs: [setup-self-hosted-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install FireSim pem
+        run: ./.github/scripts/install-firesim-pem.py
+      - name: Setup Workflow monitor
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
+        uses: ./.github/actions/setup-workflow-monitor
+        with:
+          max-runtime-hours: 4
+      - name: Catch potentially orphaned manager
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
+        uses: ./.github/actions/change-workflow-instance-states
+        with:
+          new-state: terminate
+          github-token: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
+
+  run-tutorial:
+    name: Run FireSim/Chipyard tutorial commands
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tutorial commands
+        run: .github/scripts/run-tutorial.py
