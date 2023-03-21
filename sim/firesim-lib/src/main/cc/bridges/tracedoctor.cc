@@ -120,7 +120,6 @@ tracedoctor_t::tracedoctor_t(
         traceThreads = workers.size();
       } else if (traceThreads >= workers.size()) {
         traceThreads = workers.size();
-        fprintf(stdout, "TraceDoctor@%d: using balanced thread pool of %d threads\n", info.tracerId, traceThreads);
       } else if (traceThreads == 0) {
         fprintf(stdout, "TraceDoctor@%d: multithreading disabled, reduce to single buffer depth\n", info.tracerId);
         bufferDepth = 1;
@@ -136,7 +135,11 @@ tracedoctor_t::tracedoctor_t(
       }
 
       if (traceThreads > 0) {
-        fprintf(stdout, "TraceDoctor@%d: spawning %u worker threads\n", info.tracerId, traceThreads);
+        if (traceThreads >= workers.size()) {
+          fprintf(stdout, "TraceDoctor@%d: using balanced thread pool of %d threads\n", info.tracerId, traceThreads);
+        } else {
+          fprintf(stdout, "TraceDoctor@%d: using round-robbing thread pool of %u threads\n", info.tracerId, traceThreads);
+        }
         auto const &targetWorkFunc = (traceThreads == workers.size()) ? &tracedoctor_t::balancedWork : &tracedoctor_t::work;
         for (unsigned int i = 0; i < (unsigned int) traceThreads; i++) {
           workerThreads.emplace_back(std::move(std::thread(targetWorkFunc, this, i)));
@@ -228,14 +231,12 @@ void tracedoctor_t::work(unsigned int const threadId) {
     // Roung robbing through the work queues to find a next job
     for (unsigned int i = 0; i < numWorkQueues; i++) {
       robbingId = (robbingId + 1) % numWorkQueues;
-      if (!workQueues[robbingId].empty()) {
-        if (workers[robbingId]->lock.try_lock()) {
+      if (!workQueues[robbingId].empty() && workers[robbingId]->lock.try_lock()) {
         worker = workers[robbingId];
         buffer = workQueues[robbingId].front();
         workQueues[robbingId].pop();
         foundJob = true;
         break;
-        }
       }
     }
 

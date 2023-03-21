@@ -189,10 +189,11 @@ private:
 
     unsigned int bufferIndex = 0;
     unsigned int bufferGrouping = 1;
-    unsigned int bufferDepth = 1;
+    unsigned int bufferDepth = 64;
     unsigned int bufferTokenCapacity;
     unsigned int bufferTokenThreshold;
     unsigned long int totalTokens = 0;
+
 
     std::chrono::duration<double> tickTime = std::chrono::seconds(0);
 
