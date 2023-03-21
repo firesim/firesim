@@ -5,7 +5,7 @@ package midas.widgets
 import chisel3._
 import junctions._
 import freechips.rocketchip.amba.axi4.AXI4Bundle
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 object AXI4Printf {
   def apply(io: AXI4Bundle, name: String): Unit = {

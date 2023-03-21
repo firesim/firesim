@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 import chisel3._
 import chisel3.util._ // Deprecated
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 import midas.core.SimUtils._
 import midas.widgets.SerializationUtils._

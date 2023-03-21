@@ -1,7 +1,7 @@
 //See LICENSE for license details.
 package firesim.configs
 
-import freechips.rocketchip.config.{Config, Field}
+import org.chipsalliance.cde.config.{Config, Field}
 
 import midas.models._
 

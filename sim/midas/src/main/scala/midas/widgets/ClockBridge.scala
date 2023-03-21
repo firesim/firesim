@@ -4,7 +4,7 @@ package midas.widgets
 
 import midas.core.TargetChannelIO
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util.DensePrefixSum
 
 import chisel3._

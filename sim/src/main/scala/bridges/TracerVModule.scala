@@ -5,7 +5,7 @@ package firesim.bridges
 import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
-import freechips.rocketchip.config.{Config, Field, Parameters}
+import org.chipsalliance.cde.config.{Config, Field, Parameters}
 import testchipip.DeclockedTracedInstruction
 import testchipip.TracedInstructionWidths
 import midas.targetutils.TriggerSink

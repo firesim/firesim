@@ -8,7 +8,7 @@ import scala.io.Source
 import org.scalatest.Suites
 import org.scalatest.matchers.should._
 
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 object BaseConfigs {

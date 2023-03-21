@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util.random.LFSR
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 import midas.targetutils.SynthesizePrintf
 

@@ -4,7 +4,7 @@ package firesim
 import java.io.File
 import scala.io.Source
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 
 import scala.collection.mutable
 

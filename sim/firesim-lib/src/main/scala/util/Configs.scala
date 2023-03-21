@@ -2,7 +2,7 @@
 package firesim.util
 
 
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 
 class WithILADepth(depth: Int) extends Config((site, here, up) => {
     case midas.ILADepthKey => depth

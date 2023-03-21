@@ -7,7 +7,7 @@ import chisel3._
 import firrtl.{RenameMap}
 import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
 import firrtl.annotations.{Annotation, ReferenceTarget, ModuleTarget, HasSerializationHints}
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 import midas.passes.fame.{RTRenamer}
 import midas.targetutils.FAMEAnnotation

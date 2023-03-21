@@ -7,7 +7,7 @@ import midas.stage.{ConfigPackageAnnotation, ConfigStringAnnotation}
 import firrtl.AnnotationSeq
 import firrtl.options.{Phase, PreservesAll, Unserializable, TargetDirAnnotation, Dependency}
 import firrtl.annotations.NoTargetAnnotation
-import freechips.rocketchip.config.{Parameters, Config}
+import org.chipsalliance.cde.config.{Parameters, Config}
 
 import java.io.{File}
 
