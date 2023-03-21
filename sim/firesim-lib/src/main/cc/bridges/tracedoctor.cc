@@ -96,6 +96,7 @@ tracedoctor_t::tracedoctor_t(
             std::shared_ptr<protectedWorker> worker = std::make_shared<protectedWorker>();
             worker->worker = reg->second(workerargs, info);
             workers.push_back(worker);
+            workQueues.push_back(std::queue<std::shared_ptr<referencedBuffer>>());
         }
     }
 
@@ -106,53 +107,62 @@ tracedoctor_t::tracedoctor_t(
         traceEnabled = true;
     }
 
+
     // How many tokens are fitting into our buffers
     bufferTokenCapacity = bufferGrouping * streamDepth;
     // At which point the buffer cannot fit another drain (worst case)
     bufferTokenThreshold = bufferTokenCapacity - streamDepth;
 
+
     if (traceEnabled) {
-        if (traceThreads < 0) {
-            traceThreads = workers.size();
-        } else if (traceThreads == 0) {
-            fprintf(stdout, "TraceDoctor@%d: multithreading disabled, reduce to single buffer depth\n", info.tracerId);
-            bufferDepth = 1;
-        }
+      workQueuesMaybeEmpty = true;
+      if (traceThreads < 0) {
+        traceThreads = workers.size();
+      } else if (traceThreads >= workers.size()) {
+        traceThreads = workers.size();
+        fprintf(stdout, "TraceDoctor@%d: using balanced thread pool of %d threads\n", info.tracerId, traceThreads);
+      } else if (traceThreads == 0) {
+        fprintf(stdout, "TraceDoctor@%d: multithreading disabled, reduce to single buffer depth\n", info.tracerId);
+        bufferDepth = 1;
+      }
 
-        for (unsigned int i = 0; i < bufferDepth; i++) {
-            std::shared_ptr<referencedBuffer> buffer = std::make_shared<referencedBuffer>();
-            buffer->data = (char *) aligned_alloc(sysconf(_SC_PAGESIZE), bufferTokenCapacity * info.tokenBytes);
-            if (!buffer->data) {
-              throw std::runtime_error("TraceDoctor@" + std::to_string(info.tracerId) + " could not allocate memory buffer");
-            }
-            buffers.push_back(buffer);
+      for (unsigned int i = 0; i < bufferDepth; i++) {
+        std::shared_ptr<referencedBuffer> buffer = std::make_shared<referencedBuffer>();
+        buffer->data = (char *) aligned_alloc(sysconf(_SC_PAGESIZE), bufferTokenCapacity * info.tokenBytes);
+        if (!buffer->data) {
+          throw std::runtime_error("TraceDoctor@" + std::to_string(info.tracerId) + " could not allocate memory buffer");
         }
+        buffers.push_back(buffer);
+      }
 
-        if (traceThreads > 0) {
-            fprintf(stdout, "TraceDoctor@%d: spawning %u worker threads\n", info.tracerId, traceThreads);
-            for (unsigned int i = 0; i < (unsigned int) traceThreads; i++) {
-                workerThreads.emplace_back(std::move(std::thread(&tracedoctor_t::work, this, i)));
-            }
+      if (traceThreads > 0) {
+        fprintf(stdout, "TraceDoctor@%d: spawning %u worker threads\n", info.tracerId, traceThreads);
+        auto const &targetWorkFunc = (traceThreads == workers.size()) ? &tracedoctor_t::balancedWork : &tracedoctor_t::work;
+        for (unsigned int i = 0; i < (unsigned int) traceThreads; i++) {
+          workerThreads.emplace_back(std::move(std::thread(targetWorkFunc, this, i)));
         }
+      }
     }
 }
 
 tracedoctor_t::~tracedoctor_t() {
     // Cleanup
     if (traceEnabled) {
-        exit = true;
-        workerQueueCond.notify_all();
-        // Join in the worker threads, they will finish processing the last tokens
-        for (auto &t : workerThreads) {
-            t.join();
-        }
-        // Explicitly destruct our workers here
-        workers.clear();
-        for (auto &b: buffers) {
-            free(b->data);
-        }
-        fprintf(stdout, "TraceDoctor@%d: tick_time(%f), dma_time(%f)\n", info.tracerId, tickTime.count(), dmaTime.count());
-        fprintf(stdout, "TraceDoctor@%d: traced_tokens(%ld), traced_bytes(%ld)\n", info.tracerId, totalTokens, totalTokens * info.traceBytes);
+      std::unique_lock<locktype_t> queueLock(workQueueLock);
+      exit = true;
+      queueLock.unlock();
+
+      workQueueCond.notify_all();
+      // Join in the worker threads, they will finish processing the last tokens
+      for (auto &t : workerThreads) {
+        t.join();
+      }
+      // Explicitly destruct our workers here
+      workers.clear();
+      for (auto &b: buffers) {
+        free(b->data);
+      }
+      fprintf(stdout, "TraceDoctor@%d: tick_time(%f), traced_tokens(%ld), traced_bytes(%ld)\n", info.tracerId, tickTime.count(), totalTokens, totalTokens * info.traceBytes);
     }
     free(mmioAddrs);
 }
@@ -173,49 +183,74 @@ void tracedoctor_t::init() {
 }
 
 
-void tracedoctor_t::work(unsigned int thread_index) {
-  std::thread::id threadId = std::this_thread::get_id();
+// The easiest way of distributing work, one thread has one worker
+void tracedoctor_t::balancedWork(unsigned int const threadId) {
+  if (threadId >= workQueues.size())
+    return;
 
-  while (true) {
-    // Condition on the queue, we get notified either on exit or when a job is inserted
-    std::unique_lock<locktype_t> queueLock(workerQueueLock);
-    workerQueueCond.wait(queueLock, [this](){return exit || !workerQueue.empty();});
-    if (workerQueue.empty()) {
+  auto &myWorker = workers[threadId];
+  auto &myWorkQueue = workQueues[threadId];
+
+  while(true) {
+    std::unique_lock<locktype_t> queueLock(workQueueLock);
+    workQueueCond.wait(queueLock, [&](){return exit || !myWorkQueue.empty();});
+    if (myWorkQueue.empty()) {
       return;
     }
 
-    // Pick up the first job and remove it out of the queue
-    auto job = workerQueue.front();
-    workerQueue.pop();
-
-    // Worker and Buffer
-    auto &worker = job.first;
-    auto &buffer = job.second;
-
-    // Lock the worker and unlock the queue so that other threads can proceed
-    std::unique_lock<locktype_t> workerLock(worker->lock);
+    auto &buffer = myWorkQueue.front();
+    myWorkQueue.pop();
     queueLock.unlock();
 
-    // Put our threadId into the queue of the worker
-    worker->queue.push(threadId);
-
-    // Wait until our id is at the front of the queue
-    worker->cond.wait(workerLock, [&worker, &threadId](){return worker->queue.front() == threadId; });
-    // Unlock the worker (other threads can enqueue on this worker)
-    workerLock.unlock();
-
-    // Process the worker and buffer
-    worker->worker->tick(buffer->data, buffer->tokens);
-    // Decrement the buffer references, if zero it will be put to the spare buffers
+    myWorker->worker->tick(buffer->data, buffer->tokens);
     buffer->refs--;
+  }
+}
 
-    // Lock the worker again, remove our id out of the queue
-    workerLock.lock();
-    worker->queue.pop();
+// More complicated, distributing the workers round robbing on the threads
+void tracedoctor_t::work(unsigned int const threadId) {
+  std::shared_ptr<referencedBuffer> buffer(nullptr);
+  std::shared_ptr<protectedWorker> worker(nullptr);
+  unsigned int const numWorkQueues = workQueues.size();
+  unsigned int robbingId = threadId % numWorkQueues;
+  bool foundJob = false;
 
-    // Unlock worker, notify other threads
-    workerLock.unlock();
-    worker->cond.notify_all();
+  while (true) {
+    // Condition on the queue, we get notified either on exit or when a job is inserted
+    std::unique_lock<locktype_t> queueLock(workQueueLock);
+    workQueueCond.wait(queueLock, [this, &foundJob](){ return exit || foundJob || !workQueuesMaybeEmpty; });
+    if (workQueuesMaybeEmpty && !foundJob) {
+      return;
+    }
+
+    foundJob = false;
+
+    // Roung robbing through the work queues to find a next job
+    for (unsigned int i = 0; i < numWorkQueues; i++) {
+      robbingId = (robbingId + 1) % numWorkQueues;
+      if (!workQueues[robbingId].empty()) {
+        if (workers[robbingId]->lock.try_lock()) {
+        worker = workers[robbingId];
+        buffer = workQueues[robbingId].front();
+        workQueues[robbingId].pop();
+        foundJob = true;
+        break;
+        }
+      }
+    }
+
+    // If we couldn't find a job. Either the work queues are empty or other threads
+    // are currently working on them. Either way, we cannot help out anymore.
+    workQueuesMaybeEmpty = workQueuesMaybeEmpty || !foundJob;
+    queueLock.unlock();
+
+    if (foundJob) {
+      // Process the worker and buffer
+      worker->worker->tick(buffer->data, buffer->tokens);
+      worker->lock.unlock();
+      // Decrement the buffer references, if zero it will be put to the spare buffers
+      buffer->refs--;
+    }
   }
 }
 
@@ -240,12 +275,10 @@ bool tracedoctor_t::process_tokens(unsigned int const tokens, bool flush) {
 
   // Drain the tokens from the DMA
   {
-    auto start = std::chrono::high_resolution_clock::now();
     auto bytesReceived = pull(streamIdx,
                               buffer->data + (buffer->tokens * info.tokenBytes),
                               tokens * info.tokenBytes,
                               (flush) ? 0 : (tokens * info.tokenBytes));
-    dmaTime += std::chrono::high_resolution_clock::now() - start;
 
     tokensReceived = bytesReceived / info.tokenBytes;
   }
@@ -254,16 +287,17 @@ bool tracedoctor_t::process_tokens(unsigned int const tokens, bool flush) {
 
   // If we have exceeded the bufferTokenThreshold we cannot fit another drain
   // into this buffer and we should process it (normal usage that means it is full)
-  if (buffer->tokens > bufferTokenThreshold || flush) {
+  if (buffer->tokens > bufferTokenThreshold || (buffer->tokens && flush)) {
     if (traceThreads > 0) {
       buffer->refs = workers.size();
 
-      workerQueueLock.lock();
-      for (auto &worker : workers) {
-        workerQueue.push(std::make_pair(worker, buffer));
+      workQueueLock.lock();
+      for (auto &workQueue : workQueues) {
+        workQueue.push(buffer);
       }
-      workerQueueLock.unlock();
-      workerQueueCond.notify_all();
+      workQueuesMaybeEmpty = false;
+      workQueueLock.unlock();
+      workQueueCond.notify_all();
 
       // Only for multithreading it makes sense to use multiple buffers
       bufferIndex = (bufferIndex + 1) % buffers.size();

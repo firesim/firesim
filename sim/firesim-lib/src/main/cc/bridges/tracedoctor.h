@@ -14,6 +14,7 @@
 #include <queue>
 #include <atomic>
 #include <chrono>
+#include <numeric>
 #include <functional>
 // Add some more workers
 // If you add/remove workers, they must be registered/deregistered in the
@@ -121,8 +122,6 @@ public:
 
 struct protectedWorker {
     locktype_t lock;
-    std::condition_variable cond;
-    std::queue<std::thread::id> queue;
     std::shared_ptr<tracedoctor_worker> worker;
 };
 
@@ -154,7 +153,8 @@ public:
     virtual bool terminate() { return false; }
     virtual int exit_code() { return 0; }
     virtual void finish() { flush(); };
-    virtual void work(unsigned int threadIndex);
+    virtual void balancedWork(unsigned int const threadIndex);
+    virtual void work(unsigned int const threadIndex);
 
 private:
     // Add you workers here:
@@ -168,6 +168,9 @@ private:
                   }},
         {"tracerv",     [](std::vector<std::string> &args, struct traceInfo &info){
                       return std::make_shared<tracedoctor_tracerv>(args, info);
+                  }},
+        {"tracerv_partcsv",     [](std::vector<std::string> &args, struct traceInfo &info){
+                      return std::make_shared<tracedoctor_tracerv_partcsv>(args, info);
                   }}
     };
 
@@ -176,13 +179,13 @@ private:
     int streamDepth;
 
     std::vector<std::thread> workerThreads;
-
     std::vector<std::shared_ptr<protectedWorker>> workers;
     std::vector<std::shared_ptr<referencedBuffer>> buffers;
 
-    locktype_t workerQueueLock;
-    std::condition_variable workerQueueCond;
-    std::queue<std::pair<std::shared_ptr<protectedWorker>, std::shared_ptr<referencedBuffer>>> workerQueue;
+    locktype_t workQueueLock;
+    std::condition_variable workQueueCond;
+    std::vector<std::queue<std::shared_ptr<referencedBuffer>>> workQueues;
+    bool workQueuesMaybeEmpty = true;
 
     unsigned int bufferIndex = 0;
     unsigned int bufferGrouping = 1;
@@ -192,7 +195,6 @@ private:
     unsigned long int totalTokens = 0;
 
     std::chrono::duration<double> tickTime = std::chrono::seconds(0);
-    std::chrono::duration<double> dmaTime = std::chrono::seconds(0);
 
     ClockInfo clock_info;
     struct traceInfo info = {};
