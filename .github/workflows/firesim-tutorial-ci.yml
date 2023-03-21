@@ -109,7 +109,7 @@ jobs:
 
   setup-manager:
     name: Initial manager setup (copy .pem, build-setup, credentials, submodules, daemons)
-    needs: [setup-self-hosted-manager]
+    needs: [launch-aws-ec2-manager-and-setup-gha-self-hosted-runners]
     runs-on: aws-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v3
