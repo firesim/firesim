@@ -60,6 +60,10 @@ Finally, if you are running this tutorial without ``sudo`` access you should als
 This is needed by a variety of FireSim programs that mount disk images to copy in/out results of simulations.
 Most likely you will need to follow the instructions here to ensure ``guestmount`` doesn't error: https://askubuntu.com/questions/1046828/how-to-run-libguestfs-tools-tools-such-as-virt-make-fs-without-sudo.
 
+.. warning:: If using ``guestmount``, verify that the command is able to work properly.
+   Due to prior issues with ``guestmount`` internally, ensure that your FireSim repository (and all temporary directories)
+   reside not on an NFS drive.
+
 Setting up the FireSim Repo
 ---------------------------
 
@@ -74,17 +78,56 @@ We're finally ready to fetch FireSim's sources. Run:
     git checkout |version|
 
 Next, we will bootstrap the machine by installing Miniforge Conda, our software package manager, and setup a default software environment using Conda.
-Run:
+First run the following to see the options to the bootstrap script:
 
 .. parsed-literal::
 
-   source ./scripts/machine-launch-script.sh
+   ./scripts/machine-launch-script.sh --help
 
-This will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim`` that is used.
+Make sure you understand the options and appropriately run the command.
+For example, if you already installed Conda you can use the ``--prefix`` flag to point to an existing installation.
+You can also use that same flag to setup Conda in a non-``sudo`` required location.
+Next run the ``machine-launch-script.sh``, with the options your setup requires.
+Below we will give a few examples on how to run the command (choose the command or modify it accordingly):
+
+.. Warning:: We recommend you re-install Conda in favor of Miniforge Conda (a minimal installation of Conda).
+
+.. tabs::
+
+   .. tab:: With ``sudo`` access (newly install Conda)
+
+      .. parsed-literal::
+
+         sudo ./scripts/machine-launch-script.sh
+
+   .. tab:: Without ``sudo`` access (install Conda to user-specified location)
+
+      .. parsed-literal::
+
+         ./scripts/machine-launch-script.sh --prefix REPLACE_USER_SPECIFIED_LOCATION
+
+   .. tab:: Without ``sudo`` access (use existing Conda)
+
+      .. parsed-literal::
+
+         ./scripts/machine-launch-script.sh --prefix REPLACE_PATH_TO_CONDA
+
+If the option is selected, the script will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim`` that is used.
 **Ensure that you log out of the machine / exit out of the terminal after this step so that** ``.bashrc`` **modifications can apply**.
 
-.. Warning:: If you already have Conda installed, you can look at the help text of ``machine-launch-script.sh`` to see extra options given
-   to avoid re-installation. We recommend you re-install Conda in favor of Miniforge Conda (a minimal installation of Conda).
+After re-logging back into the machine, you should be in the ``firesim`` Conda environment (or whatever you decided to name the
+environment in the ``machine-launch-script.sh``).
+Verify this by running:
+
+.. parsed-literal::
+
+   conda env list
+
+If you are not in the ``firesim`` environment and the environment exists, you can run the following to "activate" or enter the environment:
+
+.. parsed-literal::
+
+   conda activate firesim # or whatever the environment is called
 
 Next run:
 

@@ -24,9 +24,9 @@ distribution. You can do this like so:
 
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/br-base/br-base-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/br-base/br-base.img`` - a disk image for
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
@@ -250,8 +250,15 @@ live status page:
 This will only exit once all of the simulated nodes have completed simulations. So, let's let it
 run and open another terminal to the manager machine. From there, ``cd`` into
 your FireSim directory again and ``source sourceme-f1-manager.sh --skip-ssh-setup``.
-Since we are running the simulation on the same machine (i.e. ``localhost``) we can directly
-attach to the console of the simulated system using ``screen``, run:
+Next, let's ``ssh`` into the simulation machine.
+In this case, since we are running the simulation on the same machine (i.e. ``localhost``)
+we can run the following:
+
+::
+
+	ssh localhost
+
+Next, we can directly attach to the console of the simulated system using ``screen``, run:
 
 ::
 
