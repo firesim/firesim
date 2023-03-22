@@ -113,7 +113,7 @@ set -o pipefail
     echo "machine launch script started" > "$MACHINE_LAUNCH_DIR/machine-launchstatus"
     chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus"
 
-    # platform-specific setup
+    # platform-specific setup (pre-conda install)
     case "$OS_FLAVOR" in
         ubuntu)
             ;;
@@ -126,7 +126,6 @@ set -o pipefail
             exit 1
             ;;
     esac
-
 
     # everything else is platform-agnostic and could easily be expanded to Windows and/or OSX
 
@@ -290,6 +289,25 @@ set -o pipefail
 
     # emergency fix for buildroot open files limit issue on centos:
     echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
+
+    # final platform-specific setup
+    case "$OS_FLAVOR" in
+        ubuntu)
+            ;;
+        centos)
+            ;;
+        amzn)
+            echo "::INFO:: using 'sudo' to install NICE DCV"
+            wget https://raw.githubusercontent.com/aws-samples/amazon-ec2-nice-dcv-samples/5439e401d3aaf394588f1029e0ec7904d8cacc8f/scripts/AmazonLinux2-user-data.sh
+            chmod +x AmazonLinux2-user-data.sh
+            sudo ./AmazonLinux2-user-data.sh
+            echo "firesim" | sudo passwd ec2-user --stdin # default password is 'firesim'
+            ;;
+        *)
+            echo "::ERROR:: Unknown OS flavor '$OS_FLAVOR'. Unable to do platform-specific setup."
+            exit 1
+            ;;
+    esac
 
 } 2>&1 | tee "$MACHINE_LAUNCH_DIR/machine-launchstatus.log"
 chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus.log"
