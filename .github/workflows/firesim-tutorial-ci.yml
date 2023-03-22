@@ -32,7 +32,7 @@ env:
 
 jobs:
   cancel-prior-workflows:
-    name: cancel-prior-workflows
+    name: Cancel prior workflows
     runs-on: ubuntu-20.04
     steps:
       - name: Cancel previous workflow runs
@@ -45,7 +45,7 @@ jobs:
   # workflow will execute This is based off the conditional job execution
   # example here: https://github.com/dorny/paths-filter#examples
   change-filters:
-    name: filter-jobs-on-changes
+    name: Job filters check
     runs-on: ubuntu-20.04
     # Queried by downstream jobs to determine if they should run.
     outputs:
@@ -116,7 +116,7 @@ jobs:
       - name: Install FireSim pem
         run: ./.github/scripts/install-firesim-pem.py
       - name: Setup copy of FireSim repo (used in workflow monitor)
-        run: git clone ${{ env.GITHUB_WORKSPACE }} ${{ env.MANAGER_FIRESIM_LOCATION }}
+        run: git clone ${{ github.workspace }} ${{ env.MANAGER_FIRESIM_LOCATION }}
       - name: Setup Workflow monitor
         if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
         uses: ./.github/actions/setup-workflow-monitor
