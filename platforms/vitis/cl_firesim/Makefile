@@ -2,7 +2,7 @@
 #
 # Assumptions:
 #   Host must be x86
-#   You have the Vitis 2020.2 + XRT tools installed
+#   You have the Vitis 2022.1 + XRT tools installed
 
 buildroot = $(abspath .)
 PROJECT_NAME := firesim
@@ -14,6 +14,18 @@ help::
 ifndef XILINX_VITIS
 	$(error XILINX_VITIS variable is not set, please set correctly and rerun)
 endif
+
+# taken from https://stackoverflow.com/questions/26145267/how-do-i-force-a-target-to-be-rebuilt-if-a-variable-is-set
+# variable argument to DEPENDABLE_VAR can be used as a prerequisite
+define DEPENDABLE_VAR
+
+.PHONY: phony
+$1: phony
+	@if [[ `cat $1 2>&1` != '$($1)' ]]; then \
+		echo -n $($1) > $1 ; \
+	fi
+
+endef
 
 # Builds through vitis use the same tool (v++) for building xclbins destined
 # for FPGA deployment and various simulation. This is controlled by the --target, -t flag
@@ -28,7 +40,7 @@ SIM_DIR        := $(buildroot)/simulation
 bitstream: TARGET = hw
 bitstream: VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/build-bitstream.cfg
 sim:       TARGET = hw_emu
-sim:       VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg 
+sim:       VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
 run-sim:   TARGET = hw_emu
 run-sim:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
 
@@ -38,6 +50,9 @@ DEVICE ?= xilinx_u250_gen3x16_xdma_3_1_202020_1
 # Provide's the desired simulator frequency. This is generated from the clock
 # provided to the kernel using an internal MMCM.
 FREQUENCY ?= 90
+
+# declare FREQUENCY to be dependable
+$(eval $(call DEPENDABLE_VAR,FREQUENCY))
 
 # Selects a vitis config, by looking in build-strategies, for an equivalently
 # named cfg file.
@@ -134,7 +149,7 @@ $(sv_processed): $(sv_generated)
 
 ipgen_scripts = $(shell find design/ -iname "*.ipgen.tcl")
 
-%.xo: scripts/package_kernel.tcl scripts/gen_xo.tcl $(sv_processed) $(sv_defines) $(ipgen_scripts)
+%.xo: scripts/package_kernel.tcl scripts/gen_xo.tcl $(sv_processed) $(sv_defines) $(ipgen_scripts) FREQUENCY
 	mkdir -p $(@D)
 	# Move into the simulation or bitstream-build directory
 	cd $(@D)/..; $(VIVADO) -mode batch -source $(buildroot)/scripts/gen_xo.tcl \
@@ -203,4 +218,3 @@ run-sim: $(SIM_BINARY_CONTAINER) $(delivered_sim_inputs) $(emconfig)
 .PHONY: clean
 clean:
 	rm -rf $(SIM_DIR) $(BITSTREAM_DIR)
-
