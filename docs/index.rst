@@ -20,7 +20,7 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
    :maxdepth: 3
-   :caption: On-Premise FPGA Tutorial:
+   :caption: On-Premises FPGA Tutorial:
    :numbered:
 
    Initial-OnPrem-Setup/index

@@ -7,20 +7,20 @@ simulation.
 Build Recipes
 ---------------
 
-We already provide for you a build recipe (i.e. hardware configuration) called ``vitis_firesim_rocket_singlecore_no_nic`` that was used to pre-build a U250 FPGA xclbin for.
+We already provide for you a build recipe (i.e. hardware configuration) called ``vitis_firesim_rocket_singlecore_no_nic`` that was used to pre-build a U250 FPGA xclbin.
 You can find this in the ``config_build_recipes.yaml`` file.
 This configuration is a simple singlecore Rocket configuration with a single DRAM channel and no debugging features.
 
 Next, lets build the bitstream corresponding to the build recipe and specify the Build Farm to run on.
 In the ``deploy/config_build.ini`` file, you will notice at least two mappings: ``build_farm`` and ``builds_to_run``.
 Let's first finishing setting up the the ``build_farm`` mapping which specifies the build machines that are available to build FPGA images.
-First notice that the ``base_recipe`` maps to ``build-farm-recipes/externally_provisioned.yaml``.
+First, notice that the ``base_recipe`` maps to ``build-farm-recipes/externally_provisioned.yaml``.
 This indicates to the FireSim manager that the machines allocated to run builds will be provided by the user through IP addresses
-instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
-Next notice the ``build_farm_hosts`` list that has a single element ``localhost``.
+instead of being automatically launched and allocated (e.g. launching instances on-demand in AWS).
+Next, let's look at the ``build_farm_hosts`` list that has a single element ``localhost``.
 This list indicates the IP addresses of machines already booted and ready to use for builds.
-In our case, we are building locally so we provide our own IP address ``localhost``.
-Finally, lets look at and modify the ``default_build_dir`` mapping to a directory of your choice that will store
+In our case, we are building locally so we provide our own IP address, ``localhost``.
+Finally, let's look at and modify the ``default_build_dir`` mapping to a directory of your choice that will store
 temporary Vitis build files during builds.
 
 Continuing to the next section in the ``deploy/config_build.ini`` file, you will notice that the ``builds_to_run``

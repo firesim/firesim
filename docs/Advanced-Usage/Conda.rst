@@ -6,7 +6,7 @@ of ``scripts/machine-launch-script.sh`` into the EC2 Management Console and
 that script installed many dependencies that FireSim needs using
 `conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
 manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_
-(or in the case of :doc:`/Initial-OnPrem-Setup/Setting-up-your-On-Premise-Machine`, we ran ``scripts/machine-launch-script.sh``).
+(or in the case of :doc:`/Initial-OnPrem-Setup/Setting-up-your-On-Premises-Machine`, we ran ``scripts/machine-launch-script.sh``).
 
 In many situations, you may not need to know anything about ``conda``.  By default, the
 ``machine-launch-script.sh`` installs ``conda`` into ``/opt/conda`` and all of the FireSim dependencies into
