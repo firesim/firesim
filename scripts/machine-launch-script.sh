@@ -1,7 +1,9 @@
 #!/bin/bash
 
+export HOME="${HOME:-/root}"
+
 CONDA_INSTALL_PREFIX=/opt/conda
-CONDA_INSTALLER_VERSION=4.12.0-0
+CONDA_INSTALLER_VERSION=22.11.1-4
 CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
 CONDA_CMD="conda" # some installers install mamba or micromamba
 CONDA_ENV_NAME="firesim"
@@ -183,7 +185,7 @@ set -o pipefail
         # see https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community
         $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-libmamba-solver
         # Use the fast solver by default
-        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set experimental_solver libmamba
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set solver libmamba
 
         conda_init_extra_args=()
         if [[ "$INSTALL_TYPE" == system ]]; then

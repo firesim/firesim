@@ -2,6 +2,13 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.15.2] - 2023-03-22
+
+Fix machine-launch-script.sh.
+
+### Changed
+* Fixed machine-launch-script.sh.
+
 ## [1.15.1] - 2022-10-18
 
 Fixes to metasimulation, TracerV, and improved cross-platform support.
