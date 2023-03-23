@@ -380,6 +380,16 @@ jobs:
       - name: Run simple linux poweroff test w/ vitis
         run: .github/scripts/run-linux-poweroff-vitis.py
 
+  run-vitis-check-docs-generated-components:
+    name: run-vitis-check-docs-generated-components
+    runs-on: local-fpga
+    env:
+      TERM: xterm-256-color
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
+        run: ./.github/scripts/check-vitis-docs-generated-components.py
+
   documentation-check:
     name: documentation-check
     needs: change-filters

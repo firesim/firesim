@@ -30,13 +30,15 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
+            run("firesim managerinit --platform vitis")
+
             def run_w_timeout(workload_path, workload, timeout, num_passes):
                 log_tail_length = 300
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
-                    rc = run(f"timeout {timeout} {workload_path}/run-workload.sh {workload_path}/config_runtime.yaml {workload_path}/config_hwdb.yaml {workload_path}/config_build_recipes.yaml &> {workload}.log", pty=False).return_code
+                    rc = run(f"timeout {timeout} {workload_path}/run-workload.sh {workload_path}/config_runtime.yaml &> {workload}.log", pty=False).return_code
                     print(f" Printing last {log_tail_length} lines of log. See {workload}.log for full info.")
                     run(f"tail -n {log_tail_length} {workload}.log")
 
@@ -48,7 +50,7 @@ def run_linux_poweroff_vitis():
                     print(f"Printing last {log_tail_length} lines of all output files. See results-workload for more info.")
                     run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then tail -n{log_tail_length} $LAST_DIR/*/*; fi""")
 
-                    run(f"firesim terminaterunfarm -q -c {workload_path}/config_runtime.yaml -a {workload_path}/config_hwdb.yaml -r {workload_path}/config_build_recipes.yaml")
+                    run(f"firesim terminaterunfarm -q -c {workload_path}/config_runtime.yaml")
 
                 if rc != 0:
                     print(f"Workload {workload} failed.")

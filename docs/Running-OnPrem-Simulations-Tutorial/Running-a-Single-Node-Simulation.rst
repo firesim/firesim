@@ -1,15 +1,12 @@
-.. _single-node-sim:
-
 Running a Single Node Simulation
 ===================================
 
-Now that we've completed the setup of our manager instance, it's time to run
+Now that we've completed the setup of our manager machine, it's time to run
 a simulation! In this section, we will simulate **1 target node**, for which we
-will need a single ``f1.2xlarge`` (1 FPGA) instance.
+will need a single U250 FPGA.
 
-Make sure you are ``ssh`` or ``mosh``'d into your manager instance and have sourced
-``sourceme-f1-manager.sh`` before running any of these commands.
-
+**Make sure you have sourced
+``sourceme-f1-manager.sh --skip-ssh-setup`` before running any of these commands.**
 
 Building target software
 ------------------------
@@ -25,7 +22,6 @@ distribution. You can do this like so:
     ./init-submodules.sh
     ./marshal -v build br-base.json
 
-This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
 -  ``firesim/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
@@ -53,31 +49,17 @@ you have not modified it):
 
 We'll need to modify a couple of these lines.
 
-First, let's tell the manager to use the correct numbers and types of instances.
-You'll notice that in the ``run_farm`` mapping, the manager is configured to
-launch a Run Farm named ``mainrunfarm`` (given by the ``run_farm_tag``. Notice that under ``run_farm_hosts_to_use`` no ``f1.16xlarge``\ s,
-``m4.16xlarge``\ s, ``f1.4xlarge``\ s, or ``f1.2xlarge``\ s are used. The tag specified here allows the
-manager to differentiate amongst many parallel run farms (each running
-a workload) that you may be operating -- but more on that later.
-
-Since we only want to simulate a single node, let's switch to using one
-``f1.2xlarge``. To do so, change the ``run_farm_hosts_to_use`` sequence to the following:
-
-::
-
-    run_farm_hosts_to_use:
-        - f1.16xlarge: 0
-        - f1.4xlarge: 0
-        - f1.2xlarge: 1
-        - m4.16xlarge: 0
-        - z1d.3xlarge: 0
-        - z1d.6xlarge: 0
-        - z1d.12xlarge: 0
-
-You'll see other parameters in the ``run_farm`` mapping, like ``run_instance_market``,
-``spot_interruption_behavior``, and ``spot_max_price``. If you're an experienced
-AWS user, you can see what these do by looking at the
-:ref:`manager-configuration-files` section. Otherwise, don't change them.
+First, let's tell the manager to use the single U250 FPGA.
+You'll notice that in the ``run_farm`` mapping which describes and specifies the machines to run simulations on.
+First notice that the ``base_recipe`` maps to ``run-farm-recipes/externally_provisioned.yaml``.
+This indicates to the FireSim manager that the machines allocated to run simulations will be provided by the user through IP addresses
+instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
+Let's modify the ``default_platform`` to be ``VitisInstanceDeployManager`` so that we can launch simulations using Vitis/XRT.
+Next, modify the ``default_simulation_dir`` to a directory that you want to store temporary simulation collateral to.
+When running simulations, this directory is used to store any temporary files that the simulator creates (e.g. a uartlog emitted by a Linux simulation).
+Next, lets modify the ``run_farm_hosts_to_use`` mapping.
+This maps IP addresses (i.e. ``localhost``) to a description/specification of the simulation machine.
+In this case, we have only one U250 FPGA so we will change the description of ``localhost`` to ``one_fpga_spec``.
 
 Now, let's verify that the ``target_config`` mapping will model the correct target design.
 By default, it is set to model a single-node with no network.
@@ -98,111 +80,78 @@ It should look like the following:
         # for all simulators
         default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
-
 Note ``topology`` is set to
 ``no_net_config``, indicating that we do not want a network. Then,
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
-``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``. This uses a hardware configuration that does not
-have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
-MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
+``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
+Let's modify the ``default_hw_config`` (the target design) to ``vitis_firesim_rocket_singlecore_no_nic``.
+This new hardware configuration does not
+have a NIC and is pre-built for the U250 FPGA.
+This hardware configuration models a Single-core Rocket Chip SoC and **no** network interface card.
 
 We will leave the ``workload`` mapping unchanged here, since we do
 want to run the buildroot-based Linux on our simulated system. The ``terminate_on_completion``
 feature is an advanced feature that you can learn more about in the
 :ref:`manager-configuration-files` section.
 
-As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this:
+As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this (with ``PATH_TO_SIMULATION_AREA`` replaced with your simulation collateral temporary directory):
 
 ::
 
-	run_farm:
-	    base_recipe: run-farm-recipes/aws_ec2.yaml
-	    recipe_arg_overrides:
-	    	run_farm_tag: mainrunfarm
-	    	always_expand_run_farm: true
-	    	launch_instances_timeout_minutes: 60
-	    	run_instance_market: ondemand
-	    	spot_interruption_behavior: terminate
-	    	spot_max_price: ondemand
-	    	default_simulation_dir: /home/centos
-	    	run_farm_hosts_to_use:
-	    	    - f1.16xlarge: 0
-	    	    - f1.4xlarge: 0
-	    	    - f1.2xlarge: 1
-	    	    - m4.16xlarge: 0
-	    	    - z1d.3xlarge: 0
-	    	    - z1d.6xlarge: 0
+    run_farm:
+      base_recipe: run-farm-recipes/externally_provisioned.yaml
+      recipe_arg_overrides:
+        default_platform: VitisInstanceDeployManager
+        default_simulation_dir: <PATH_TO_SIMULATION_AREA>
+        run_farm_hosts_to_use:
+            - localhost: one_fpga_spec
 
-	target_config:
-		topology: no_net_config
-		no_net_num_nodes: 1
-		link_latency: 6405
-		switching_latency: 10
-		net_bandwidth: 200
-		profile_interval: -1
-		default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
-		plusarg_passthrough: ""
+    target_config:
+        topology: no_net_config
+        no_net_num_nodes: 1
+        link_latency: 6405
+        switching_latency: 10
+        net_bandwidth: 200
+        profile_interval: -1
+        default_hw_config: vitis_firesim_rocket_singlecore_no_nic
+        plusarg_passthrough: ""
 
-	workload:
-		workload_name: linux-uniform.json
-		terminate_on_completion: no
-		suffix_tag: null
-
-.. attention::
-
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default_hw_config`` to ``firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3``.
-
+    workload:
+	workload_name: linux-uniform.json
+	terminate_on_completion: no
+	suffix_tag: null
 
 Launching a Simulation!
 -----------------------------
 
 Now that we've told the manager everything it needs to know in order to run
-our single-node simulation, let's actually launch an instance and run it!
+our single-node simulation, let's actually run it!
 
 Starting the Run Farm
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
-
-First, we will tell the manager to launch our Run Farm, as we specified above.
-When you do this, you will start getting charged for the running EC2 instances
-(in addition to your manager).
-
-To do launch your run farm, run:
+First, we will tell the manager to launch our Run Farm with a single machine called ``localhost``. Run:
 
 ::
 
-    firesim launchrunfarm
+	firesim launchrunfarm
+
+In this case, since we are already running the machine with the FPGA (``localhost``),
+this command should not launch any machine and should be quick.
 
 You should expect output like the following:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim launchrunfarm
-	FireSim Manager. Docs: http://docs.fires.im
+	$ firesim launchrunfarm
+	FireSim Manager. Docs: https://docs.fires.im
 	Running: launchrunfarm
 
-	Waiting for instance boots: f1.16xlarges
-	Waiting for instance boots: f1.4xlarges
-	Waiting for instance boots: m4.16xlarges
-	Waiting for instance boots: f1.2xlarges
-	i-0d6c29ac507139163 booted!
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	WARNING: Skipping launchrunfarm since run hosts are externally provisioned.
 	The full log of this run is:
-	/home/centos/firesim-new/deploy/logs/2018-05-19--00-19-43-launchrunfarm-B4Q2ROAK0JN9EDE4.log
-
-
-The output will rapidly progress to ``Waiting for instance boots: f1.2xlarges``
-and then take a minute or two while your ``f1.2xlarge`` instance launches.
-Once the launches complete, you should see the instance id printed and the instance
-will also be visible in your AWS EC2 Management console. The manager will tag
-the instances launched with this operation with the value you specified above
-as the ``run_farm_tag`` parameter from the ``config_runtime.yaml`` file, which we left
-set as ``mainrunfarm``. This value allows the manager to tell multiple Run Farms
-apart -- i.e., you can have multiple independent Run Farms running different
-workloads/hardware configurations in parallel. This is detailed in the
-:ref:`manager-configuration-files` and the :ref:`firesim-launchrunfarm`
-sections -- you do not need to be familiar with it here.
+	.../firesim/deploy/logs/2023-03-06--00-20-37-launchrunfarm-24T0KOGRHBMSHAV5.log
 
 Setting up the simulation infrastructure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -214,43 +163,34 @@ let's run:
 
 ::
 
-    firesim infrasetup
+	firesim infrasetup
 
 
 For a complete run, you should expect output like the following:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim infrasetup
-	FireSim Manager. Docs: http://docs.fires.im
+	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
 	Running: infrasetup
 
-	Building FPGA software driver for FireSim-FireSimQuadRocketConfig-BaseF1Config
-	[172.30.2.174] Executing task 'instance_liveness'
-	[172.30.2.174] Checking if host instance is up...
-	[172.30.2.174] Executing task 'infrasetup_node_wrapper'
-	[172.30.2.174] Copying FPGA simulation infrastructure for slot: 0.
-	[172.30.2.174] Installing AWS FPGA SDK on remote nodes.
-	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
-	[172.30.2.174] Copying AWS FPGA XDMA driver to remote node.
-	[172.30.2.174] Loading XDMA Driver Kernel Module.
-	[172.30.2.174] Clearing FPGA Slot 0.
-	[172.30.2.174] Flashing FPGA Slot: 0 with agfi: agfi-0eaa90f6bb893c0f7.
-	[172.30.2.174] Unloading XDMA/EDMA/XOCL Driver Kernel Module.
-	[172.30.2.174] Loading XDMA Driver Kernel Module.
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	Building FPGA software driver for FireSim-FireSimRocketConfig-BaseVitisConfig
+	...
+	[localhost] Checking if host instance is up...
+	[localhost] Copying FPGA simulation infrastructure for slot: 0.
+	[localhost] Clearing all FPGA Slots.
 	The full log of this run is:
-	/home/centos/firesim-new/deploy/logs/2018-05-19--00-32-02-infrasetup-9DJJCX29PF4GAIVL.log
+	.../firesim/deploy/logs/2023-03-06--01-22-46-infrasetup-35ZP4WUOX8KUYBF3.log
 
 Many of these tasks will take several minutes, especially on a clean copy of
 the repo.  The console output here contains the "user-friendly" version of the
 output. If you want to see detailed progress as it happens, ``tail -f`` the
 latest logfile in ``firesim/deploy/logs/``.
 
-At this point, the ``f1.2xlarge`` instance in our Run Farm has all the infrastructure
+At this point, our single Run Farm ``localhost`` machine has all the infrastructure
 necessary to run a simulation.
 
 So, let's launch our simulation!
-
 
 Running a simulation!
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -267,16 +207,14 @@ nodes every 10s. When you do this, you will initially see output like:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim runworkload
-	FireSim Manager. Docs: http://docs.fires.im
+	$ firesim runworkload
+	FireSim Manager. Docs: https://docs.fires.im
 	Running: runworkload
 
-	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
-	[172.30.2.174] Executing task 'instance_liveness'
-	[172.30.2.174] Checking if host instance is up...
-	[172.30.2.174] Executing task 'boot_simulation_wrapper'
-	[172.30.2.174] Starting FPGA simulation for slot: 0.
-	[172.30.2.174] Executing task 'monitor_jobs_wrapper'
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	Creating the directory: .../firesim/deploy/results-workload/2023-03-06--01-25-34-linux-uniform/
+	[localhost] Checking if host instance is up...
+	[localhost] Starting FPGA simulation for slot: 0.
 
 If you don't look quickly, you might miss it, since it will get replaced with a
 live status page:
@@ -286,21 +224,21 @@ live status page:
 	FireSim Simulation Status @ 2018-05-19 00:38:56.062737
 	--------------------------------------------------------------------------------
 	This workload's output is located in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	This run's log is located in:
-	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
+	.../firesim/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 	This status will update every 10s.
 	--------------------------------------------------------------------------------
 	Instances
 	--------------------------------------------------------------------------------
-	Hostname/IP:   172.30.2.174 | Terminated: False
+	Hostname/IP:   localhost | Terminated: False
 	--------------------------------------------------------------------------------
 	Simulated Switches
 	--------------------------------------------------------------------------------
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Hostname/IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: True
+	Hostname/IP:   localhost | Job: linux-uniform0 | Sim running: True
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -309,21 +247,18 @@ live status page:
 	--------------------------------------------------------------------------------
 
 
-This will only exit once all of the simulated nodes have shut down. So, let's let it
-run and open another ssh connection to the manager instance. From there, ``cd`` into
-your firesim directory again and ``source sourceme-f1-manager.sh`` again to get
-our ssh key setup. To access our simulated system, ssh into the IP address being
-printed by the status page, **from your manager instance**. In our case, from
-the above output, we see that our simulated system is running on the instance with
-IP ``172.30.2.174``. So, run:
+This will only exit once all of the simulated nodes have completed simulations. So, let's let it
+run and open another terminal to the manager machine. From there, ``cd`` into
+your FireSim directory again and ``source sourceme-f1-manager.sh --skip-ssh-setup``.
+Next, let's ``ssh`` into the simulation machine.
+In this case, since we are running the simulation on the same machine (i.e. ``localhost``)
+we can run the following:
 
 ::
 
-	[RUN THIS ON YOUR MANAGER INSTANCE!]
-	ssh 172.30.2.174
+	ssh localhost
 
-This will log you into the instance running the simulation. Then, to attach to the
-console of the simulated system, run:
+Next, we can directly attach to the console of the simulated system using ``screen``, run:
 
 ::
 
@@ -373,7 +308,7 @@ where you can type commands into the simulation and run programs. For example:
 
 
 At this point, you can run workloads as you'd like. To finish off this tutorial,
-let's poweroff the simulated system and see what the manager does. To do so,
+let's power off the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
 
@@ -411,9 +346,9 @@ from the manager:
 	FireSim Simulation Status @ 2018-05-19 00:46:50.075885
 	--------------------------------------------------------------------------------
 	This workload's output is located in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	This run's log is located in:
-	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
+	.../firesim/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 	This status will update every 10s.
 	--------------------------------------------------------------------------------
 	Instances
@@ -433,28 +368,28 @@ from the manager:
 	0/1 simulations are still running.
 	--------------------------------------------------------------------------------
 	FireSim Simulation Exited Successfully. See results in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
 	The full log of this run is:
-	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
+	.../firesim/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 
 
-If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
+If you take a look at the workload output directory given in the manager output (in this case, ``.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform$ ls -la */*
+	$ ls -la firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/*/*
 	-rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
 	-rw-rw-r-- 1 centos centos  125 May 19 00:46 linux-uniform0/os-release
 	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 linux-uniform0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
 (:gh-file-ref:`deploy/workloads/linux-uniform.json`) as files that we want
-automatically copied back to our manager after we run a simulation, which is
+automatically copied back from the temporary simulation directory into the ``results-workload`` directory (on our manager machine - which is also ``localhost`` for this tutorial) after we run a simulation, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.
 
-For now, let's wrap-up our tutorial by terminating the ``f1.2xlarge`` instance
-that we launched. To do so, run:
+For now, let's wrap-up our tutorial by terminating the Run Farm that we launched.
+To do so, run:
 
 ::
 
@@ -464,39 +399,26 @@ Which should present you with the following:
 
 ::
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim terminaterunfarm
-	FireSim Manager. Docs: http://docs.fires.im
+	$ firesim terminaterunfarm
+	FireSim Manager. Docs: https://docs.fires.im
 	Running: terminaterunfarm
 
-	IMPORTANT!: This will terminate the following instances:
-	f1.16xlarges
-	[]
-	f1.4xlarges
-	[]
-	m4.16xlarges
-	[]
-	f1.2xlarges
-	['i-0d6c29ac507139163']
-	Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.
-
-You must type ``yes`` then hit enter here to have your instances terminated. Once
-you do so, you will see:
-
-::
-
-	[ truncated output from above ]
-	Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.
-	yes
-	Instances terminated. Please confirm in your AWS Management Console.
+	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	WARNING: Skipping terminaterunfarm since run hosts are externally provisioned.
 	The full log of this run is:
-	/home/centos/firesim-new/deploy/logs/2018-05-19--00-51-54-terminaterunfarm-T9ZAED3LJUQQ3K0N.log
+	.../firesim/deploy/logs/2023-03-06--01-34-45-terminaterunfarm-YFXAJCRGF8KF4LQ3.log
 
-**At this point, you should always confirm in your AWS management console that
-the instance is in the shutting-down or terminated states. You are ultimately
-responsible for ensuring that your instances are terminated appropriately.**
+Since we are re-using an existing machine that is already booted, this command should do nothing and be quick.
 
 Congratulations on running your first FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
-automatically run the SPEC17 benchmarks: :ref:`spec-2017`), or you can continue
-on with the cluster simulation tutorial.
+automatically run the SPEC17 benchmarks: :ref:`spec-2017`).
+
+.. warning:: Currently, FireSim simulations with bridges that use the Vitis PCI-E DMA interface are not supported (i.e. TracerV, NIC, Dromajo, Printfs).
+	This will be added in a future FireSim release.
+
+.. warning:: In some cases, simulation may fail because you might need to update the U250 DRAM offset that is currently hard coded in both the FireSim Vitis/XRT driver code and platform shim.
+	To verify this, run ``xclbinutil --info --input <YOURXCLBIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset. If it differs from the hardcoded ``0x40000000`` given in
+	driver code (``u250_dram_expected_offset`` variable in ``sim/midas/src/main/cc/simif_vitis.cc``) and platform shim (``araddr``/``awaddr`` offset in
+	``sim/midas/src/main/scala/midas/platform/VitisShim.scala``) replace both areas with the new offset given by ``xclbinutil`` and regenerate the bitstream.

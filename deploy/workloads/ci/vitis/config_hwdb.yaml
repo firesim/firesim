@@ -1,4 +1,0 @@
-vitis_test:
-    xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/firesim_rocket_singlecore_no_nic_d90a28.xclbin
-    deploy_triplet_override: FireSim-FireSimRocketMMIOOnlyConfig-BaseVitisConfig
-    custom_runtime_config: null
