@@ -163,8 +163,8 @@ set -o pipefail
             conda_install_extra=""
             echo "::INFO:: installing conda to '$CONDA_INSTALL_PREFIX'"
         fi
-        # -b for non-interactive install
-        $SUDO bash ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX" $conda_install_extra
+        # -b for non-interactive install, HOME overridden to ignore set -u errors
+        $SUDO HOME="/" ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX" $conda_install_extra
         rm ./install_conda.sh
 
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
