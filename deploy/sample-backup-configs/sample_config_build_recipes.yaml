@@ -235,7 +235,7 @@ firesim_gemmini_rocket_singlecore_no_nic:
     PLATFORM_CONFIG: BaseF1Config
     deploy_triplet: null
     platform_config_args:
-        fpga_frequency: 60
+        fpga_frequency: 30 # AJG: conservative for now, later sweep for higher frequency
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
