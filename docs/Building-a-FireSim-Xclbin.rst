@@ -12,7 +12,7 @@ You can find this in the ``config_build_recipes.yaml`` file.
 This configuration is a simple singlecore Rocket configuration with a single DRAM channel and no debugging features.
 
 Next, lets build the bitstream corresponding to the build recipe and specify the Build Farm to run on.
-In the ``deploy/config_build.ini`` file, you will notice at least two mappings: ``build_farm`` and ``builds_to_run``.
+In the ``deploy/config_build.yaml`` file, you will notice at least two mappings: ``build_farm`` and ``builds_to_run``.
 Let's first finishing setting up the the ``build_farm`` mapping which specifies the build machines that are available to build FPGA images.
 First, notice that the ``base_recipe`` maps to ``build-farm-recipes/externally_provisioned.yaml``.
 This indicates to the FireSim manager that the machines allocated to run builds will be provided by the user through IP addresses
@@ -23,20 +23,20 @@ In our case, we are building locally so we provide our own IP address, ``localho
 Finally, let's look at and modify the ``default_build_dir`` mapping to a directory of your choice that will store
 temporary Vitis build files during builds.
 
-Continuing to the next section in the ``deploy/config_build.ini`` file, you will notice that the ``builds_to_run``
+Continuing to the next section in the ``deploy/config_build.yaml`` file, you will notice that the ``builds_to_run``
 section currently contains several lines, which
 indicates to the build system that you want to run all of these builds on the machines provided, with the parameters listed in the relevant section of the
-``deploy/config_build_recipes.ini`` file.
+``deploy/config_build_recipes.yaml`` file.
 
 To start out, let's build our simple design, ``vitis_firesim_rocket_singlecore_no_nic``, that we previously added.
-To do so, comment out all of the other build entries in ``deploy/config_build.ini``, and uncomment the ``- vitis_firesim_rocket_singlecore_no_nic`` line.
+To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, and uncomment the ``- vitis_firesim_rocket_singlecore_no_nic`` line.
 So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
 ::
 
    builds_to_run:
-       # this section references builds defined in config_build_recipes.ini
+       # this section references builds defined in config_build_recipes.yaml
        # if you add a build here, it will be built when you run buildbitstream
        # Many other commented lines...
        - vitis_firesim_rocket_singlecore_no_nic
