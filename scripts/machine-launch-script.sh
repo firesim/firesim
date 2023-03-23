@@ -1,6 +1,7 @@
 #!/bin/bash
 
 MACHINE_LAUNCH_DIR=/tmp
+export HOME="${HOME:-/root}"
 
 CONDA_INSTALL_PREFIX=/opt/conda
 CONDA_INSTALLER_VERSION=22.11.1-4
@@ -163,8 +164,8 @@ set -o pipefail
             conda_install_extra=""
             echo "::INFO:: installing conda to '$CONDA_INSTALL_PREFIX'"
         fi
-        # -b for non-interactive install, HOME overridden to ignore set -u errors
-        $SUDO HOME="/" ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX" $conda_install_extra
+        # -b for non-interactive install
+        $SUDO bash ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX" $conda_install_extra
         rm ./install_conda.sh
 
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
