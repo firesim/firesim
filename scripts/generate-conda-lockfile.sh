@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-REQS_DIR="$(pwd)/conda-reqs"
+CUR_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+REQS_DIR="$CUR_DIR/../conda-reqs"
 if [ ! -d "$REQS_DIR" ]; then
   echo "$REQS_DIR does not exist, make sure you're calling this script from firesim/"
   exit 1
