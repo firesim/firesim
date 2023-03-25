@@ -1,0 +1,5 @@
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    agfi: agfi-0f18aee8d6f8ff86d
+    deploy_triplet_override: null
+    custom_runtime_config: null
+
