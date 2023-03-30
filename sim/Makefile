@@ -7,6 +7,9 @@
 # - generating new runtime configurations (phony: conf)
 # - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug)
 
+# ensure make is not executed in parallel (ignore -j)
+.NOTPARALLEL:
+
 .PHONY: default
 default: compile
 
