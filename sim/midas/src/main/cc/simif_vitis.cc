@@ -42,6 +42,8 @@ private:
   xrt::uuid uuid;
   xrt::ip kernel_handle;
   xrt::run run_handle;
+  char* host_mem_0_map;
+  xrt::bo host_mem_0;
 };
 
 constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
@@ -108,6 +110,21 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
               << "Received: " << fpga_mem_0.address() << std::endl;
     exit(1);
   }
+
+  // setup DMA region
+  host_mem_0_map = NULL;
+  if (std::optional<AXI4Config> conf = config.fpga_managed) {
+    assert(!config.cpu_managed && "stream should be CPU or FPGA managed");
+    assert(conf.has_value());
+    auto size_in_bytes = 1ULL << conf->addr_bits;
+    printf("Allocating %ld bytes of host memory.\n", size_in_bytes);
+    // TODO: check the xclbinutil to see the bank index (put in a MEM_DRAM spot instead of DDR4?)
+    host_mem_0 = xrt::bo(device_handle,
+                              size_in_bytes,
+                              xrt::bo::flags::host_only,
+                              0);
+    host_mem_0_map = host_mem_0.map<char*>();
+  }
 }
 
 void simif_vitis_t::write(size_t addr, uint32_t data) {
@@ -132,8 +149,10 @@ uint32_t simif_vitis_t::is_write_ready() {
 }
 
 char *simif_vitis_t::get_memory_base() {
-  std::cerr << "FPGA-managed streams are not yet supported";
-  abort();
+  // add abort if this ptr is null
+  assert(host_mem_0_map != NULL);
+  printf("get_memory_base: %p\n", host_mem_0_map);
+  return host_mem_0_map;
 }
 
 std::unique_ptr<simif_t>

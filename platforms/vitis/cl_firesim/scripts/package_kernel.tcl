@@ -77,6 +77,7 @@ foreach up [ipx::get_user_parameters] {
 
 ipx::associate_bus_interfaces -busif s_axi_lite -clock ap_clk $core
 ipx::associate_bus_interfaces -busif host_mem_0 -clock ap_clk $core
+ipx::associate_bus_interfaces -busif m_dma -clock ap_clk $core
 
 # set up mem map for axis intf
 set mem_map    [::ipx::add_memory_map -quiet "s_axi_lite" $core]
@@ -86,6 +87,10 @@ set host_mem_0_offset      [::ipx::add_register -quiet "host_mem_0_offset" $addr
 set_property address_offset 0x010 $host_mem_0_offset
 set_property size           64    $host_mem_0_offset
 
+set m_dma_offset      [::ipx::add_register -quiet "m_dma_offset" $addr_block]
+set_property address_offset 0x020 $m_dma_offset
+set_property size           64    $m_dma_offset
+
 set_property slave_memory_map_ref "s_axi_lite" [::ipx::get_bus_interfaces -of $core "s_axi_lite"]
 
 # define association between pointer arguments (SRC_ADDR, DEST_ADDR) and axi masters (axi_rmst, axi_wmst)
@@ -94,6 +99,12 @@ set_property value {host_mem_0} [::ipx::get_register_parameters -of_objects $hos
 
 ipx::add_bus_parameter DATA_WIDTH [ipx::get_bus_interfaces host_mem_0 -of_objects [ipx::current_core]]
 set_property value          {64}  [ipx::get_bus_parameters DATA_WIDTH -of_objects [ipx::get_bus_interfaces host_mem_0 -of_objects [ipx::current_core]]]
+
+ipx::add_register_parameter ASSOCIATED_BUSIF $m_dma_offset
+set_property value {m_dma} [::ipx::get_register_parameters -of_objects $m_dma_offset ASSOCIATED_BUSIF]
+
+ipx::add_bus_parameter DATA_WIDTH [ipx::get_bus_interfaces m_dma -of_objects [ipx::current_core]]
+set_property value          {64}  [ipx::get_bus_parameters DATA_WIDTH -of_objects [ipx::get_bus_interfaces m_dma -of_objects [ipx::current_core]]]
 
 set_property xpm_libraries {XPM_CDC XPM_MEMORY XPM_FIFO} $core
 set_property sdx_kernel true $core

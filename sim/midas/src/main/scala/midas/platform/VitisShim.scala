@@ -30,11 +30,15 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
   val hostMemAXI4BundleParams = p(HostMemChannelKey).axi4BundleParams
     .copy(addrBits = VitisConstants.axi4MAddressBits)
 
+  val dmaAXI4BundleParams = p(FPGAManagedAXI4Key).get.axi4BundleParams
+    .copy(addrBits = VitisConstants.axi4MAddressBits)
+
   lazy val module             = new LazyRawModuleImp(this) {
     val ap_rst_n   = IO(Input(AsyncReset()))
     val ap_clk     = IO(Input(Clock()))
     val s_axi_lite = IO(Flipped(new XilinxAXI4Bundle(ctrlAXI4BundleParams, isAXI4Lite = true)))
     val host_mem_0 = IO((new XilinxAXI4Bundle(hostMemAXI4BundleParams)))
+    val m_dma        = IO((new XilinxAXI4Bundle(dmaAXI4BundleParams)))
 
     val ap_rst = (!ap_rst_n.asBool)
 
@@ -98,13 +102,7 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     }
 
     top.module.fpga_managed_axi4.map { axi4 =>
-      axi4.ar.ready := false.B
-      axi4.aw.ready := false.B
-      axi4.w.ready  := false.B
-      axi4.r        <> DontCare
-      axi4.b        <> DontCare
-      axi4.r.valid  := false.B
-      axi4.b.valid  := false.B
+      axi4 <> m_dma
     }
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
