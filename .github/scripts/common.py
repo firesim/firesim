@@ -1,4 +1,4 @@
-from fabric.api import env # type: ignore
+from fabric.api import env, run # type: ignore
 import requests
 
 from typing import Dict
@@ -36,3 +36,10 @@ def get_platform_lib(platform: Platform) -> PlatformLib:
         raise Exception(f"Azure not yet supported")
     else:
         raise Exception(f"Invalid platform: '{platform}'")
+
+def search_match_in_last_workloads_output_file(file_name: str = "uartlog", match_key: str = "*** PASSED ***") -> int:
+    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "{match_key}" $LAST_DIR/*/{file_name}; fi""")
+    out_split = [e for e in out.split('\n') if match_key in e]
+    out_count = len(out_split)
+    print(f"Found {out_count} '{match_key}' strings in {file_name}")
+    return out_count

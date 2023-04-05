@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fabric.api import prefix, settings, run, execute # type: ignore
 
-from common import manager_fsim_dir, set_fabric_firesim_pem
+from common import manager_fsim_dir, set_fabric_firesim_pem, search_match_in_last_workloads_output_file
 from ci_variables import ci_env
 
 def run_linux_poweroff():
@@ -45,15 +45,25 @@ def run_linux_poweroff():
                     run(f"firesim terminaterunfarm -q -c {workload}")
                     sys.exit(rc)
                 else:
-                    print(f"Workload run {workload} successful. Checking uartlogs...")
+                    print(f"Workload run {workload} successful. Checking workload files...")
 
-                    # verify that linux booted and the pass printout was given
-                    match_key = "*** PASSED ***"
-                    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "{match_key}" $LAST_DIR/*/uartlog; fi""")
-                    out_split = [e for e in out.split('\n') if match_key in e]
-                    print(f"DEBUG: out_split = {out_split}")
-                    out_count = len(out_split)
-                    assert out_count >= num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
+                    file_name = 'uartlog'
+
+                    # first driver completed successfully
+                    match_key = '*** PASSED ***'
+                    out_count = search_match_in_last_workloads_output_file(file_name, match_key)
+                    assert out_count >= num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (< {num_passes}). Something went wrong."
+
+                    # verify login was reached (i.e. linux booted)
+                    match_key = 'buildroot login:'
+                    out_count = search_match_in_last_workloads_output_file(file_name, match_key)
+                    assert out_count >= num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (< {num_passes}). Something went wrong."
+
+                    # verify reaching poweroff
+                    match_key = 'Power down'
+                    out_count = search_match_in_last_workloads_output_file(file_name, match_key)
+                    assert out_count >= num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (< {num_passes}). Something went wrong."
+
 
                     print(f"Workload run {workload} successful.")
 
