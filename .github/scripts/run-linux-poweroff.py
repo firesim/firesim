@@ -5,7 +5,8 @@ from pathlib import Path
 
 from fabric.api import prefix, settings, run, execute # type: ignore
 
-from common import manager_fsim_dir, set_fabric_firesim_pem, search_match_in_last_workloads_output_file
+from common import manager_fsim_dir, set_fabric_firesim_pem
+from utils import search_match_in_last_workloads_output_file
 from ci_variables import ci_env
 
 def run_linux_poweroff():

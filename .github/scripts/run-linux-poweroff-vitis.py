@@ -4,7 +4,7 @@ import sys
 from fabric.api import prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
-from common import search_match_in_last_workloads_output_file
+from utils import search_match_in_last_workloads_output_file
 
 def run_linux_poweroff_vitis():
     """ Runs Base Vitis Build """
