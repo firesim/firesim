@@ -89,6 +89,8 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
       case otherAnno => Some(otherAnno)
     })
 
+    bridgeAnnos.foreach(println(_))
+
     val bridgeAnnoMap = bridgeAnnos.map(anno => anno.target.module -> anno ).toMap
 
     val portInstPairs = new mutable.ArrayBuffer[(String, String)]()

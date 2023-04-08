@@ -14,6 +14,8 @@ private[midas] class MidasTransforms extends Transform {
 
   //Logger.setLevel(LogLevel.Info)
   def execute(state: CircuitState) = {
+    println("MidasTransforms.execute")
+
     // Optionally run if the GenerateMultiCycleRamModels parameter is set
     val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
     val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(

@@ -20,6 +20,8 @@ class GoldenGateCompilerPhase extends Phase {
     Dependency[CreateParametersInstancePhase])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
+    println("GoldenGateCompilerPhase.transform")
+
     val allCircuits = annotations.collect({ case FirrtlCircuitAnnotation(circuit) => circuit })
     require(allCircuits.size == 1, "Golden Gate can only process a single Firrtl Circuit at a time.")
 
