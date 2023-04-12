@@ -1,10 +1,8 @@
-//See LICENSE for license details
 #ifndef __TRACEDOCTOR_H_
 #define __TRACEDOCTOR_H_
 
 #include "bridges/bridge_driver.h"
 #include "bridges/clock_info.h"
-
 
 #include <vector>
 #include <mutex>
@@ -16,11 +14,8 @@
 #include <chrono>
 #include <numeric>
 #include <functional>
-// Add some more workers
-// If you add/remove workers, they must be registered/deregistered in the
-// workerRegister map here in the header file in the tracedoctor_t class
-#include "tracedoctor_worker.h"
-#include "tracedoctor_example.h"
+
+#include "tracedoctor_register.h"
 
 #ifdef TRACEDOCTORBRIDGEMODULE_struct_guard
 
@@ -157,23 +152,6 @@ public:
     virtual void work(unsigned int const threadIndex);
 
 private:
-    // Add you workers here:
-    std::map<std::string,
-             std::function<std::shared_ptr<tracedoctor_worker>(std::vector<std::string> &, struct traceInfo &)>> workerRegister = {
-        {"dummy",       [](std::vector<std::string> &args, struct traceInfo &info){
-                      (void) args; return std::make_shared<tracedoctor_worker>("Dummy", args, info, TDWORKER_NO_FILES);
-                  }},
-        {"filer",       [](std::vector<std::string> &args, struct traceInfo &info){
-                      return std::make_shared<tracedoctor_filedumper>(args, info);
-                  }},
-        {"tracerv",     [](std::vector<std::string> &args, struct traceInfo &info){
-                      return std::make_shared<tracedoctor_tracerv>(args, info);
-                  }},
-        {"tracerv_partcsv",     [](std::vector<std::string> &args, struct traceInfo &info){
-                      return std::make_shared<tracedoctor_tracerv_partcsv>(args, info);
-                  }}
-    };
-
     TRACEDOCTORBRIDGEMODULE_struct * mmioAddrs;
     int streamIdx;
     int streamDepth;
@@ -205,7 +183,6 @@ private:
     int traceThreads = -1;
     bool exit = false;
 
-    std::shared_ptr<protectedWorker> getWorker(std::string workername, std::vector<std::string> &args, struct traceInfo &info);
     bool process_tokens(unsigned int const tokens, bool flush = false);
     void flush();
 };

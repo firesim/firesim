@@ -82,8 +82,8 @@ tracedoctor_t::tracedoctor_t(
                 workername = workerargs.front();
                 workerargs.erase(workerargs.begin());
             }
-            auto reg = workerRegister.find(workername);
-            if (reg == workerRegister.end()) {
+            auto reg = tracedoctor_register.find(workername);
+            if (reg == tracedoctor_register.end()) {
                 throw std::invalid_argument("TraceDoctor@" + std::to_string(info.tracerId) + " unknown worker '" + workername + "'");
             }
             fprintf(stdout, "TraceDoctor@%d: adding worker '%s' with args '", info.tracerId, workername.c_str());
