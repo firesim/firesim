@@ -56,7 +56,7 @@ def run_linux_poweroff():
                     check('*** PASSED ***')
 
                     # verify login was reached (i.e. linux booted)
-                    check('buildroot login:')
+                    check('launching firemarshal workload')
 
                     # verify reaching poweroff
                     check('Power down')
