@@ -1,4 +1,4 @@
-from fabric.api import env, run # type: ignore
+from fabric.api import env # type: ignore
 import requests
 
 from typing import Dict

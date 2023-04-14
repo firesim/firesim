@@ -87,22 +87,18 @@ def run_linux_poweroff_externally_provisioned():
                 else:
                     print(f"Workload run {workload} successful. Checking workload files...")
 
-                    file_name = 'uartlog'
+                    def check(match_key, file_name = 'uartlog'):
+                        out_count = search_match_in_last_workloads_output_file(file_name, match_key)
+                        assert out_count == num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (!= {num_passes}). Something went wrong."
 
                     # first driver completed successfully
-                    match_key = '*** PASSED ***'
-                    out_count = search_match_in_last_workloads_output_file(file_name, match_key)
-                    assert out_count == num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (!= {num_passes}). Something went wrong."
+                    check('*** PASSED ***')
 
                     # verify login was reached (i.e. linux booted)
-                    match_key = 'buildroot login:'
-                    out_count = search_match_in_last_workloads_output_file(file_name, match_key)
-                    assert out_count == num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (!= {num_passes}). Something went wrong."
+                    check('buildroot login:')
 
                     # verify reaching poweroff
-                    match_key = 'Power down'
-                    out_count = search_match_in_last_workloads_output_file(file_name, match_key)
-                    assert out_count == num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (!= {num_passes}). Something went wrong."
+                    check('Power down')
 
                     print(f"Workload run {workload} successful.")
 
