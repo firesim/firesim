@@ -4,7 +4,7 @@
  * This is an example how to implement a TracerV like trace with TraceDoctor
 */
 
-tracedoctor_tracerv::tracedoctor_tracerv(std::vector<std::string> const args, struct traceInfo const info)
+tracedoctor_tracerv::tracedoctor_tracerv(std::vector<std::string> const &args, struct traceInfo const &info)
     : tracedoctor_worker("TracerV", args, info, 1), mode(TRACERV_CSV), tracerv_tracker(NULL)
 {
   std::string dwarfFileName = "";

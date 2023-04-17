@@ -14,7 +14,6 @@
 #include <chrono>
 #include <numeric>
 #include <functional>
-
 #include "tracedoctor_register.h"
 
 #ifdef TRACEDOCTORBRIDGEMODULE_struct_guard
@@ -36,155 +35,104 @@
         IDX)); \
 
 
-
-// https://stackoverflow.com/questions/7045576/using-more-than-one-mutex-with-a-conditional-variable
-template<class T1, class T2> class Lock2 {
-    bool own1_;
-    bool own2_;
-    T1 &m1_;
-    T2 &m2_;
-public:
-    Lock2(T1 &m1, T2 &m2)
-        : own1_(false), own2_(false), m1_(m1), m2_(m2)
-    {
-        lock();
-    }
-
-    ~Lock2() {
-        unlock();
-    }
-
-    Lock2(const Lock2&) = delete;
-    Lock2& operator=(const Lock2&) = delete;
-
-    void lock() {
-        if (!own1_ && !own2_) {
-            own1_=true; own2_=true;
-            std::lock(m1_, m2_);
-        } else if (!own1_) {
-            own1_=true;
-            m1_.lock();
-        } else if (!own2_) {
-            own2_=true;
-            m2_.lock();
-        }
-    }
-
-    void unlock() {
-        unlock_1();
-        unlock_2();
-    }
-
-    void unlock_1() {
-        if (own1_) {
-            own1_=false;
-            m1_.unlock();
-        }
-    }
-
-    void unlock_2() {
-        if (own2_) {
-            own2_=false;
-            m2_.unlock();
-        }
-    }
-};
-
 class spinlock {
-        std::atomic<bool> lock_ = {false};
+  std::atomic<bool> lock_ = {false};
 public:
-    void lock() {
-        for (;;) {
-            if (!lock_.exchange(true, std::memory_order_acquire)) {
-                break;
-            }
-            while (lock_.load(std::memory_order_relaxed));
-        }
+  void lock() {
+    for (;;) {
+      if (!lock_.exchange(true, std::memory_order_acquire)) {
+        break;
+      }
+      while (lock_.load(std::memory_order_relaxed));
     }
+  }
 
-    void unlock() {
-        lock_.store(false, std::memory_order_release);
-    }
+  void unlock() {
+    lock_.store(false, std::memory_order_release);
+  }
 
-    bool try_lock() {
-        return !lock_.exchange(true, std::memory_order_acquire);
-    }
+  bool try_lock() {
+    return !lock_.exchange(true, std::memory_order_acquire);
+  }
 };
 
 #define locktype_t spinlock
-// #define locktype_t std::mutex
+//#define locktype_t std::mutex
 
 
 struct protectedWorker {
-    locktype_t lock;
-    std::shared_ptr<tracedoctor_worker> worker;
+  locktype_t lock;
+  std::unique_ptr<tracedoctor_worker> worker;
 };
 
 struct referencedBuffer {
-    char *data;
-    unsigned int tokens;
-    std::atomic<unsigned int> refs;
+  char *data;
+  unsigned int tokens;
+  std::atomic<unsigned int> refs;
 };
 
 
 class tracedoctor_t: public bridge_driver_t
 {
 public:
-    tracedoctor_t(simif_t *sim,
-                   std::vector<std::string> &args,
-                   TRACEDOCTORBRIDGEMODULE_struct * mmio_addrs,
-                   const int stream_idx,
-                   const int stream_depth,
-                   const unsigned int tokenWidth,
-                   const unsigned int traceWidth,
-                   const char* const  clock_domain_name,
-                   const unsigned int clock_multiplier,
-                   const unsigned int clock_divisor,
-                   int tracerId);
-    ~tracedoctor_t();
+  tracedoctor_t(simif_t *sim,
+                std::vector<std::string> &args,
+                TRACEDOCTORBRIDGEMODULE_struct * mmio_addrs,
+                const int stream_idx,
+                const int stream_depth,
+                const unsigned int tokenWidth,
+                const unsigned int traceWidth,
+                const char* const  clock_domain_name,
+                const unsigned int clock_multiplier,
+                const unsigned int clock_divisor,
+                int tracerId);
+  ~tracedoctor_t();
 
-    virtual void init();
-    virtual void tick();
-    virtual bool terminate() { return false; }
-    virtual int exit_code() { return 0; }
-    virtual void finish() { flush(); };
-    virtual void balancedWork(unsigned int const threadIndex);
-    virtual void work(unsigned int const threadIndex);
+  void init();
+  void tick();
+  bool terminate() { return false; }
+  int exit_code() { return 0; }
+  void finish() { flush(); };
+  void balancedWork(unsigned int const threadIndex);
+  void work(unsigned int const threadIndex);
 
 private:
-    TRACEDOCTORBRIDGEMODULE_struct * mmioAddrs;
-    int streamIdx;
-    int streamDepth;
+  TRACEDOCTORBRIDGEMODULE_struct * mmioAddrs;
+  int streamIdx;
+  int streamDepth;
 
-    std::vector<std::thread> workerThreads;
-    std::vector<std::shared_ptr<protectedWorker>> workers;
-    std::vector<std::shared_ptr<referencedBuffer>> buffers;
+  std::vector<std::thread> workerThreads;
+  // Atomics and Mutex are now allowed to be passed around
+  // keep them in one place and pass references
+  std::vector<std::unique_ptr<struct protectedWorker>> workers;
+  std::vector<std::unique_ptr<struct referencedBuffer>> buffers;
 
-    locktype_t workQueueLock;
-    std::condition_variable_any workQueueCond;
-    std::vector<std::queue<std::shared_ptr<referencedBuffer>>> workQueues;
-    bool workQueuesMaybeEmpty = true;
+  std::vector<std::queue<struct referencedBuffer *>> workQueues;
 
-    unsigned int bufferIndex = 0;
-    unsigned int bufferGrouping = 1;
-    unsigned int bufferDepth = 64;
-    unsigned int bufferTokenCapacity;
-    unsigned int bufferTokenThreshold;
-    unsigned long int totalTokens = 0;
+  locktype_t workQueueLock;
+  std::condition_variable_any workQueueCond;
+  bool workQueuesMaybeEmpty = true;
+
+  unsigned int bufferIndex = 0;
+  unsigned int bufferGrouping = 1;
+  unsigned int bufferDepth = 64;
+  unsigned int bufferTokenCapacity;
+  unsigned int bufferTokenThreshold;
+  unsigned long int totalTokens = 0;
 
 
-    std::chrono::duration<double> tickTime = std::chrono::seconds(0);
+  std::chrono::duration<double> tickTime = std::chrono::seconds(0);
 
-    ClockInfo clock_info;
-    struct traceInfo info = {};
+  ClockInfo clock_info;
+  struct traceInfo info = {};
 
-    bool traceEnabled = false;
-    unsigned int traceTrigger = 0;
-    int traceThreads = -1;
-    bool exit = false;
+  bool traceEnabled = false;
+  unsigned int traceTrigger = 0;
+  int traceThreads = -1;
+  bool workerExit = false;
 
-    bool process_tokens(unsigned int const tokens, bool flush = false);
-    void flush();
+  bool process_tokens(unsigned int const tokens, bool flush = false);
+  void flush();
 };
 #endif // TRACEDOCTORBRIDGEMODULE_struct_guard
 

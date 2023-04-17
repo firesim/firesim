@@ -20,9 +20,10 @@ private:
   enum tracerv_mode {TRACERV_CSV, TRACERV_BINARY, TRACERV_FIREPERF} mode;
   TraceTracker *tracerv_tracker;
 public:
-  tracedoctor_tracerv(std::vector<std::string> const args, struct traceInfo const info);
+  tracedoctor_tracerv(std::vector<std::string> const &args, struct traceInfo const &info);
   ~tracedoctor_tracerv();
-  void tick(char const * const data, unsigned int tokens);
+
+  void tick(char const * const data, unsigned int tokens) override;
 };
 
 #endif // __TRACEDOCTOR_EXAMPLE_H_
