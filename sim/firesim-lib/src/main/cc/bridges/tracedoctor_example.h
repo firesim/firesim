@@ -21,7 +21,7 @@ private:
   TraceTracker *tracerv_tracker;
 public:
   tracedoctor_tracerv(std::vector<std::string> const &args, struct traceInfo const &info);
-  ~tracedoctor_tracerv();
+  ~tracedoctor_tracerv() override;
 
   void tick(char const * const data, unsigned int tokens) override;
 };

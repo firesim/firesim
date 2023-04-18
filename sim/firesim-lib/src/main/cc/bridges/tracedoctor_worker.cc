@@ -14,9 +14,10 @@ void strReplaceAll(std::string &str, std::string const &from, std::string const 
 }
 
 std::vector<std::string> strSplit(std::string const &str, std::string const &sep) {
-  char* cstr = const_cast<char*>(str.c_str());
-  char* current;
+  std::string cpystr = str;
   std::vector<std::string> arr;
+  char* current;
+  char* cstr = const_cast<char*>(cpystr.c_str());
   current = strtok(cstr,sep.c_str());
   while (current!=NULL) {
     arr.push_back(current);
@@ -162,11 +163,10 @@ tracedoctor_filer::~tracedoctor_filer() {
 void tracedoctor_filer::tick(char const * const data, unsigned int tokens) {
   if (raw) {
     fwrite(data, 1, tokens * info.tokenBytes, std::get<freg_descriptor>(fileRegister[0]));
-    byteCount += tokens * info.tokenBytes;
   } else {
     for (unsigned int i = 0; i < tokens; i++) {
       fwrite(&data[i * info.tokenBytes], 1, info.traceBytes, std::get<freg_descriptor>(fileRegister[0]));
     }
-    byteCount += tokens * info.traceBytes;
   }
+  byteCount += tokens * info.traceBytes;
 }

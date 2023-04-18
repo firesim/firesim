@@ -40,7 +40,7 @@ protected:
 public:
   tracedoctor_worker(std::string const &name, std::vector<std::string> const &args, struct traceInfo const &info, int const requiredFiles = TDWORKER_NO_FILES);
   virtual void tick(char const * const data, unsigned int tokens);
-  ~tracedoctor_worker();
+  virtual ~tracedoctor_worker();
 };
 
 class tracedoctor_dummy : public tracedoctor_worker {
@@ -54,7 +54,7 @@ private:
   bool raw;
 public:
   tracedoctor_filer(std::vector<std::string> const &args, struct traceInfo const &info);
-  ~tracedoctor_filer();
+  ~tracedoctor_filer() override;
   void tick(char const * const data, unsigned int tokens) override;
 };
 
