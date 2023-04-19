@@ -95,7 +95,7 @@ def run_linux_poweroff_externally_provisioned():
                     check('*** PASSED ***')
 
                     # verify login was reached (i.e. linux booted)
-                    check('launching firemarshal workload')
+                    check('running /etc/init.d/S99run')
 
                     # verify reaching poweroff
                     check('Power down')
