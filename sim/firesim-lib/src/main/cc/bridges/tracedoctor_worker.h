@@ -29,11 +29,9 @@ protected:
   std::string const name;
   std::string const tracerName;
   struct traceInfo const info;
-  unsigned int compressionThreads = 1;
-  unsigned int compressionLevel = 1;
   std::vector<std::tuple<std::string, FILE *, bool>> fileRegister;
 
-  FILE * openFile(std::string const &filename);
+  FILE * openFile(std::string const &filename, std::string const &compressionCmd = "", unsigned int const compressionLevel = 1, unsigned int const compressionThreads = 1);
   void closeFile(FILE * const);
   void closeFiles(void);
 

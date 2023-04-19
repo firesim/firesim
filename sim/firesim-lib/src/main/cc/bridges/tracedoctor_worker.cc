@@ -29,6 +29,10 @@ std::vector<std::string> strSplit(std::string const &str, std::string const &sep
 tracedoctor_worker::tracedoctor_worker(std::string const &name, std::vector<std::string> const &args, struct traceInfo const &info, int const requiredFiles) : name(name), tracerName(name + "@" + std::to_string(info.tracerId)), info(info) {
   if (requiredFiles != TDWORKER_NO_FILES) {
     unsigned int localRequiredFiles = requiredFiles;
+    std::string compressionCmd = "";
+    unsigned int compressionLevel = 1;
+    unsigned int compressionThreads = 1;
+
     std::vector<std::string> filesToOpen;
 
     for (auto &a: args) {
@@ -40,6 +44,8 @@ tracedoctor_worker::tracedoctor_worker(std::string const &name, std::vector<std:
         compressionThreads = std::stoul(c[1], nullptr, 0);
       } else if (c[0].compare("compressionLevel") == 0 && c.size() > 1) {
         compressionLevel = std::stoul(c[1], nullptr, 0);
+      } else if (c[0].compare("compressionCmd") == 0 && c.size() > 1) {
+        compressionCmd = c[1];
       }
     }
 
@@ -48,7 +54,7 @@ tracedoctor_worker::tracedoctor_worker(std::string const &name, std::vector<std:
     }
 
     for (auto &a : filesToOpen) {
-      openFile(a);
+      openFile(a, compressionCmd, compressionLevel, compressionThreads);
     }
   }
 }
@@ -57,12 +63,11 @@ void tracedoctor_worker::tick(char const * const data, unsigned int tokens) {
   (void) data; (void) tokens;
 }
 
-FILE * tracedoctor_worker::openFile(std::string const &fileName) {
+FILE * tracedoctor_worker::openFile(std::string const &fileName, std::string const &compressionCmd, unsigned int const compressionLevel, unsigned int const compressionThreads) {
   std::string localFileName = fileName;
+  std::string localCompressionCmd = compressionCmd;
   strReplaceAll(localFileName, std::string("%id"), std::to_string(info.tracerId));
 
-  bool compressed = false;
-  std::pair<std::string , bool> compressApp;
   FILE *fileDescriptor;
 
   std::map<std::string, std::pair<std::string, bool>> const compressionMap = {
@@ -72,23 +77,24 @@ FILE * tracedoctor_worker::openFile(std::string const &fileName) {
     {".zst", {"zstd -T", true}},
   };
 
-  for (const auto &c: compressionMap) {
-    if (c.first.size() <= localFileName.size() && std::equal(c.first.rbegin(), c.first.rend(), localFileName.rbegin())) {
-      compressed = true;
-      compressApp = c.second;
-      break;
+  if (localCompressionCmd.empty()) {
+    for (const auto &c: compressionMap) {
+      if (c.first.size() <= localFileName.size() && std::equal(c.first.rbegin(), c.first.rend(), localFileName.rbegin())) {
+        localCompressionCmd = c.second.first;
+        if (c.second.second)
+          localCompressionCmd += std::to_string(compressionThreads);
+        localCompressionCmd += std::string(" -") + std::to_string(compressionLevel) + std::string(" - >") + localFileName;
+        break;
+      }
     }
+  } else {
+    localCompressionCmd += std::string(" - >") + localFileName;
   }
 
-  if (compressed) {
-    std::string cmd = compressApp.first;
-    if (compressApp.second) {
-      cmd += std::to_string(compressionThreads);
-    }
-    cmd += std::string(" -") + std::to_string(compressionLevel) + std::string(" - >") + localFileName;
-    fileDescriptor = popen(cmd.c_str(), "w");
+  if (!localCompressionCmd.empty()) {
+    fileDescriptor = popen(compressionCmd.c_str(), "w");
     if (fileDescriptor == NULL)
-      throw std::invalid_argument("Could not execute " + cmd);
+      throw std::invalid_argument("Could not execute " + compressionCmd);
     fileRegister.emplace_back(localFileName, fileDescriptor, false);
   } else {
     fileDescriptor = fopen(localFileName.c_str(), "w");
