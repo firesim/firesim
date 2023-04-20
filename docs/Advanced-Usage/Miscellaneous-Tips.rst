@@ -62,7 +62,7 @@ the simulated node:
     ports[1] = new SSHPort(1);
 
     #endif
-    
+
     #ifdef MACPORTSCONFIG
     uint16_t mac2port[3]  {1, 2, 0};
     #endif
@@ -83,7 +83,7 @@ the simulated node:
 
 9. Run ``firesim runworkload``. Confirm that the node has booted to the login prompt in the fsim0 screen.
 
-10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (172.16.0.2), username root, password firesim. You should also prefix with TERM=linux to get backspace to work correctly: So:
+10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (172.16.0.2), username ``root``. You should also prefix with TERM=linux to get backspace to work correctly: So:
 
 ::
 
