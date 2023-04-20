@@ -293,8 +293,8 @@ with a Linux login prompt, like so:
 You can ignore the messages about the network -- that is expected because we
 are simulating a design without a NIC.
 
-Now, you can login to the system! The username is ``root`` and the password is
-``firesim``. At this point, you should be presented with a regular console,
+Now, you can login to the system! The username is ``root``.
+At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
 ::

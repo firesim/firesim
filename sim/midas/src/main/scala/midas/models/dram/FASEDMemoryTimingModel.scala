@@ -5,7 +5,7 @@ package models
 import firrtl.annotations.HasSerializationHints
 
 // From RC
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
 import freechips.rocketchip.diplomacy.{IdRange, LazyModule, AddressSet, TransferSizes}
 import freechips.rocketchip.amba.axi4._

@@ -222,7 +222,7 @@ vitis_firesim_gemmini_rocket_singlecore_no_nic:
     PLATFORM_CONFIG: BaseVitisConfig
     deploy_triplet: null
     platform_config_args:
-        fpga_frequency: 60
+        fpga_frequency: 30
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null

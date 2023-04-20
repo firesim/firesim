@@ -4,7 +4,7 @@ package platform
 import chisel3._
 import chisel3.util._
 import junctions._
-import freechips.rocketchip.config.{Field, Parameters}
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 

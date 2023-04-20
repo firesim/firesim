@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
-import freechips.rocketchip.config.{Config, Field, Parameters}
+import org.chipsalliance.cde.config.{Config, Field, Parameters}
 
 import midas.widgets._
 

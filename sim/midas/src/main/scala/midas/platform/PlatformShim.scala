@@ -2,7 +2,7 @@
 
 package midas.platform
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy.LazyModule
 
 import midas.Platform

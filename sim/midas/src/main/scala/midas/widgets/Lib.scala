@@ -8,7 +8,7 @@ import junctions._
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.DataMirror
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()). Returns a Seq of the leaf nodes with their

@@ -7,7 +7,7 @@ import chisel3.util._
 
 import scala.collection.immutable.ListMap
 
-import freechips.rocketchip.config.{Parameters}
+import org.chipsalliance.cde.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
 class AssertBridgeRecord(assertPortName: String, resetPortName: String, numAsserts: Int) extends Record {

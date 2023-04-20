@@ -4,7 +4,7 @@ package firesim.bridges
 
 import firesim.configs.WithDefaultMemModel
 
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.subsystem.{PeripheryBusKey, PeripheryBusParams}
 import testchipip.{BlockDeviceConfig, BlockDeviceKey}
 
