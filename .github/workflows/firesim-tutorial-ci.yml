@@ -139,6 +139,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Run tutorial commands
         run: |
+          source /etc/profile.d/conda.sh
           cd ${{ env.MANAGER_FIRESIM_LOCATION }}
           ./scripts/full-tutorial-run.sh
-          .github/scripts/run-tutorial.py

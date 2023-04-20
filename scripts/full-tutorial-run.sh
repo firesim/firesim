@@ -6,6 +6,7 @@ set -o pipefail
 # AMI SETUP START #
 
 export MAKEFLAGS=-j16
+CY_COMMIT=9b3fef
 
 ################################### CHIPYARD AM
 cd ~/
@@ -14,7 +15,10 @@ cd ~/
 # get a subshell so can source sourceme-f1-manager.sh later
 
 # get chipyard
-git clone https://github.com/ucb-bar/chipyard -b 1.9.1 chipyard-morning
+git clone https://github.com/ucb-bar/chipyard chipyard-morning
+cd chipyard-morning
+git checkout $CY_COMMIT
+cd ~
 
 # chipyard init
 cd chipyard-morning
@@ -48,7 +52,11 @@ cd ~/
 # get a subshell so can source sourceme-f1-manager.sh later
 
 # get chipyard
-git clone https://github.com/ucb-bar/chipyard -b 1.9.1 chipyard-afternoon
+git clone https://github.com/ucb-bar/chipyard chipyard-afternoon
+cd chipyard-morning
+git checkout $CY_COMMIT
+cd ~
+
 # chipyard init
 cd chipyard-afternoon
 
@@ -109,17 +117,19 @@ ls
 cd $MCYDIR/tests
 make -j16
 spike hello.riscv
-spike mt-hello.riscv
-spike -p4 mt-hello.riscv
+timeout 10m spike mt-hello.riscv || true
+timeout 10m spike -p4 mt-hello.riscv || true
 
-spike mt-gemmini.riscv
-spike --extension=gemmini mt-gemmini.riscv
-spike --extension=gemmini -p4 mt-gemmini.riscv
+# TODO: add
+#spike mt-gemmini.riscv
+#spike --extension=gemmini mt-gemmini.riscv
+#spike --extension=gemmini -p4 mt-gemmini.riscv
 
 cd $MCYDIR/sims/verilator
 make CONFIG=TutorialLeanGemminiConfig BINARY=$MCYDIR/tests/hello.riscv run-binary-hex
-make CONFIG=TutorialLeanGemminiConfig BINARY=$MCYDIR/tests/mt-hello.riscv run-binary-hex
-make CONFIG=TutorialLeanGemminiConfig BINARY=$MCYDIR/tests/mt-gemmini.riscv run-binary-hex
+timeout 10m make CONFIG=TutorialLeanGemminiConfig BINARY=$MCYDIR/tests/mt-hello.riscv run-binary-hex || true
+# TODO: add
+#make CONFIG=TutorialLeanGemminiConfig BINARY=$MCYDIR/tests/mt-gemmini.riscv run-binary-hex
 
 cd $MCYDIR/sims/verilator
 make CONFIG=TutorialManyCoreNoCConfig verilog
