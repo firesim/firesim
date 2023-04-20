@@ -1,6 +1,13 @@
 // See LICENSE for license details.
-
 package firesim.midasexamples
+
+import java.io.File
+import freechips.rocketchip.config.Config
+import org.scalatest.Suites
+import firesim.TestSuiteUtil._
+import firesim.configs.WithTokenHashers
+
+import firesim.BasePlatformConfig
 
 /** Trait so that we have a uniform numbering scheme for the plusargs tests
   */
@@ -43,5 +50,18 @@ class PlusArgsGroup29Bit
     it should "accept an int from the command line, 1 slice" in {
       assert(run(backend, debug, args = Seq(s"+plusar_v=${BigInt("1eadbeef", 16)}", getKey(1, 1))) == 0)
     }
+  }
+}
+
+// This test piggy-backs off of PlusArgsTest. Because the token hashers apply to all bridges
+// it makes sense to use an existing one
+// "DefaultF1Config_EnableTokenHashersDefault"
+class TokenHashersTest extends TutorialSuite("TokenHashersModule", "NoConfig", Seq(classOf[WithTokenHashers])) {
+  // it should "provide the correct default value, 1 slice" in {
+  //   assert(run("verilator", false, args = Seq(getKey(1,0))) == 0)
+  // }
+
+  it should "hash basic" in {
+    assert(run("verilator", true, args = Seq()) == 0)
   }
 }

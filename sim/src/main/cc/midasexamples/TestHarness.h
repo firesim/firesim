@@ -4,6 +4,7 @@
 #include <random>
 
 #include "bridges/peek_poke.h"
+#include "bridges/token_hashers.h"
 #include "core/simif.h"
 #include "core/simulation.h"
 

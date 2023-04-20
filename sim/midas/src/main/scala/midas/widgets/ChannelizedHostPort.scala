@@ -124,4 +124,16 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
       PipeBridgeChannel(name, meta.clockRT, meta.fieldRTs, Seq(), 0)
     }
   })
+
+
+  // outputs only
+  def getOutputChannelPorts() = channels.collect({ case (targetField, ch, meta) if !meta.bridgeSunk =>
+    (reverseElementMap(ch), ch)
+  }).toSeq
+
+
+  // inputs only
+  def getInputChannelPorts() = channels.collect({ case (targetField, ch, meta) if meta.bridgeSunk =>
+    (reverseElementMap(ch), ch)
+  }).toSeq
 }
