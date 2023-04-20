@@ -60,6 +60,6 @@ vitis_firesim_rocket_singlecore_no_nic:
     deploy_triplet_override: FireSim-FireSimRocketMMIOOnlyConfig-BaseVitisConfig
     custom_runtime_config: null
 vitis_firesim_gemmini_rocket_singlecore_no_nic:
-    xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_gemmini_rocket_singlecore_no_nic_36bfe5.xclbin
+    xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_gemmini_rocket_singlecore_no_nic_1ea5c4.xclbin
     deploy_triplet_override: FireSim-FireSimLeanGemminiRocketMMIOOnlyConfig-BaseVitisConfig
     custom_runtime_config: null
