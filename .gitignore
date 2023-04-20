@@ -10,3 +10,4 @@ build
 scala-doc-env.sh
 *.swp
 /.conda-env
+.metals/

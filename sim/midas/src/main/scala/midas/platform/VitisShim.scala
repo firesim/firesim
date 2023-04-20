@@ -7,7 +7,7 @@ import freechips.rocketchip.amba.axi4._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy.LazyRawModuleImp
 
-import midas.core.HostMemChannelKey
+import midas.core.{HostMemChannelKey, FPGAManagedAXI4Key}
 import midas.widgets.CtrlNastiKey
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.platform.xilinx._

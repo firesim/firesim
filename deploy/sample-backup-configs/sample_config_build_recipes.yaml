@@ -253,3 +253,16 @@ firesim_gemmini_printf_rocket_singlecore_no_nic:
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f1.yaml
+
+# Additional Vitis/XRT-only Config
+abe_vitis_firesim_rocket_singlecore_no_nic:
+    DESIGN: FireSim
+    TARGET_CONFIG: VitisFireSimRocketConfig
+    PLATFORM_CONFIG: BaseVitisConfig
+    deploy_triplet: null
+    platform_config_args:
+        fpga_frequency: 10
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/vitis.yaml
