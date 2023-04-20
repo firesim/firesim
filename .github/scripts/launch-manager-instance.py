@@ -30,7 +30,8 @@ def main():
         '--int_behavior', 'terminate',
         '--block_devices', str([{'DeviceName':'/dev/sda1','Ebs':{'VolumeSize':300,'VolumeType':'gp2'}}]),
         '--tags', str(aws_platform_lib.get_manager_tag_dict(ci_env['GITHUB_SHA'], ci_env['GITHUB_RUN_ID'])),
-        '--user_data_file', ci_env['GITHUB_WORKSPACE'] + "/scripts/machine-launch-script.sh"
+        '--user_data_file', ci_env['GITHUB_WORKSPACE'] + "/scripts/machine-launch-script.sh",
+        "--use_manager_security_group"
     ])
 
     print("Instance ready.")

@@ -182,6 +182,7 @@ def aws_resource_names() -> Dict[str, Any]:
         # regular users are instructed to create these in the setup instructions
         'vpcname':           'firesim',
         'securitygroupname': 'for-farms-only-firesim',
+        'securitygroupname-manager': 'firesim',
         # regular users are instructed to create a key named `firesim` in the wiki
         'keyname':           'firesim',
         's3bucketname' :     None,
@@ -200,6 +201,7 @@ def aws_resource_names() -> Dict[str, Any]:
         base_dict['tutorial_mode']     = True
         base_dict['vpcname']           = resptags['firesim-tutorial-username']
         base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
+        base_dict['securitygroupname-manager'] = resptags['firesim-tutorial-username'] + "-manager"
         base_dict['keyname']           = resptags['firesim-tutorial-username']
         base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
         base_dict['snsname']           = resptags['firesim-tutorial-username']
@@ -343,7 +345,7 @@ def construct_instance_market_options(instancemarket: str, spotinterruptionbehav
         assert False, "INVALID INSTANCE MARKET TYPE."
 
 def launch_instances(instancetype: str, count: int, instancemarket: str, spotinterruptionbehavior: str, spotmaxprice: str, blockdevices: Optional[List[Dict[str, Any]]] = None,
-        tags: Optional[Dict[str, Any]] = None, randomsubnet: bool = False, user_data_file: Optional[str] = None, timeout: timedelta = timedelta(), always_expand: bool = True, ami_id: Optional[str] = None) -> List[EC2InstanceResource]:
+        tags: Optional[Dict[str, Any]] = None, randomsubnet: bool = False, user_data_file: Optional[str] = None, timeout: timedelta = timedelta(), always_expand: bool = True, ami_id: Optional[str] = None, use_manager_security_group: bool = False) -> List[EC2InstanceResource]:
     """Launch `count` instances of type `instancetype`
 
     Using `instancemarket`, `spotinterruptionbehavior` and `spotmaxprice` to define instance market conditions
@@ -368,6 +370,7 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
             If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
         ami_id: Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
             `awstools.get_f1_ami_id()`.
+        use_manager_security_group: Use the manager security group instead of the run/build farm security group.
 
     Returns:
         List of instance resources.  If `always_expand` is True, this list contains only the instances created in this
@@ -380,6 +383,8 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
     aws_resource_names_dict = aws_resource_names()
     keyname = aws_resource_names_dict['keyname']
     securitygroupname = aws_resource_names_dict['securitygroupname']
+    if use_manager_security_group:
+        securitygroupname = aws_resource_names_dict['securitygroupname-manager']
     vpcname = aws_resource_names_dict['vpcname']
 
     ec2 = boto3.resource('ec2')
@@ -740,6 +745,7 @@ def main(args: List[str]) -> int:
     parser.add_argument("--filters", type=yaml.safe_load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
     parser.add_argument("--user_data_file", default=None, help="File path to use as user data (run on initialization). Used by \'launch\'.")
     parser.add_argument("--ami_id", default=get_f1_ami_id(), help="Override AMI ID used for launch. Defaults to \'awstools.get_f1_ami_id()\'. Used by \'launch\'.")
+    parser.add_argument("--use_manager_security_group", action=argparse.BooleanOptionalAction, default=False, help="Launch instances within the manager security group instead of the farm security group.")
     parsed_args = parser.parse_args(args)
 
     if parsed_args.command == "launch":
@@ -753,7 +759,8 @@ def main(args: List[str]) -> int:
             parsed_args.tags,
             parsed_args.random_subnet,
             parsed_args.user_data_file,
-            parsed_args.ami_id)
+            parsed_args.ami_id,
+            parsed_args.use_manager_security_group)
         instids = get_instance_ids_for_instances(insts)
         print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)
