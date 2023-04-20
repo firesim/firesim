@@ -33,7 +33,7 @@ To launch a manager instance, follow these steps:
 #. In the *Name* field, give the instance a recognizable name, for example ``firesim-manager-1``. This is purely for your own convenience and can also be left blank.
 #. In the *Application and OS Images* search box, search for
    ``FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
-   select the AMI that appears under the ***Community AMIs*** tab (there
+   select the AMI that appears under the **Community AMIs** tab (there
    should be only one). **DO NOT USE ANY OTHER VERSION.** For example, **do not** use `FPGA Developer AMI` from the *AWS Marketplace AMIs* tab, as you will likely get an incorrect version of the AMI.
 #. In the *Instance Type* drop-down, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
@@ -43,7 +43,7 @@ To launch a manager instance, follow these steps:
    #. Under *VPC - required*, select the ``firesim`` VPC. Any subnet within the ``firesim`` VPC is fine.
    #. Under *Firewall (security groups)*, click *Select existing security
       group* and in the *Common security groups* dropdown that appears, select the ``firesim`` security group that was automatically
-      created for you earlier.
+      created for you earlier. Do **NOT** select the ``for-farms-only-firesim`` security group that might also be in the list (it is also fine if this group does not appear in your list).
 
 #. In the *Configure storage* section, increase the size of the root
    volume to at least 300GB. The default of 85GB can quickly become too small as

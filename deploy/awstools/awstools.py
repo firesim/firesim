@@ -181,7 +181,7 @@ def aws_resource_names() -> Dict[str, Any]:
         'tutorial_mode'  :   False,
         # regular users are instructed to create these in the setup instructions
         'vpcname':           'firesim',
-        'securitygroupname': 'firesim',
+        'securitygroupname': 'for-farms-only-firesim',
         # regular users are instructed to create a key named `firesim` in the wiki
         'keyname':           'firesim',
         's3bucketname' :     None,
@@ -209,6 +209,56 @@ def aws_resource_names() -> Dict[str, Any]:
     return base_dict
 
 
+def farm_security_group_setup() -> None:
+    """Create the security group for build/run farm instances, if it doesn't
+    already exist."""
+
+    aws_resource_names_dict = aws_resource_names()
+    securitygroupname = aws_resource_names_dict['securitygroupname']
+    vpcname = aws_resource_names_dict['vpcname']
+
+    ec2 = boto3.resource('ec2')
+    client = boto3.client('ec2')
+
+    operation_params = {
+        'Filters': [{'Name':'group-name', 'Values': [securitygroupname]}]
+    }
+    firesimsecuritygroup = depaginated_boto_query(client, 'describe_security_groups', operation_params, 'SecurityGroups')
+
+    if len(firesimsecuritygroup) > 1:
+        rootLogger.critical(f"Too many security groups named {securitygroupname}. Exiting.")
+    elif len(firesimsecuritygroup) == 1:
+        return
+
+    # at this point, we do not have the required security group, so create it
+    rootLogger.info(f"The {securitygroupname} security group does not exist. Creating it for you.")
+
+    vpcfilter: Sequence[FilterTypeDef] = [{'Name':'tag:Name', 'Values': [vpcname]}]
+    # docs show 'NextToken' / 'MaxResults' which suggests pagination, but
+    # the boto3 source says collections handle pagination automatically,
+    # so assume this is fine
+    # https://github.com/boto/boto3/blob/1.20.21/boto3/resources/collection.py#L32
+    firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))[0]
+
+    sec_group = ec2.create_security_group(
+        GroupName=securitygroupname, Description='Do not use for FireSim Manager instances. For FireSim build and run farms only.',
+        VpcId=firesimvpc.id)
+
+    # this security group will allow ingress ONLY from the firesim VPC, i.e.
+    # managers and other build/run farm instances
+    allowed_cidr = '192.168.0.0/16'
+
+    sec_group.authorize_ingress(IpPermissions=[
+        {u'PrefixListIds': [], u'FromPort': 60000, u'IpRanges': [{u'Description': 'mosh', u'CidrIp': allowed_cidr}], u'ToPort': 61000, u'IpProtocol': 'udp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 22, u'IpRanges': [{u'CidrIp': allowed_cidr}], u'ToPort': 22, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 10000, u'IpRanges': [{u'Description': 'firesim network model', u'CidrIp': allowed_cidr}], u'ToPort': 11000, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 3389, u'IpRanges': [{u'Description': 'remote desktop', u'CidrIp': allowed_cidr}], u'ToPort': 3389, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 8443, u'IpRanges': [{u'Description': 'nice dcv (ipv4)', u'CidrIp': allowed_cidr}], u'ToPort': 8443, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+    ])
+
+    rootLogger.info(f"The {securitygroupname} security group has been successfully created!")
+
+
 def awsinit() -> None:
     """Setup AWS FireSim manager components."""
 
@@ -223,6 +273,8 @@ def awsinit() -> None:
         valid_creds = valid_aws_configure_creds()
         if not valid_creds:
             rootLogger.info("Invalid AWS credentials. Try again.")
+
+    farm_security_group_setup()
 
     useremail = firesim_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
     if useremail != "":
