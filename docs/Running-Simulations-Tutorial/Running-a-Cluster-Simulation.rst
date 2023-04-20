@@ -382,8 +382,8 @@ If you also ran the single-node no-nic simulation you'll notice a difference
 in this boot output -- here, Linux sees the NIC and its assigned MAC address and
 automatically brings up the ``eth0`` interface at boot.
 
-Now, you can login to the system! The username is ``root`` and the password is
-``firesim``. At this point, you should be presented with a regular console,
+Now, you can login to the system! The username is ``root``.
+At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
 ::
