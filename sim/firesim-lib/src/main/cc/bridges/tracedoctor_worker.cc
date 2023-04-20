@@ -92,9 +92,9 @@ FILE * tracedoctor_worker::openFile(std::string const &fileName, std::string con
   }
 
   if (!localCompressionCmd.empty()) {
-    fileDescriptor = popen(compressionCmd.c_str(), "w");
+    fileDescriptor = popen(localCompressionCmd.c_str(), "w");
     if (fileDescriptor == NULL)
-      throw std::invalid_argument("Could not execute " + compressionCmd);
+      throw std::invalid_argument("Could not execute " + localCompressionCmd);
     fileRegister.emplace_back(localFileName, fileDescriptor, false);
   } else {
     fileDescriptor = fopen(localFileName.c_str(), "w");
