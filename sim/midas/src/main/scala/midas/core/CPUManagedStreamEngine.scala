@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.prefix
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.DecoupledHelper
 

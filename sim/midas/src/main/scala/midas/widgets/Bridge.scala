@@ -5,7 +5,7 @@ package widgets
 
 import midas.core.{TargetChannelIO}
 
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 
 import chisel3._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}

@@ -2,7 +2,7 @@ package midas
 package models
 
 // From RC
-import freechips.rocketchip.config.{Parameters}
+import org.chipsalliance.cde.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 import junctions._
 

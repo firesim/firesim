@@ -2,7 +2,7 @@
 
 package midas.core
 
-import freechips.rocketchip.config.Field
+import org.chipsalliance.cde.config.Field
 
 /**
   * Does the dirty work of providing an index to each stream, and checking its

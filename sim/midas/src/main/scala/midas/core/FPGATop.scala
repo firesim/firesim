@@ -9,7 +9,7 @@ import midas.passes.HostClockSource
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.{Field, Parameters}
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 
 import scala.collection.immutable.ListMap

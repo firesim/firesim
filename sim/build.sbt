@@ -1,6 +1,6 @@
 import Tests._
 
-val chiselVersion = "3.5.5"
+val chiselVersion = "3.5.6"
 
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")

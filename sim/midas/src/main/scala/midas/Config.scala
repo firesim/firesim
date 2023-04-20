@@ -7,7 +7,7 @@ import widgets._
 import platform._
 import firrtl.stage.TransformManager.TransformDependency
 import junctions.NastiParameters
-import freechips.rocketchip.config.{Parameters, Config, Field}
+import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
 import java.io.{File}

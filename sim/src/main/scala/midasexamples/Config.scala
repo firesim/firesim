@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import midas._
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import junctions._
 
 import firesim.configs.{WithDefaultMemModel, WithWiringTransform}

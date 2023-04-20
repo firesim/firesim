@@ -4,7 +4,7 @@ package platform
 import chisel3._
 import junctions._
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy.LazyRawModuleImp
 
 import midas.core.HostMemChannelKey

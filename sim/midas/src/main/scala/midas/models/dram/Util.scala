@@ -2,7 +2,7 @@ package midas
 package models
 
 // From RC
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util.{ParameterizedBundle, UIntIsOneOf}
 import freechips.rocketchip.unittest.UnitTest
 import junctions._

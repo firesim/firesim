@@ -2,7 +2,7 @@
 
 package firesim.midasexamples
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import midas.targetutils.xdc._
 
 class CustomConstraintsDUT extends ShiftRegisterDUT {

@@ -9,7 +9,7 @@ import midas.passes.fame
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel, FAMEChannelFanoutAnnotation}
 import midas.core.SimUtils._
 
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
 
 import chisel3._
