@@ -752,17 +752,17 @@ def main(args: List[str]) -> int:
 
     if parsed_args.command == "launch":
         insts = launch_instances(
-            parsed_args.inst_type,
-            parsed_args.inst_amt,
-            parsed_args.market,
-            parsed_args.int_behavior,
-            parsed_args.spot_max_price,
-            parsed_args.block_devices,
-            parsed_args.tags,
-            parsed_args.random_subnet,
-            parsed_args.user_data_file,
-            parsed_args.ami_id,
-            parsed_args.use_manager_security_group)
+            instancetype=parsed_args.inst_type,
+            count=parsed_args.inst_amt,
+            instancemarket=parsed_args.market,
+            spotinterruptionbehavior=parsed_args.int_behavior,
+            spotmaxprice=parsed_args.spot_max_price,
+            blockdevices=parsed_args.block_devices,
+            tags=parsed_args.tags,
+            randomsubnet=parsed_args.random_subnet,
+            user_data_file=parsed_args.user_data_file,
+            ami_id=parsed_args.ami_id,
+            use_manager_security_group=parsed_args.use_manager_security_group)
         instids = get_instance_ids_for_instances(insts)
         print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)
