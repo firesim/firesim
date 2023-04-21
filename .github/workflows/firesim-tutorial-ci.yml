@@ -1,11 +1,11 @@
 name: firesim-tutorial-ci
 
-on: [push]
-#  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
-#  pull_request:
-#    branches:
-#      - main
-#      - stable
+# run ci when pring to main (note: ci runs on the merge commit of the pr!)
+on:
+  pull_request:
+    branches:
+      - main
+      - stable
 
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
