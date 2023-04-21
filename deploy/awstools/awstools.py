@@ -229,7 +229,9 @@ def farm_security_group_setup() -> None:
 
     if len(firesimsecuritygroup) > 1:
         rootLogger.critical(f"Too many security groups named {securitygroupname}. Exiting.")
+        assert False
     elif len(firesimsecuritygroup) == 1:
+        rootLogger.debug(f"Security group {securitygroupname} already exists. Skipping setup.")
         return
 
     # at this point, we do not have the required security group, so create it
