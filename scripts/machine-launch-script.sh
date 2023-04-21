@@ -288,8 +288,12 @@ set -o pipefail
     fi
     "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
 
-    # emergency fix for buildroot open files limit issue on centos:
-    echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
+    # emergency fix for buildroot open files limit issue:
+    if [[ "$INSTALL_TYPE" == system ]]; then
+        "${DRY_RUN_ECHO[@]}" echo "* hard nofile 16384" | $SUDO tee --append /etc/security/limits.conf
+    else
+        "${DRY_RUN_ECHO[@]}" echo "::WARN:: Unable to set open files limit without sudo."
+    fi
 
     # final platform-specific setup
     case "$OS_FLAVOR" in
