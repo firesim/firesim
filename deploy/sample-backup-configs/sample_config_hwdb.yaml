@@ -11,23 +11,55 @@
 
 # DOCREF START: Example HWDB Entry
 firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
-    agfi: agfi-013235c1ca782dba8
+    agfi: agfi-0ac731f61d3f31817
     deploy_triplet_override: null
     custom_runtime_config: null
 # DOCREF END: Example HWDB Entry
 firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3:
-    agfi: agfi-078250f80a5261791
+    agfi: agfi-0a60b1241fe70aad8
     deploy_triplet_override: null
     custom_runtime_config: null
 firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
-    agfi: agfi-012a7506602bb91e7
+    agfi: agfi-0c82dc422cf6408a9
     deploy_triplet_override: null
     custom_runtime_config: null
 firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3:
-    agfi: agfi-0ccc0451fd75246c0
+    agfi: agfi-09a9331f468822063
     deploy_triplet_override: null
     custom_runtime_config: null
 firesim_supernode_rocket_singlecore_nic_l2_lbp:
-    agfi: agfi-0b68e45059b53edcd
+    agfi: agfi-074d5fb88949da9e3
     deploy_triplet_override: null
+    custom_runtime_config: null
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    agfi: agfi-0bd3e59a6291be8d8
+    deploy_triplet_override: null
+    custom_runtime_config: null
+firesim_rocket_singlecore_sha3_nic_l2_llc4mb_ddr3:
+    agfi: agfi-0a3aa8485fc964a28
+    deploy_triplet_override: null
+    custom_runtime_config: null
+firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3:
+    agfi: agfi-037fd4a1261e58c73
+    deploy_triplet_override: null
+    custom_runtime_config: null
+firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3_printf:
+    agfi: agfi-037978a7a54662358
+    deploy_triplet_override: null
+    custom_runtime_config: null
+firesim_gemmini_printf_rocket_singlecore_no_nic:
+    agfi: agfi-03d8cc99122d5fb41
+    deploy_triplet_override: null
+    custom_runtime_config: null
+firesim_gemmini_rocket_singlecore_no_nic:
+    agfi: agfi-09127fbc65317005a
+    deploy_triplet_override: null
+    custom_runtime_config: null
+vitis_firesim_rocket_singlecore_no_nic:
+    xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_rocket_singlecore_no_nic_c12936.xclbin
+    deploy_triplet_override: FireSim-FireSimRocketMMIOOnlyConfig-BaseVitisConfig
+    custom_runtime_config: null
+vitis_firesim_gemmini_rocket_singlecore_no_nic:
+    xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_gemmini_rocket_singlecore_no_nic_1ea5c4.xclbin
+    deploy_triplet_override: FireSim-FireSimLeanGemminiRocketMMIOOnlyConfig-BaseVitisConfig
     custom_runtime_config: null

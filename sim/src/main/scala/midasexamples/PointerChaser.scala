@@ -5,7 +5,7 @@ package firesim.midasexamples
 import chisel3._
 import chisel3.util._
 import junctions._
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 
 import midas.widgets.{PeekPokeBridge}
 import midas.models.{FASEDBridge, BaseParams, LatencyPipeConfig, CompleteConfig}

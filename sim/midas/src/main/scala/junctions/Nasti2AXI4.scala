@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util.experimental.InlineInstance
 
 import freechips.rocketchip.amba.axi4._
-import freechips.rocketchip.config.{Parameters}
+import org.chipsalliance.cde.config.{Parameters}
 
 class AXI42NastiIdentityModule(params: AXI4BundleParameters)(implicit p: Parameters)
     extends RawModule with InlineInstance {

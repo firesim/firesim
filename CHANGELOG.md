@@ -2,6 +2,168 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.16.0] - 2023-03-23
+
+Vitis documentation updates, re-work of FireSim driver code, URI support for tarball/xclbins, Various bumps
+
+### Added
+* Vitis: support different bitstream build strategies by @davidbiancolin in https://github.com/firesim/firesim/pull/1270
+* vitis: Support frequency settings provided at bitstream build by @davidbiancolin in https://github.com/firesim/firesim/pull/1281
+* Adding support for Azure CI by @t14916 in https://github.com/firesim/firesim/pull/1262
+* Add apply method that takes ReferenceTarget parameter in RAMStyleHint by @russell-horvath in https://github.com/firesim/firesim/pull/1306
+* adding a Plusargs Bridge, with unit tests and TutorialSuite tests by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1291
+* Add CI typechecking by @abejgonzalez in https://github.com/firesim/firesim/pull/1325
+* Added UART bridge test by @nandor in https://github.com/firesim/firesim/pull/1326
+* Added SimpleRocketF1Tests by @nandor in https://github.com/firesim/firesim/pull/1330
+* Add an Assert-mode for TerminationBridge; expand testing by @davidbiancolin in https://github.com/firesim/firesim/pull/1324
+* Introduced an interface to capture the user-defined logic of a simuation by @nandor in https://github.com/firesim/firesim/pull/1328
+* Added a test for the BlockDevBridge by @nandor in https://github.com/firesim/firesim/pull/1335
+* Added a root widget class and a low-overhead RTTI mechanism by @nandor in https://github.com/firesim/firesim/pull/1382
+* Added a bridge registry to own all bridge instances by @nandor in https://github.com/firesim/firesim/pull/1369
+* Added a test for memory accesses and LoadMemWidget by @nandor in https://github.com/firesim/firesim/pull/1433
+* Add scalaFix  by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1393
+* Add VCS metasimulation to CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1396
+* Add CI for Vitis driver outside of FPGA sims by @abejgonzalez in https://github.com/firesim/firesim/pull/1414
+* Add reports and checkpoints section to vitis readme by @russell-horvath in https://github.com/firesim/firesim/pull/1412
+* Add option to the F1 driver to load an AGFI by @nandor in https://github.com/firesim/firesim/pull/1434
+* Add URI support to tarball path and xclbin path by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1432
+* Add ci:persist-prior-workflows tag to allow prior workflow to run until completion by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1449
+* Add uartlog checking to Linux boots in CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1454
+* Add `build_farm_tag` field to AWS EC2 build farm recipe by @abejgonzalez in https://github.com/firesim/firesim/pull/1457
+* Add  `buildfarmprefix` to AWS resource dict by @abejgonzalez in https://github.com/firesim/firesim/pull/1462
+* Add PyTest docs by @abejgonzalez in https://github.com/firesim/firesim/pull/1269
+* Put instPath before label in AutoCounter output by @timsnyder-siv in https://github.com/firesim/firesim/pull/1274
+* Add workshop info to README.md by @sagark in https://github.com/firesim/firesim/pull/1411
+* Bump to latest rocket-chip/scala2.13 by @jerryz123 in https://github.com/firesim/firesim/pull/1392
+* Bump SBT to 1.8.2 by @abejgonzalez in https://github.com/firesim/firesim/pull/1446
+* Support AL2 manager instances by @abejgonzalez in https://github.com/firesim/firesim/pull/1460
+* AL2 Auto-Setup NICE DCV by @abejgonzalez in https://github.com/firesim/firesim/pull/1468
+* Expand TracerV to support more than 7 IPC by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1383
+
+### Changed
+* Expose frequency in the builddcp script by @russell-horvath in https://github.com/firesim/firesim/pull/1229
+* Match field order in channel info by @nandor in https://github.com/firesim/firesim/pull/1264
+* Localize Java temp directory + Revert to using `sbt-launch.jar` by @abejgonzalez in https://github.com/firesim/firesim/pull/1257
+* build setup: make env.sh sourcable in contexts without conda functions by @davidbiancolin in https://github.com/firesim/firesim/pull/1285
+* Relaxed restrictions on pipe channel types by @nandor in https://github.com/firesim/firesim/pull/1263
+* Move XDC circuit paths to config by @fabianschuiki in https://github.com/firesim/firesim/pull/1308
+* Moved chipyard tests to main FireSim repository by @nandor in https://github.com/firesim/firesim/pull/1314
+* Rewrite MIDAS tests by @nandor in https://github.com/firesim/firesim/pull/1327
+* Eliminate virtual inheritance and simplify tests by @nandor in https://github.com/firesim/firesim/pull/1323
+* Remove references to buildafi; replace with buildbitstream by @davidbiancolin in https://github.com/firesim/firesim/pull/1287
+* Move termination to Run Farm `Inst` + `monitor_jobs` small rework by @abejgonzalez in https://github.com/firesim/firesim/pull/1322
+* Provided tests with their own random number generator by @nandor in https://github.com/firesim/firesim/pull/1338
+* Moved MMIO struct type definitions to headers by @nandor in https://github.com/firesim/firesim/pull/1331
+* Moved widget logic to individual classes by @nandor in https://github.com/firesim/firesim/pull/1339
+* Switch VCS simulation over to DPI by @nandor in https://github.com/firesim/firesim/pull/1332
+* Introduced a uniform harness over bridge tests by @nandor in https://github.com/firesim/firesim/pull/1336
+* Separated testing from peek-poke logic by @nandor in https://github.com/firesim/firesim/pull/1341
+* VCS and Verilator DPI switchover by @nandor in https://github.com/firesim/firesim/pull/1348
+* Improve the names of synchronisation primitives in `simif_emul` by @nandor in https://github.com/firesim/firesim/pull/1364
+* Replace AXI4 configuration with structures by @nandor in https://github.com/firesim/firesim/pull/1358
+* Split TutorialSuite into multiple files and helpers by @nandor in https://github.com/firesim/firesim/pull/1355
+* Introduced a uniform harness across all simulations by @nandor in https://github.com/firesim/firesim/pull/1342
+* Moved constructor macros to the constructor header by @nandor in https://github.com/firesim/firesim/pull/1359
+* Eliminate random number generation from simif by @nandor in https://github.com/firesim/firesim/pull/1367
+* Split `target-agnostic.mk` into multiple files by @nandor in https://github.com/firesim/firesim/pull/1353
+* Stream Engine IO interfaces by @nandor in https://github.com/firesim/firesim/pull/1366
+* Split timing functions from simif.h by @nandor in https://github.com/firesim/firesim/pull/1371
+* Split `simulation_t` from simif.h by @nandor in https://github.com/firesim/firesim/pull/1372
+* [library] Re-organised library file structure by @nandor in https://github.com/firesim/firesim/pull/1361
+* Remove the use of DPI utilities from dpi.cc by @nandor in https://github.com/firesim/firesim/pull/1379
+* Separate XSIM from f1 into `simif_xsim` by @nandor in https://github.com/firesim/firesim/pull/1374
+* Split project `Makefrag` into multiple components by @nandor in https://github.com/firesim/firesim/pull/1354
+* Cache the classpath between SBT runs by @nandor in https://github.com/firesim/firesim/pull/1390
+* Enable clang-tidy on C++ sources by @nandor in https://github.com/firesim/firesim/pull/1400
+* Moved simulation step control to the PeekPoke bridge by @nandor in https://github.com/firesim/firesim/pull/1399
+* [library] Introduced a unique main to the simulation. by @nandor in https://github.com/firesim/firesim/pull/1368
+* Passed memory region offsets to genHeader by @nandor in https://github.com/firesim/firesim/pull/1416
+* Removed the compiler-generated runtime config by @nandor in https://github.com/firesim/firesim/pull/1422
+* Re-enabled timeout detection for harnesses by @nandor in https://github.com/firesim/firesim/pull/1423
+* Moved non-host IF functions from `simif_t` into `simulation_t` by @nandor in https://github.com/firesim/firesim/pull/1424
+* Restored the runtime config generation phase by @nandor in https://github.com/firesim/firesim/pull/1425
+* Remove `constructor.h` and replace it with a Scala-generated header by @nandor in https://github.com/firesim/firesim/pull/1398
+* Enabled scalafmt on more sources by @nandor in https://github.com/firesim/firesim/pull/1429
+* VCS post-synthesis RTL simulators by @nandor in https://github.com/firesim/firesim/pull/1438
+* Extended tests to work with post-synth RTL by @nandor in https://github.com/firesim/firesim/pull/1439
+* Converted FASEDMemoryTimingModel into a bridge by @nandor in https://github.com/firesim/firesim/pull/1440
+* Move bridge init/finish handling into the simulation base by @nandor in https://github.com/firesim/firesim/pull/1441
+* Removed `test_harness_bridge` and simplified harnesses by @nandor in https://github.com/firesim/firesim/pull/1442
+* Bump Conda to 22.11.1-4 by @abejgonzalez in https://github.com/firesim/firesim/pull/1481
+* New Local FPGA Tutorial by @abejgonzalez in https://github.com/firesim/firesim/pull/1453
+* FPGA-managed bridge stream support in metasimulation by @davidbiancolin in https://github.com/firesim/firesim/pull/1181
+* Setup defaults to be single-node by @abejgonzalez in https://github.com/firesim/firesim/pull/1260
+* Changed "firesim infrasetup" to deploy using a tarball.  by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1299
+* Switch to py script for XRT shell flashing by @abejgonzalez in https://github.com/firesim/firesim/pull/1385
+* Update Vitis docs | Bump FPGA platform to 2022.1 by @abejgonzalez in https://github.com/firesim/firesim/pull/1397
+* Force using 2022.1 Vitis by @abejgonzalez in https://github.com/firesim/firesim/pull/1410
+* Localize `.ivy2` and `.sbt` folders to FireSim repo by @abejgonzalez in https://github.com/firesim/firesim/pull/1456
+* Unpin most conda reqs now that we have a lockfile by @abejgonzalez in https://github.com/firesim/firesim/pull/1451
+
+### Fixed
+* Do not materialize a stream engine if no streams are used by @nandor in https://github.com/firesim/firesim/pull/1430
+* Do not materialize memory connections if the target does not use them by @nandor in https://github.com/firesim/firesim/pull/1431
+* Introduced a full verilator/vcs/debug matrix by @nandor in https://github.com/firesim/firesim/pull/1435
+* Re-enable compilation of the Dromajo bridge by @nandor in https://github.com/firesim/firesim/pull/1384
+* Bump CI to Ubuntu 20.04 + new checkout action by @abejgonzalez in https://github.com/firesim/firesim/pull/1265
+* remove unused import RocketTilesKey (copy #1278) by @mergify in https://github.com/firesim/firesim/pull/1279
+* fix vcs metasims by @sagark in https://github.com/firesim/firesim/pull/1280
+* aws-fpga: avoid invocations of git clean  by @davidbiancolin in https://github.com/firesim/firesim/pull/1283
+* Fix and Register TargetUtils + Midas Scala Tests in CI by @davidbiancolin in https://github.com/firesim/firesim/pull/1284
+* manager: fix string interpolation in buildconfigfile by @davidbiancolin in https://github.com/firesim/firesim/pull/1288
+* Manager: Add back InfoStreamLoggers to buildbitstream related tasks by @davidbiancolin in https://github.com/firesim/firesim/pull/1292
+* fixed runners for midas / targetutils tests by @t14916 in https://github.com/firesim/firesim/pull/1294
+* Fix SimUtils tests by @nandor in https://github.com/firesim/firesim/pull/1295
+* Fix Reset Synchronizer For InitValues == 0 by @davidbiancolin in https://github.com/firesim/firesim/pull/1296
+* Fix MCRAMs optimization with more strict FPGA backend passes by @russell-horvath in https://github.com/firesim/firesim/pull/1298
+* Fix C++ compiler warnings by @nandor in https://github.com/firesim/firesim/pull/1302
+* AutoCounter: Add cinttypes to autocounter.h for format specifier bug by @davidbiancolin in https://github.com/firesim/firesim/pull/1304
+* Regenerate AGFIs to fix references to removed FXXMHz classes by @davidbiancolin in https://github.com/firesim/firesim/pull/1300
+* CI Cleanup: Camel-case AWS CI variables by @abejgonzalez in https://github.com/firesim/firesim/pull/1321
+* CI Cleanup: Fix deprecations + Remove extra whitespace by @abejgonzalez in https://github.com/firesim/firesim/pull/1320
+* CI Rework: More Aggressive Culling Of FPGA Resources, Slack/PR Notifications by @abejgonzalez in https://github.com/firesim/firesim/pull/1316
+* Remove raw pointers from bridge port address creation by @nandor in https://github.com/firesim/firesim/pull/1309
+* Fixed invalid memory access of MMIO port addresses by @nandor in https://github.com/firesim/firesim/pull/1317
+* Slightly increased timeouts of fpga jobs in CI by @t14916 in https://github.com/firesim/firesim/pull/1333
+* Fixed firesim.bridges CI tests by @nandor in https://github.com/firesim/firesim/pull/1334
+* Fix documentation on Vitis deploy manager by @abejgonzalez in https://github.com/firesim/firesim/pull/1343
+* Fixed GCC/Clang compilation issues by @nandor in https://github.com/firesim/firesim/pull/1360
+* Fix a memory leak in the serial bridge by @nandor in https://github.com/firesim/firesim/pull/1373
+* Fix Valgrind false positives by @nandor in https://github.com/firesim/firesim/pull/1376
+* Fix Assorted Scala warnings by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1378
+* Fixes needed to support Scala 2.13 by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1388
+* Fix metasim due to tarball deployment and add CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1387
+* Fixed platform configs not being applied by @nandor in https://github.com/firesim/firesim/pull/1394
+* Fix Vitis CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1344
+* Fixes for Chisel 3.6 support by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1395
+* Applied clang-tidy fixes by @nandor in https://github.com/firesim/firesim/pull/1402
+* Fix loadmem bug in `firesim_tsi.cc` by @jerryz123 in https://github.com/firesim/firesim/pull/1401
+* Fix incremental builds triggered by scala changes by @nandor in https://github.com/firesim/firesim/pull/1408
+* Fix Vitis driver compilation + Fix CY-as-top driver builds by @abejgonzalez in https://github.com/firesim/firesim/pull/1409
+* Fix Vitis driver CI check by @abejgonzalez in https://github.com/firesim/firesim/pull/1415
+* Fixed missing array include by @nandor in https://github.com/firesim/firesim/pull/1417
+* bump aws-fpga to remove bloat files in hdk/cl/examples + fix typo by @russell-horvath in https://github.com/firesim/firesim/pull/1406
+* Fix wiring of unused ports by @nandor in https://github.com/firesim/firesim/pull/1437
+* Fix replace-rtl ordering problem by @nandor in https://github.com/firesim/firesim/pull/1444
+* Fix uartlog checking in CI for Linux boot by @abejgonzalez in https://github.com/firesim/firesim/pull/1467
+* [SimWrapper] Remove unused SimReadyValidRecord; NFC by @fabianschuiki in https://github.com/firesim/firesim/pull/1337
+* manager: update paramiko date threshold by @davidbiancolin in https://github.com/firesim/firesim/pull/1357
+* bump aws-fpga w/ Route 35-1 and Synth-8-6340 warning promotion by @russell-horvath in https://github.com/firesim/firesim/pull/1391
+* Use the new config filename in bitbuilder logging by @caizixian in https://github.com/firesim/firesim/pull/1413
+* Test for existing TracerV bridge including trigger modes by @sifive-benjamin-morse in https://github.com/firesim/firesim/pull/1426
+* Update doc of `always_expand_run_farm` for rename by @timsnyder-siv in https://github.com/firesim/firesim/pull/1427
+* pickup fab-classic#77 by bumping to 1.19.2 by @timsnyder-siv in https://github.com/firesim/firesim/pull/1443
+* Dedup. CI Requirements by @abejgonzalez in https://github.com/firesim/firesim/pull/1445
+* Don't hash dict in CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1450
+* Revert to UInt64 for offsetConst in SerialBridge by @abejgonzalez in https://github.com/firesim/firesim/pull/1463
+* Update .gitignore for .ivy2/.sbt by @abejgonzalez in https://github.com/firesim/firesim/pull/1465
+* Bump Chipyard + Update Vitis Xclbin + AWS AGFIs by @abejgonzalez in https://github.com/firesim/firesim/pull/1466
+* Bump conda-reqs | Bump Chipyard by @abejgonzalez in https://github.com/firesim/firesim/pull/1470
+* Use FREQUENCY as a prereq in Vitis builds by @abejgonzalez in https://github.com/firesim/firesim/pull/1472
+* firesim gemmini tutorial configs by @sagark in https://github.com/firesim/firesim/pull/1480
+* Fix typos in Vitis docs by @ncppd in https://github.com/firesim/firesim/pull/1483
+
+
 ## [1.15.1] - 2022-10-18
 
 Fixes to metasimulation, TracerV, and improved cross-platform support.

@@ -11,7 +11,7 @@ FireSim is capable of simulating from **one to thousands of multi-core compute
 nodes**, derived from **silicon-proven** and **open** target-RTL, with an optional
 cycle-accurate network simulation tying them together. FireSim runs on FPGAs in **public
 cloud** environments like AWS EC2 F1, removing the high capex traditionally
-involved in large-scale FPGA-based simulation, as well as on on-premise FPGAs.
+involved in large-scale FPGA-based simulation, as well as on on-premises FPGAs.
 
 FireSim is useful both for datacenter architecture research as well as running
 many single-node architectural experiments in parallel on FPGAs. By harnessing
@@ -28,15 +28,15 @@ see our ISCA 2018 lightning talk `on YouTube <https://www.youtube.com/watch?v=4X
 Three common use cases:
 --------------------------
 
-Single-Node Simulation In Parallel Using On-Premise FPGAs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Single-Node Simulation In Parallel Using On-Premises FPGAs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this mode, FireSim allows for simulation of individual Rocket
 Chip-based nodes without a network, which allows individual simulations to run
 at ~150 MHz. The FireSim manager has the ability to automatically distribute
-jobs to on-premise FPGAs allowing users to harness existing FPGAs for quick turnaround time and
+jobs to on-premises FPGAs allowing users to harness existing FPGAs for quick turnaround time and
 maximum flexibility. For example, users can run all of SPECInt2017 on Rocket Chip
-in ~1 day by running the 10 separate workloads in parallel on 10 on-premise FPGAs.
+in ~1 day by running the 10 separate workloads in parallel on 10 on-premises FPGAs.
 
 Single-Node Simulation In Parallel Using Cloud FPGAs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

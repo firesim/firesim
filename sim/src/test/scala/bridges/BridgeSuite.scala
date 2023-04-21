@@ -7,9 +7,9 @@ import java.io._
 import org.scalatest.Suites
 import org.scalatest.matchers.should._
 
-import freechips.rocketchip.config.Config
-import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config.Config
+import org.chipsalliance.cde.config.Parameters
+import org.chipsalliance.cde.config._
 
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 

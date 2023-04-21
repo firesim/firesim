@@ -1,7 +1,7 @@
 package midas
 package models
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import junctions._
 
 import chisel3._

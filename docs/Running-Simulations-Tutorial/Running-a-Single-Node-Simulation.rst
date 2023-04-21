@@ -28,9 +28,9 @@ distribution. You can do this like so:
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/br-base-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/br-base.img`` - a disk image for
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
@@ -358,8 +358,8 @@ with a Linux login prompt, like so:
 You can ignore the messages about the network -- that is expected because we
 are simulating a design without a NIC.
 
-Now, you can login to the system! The username is ``root`` and the password is
-``firesim``. At this point, you should be presented with a regular console,
+Now, you can login to the system! The username is ``root``.
+At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
 ::
@@ -500,4 +500,3 @@ check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`), or you can continue
 on with the cluster simulation tutorial.
-

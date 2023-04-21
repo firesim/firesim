@@ -4,7 +4,7 @@ package midas.unittest
 import chisel3._
 import chisel3.experimental.DataMirror
 
-import freechips.rocketchip.config.{Parameters, Config, Field}
+import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import midas.widgets.ScanRegister
 
 case object QoRTargets extends Field[Parameters => Seq[RawModule]]

@@ -6,7 +6,7 @@ import chisel3.util._
 import junctions._
 import midas.widgets._
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
 // Add some scheduler specific metadata to a reference

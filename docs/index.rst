@@ -20,6 +20,16 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
    :maxdepth: 3
+   :caption: On-Premises FPGA Tutorial:
+   :numbered:
+
+   Initial-OnPrem-Setup/index
+   Running-OnPrem-Simulations-Tutorial/index
+   Building-a-FireSim-Xclbin
+
+
+.. toctree::
+   :maxdepth: 3
    :caption: Advanced Docs:
 
    Advanced-Usage/Manager/index
@@ -31,7 +41,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
-   Advanced-Usage/Vitis.rst
 
 .. toctree::
    :maxdepth: 3

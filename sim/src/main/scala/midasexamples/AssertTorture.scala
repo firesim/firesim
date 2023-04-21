@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import chisel3._
 import freechips.rocketchip.util.ResetCatchAndSync
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
 
 import scala.util.Random

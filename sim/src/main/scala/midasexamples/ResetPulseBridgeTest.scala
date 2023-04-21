@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
-import freechips.rocketchip.config.{Parameters, Field, Config}
+import org.chipsalliance.cde.config.{Parameters, Field, Config}
 import midas.widgets.{RationalClockBridge, PeekPokeBridge, ResetPulseBridge, ResetPulseBridgeParameters}
 
 case object ResetPulseBridgeActiveHighKey extends Field[Boolean](true)

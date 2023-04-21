@@ -4,6 +4,7 @@ import sys
 from fabric.api import prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
+from utils import search_match_in_last_workloads_output_file
 
 def run_linux_poweroff_vitis():
     """ Runs Base Vitis Build """
@@ -30,13 +31,15 @@ def run_linux_poweroff_vitis():
 
                 run("./marshal -v install test/outputs.yaml")
 
+            run("firesim managerinit --platform vitis")
+
             def run_w_timeout(workload_path, workload, timeout, num_passes):
                 log_tail_length = 300
                 rc = 0
                 with settings(warn_only=True):
                     # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
                     # pty=False needed to avoid issues with screen -ls stalling in fabric
-                    rc = run(f"timeout {timeout} {workload_path}/run-workload.sh {workload_path}/config_runtime.yaml {workload_path}/config_hwdb.yaml {workload_path}/config_build_recipes.yaml &> {workload}.log", pty=False).return_code
+                    rc = run(f"timeout {timeout} {workload_path}/run-workload.sh {workload_path}/config_runtime.yaml &> {workload}.log", pty=False).return_code
                     print(f" Printing last {log_tail_length} lines of log. See {workload}.log for full info.")
                     run(f"tail -n {log_tail_length} {workload}.log")
 
@@ -48,21 +51,26 @@ def run_linux_poweroff_vitis():
                     print(f"Printing last {log_tail_length} lines of all output files. See results-workload for more info.")
                     run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then tail -n{log_tail_length} $LAST_DIR/*/*; fi""")
 
-                    run(f"firesim terminaterunfarm -q -c {workload_path}/config_runtime.yaml -a {workload_path}/config_hwdb.yaml -r {workload_path}/config_build_recipes.yaml")
+                    run(f"firesim terminaterunfarm -q -c {workload_path}/config_runtime.yaml")
 
                 if rc != 0:
                     print(f"Workload {workload} failed.")
                     sys.exit(rc)
                 else:
-                    print(f"Workload run {workload} successful. Checking uartlogs...")
+                    print(f"Workload run {workload} successful. Checking workload files...")
 
-                    # verify that linux booted and the pass printout was given
-                    match_key = "*** PASSED ***"
-                    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -n "{match_key}" $LAST_DIR/*/uartlog; fi""")
-                    out_split = [e for e in out.split('\n') if match_key in e]
-                    print(f"DEBUG: out_split = {out_split}")
-                    out_count = len(out_split)
-                    assert out_count == num_passes, f"Uartlog is malformed for some runs: *** PASSED *** found {out_count} times (!= {num_passes}). Something went wrong."
+                    def check(match_key, file_name = 'uartlog'):
+                        out_count = search_match_in_last_workloads_output_file(file_name, match_key)
+                        assert out_count == num_passes, f"Workload {file_name} files are malformed: '{match_key}' found {out_count} times (!= {num_passes}). Something went wrong."
+
+                    # first driver completed successfully
+                    check('*** PASSED ***')
+
+                    # verify login was reached (i.e. linux booted)
+                    check('running /etc/init.d/S99run')
+
+                    # verify reaching poweroff
+                    check('Power down')
 
                     print(f"Workload run {workload} successful.")
 

@@ -42,9 +42,9 @@ this like so:
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/br-disk-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-disk-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/br-disk.img`` - a disk image for
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-disk.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
@@ -382,8 +382,8 @@ If you also ran the single-node no-nic simulation you'll notice a difference
 in this boot output -- here, Linux sees the NIC and its assigned MAC address and
 automatically brings up the ``eth0`` interface at boot.
 
-Now, you can login to the system! The username is ``root`` and the password is
-``firesim``. At this point, you should be presented with a regular console,
+Now, you can login to the system! The username is ``root``.
+At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
 ::

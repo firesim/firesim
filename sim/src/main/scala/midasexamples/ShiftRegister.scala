@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 class ShiftRegisterDUT extends Module {
   val io = IO(new Bundle {

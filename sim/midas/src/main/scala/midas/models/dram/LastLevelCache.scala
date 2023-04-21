@@ -6,7 +6,7 @@ package models
 import junctions._
 
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util.{MaskGen, UIntToOH1}
 
 import chisel3._
