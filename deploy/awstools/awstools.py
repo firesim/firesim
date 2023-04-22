@@ -181,7 +181,8 @@ def aws_resource_names() -> Dict[str, Any]:
         'tutorial_mode'  :   False,
         # regular users are instructed to create these in the setup instructions
         'vpcname':           'firesim',
-        'securitygroupname': 'firesim',
+        'securitygroupname': 'for-farms-only-firesim',
+        'securitygroupname-manager': 'firesim',
         # regular users are instructed to create a key named `firesim` in the wiki
         'keyname':           'firesim',
         's3bucketname' :     None,
@@ -200,6 +201,7 @@ def aws_resource_names() -> Dict[str, Any]:
         base_dict['tutorial_mode']     = True
         base_dict['vpcname']           = resptags['firesim-tutorial-username']
         base_dict['securitygroupname'] = resptags['firesim-tutorial-username']
+        base_dict['securitygroupname-manager'] = resptags['firesim-tutorial-username'] + "-manager"
         base_dict['keyname']           = resptags['firesim-tutorial-username']
         base_dict['s3bucketname']      = resptags['firesim-tutorial-username']
         base_dict['snsname']           = resptags['firesim-tutorial-username']
@@ -207,6 +209,58 @@ def aws_resource_names() -> Dict[str, Any]:
         base_dict['buildfarmprefix']   = resptags['firesim-tutorial-username']
 
     return base_dict
+
+
+def farm_security_group_setup() -> None:
+    """Create the security group for build/run farm instances, if it doesn't
+    already exist."""
+
+    aws_resource_names_dict = aws_resource_names()
+    securitygroupname = aws_resource_names_dict['securitygroupname']
+    vpcname = aws_resource_names_dict['vpcname']
+
+    ec2 = boto3.resource('ec2')
+    client = boto3.client('ec2')
+
+    operation_params = {
+        'Filters': [{'Name':'group-name', 'Values': [securitygroupname]}]
+    }
+    firesimsecuritygroup = depaginated_boto_query(client, 'describe_security_groups', operation_params, 'SecurityGroups')
+
+    if len(firesimsecuritygroup) > 1:
+        rootLogger.critical(f"Too many security groups named {securitygroupname}. Exiting.")
+        assert False
+    elif len(firesimsecuritygroup) == 1:
+        rootLogger.debug(f"Security group {securitygroupname} already exists. Skipping setup.")
+        return
+
+    # at this point, we do not have the required security group, so create it
+    rootLogger.info(f"The {securitygroupname} security group does not exist. Creating it for you.")
+
+    vpcfilter: Sequence[FilterTypeDef] = [{'Name':'tag:Name', 'Values': [vpcname]}]
+    # docs show 'NextToken' / 'MaxResults' which suggests pagination, but
+    # the boto3 source says collections handle pagination automatically,
+    # so assume this is fine
+    # https://github.com/boto/boto3/blob/1.20.21/boto3/resources/collection.py#L32
+    firesimvpc = list(ec2.vpcs.filter(Filters=vpcfilter))[0]
+
+    sec_group = ec2.create_security_group(
+        GroupName=securitygroupname, Description='Do not use for FireSim Manager instances. For FireSim build and run farms only.',
+        VpcId=firesimvpc.id)
+
+    # this security group will allow ingress ONLY from the firesim VPC, i.e.
+    # managers and other build/run farm instances
+    allowed_cidr = '192.168.0.0/16'
+
+    sec_group.authorize_ingress(IpPermissions=[
+        {u'PrefixListIds': [], u'FromPort': 60000, u'IpRanges': [{u'Description': 'mosh', u'CidrIp': allowed_cidr}], u'ToPort': 61000, u'IpProtocol': 'udp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 22, u'IpRanges': [{u'CidrIp': allowed_cidr}], u'ToPort': 22, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 10000, u'IpRanges': [{u'Description': 'firesim network model', u'CidrIp': allowed_cidr}], u'ToPort': 11000, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 3389, u'IpRanges': [{u'Description': 'remote desktop', u'CidrIp': allowed_cidr}], u'ToPort': 3389, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+        {u'PrefixListIds': [], u'FromPort': 8443, u'IpRanges': [{u'Description': 'nice dcv (ipv4)', u'CidrIp': allowed_cidr}], u'ToPort': 8443, u'IpProtocol': 'tcp', u'UserIdGroupPairs': [], u'Ipv6Ranges': []},
+    ])
+
+    rootLogger.info(f"The {securitygroupname} security group has been successfully created!")
 
 
 def awsinit() -> None:
@@ -223,6 +277,8 @@ def awsinit() -> None:
         valid_creds = valid_aws_configure_creds()
         if not valid_creds:
             rootLogger.info("Invalid AWS credentials. Try again.")
+
+    farm_security_group_setup()
 
     useremail = firesim_input("If you are a new user, supply your email address [abc@xyz.abc] for email notifications (leave blank if you do not want email notifications): ")
     if useremail != "":
@@ -291,7 +347,7 @@ def construct_instance_market_options(instancemarket: str, spotinterruptionbehav
         assert False, "INVALID INSTANCE MARKET TYPE."
 
 def launch_instances(instancetype: str, count: int, instancemarket: str, spotinterruptionbehavior: str, spotmaxprice: str, blockdevices: Optional[List[Dict[str, Any]]] = None,
-        tags: Optional[Dict[str, Any]] = None, randomsubnet: bool = False, user_data_file: Optional[str] = None, timeout: timedelta = timedelta(), always_expand: bool = True, ami_id: Optional[str] = None) -> List[EC2InstanceResource]:
+        tags: Optional[Dict[str, Any]] = None, randomsubnet: bool = False, user_data_file: Optional[str] = None, timeout: timedelta = timedelta(), always_expand: bool = True, ami_id: Optional[str] = None, use_manager_security_group: bool = False) -> List[EC2InstanceResource]:
     """Launch `count` instances of type `instancetype`
 
     Using `instancemarket`, `spotinterruptionbehavior` and `spotmaxprice` to define instance market conditions
@@ -316,6 +372,7 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
             If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
         ami_id: Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
             `awstools.get_f1_ami_id()`.
+        use_manager_security_group: Use the manager security group instead of the run/build farm security group.
 
     Returns:
         List of instance resources.  If `always_expand` is True, this list contains only the instances created in this
@@ -328,6 +385,8 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
     aws_resource_names_dict = aws_resource_names()
     keyname = aws_resource_names_dict['keyname']
     securitygroupname = aws_resource_names_dict['securitygroupname']
+    if use_manager_security_group:
+        securitygroupname = aws_resource_names_dict['securitygroupname-manager']
     vpcname = aws_resource_names_dict['vpcname']
 
     ec2 = boto3.resource('ec2')
@@ -688,20 +747,22 @@ def main(args: List[str]) -> int:
     parser.add_argument("--filters", type=yaml.safe_load, default=run_filters_list_dict(), help="List of dicts used to filter instances. Used by \'terminate\'.")
     parser.add_argument("--user_data_file", default=None, help="File path to use as user data (run on initialization). Used by \'launch\'.")
     parser.add_argument("--ami_id", default=get_f1_ami_id(), help="Override AMI ID used for launch. Defaults to \'awstools.get_f1_ami_id()\'. Used by \'launch\'.")
+    parser.add_argument("--use_manager_security_group", action=argparse.BooleanOptionalAction, default=False, help="Launch instances within the manager security group instead of the farm security group.")
     parsed_args = parser.parse_args(args)
 
     if parsed_args.command == "launch":
         insts = launch_instances(
-            parsed_args.inst_type,
-            parsed_args.inst_amt,
-            parsed_args.market,
-            parsed_args.int_behavior,
-            parsed_args.spot_max_price,
-            parsed_args.block_devices,
-            parsed_args.tags,
-            parsed_args.random_subnet,
-            parsed_args.user_data_file,
-            parsed_args.ami_id)
+            instancetype=parsed_args.inst_type,
+            count=parsed_args.inst_amt,
+            instancemarket=parsed_args.market,
+            spotinterruptionbehavior=parsed_args.int_behavior,
+            spotmaxprice=parsed_args.spot_max_price,
+            blockdevices=parsed_args.block_devices,
+            tags=parsed_args.tags,
+            randomsubnet=parsed_args.random_subnet,
+            user_data_file=parsed_args.user_data_file,
+            ami_id=parsed_args.ami_id,
+            use_manager_security_group=parsed_args.use_manager_security_group)
         instids = get_instance_ids_for_instances(insts)
         print("Instance IDs: {}".format(instids))
         wait_on_instance_launches(insts)
