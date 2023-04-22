@@ -93,14 +93,40 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
   // Open Kernel
   kernel_handle = xrt::ip(device_handle, uuid, "firesim");
 
+  // Get kernel metadata
+  auto xclbin = xrt::xclbin(binary_file);
+
+  // Only 1 MEM_DDR4 region so use that offset
+  // determine the bank index for the dram channel.
+  // this is an adaptation of https://xilinx.github.io/XRT/master/html/xclbintools.html
+  int32_t fpga_mem_0_idx = -1;
+  for (auto& mem : xclbin.get_mems()) {
+    std::cout << "DEBUG: mems Tag:" << mem.get_tag() << " Used:" << mem.get_used() << " Idx:" << mem.get_index() << std::hex << " BAddr:" << mem.get_base_address() << std::dec << " SizeKB:" << mem.get_size_kb() << std::endl;
+    if (mem.get_used() && mem.get_type() == xrt::xclbin::mem::memory_type::ddr4) {
+      if (fpga_mem_0_idx == -1) {
+        fpga_mem_0_idx = mem.get_index();
+      } else {
+        // only supporting 1 DRAM port
+        std::cerr
+            << "Found more DRAM ports than we can deal with"
+            << std::endl;
+        exit(1);
+      }
+    }
+  }
+
+  if (fpga_mem_0_idx == -1) {
+    std::cerr
+        << "Unable to find idx of dram port"
+        << std::endl;
+    exit(1);
+  }
+
   // Intialize FPGA-DRAM regions.
-  // The final argument here is the bank index for the dram channel.
-  // I used xclbinutil to find this
-  // https://xilinx.github.io/XRT/master/html/xclbintools.html
   auto fpga_mem_0 = xrt::bo(device_handle,
                             u250_dram_channel_size_bytes,
                             xrt::bo::flags::device_only,
-                            0);
+                            fpga_mem_0_idx);
 
   if (fpga_mem_0.address() != u250_dram_expected_offset) {
     std::cerr
@@ -116,14 +142,20 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
   if (std::optional<AXI4Config> conf = config.fpga_managed) {
     assert(!config.cpu_managed && "stream should be CPU or FPGA managed");
     assert(conf.has_value());
+
     auto size_in_bytes = 1ULL << conf->addr_bits;
-    printf("Allocating %ld bytes of host memory.\n", size_in_bytes);
+    printf("Allocating %llu bytes of host memory.\n", size_in_bytes);
+
     // TODO: check the xclbinutil to see the bank index (put in a MEM_DRAM spot instead of DDR4?)
     host_mem_0 = xrt::bo(device_handle,
                               size_in_bytes,
                               xrt::bo::flags::host_only,
                               0);
+    // TODO: unsure about group id... what is this
+    uint64_t host_mem_0_paddr = host_mem_0.address();
+    printf("DEBUG: bo Flags:%lu PAddr:0x%lu\n", host_mem_0.get_flags(), host_mem_0_paddr);
     host_mem_0_map = host_mem_0.map<char*>();
+    printf("DEBUG: bo MapAddr:%p\n", host_mem_0_map);
   }
 }
 
@@ -152,6 +184,7 @@ char *simif_vitis_t::get_memory_base() {
   // add abort if this ptr is null
   assert(host_mem_0_map != NULL);
   printf("get_memory_base: %p\n", host_mem_0_map);
+  // TODO: probably need to bo.sync() for caching invalidation
   return host_mem_0_map;
 }
 

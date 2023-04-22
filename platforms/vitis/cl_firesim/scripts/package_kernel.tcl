@@ -83,10 +83,12 @@ ipx::associate_bus_interfaces -busif m_dma -clock ap_clk $core
 set mem_map    [::ipx::add_memory_map -quiet "s_axi_lite" $core]
 set addr_block [::ipx::add_address_block -quiet "reg0" $mem_map]
 
+# TODO: i think this is unused but needed for the vitis build to pass
 set host_mem_0_offset      [::ipx::add_register -quiet "host_mem_0_offset" $addr_block]
 set_property address_offset 0x010 $host_mem_0_offset
 set_property size           64    $host_mem_0_offset
 
+# TODO: i think this is unused but needed for the vitis build to pass
 set m_dma_offset      [::ipx::add_register -quiet "m_dma_offset" $addr_block]
 set_property address_offset 0x020 $m_dma_offset
 set_property size           64    $m_dma_offset
@@ -100,6 +102,7 @@ set_property value {host_mem_0} [::ipx::get_register_parameters -of_objects $hos
 ipx::add_bus_parameter DATA_WIDTH [ipx::get_bus_interfaces host_mem_0 -of_objects [ipx::current_core]]
 set_property value          {64}  [ipx::get_bus_parameters DATA_WIDTH -of_objects [ipx::get_bus_interfaces host_mem_0 -of_objects [ipx::current_core]]]
 
+# define association between pointer arguments (SRC_ADDR, DEST_ADDR) and axi masters (axi_rmst, axi_wmst)
 ipx::add_register_parameter ASSOCIATED_BUSIF $m_dma_offset
 set_property value {m_dma} [::ipx::get_register_parameters -of_objects $m_dma_offset ASSOCIATED_BUSIF]
 
