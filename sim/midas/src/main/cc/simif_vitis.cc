@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <optional>
 
 #include "bridges/fpga_managed_stream.h"
 #include "core/simif.h"
@@ -54,6 +55,7 @@ constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
  * concurrently running kernel.
  */
 constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
+constexpr uint64_t u250_dma_expected_offset = 0x2000000000L;
 
 simif_vitis_t::simif_vitis_t(const TargetConfig &config,
                              const std::vector<std::string> &args)
@@ -96,37 +98,44 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
   // Get kernel metadata
   auto xclbin = xrt::xclbin(binary_file);
 
-  // Only 1 MEM_DDR4 region so use that offset
-  // determine the bank index for the dram channel.
-  // this is an adaptation of https://xilinx.github.io/XRT/master/html/xclbintools.html
-  int32_t fpga_mem_0_idx = -1;
+  // get the bank index of the DDR4 and DMA buffers.
+  // this C++ API of https://xilinx.github.io/XRT/master/html/xclbintools.html
+
+  // for now, only 1 DDR4 region (of type MEM_DDR4).
+  std::optional<int32_t> u250_dram_bank_idx;
+  std::optional<int32_t> u250_dma_bank_idx;
   for (auto& mem : xclbin.get_mems()) {
-    std::cout << "DEBUG: mems Tag:" << mem.get_tag() << " Used:" << mem.get_used() << " Idx:" << mem.get_index() << std::hex << " BAddr:" << mem.get_base_address() << std::dec << " SizeKB:" << mem.get_size_kb() << std::endl;
+    std::cout << "DEBUG: Mem Tag:" << mem.get_tag() << " Idx:" << mem.get_index() << " Used:" << mem.get_used() << std::hex << " BaseAddr:" << mem.get_base_address() << std::dec << " SizeKB:" << mem.get_size_kb() << std::endl;
+
+    // for now, only 1 DDR4 region (of type MEM_DDR4).
     if (mem.get_used() && mem.get_type() == xrt::xclbin::mem::memory_type::ddr4) {
-      if (fpga_mem_0_idx == -1) {
-        fpga_mem_0_idx = mem.get_index();
+      if (u250_dram_bank_idx.has_value()) {
+        std::cerr << "Only 1 DRAM buffer is currently used. Skipping " << mem.get_index() << " bank index." << std::endl;
       } else {
-        // only supporting 1 DRAM port
-        std::cerr
-            << "Found more DRAM ports than we can deal with"
-            << std::endl;
-        exit(1);
+        u250_dram_bank_idx = mem.get_index();
       }
     }
+
+    if (mem.get_used() && mem.get_type() == xrt::xclbin::mem::memory_type::dram) {
+      if (u250_dma_bank_idx.has_value()) {
+        std::cerr << "Only 1 DMA buffer is currently used. Skipping " << mem.get_index() << " bank index." << std::endl;
+      } else {
+        u250_dma_bank_idx = mem.get_index();
+      }
+    }
+
   }
 
-  if (fpga_mem_0_idx == -1) {
-    std::cerr
-        << "Unable to find idx of dram port"
-        << std::endl;
+  if (!u250_dram_bank_idx.has_value() || !u250_dma_bank_idx.has_value()) {
+    std::cerr << "Unable to find bank index of DRAM or DMA port." << std::endl;
     exit(1);
   }
 
-  // Intialize FPGA-DRAM regions.
+  // Initialize FPGA-DRAM regions.
   auto fpga_mem_0 = xrt::bo(device_handle,
                             u250_dram_channel_size_bytes,
                             xrt::bo::flags::device_only,
-                            fpga_mem_0_idx);
+                            u250_dram_bank_idx.value());
 
   if (fpga_mem_0.address() != u250_dram_expected_offset) {
     std::cerr
@@ -146,16 +155,22 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
     auto size_in_bytes = 1ULL << conf->addr_bits;
     printf("Allocating %llu bytes of host memory.\n", size_in_bytes);
 
-    // TODO: check the xclbinutil to see the bank index (put in a MEM_DRAM spot instead of DDR4?)
     host_mem_0 = xrt::bo(device_handle,
-                              size_in_bytes,
-                              xrt::bo::flags::host_only,
-                              0);
-    // TODO: unsure about group id... what is this
-    uint64_t host_mem_0_paddr = host_mem_0.address();
-    printf("DEBUG: bo Flags:%lu PAddr:0x%lu\n", host_mem_0.get_flags(), host_mem_0_paddr);
+                         size_in_bytes,
+                         xrt::bo::flags::host_only,
+                         u250_dma_bank_idx.value());
+
+    if (host_mem_0.address() != u250_dma_expected_offset) {
+      std::cerr
+          << "Allocated host_only buffer address not match the expected offset."
+          << std::endl;
+      std::cerr << "Expected: " << u250_dma_expected_offset
+                << "Received: " << host_mem_0.address() << std::endl;
+      exit(1);
+    }
+
     host_mem_0_map = host_mem_0.map<char*>();
-    printf("DEBUG: bo MapAddr:%p\n", host_mem_0_map);
+    printf("DEBUG: host_only bo MapAddr:%p\n", host_mem_0_map);
   }
 }
 

@@ -102,7 +102,20 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     }
 
     top.module.fpga_managed_axi4.map { axi4 =>
-      axi4 <> m_dma
+      val addrWidth = VitisConstants.axi4MAddressBits.W
+
+      val dma_cdc = Module(new AXI4ClockConverter(dmaAXI4BundleParams, "dma_cdc"))
+      dma_cdc.io.s_axi.drivenByStandardAXI4(axi4, hostClock, hostSyncReset)
+      dma_cdc.io.s_axi_aclk    := hostClock
+      dma_cdc.io.s_axi_aresetn := (!hostSyncReset).asAsyncReset
+      dma_cdc.io.s_axi.araddr  := 0x2000000000L.U(addrWidth) + axi4.ar.bits.addr
+      dma_cdc.io.s_axi.awaddr  := 0x2000000000L.U(addrWidth) + axi4.aw.bits.addr
+      dma_cdc.io.s_axi.arcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
+      dma_cdc.io.s_axi.awcache.foreach { _ := AXI4Parameters.CACHE_MODIFIABLE }
+
+      m_dma                    <> dma_cdc.io.m_axi
+      dma_cdc.io.m_axi_aclk    := ap_clk
+      dma_cdc.io.m_axi_aresetn := ap_rst_n
     }
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
