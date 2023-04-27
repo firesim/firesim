@@ -148,7 +148,6 @@ You should expect output like the following:
 	FireSim Manager. Docs: https://docs.fires.im
 	Running: launchrunfarm
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
 	WARNING: Skipping launchrunfarm since run hosts are externally provisioned.
 	The full log of this run is:
 	.../firesim/deploy/logs/2023-03-06--00-20-37-launchrunfarm-24T0KOGRHBMSHAV5.log
@@ -173,7 +172,6 @@ For a complete run, you should expect output like the following:
 	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
 	Running: infrasetup
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
 	Building FPGA software driver for FireSim-FireSimRocketConfig-BaseVitisConfig
 	...
 	[localhost] Checking if host instance is up...
@@ -211,7 +209,6 @@ nodes every 10s. When you do this, you will initially see output like:
 	FireSim Manager. Docs: https://docs.fires.im
 	Running: runworkload
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
 	Creating the directory: .../firesim/deploy/results-workload/2023-03-06--01-25-34-linux-uniform/
 	[localhost] Checking if host instance is up...
 	[localhost] Starting FPGA simulation for slot: 0.
@@ -403,7 +400,6 @@ Which should present you with the following:
 	FireSim Manager. Docs: https://docs.fires.im
 	Running: terminaterunfarm
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
 	WARNING: Skipping terminaterunfarm since run hosts are externally provisioned.
 	The full log of this run is:
 	.../firesim/deploy/logs/2023-03-06--01-34-45-terminaterunfarm-YFXAJCRGF8KF4LQ3.log

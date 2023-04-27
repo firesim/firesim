@@ -47,7 +47,7 @@ class to the platform configuration, as shown in the following example build rec
         DESIGN: FireSim
         TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_FireSimLargeBoomConfig
         PLATFORM_CONFIG: MCRams_BaseF1Config
-        deploy_triplet: null
+        deploy_quadruplet: null
 
 
 Multi-Threading of Repeated Instances
@@ -71,7 +71,7 @@ example build recipe:
         DESIGN: FireSim
         TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig
         PLATFORM_CONFIG: MTModels_BaseF1Config
-        deploy_triplet: null
+        deploy_quadruplet: null
 
 This simulator configuration will rely on a single threaded model to simulate the four Rocket tiles.
 However, it will still produce bit- and cycle-identical results to any other platform configuration
@@ -89,4 +89,4 @@ partitioning.
         DESIGN: FireSim
         TARGET_CONFIG: MyMultiCoreBoomConfig
         PLATFORM_CONFIG: MTModels_MCRams_BaseF1Config
-        deploy_triplet: null
+        deploy_quadruplet: null

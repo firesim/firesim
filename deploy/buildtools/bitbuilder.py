@@ -110,7 +110,7 @@ class F1BitBuilder(BitBuilder):
         get_snsname_arn()
 
     def replace_rtl(self) -> None:
-        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
+        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quadruplet()}")
 
         with InfoStreamLogger('stdout'), \
             prefix(f'cd {get_deploy_dir()}/../'), \
@@ -123,7 +123,7 @@ class F1BitBuilder(BitBuilder):
             run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
 
     def build_driver(self) -> None:
-        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_triplet()}")
+        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_quadruplet()}")
 
         with InfoStreamLogger('stdout'), \
             prefix(f'cd {get_deploy_dir()}/../'), \
@@ -195,7 +195,7 @@ class F1BitBuilder(BitBuilder):
 
             message_title = "FireSim FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
+            message_body = "Your FPGA build failed for quadruplet: " + self.build_config.get_chisel_quadruplet()
 
             send_firesim_notification(message_title, message_body)
 
@@ -273,17 +273,19 @@ class F1BitBuilder(BitBuilder):
         afiname = self.build_config.name
 
         # construct the "tags" we store in the AGFI description
-        tag_buildtriplet = self.build_config.get_chisel_triplet()
-        tag_deploytriplet = tag_buildtriplet
-        if self.build_config.deploytriplet:
-            tag_deploytriplet = self.build_config.deploytriplet
+        tag_build_quadruplet = self.build_config.get_chisel_quadruplet()
+        tag_deploy_quadruplet = self.build_config.get_effective_deploy_quadruplet()
+        tag_build_triplet = self.build_config.get_chisel_triplet()
+        tag_deploy_triplet = self.build_config.get_effective_deploy_triplet()
 
         # the asserts are left over from when we tried to do this with tags
         # - technically I don't know how long these descriptions are allowed to be,
-        # but it's at least 256*3, so I'll leave these here for now as sanity
+        # but it's at least 2048 chars, so I'll leave these here for now as sanity
         # checks.
-        assert len(tag_buildtriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for buildtriplet"
-        assert len(tag_deploytriplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploytriplet"
+        assert len(tag_build_quadruplet) <= 255, "ERR: aws does not support tags longer than 256 chars for build_quadruplet"
+        assert len(tag_deploy_quadruplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploy_quadruplet"
+        assert len(tag_build_triplet) <= 255, "ERR: aws does not support tags longer than 256 chars for build_triplet"
+        assert len(tag_deploy_triplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploy_triplet"
 
         is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
         hash = local("git rev-parse HEAD", capture=True)
@@ -292,13 +294,13 @@ class F1BitBuilder(BitBuilder):
         assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
 
         # construct the serialized description from these tags.
-        description = firesim_tags_to_description(tag_buildtriplet, tag_deploytriplet, tag_fsimcommit)
+        description = firesim_tags_to_description(tag_build_quadruplet, tag_deploy_quadruplet, tag_build_triplet, tag_deploy_triplet, tag_fsimcommit)
 
         # if we're unlucky, multiple vivado builds may launch at the same time. so we
         # append the build node IP + a random string to diff them in s3
         global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-        with lcd(f"{local_results_dir}/cl_{tag_buildtriplet}/build/checkpoints/to_aws/"):
+        with lcd(f"{local_results_dir}/cl_{self.build_config.get_chisel_triplet()}/build/checkpoints/to_aws/"):
             files = local('ls *.tar', capture=True)
             rootLogger.debug(files)
             rootLogger.debug(files.stderr)
@@ -335,7 +337,7 @@ class F1BitBuilder(BitBuilder):
             message_title = "FireSim FPGA Build Completed"
             agfi_entry = afiname + ":\n"
             agfi_entry += "    agfi: " + agfi + "\n"
-            agfi_entry += "    deploy_triplet_override: null\n"
+            agfi_entry += "    deploy_quadruplet_override: null\n"
             agfi_entry += "    custom_runtime_config: null\n"
             message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
 
@@ -382,7 +384,7 @@ class VitisBitBuilder(BitBuilder):
         return
 
     def replace_rtl(self):
-        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
+        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quadruplet()}")
 
         with InfoStreamLogger('stdout'), \
             prefix(f'cd {get_deploy_dir()}/../'), \
@@ -394,7 +396,7 @@ class VitisBitBuilder(BitBuilder):
             run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
 
     def build_driver(self):
-        rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_triplet())))
+        rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_quadruplet())))
 
         with InfoStreamLogger('stdout'), \
             prefix(f'cd {get_deploy_dir()}/../'), \
@@ -465,7 +467,7 @@ class VitisBitBuilder(BitBuilder):
 
             message_title = "FireSim Vitis FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
+            message_body = "Your FPGA build failed for quadruplet: " + self.build_config.get_chisel_quadruplet()
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
@@ -521,7 +523,7 @@ class VitisBitBuilder(BitBuilder):
 
         hwdb_entry = hwdb_entry_name + ":\n"
         hwdb_entry +=  "    xclbin: " + xclbin_path + "\n"
-        hwdb_entry += f"    deploy_triplet_override: {self.build_config.get_chisel_triplet()}\n"
+        hwdb_entry += f"    deploy_quadruplet_override: {self.build_config.get_chisel_quadruplet()}\n"
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"

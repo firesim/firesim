@@ -19,7 +19,7 @@ from uuid import uuid1
 from tempfile import TemporaryDirectory
 
 from awstools.awstools import aws_resource_names
-from awstools.afitools import get_firesim_tagval_for_agfi
+from awstools.afitools import get_firesim_deploy_quadruplet_for_agfi
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.run_farm_deploy_managers import VitisInstanceDeployManager
 from runtools.workload import WorkloadConfig
@@ -51,7 +51,7 @@ class RuntimeHWConfig:
     """User-specified, URI path to xclbin"""
     xclbin: Optional[str]
 
-    deploytriplet: Optional[str]
+    deploy_quadruplet: Optional[str]
     customruntimeconfig: str
     driver_built: bool
     tarball_built: bool
@@ -88,13 +88,28 @@ class RuntimeHWConfig:
         self.driver_type_message = "FPGA software"
         self.driver_build_target = self.platform
 
-        self.deploytriplet = hwconfig_dict['deploy_triplet_override']
-        if self.deploytriplet is not None:
-            rootLogger.warning("{} is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
+        if 'deploy_triplet_override' in hwconfig_dict.keys() and 'deploy_quadruplet_override' in hwconfig_dict.keys():
+            rootLogger.error("Cannot have both deploy_quadruplet_override and deploy_triplet_override in hwdb entry. Define only deploy_quadruplet_override.")
+            sys.exit(1)
+        elif 'deploy_triplet_override' in hwconfig_dict.keys():
+            rootLogger.warning("Please rename your 'deploy_triplet_override' key in your hwdb entry to 'deploy_quadruplet_override'. Support for 'deploy_triplet_override' will be removed in the future.")
 
-        # TODO: obtain deploy_triplet from tag in xclbin
-        if self.deploytriplet is None and self.platform == "vitis":
-            raise Exception(f"Must set the deploy_triplet_override for Vitis bitstreams")
+        hwconfig_override_build_quadruplet = hwconfig_dict.get('deploy_quadruplet_override')
+        if hwconfig_override_build_quadruplet is None:
+            # temporary backwards compat for old key
+            hwconfig_override_build_quadruplet = hwconfig_dict.get('deploy_triplet_override')
+
+        if hwconfig_override_build_quadruplet is not None and len(hwconfig_override_build_quadruplet.split("-")) == 3:
+            # convert old build_triplet into buildquadruplet
+            hwconfig_override_build_quadruplet = 'firesim-' + hwconfig_override_build_quadruplet
+
+        self.deploy_quadruplet = hwconfig_override_build_quadruplet
+        if self.deploy_quadruplet is not None and self.platform != "vitis":
+            rootLogger.warning("{} is overriding a deploy quadruplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
+
+        # TODO: obtain deploy_quadruplet from tag in xclbin
+        if self.deploy_quadruplet is None and self.platform == "vitis":
+            raise Exception(f"Must set the deploy_quadruplet_override for Vitis bitstreams")
 
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf
@@ -104,20 +119,22 @@ class RuntimeHWConfig:
         self.additional_required_files = []
 
     def get_deploytriplet_for_config(self) -> str:
-        """ Get the deploytriplet for this configuration. This memoizes the request
+        """ Get the deploytriplet for this configuration. """
+        quad = self.get_deployquadruplet_for_config()
+        return "-".join(quad.split("-")[1:])
+
+    def get_deployquadruplet_for_config(self) -> str:
+        """ Get the deployquadruplet for this configuration. This memoizes the request
         to the AWS AGFI API."""
-        if self.deploytriplet is not None:
-            return self.deploytriplet
+        if self.deploy_quadruplet is not None:
+            return self.deploy_quadruplet
         rootLogger.debug("Setting deploytriplet by querying the AGFI's description.")
-        self.deploytriplet = get_firesim_tagval_for_agfi(self.agfi,
-                                                         'firesim-deploytriplet')
-        return self.deploytriplet
+        self.deploy_quadruplet = get_firesim_deploy_quadruplet_for_agfi(self.agfi)
+        return self.deploy_quadruplet
 
     def get_design_name(self) -> str:
         """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        my_design = my_deploytriplet.split("-")[0]
-        return my_design
+        return self.get_deployquadruplet_for_config().split("-")[1]
 
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
@@ -275,11 +292,14 @@ class RuntimeHWConfig:
             # we already built the driver at some point
             return
         # TODO there is a duplicate of this in runtools
-        triplet_pieces = self.get_deploytriplet_for_config().split("-")
-        design = triplet_pieces[0]
-        target_config = triplet_pieces[1]
-        platform_config = triplet_pieces[2]
-        rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deploytriplet_for_config())}")
+        quadruplet_pieces = self.get_deployquadruplet_for_config().split("-")
+
+        target_project = quadruplet_pieces[0]
+        design = quadruplet_pieces[1]
+        target_config = quadruplet_pieces[2]
+        platform_config = quadruplet_pieces[3]
+
+        rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deployquadruplet_for_config())}")
 
         with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
@@ -287,7 +307,7 @@ class RuntimeHWConfig:
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = f"make DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} PLATFORM={self.platform} {self.driver_build_target}"
+            driverbuildcommand = f"make TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} PLATFORM={self.platform} {self.driver_build_target}"
             buildresult = run(driverbuildcommand)
             self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 
@@ -343,7 +363,7 @@ class RuntimeHWConfig:
             self.tarball_built = True
 
     def __str__(self) -> str:
-        return """RuntimeHWConfig: {}\nDeployTriplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploytriplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
+        return """RuntimeHWConfig: {}\nDeployQuadruplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quadruplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
 
 
 
@@ -362,7 +382,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.driver_tar = None
         self.tarball_built = False
 
-        self.deploytriplet = build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
+        self.deploy_quadruplet = build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf

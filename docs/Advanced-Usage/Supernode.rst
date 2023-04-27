@@ -69,7 +69,7 @@ configurations.  For example:
     DESIGN: FireSim
     TARGET_CONFIG: SupernodeFireSimQuadRocketConfig
     PLATFORM_CONFIG: BaseF1Config
-    deploy_triplet: None
+    deploy_quadruplet: None
 
 
 We currently provide a single pre-built AGFI for supernode of 4 quad-core

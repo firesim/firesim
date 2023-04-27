@@ -316,8 +316,8 @@ class FireSimTopologyWithPasses:
             RuntimeHWConfig object then keep it the same.
             2) If a node's hardware config is none, give it the default
             hardware config.
-            3) In either case, call get_deploytriplet_for_config() once to
-            make the API call and cache the result for the deploytriplet.
+            3) In either case, call get_deployquadruplet_for_config() once to
+            make the API call and cache the result for the deployquadruplet.
         """
         servers = self.firesimtopol.get_dfs_order_servers()
 
@@ -331,7 +331,7 @@ class FireSimTopologyWithPasses:
                 hw_cfg = runtimehwconfig_lookup_fn(self.defaulthwconfig)
             elif isinstance(hw_cfg, str):
                 hw_cfg = runtimehwconfig_lookup_fn(hw_cfg)
-            hw_cfg.get_deploytriplet_for_config()
+            hw_cfg.get_deployquadruplet_for_config()
             server.set_server_hardware_config(hw_cfg)
 
     def pass_apply_default_params(self) -> None:
