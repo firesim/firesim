@@ -527,7 +527,7 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 ``deploy_quadruplet_override``
-"""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This is an advanced feature - under normal conditions, you should leave this set to ``null``, so that the
 manager uses the configuration quadruplet that is automatically stored with the
