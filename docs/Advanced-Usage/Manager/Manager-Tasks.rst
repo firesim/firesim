@@ -318,7 +318,7 @@ is a rough outline of what the command does:
 - Constructs the internal representation of your simulation. This is a tree of
   components in the simulation (simulated server blades, switches)
 - For each type of server blade, rebuild the software simulation driver by querying
-  the bitstream metadata to get the build-triplet or using its override
+  the bitstream metadata to get the build-quadruplet or using its override
 - For each type of switch in the simulation, generate the switch model binary
 - For each host instance in the Run Farm, collect information about all the
   resources necessary to run a simulation on that host instance, then copy

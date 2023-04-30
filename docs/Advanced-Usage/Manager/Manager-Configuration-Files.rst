@@ -328,7 +328,7 @@ configuration in ``config_hwdb.yaml``. For example, to share the hardware config
     firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
         # this is a comment that describes my favorite configuration!
         agfi: agfi-0a6449b5894e96e53
-        deploy_triplet_override: null
+        deploy_quadruplet_override: null
         custom_runtime_config: null
 
 you would use:
@@ -420,16 +420,6 @@ platforms, but try to optimize for the same things. Strategies supported across 
 
 Names are derived AWS's strategy set.
 
-``deploy_triplet``
-""""""""""""""""""
-
-This allows you to override the ``deploytriplet`` stored with the AGFI.
-Otherwise, the ``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
-above will be used. See the AGFI Tagging section for more details. Most likely,
-you should leave this set to ``null``. This is usually only used if you have
-proprietary RTL that you bake into an FPGA image, but don't want to share with
-users of the simulator.
-
 ``TARGET_PROJECT`` `(Optional)`
 """""""""""""""""""""""""""""""
 
@@ -439,6 +429,16 @@ in greater detail :ref:`here<generating-different-targets>`).  If
 Setting ``TARGET_PROJECT`` is required for building the MIDAS examples
 (``TARGET_PROJECT: midasexamples``) with the manager, or for building a
 user-provided target project.
+
+``deploy_quadruplet``
+""""""""""""""""""""""""""
+
+This allows you to override the ``deployquadruplet`` stored with the AGFI.
+Otherwise, the ``TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
+above will be used. See the AGFI Tagging section for more details. Most likely,
+you should leave this set to ``null``. This is usually only used if you have
+proprietary RTL that you bake into an FPGA image, but don't want to share with
+users of the simulator.
 
 ``post_build_hook``
 """""""""""""""""""""""
@@ -491,7 +491,7 @@ Here is a sample of this configuration file:
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
 configurations, defined in the section header, an handle to a bitstream (an AGFI or ``xclbin`` path), which represents the
-FPGA image, a custom runtime config, if one is needed, and a deploy triplet
+FPGA image, a custom runtime config, if one is needed, and a deploy quadruplet
 override if one is necessary.
 
 When you build a new bitstream, you should put the default version of it in this
@@ -526,11 +526,11 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
-``deploy_triplet_override``
-"""""""""""""""""""""""""""""
+``deploy_quadruplet_override``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This is an advanced feature - under normal conditions, you should leave this set to ``null``, so that the
-manager uses the configuration triplet that is automatically stored with the
+manager uses the configuration quadruplet that is automatically stored with the
 bitstream metadata at build time. Advanced users can set this to a different
 value to build and use a different driver when deploying simulations. Since
 the driver depends on logic now hardwired into the
@@ -572,7 +572,7 @@ Add more hardware config sections, like ``NAME_GOES_HERE_2``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can add as many of these entries to ``config_hwdb.yaml`` as you want, following the format
-discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_triplet_override``, and ``custom_runtime_config``).
+discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_quadruplet_override``, and ``custom_runtime_config``).
 
 .. _run-farm-recipe:
 
