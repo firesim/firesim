@@ -49,7 +49,7 @@ DEVICE ?= xilinx_u250_gen3x16_xdma_3_1_202020_1
 
 # Provide's the desired simulator frequency. This is generated from the clock
 # provided to the kernel using an internal MMCM.
-FREQUENCY ?= 90
+FREQUENCY ?= 30
 
 # declare FREQUENCY to be dependable
 $(eval $(call DEPENDABLE_VAR,FREQUENCY))
@@ -168,7 +168,6 @@ vpp_config_overlay_args = $(addprefix --config ,$(vpp_config_overlays))
 	mkdir -p $(@D)
 	# Move into temp directory to avoid polluting top-level workdir
 	cd $(@D)/..; $(VPP) $(vpp_config_overlay_args) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) \
-	--connectivity.sp $(PROJECT_NAME)_1.host_mem_0:DDR[0] \
 	--link $(VPP_LDFLAGS) -o $@ $<
 
 
@@ -209,7 +208,7 @@ run-sim: $(SIM_BINARY_CONTAINER) $(delivered_sim_inputs) $(emconfig)
 	cd $(SIM_RUN_DIR) && XCL_EMULATION_MODE=hw_emu ./$(driver_bin) \
     +permissive \
     +fesvr-step-size=128 \
-    +device_index=0 \
+    +slotid=0 \
     +binary_file=$(SIM_BINARY_CONTAINER) \
     +permissive-off \
     +prog0=$(RISCV)/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-simple </dev/null

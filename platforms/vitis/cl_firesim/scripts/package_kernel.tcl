@@ -83,12 +83,12 @@ ipx::associate_bus_interfaces -busif m_dma -clock ap_clk $core
 set mem_map    [::ipx::add_memory_map -quiet "s_axi_lite" $core]
 set addr_block [::ipx::add_address_block -quiet "reg0" $mem_map]
 
-# TODO: i think this is unused but needed for the vitis build to pass
+# TODO: this is unused but I think this is needed vitis build to pass (verify?)
 set host_mem_0_offset      [::ipx::add_register -quiet "host_mem_0_offset" $addr_block]
 set_property address_offset 0x010 $host_mem_0_offset
 set_property size           64    $host_mem_0_offset
 
-# TODO: i think this is unused but needed for the vitis build to pass
+# TODO: this is unused but needed for the vitis build to pass? or is this not similar to the axi4-lite intf?
 set m_dma_offset      [::ipx::add_register -quiet "m_dma_offset" $addr_block]
 set_property address_offset 0x020 $m_dma_offset
 set_property size           64    $m_dma_offset

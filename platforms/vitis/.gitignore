@@ -1,7 +1,8 @@
 .*.swp
 .*.swo
 
-cl_FireSim*
+cl_*
+!cl_firesim
 
 profile_*
 TempConfig
