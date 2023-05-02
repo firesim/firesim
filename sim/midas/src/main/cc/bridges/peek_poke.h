@@ -5,6 +5,7 @@
 
 #include <gmp.h>
 #include <string_view>
+#include <iostream>
 
 #include "core/simif.h"
 #include "core/timing.h"
@@ -92,10 +93,12 @@ private:
   }
 
   bool wait_on_done(double timeout) {
+    std::cout << "Waiting for done" << std::endl;
     return wait_on(mmio_addrs.DONE, timeout);
   }
 
   bool wait_on_stable_peeks(double timeout) {
+    std::cout << "Waiting stable peek" << std::endl;
     return wait_on(mmio_addrs.PRECISE_PEEKABLE, timeout);
   }
 };

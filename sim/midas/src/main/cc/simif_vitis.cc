@@ -35,6 +35,7 @@ private:
   }
 
   char *get_memory_base() override;
+  void sync_from_fpga() override;
 
 private:
   int slotid;
@@ -54,7 +55,8 @@ constexpr size_t u250_dram_channel_size_bytes = 16ULL * 1024 * 1024 * 1024;
  * using MMIO. For now we've hardcoded the offset for a U250 with no other
  * concurrently running kernel.
  */
-constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
+//constexpr uint64_t u250_dram_expected_offset = 0x4000000000L;
+constexpr uint64_t u250_dram_expected_offset = 0x5000000000L;
 constexpr uint64_t u250_dma_expected_offset = 0x2000000000L;
 
 simif_vitis_t::simif_vitis_t(const TargetConfig &config,
@@ -131,6 +133,8 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
     exit(1);
   }
 
+  printf("Allocating %lu bytes of memory for single DRAM channel.\n", u250_dram_channel_size_bytes);
+
   // Initialize FPGA-DRAM regions.
   auto fpga_mem_0 = xrt::bo(device_handle,
                             u250_dram_channel_size_bytes,
@@ -153,7 +157,7 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
     assert(conf.has_value());
 
     auto size_in_bytes = 1ULL << conf->addr_bits;
-    printf("Allocating %llu bytes of host memory.\n", size_in_bytes);
+    printf("Allocating %llu bytes of host memory for DMA.\n", size_in_bytes);
 
     host_mem_0 = xrt::bo(device_handle,
                          size_in_bytes,
@@ -175,16 +179,14 @@ simif_vitis_t::simif_vitis_t(const TargetConfig &config,
 }
 
 void simif_vitis_t::write(size_t addr, uint32_t data) {
-  // addr is really a (32-byte) word address because of zynq implementation
-  // addr <<= CTRL_AXI4_SIZE;
+  std::cout << "MMIO W(" << std::hex << "0x" << addr << ", " << std::dec << addr << ") = " << data << std::endl;
   kernel_handle.write_register(addr, data);
 }
 
 uint32_t simif_vitis_t::read(size_t addr) {
-  // Convert the word address into a byte-address
-  // addr <<= CTRL_AXI4_SIZE;
   uint32_t value;
   value = kernel_handle.read_register(addr);
+  std::cout << "MMIO R(" << std::hex << "0x" << addr << ", " << std::dec << addr << ") = " << (value & 0xFFFFFFFF) << std::endl;
   return value & 0xFFFFFFFF;
 }
 
@@ -196,11 +198,15 @@ uint32_t simif_vitis_t::is_write_ready() {
 }
 
 char *simif_vitis_t::get_memory_base() {
-  // add abort if this ptr is null
   assert(host_mem_0_map != NULL);
-  printf("get_memory_base: %p\n", host_mem_0_map);
-  // TODO: probably need to bo.sync() for caching invalidation
   return host_mem_0_map;
+}
+
+void simif_vitis_t::sync_from_fpga() {
+  std::cout << "Performing sync" << std::endl;
+  // for caching invalidation
+  // based on https://xilinx.github.io/XRT/2022.1/html/hm.html#host-memory-access end of page
+  host_mem_0.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 }
 
 std::unique_ptr<simif_t>

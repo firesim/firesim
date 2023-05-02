@@ -33,6 +33,11 @@ public:
    * Returns a pointer to the memory region where the device is mapped.
    */
   virtual char *get_memory_base() = 0;
+
+  /**
+   * (If necessary) Performs a sync of the DMA buffer from the FPGA to the host
+   */
+  virtual void sync_from_fpga() = 0;
 };
 
 namespace FPGAManagedStreams {

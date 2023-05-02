@@ -25,6 +25,7 @@ void peek_poke_t::poke(std::string_view id, uint32_t value, bool blocking) {
     return;
   }
 
+  std::cout << "Writing value: " << value << " to addr: " << std::hex << it->second.address << std::endl;
   simif.write(it->second.address, value);
 }
 
@@ -41,7 +42,9 @@ uint32_t peek_poke_t::peek(std::string_view id, bool blocking) {
   }
 
   req_unstable = blocking && !wait_on_stable_peeks(0.1);
-  return simif.read(it->second.address);
+  auto readValue = simif.read(it->second.address);
+  std::cout << "Read value: " << readValue << " from addr: " << std::hex << it->second.address << std::endl;
+  return readValue;
 }
 
 void peek_poke_t::poke(std::string_view id, mpz_t &value) {
@@ -75,9 +78,14 @@ void peek_poke_t::peek(std::string_view id, mpz_t &value) {
   mpz_import(value, size, -1, sizeof(uint32_t), 0, 0, data);
 }
 
-bool peek_poke_t::is_done() { return simif.read(mmio_addrs.DONE); }
+bool peek_poke_t::is_done() {
+  auto readValue = simif.read(mmio_addrs.DONE);
+  std::cout << "is_done?: " << readValue << std::endl;
+  return readValue;
+}
 
 void peek_poke_t::step(size_t n, bool blocking) {
+  std::cout << "Stepping " << n << std::endl;
   simif.write(mmio_addrs.STEP, n);
 
   if (blocking) {

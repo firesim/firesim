@@ -197,6 +197,8 @@ private:
       return simif.write(addr, value);
     }
 
+    void sync_from_fpga() override {}
+
     char *get_memory_base() override { return ((char *)cpu_mem.get_data()); }
 
     simif_emul_t &simif;

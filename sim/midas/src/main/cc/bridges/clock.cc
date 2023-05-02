@@ -2,6 +2,7 @@
 
 #include "clock.h"
 #include "core/simif.h"
+#include <iostream>
 
 char clockmodule_t::KIND;
 
@@ -17,6 +18,8 @@ uint64_t clockmodule_t::tcycle() {
   simif.write(mmio_addrs.tCycle_latch, 1);
   uint32_t cycle_l = simif.read(mmio_addrs.tCycle_0);
   uint32_t cycle_h = simif.read(mmio_addrs.tCycle_1);
+  auto t = (((uint64_t)cycle_h) << 32) | cycle_l;
+  std::cout << "Target cycle: " << t << std::endl;
   return (((uint64_t)cycle_h) << 32) | cycle_l;
 }
 
@@ -24,5 +27,7 @@ uint64_t clockmodule_t::hcycle() {
   simif.write(mmio_addrs.hCycle_latch, 1);
   uint32_t cycle_l = simif.read(mmio_addrs.hCycle_0);
   uint32_t cycle_h = simif.read(mmio_addrs.hCycle_1);
+  auto t = (((uint64_t)cycle_h) << 32) | cycle_l;
+  std::cout << "Host cycle: " << t << std::endl;
   return (((uint64_t)cycle_h) << 32) | cycle_l;
 }

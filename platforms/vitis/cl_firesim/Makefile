@@ -177,7 +177,8 @@ vpp_config_overlay_args = $(addprefix --config ,$(vpp_config_overlays))
 	cd $(@D)/..; $(VPP) $(vpp_config_overlay_args) $(VPP_TARGET_SPECIFIC_ARGS) $(VPP_COMMON_ARGS) --package --package.out_dir $(PACKAGE_OUT) -o $@ $<
 
 # FPGA-level simulation support
-driver_bin = FireSim-vitis
+driver_bin = PrintfModule-vitis
+driver_bin2 = FireSim-vitis
 
 # Hardware Emulation Configuration -- specifies the platform to model during simulation
 # See https://www.xilinx.com/html_docs/xilinx2021_1/vitis_doc/emconfigutil.html
@@ -188,7 +189,6 @@ $(SIM_RUN_DIR)/emconfig.json:
 # Populate the run directory. Vitis wants certain files to reside in the same
 # directory as the application binary, keep things separated by building up a
 # fresh location that can be cleanly removed.
-delivered_sim_inputs = $(addprefix $(SIM_RUN_DIR)/, $(driver_bin))
 $(SIM_RUN_DIR)/%: $(DRIVER_DIR)/%
 	mkdir -p $(@D)
 	cp -f $< $@
@@ -199,20 +199,33 @@ $(SIM_RUN_DIR)/%: $(DRIVER_DIR)/%
 # none  = no waves
 DEBUG_MODE ?= batch
 
-.PHONY: run-sim
-run-sim: $(SIM_BINARY_CONTAINER) $(delivered_sim_inputs) $(emconfig)
+.PHONY: run-sim-printf
+run-sim-printf: $(SIM_BINARY_CONTAINER) $(addprefix $(SIM_RUN_DIR)/, $(driver_bin)) $(emconfig)
 	mkdir -p $(SIM_RUN_DIR)
 	@echo "[Emulation]"                                            >  $(SIM_RUN_DIR)/xrt.ini
 	@echo "user_pre_sim_script=../../scripts/xsim-setup-waves.tcl" >> $(SIM_RUN_DIR)/xrt.ini
 	@echo "debug_mode=$(DEBUG_MODE)"                               >> $(SIM_RUN_DIR)/xrt.ini # wave dump at end
 	cd $(SIM_RUN_DIR) && XCL_EMULATION_MODE=hw_emu ./$(driver_bin) \
     +permissive \
+    +slotid=0 \
+    +binary_file=$(SIM_BINARY_CONTAINER) \
+    +permissive-off \
+    </dev/null
+
+.PHONY: run-sim-rc
+run-sim-rc: $(SIM_BINARY_CONTAINER) $(addprefix $(SIM_RUN_DIR)/, $(driver_bin2)) $(emconfig)
+	mkdir -p $(SIM_RUN_DIR)
+	@echo "[Emulation]"                                            >  $(SIM_RUN_DIR)/xrt.ini
+	@echo "user_pre_sim_script=../../scripts/xsim-setup-waves.tcl" >> $(SIM_RUN_DIR)/xrt.ini
+	@echo "debug_mode=$(DEBUG_MODE)"                               >> $(SIM_RUN_DIR)/xrt.ini # wave dump at end
+	cd $(SIM_RUN_DIR) && XCL_EMULATION_MODE=hw_emu ./$(driver_bin2) \
+    +permissive \
     +fesvr-step-size=128 \
     +slotid=0 \
     +binary_file=$(SIM_BINARY_CONTAINER) \
     +permissive-off \
-    +prog0=$(RISCV)/riscv64-unknown-elf/share/riscv-tests/isa/rv64ui-p-simple </dev/null
-
+    +prog0=$(buildroot)/../cl_firesim/bare0-hello \
+    </dev/null
 
 .PHONY: clean
 clean:

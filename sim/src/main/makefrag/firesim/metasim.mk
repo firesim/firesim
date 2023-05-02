@@ -5,18 +5,18 @@
 ################################################################
 TIMEOUT_CYCLES = 100000000
 
-NET_SLOT ?= 0
-NET_LINK_LATENCY ?= 6405
-NET_BW ?= 100
-NET_SHMEMPORTNAME ?= $(shell printf '%0100d' $(NET_SLOT))
-NET_LOOPBACK ?= +nic-loopback0
-NET_MACADDR ?= $(shell printf '00:00:00:00:00:%02x' $$(($(NET_SLOT)+2)))
-nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
-	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
-	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
-tracer_args = +tracefile=TRACEFILE
-blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
-autocounter_args = +autocounter-readrate=1000 +autocounter-filename-base=AUTOCOUNTERFILE
+#NET_SLOT ?= 0
+#NET_LINK_LATENCY ?= 6405
+#NET_BW ?= 100
+#NET_SHMEMPORTNAME ?= $(shell printf '%0100d' $(NET_SLOT))
+#NET_LOOPBACK ?= +nic-loopback0
+#NET_MACADDR ?= $(shell printf '00:00:00:00:00:%02x' $$(($(NET_SLOT)+2)))
+#nic_args = +shmemportname0=$(NET_SHMEMPORTNAME) +macaddr0=$(NET_MACADDR) \
+#	+niclog0=niclog$(NET_SLOT) +linklatency0=$(NET_LINK_LATENCY) \
+#	+netbw0=$(NET_BW) +netburst0=8 $(NET_LOOPBACK)
+#tracer_args = +tracefile=TRACEFILE
+#blkdev_args = +blkdev-in-mem0=128 +blkdev-log0=blkdev-log$(NET_SLOT)
+#autocounter_args = +autocounter-readrate=1000 +autocounter-filename-base=AUTOCOUNTERFILE
 # Neglecting this +arg will make the simulator use the same step size as on the
 # FPGA. This will make ML simulation more closely match results seen on the
 # FPGA at the expense of dramatically increased target runtime

@@ -86,6 +86,9 @@ synthesized_prints_t::synthesized_prints_t(
     abort();
   }
 
+  std::cout << "Printing to log file: " << printfilename << std::endl;
+  std::cout << "Cycle prefix: " << print_cycle_prefix << std::endl;
+
   this->printstream = &(this->printfile);
   this->clock_info.emit_file_header(*(this->printstream));
 
@@ -138,6 +141,7 @@ synthesized_prints_t::~synthesized_prints_t() {
 
 void synthesized_prints_t::init() {
   // Set the bounds in the widget
+  std::cout << "Doing MMIO write init for stuff: " << this-> start_cycle << " " << this->end_cycle << std::endl;
   write(mmio_addrs.startCycleL, this->start_cycle);
   write(mmio_addrs.startCycleH, this->start_cycle >> 32);
   write(mmio_addrs.endCycleL, this->end_cycle);

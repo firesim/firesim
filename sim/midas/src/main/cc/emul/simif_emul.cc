@@ -7,6 +7,7 @@
 #include "core/simulation.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
+#include <iostream>
 
 simif_emul_t::simif_emul_t(const TargetConfig &config,
                            const std::vector<std::string> &args)
@@ -113,6 +114,7 @@ void simif_emul_t::wait_read(mmio_t &mmio, void *data) {
 }
 
 void simif_emul_t::write(size_t addr, uint32_t data) {
+  std::cout << "MMIO W(" << std::hex << "0x" << addr << ", " << std::dec << addr << ") = " << data << std::endl;
   uint64_t size = master->get_config().get_size();
   assert(size == 2 && "AXI4-lite control interface has unexpected size");
   uint64_t strb = (1 << master->get_config().strb_bits()) - 1;
@@ -126,6 +128,7 @@ uint32_t simif_emul_t::read(size_t addr) {
   uint32_t data;
   master->read_req(addr, size, 0);
   wait_read(*master, &data);
+  std::cout << "MMIO R(" << std::hex << "0x" << addr << ", " << std::dec << addr << ") = " << (data & 0xFFFFFFFF) << std::endl;
   return data;
 }
 
