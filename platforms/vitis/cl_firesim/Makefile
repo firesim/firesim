@@ -41,8 +41,10 @@ bitstream: TARGET = hw
 bitstream: VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/build-bitstream.cfg
 sim:       TARGET = hw_emu
 sim:       VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
-run-sim:   TARGET = hw_emu
-run-sim:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
+run-sim-rc:   TARGET = hw_emu
+run-sim-rc:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
+run-sim-printf:   TARGET = hw_emu
+run-sim-printf:   VPP_TARGET_SPECIFIC_ARGS = --target $(TARGET) --config $(buildroot)/simulation.cfg
 
 # current support on firesim1
 DEVICE ?= xilinx_u250_gen3x16_xdma_3_1_202020_1
