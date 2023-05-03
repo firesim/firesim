@@ -20,13 +20,21 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
    :maxdepth: 3
-   :caption: On-Premises FPGA Tutorial:
+   :caption: On-Premises Xilinx Vitis FPGA Tutorial:
    :numbered:
 
-   Initial-OnPrem-Setup/index
-   Running-OnPrem-Simulations-Tutorial/index
+   Initial-OnPremVitis-Setup/index
+   Running-OnPremVitis-Simulations-Tutorial/index
    Building-a-FireSim-Xclbin
 
+.. toctree::
+   :maxdepth: 3
+   :caption: On-Premises Xilinx U250 FPGA Tutorial:
+   :numbered:
+
+   Initial-OnPremU250-Setup/index
+   Running-OnPremU250-Simulations-Tutorial/index
+   Building-a-FireSim-U250-Bitfile
 
 .. toctree::
    :maxdepth: 3

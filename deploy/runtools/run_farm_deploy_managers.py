@@ -872,3 +872,88 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     def terminate_instance(self) -> None:
         """ VitisInstanceDeployManager machines cannot be terminated. """
         return
+
+class XilinxAU250InstanceDeployManager(InstanceDeployManager):
+    """ This class manages a Xilinx AU250-enabled instance """
+
+    @classmethod
+    def sim_command_requires_sudo(cls) -> bool:
+        """ This sim does not require sudo. """
+        return True
+
+    @classmethod
+    def get_bit_filename(cls) -> str:
+        """ Get the name of the bit file inside the sim_slot_X directory on the run host. """
+        return "firesim.bit"
+
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+
+        # add the additional handling of the bit file URI
+        self.uri_list.append(URIContainer('bit', self.get_bit_filename()))
+
+    def unload_xdma(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("Unloading XDMA Driver Kernel Module.")
+
+            with warn_only():
+                remote_kmsg("removing_xdma_start")
+                run('sudo rmmod xdma')
+                remote_kmsg("removing_xdma_end")
+
+    def load_xdma(self) -> None:
+        """ load the xdma kernel module. """
+        if self.instance_assigned_simulations():
+            # unload first
+            self.unload_xdma()
+            # load xdma
+            self.instance_logger("Loading XDMA Driver Kernel Module.")
+            # must be installed to this path on sim. machine
+            run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
+
+    def flash_fpgas(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Flash all FPGA Slots.""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                bit = XilinxAU250InstanceDeployManager.get_bit_filename()
+                remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
+
+                self.instance_logger(f"""Copying FPGA flashing scripts for {slotno}""")
+                put('../platforms/xilinxau250/scripts',
+                    remote_sim_dir, mirror_local_mode=True)
+
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                collect = run('lspci | grep -i serial.*xilinx')
+                bdfs = [ "0000:" + i[:2] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno]
+
+                self.instance_logger(f"""Flashing FPGA Slot: {slotno} with bit: {bit}""")
+                run(f"""EXTENDED_DEVICE_BDF1={bdf} {remote_sim_dir}/program_fpga.sh {bit} au250""")
+
+    def infrasetup_instance(self, uridir: str) -> None:
+        """ Handle infrastructure setup for this platform. """
+        metasim_enabled = self.parent_node.metasimulation_enabled
+
+        if self.instance_assigned_simulations():
+            # This is a sim-host node.
+
+            # copy sim infrastructure
+            for slotno in range(len(self.parent_node.sim_slots)):
+                self.copy_sim_slot_infrastructure(slotno, uridir)
+                self.extract_driver_tarball(slotno)
+
+            if not metasim_enabled:
+                # load xdma driver
+                self.load_xdma()
+                # flash fpgas
+                self.flash_fpgas()
+
+        if self.instance_assigned_switches():
+            # all nodes could have a switch
+            for slotno in range(len(self.parent_node.switch_slots)):
+                self.copy_switch_slot_infrastructure(slotno)
+
+    def terminate_instance(self) -> None:
+        """ XilinxAU250InstanceDeployManager machines cannot be terminated. """
+        return

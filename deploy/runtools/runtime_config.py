@@ -50,6 +50,8 @@ class RuntimeHWConfig:
     agfi: Optional[str]
     """User-specified, URI path to xclbin"""
     xclbin: Optional[str]
+    """User-specified, URI path to bit file"""
+    bit: Optional[str]
 
     deploy_quadruplet: Optional[str]
     customruntimeconfig: str
@@ -69,17 +71,20 @@ class RuntimeHWConfig:
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        if 'agfi' in hwconfig_dict and 'xclbin' in hwconfig_dict:
-            raise Exception(f"Unable to have agfi and xclbin in HWDB entry {name}.")
+        if sum(['agfi' in hwconfig_dict, 'xclbin' in hwconfig_dict, 'bit' in hwconfig_dict]) > 1:
+            raise Exception(f"Must only have 'agfi' or 'xclbin' or 'bit' HWDB entry {name}.")
 
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
+        self.bit = hwconfig_dict.get('bit')
         self.driver_tar = hwconfig_dict.get('driver_tar')
 
         if self.agfi is not None:
             self.platform = "f1"
-        else:
+        elif self.xclbin is not None:
             self.platform = "vitis"
+        else:
+            self.platform = "xilinxau250"
 
         self.driver_name_prefix = ""
         self.driver_name_suffix = "-" + self.platform
@@ -107,9 +112,9 @@ class RuntimeHWConfig:
         if self.deploy_quadruplet is not None and self.platform != "vitis":
             rootLogger.warning("{} is overriding a deploy quadruplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
 
-        # TODO: obtain deploy_quadruplet from tag in xclbin
-        if self.deploy_quadruplet is None and self.platform == "vitis":
-            raise Exception(f"Must set the deploy_quadruplet_override for Vitis bitstreams")
+        # TODO: obtain deploy_quadruplet from tag in xclbin or bit file
+        if self.deploy_quadruplet is None and (self.platform == "vitis" or self.platform == "xilinxau250"):
+            raise Exception(f"Must set the deploy_quadruplet_override for Vitis or Xilinx AU250 bitstreams.")
 
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
         # note whether we've built a copy of the simulation driver for this hwconf

@@ -8,6 +8,8 @@ platforms_dir := $(abspath $(firesim_base_dir)/../platforms)
 
 ifeq ($(PLATFORM), vitis)
 board_dir 	   := $(platforms_dir)/vitis
+else ifeq ($(PLATFORM), xilinxau250)
+board_dir          := $(platforms_dir)/xilinxau250
 else
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
 endif

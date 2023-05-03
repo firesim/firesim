@@ -392,7 +392,7 @@ Targets<generating-different-targets>`).
 This specifies parameters to pass to the compiler (Golden Gate). Notably,
 PLATFORM_CONFIG can be used to enable debugging tools like assertion synthesis,
 and resource optimizations like instance multithreading.  Critically, it also
-calls out the host-platform (e.g., F1 or Vitis) to compile against: this
+calls out the host-platform (e.g., F1) to compile against: this
 defines the widths of internal simulation interfaces and specifies resource
 limits (e.g., how much DRAM is available on the platform).
 
@@ -413,7 +413,7 @@ Specifies the host FPGA frequency for a bitstream build.
 
 Specifies a pre-canned set of strategies and directives to pass to the
 bitstream build. Note, these are implemented differently on different host
-platforms, but try to optimize for the same things. Strategies supported across both Vitis and EC2 F1 include:
+platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx U250, and EC2 F1 include:
 
  - ``TIMING``: Optimize for improved fmax.
  - ``AREA``: Optimize for reduced resource utilization.
@@ -490,12 +490,12 @@ Here is a sample of this configuration file:
 
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
-configurations, defined in the section header, an handle to a bitstream (an AGFI or ``xclbin`` path), which represents the
+configurations, defined in the section header, an handle to a bitstream (i.e. an AGFI or ``xclbin`` path), which represents the
 FPGA image, a custom runtime config, if one is needed, and a deploy quadruplet
 override if one is necessary.
 
 When you build a new bitstream, you should put the default version of it in this
-file so that it can be referenced from your other configuration files (the AGFI ID or ``xclbin`` path).
+file so that it can be referenced from your other configuration files (i.e. the AGFI ID or ``xclbin`` path).
 
 The following is an example section from this file - you can add as many of
 these as necessary:
@@ -526,8 +526,15 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
+``bit``
+"""""""""""""""
+
+Indicates where the bitstream (FPGA Image) is located, may be one of:
+  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
+  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
+
 ``deploy_quadruplet_override``
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""
 
 This is an advanced feature - under normal conditions, you should leave this set to ``null``, so that the
 manager uses the configuration quadruplet that is automatically stored with the
@@ -738,7 +745,7 @@ simulations across all run farm hosts.
 For example, this class manages how to flash FPGAs with bitstreams, how to copy back results, and how to check if a simulation is running.
 By default, deploy platform classes can be found in :gh-file-ref:`deploy/runtools/run_farm_deploy_managers.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-There are two default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs and Vitis FPGAs, ``EC2InstanceDeployManager`` and ``VitisInstanceDeployManager``, respectively.
+There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx U250 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAU250InstanceDeployManager``, respectively.
 For example, to use the ``EC2InstanceDeployManager`` deploy platform class, you would write ``default_platform: EC2InstanceDeployManager``.
 
 ``default_simulation_dir``
@@ -927,13 +934,18 @@ When enabled, this appends the current users AWS user ID and region to the ``s3_
 ``vitis.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This bit builder recipe configures a build farm host to build an Vitis U250 (FPGA bitstream called an ``xclbin``).
+This bit builder recipe configures a build farm host to build an Vitis bitstream (FPGA bitstream called an ``xclbin``).
 
 ``device``
 """"""""""""""""""""""""""
-This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1``.
+This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1`` when targeting a Alveo U250 FPGA.
 
 Here is an example of this configuration file:
 
 .. literalinclude:: /../deploy/bit-builder-recipes/vitis.yaml
    :language: yaml
+
+``xilinxau250.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an Xilinx U250 bitstream.

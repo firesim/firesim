@@ -123,7 +123,7 @@ Using FireSim/The FireSim Workflow
 -------------------------------------
 
 The tutorials that follow this page will guide you through the complete flow for
-getting an example FireSim simulation up and running using AWS EC2 F1. At the end of this
+getting an example FireSim simulation up and running using AWS EC2 F1 or an on-premises setup. At the end of this
 tutorial, you'll have a simulation that simulates a single quad-core Rocket
 Chip-based node with a 4 MB last level cache, 16 GB DDR3, and no NIC. After
 this, you can continue to a tutorial that shows you how to simulate
@@ -154,4 +154,6 @@ Here's a high-level outline of what we'll be doing in our AWS EC2 tutorials:
 Generally speaking, you only need to follow step 4 if you're modifying Chisel
 RTL or changing non-runtime configurable hardware parameters.
 
-Now, hit Next to proceed with setup.
+Other on-premises tutorials follow a similar format.
+
+Now, hit Next to proceed with setup or look at the sidebar to jump to on-premises tutorials.

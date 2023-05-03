@@ -76,10 +76,14 @@ class BaseF1Config extends Config(
   new midas.F1Config
 )
 
+class BaseXilinxAU250Config extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new midas.XilinxAU250Config
+)
+
 class BaseVitisConfig extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
-//  new WithEC2F1Artefacts ++
-//  new WithILATopWiringTransform ++
   new midas.VitisConfig
 )

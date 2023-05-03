@@ -4,7 +4,7 @@ and populate it with the necessary sources. We'll call this subdirectory, WORKDI
 
 # Bitstream Builds
 
-`make bitstream` to build an XCLBIN that can be deployed to a U250. Bitstream builds run under the $WORDIR/bitstream
+`make bitstream` to build an XCLBIN that can be deployed to a U250. Bitstream builds run under the $WORKDIR/bitstream
 
 # FPGA-level Metasimulation
 
