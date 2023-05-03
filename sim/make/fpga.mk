@@ -8,10 +8,14 @@ platforms_dir := $(abspath $(firesim_base_dir)/../platforms)
 
 ifeq ($(PLATFORM), vitis)
 board_dir 	   := $(platforms_dir)/vitis
-else ifeq ($(PLATFORM), xilinxau250)
-board_dir          := $(platforms_dir)/xilinxau250
-else
+else ifeq ($(PLATFORM), xilinx_alveo_u250)
+board_dir          := $(platforms_dir)/xilinx_alveo_u250
+else ifeq ($(PLATFORM), xilinx_alveo_u280)
+board_dir          := $(platforms_dir)/xilinx_alveo_u280
+else ifeq ($(PLATFORM), f1)
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
+else
+$(error Invalid PLATFORM used: $(PLATFORM))
 endif
 
 fpga_work_dir  := $(board_dir)/cl_$(name_tuple)

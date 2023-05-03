@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Adapted from https://github.com/Xilinx/open-nic-shell
 
@@ -10,6 +10,8 @@ if [[ $# -le 1 ]] || [[ -z EXTENDED_DEVICE_BDF1 ]] || [[ -z $XILINX_VIVADO ]]; t
     echo "Please ensure vivado is loaded into system path."
     exit 1
 fi
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 set -Eeuo pipefail
 set -x
@@ -40,7 +42,7 @@ else
 fi
 
 # Program fpga
-vivado -mode tcl -source ./program_fpga.tcl \
+vivado -mode tcl -source $SCRIPT_DIR/program_fpga.tcl \
     -tclargs -board $board \
     -bitstream_path $bitstream_path \
     -probes_path $probes_path
@@ -53,4 +55,4 @@ if [[ -n "${EXTENDED_DEVICE_BDF2:-}" ]]; then
 fi
 
 echo "program_fpga.sh completed"
-echo "Warm reboot machine if the machine hasn't been warm reboooted after loading a open nic bitstream."
+echo "Warm reboot machine if the FPGA wasn't initially setup with an XDMA bitstream."

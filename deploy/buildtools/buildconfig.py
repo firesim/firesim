@@ -52,7 +52,7 @@ class BuildConfig:
         TARGET_PROJECT: Target project to build.
         DESIGN: Design to build.
         TARGET_CONFIG: Target config to build.
-        deploy_quadruplet: Deploy quadruplet override.
+        deploy_quintuplet: Deploy quintuplet override.
         launch_time: Launch time of the manager.
         PLATFORM_CONFIG: Platform config to build.
         fpga_frequency: Frequency for the FPGA build.
@@ -65,7 +65,7 @@ class BuildConfig:
     TARGET_PROJECT: str
     DESIGN: str
     TARGET_CONFIG: str
-    deploy_quadruplet: Optional[str]
+    deploy_quintuplet: Optional[str]
     frequency: float
     strategy: BuildStrategy
     launch_time: str
@@ -88,24 +88,25 @@ class BuildConfig:
         self.name = name
         self.build_config_file = build_config_file
 
-        # default provided for old build recipes that don't specify TARGET_PROJECT
+        # default provided for old build recipes that don't specify TARGET_PROJECT, PLATFORM
+        self.PLATFORM = recipe_config_dict.get('PLATFORM', 'f1')
         self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT', 'firesim')
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
 
-        if 'deploy_triplet' in recipe_config_dict.keys() and 'deploy_quadruplet' in recipe_config_dict.keys():
-            rootLogger.error("Cannot have both deploy_quadruplet and deploy_triplet in build config. Define only deploy_quadruplet.")
+        if 'deploy_triplet' in recipe_config_dict.keys() and 'deploy_quintuplet' in recipe_config_dict.keys():
+            rootLogger.error("Cannot have both 'deploy_quintuplet' and 'deploy_triplet' in build config. Define only 'deploy_quintuplet'.")
             sys.exit(1)
         elif 'deploy_triplet' in recipe_config_dict.keys():
-            rootLogger.warning("Please rename your 'deploy_triplet' key in your build config to 'deploy_quadruplet'. Support for 'deploy_triplet' will be removed in the future.")
+            rootLogger.warning("Please rename your 'deploy_triplet' key in your build config to 'deploy_quintuplet'. Support for 'deploy_triplet' will be removed in the future.")
 
-        self.deploy_quadruplet = recipe_config_dict.get('deploy_quadruplet')
-        if self.deploy_quadruplet is None:
+        self.deploy_quintuplet = recipe_config_dict.get('deploy_quintuplet')
+        if self.deploy_quintuplet is None:
             # temporarily support backwards compat
-            self.deploy_quadruplet = recipe_config_dict.get('deploy_triplet')
+            self.deploy_quintuplet = recipe_config_dict.get('deploy_triplet')
 
-        if self.deploy_quadruplet is not None and len(self.deploy_quadruplet.split("-")) == 3:
-            self.deploy_quadruplet = 'firesim-' + self.deploy_quadruplet
+        if self.deploy_quintuplet is not None and len(self.deploy_quintuplet.split("-")) == 3:
+            self.deploy_quintuplet = 'f1-firesim-' + self.deploy_quintuplet
         self.launch_time = launch_time
 
         # run platform specific options
@@ -142,41 +143,24 @@ class BuildConfig:
         # create dispatcher object using class given and pass args to it
         self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
 
-    def get_chisel_triplet(self) -> str:
-        """Get the unique build-specific '-' deliminated triplet.
+    def get_chisel_quintuplet(self) -> str:
+        """Get the unique build-specific '-' deliminated quintuplet.
 
         Returns:
-            Chisel triplet
+            Chisel quintuplet
         """
-        return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
+        return f"{self.PLATFORM}-{self.TARGET_PROJECT}-{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
-    def get_chisel_quadruplet(self) -> str:
-        """Get the unique build-specific '-' deliminated quadruplet.
+    def get_effective_deploy_quintuplet(self) -> str:
+        """Get the effective deploy quintuplet, i.e. the value specified in
+        deploy_quintuplet if specified, otherwise just get_chisel_quintuplet().
 
         Returns:
-            Chisel quadruplet
+            Effective deploy quintuplet
         """
-        return f"{self.TARGET_PROJECT}-{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
-
-    def get_effective_deploy_triplet(self) -> str:
-        """Get the effective deploy triplet, i.e. the triplet version of
-        get_effective_deploy_quadruplet().
-
-        Returns:
-            Effective deploy triplet
-        """
-        return "-".join(self.get_effective_deploy_quadruplet().split("-")[1:])
-
-    def get_effective_deploy_quadruplet(self) -> str:
-        """Get the effective deploy triplet, i.e. the value specified in
-        deploy_quadruplet if specified, otherwise just get_chisel_quadruplet().
-
-        Returns:
-            Effective deploy quadruplet
-        """
-        if self.deploy_quadruplet:
-            return self.deploy_quadruplet
-        return self.get_chisel_quadruplet()
+        if self.deploy_quintuplet:
+            return self.deploy_quintuplet
+        return self.get_chisel_quintuplet()
 
     def get_frequency(self) -> float:
         """Get the desired fpga frequency.
@@ -211,12 +195,10 @@ class BuildConfig:
         Returns:
             Fully specified make command.
         """
-        return f"""make TARGET_PROJECT={self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
+        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
 
     def __repr__(self) -> str:
         return f"< {type(self)}(name={self.name!r}, build_config_file={self.build_config_file!r}) @{id(self)} >"
 
     def __str__(self) -> str:
         return pprint.pformat(vars(self), width=1, indent=10)
-
-

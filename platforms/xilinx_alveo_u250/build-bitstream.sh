@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script is called by FireSim's bitbuilder to create a xclbin
+# This script is called by FireSim's bitbuilder to create a bit file
 
 # exit script if any command fails
 set -e
@@ -10,10 +10,12 @@ usage() {
     echo "usage: ${0} [OPTIONS]"
     echo ""
     echo "Options"
-    echo "   --cl_dir    : Custom logic directory to build AWS F1 bitstream from"
+    echo "   --cl_dir    : Custom logic directory to build Vivado bitstream from"
     echo "   --frequency : Frequency in MHz of the desired FPGA host clock."
     echo "   --strategy  : A string to a precanned set of build directives.
-                          See aws-fpga documentation for more info/"
+                          See aws-fpga documentation for more info/.
+                          For this platform TIMING and AREA supported."
+    echo "   --board     : FPGA board {au250,au280}."
     echo "   --help      : Display this message"
     exit "$1"
 }
@@ -21,9 +23,9 @@ usage() {
 CL_DIR=""
 FREQUENCY=""
 STRATEGY=""
+BOARD=""
 
 # getopts does not support long options, and is inflexible
-# ensure $1 arg is empty or else hdk_setup.sh will fail
 while [ "$1" != "" ];
 do
     case $1 in
@@ -38,6 +40,9 @@ do
         --frequency )
             shift
             FREQUENCY=$1 ;;
+        --board )
+            shift
+            BOARD=$1 ;;
         * )
             echo "invalid option $1"
             usage 1 ;;
@@ -60,6 +65,11 @@ if [ -z "$STRATEGY" ] ; then
     usage 1
 fi
 
+if [ -z "$BOARD" ] ; then
+    echo "No --board specified"
+    usage 1
+fi
+
 # run build
 cd $CL_DIR
-vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY
+vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD

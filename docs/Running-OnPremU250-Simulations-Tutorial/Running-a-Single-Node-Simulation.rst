@@ -54,7 +54,7 @@ You'll notice that in the ``run_farm`` mapping which describes and specifies the
 First notice that the ``base_recipe`` maps to ``run-farm-recipes/externally_provisioned.yaml``.
 This indicates to the FireSim manager that the machines allocated to run simulations will be provided by the user through IP addresses
 instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
-Let's modify the ``default_platform`` to be ``XilinxAU250InstanceDeployManager`` so that we can launch simulations using the U250.
+Let's modify the ``default_platform`` to be ``XilinxAlveoU250InstanceDeployManager`` so that we can launch simulations using the U250.
 Next, modify the ``default_simulation_dir`` to a directory that you want to store temporary simulation collateral to.
 When running simulations, this directory is used to store any temporary files that the simulator creates (e.g. a uartlog emitted by a Linux simulation).
 Next, lets modify the ``run_farm_hosts_to_use`` mapping.
@@ -85,7 +85,7 @@ Note ``topology`` is set to
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
 ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
-Let's modify the ``default_hw_config`` (the target design) to ``ntnu_firesim_rocket_singlecore_no_nic``.
+Let's modify the ``default_hw_config`` (the target design) to ``alveou250_firesim_rocket_singlecore_no_nic``.
 This new hardware configuration does not
 have a NIC and is pre-built for the U250 FPGA.
 This hardware configuration models a Single-core Rocket Chip SoC and **no** network interface card.
@@ -102,7 +102,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
     run_farm:
       base_recipe: run-farm-recipes/externally_provisioned.yaml
       recipe_arg_overrides:
-        default_platform: XilinxAU250InstanceDeployManager
+        default_platform: XilinxAlveoU250InstanceDeployManager
         default_simulation_dir: <PATH_TO_SIMULATION_AREA>
         run_farm_hosts_to_use:
             - localhost: one_fpga_spec
@@ -114,7 +114,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
         switching_latency: 10
         net_bandwidth: 200
         profile_interval: -1
-        default_hw_config: ntnu_firesim_rocket_singlecore_no_nic
+        default_hw_config: alveou250_firesim_rocket_singlecore_no_nic
         plusarg_passthrough: ""
 
     workload:
@@ -148,7 +148,7 @@ You should expect output like the following:
 	FireSim Manager. Docs: https://docs.fires.im
 	Running: launchrunfarm
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	firesim_rocket_singlecore_no_nic is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!
 	WARNING: Skipping launchrunfarm since run hosts are externally provisioned.
 	The full log of this run is:
 	.../firesim/deploy/logs/2023-03-06--00-20-37-launchrunfarm-24T0KOGRHBMSHAV5.log
@@ -173,7 +173,7 @@ For a complete run, you should expect output like the following:
 	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
 	Running: infrasetup
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	firesim_rocket_singlecore_no_nic is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!
 	Building FPGA software driver for FireSim-FireSimRocketConfig-BaseF1Config1Mem
 	...
 	[localhost] Checking if host instance is up...
@@ -211,7 +211,7 @@ nodes every 10s. When you do this, you will initially see output like:
 	FireSim Manager. Docs: https://docs.fires.im
 	Running: runworkload
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	firesim_rocket_singlecore_no_nic is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!
 	Creating the directory: .../firesim/deploy/results-workload/2023-03-06--01-25-34-linux-uniform/
 	[localhost] Checking if host instance is up...
 	[localhost] Starting FPGA simulation for slot: 0.
@@ -403,7 +403,7 @@ Which should present you with the following:
 	FireSim Manager. Docs: https://docs.fires.im
 	Running: terminaterunfarm
 
-	firesim_rocket_singlecore_no_nic is overriding a deploy triplet in your config_hwdb.yaml file. Make sure you understand why!
+	firesim_rocket_singlecore_no_nic is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!
 	WARNING: Skipping terminaterunfarm since run hosts are externally provisioned.
 	The full log of this run is:
 	.../firesim/deploy/logs/2023-03-06--01-34-45-terminaterunfarm-YFXAJCRGF8KF4LQ3.log

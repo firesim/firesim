@@ -1,12 +1,12 @@
-Building Your Own Hardware Designs (FireSim Xilinx AU250 FPGA Bitstreams)
-========================================================================
+Building Your Own Hardware Designs (FireSim Xilinx Alveo U250 FPGA Bitstreams)
+==============================================================================
 
-This section will guide you through building a Xilinx AU250 FPGA bitstream (FPGA image) for a FireSim simulation.
+This section will guide you through building a Xilinx Alveo U250 FPGA bitstream (FPGA image) for a FireSim simulation.
 
 Build Recipes
 ---------------
 
-We already provide for you a build recipe (i.e. hardware configuration) called ``ntnu_firesim_rocket_singlecore_no_nic`` that was used to pre-build a U250 FPGA bitstream.
+We already provide for you a build recipe (i.e. hardware configuration) called ``alveou250_firesim_rocket_singlecore_no_nic`` that was used to pre-build a U250 FPGA bitstream.
 You can find this in the ``config_build_recipes.yaml`` file.
 This configuration is a simple singlecore Rocket configuration with a single DRAM channel.
 
@@ -27,8 +27,8 @@ section currently contains several lines, which
 indicates to the build system that you want to run all of these builds on the machines provided, with the parameters listed in the relevant section of the
 ``deploy/config_build_recipes.yaml`` file.
 
-To start out, let's build our simple design, ``ntnu_firesim_rocket_singlecore_no_nic``, that we previously added.
-To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, and uncomment the ``- ntnu_firesim_rocket_singlecore_no_nic`` line.
+To start out, let's build our simple design, ``alveou250_firesim_rocket_singlecore_no_nic``, that we previously added.
+To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, and uncomment the ``- alveou250_firesim_rocket_singlecore_no_nic`` line.
 So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
@@ -38,7 +38,7 @@ end up with something like this (a line beginning with a ``#`` is a comment):
        # this section references builds defined in config_build_recipes.yaml
        # if you add a build here, it will be built when you run buildbitstream
        # Many other commented lines...
-       - ntnu_firesim_rocket_singlecore_no_nic
+       - alveou250_firesim_rocket_singlecore_no_nic
 
 
 Running a Build

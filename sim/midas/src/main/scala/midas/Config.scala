@@ -116,7 +116,7 @@ class F1Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
 }) ++ new SimConfig)
 
-class XilinxAU250Config extends Config(new Config((site, here, up) => {
+class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 1
   case PreLinkCircuitPath => None
   case PostLinkCircuitPath => None

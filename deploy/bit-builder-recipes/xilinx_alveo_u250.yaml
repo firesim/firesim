@@ -12,5 +12,5 @@
 #     # object. Determined by looking at `_parse_args` function of class.
 #     <K/V pairs of args>
 
-bit_builder_type: XilinxAU250BitBuilder
+bit_builder_type: XilinxAlveoU250BitBuilder
 args: null

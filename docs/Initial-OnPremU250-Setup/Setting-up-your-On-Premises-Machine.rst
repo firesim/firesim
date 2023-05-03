@@ -1,5 +1,5 @@
-Setting up your On-Premises Machine for Xilinx U250 FPGA Simulations
-====================================================================
+Setting up your On-Premises Machine for Xilinx Alveo U250 FPGA Simulations
+==========================================================================
 
 This tutorial is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
@@ -161,14 +161,14 @@ Next, lets add the kernel module:
    sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1
 
 Next, lets flash the FPGAs with the dummy bitstream.
-Open the ``sample_config_hwdb.yaml`` file, find the HWDB entry called ``ntnu_firesim_rocket_singlecore_no_nic``, and retrieve the ``bit:`` field URL.
+Open the ``sample_config_hwdb.yaml`` file, find the HWDB entry called ``alveou250_firesim_rocket_singlecore_no_nic``, and retrieve the ``bit:`` field URL.
 
 .. parsed-literal::
 
    # open sample_config_hwdb.yaml
    vim deploy/sample-backup-configs/sample_config_hwdb.yaml
 
-   # find ntnu_firesim_rocket_singlecore_no_nic
+   # find alveou250_firesim_rocket_singlecore_no_nic
    # save URL of bit: field
    # i.e. `bit: <SAVE THIS URL>`
 
@@ -193,7 +193,7 @@ Next, lets flash the FPGA with that bitstream and the BDF chosen (repeat this fo
 .. parsed-literal::
 
    wget -O /tmp/firesim.bit <URL SAVE FROM PREVIOUSLY>
-   EXTENDED_DEVICE_BDF1=<YOUR BDF HERE> ./platforms/xilinxau250/scripts/program_fpga.sh /tmp/firesim.bit au250
+   EXTENDED_DEVICE_BDF1=<YOUR BDF HERE> ./platforms/xilinx_alveo_u250/scripts/program_fpga.sh /tmp/firesim.bit au250
 
 Next, **warm reboot** the computer.
 

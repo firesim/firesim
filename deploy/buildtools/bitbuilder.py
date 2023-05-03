@@ -56,15 +56,32 @@ class BitBuilder(metaclass=abc.ABCMeta):
         """Any setup needed before `replace_rtl`, `build_driver`, and `build_bitstream` is run."""
         raise NotImplementedError
 
-    @abc.abstractmethod
     def replace_rtl(self) -> None:
         """Generate Verilog from build config. Should run on the manager host."""
-        raise NotImplementedError
+        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quintuplet()}")
 
-    @abc.abstractmethod
+        with InfoStreamLogger('stdout'), \
+            prefix(f'cd {get_deploy_dir()}/../'), \
+            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
+            prefix(f'export PATH={os.getenv("PATH", "")}'), \
+            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            InfoStreamLogger('stdout'), \
+            prefix('cd sim/'):
+            run(self.build_config.make_recipe("replace-rtl"))
+
     def build_driver(self) -> None:
-        """Build FireSim FPGA driver from build config."""
-        raise NotImplementedError
+        """Build FireSim FPGA driver from build config. Should run on the manager host."""
+        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_quintuplet()}")
+
+        with InfoStreamLogger('stdout'), \
+            prefix(f'cd {get_deploy_dir()}/../'), \
+            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
+            prefix(f'export PATH={os.getenv("PATH", "")}'), \
+            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
+            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('cd sim/'):
+            run(self.build_config.make_recipe("driver"))
 
     @abc.abstractmethod
     def build_bitstream(self, bypass: bool = False) -> bool:
@@ -78,6 +95,29 @@ class BitBuilder(metaclass=abc.ABCMeta):
             Boolean indicating if the build passed or failed.
         """
         raise NotImplementedError
+
+    def get_metadata_string(self) -> str:
+        """Standardized metadata format used across different FPGA platforms
+        """
+        # construct the "tags" we store in the metadata description
+        tag_build_quintuplet = self.build_config.get_chisel_quintuplet()
+        tag_deploy_quintuplet = self.build_config.get_effective_deploy_quintuplet()
+
+        # the asserts are left over from when we tried to do this with tags
+        # - technically I don't know how long these descriptions are allowed to be,
+        # but it's at least 2048 chars, so I'll leave these here for now as sanity
+        # checks.
+        assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
+        assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
+
+        is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
+        hash = local("git rev-parse HEAD", capture=True)
+        tag_fsimcommit = hash + is_dirty_str
+
+        assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
+
+        # construct the serialized description from these tags.
+        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_fsimcommit)
 
 class F1BitBuilder(BitBuilder):
     """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
@@ -109,42 +149,17 @@ class F1BitBuilder(BitBuilder):
         # check to see email notifications can be subscribed
         get_snsname_arn()
 
-    def replace_rtl(self) -> None:
-        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quadruplet()}")
-
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
-            InfoStreamLogger('stdout'), \
-            prefix('cd sim/'):
-            run(self.build_config.make_recipe("PLATFORM=f1 replace-rtl"))
-
-    def build_driver(self) -> None:
-        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_quadruplet()}")
-
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
-            prefix('cd sim/'):
-            run(self.build_config.make_recipe("PLATFORM=f1 driver"))
-
-    def cl_dir_setup(self, chisel_triplet: str, dest_build_dir: str) -> str:
+    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
         """Setup CL_DIR on build host.
 
         Args:
-            chisel_triplet: Build config chisel triplet used to uniquely identify build dir.
+            chisel_quintuplet: Build config chisel quintuplet used to uniquely identify build dir.
             dest_build_dir: Destination base directory to use.
 
         Returns:
             Path to CL_DIR directory (that is setup) or `None` if invalid.
         """
-        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_triplet}"
+        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_quintuplet}"
 
         # local paths
         local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
@@ -195,7 +210,7 @@ class F1BitBuilder(BitBuilder):
 
             message_title = "FireSim FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for quadruplet: " + self.build_config.get_chisel_quadruplet()
+            message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
 
             send_firesim_notification(message_title, message_body)
 
@@ -207,13 +222,13 @@ class F1BitBuilder(BitBuilder):
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
-        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_triplet()}"
+        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
 
         build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
+        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
         vivado_result = 0
 
@@ -272,35 +287,13 @@ class F1BitBuilder(BitBuilder):
         s3bucket = self.s3_bucketname
         afiname = self.build_config.name
 
-        # construct the "tags" we store in the AGFI description
-        tag_build_quadruplet = self.build_config.get_chisel_quadruplet()
-        tag_deploy_quadruplet = self.build_config.get_effective_deploy_quadruplet()
-        tag_build_triplet = self.build_config.get_chisel_triplet()
-        tag_deploy_triplet = self.build_config.get_effective_deploy_triplet()
-
-        # the asserts are left over from when we tried to do this with tags
-        # - technically I don't know how long these descriptions are allowed to be,
-        # but it's at least 2048 chars, so I'll leave these here for now as sanity
-        # checks.
-        assert len(tag_build_quadruplet) <= 255, "ERR: aws does not support tags longer than 256 chars for build_quadruplet"
-        assert len(tag_deploy_quadruplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploy_quadruplet"
-        assert len(tag_build_triplet) <= 255, "ERR: aws does not support tags longer than 256 chars for build_triplet"
-        assert len(tag_deploy_triplet) <= 255, "ERR: aws does not support tags longer than 256 chars for deploy_triplet"
-
-        is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
-        hash = local("git rev-parse HEAD", capture=True)
-        tag_fsimcommit = hash + is_dirty_str
-
-        assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
-
-        # construct the serialized description from these tags.
-        description = firesim_tags_to_description(tag_build_quadruplet, tag_deploy_quadruplet, tag_build_triplet, tag_deploy_triplet, tag_fsimcommit)
+        description = self.get_metadata_string()
 
         # if we're unlucky, multiple vivado builds may launch at the same time. so we
         # append the build node IP + a random string to diff them in s3
         global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
 
-        with lcd(f"{local_results_dir}/cl_{self.build_config.get_chisel_triplet()}/build/checkpoints/to_aws/"):
+        with lcd(f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/to_aws/"):
             files = local('ls *.tar', capture=True)
             rootLogger.debug(files)
             rootLogger.debug(files.stderr)
@@ -337,7 +330,7 @@ class F1BitBuilder(BitBuilder):
             message_title = "FireSim FPGA Build Completed"
             agfi_entry = afiname + ":\n"
             agfi_entry += "    agfi: " + agfi + "\n"
-            agfi_entry += "    deploy_quadruplet_override: null\n"
+            agfi_entry += "    deploy_quintuplet_override: null\n"
             agfi_entry += "    custom_runtime_config: null\n"
             message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
 
@@ -383,41 +376,17 @@ class VitisBitBuilder(BitBuilder):
     def setup(self) -> None:
         return
 
-    def replace_rtl(self):
-        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quadruplet()}")
-
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
-            prefix('cd sim/'):
-            run(self.build_config.make_recipe("PLATFORM=vitis replace-rtl"))
-
-    def build_driver(self):
-        rootLogger.info("Building FPGA driver for {}".format(str(self.build_config.get_chisel_quadruplet())))
-
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
-            prefix('cd sim/'):
-            run(self.build_config.make_recipe("PLATFORM=vitis driver"))
-
-    def cl_dir_setup(self, chisel_triplet: str, dest_build_dir: str) -> str:
+    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
         """Setup CL_DIR on build host.
 
         Args:
-            chisel_triplet: Build config chisel triplet used to uniquely identify build dir.
+            chisel_quintuplet: Build config chisel quintuplet used to uniquely identify build dir.
             dest_build_dir: Destination base directory to use.
 
         Returns:
             Path to CL_DIR directory (that is setup) or `None` if invalid.
         """
-        fpga_build_postfix = f"cl_{chisel_triplet}"
+        fpga_build_postfix = f"cl_{chisel_quintuplet}"
 
         # local paths
         local_vitis_dir = f"{get_deploy_dir()}/../platforms/vitis"
@@ -467,7 +436,7 @@ class VitisBitBuilder(BitBuilder):
 
             message_title = "FireSim Vitis FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for quadruplet: " + self.build_config.get_chisel_quadruplet()
+            message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
@@ -477,16 +446,15 @@ class VitisBitBuilder(BitBuilder):
         rootLogger.info("Building Vitis Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
-        fpga_build_postfix = f"cl_{self.build_config.get_chisel_triplet()}"
+        fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
 
         build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
+        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
         vitis_result = 0
-        # TODO: Put script within Vitis area
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
             local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
@@ -516,14 +484,16 @@ class VitisBitBuilder(BitBuilder):
             on_build_failure()
             return False
 
-        hwdb_entry_name = self.build_config.name
-        xclbin_path = cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
+        build_farm = self.build_config.build_config_file.build_farm
+        hostname = build_farm.get_build_host_ip(self.build_config)
 
-        results_build_dir = """{}/""".format(local_results_dir)
+        hwdb_entry_name = self.build_config.name
+        local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
+        xclbin_path = "file://" + local_cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
 
         hwdb_entry = hwdb_entry_name + ":\n"
         hwdb_entry +=  "    xclbin: " + xclbin_path + "\n"
-        hwdb_entry += f"    deploy_quadruplet_override: {self.build_config.get_chisel_quadruplet()}\n"
+        hwdb_entry += f"    deploy_quintuplet_override: {self.build_config.get_chisel_quintuplet()}\n"
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
@@ -551,81 +521,57 @@ class VitisBitBuilder(BitBuilder):
 
         return True
 
-class XilinxAU250CustomBitBuilder(BitBuilder):
-    """Bit builder class that builds a Xilinx AU250 bitstream from the build config.
-    """
-    PLATFORM_NAME: str = "xilinxau250"
+class XilinxAlveoBitBuilder(BitBuilder):
+    """Bit builder class that builds a Xilinx Alveo bitstream from the build config."""
+    BOARD_NAME: Optional[str]
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
+        self.BOARD_NAME = None
 
     def setup(self) -> None:
         return
 
-    def replace_rtl(self):
-        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_triplet()}")
-
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
-            prefix('cd sim/'):
-            run(self.build_config.make_recipe(f"PLATFORM={PLATFORM_NAME} replace-rtl"))
-
-    def build_driver(self):
-        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_triplet()}")
-
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
-            prefix('cd sim/'):
-            run(self.build_config.make_recipe(f"PLATFORM={PLATFORM_NAME} driver"))
-
-    def cl_dir_setup(self, chisel_triplet: str, dest_build_dir: str) -> str:
+    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
         """Setup CL_DIR on build host.
 
         Args:
-            chisel_triplet: Build config chisel triplet used to uniquely identify build dir.
+            chisel_quintuplet: Build config chisel quintuplet used to uniquely identify build dir.
             dest_build_dir: Destination base directory to use.
 
         Returns:
             Path to CL_DIR directory (that is setup) or `None` if invalid.
         """
-        fpga_build_postfix = f"cl_{chisel_triplet}"
+        fpga_build_postfix = f"cl_{chisel_quintuplet}"
 
         # local paths
-        local_au250_dir = f"{get_deploy_dir()}/../platforms/{PLATFORM_NAME}"
+        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.PLATFORM}"
 
-        dest_au250_dir = f"{dest_build_dir}/platforms/${PLATFORM_NAME}"
+        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.PLATFORM}"
 
-        # copy au250 files to the build instance.
+        # copy alveo files to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
-        # extra_opts -l preserves symlinks
+        # extra_opts -L resolves symlinks
 
-        run(f'mkdir -p {dest_au250_dir}')
+        run(f'mkdir -p {dest_alveo_dir}')
         rsync_cap = rsync_project(
-            local_dir=local_au250_dir,
-            remote_dir=dest_au250_dir,
+            local_dir=local_alveo_dir,
+            remote_dir=dest_alveo_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="cl_*",
-            extra_opts="-l", capture=True)
+            extra_opts="-L", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
-            local_dir=f"{local_au250_dir}/{fpga_build_postfix}/",
-            remote_dir=f'{dest_au250_dir}/{fpga_build_postfix}',
+            local_dir=f"{local_alveo_dir}/{fpga_build_postfix}/",
+            remote_dir=f'{dest_alveo_dir}/{fpga_build_postfix}',
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+            extra_opts="-L", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-        return f"{dest_au250_dir}/{fpga_build_postfix}"
+        return f"{dest_alveo_dir}/{fpga_build_postfix}"
 
     def build_bitstream(self, bypass: bool = False) -> bool:
         """ Run Vivado to generate an bit file. Then terminate the instance at the end.
@@ -644,33 +590,33 @@ class XilinxAU250CustomBitBuilder(BitBuilder):
         def on_build_failure():
             """ Terminate build host and notify user that build failed """
 
-            message_title = "FireSim Xilinx AU250 FPGA Build Failed"
+            message_title = f"FireSim Xilinx Alveo {self.PLATFORM} FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for triplet: " + self.build_config.get_chisel_triplet()
+            message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
             self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
 
-        rootLogger.info("Building Xilinx AU250 Bitstream from Verilog")
+        rootLogger.info(f"Building Xilinx Alveo {self.PLATFORM} Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
-        fpga_build_postfix = f"cl_{self.build_config.get_chisel_triplet()}"
+        fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
 
         build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_triplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
+        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
-        au250_result = 0
+        alveo_result = 0
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/{PLATFORM_NAME}/build-bitstream.sh",
+            local_dir=f"{local_deploy_dir}/../platforms/{self.PLATFORM}/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+            extra_opts="-L", capture=True)
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
@@ -678,7 +624,7 @@ class XilinxAU250CustomBitBuilder(BitBuilder):
         build_strategy = self.build_config.get_strategy().name
 
         with InfoStreamLogger('stdout'), settings(warn_only=True):
-            au250_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
+            alveo_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}").return_code
 
         # put build results in the result-build area
 
@@ -690,18 +636,39 @@ class XilinxAU250CustomBitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-        if au250_result != 0:
+        if alveo_result != 0:
             on_build_failure()
             return False
 
-        hwdb_entry_name = self.build_config.name
-        bit_path = cl_dir + f"/vivado_proj/firesim.bit"
+        # make hwdb entry from locally stored results
 
-        results_build_dir = f"""{local_results_dir}/"""
+        hwdb_entry_name = self.build_config.name
+        local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
+        bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
+        #bit_path = "/scratch/abejgonza/firesim-private/deploy/results-build/2023-05-04--01-35-15-alveou250_firesim_rocket_singlecore_no_nic_2/cl_FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig/vivado_proj/firesim.bit"
+        tar_staging_path = f"{local_cl_dir}/{self.PLATFORM}"
+        tar_name = "firesim.tar.gz"
+
+        # store files into staging dir
+        local(f"rm -rf {tar_staging_path}")
+        local(f"mkdir -p {tar_staging_path}")
+
+        # store bitfile
+        local(f"cp {bit_path} {tar_staging_path}")
+
+        # store metadata string
+        local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
+
+        # form tar.gz
+        with prefix(f"cd {local_cl_dir}"):
+            local(f"tar zcvf {tar_name} {self.PLATFORM}/")
+
+        build_farm = self.build_config.build_config_file.build_farm
+        hostname = build_farm.get_build_host_ip(self.build_config)
 
         hwdb_entry = hwdb_entry_name + ":\n"
-        hwdb_entry += f"    bit: {bit_path}\n"
-        hwdb_entry += f"    deploy_triplet_override: {self.build_config.get_chisel_triplet()}\n"
+        hwdb_entry += f"    bit_tar: file://{local_cl_dir}/{tar_name}\n"
+        hwdb_entry += f"    deploy_quintuplet_override: null\n"
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
@@ -723,8 +690,18 @@ class XilinxAU250CustomBitBuilder(BitBuilder):
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info(f"Build complete! Xilinx AU250 bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
+        rootLogger.info(f"Build complete! Xilinx Alveo {self.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
         self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
 
         return True
+
+class XilinxAlveoU280BitBuilder(XilinxAlveoBitBuilder):
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        super().__init__(build_config, args)
+        self.BOARD_NAME = "au280"
+
+class XilinxAlveoU250BitBuilder(XilinxAlveoBitBuilder):
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        super().__init__(build_config, args)
+        self.BOARD_NAME = "au250"

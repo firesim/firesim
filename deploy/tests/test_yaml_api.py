@@ -244,7 +244,7 @@ class TestConfigBuildAPI:
             testing_recipe_name:
                 DESIGN: TopModule
                 TARGET_CONFIG: Config
-                deploy_quadruplet: null
+                deploy_quintuplet: null
                 PLATFORM_CONFIG: Config
                 platform_config_args:
                     fpga_frequency: 123

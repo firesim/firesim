@@ -328,7 +328,7 @@ configuration in ``config_hwdb.yaml``. For example, to share the hardware config
     firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
         # this is a comment that describes my favorite configuration!
         agfi: agfi-0a6449b5894e96e53
-        deploy_quadruplet_override: null
+        deploy_quintuplet_override: null
         custom_runtime_config: null
 
 you would use:
@@ -413,7 +413,7 @@ Specifies the host FPGA frequency for a bitstream build.
 
 Specifies a pre-canned set of strategies and directives to pass to the
 bitstream build. Note, these are implemented differently on different host
-platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx U250, and EC2 F1 include:
+platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx Alveo U250, and EC2 F1 include:
 
  - ``TIMING``: Optimize for improved fmax.
  - ``AREA``: Optimize for reduced resource utilization.
@@ -430,11 +430,11 @@ Setting ``TARGET_PROJECT`` is required for building the MIDAS examples
 (``TARGET_PROJECT: midasexamples``) with the manager, or for building a
 user-provided target project.
 
-``deploy_quadruplet``
+``deploy_quintuplet``
 """"""""""""""""""""""""""
 
-This allows you to override the ``deployquadruplet`` stored with the AGFI.
-Otherwise, the ``TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
+This allows you to override the ``deployquintuplet`` stored with the AGFI.
+Otherwise, the ``PLATFORM`` / TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
 above will be used. See the AGFI Tagging section for more details. Most likely,
 you should leave this set to ``null``. This is usually only used if you have
 proprietary RTL that you bake into an FPGA image, but don't want to share with
@@ -491,7 +491,7 @@ Here is a sample of this configuration file:
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
 configurations, defined in the section header, an handle to a bitstream (i.e. an AGFI or ``xclbin`` path), which represents the
-FPGA image, a custom runtime config, if one is needed, and a deploy quadruplet
+FPGA image, a custom runtime config, if one is needed, and a deploy quintuplet
 override if one is necessary.
 
 When you build a new bitstream, you should put the default version of it in this
@@ -533,11 +533,11 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
-``deploy_quadruplet_override``
+``deploy_quintuplet_override``
 """""""""""""""""""""""""""""
 
 This is an advanced feature - under normal conditions, you should leave this set to ``null``, so that the
-manager uses the configuration quadruplet that is automatically stored with the
+manager uses the configuration quintuplet that is automatically stored with the
 bitstream metadata at build time. Advanced users can set this to a different
 value to build and use a different driver when deploying simulations. Since
 the driver depends on logic now hardwired into the
@@ -579,7 +579,7 @@ Add more hardware config sections, like ``NAME_GOES_HERE_2``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can add as many of these entries to ``config_hwdb.yaml`` as you want, following the format
-discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_quadruplet_override``, and ``custom_runtime_config``).
+discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_quintuplet_override``, and ``custom_runtime_config``).
 
 .. _run-farm-recipe:
 
@@ -745,7 +745,7 @@ simulations across all run farm hosts.
 For example, this class manages how to flash FPGAs with bitstreams, how to copy back results, and how to check if a simulation is running.
 By default, deploy platform classes can be found in :gh-file-ref:`deploy/runtools/run_farm_deploy_managers.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx U250 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAU250InstanceDeployManager``, respectively.
+There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx Alveo U250 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAlveoU250InstanceDeployManager``, respectively.
 For example, to use the ``EC2InstanceDeployManager`` deploy platform class, you would write ``default_platform: EC2InstanceDeployManager``.
 
 ``default_simulation_dir``
@@ -945,7 +945,7 @@ Here is an example of this configuration file:
 .. literalinclude:: /../deploy/bit-builder-recipes/vitis.yaml
    :language: yaml
 
-``xilinxau250.yaml`` bit builder recipe
+``xilinx_alveo_u250.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This bit builder recipe configures a build farm host to build an Xilinx U250 bitstream.
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U250 bitstream.

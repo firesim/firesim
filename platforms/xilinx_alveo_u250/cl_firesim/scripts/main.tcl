@@ -3,6 +3,7 @@ set vivado_version [version -short]
 
 set ifrequency           [lindex $argv 0]
 set istrategy            [lindex $argv 1]
+set iboard               [lindex $argv 2]
 
 proc retrieveVersionedFile {filename version} {
   set first [file rootname $filename]
@@ -16,6 +17,12 @@ proc retrieveVersionedFile {filename version} {
 puts $vivado_version
 
 if {![file exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/platform_env.tcl $vivado_version]]]} {
+    puts "ERROR: could not find $sourceFile"
+    exit 1
+}
+source $sourceFile
+
+if {![file exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/${iboard}.tcl $vivado_version]]]} {
     puts "ERROR: could not find $sourceFile"
     exit 1
 }

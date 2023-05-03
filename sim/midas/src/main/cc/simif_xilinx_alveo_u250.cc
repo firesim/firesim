@@ -12,10 +12,10 @@
 
 #define PCI_DEV_FMT "%04x:%02x:%02x.%d"
 
-class simif_xilinxau250_t final : public simif_t, public CPUManagedStreamIO {
+class simif_xilinx_alveo_u250_t final : public simif_t, public CPUManagedStreamIO {
 public:
-  simif_xilinxau250_t(const TargetConfig &config, const std::vector<std::string> &args);
-  ~simif_xilinxau250_t();
+  simif_xilinx_alveo_u250_t(const TargetConfig &config, const std::vector<std::string> &args);
+  ~simif_xilinx_alveo_u250_t();
 
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
@@ -43,7 +43,7 @@ private:
   int edma_write_fd;
   int edma_read_fd;
   void* bar0_base;
-  int bar0_size = 0x2000000; // 32 MB
+  uint32_t bar0_size = 0x2000000; // 32 MB
 };
 
 
@@ -61,7 +61,7 @@ static int fpga_pci_check_file_id(char *path, uint16_t id)
     return 0;
 }
 
-simif_xilinxau250_t::simif_xilinxau250_t(const TargetConfig &config,
+simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(const TargetConfig &config,
                        const std::vector<std::string> &args)
     : simif_t(config) {
 
@@ -82,24 +82,24 @@ simif_xilinxau250_t::simif_xilinxau250_t(const TargetConfig &config,
   fpga_setup(slot_id);
 }
 
-void * simif_xilinxau250_t::fpga_pci_bar_get_mem_at_offset(uint64_t offset){
+void * simif_xilinx_alveo_u250_t::fpga_pci_bar_get_mem_at_offset(uint64_t offset){
     assert(!(((uint64_t)(offset + 4)) > bar0_size));
-    return bar0_base + offset;
+    return (uint8_t*)bar0_base + offset;
 }
 
-int simif_xilinxau250_t::fpga_pci_poke(uint64_t offset, uint32_t value) {
+int simif_xilinx_alveo_u250_t::fpga_pci_poke(uint64_t offset, uint32_t value) {
     uint32_t *reg_ptr = (uint32_t *)fpga_pci_bar_get_mem_at_offset(offset);
     *reg_ptr = value;
     return 0;
 }
 
-int simif_xilinxau250_t::fpga_pci_peek(uint64_t offset, uint32_t *value) {
+int simif_xilinx_alveo_u250_t::fpga_pci_peek(uint64_t offset, uint32_t *value) {
     uint32_t *reg_ptr = (uint32_t *)fpga_pci_bar_get_mem_at_offset(offset);
     *value = *reg_ptr;
     return 0;
 }
 
-void simif_xilinxau250_t::check_rc(int rc, char *infostr) {
+void simif_xilinx_alveo_u250_t::check_rc(int rc, char *infostr) {
   if (rc) {
     if (infostr) {
       fprintf(stderr, "%s\n", infostr);
@@ -110,7 +110,7 @@ void simif_xilinxau250_t::check_rc(int rc, char *infostr) {
   }
 }
 
-void simif_xilinxau250_t::fpga_shutdown() {
+void simif_xilinx_alveo_u250_t::fpga_shutdown() {
   int ret = munmap(bar0_base, bar0_size);
   assert(ret == 0);
   close(edma_write_fd);
@@ -127,7 +127,7 @@ constexpr uint16_t pci_vendor_id = 0x10ee;
  */
 constexpr uint16_t pci_device_id = 0x903f;
 
-void simif_xilinxau250_t::fpga_setup(int slot_id) {
+void simif_xilinx_alveo_u250_t::fpga_setup(int slot_id) {
     int domain = 0;
     int device_id = 0;
     int pf_id = 0;
@@ -203,29 +203,29 @@ void simif_xilinxau250_t::fpga_setup(int slot_id) {
     assert(edma_read_fd >= 0);
 }
 
-simif_xilinxau250_t::~simif_xilinxau250_t() { fpga_shutdown(); }
+simif_xilinx_alveo_u250_t::~simif_xilinx_alveo_u250_t() { fpga_shutdown(); }
 
-void simif_xilinxau250_t::write(size_t addr, uint32_t data) {
+void simif_xilinx_alveo_u250_t::write(size_t addr, uint32_t data) {
   int rc = fpga_pci_poke(addr, data);
   check_rc(rc, NULL);
 }
 
-uint32_t simif_xilinxau250_t::read(size_t addr) {
+uint32_t simif_xilinx_alveo_u250_t::read(size_t addr) {
   uint32_t value;
   int rc = fpga_pci_peek(addr, &value);
   return value & 0xFFFFFFFF;
 }
 
-size_t simif_xilinxau250_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
+size_t simif_xilinx_alveo_u250_t::cpu_managed_axi4_read(size_t addr, char *data, size_t size) {
   return ::pread(edma_read_fd, data, size, addr);
 }
 
 size_t
-simif_xilinxau250_t::cpu_managed_axi4_write(size_t addr, const char *data, size_t size) {
+simif_xilinx_alveo_u250_t::cpu_managed_axi4_write(size_t addr, const char *data, size_t size) {
   return ::pwrite(edma_write_fd, data, size, addr);
 }
 
-uint32_t simif_xilinxau250_t::is_write_ready() {
+uint32_t simif_xilinx_alveo_u250_t::is_write_ready() {
   uint64_t addr = 0x4;
   uint32_t value;
   int rc = fpga_pci_peek(addr, &value);
@@ -236,5 +236,5 @@ uint32_t simif_xilinxau250_t::is_write_ready() {
 std::unique_ptr<simif_t>
 create_simif(const TargetConfig &config, int argc, char **argv) {
   std::vector<std::string> args(argv + 1, argv + argc);
-  return std::make_unique<simif_xilinxau250_t>(config, args);
+  return std::make_unique<simif_xilinx_alveo_u250_t>(config, args);
 }
