@@ -18,3 +18,4 @@ Depending on the FPGA's available to you, feel free to setup the FPGA(s) for Fir
    :substitutions:
 
     This is example text |version|
+    This is example text |overall_version|
