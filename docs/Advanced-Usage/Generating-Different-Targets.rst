@@ -195,7 +195,7 @@ Projects have the following directory structure:
 Specifying A Target Instance
 ----------------------------
 
-To generate a specific instance of a target, the build system leverages four Make variables:
+To generate a specific instance of a target, the build system leverages five Make variables:
 
 1. ``TARGET_PROJECT``: this points the Makefile (`sim/Makefile`) at the right
    target-specific Makefrag, which defines the generation and metasimulation
@@ -213,6 +213,10 @@ To generate a specific instance of a target, the build system leverages four Mak
    Golden Gate and specifies compiler-level and host-land
    parameters, such as whether to enable assertion synthesis, or multi-ported RAM optimizations.
    Common platform configs are described in ``firesim-lib/sim/src/main/scala/configs/CompilerConfigs.scala``).
+
+5. ``PLATFORM``: this points the Makefile (`sim/Makefile`) at the right
+   FPGA platform to build for. This must correspond to a platform
+   defined at ``platforms/``.
 
 ``TARGET_CONFIG`` and ``PLATFORM_CONFIG`` are strings that are used to construct a
 ``Config`` instance (derives from RocketChip's parameterization system, ``Config``, see the

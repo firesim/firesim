@@ -430,6 +430,13 @@ Setting ``TARGET_PROJECT`` is required for building the MIDAS examples
 (``TARGET_PROJECT: midasexamples``) with the manager, or for building a
 user-provided target project.
 
+``PLATFORM`` `(Optional)`
+"""""""""""""""""""""""""""""""
+
+This specifies the platform for which the target will be built for (this is described
+in greater detail :ref:`here<generating-different-targets>`).  If
+``PLATFORM`` is undefined the manager will default to ``f1``.
+
 ``deploy_quintuplet``
 """"""""""""""""""""""""""
 
