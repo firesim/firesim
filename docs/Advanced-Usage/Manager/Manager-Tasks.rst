@@ -5,7 +5,7 @@ This page outlines all of the tasks that the FireSim manager supports.
 
 .. _firesim-managerinit:
 
-``firesim managerinit --platform {f1,vitis,xilinx_alveo_u250}``
+``firesim managerinit``
 ---------------------------------------------
 
 This is a setup command that does the following:
@@ -28,6 +28,10 @@ Then, do platform-specific init steps for the given ``--platform``.
         * Setup the ``config_runtime.yaml`` and ``config_build.yaml`` files with externally provisioned run/build farm arguments.
 
    .. tab:: ``xilinx_alveo_u250``
+
+        * Setup the ``config_runtime.yaml`` and ``config_build.yaml`` files with externally provisioned run/build farm arguments.
+
+   .. tab:: ``xilinx_alveo_u280``
 
         * Setup the ``config_runtime.yaml`` and ``config_build.yaml`` files with externally provisioned run/build farm arguments.
 
@@ -129,7 +133,7 @@ command in a script), you can give the command the ``--forceterminate`` command
 line argument. For example, the following will terminate all build instances in the
 build farm without prompting for confirmation if a SIGINT is received:
 
-::
+.. code-block:: bash
 
     firesim buildbitstream --forceterminate
 
@@ -287,7 +291,7 @@ command in a script), you can give the command the ``--forceterminate`` command
 line argument. For example, the following will TERMINATE ALL INSTANCES IN THE
 RUN FARM WITHOUT PROMPTING FOR CONFIRMATION:
 
-::
+.. code-block:: bash
 
     firesim terminaterunfarm --forceterminate
 
@@ -303,7 +307,7 @@ instance as you specify.
 
 Here are some examples:
 
-::
+.. code-block:: bash
 
     [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
@@ -312,7 +316,7 @@ Here are some examples:
     [ now, we have: 1 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
 
-::
+.. code-block:: bash
 
     [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 

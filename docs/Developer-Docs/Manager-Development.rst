@@ -12,7 +12,7 @@ Running PyTests Locally
 
 Assuming the FireSim repository is setup properly, PyTests can be run by doing the following:
 
-::
+.. code-block:: bash
 
     cd <FireSim Root>
     cd deploy/

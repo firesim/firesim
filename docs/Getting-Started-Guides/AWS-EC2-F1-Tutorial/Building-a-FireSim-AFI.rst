@@ -16,16 +16,16 @@ to specify a name.
 So, choose a bucket name, e.g. ``firesim``. Bucket names must be
 globally unique. If you choose one that's already taken, the manager
 will notice and complain when you tell it to build an AFI. To set your
-bucket name, open ``deploy/bit-builder-recipes/f1.yaml`` in your editor and under the
+bucket name, open :gh-file-ref:`deploy/bit-builder-recipes/f1.yaml` in your editor and under the
 particular recipe you plan to build, replace
 
-::
+.. code-block:: yaml
 
     s3_bucket_name: firesim
 
 with your own bucket name, e.g.:
 
-::
+.. code-block:: yaml
 
     s3_bucket_name: firesim
 
@@ -51,7 +51,7 @@ This is a design that has four cores, no nic, and uses the 4MB LLC + DDR3 memory
 To do so, comment out all of the other build entries in ``deploy/config_build.ini``, besides the one we want. So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
-::
+.. code-block:: yaml
 
    builds_to_run:
        # this section references builds defined in config_build_recipes.ini
@@ -64,7 +64,7 @@ Running a Build
 
 Now, we can run a build like so:
 
-::
+.. code-block:: bash
 
     firesim buildbitstream
 

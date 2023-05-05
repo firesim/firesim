@@ -86,7 +86,7 @@ setup is complete.
 In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``) and wait until the
 ``/tmp/machine-launchstatus`` file contains all the following text:
 
-::
+.. code-block:: bash
 
     $ cat /tmp/machine-launchstatus
     machine launch script started
@@ -110,13 +110,13 @@ Setting up the FireSim Repo
 
 We're finally ready to fetch FireSim's sources. Run:
 
-.. parsed-literal::
+.. code-block:: bash
 
     git clone https://github.com/firesim/firesim
     cd firesim
     # checkout latest official firesim release
     # note: this may not be the latest release if the documentation version != "stable"
-    git checkout |version|
+    git checkout |overall_version|
     ./build-setup.sh
 
 The ``build-setup.sh`` script will validate that you are on a tagged branch,
@@ -126,7 +126,7 @@ other dependencies.
 
 Next, run:
 
-::
+.. code-block:: bash
 
     source sourceme-f1-manager.sh
 
@@ -147,7 +147,7 @@ Completing Setup Using the Manager
 The FireSim manager contains a command that will interactively guide you
 through the rest of the FireSim setup process. To run it, do the following:
 
-::
+.. code-block:: bash
 
     firesim managerinit --platform f1
 

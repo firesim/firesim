@@ -78,13 +78,13 @@ Run scripts from the t2.nano
 
 SSH into the ``t2.nano`` like so:
 
-::
+.. code-block:: bash
 
     ssh -i firesim.pem ec2-user@INSTANCE_PUBLIC_IP
 
 Which should present you with something like:
 
-::
+.. code-block:: bash
 
     Last login: Mon Feb 12 21:11:27 2018 from 136.152.143.34
 
@@ -99,7 +99,7 @@ Which should present you with something like:
 
 On this machine, run the following:
 
-::
+.. code-block:: bash
 
     aws configure
     [follow prompts]
@@ -112,7 +112,7 @@ output format to ``json``. You will need to generate an AWS access key in the "S
 
 Again on the ``t2.nano`` instance, do the following:
 
-.. parsed-literal::
+.. code-block:: bash
 
     sudo yum install -y python36-pip
     sudo pip3 install --upgrade pip

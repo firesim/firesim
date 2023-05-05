@@ -63,6 +63,7 @@ vitis_firesim_gemmini_rocket_singlecore_no_nic:
     xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_gemmini_rocket_singlecore_no_nic_1ea5c4.xclbin
     deploy_quintuplet_override: firesim-FireSim-FireSimLeanGemminiRocketMMIOOnlyConfig-BaseVitisConfig
     custom_runtime_config: null
+# DOCREF START: Xilinx Alveo HWDB Entries
 alveou250_firesim_rocket_singlecore_no_nic:
     bit: REPLACE_THIS
     deploy_quintuplet_override: firesim-FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig
@@ -71,3 +72,4 @@ alveou280_firesim_rocket_singlecore_no_nic:
     bit: REPLACE_THIS
     deploy_quintuplet_override: firesim-FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig
     custom_runtime_config: null
+# DOCREF END: Xilinx Alveo HWDB Entries

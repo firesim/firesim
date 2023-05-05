@@ -3,38 +3,16 @@ Welcome to FireSim's documentation (version "|version|")!
 
 New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
+
 .. toctree::
    :maxdepth: 3
    :caption: Getting Started:
 
    FireSim-Basics
-
-.. toctree::
-   :maxdepth: 3
-   :caption: AWS EC2 F1 Tutorial:
-   :numbered:
-
-   Initial-Setup/index
-   Running-Simulations-Tutorial/index
-   Building-a-FireSim-AFI
-
-.. toctree::
-   :maxdepth: 3
-   :caption: On-Premises Xilinx Vitis FPGA Tutorial:
-   :numbered:
-
-   Initial-OnPremVitis-Setup/index
-   Running-OnPremVitis-Simulations-Tutorial/index
-   Building-a-FireSim-Xclbin
-
-.. toctree::
-   :maxdepth: 3
-   :caption: On-Premises Xilinx U250 FPGA Tutorial:
-   :numbered:
-
-   Initial-OnPremU250-Setup/index
-   Running-OnPremU250-Simulations-Tutorial/index
-   Building-a-FireSim-U250-Bitfile
+   Getting-Started-Guides/AWS-EC2-F1-Tutorial/index
+   Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U250-FPGAs
+   Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U280-FPGAs
+   Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Vitis-FPGAs
 
 .. toctree::
    :maxdepth: 3

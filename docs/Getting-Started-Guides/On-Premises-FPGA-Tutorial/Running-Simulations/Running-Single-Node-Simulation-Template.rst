@@ -3,10 +3,9 @@ Running a Single Node Simulation
 
 Now that we've completed the setup of our manager machine, it's time to run
 a simulation! In this section, we will simulate **1 target node**, for which we
-will need a single U250 FPGA.
+will need a single |fpga_type|.
 
-**Make sure you have sourced
-``sourceme-f1-manager.sh --skip-ssh-setup`` before running any of these commands.**
+**Make sure you have sourced** ``sourceme-f1-manager.sh --skip-ssh-setup`` **before running any of these commands.**
 
 Building target software
 ------------------------
@@ -16,7 +15,7 @@ simulated node. To do so, we'll need to build our FireSim-compatible RISC-V
 Linux distro. For this tutorial, we will use a simple buildroot-based
 distribution. You can do this like so:
 
-::
+.. code-block:: bash
 
     cd firesim/sw/firesim-software
     ./init-submodules.sh
@@ -49,23 +48,23 @@ you have not modified it):
 
 We'll need to modify a couple of these lines.
 
-First, let's tell the manager to use the single U250 FPGA.
+First, let's tell the manager to use the single |fpga_type| FPGA.
 You'll notice that in the ``run_farm`` mapping which describes and specifies the machines to run simulations on.
 First notice that the ``base_recipe`` maps to ``run-farm-recipes/externally_provisioned.yaml``.
 This indicates to the FireSim manager that the machines allocated to run simulations will be provided by the user through IP addresses
 instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
-Let's modify the ``default_platform`` to be ``VitisInstanceDeployManager`` so that we can launch simulations using Vitis/XRT.
+Let's modify the ``default_platform`` to be |deploy_manager_code| so that we can launch simulations using |runner|.
 Next, modify the ``default_simulation_dir`` to a directory that you want to store temporary simulation collateral to.
 When running simulations, this directory is used to store any temporary files that the simulator creates (e.g. a uartlog emitted by a Linux simulation).
 Next, lets modify the ``run_farm_hosts_to_use`` mapping.
 This maps IP addresses (i.e. ``localhost``) to a description/specification of the simulation machine.
-In this case, we have only one U250 FPGA so we will change the description of ``localhost`` to ``one_fpga_spec``.
+In this case, we have only one |fpga_type| FPGA so we will change the description of ``localhost`` to ``one_fpga_spec``.
 
 Now, let's verify that the ``target_config`` mapping will model the correct target design.
 By default, it is set to model a single-node with no network.
 It should look like the following:
 
-::
+.. code-block:: yaml
 
     target_config:
         topology: no_net_config
@@ -85,9 +84,9 @@ Note ``topology`` is set to
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
 ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
-Let's modify the ``default_hw_config`` (the target design) to ``vitis_firesim_rocket_singlecore_no_nic``.
+Let's modify the ``default_hw_config`` (the target design) to "|hwdb_entry|".
 This new hardware configuration does not
-have a NIC and is pre-built for the U250 FPGA.
+have a NIC and is pre-built for the |fpga_type| FPGA.
 This hardware configuration models a Single-core Rocket Chip SoC and **no** network interface card.
 
 We will leave the ``workload`` mapping unchanged here, since we do
@@ -97,12 +96,13 @@ feature is an advanced feature that you can learn more about in the
 
 As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this (with ``PATH_TO_SIMULATION_AREA`` replaced with your simulation collateral temporary directory):
 
-::
+.. code-block:: yaml
+   :substitutions:
 
     run_farm:
       base_recipe: run-farm-recipes/externally_provisioned.yaml
       recipe_arg_overrides:
-        default_platform: VitisInstanceDeployManager
+        default_platform: |deploy_manager|
         default_simulation_dir: <PATH_TO_SIMULATION_AREA>
         run_farm_hosts_to_use:
             - localhost: one_fpga_spec
@@ -114,7 +114,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
         switching_latency: 10
         net_bandwidth: 200
         profile_interval: -1
-        default_hw_config: vitis_firesim_rocket_singlecore_no_nic
+        default_hw_config: |hwdb_entry|
         plusarg_passthrough: ""
 
     workload:
@@ -133,7 +133,7 @@ Starting the Run Farm
 
 First, we will tell the manager to launch our Run Farm with a single machine called ``localhost``. Run:
 
-::
+.. code-block:: bash
 
 	firesim launchrunfarm
 
@@ -142,7 +142,7 @@ this command should not launch any machine and should be quick.
 
 You should expect output like the following:
 
-::
+.. code-block:: bash
 
 	$ firesim launchrunfarm
 	FireSim Manager. Docs: https://docs.fires.im
@@ -160,19 +160,19 @@ components necessary to run your simulation. The manager will also handle
 flashing FPGAs. To tell the manager to setup our simulation infrastructure,
 let's run:
 
-::
+.. code-block:: bash
 
 	firesim infrasetup
 
 
 For a complete run, you should expect output like the following:
 
-::
+.. code-block:: bash
 
 	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
 	Running: infrasetup
 
-	Building FPGA software driver for FireSim-FireSimRocketConfig-BaseVitisConfig
+	Building FPGA software driver for |quintuplet|
 	...
 	[localhost] Checking if host instance is up...
 	[localhost] Copying FPGA simulation infrastructure for slot: 0.
@@ -195,7 +195,7 @@ Running a simulation!
 
 Finally, let's run our simulation! To do so, run:
 
-::
+.. code-block:: bash
 
 	firesim runworkload
 
@@ -203,7 +203,7 @@ Finally, let's run our simulation! To do so, run:
 This command boots up a simulation and prints out the live status of the simulated
 nodes every 10s. When you do this, you will initially see output like:
 
-::
+.. code-block:: bash
 
 	$ firesim runworkload
 	FireSim Manager. Docs: https://docs.fires.im
@@ -216,7 +216,7 @@ nodes every 10s. When you do this, you will initially see output like:
 If you don't look quickly, you might miss it, since it will get replaced with a
 live status page:
 
-::
+.. code-block:: text
 
 	FireSim Simulation Status @ 2018-05-19 00:38:56.062737
 	--------------------------------------------------------------------------------
@@ -251,13 +251,13 @@ Next, let's ``ssh`` into the simulation machine.
 In this case, since we are running the simulation on the same machine (i.e. ``localhost``)
 we can run the following:
 
-::
+.. code-block:: bash
 
 	ssh localhost
 
 Next, we can directly attach to the console of the simulated system using ``screen``, run:
 
-::
+.. code-block:: bash
 
 	screen -r fsim0
 
@@ -265,7 +265,7 @@ Voila! You should now see Linux booting on the simulated system and then be prom
 with a Linux login prompt, like so:
 
 
-::
+.. code-block:: bash
 
 	[truncated Linux boot output]
 	[    0.020000] VFS: Mounted root (ext2 filesystem) on device 254:0.
@@ -294,7 +294,7 @@ Now, you can login to the system! The username is ``root``.
 At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
-::
+.. code-block:: bash
 
 	Welcome to Buildroot
 	buildroot login: root
@@ -309,7 +309,7 @@ let's power off the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
 
-::
+.. code-block:: bash
 
 	Welcome to Buildroot
 	buildroot login: root
@@ -320,7 +320,7 @@ in the console of the simulated system, run ``poweroff -f``:
 
 You should see output like the following from the simulation console:
 
-::
+.. code-block:: bash
 
 	# poweroff -f
 	[   12.456000] reboot: Power down
@@ -338,7 +338,7 @@ You should see output like the following from the simulation console:
 You'll also notice that the manager polling loop exited! You'll see output like this
 from the manager:
 
-::
+.. code-block:: text
 
 	FireSim Simulation Status @ 2018-05-19 00:46:50.075885
 	--------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ from the manager:
 
 If you take a look at the workload output directory given in the manager output (in this case, ``.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
 
-::
+.. code-block:: bash
 
 	$ ls -la firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/*/*
 	-rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
@@ -388,13 +388,13 @@ useful for running benchmarks automatically. The
 For now, let's wrap-up our tutorial by terminating the Run Farm that we launched.
 To do so, run:
 
-::
+.. code-block:: bash
 
 	firesim terminaterunfarm
 
 Which should present you with the following:
 
-::
+.. code-block:: bash
 
 	$ firesim terminaterunfarm
 	FireSim Manager. Docs: https://docs.fires.im
@@ -410,11 +410,3 @@ Congratulations on running your first FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`).
-
-.. warning:: Currently, FireSim simulations with bridges that use the Vitis PCI-E DMA interface are not supported (i.e. TracerV, NIC, Dromajo, Printfs).
-	This will be added in a future FireSim release.
-
-.. warning:: In some cases, simulation may fail because you might need to update the U250 DRAM offset that is currently hard coded in both the FireSim Vitis/XRT driver code and platform shim.
-	To verify this, run ``xclbinutil --info --input <YOURXCLBIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset. If it differs from the hardcoded ``0x40000000`` given in
-	driver code (``u250_dram_expected_offset`` variable in ``sim/midas/src/main/cc/simif_vitis.cc``) and platform shim (``araddr``/``awaddr`` offset in
-	``sim/midas/src/main/scala/midas/platform/VitisShim.scala``) replace both areas with the new offset given by ``xclbinutil`` and regenerate the bitstream.

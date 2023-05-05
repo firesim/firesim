@@ -6,7 +6,7 @@ Manager Configuration Files
 This page contains a centralized reference for all of the configuration options
 in ``config_runtime.yaml``, ``config_build.yaml``, ``config_build_farm.yaml``,
 ``config_build_recipes.yaml``, and ``config_hwdb.yaml``. It also contains
-references for all build and run farm recipes (in ``deploy/build-farm-recipes/`` and ``deploy/run-farm-recipes/``).
+references for all build and run farm recipes (in :gh-file-ref:`deploy/build-farm-recipes` and :gh-file-ref:`deploy/run-farm-recipes`).
 
 .. _config-runtime:
 
@@ -306,7 +306,7 @@ for a particular call to the ``buildbitstream`` command (see
 example, if we want to run the builds named ``awesome_firesim_config`` and ``quad_core_awesome_firesim_config``, we would
 write:
 
-::
+.. code-block:: yaml
 
     builds_to_run:
         - awesome_firesim_config
@@ -323,7 +323,7 @@ users specified in the next (``share_with_accounts``) section. In this section,
 you should specify the section title (i.e. the name you made up) for a hardware
 configuration in ``config_hwdb.yaml``. For example, to share the hardware config:
 
-::
+.. code-block:: yaml
 
     firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
         # this is a comment that describes my favorite configuration!
@@ -333,7 +333,7 @@ configuration in ``config_hwdb.yaml``. For example, to share the hardware config
 
 you would use:
 
-::
+.. code-block:: yaml
 
     agfis_to_share:
         - firesim_rocket_quadcore_nic_l2_llc4mb_ddr3
@@ -429,6 +429,13 @@ in greater detail :ref:`here<generating-different-targets>`).  If
 Setting ``TARGET_PROJECT`` is required for building the MIDAS examples
 (``TARGET_PROJECT: midasexamples``) with the manager, or for building a
 user-provided target project.
+
+``PLATFORM`` `(Optional)`
+"""""""""""""""""""""""""""""""
+
+This specifies the platform for which the target will be built for (this is described
+in greater detail :ref:`here<generating-different-targets>`).  If
+``PLATFORM`` is undefined the manager will default to ``f1``.
 
 ``deploy_quintuplet``
 """"""""""""""""""""""""""
@@ -534,7 +541,7 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 ``deploy_quintuplet_override``
-"""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""
 
 This is an advanced feature - under normal conditions, you should leave this set to ``null``, so that the
 manager uses the configuration quintuplet that is automatically stored with the
@@ -946,6 +953,11 @@ Here is an example of this configuration file:
    :language: yaml
 
 ``xilinx_alveo_u250.yaml`` bit builder recipe
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This bit builder recipe configures a build farm host to build an Xilinx Alveo U250 bitstream.
+
+``xilinx_alveo_u280.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U280 bitstream.

@@ -27,7 +27,7 @@ terminate.
 An example of an assertion caught in a dual-core instance of BOOM is given
 below:
 
-::
+.. code-block:: text
 
     id: 1190, module: IssueSlot_4, path: FireSimNoNIC.tile_1.core.issue_units_0.slots_3]
     Assertion failed
