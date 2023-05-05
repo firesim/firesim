@@ -1,4 +1,4 @@
-Sphinx==7.0.0
+Sphinx==6.2.1
 Pygments==2.15.1
 sphinx-autobuild
 sphinx_rtd_theme==1.2.0
