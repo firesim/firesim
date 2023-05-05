@@ -1,2 +1,0 @@
-Xilinx Vitis FPGAs
-==================
