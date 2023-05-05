@@ -1,8 +1,5 @@
-Software Installation and Validation
------------------------------------------------------------
-
-Requirements
-~~~~~~~~~~~~
+Software and Machine Setup
+--------------------------
 
 We require a base machine that is able to support the |fpga_name| and running Xilinx Vivado.
 Please refer to the minimum system requirements given in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements.
@@ -10,19 +7,19 @@ Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301
 
 We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:
 
-* Vivado 2021.1
+* Vivado 2021.1 or 2022.2
 
-* U250 board package (corresponding with Vivado 2021.1)
+* U250 board package (corresponding with Vivado 2021.1 or 2022.2)
 
   * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
 
   * Ensure that the board package is installed to a Vivado accessible location: https://support.xilinx.com/s/article/The-board-file-location-with-the-latest-Vivado-tools?language=en_US
 
-Importantly, using this FPGA with FireSim requires that you have ``sudo`` passwordless access to the machine with the FPGA.
+Importantly, using this FPGA with FireSim requires that you have ``sudo`` **passwordless** access to the machine with the FPGA.
 This is needed to flash the FPGA bitstream onto the FPGA.
 
 FPGA Setup
-----------------
+----------
 
 After installing the |fpga_name| using the Xilinx instructions and installing the specific version of Vivado, we need to flash the |fpga_name| with a dummy XDMA-enabled design to finish setup.
 First, lets install the XDMA kernel module in a FireSim known location:
@@ -47,11 +44,12 @@ Next, lets add the kernel module:
 Next, let's determine the BDF's (unique ID) of the/any FPGA you want to use with FireSim.
 
 .. code-block:: bash
+   :substitutions:
 
    # determine BDF of FPGA that you want to use / re-flash
    lspci | grep -i xilinx
 
-   # example output of a 2 U250 FPGA system:
+   # example output of a 2 |fpga_name| FPGA system:
    # 04:00.0 Processing accelerators: Xilinx Corporation Device 5004
    # 04:00.1 Processing accelerators: Xilinx Corporation Device 5005
    # 83:00.0 Processing accelerators: Xilinx Corporation Device 5004
@@ -61,7 +59,7 @@ Next, let's determine the BDF's (unique ID) of the/any FPGA you want to use with
    # the extended BDF would be 0000: + the BDF from before (i.e. 0000:04:00.0)
    # note: that you BDF to use is the one ending in .0
 
-Keep note of the *extended BDF* of the FPGA you would like to setup.
+Keep note of the **extended BDF** of the FPGA you would like to setup.
 Next, let's flash each |fpga_name| that you would like to use with the dummy bitstream.
 To obtain the sample bitstream, let's find the URL to download the file to the machine with the FPGA.
 Below find the HWDB entry called "|hwdb_entry_name|".
@@ -90,7 +88,9 @@ Next, we will do the following for each FPGA that will be used with FireSim.
    cd |platform_name|
 
    git clone --branch |overall_version| https://github.com/firesim/firesim
-   EXTENDED_DEVICE_BDF1=<YOUR BDF HERE> ./platforms/|platform_name|/scripts/program_fpga.sh ./firesim.bit |board_name|
+   EXTENDED_DEVICE_BDF1=<YOUR BDF HERE> ./firesim/platforms/|platform_name|/scripts/program_fpga.sh ./firesim.bit |board_name|
+
+   rm -rf /tmp/tempdownload
 
 Next, **warm reboot** the computer.
 This will reconfigure your PCI-E settings such that FireSim can detect the XDMA-enabled bitstream.

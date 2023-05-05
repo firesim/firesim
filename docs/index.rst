@@ -11,11 +11,11 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
 .. toctree::
    :maxdepth: 3
-   :caption: Initial FPGA Setup:
+   :caption: Getting Started:
 
-   Initial-FPGA-Setup/Intro
-   Initial-FPGA-Setup/AWS-EC2-F1
-   Initial-FPGA-Setup/On-Premises-FPGAs/index
+   Tutorials/Intro
+   Tutorials/AWS-EC2-F1-Tutorial/index
+   Tutorials/On-Premises-FPGAs/index
 
 .. .. toctree::
 ..    :maxdepth: 3
