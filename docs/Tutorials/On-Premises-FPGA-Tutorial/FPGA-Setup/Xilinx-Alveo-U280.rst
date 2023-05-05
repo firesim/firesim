@@ -3,7 +3,7 @@
 .. |platform_name| replace:: xilinx_alveo_u280
 .. |board_name| replace:: au280
 
-Xilinx Alveo U280
-=================
+FPGA and Tool Setup
+===================
 
 .. include:: Xilinx-Alveo-Template.rst

@@ -3,7 +3,7 @@
 .. |platform_name| replace:: xilinx_alveo_u250
 .. |board_name| replace:: au250
 
-Xilinx Alveo U250
-=================
+FPGA and Tool Setup
+===================
 
 .. include:: Xilinx-Alveo-Template.rst

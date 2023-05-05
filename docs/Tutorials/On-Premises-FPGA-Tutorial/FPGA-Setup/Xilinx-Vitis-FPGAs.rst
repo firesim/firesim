@@ -1,10 +1,10 @@
 .. |fpga_name| replace:: Xilinx Alveo |fpga_name|
 
-Xilinx Vitis FPGAs
-==================
+FPGA and Tool Setup
+===================
 
-Software and Machine Setup
---------------------------
+Requirements and Installations
+------------------------------
 
 We require a base machine that is able to support a Xilinx Vitis-enabled FPGA and running Xilinx Vitis.
 For the purposes of this tutorial, we assume you are running with a |fpga_name|.
@@ -24,7 +24,7 @@ We require the following programs/packages installed from the Xilinx website in 
   * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
 
 Setup Validation
-~~~~~~~~~~~~~~~~
+----------------
 
 After installing the |fpga_name| using the Xilinx instructions and installing the specific versions of Vitis/XRT, let's verify that the |fpga_name| can be used for emulations.
 Ensure that you can run the following XRT commands without errors:

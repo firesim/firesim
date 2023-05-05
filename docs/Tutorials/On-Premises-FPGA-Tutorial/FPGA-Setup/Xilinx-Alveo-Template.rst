@@ -1,5 +1,5 @@
-Software and Machine Setup
---------------------------
+Requirements and Installations
+------------------------------
 
 We require a base machine that is able to support the |fpga_name| and running Xilinx Vivado.
 Please refer to the minimum system requirements given in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements.
