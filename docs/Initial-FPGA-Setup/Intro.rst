@@ -1,3 +1,5 @@
+.. |Product| replace:: FireSim is a product
+
 Introduction
 ============
 
@@ -20,11 +22,13 @@ Depending on the FPGA's available to you, feel free to setup the FPGA(s) for Fir
     This is example text |version|
     This is example text |overall_version|
     This is example text |this|
+    This is example text |Product|
 
 .. parsed-literal::
 
     This is example text |version|
     This is example text |overall_version|
     This is example text |this|
+    This is example text |Product|
 
-.. include:: temp.inc
+.. include:: temp.rst
