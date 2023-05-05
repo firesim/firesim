@@ -110,13 +110,13 @@ Setting up the FireSim Repo
 
 We're finally ready to fetch FireSim's sources. Run:
 
-.. parsed-literal::
+.. code-block:: bash
 
     git clone https://github.com/firesim/firesim
     cd firesim
     # checkout latest official firesim release
     # note: this may not be the latest release if the documentation version != "stable"
-    git checkout |version|
+    git checkout |overall_version|
     ./build-setup.sh
 
 The ``build-setup.sh`` script will validate that you are on a tagged branch,

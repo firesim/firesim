@@ -169,9 +169,9 @@ html_context = {
 
 # add rst to beginning of each rst source file
 # can put custom strings here that are generated from this file
+# you can use these in .. code-block:: directives if you give the :substitutions: option underneath
 rst_prolog = f"""
 .. |overall_version| replace:: {version}
-.. |this| replace:: OMG!!
 """
 
 # -- Options for LaTeX output ------------------------------------------------
