@@ -32,3 +32,5 @@ Depending on the FPGA's available to you, feel free to setup the FPGA(s) for Fir
     This is example text |Product|
 
 .. include:: temp.rst
+
+.. include:: another.rst
