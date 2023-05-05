@@ -167,10 +167,11 @@ html_context = {
     "version": version
 }
 
-# add rst to end of each rst source file
+# add rst to beginning of each rst source file
 # can put custom strings here that are generated from this file
-rst_epilog = f"""
+rst_prolog = f"""
 .. |overall_version| replace:: {version}
+.. |this| replace:: OMG!!
 """
 
 # -- Options for LaTeX output ------------------------------------------------
