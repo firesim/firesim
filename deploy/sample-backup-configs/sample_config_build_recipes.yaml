@@ -288,7 +288,7 @@ firesim_gemmini_printf_rocket_singlecore_no_nic:
     bit_builder_recipe: bit-builder-recipes/f1.yaml
 
 # Additional Xilinx Alveo U250-only Config
-alveou250_firesim_rocket_singlecore_no_nic:
+alveo_u250_firesim_rocket_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u250
     TARGET_PROJECT: firesim
     DESIGN: FireSim
@@ -303,7 +303,7 @@ alveou250_firesim_rocket_singlecore_no_nic:
     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
 
 # Additional Xilinx Alveo U280-only Config
-alveou280_firesim_rocket_singlecore_no_nic:
+alveo_u280_firesim_rocket_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u280
     TARGET_PROJECT: firesim
     DESIGN: FireSim

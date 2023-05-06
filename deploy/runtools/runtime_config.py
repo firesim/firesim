@@ -162,7 +162,7 @@ class RuntimeHWConfig:
     """User-specified, URI path to xclbin"""
     xclbin: Optional[str]
     """User-specified, URI path to bitstream tar file"""
-    bit_tar: Optional[str]
+    bitstream_tar: Optional[str]
 
     deploy_quintuplet: Optional[str]
     customruntimeconfig: str
@@ -185,12 +185,12 @@ class RuntimeHWConfig:
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        if sum(['agfi' in hwconfig_dict, 'xclbin' in hwconfig_dict, 'bit_tar' in hwconfig_dict]) > 1:
-            raise Exception(f"Must only have 'agfi' or 'xclbin' or 'bit_tar' HWDB entry {name}.")
+        if sum(['agfi' in hwconfig_dict, 'xclbin' in hwconfig_dict, 'bitstream_tar' in hwconfig_dict]) > 1:
+            raise Exception(f"Must only have 'agfi' or 'xclbin' or 'bitstream_tar' HWDB entry {name}.")
 
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
-        self.bit_tar = hwconfig_dict.get('bit_tar')
+        self.bitstream_tar = hwconfig_dict.get('bitstream_tar')
         self.driver_tar = hwconfig_dict.get('driver_tar')
 
         self.uri_list = []
@@ -201,7 +201,7 @@ class RuntimeHWConfig:
             self.platform = "vitis"
             self.uri_list.append(URIContainer('xclbin', self.get_xclbin_filename()))
         else:
-            self.uri_list.append(URIContainer('bit_tar', self.get_bit_tar_filename()))
+            self.uri_list.append(URIContainer('bitstream_tar', self.get_bitstream_tar_filename()))
 
         self.driver_name_suffix = None
 
@@ -245,7 +245,7 @@ class RuntimeHWConfig:
         return "bitstream.xclbin"
 
     @classmethod
-    def get_bit_tar_filename(cls) -> str:
+    def get_bitstream_tar_filename(cls) -> str:
         """ Get the name of the bit tar file inside the sim_slot_X directory on the run host. """
         return "firesim.tar.gz"
 
@@ -282,6 +282,11 @@ class RuntimeHWConfig:
             assert False, "Unable to obtain deploy_quintuplet"
 
         return self.deploy_quintuplet
+
+    def get_deploytriplet_for_config(self) -> str:
+        """ Get the deploytriplet for this configuration. """
+        quin = self.get_deployquinruplet_for_config()
+        return "-".join(quin.split("-")[2:])
 
     def get_design_name(self) -> str:
         """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
@@ -458,18 +463,18 @@ class RuntimeHWConfig:
 
         if self.platform == "f1" or self.platform == "vitis":
             return
-        else: # bit_tar platforms
+        else: # bitstream_tar platforms
             for container in self.uri_list:
                 both = container._choose_path(dir, self)
 
                 # do nothing if there isn't a URI
                 if both is None:
-                    uri = self.bit_tar
-                    destination = self.bit_tar
+                    uri = self.bitstream_tar
+                    destination = self.bitstream_tar
                 else:
                     (uri, destination) = both
 
-                if uri == self.bit_tar:
+                if uri == self.bitstream_tar:
                     # unpack destination value
                     temp_dir = f"{dir}/{URIContainer.hashed_name(uri)}-dir"
                     local(f"mkdir -p {temp_dir}")
@@ -578,7 +583,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.agfi = None
         self.xclbin = None
-        self.bit_tar = None
+        self.bitstream_tar = None
         self.driver_tar = None
         self.tarball_built = False
 

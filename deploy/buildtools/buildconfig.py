@@ -143,6 +143,23 @@ class BuildConfig:
         # create dispatcher object using class given and pass args to it
         self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
 
+    def get_chisel_triplet(self) -> str:
+        """Get the unique build-specific '-' deliminated triplet.
+
+        Returns:
+            Chisel triplet
+        """
+        return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
+
+    def get_effective_deploy_triplet(self) -> str:
+        """Get the effective deploy triplet, i.e. the triplet version of
+        get_effective_deploy_quadruplet().
+
+        Returns:
+            Effective deploy triplet
+        """
+        return "-".join(self.get_effective_deploy_quadruplet().split("-")[2:])
+
     def get_chisel_quintuplet(self) -> str:
         """Get the unique build-specific '-' deliminated quintuplet.
 

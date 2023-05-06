@@ -103,12 +103,17 @@ class BitBuilder(metaclass=abc.ABCMeta):
         tag_build_quintuplet = self.build_config.get_chisel_quintuplet()
         tag_deploy_quintuplet = self.build_config.get_effective_deploy_quintuplet()
 
+        tag_build_triplet = self.build_config.get_chisel_triplet()
+        tag_deploy_triplet = self.build_config.get_effective_deploy_triplet()
+
         # the asserts are left over from when we tried to do this with tags
         # - technically I don't know how long these descriptions are allowed to be,
         # but it's at least 2048 chars, so I'll leave these here for now as sanity
         # checks.
         assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
         assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
+        assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
+        assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
 
         is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
         hash = local("git rev-parse HEAD", capture=True)
@@ -117,7 +122,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
         assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
 
         # construct the serialized description from these tags.
-        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_fsimcommit)
+        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_build_triple, tag_deploy_triple, tag_fsimcommit)
 
 class F1BitBuilder(BitBuilder):
     """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
@@ -645,7 +650,6 @@ class XilinxAlveoBitBuilder(BitBuilder):
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
-        #bit_path = "/scratch/abejgonza/firesim-private/deploy/results-build/2023-05-04--01-35-15-alveou250_firesim_rocket_singlecore_no_nic_2/cl_FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig/vivado_proj/firesim.bit"
         tar_staging_path = f"{local_cl_dir}/{self.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
@@ -667,7 +671,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         hostname = build_farm.get_build_host_ip(self.build_config)
 
         hwdb_entry = hwdb_entry_name + ":\n"
-        hwdb_entry += f"    bit_tar: file://{local_cl_dir}/{tar_name}\n"
+        hwdb_entry += f"    bitstream_tar: file://{local_cl_dir}/{tar_name}\n"
         hwdb_entry += f"    deploy_quintuplet_override: null\n"
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
