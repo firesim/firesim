@@ -3,10 +3,9 @@ Running a Single Node Simulation
 
 Now that we've completed the setup of our manager machine, it's time to run
 a simulation! In this section, we will simulate **1 target node**, for which we
-will need a single U250 FPGA.
+will need a single |fpga_type|.
 
-**Make sure you have sourced
-``sourceme-f1-manager.sh --skip-ssh-setup`` before running any of these commands.**
+**Make sure you have sourced** ``sourceme-f1-manager.sh --skip-ssh-setup`` **before running any of these commands.**
 
 Building target software
 ------------------------
@@ -49,17 +48,17 @@ you have not modified it):
 
 We'll need to modify a couple of these lines.
 
-First, let's tell the manager to use the single U250 FPGA.
+First, let's tell the manager to use the single |fpga_type| FPGA.
 You'll notice that in the ``run_farm`` mapping which describes and specifies the machines to run simulations on.
 First notice that the ``base_recipe`` maps to ``run-farm-recipes/externally_provisioned.yaml``.
 This indicates to the FireSim manager that the machines allocated to run simulations will be provided by the user through IP addresses
 instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
-Let's modify the ``default_platform`` to be ``VitisInstanceDeployManager`` so that we can launch simulations using Vitis/XRT.
+Let's modify the ``default_platform`` to be "|deploy_manager|" so that we can launch simulations using |runner|.
 Next, modify the ``default_simulation_dir`` to a directory that you want to store temporary simulation collateral to.
 When running simulations, this directory is used to store any temporary files that the simulator creates (e.g. a uartlog emitted by a Linux simulation).
 Next, lets modify the ``run_farm_hosts_to_use`` mapping.
 This maps IP addresses (i.e. ``localhost``) to a description/specification of the simulation machine.
-In this case, we have only one U250 FPGA so we will change the description of ``localhost`` to ``one_fpga_spec``.
+In this case, we have only one |fpga_type| FPGA so we will change the description of ``localhost`` to ``one_fpga_spec``.
 
 Now, let's verify that the ``target_config`` mapping will model the correct target design.
 By default, it is set to model a single-node with no network.
@@ -85,9 +84,9 @@ Note ``topology`` is set to
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
 ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
-Let's modify the ``default_hw_config`` (the target design) to ``vitis_firesim_rocket_singlecore_no_nic``.
+Let's modify the ``default_hw_config`` (the target design) to "|hwdb_entry|".
 This new hardware configuration does not
-have a NIC and is pre-built for the U250 FPGA.
+have a NIC and is pre-built for the |fpga_type| FPGA.
 This hardware configuration models a Single-core Rocket Chip SoC and **no** network interface card.
 
 We will leave the ``workload`` mapping unchanged here, since we do
@@ -102,7 +101,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
     run_farm:
       base_recipe: run-farm-recipes/externally_provisioned.yaml
       recipe_arg_overrides:
-        default_platform: VitisInstanceDeployManager
+        default_platform: |deploy_manager|
         default_simulation_dir: <PATH_TO_SIMULATION_AREA>
         run_farm_hosts_to_use:
             - localhost: one_fpga_spec
@@ -114,7 +113,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
         switching_latency: 10
         net_bandwidth: 200
         profile_interval: -1
-        default_hw_config: vitis_firesim_rocket_singlecore_no_nic
+        default_hw_config: |hwdb_entry|
         plusarg_passthrough: ""
 
     workload:
@@ -172,7 +171,7 @@ For a complete run, you should expect output like the following:
 	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
 	Running: infrasetup
 
-	Building FPGA software driver for FireSim-FireSimRocketConfig-BaseVitisConfig
+	Building FPGA software driver for |quintuplet|
 	...
 	[localhost] Checking if host instance is up...
 	[localhost] Copying FPGA simulation infrastructure for slot: 0.
@@ -410,11 +409,3 @@ Congratulations on running your first FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`).
-
-.. warning:: Currently, FireSim simulations with bridges that use the Vitis PCI-E DMA interface are not supported (i.e. TracerV, NIC, Dromajo, Printfs).
-	This will be added in a future FireSim release.
-
-.. warning:: In some cases, simulation may fail because you might need to update the U250 DRAM offset that is currently hard coded in both the FireSim Vitis/XRT driver code and platform shim.
-	To verify this, run ``xclbinutil --info --input <YOURXCLBIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset. If it differs from the hardcoded ``0x40000000`` given in
-	driver code (``u250_dram_expected_offset`` variable in ``sim/midas/src/main/cc/simif_vitis.cc``) and platform shim (``araddr``/``awaddr`` offset in
-	``sim/midas/src/main/scala/midas/platform/VitisShim.scala``) replace both areas with the new offset given by ``xclbinutil`` and regenerate the bitstream.
