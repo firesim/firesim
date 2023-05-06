@@ -5,6 +5,6 @@ Xilinx Vitis-enabled FPGAs
    :maxdepth: 3
 
    FPGA-Setup/Xilinx-Vitis-FPGAs
-   Initial-Setup/Setting-up-your-On-Premises-Machine
+   Initial-Setup/Setting-Up-Xilinx-Vitis
    Building-a-FireSim-Bitstream/Xilinx-Vitis-Xclbin
    Running-Simulations/Running-a-Single-Node-Simulation

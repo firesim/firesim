@@ -4,11 +4,11 @@ Setting up your On-Premises Machine
 This tutorial is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
 
-Finally, ensure that the XRT/Vitis tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
+Finally, ensure that the |tool_type| tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
 The environment variables should be visible to any non-interactive shells that are spawned.
-You can check this by ensuring that the output of the following command shows that the XRT/Vitis tools are present in the environment variables (i.e. ``XILINX_XRT``):
+You can check this by ensuring that the output of the following command shows that the |tool_type| tools are present in the environment variables (i.e. "|example_var|"):
 
-.. parsed-literal::
+.. code-block:: bash
 
     ssh localhost printenv
 
@@ -19,7 +19,7 @@ Additionally, you should be able to run ``ssh localhost`` without needing a pass
 The FireSim manager program runs all commands by ``ssh``-ing into a BuildFarm/RunFarm machine given an IP address then running the command.
 To do so non-interactively, it needs passwordless access to the machines (in our case, ``localhost``) to build/run on.
 
-Finally, if you are running this tutorial without ``sudo`` access you should also install the ``guestmount`` program and ensure it runs properly.
+Finally, you should also install the ``guestmount`` program and ensure it runs properly.
 This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
 Most likely you will need to follow the instructions `here <https://askubuntu.com/questions/1046828/how-to-run-libguestfs-tools-tools-such-as-virt-make-fs-without-sudo>`_ to ensure ``guestmount`` doesn't error.
 
@@ -32,18 +32,19 @@ Setting up the FireSim Repo
 
 We're finally ready to fetch FireSim's sources. Run:
 
-.. parsed-literal::
+.. code-block:: bash
+   :substitutions:
 
     git clone https://github.com/firesim/firesim
     cd firesim
     # checkout latest official firesim release
     # note: this may not be the latest release if the documentation version != "stable"
-    git checkout |version|
+    git checkout |overall_version|
 
 Next, we will bootstrap the machine by installing Miniforge Conda, our software package manager, and set up a default software environment using Conda.
 First run the following to see the options to the bootstrap script:
 
-.. parsed-literal::
+.. code-block:: bash
 
    ./scripts/machine-launch-script.sh --help
 
@@ -59,19 +60,19 @@ Below we will give a few examples on how to run the command (choose the command 
 
    .. tab:: With ``sudo`` access (newly install Conda)
 
-      .. parsed-literal::
+      .. code-block:: bash
 
          sudo ./scripts/machine-launch-script.sh
 
    .. tab:: Without ``sudo`` access (install Conda to user-specified location)
 
-      .. parsed-literal::
+      .. code-block:: bash
 
          ./scripts/machine-launch-script.sh --prefix REPLACE_USER_SPECIFIED_LOCATION
 
    .. tab:: Without ``sudo`` access (use existing Conda)
 
-      .. parsed-literal::
+      .. code-block:: bash
 
          ./scripts/machine-launch-script.sh --prefix REPLACE_PATH_TO_CONDA
 
@@ -82,19 +83,19 @@ After re-logging back into the machine, you should be in the ``firesim`` Conda e
 environment in the ``machine-launch-script.sh``).
 Verify this by running:
 
-.. parsed-literal::
+.. code-block:: bash
 
    conda env list
 
 If you are not in the ``firesim`` environment and the environment exists, you can run the following to "activate" or enter the environment:
 
-.. parsed-literal::
+.. code-block:: bash
 
    conda activate firesim # or whatever the environment is called
 
 Next run:
 
-.. parsed-literal::
+.. code-block:: bash
 
     ./build-setup.sh
 
@@ -105,7 +106,7 @@ other dependencies.
 
 Next, run:
 
-.. parsed-literal::
+.. code-block:: bash
 
     source sourceme-f1-manager.sh --skip-ssh-setup
 
@@ -120,23 +121,23 @@ Final Environment Check
 
 Finally, lets verify that the environment variables are correctly setup for the tutorial. Run:
 
-.. parsed-literal::
+.. code-block:: bash
 
    echo $PATH
 
-You should see that both the Xilinx Vitis and XRT tools are located in the ``PATH`` are are **after**
+You should see that both the |tool_type| tools are located in the ``PATH`` are are **after**
 the conda environment path. Next run:
 
-.. parsed-literal::
+.. code-block:: bash
 
    echo $LD_LIBRARY_PATH
 
-You should see that the XRT tools are located on your ``LD_LIBRARY_PATH`` and that there
+You should see that the |tool_type| tools are located on your ``LD_LIBRARY_PATH`` and that there
 is no trailing ``:`` (otherwise compilation will error later).
 
-Finally verify that Xilinx Vitis and XRT tools are found when running locally through ``ssh``. Run:
+Finally verify that |tool_type| tools are found when running locally through ``ssh``. Run:
 
-.. parsed-literal::
+.. code-block:: bash
 
    ssh localhost printenv
 
@@ -149,9 +150,10 @@ Completing Setup Using the Manager
 The FireSim manager contains a command that will finish the rest of the FireSim setup process.
 To run it, do the following:
 
-.. parsed-literal::
+.. code-block:: bash
+   :substitutions:
 
-    firesim managerinit --platform vitis
+    firesim managerinit --platform |platform_name|
 
 It will create initial configuration files, which we will edit in later
 sections.
