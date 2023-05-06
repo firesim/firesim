@@ -2,4 +2,4 @@
 .. |tool_type| replace:: Xilinx XRT/Vitis
 .. |example_var| replace:: XILINX_XRT
 
-.. include:: ./Setting-Up.rst
+.. include:: ./Setting-Up-Template.rst

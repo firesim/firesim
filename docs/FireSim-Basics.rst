@@ -119,4 +119,16 @@ on the simulated RISC-V system (*target*-software) or on a host x86 machine (*ho
   The FIRRTL compiler used by FireSim to convert target RTL into a decoupled
   simulator. Formerly named MIDAS.
 
-Now, hit "Next" to get started with your particular platform.
+Get Started
+-----------
+
+FireSim supports many type of FPGAs and FPGA platforms!
+Click one of the following links to get started with your particular platform.
+
+* Reference to AWS EC2 F1
+
+* Reference to On Premises Intro
+
+    * Reference to Xilinx Alveo U250
+
+    * Reference to Xilinx Alveo U280
