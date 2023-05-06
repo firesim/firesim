@@ -57,19 +57,19 @@ firesim_gemmini_rocket_singlecore_no_nic:
     custom_runtime_config: null
 vitis_firesim_rocket_singlecore_no_nic:
     xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_rocket_singlecore_no_nic_c12936.xclbin
-    deploy_quintuplet_override: firesim-FireSim-FireSimRocketMMIOOnlyConfig-BaseVitisConfig
+    deploy_quintuplet_override: vitis-firesim-FireSim-FireSimRocketMMIOOnlyConfig-BaseVitisConfig
     custom_runtime_config: null
 vitis_firesim_gemmini_rocket_singlecore_no_nic:
     xclbin: https://firesim-ci-vitis-xclbins.s3.us-west-2.amazonaws.com/vitis_firesim_gemmini_rocket_singlecore_no_nic_1ea5c4.xclbin
-    deploy_quintuplet_override: firesim-FireSim-FireSimLeanGemminiRocketMMIOOnlyConfig-BaseVitisConfig
+    deploy_quintuplet_override: vitis-firesim-FireSim-FireSimLeanGemminiRocketMMIOOnlyConfig-BaseVitisConfig
     custom_runtime_config: null
 # DOCREF START: Xilinx Alveo HWDB Entries
 alveo_u250_firesim_rocket_singlecore_no_nic:
     bitstream_tar: REPLACE_THIS
-    deploy_quintuplet_override: firesim-FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig
+    deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u280_firesim_rocket_singlecore_no_nic:
     bitstream_tar: REPLACE_THIS
-    deploy_quintuplet_override: firesim-FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig
+    deploy_quintuplet_override: null
     custom_runtime_config: null
 # DOCREF END: Xilinx Alveo HWDB Entries

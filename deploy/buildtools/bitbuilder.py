@@ -205,8 +205,10 @@ class F1BitBuilder(BitBuilder):
         Returns:
             Boolean indicating if the build passed or failed.
         """
+        build_farm = self.build_config.build_config_file.build_farm
+
         if bypass:
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
             return True
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -222,15 +224,13 @@ class F1BitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
 
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-
-        build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
@@ -271,7 +271,7 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return False
 
-        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+        build_farm.release_build_host(self.build_config)
 
         return True
 
@@ -431,8 +431,10 @@ class VitisBitBuilder(BitBuilder):
         Returns:
             Boolean indicating if the build passed or failed.
         """
+        build_farm = self.build_config.build_config_file.build_farm
+
         if bypass:
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
             return True
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -446,15 +448,13 @@ class VitisBitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
 
         rootLogger.info("Building Vitis Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-
-        build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
@@ -489,9 +489,6 @@ class VitisBitBuilder(BitBuilder):
             on_build_failure()
             return False
 
-        build_farm = self.build_config.build_config_file.build_farm
-        hostname = build_farm.get_build_host_ip(self.build_config)
-
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         xclbin_path = "file://" + local_cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
@@ -522,7 +519,7 @@ class VitisBitBuilder(BitBuilder):
 
         rootLogger.info(f"Build complete! Vitis bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
-        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+        build_farm.release_build_host(self.build_config)
 
         return True
 
@@ -587,8 +584,10 @@ class XilinxAlveoBitBuilder(BitBuilder):
         Returns:
             Boolean indicating if the build passed or failed.
         """
+        build_farm = self.build_config.build_config_file.build_farm
+
         if bypass:
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
             return True
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -602,15 +601,13 @@ class XilinxAlveoBitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
 
         rootLogger.info(f"Building Xilinx Alveo {self.build_config.PLATFORM} Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-
-        build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
@@ -667,9 +664,6 @@ class XilinxAlveoBitBuilder(BitBuilder):
         with prefix(f"cd {local_cl_dir}"):
             local(f"tar zcvf {tar_name} {self.build_config.PLATFORM}/")
 
-        build_farm = self.build_config.build_config_file.build_farm
-        hostname = build_farm.get_build_host_ip(self.build_config)
-
         hwdb_entry = hwdb_entry_name + ":\n"
         hwdb_entry += f"    bitstream_tar: file://{local_cl_dir}/{tar_name}\n"
         hwdb_entry += f"    deploy_quintuplet_override: null\n"
@@ -696,7 +690,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         rootLogger.info(f"Build complete! Xilinx Alveo {self.build_config.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
-        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+        build_farm.release_build_host(self.build_config)
 
         return True
 

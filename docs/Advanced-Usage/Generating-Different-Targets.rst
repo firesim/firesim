@@ -216,7 +216,7 @@ To generate a specific instance of a target, the build system leverages five Mak
 
 5. ``PLATFORM``: this points the Makefile (`sim/Makefile`) at the right
    FPGA platform to build for. This must correspond to a platform
-   defined at ``platforms/``.
+   defined at :gh-file-ref:`platforms`.
 
 ``TARGET_CONFIG`` and ``PLATFORM_CONFIG`` are strings that are used to construct a
 ``Config`` instance (derives from RocketChip's parameterization system, ``Config``, see the

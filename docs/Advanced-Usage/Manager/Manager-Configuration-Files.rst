@@ -413,7 +413,7 @@ Specifies the host FPGA frequency for a bitstream build.
 
 Specifies a pre-canned set of strategies and directives to pass to the
 bitstream build. Note, these are implemented differently on different host
-platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx Alveo U250, and EC2 F1 include:
+platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx Alveo U250/U280, and EC2 F1 include:
 
  - ``TIMING``: Optimize for improved fmax.
  - ``AREA``: Optimize for reduced resource utilization.
@@ -441,7 +441,7 @@ in greater detail :ref:`here<generating-different-targets>`).  If
 """"""""""""""""""""""""""
 
 This allows you to override the ``deployquintuplet`` stored with the AGFI.
-Otherwise, the ``PLATFORM`` / TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
+Otherwise, the ``PLATFORM``/``TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
 above will be used. See the AGFI Tagging section for more details. Most likely,
 you should leave this set to ``null``. This is usually only used if you have
 proprietary RTL that you bake into an FPGA image, but don't want to share with
@@ -533,10 +533,10 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
-``bit``
+``bitstream_tar``
 """""""""""""""
 
-Indicates where the bitstream (FPGA Image) is located, may be one of:
+Indicates where the bitstream (FPGA Image) and metadata associated with it is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
@@ -752,7 +752,7 @@ simulations across all run farm hosts.
 For example, this class manages how to flash FPGAs with bitstreams, how to copy back results, and how to check if a simulation is running.
 By default, deploy platform classes can be found in :gh-file-ref:`deploy/runtools/run_farm_deploy_managers.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx Alveo U250 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAlveoU250InstanceDeployManager``, respectively.
+There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx Alveo U250/U280 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAlveo{U250,U280}InstanceDeployManager``, respectively.
 For example, to use the ``EC2InstanceDeployManager`` deploy platform class, you would write ``default_platform: EC2InstanceDeployManager``.
 
 ``default_simulation_dir``
@@ -945,7 +945,7 @@ This bit builder recipe configures a build farm host to build an Vitis bitstream
 
 ``device``
 """"""""""""""""""""""""""
-This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1`` when targeting a Alveo U250 FPGA.
+This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1`` when targeting a Vitis-enabled Alveo U250 FPGA.
 
 Here is an example of this configuration file:
 

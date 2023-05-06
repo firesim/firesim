@@ -125,10 +125,10 @@ Get Started
 FireSim supports many type of FPGAs and FPGA platforms!
 Click one of the following links to get started with your particular platform.
 
-* Reference to AWS EC2 F1
+* :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/index`
 
-* Reference to On Premises Intro
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U250-FPGAs`
 
-    * Reference to Xilinx Alveo U250
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U280-FPGAs`
 
-    * Reference to Xilinx Alveo U280
+* :doc:`Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Vitis-FPGAs`

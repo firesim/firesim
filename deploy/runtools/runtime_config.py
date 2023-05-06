@@ -155,7 +155,7 @@ class URIContainer:
 class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.yaml """
     name: str
-    platform: Optional[str] = None
+    platform: Optional[str]
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
@@ -167,10 +167,10 @@ class RuntimeHWConfig:
     deploy_quintuplet: Optional[str]
     customruntimeconfig: str
     # note whether we've built a copy of the simulation driver for this hwconf
-    driver_built: bool = False
-    tarball_built: bool = False
-    additional_required_files: List[Tuple[str, str]] = []
-    driver_name_prefix: str = ""
+    driver_built: bool
+    tarball_built: bool
+    additional_required_files: List[Tuple[str, str]]
+    driver_name_prefix: str
     driver_name_suffix: Optional[str]
     local_driver_base_dir: str = LOCAL_DRIVERS_BASE
     driver_type_message: str = "FPGA software"
@@ -192,6 +192,12 @@ class RuntimeHWConfig:
         self.xclbin = hwconfig_dict.get('xclbin')
         self.bitstream_tar = hwconfig_dict.get('bitstream_tar')
         self.driver_tar = hwconfig_dict.get('driver_tar')
+
+        self.platform = None
+        self.driver_built = False
+        self.tarball_built = False
+        self.additional_required_files = []
+        self.driver_name_prefix = ""
 
         self.uri_list = []
 
@@ -233,6 +239,11 @@ class RuntimeHWConfig:
         self.additional_required_files = []
 
         self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
+
+    def get_deploytriplet_for_config(self) -> str:
+        """ Get the deploytriplet for this configuration. """
+        quin = self.get_deployquintuplet_for_config()
+        return "-".join(quin.split("-")[2:])
 
     @classmethod
     def get_driver_tar_filename(cls) -> str:
@@ -282,11 +293,6 @@ class RuntimeHWConfig:
             assert False, "Unable to obtain deploy_quintuplet"
 
         return self.deploy_quintuplet
-
-    def get_deploytriplet_for_config(self) -> str:
-        """ Get the deploytriplet for this configuration. """
-        quin = self.get_deployquintuplet_for_config()
-        return "-".join(quin.split("-")[2:])
 
     def get_design_name(self) -> str:
         """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
