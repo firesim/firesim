@@ -306,7 +306,7 @@ for a particular call to the ``buildbitstream`` command (see
 example, if we want to run the builds named ``awesome_firesim_config`` and ``quad_core_awesome_firesim_config``, we would
 write:
 
-::
+.. code-block:: yaml
 
     builds_to_run:
         - awesome_firesim_config
@@ -323,7 +323,7 @@ users specified in the next (``share_with_accounts``) section. In this section,
 you should specify the section title (i.e. the name you made up) for a hardware
 configuration in ``config_hwdb.yaml``. For example, to share the hardware config:
 
-::
+.. code-block:: yaml
 
     firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
         # this is a comment that describes my favorite configuration!
@@ -333,7 +333,7 @@ configuration in ``config_hwdb.yaml``. For example, to share the hardware config
 
 you would use:
 
-::
+.. code-block:: yaml
 
     agfis_to_share:
         - firesim_rocket_quadcore_nic_l2_llc4mb_ddr3

@@ -7,7 +7,7 @@ I just bumped the FireSim repository to a newer commit and simulations aren't ru
 Anytime there is an AGFI bump, FireSim simulations will break/hang due to outdated AFGI.
 To get the new default AGFI's you must run the manager initialization again by doing the following:
 
-::
+.. code-block:: bash
 
     cd firesim
     source sourceme-f1-manager.sh
@@ -19,7 +19,7 @@ Is there a good way to keep track of what AGFI corresponds to what FireSim commi
 When building an AGFI during ``firesim buildbitstream``, FireSim keeps track of what FireSim repository commit was used to build the AGFI.
 To view a list of AGFI's that you have built and what you have access to, you can run the following command:
 
-::
+.. code-block:: bash
 
     cd firesim
     source sourceme-f1-manager.sh
@@ -27,7 +27,7 @@ To view a list of AGFI's that you have built and what you have access to, you ca
 
 You can also view a specific AGFI image by giving the AGFI ID (found in ``deploy/config_hwdb.ini``) through the following command:
 
-::
+.. code-block:: bash
 
     cd firesim
     source sourceme-f1-manager.sh
@@ -74,7 +74,7 @@ For example, if you want to use ZFS to transparently compress data:
     Creating the zpool will destroy all pre-existing data on that partition.
     Double-check that the device node is correct before running any commands.
 
-::
+.. code-block:: bash
 
     # replace /dev/nvme1n1 with the proper device node
     zpool create -o ashift=12 -O compression=on <POOL_NAME> /dev/nvme1n1

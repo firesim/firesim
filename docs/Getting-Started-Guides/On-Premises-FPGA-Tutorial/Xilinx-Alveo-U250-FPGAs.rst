@@ -4,6 +4,12 @@
 
 .. include:: Intro-Template.rst
 
+.. |other| replace:: `name`
+.. |other2| replace:: |fpga_name|
+Testing if you can put this in code blocks: `|fpga_name|`
+Testing if you can put this in code blocks: |other|
+Testing if you can put this in code blocks: |other2|
+
 .. toctree::
    :maxdepth: 3
 

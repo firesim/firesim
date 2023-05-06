@@ -1,4 +1,6 @@
-.. |fpga_name| replace:: Xilinx Alveo |fpga_name|
+.. |fpga_name| replace:: Xilinx Vitis-enabled U250
+.. |vitis_version| replace:: 2022.1
+.. |vitis_link| replace:: https://www.xilinx.com/products/design-tools/vitis/vitis-whats-new.html#20221
 
 FPGA and Tool Setup
 ===================
@@ -6,7 +8,7 @@ FPGA and Tool Setup
 Requirements and Installations
 ------------------------------
 
-We require a base machine that is able to support a Xilinx Vitis-enabled FPGA and running Xilinx Vitis.
+We require a base machine that is able to support a |fpga_name| and running Xilinx Vitis.
 For the purposes of this tutorial, we assume you are running with a |fpga_name|.
 Please refer to the minimum system requirements given in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements.
 ``sudo`` access is not needed for the machine except for when the |fpga_name| and corresponding software is installed.
@@ -15,11 +17,11 @@ Next, install the |fpga_name| as indicated: https://docs.xilinx.com/r/en-US/ug13
 
 We require the following programs/packages installed from the Xilinx website in addition to a physical |fpga_name| installation:
 
-* Xilinx Vitis 2022.1
+* Xilinx Vitis |vitis_version|
 
-  * Installation link: https://www.xilinx.com/products/design-tools/vitis/vitis-whats-new.html#20221
+  * Installation link: |vitis_link|
 
-* Xilinx XRT and |fpga_name| board package (corresponding with Vitis 2022.1)
+* Xilinx XRT and |fpga_name| board package (corresponding with Vitis |vitis_version|)
 
   * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
 

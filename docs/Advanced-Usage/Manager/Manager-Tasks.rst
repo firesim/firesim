@@ -129,7 +129,7 @@ command in a script), you can give the command the ``--forceterminate`` command
 line argument. For example, the following will terminate all build instances in the
 build farm without prompting for confirmation if a SIGINT is received:
 
-::
+.. code-block:: bash
 
     firesim buildbitstream --forceterminate
 
@@ -287,7 +287,7 @@ command in a script), you can give the command the ``--forceterminate`` command
 line argument. For example, the following will TERMINATE ALL INSTANCES IN THE
 RUN FARM WITHOUT PROMPTING FOR CONFIRMATION:
 
-::
+.. code-block:: bash
 
     firesim terminaterunfarm --forceterminate
 
@@ -303,7 +303,7 @@ instance as you specify.
 
 Here are some examples:
 
-::
+.. code-block:: bash
 
     [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
@@ -312,7 +312,7 @@ Here are some examples:
     [ now, we have: 1 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
 
-::
+.. code-block:: bash
 
     [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 

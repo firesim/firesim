@@ -8,7 +8,9 @@ Build Recipes
 
 We already provide for you a build recipe (i.e. hardware configuration) called "|hwdb_entry_name|" that was used to pre-build a |fpga_name| FPGA |bit_file_type|.
 You can find this in the ``config_build_recipes.yaml`` file.
-This configuration is a simple singlecore Rocket configuration with a single DRAM channel and no debugging features.
+This configuration is a simple singlecore Rocket configuration with a single DRAM channel and no debugging features (as indicated by some of the variables like ``TARGET_CONFIG``).
+Additionally, this configuration has a field called ``bit_builder_recipe`` pointing to "|bit_builder_path|".
+This file found in the :gh-file-ref:`deploy` tells the FireSim build system what combination of commands to run to build the |bit_file_type|.
 
 Next, lets build the bitstream corresponding to the build recipe and specify the Build Farm to run on.
 In the ``deploy/config_build.yaml`` file, you will notice at least two mappings: ``build_farm`` and ``builds_to_run``.
@@ -46,7 +48,7 @@ Running a Build
 
 Now, we can run a build like so:
 
-::
+.. code-block:: bash
 
     firesim buildbitstream
 

@@ -1,4 +1,4 @@
-.. |fpga_name| replace:: Xilinx Vitis-enabled FPGA
+.. |fpga_name| replace:: Xilinx Vitis-enabled U250
 .. |bit_type| replace:: "xclbin"
 .. |build_type| replace:: Xilinx Vitis
 

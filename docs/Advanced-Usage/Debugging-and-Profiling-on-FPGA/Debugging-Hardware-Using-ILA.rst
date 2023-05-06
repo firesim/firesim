@@ -31,7 +31,7 @@ In order to annotate a signal, we must import the
 ``midas.targetutils.FpgaDebug`` annotator. FpgaDebug's apply method accepts a
 vararg of chisel3.Data. Invoke it as follows:
 
-::
+.. code-block:: scala
 
     import midas.targetutils.FpgaDebug
 
@@ -59,11 +59,9 @@ configured much like the desired HostFrequency by appending a mixin to the
 
 Below is an example `PLATFORM_CONFIG` that can be used in the `build_recipes` config file.
 
-::
+.. code-block:: bash
 
    PLATFORM_CONFIG=ILADepth8192_BaseF1Config
-
-
 
 Using the ILA at Runtime
 ------------------------
@@ -74,7 +72,7 @@ In order to use the ILA, we must enable the GUI interface on our manager instanc
 In the past, AWS had a custom ``setup_gui.sh`` script. However, this was recently deprecated due to compatibility
 issues with various packages. Therefore, AWS currently recommends using `NICE DCV <https://docs.aws.amazon.com/dcv/latest/adminguide/what-is-dcv.html>`__ as a GUI client. You should `download a DCV client <https://docs.aws.amazon.com/dcv/latest/userguide/client.html>`__, and then run the following commands on your FireSim manager instance:
 
-::
+.. code-block:: bash
 
   sudo yum -y groupinstall "GNOME Desktop"
   sudo yum -y install glx-utils

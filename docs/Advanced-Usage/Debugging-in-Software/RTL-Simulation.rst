@@ -235,14 +235,14 @@ Running Metasimulations through Make
 
 Metasimulations are run out of the ``firesim/sim`` directory.
 
-::
+.. code-block:: bash
 
     [in firesim/sim]
     make <verilator|vcs>
 
 To compile a simulator with full-visibility waveforms, type:
 
-::
+.. code-block:: bash
 
     make <verilator|vcs>-debug
 
@@ -252,7 +252,7 @@ for running suites of assembly tests. MIDAS puts this in
 Make sure your ``$RISCV`` environment variable is set by sourcing
 ``firesim/sourceme-f1-manager.sh`` or ``firesim/env.sh``, and type:
 
-::
+.. code-block:: bash
 
     make run-<asm|bmark>-tests EMUL=<vcs|verilator>
 
@@ -260,7 +260,7 @@ Make sure your ``$RISCV`` environment variable is set by sourcing
 To run only a single test, the make target is the full path to the output.
 Specifically:
 
-::
+.. code-block:: bash
 
     make EMUL=<vcs|verilator> $PWD/output/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/<RISCV-TEST-NAME>.<vpd|out>
 
@@ -269,7 +269,7 @@ whereas a ``.out`` target will use the faster waveform-less simulator.
 
 Additionally, you can run a unique binary in the following way:
 
-::
+.. code-block:: bash
 
     make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>
     make SIM_BINARY=<PATH_TO_BINARY> run-<vcs|verilator>-debug
@@ -280,7 +280,7 @@ Examples
 
 Run all RISCV-tools assembly and benchmark tests on a Verilated simulator.
 
-::
+.. code-block:: bash
 
     [in firesim/sim]
     make
@@ -290,7 +290,7 @@ Run all RISCV-tools assembly and benchmark tests on a Verilated simulator.
 Run all RISCV-tools assembly and benchmark tests on a Verilated simulator with
 waveform dumping.
 
-::
+.. code-block:: bash
 
     make verilator-debug
     make -j run-asm-tests-debug
@@ -298,7 +298,7 @@ waveform dumping.
 
 Run ``rv64ui-p-simple`` (a single assembly test) on a Verilated simulator.
 
-::
+.. code-block:: bash
 
     make
     make $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
@@ -306,7 +306,7 @@ Run ``rv64ui-p-simple`` (a single assembly test) on a Verilated simulator.
 Run ``rv64ui-p-simple`` (a single assembly test) on a VCS simulator with
 waveform dumping.
 
-::
+.. code-block:: bash
 
     make vcs-debug
     make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
@@ -347,4 +347,3 @@ a scientific comparison between simulators. VCS numbers collected on a local
 Berkeley machine, Verilator numbers collected on a ``c4.4xlarge``.
 (metasimulation Verilator version: 4.002, target-level Verilator version:
 3.904)
-

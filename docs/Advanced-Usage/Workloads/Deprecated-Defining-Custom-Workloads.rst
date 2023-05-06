@@ -56,7 +56,7 @@ Let's take a look at this file:
 
 There is also a corresponding directory named after this workload/file:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/linux-uniform$ ls -la
 	total 4
@@ -132,7 +132,7 @@ job per simulated node.
 Additionally, let's take a look at the state of the ``ping-latency`` directory
 AFTER the workload is built:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency$ ls -la
 	total 15203216
@@ -160,7 +160,7 @@ First, let's identify some of these files:
 
 Additionally, let's look at the ``overlay`` subdirectory:
 
-::
+.. code-block:: bash
 
     centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency/overlay$ ls -la */*
     -rwxrwxr-x 1 centos centos 249 May 17 21:58 bin/pinglatency.sh
@@ -190,7 +190,7 @@ overlay directory, and the base rootfses generated in ``firesim-software``,
 the following command will automatically generate all of the rootfses that you
 see in the ``ping-latency`` directory.
 
-::
+.. code-block:: bash
 
     [ from the workloads/ directory ]
     ./gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/firechip/br-base/br-base.img -s ping-latency/overlay

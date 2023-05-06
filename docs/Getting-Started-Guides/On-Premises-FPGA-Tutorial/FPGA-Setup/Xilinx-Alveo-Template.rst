@@ -1,3 +1,6 @@
+FPGA and Tool Setup
+===================
+
 Requirements and Installations
 ------------------------------
 

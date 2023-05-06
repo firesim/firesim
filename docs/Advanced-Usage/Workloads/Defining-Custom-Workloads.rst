@@ -53,7 +53,7 @@ Let's take a look at this file:
 
 There is also a corresponding directory named after this workload/file:
 
-::
+.. code-block:: bash
 
 	centos@ip-192-168-2-7.ec2.internal:~/firesim/deploy/workloads/linux-uniform$ ls -la
         total 4
@@ -136,7 +136,7 @@ Additionally, let's take a look at the state of the ``ping-latency`` directory
 AFTER the workload is built (assume that a tool like :ref:`firemarshal` already
 created the rootfses and linux images):
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency$ ls -la
 	total 15203216

@@ -86,7 +86,7 @@ setup is complete.
 In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOUR_INSTANCE_IP``) and wait until the
 ``/tmp/machine-launchstatus`` file contains all the following text:
 
-::
+.. code-block:: bash
 
     $ cat /tmp/machine-launchstatus
     machine launch script started
@@ -126,7 +126,7 @@ other dependencies.
 
 Next, run:
 
-::
+.. code-block:: bash
 
     source sourceme-f1-manager.sh
 
@@ -147,7 +147,7 @@ Completing Setup Using the Manager
 The FireSim manager contains a command that will interactively guide you
 through the rest of the FireSim setup process. To run it, do the following:
 
-::
+.. code-block:: bash
 
     firesim managerinit --platform f1
 

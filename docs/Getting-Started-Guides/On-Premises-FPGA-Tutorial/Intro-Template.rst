@@ -32,5 +32,5 @@ Here's a high-level outline of what we'll be doing in our tutorials:
    to plug into your simulations. This automatically runs Chisel elaboration,
    FAME-1 Transformation, and the |build_type| FPGA flow.
 
-Generally speaking, you only need to follow step 4 if you're modifying Chisel
+Generally speaking, you only need to follow Step 4 if you're modifying Chisel
 RTL or changing non-runtime configurable hardware parameters.
