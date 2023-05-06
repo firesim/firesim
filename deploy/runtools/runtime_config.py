@@ -285,7 +285,7 @@ class RuntimeHWConfig:
 
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. """
-        quin = self.get_deployquinruplet_for_config()
+        quin = self.get_deployquintuplet_for_config()
         return "-".join(quin.split("-")[2:])
 
     def get_design_name(self) -> str:
@@ -474,7 +474,7 @@ class RuntimeHWConfig:
                 else:
                     (uri, destination) = both
 
-                if uri == self.bitstream_tar:
+                if uri == self.bitstream_tar and uri is not None:
                     # unpack destination value
                     temp_dir = f"{dir}/{URIContainer.hashed_name(uri)}-dir"
                     local(f"mkdir -p {temp_dir}")

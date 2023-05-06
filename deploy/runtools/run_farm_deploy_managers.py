@@ -723,6 +723,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
 class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx Alveo-enabled instance """
+    PLATFORM_NAME: Optional[str]
+    BOARD_NAME: Optional[str]
 
     @classmethod
     def sim_command_requires_sudo(cls) -> bool:
@@ -731,6 +733,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
+        self.PLATFORM_NAME = None
+        self.BOARD_NAME = None
 
     def unload_xdma(self) -> None:
         if self.instance_assigned_simulations():

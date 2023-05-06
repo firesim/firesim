@@ -122,7 +122,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
         assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
 
         # construct the serialized description from these tags.
-        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_build_triple, tag_deploy_triple, tag_fsimcommit)
+        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_build_triplet, tag_deploy_triplet, tag_fsimcommit)
 
 class F1BitBuilder(BitBuilder):
     """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
@@ -550,9 +550,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
         fpga_build_postfix = f"cl_{chisel_quintuplet}"
 
         # local paths
-        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.PLATFORM}"
+        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}"
 
-        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.PLATFORM}"
+        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}"
 
         # copy alveo files to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
@@ -595,7 +595,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         def on_build_failure():
             """ Terminate build host and notify user that build failed """
 
-            message_title = f"FireSim Xilinx Alveo {self.PLATFORM} FPGA Build Failed"
+            message_title = f"FireSim Xilinx Alveo {self.build_config.PLATFORM} FPGA Build Failed"
 
             message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
 
@@ -604,7 +604,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
             self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
 
-        rootLogger.info(f"Building Xilinx Alveo {self.PLATFORM} Bitstream from Verilog")
+        rootLogger.info(f"Building Xilinx Alveo {self.build_config.PLATFORM} Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
@@ -618,7 +618,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         alveo_result = 0
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/{self.PLATFORM}/build-bitstream.sh",
+            local_dir=f"{local_deploy_dir}/../platforms/{self.build_config.PLATFORM}/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-L", capture=True)
@@ -650,7 +650,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
-        tar_staging_path = f"{local_cl_dir}/{self.PLATFORM}"
+        tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
         # store files into staging dir
@@ -665,7 +665,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # form tar.gz
         with prefix(f"cd {local_cl_dir}"):
-            local(f"tar zcvf {tar_name} {self.PLATFORM}/")
+            local(f"tar zcvf {tar_name} {self.build_config.PLATFORM}/")
 
         build_farm = self.build_config.build_config_file.build_farm
         hostname = build_farm.get_build_host_ip(self.build_config)
@@ -694,7 +694,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info(f"Build complete! Xilinx Alveo {self.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
+        rootLogger.info(f"Build complete! Xilinx Alveo {self.build_config.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
         self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
 

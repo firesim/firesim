@@ -158,7 +158,7 @@ class BuildConfig:
         Returns:
             Effective deploy triplet
         """
-        return "-".join(self.get_effective_deploy_quadruplet().split("-")[2:])
+        return "-".join(self.get_effective_deploy_quintuplet().split("-")[2:])
 
     def get_chisel_quintuplet(self) -> str:
         """Get the unique build-specific '-' deliminated quintuplet.
