@@ -736,7 +736,7 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
 
         run(f'mkdir -p {dest_alveo_dir}')
         rsync_cap = rsync_project(
-            local_dir=local_alveo_dir,
+            local_dir=local_alveo_dir + "/",
             remote_dir=dest_alveo_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="cl_*",
