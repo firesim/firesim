@@ -21,8 +21,9 @@ def run_docs_generated_components_check():
             run("firesim managerinit --platform vitis")
             with prefix("cd deploy"):
                 run("cat config_runtime.yaml")
-                run("cat ../docs/Running-OnPrem-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
-                run("diff config_runtime.yaml ../docs/Running-OnPrem-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml")
+                path = "docs/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml"
+                run(f"cat ../{path}")
+                run(f"diff config_runtime.yaml ../{path}")
 
 if __name__ == "__main__":
     execute(run_docs_generated_components_check, hosts=["localhost"])
