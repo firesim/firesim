@@ -725,9 +725,9 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
         fpga_build_postfix = f"cl_{chisel_quintuplet}"
 
         # local paths
-        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.PLATFORM}/garnet-firesim"
+        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}/garnet-firesim"
 
-        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.PLATFORM}/garnet-firesim"
+        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/garnet-firesim"
 
         # copy alveo files to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
