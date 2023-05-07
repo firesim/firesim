@@ -76,7 +76,7 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
 
     // This is the only nullary plusarg supported by fased
     if (key == std::string("useHardwareDefaultRuntimeSettings")) {
-      useHardwareDefaults = false;
+      useHardwareDefaults = true;
       continue;
     }
 
