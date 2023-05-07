@@ -394,6 +394,9 @@ jobs:
     name: documentation-check
     needs: change-filters
     runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
