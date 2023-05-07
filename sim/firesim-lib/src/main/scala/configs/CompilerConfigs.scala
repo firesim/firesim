@@ -82,6 +82,12 @@ class BaseXilinxAlveoConfig extends Config(
   new midas.XilinxAlveoConfig
 )
 
+class BaseXilinxVCU118Config extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new midas.XilinxVCU118Config
+)
+
 class BaseVitisConfig extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++

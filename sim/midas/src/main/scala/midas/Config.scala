@@ -122,6 +122,12 @@ class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => None
 }) ++ new F1Config ++ new SimConfig)
 
+class XilinxVCU118Config extends Config(new Config((site, here, up) => {
+  case HostMemNumChannels => 1
+  case PreLinkCircuitPath => None
+  case PostLinkCircuitPath => None
+}) ++ new F1Config ++ new SimConfig)
+
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case CPUManagedAXI4Key => None

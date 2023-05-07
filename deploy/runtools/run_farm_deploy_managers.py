@@ -847,3 +847,120 @@ class XilinxAlveoU280InstanceDeployManager(XilinxAlveoInstanceDeployManager):
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_alveo_u280"
         self.BOARD_NAME = "au280"
+
+class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
+    """ This class manages a Xilinx VCU118-enabled instance using the
+    garnet shell. """
+
+    @classmethod
+    def sim_command_requires_sudo(cls) -> bool:
+        """ This sim does requires sudo. """
+        return True
+
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+
+    def unload_xdma(self) -> None:
+        """ unload the xdma and xvsec kernel modules. """
+        if self.instance_assigned_simulations():
+            self.instance_logger("Unloading XDMA Driver Kernel Module.")
+
+            with warn_only():
+                remote_kmsg("removing_xdma_xvsec_start")
+                run('sudo rmmod xdma')
+                run('sudo rmmod xvsec')
+                remote_kmsg("removing_xdma_xvsec_end")
+
+    def load_xdma(self) -> None:
+        """ load the xdma and xvsec kernel modules. """
+        if self.instance_assigned_simulations():
+            # unload first
+            self.unload_xdma()
+            # load xdma
+            self.instance_logger("Loading XDMA Driver Kernel Module.")
+            # must be installed to this path on sim. machine
+            run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
+            run(f"sudo insmod /lib/modules/$(uname -r)/updates/kernel/drivers/xvsec/xvsec.ko", shell=True)
+
+    def flash_fpgas(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Flash all FPGA Slots.""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                serv = self.parent_node.sim_slots[slotno]
+                hwcfg = serv.get_resolved_server_hardware_config()
+
+                bit_tar = hwcfg.get_bit_tar_filename()
+                remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
+                bit_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
+                bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+
+                # at this point the tar file is in the sim slot
+                run(f"rm -rf {bit_tar_unpack_dir}")
+                run(f"tar xvf {remote_sim_dir}/{bit_tar} -C {remote_sim_dir}")
+
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                collect = run('lspci | grep -i serial.*xilinx')
+
+                # TODO: is hardcoded cap 0x1 correct?
+                # TODO: is "Partial Reconfig Clear File" useful (see xvsecctl help)?
+                bdfs = [ { "busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x1" } for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno]
+
+                busno = bdf['busno']
+                devno = bdf['devno']
+                capno = bdf['capno']
+                self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
+                run(f"""sudo xvsecctl -b {busno} -F {devno} -c {capno} -p {bit}""")
+
+    def infrasetup_instance(self, uridir: str) -> None:
+        """ Handle infrastructure setup for this platform. """
+        metasim_enabled = self.parent_node.metasimulation_enabled
+
+        if self.instance_assigned_simulations():
+            # This is a sim-host node.
+
+            # copy sim infrastructure
+            for slotno in range(len(self.parent_node.sim_slots)):
+                self.copy_sim_slot_infrastructure(slotno, uridir)
+                self.extract_driver_tarball(slotno)
+
+            if not metasim_enabled:
+                # load xdma driver
+                self.load_xdma()
+                # flash fpgas
+                self.flash_fpgas()
+
+        if self.instance_assigned_switches():
+            # all nodes could have a switch
+            for slotno in range(len(self.parent_node.switch_slots)):
+                self.copy_switch_slot_infrastructure(slotno)
+
+    def terminate_instance(self) -> None:
+        """ XilinxVCU118InstanceDeployManager machines cannot be terminated. """
+        return
+
+    def start_sim_slot(self, slotno: int) -> None:
+        """ start a simulation. (same as the default except that you have a mapping from slotno to a specific BDF)"""
+        if self.instance_assigned_simulations():
+            self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
+            remote_home_dir = self.parent_node.sim_dir
+            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            server = self.parent_node.sim_slots[slotno]
+
+            self.instance_logger(f"""Determine BDF for {slotno}""")
+            collect = run('lspci | grep -i serial.*xilinx')
+            bdfs = [ i[:2] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+            bdf = bdfs[slotno]
+
+            # make the local job results dir for this sim slot
+            server.mkdir_and_prep_local_job_results_dir()
+            sim_start_script_local_path = server.write_sim_start_script(bdf, (self.sim_command_requires_sudo() and has_sudo()))
+            put(sim_start_script_local_path, remote_sim_dir)
+
+            with cd(remote_sim_dir):
+                run("chmod +x sim-run.sh")
+                run("./sim-run.sh")
+
+

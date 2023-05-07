@@ -19,3 +19,6 @@
 [submodule "utils/FlameGraph"]
 	path = utils/fireperf/FlameGraph
 	url = https://github.com/brendangregg/FlameGraph.git
+[submodule "platforms/xilinx_vcu118/garnet-firesim"]
+	path = platforms/xilinx_vcu118/garnet-firesim
+	url = https://github.com/firesim/garnet-firesim
