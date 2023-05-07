@@ -442,6 +442,7 @@ jobs:
         run: |
           git fetch --recurse-submodules=no origin ${{ github.base_ref }}
           DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
+          echo "DEBUG: $DIFF_COMMIT"
           git clang-format $DIFF_COMMIT
           git diff --ignore-submodules > clang-format.patch
           if [ -s clang-format.patch ]; then
