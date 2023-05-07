@@ -81,7 +81,7 @@ SSH into the ``t2.nano`` like so:
 
 Which should present you with something like:
 
-.. code-block:: bash
+.. code-block:: text
 
        ,     #_
        ~\_  ####_        Amazon Linux 2023

@@ -486,6 +486,7 @@ class FireSimServerNode(FireSimNode):
         all_paths = []
 
         driver_path = self.get_resolved_server_hardware_config().get_local_driver_path()
+        rootLogger.info(f"DEBUG: {driver_path}")
         all_paths.append((driver_path, ''))
 
         runtime_conf_path = self.get_resolved_server_hardware_config().get_local_runtime_conf_path()

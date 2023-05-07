@@ -33,7 +33,7 @@ To start out, let's build our simple design, |hwdb_entry_name|, that we previous
 To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, and uncomment the "- |hwdb_entry_name_non_code|" line.
 So, you should end up with something like this (a line beginning with a ``#`` is a comment):
 
-.. code-block:: yaml
+.. code-block:: text
    :substitutions:
 
    builds_to_run:

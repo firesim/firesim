@@ -96,7 +96,7 @@ feature is an advanced feature that you can learn more about in the
 
 As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this (with ``PATH_TO_SIMULATION_AREA`` replaced with your simulation collateral temporary directory):
 
-.. code-block:: yaml
+.. code-block:: text
    :substitutions:
 
     run_farm:
