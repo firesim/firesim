@@ -244,7 +244,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()))
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), None)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -833,7 +833,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(bdf, (self.sim_command_requires_sudo() and has_sudo()))
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):

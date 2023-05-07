@@ -307,7 +307,7 @@ class RuntimeHWConfig:
     def get_local_driver_dir(self) -> str:
         """ Get the relative local directory that contains the driver used to
         run this sim. """
-        return self.local_driver_base_dir + "/" + self.platform + "/" + self.get_deployquintuplet_for_config() + "/"
+        return self.local_driver_base_dir + "/" + self.get_platform() + "/" + self.get_deployquintuplet_for_config() + "/"
 
     def get_local_driver_path(self) -> str:
         """ return relative local path of the driver used to run this sim. """
@@ -316,7 +316,7 @@ class RuntimeHWConfig:
     def local_quintuplet_path(self) -> Path:
         """ return the local path of the quintuplet folder. the tarball that is created goes inside this folder """
         quintuplet = self.get_deployquintuplet_for_config()
-        return Path(get_deploy_dir()) / '../sim/output' / self.platform / quintuplet
+        return Path(get_deploy_dir()) / '../sim/output' / self.get_platform() / quintuplet
 
     def local_tarball_path(self, name: str) -> Path:
         """ return the local path of the tarball """
@@ -333,7 +333,7 @@ class RuntimeHWConfig:
         if self.customruntimeconfig is None:
             return None
         quintuplet = self.get_deployquintuplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + quintuplet + "/"
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + self.get_platform() + "/" + quintuplet + "/"
         return CUSTOM_RUNTIMECONFS_BASE + self.customruntimeconfig
 
     def get_additional_required_sim_files(self) -> List[Tuple[str, str]]:
@@ -355,8 +355,9 @@ class RuntimeHWConfig:
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            extra_plusargs: str = "",
-            extra_args: str = "") -> str:
+            fpga_physical_selection: Optional[str],
+            extra_plusargs: str,
+            extra_args: str) -> str:
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -403,7 +404,10 @@ class RuntimeHWConfig:
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
         screen_name = "fsim{}".format(slotid)
-        run_device_placement = "+slotid={}".format(slotid)
+
+        if fpga_physical_selection is None:
+            fpga_physical_selection = slotid
+        run_device_placement = "+slotid={}".format(fpga_physical_selection)
 
         if self.platform == "vitis":
             assert self.xclbin is not None
@@ -645,8 +649,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            extra_plusargs: str = "",
-            extra_args: str = "") -> str:
+            fpga_physical_selection: Optional[str],
+            extra_plusargs: str,
+            extra_args: str) -> str:
         """ return the command used to boot the meta simulation. """
         full_extra_plusargs = " " + self.metasimulation_only_plusargs + " " + extra_plusargs
         if self.metasim_host_simulator in ['vcs', 'vcs-debug']:
@@ -669,6 +674,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config,
             synthprint_config,
             sudo,
+            fpga_physical_selection,
             full_extra_plusargs,
             full_extra_args)
 
