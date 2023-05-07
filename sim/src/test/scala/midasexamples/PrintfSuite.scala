@@ -155,8 +155,8 @@ class PrintfGlobalResetConditionTest
       simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out"),
     ) {
 
-  def assertSynthesizedLogEmpty(synthLog: String) {
-    s"${synthLog}" should "be empty" in {
+  def assertSynthesizedLogEmpty(synthLog: String, backend: String) {
+    s"${synthLog} for ${backend}" should "be empty" in {
       val synthLogFile = new File(genDir, s"/${synthLog}")
       val lines        = extractLines(synthLogFile, prefix = "")
       assert(lines.isEmpty)
@@ -164,12 +164,12 @@ class PrintfGlobalResetConditionTest
   }
 
   override def defineTests(backend: String, debug: Boolean) {
-    it should "run in the simulator" in {
+    it should s"run in the ${backend} simulator" in {
       assert(run(backend, debug, args = simulationArgs) == 0)
     }
     // The log should be empty.
-    assertSynthesizedLogEmpty("synthprinttest.out0")
-    assertSynthesizedLogEmpty("synthprinttest.out1")
+    assertSynthesizedLogEmpty("synthprinttest.out0", backend)
+    assertSynthesizedLogEmpty("synthprinttest.out1", backend)
   }
 }
 
