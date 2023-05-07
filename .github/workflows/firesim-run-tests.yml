@@ -403,9 +403,10 @@ jobs:
         with:
           environment-file: conda-reqs/docs.yaml
           miniforge-version: latest
-      - name: Check that documentation builds with no warnings/errors
+      - name: Check that documentation builds with selective warnings/errors
         run: |
           make -C docs html
+          ! grep -v "ERROR: Undefined substitution referenced" warnings.txt
       - name: Show error log and dump objects.inv from sphinx if failed
         if: ${{ failure() }}
         run: |
