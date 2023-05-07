@@ -1,7 +1,7 @@
-Sphinx==6.2.1
+Sphinx==5.3.0
 Pygments==2.15.1
 sphinx-autobuild
-sphinx_rtd_theme==1.2.0
+sphinx_rtd_theme==1.1.0
 requests==2.30.0
 sphinx-tabs
 sphinx-copybutton

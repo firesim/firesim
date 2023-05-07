@@ -6,10 +6,10 @@ This section will guide you through building a |fpga_name| FPGA |bit_file_type| 
 Build Recipes
 ---------------
 
-We already provide for you a build recipe (i.e. hardware configuration) called "|hwdb_entry_name|" that was used to pre-build a |fpga_name| FPGA |bit_file_type|.
+We already provide for you a build recipe (i.e. hardware configuration) called |hwdb_entry_name| that was used to pre-build a |fpga_name| FPGA |bit_file_type|.
 You can find this in the ``config_build_recipes.yaml`` file.
 This configuration is a simple singlecore Rocket configuration with a single DRAM channel and no debugging features (as indicated by some of the variables like ``TARGET_CONFIG``).
-Additionally, this configuration has a field called ``bit_builder_recipe`` pointing to "|bit_builder_path|".
+Additionally, this configuration has a field called ``bit_builder_recipe`` pointing to |bit_builder_path|.
 This file found in the :gh-file-ref:`deploy` tells the FireSim build system what combination of commands to run to build the |bit_file_type|.
 
 Next, lets build the bitstream corresponding to the build recipe and specify the Build Farm to run on.
@@ -29,8 +29,8 @@ section currently contains several lines, which
 indicates to the build system that you want to run all of these builds on the machines provided, with the parameters listed in the relevant section of the
 ``deploy/config_build_recipes.yaml`` file.
 
-To start out, let's build our simple design, "|hwdb_entry_name|", that we previously added.
-To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, and uncomment the "- |hwdb_entry_name|" line.
+To start out, let's build our simple design, |hwdb_entry_name|, that we previously added.
+To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, and uncomment the "- |hwdb_entry_name_non_code|" line.
 So, you should end up with something like this (a line beginning with a ``#`` is a comment):
 
 .. code-block:: yaml
@@ -40,7 +40,7 @@ So, you should end up with something like this (a line beginning with a ``#`` is
        # this section references builds defined in config_build_recipes.yaml
        # if you add a build here, it will be built when you run buildbitstream
        # Many other commented lines...
-       - |hwdb_entry_name|
+       - |hwdb_entry_name_non_code|
 
 
 Running a Build

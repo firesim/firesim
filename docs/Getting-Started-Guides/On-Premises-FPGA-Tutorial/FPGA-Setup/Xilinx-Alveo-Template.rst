@@ -65,14 +65,14 @@ Next, let's determine the BDF's (unique ID) of the/any FPGA you want to use with
 Keep note of the **extended BDF** of the FPGA you would like to setup.
 Next, let's flash each |fpga_name| that you would like to use with the dummy bitstream.
 To obtain the sample bitstream, let's find the URL to download the file to the machine with the FPGA.
-Below find the HWDB entry called "|hwdb_entry_name|".
+Below find the HWDB entry called |hwdb_entry_name|.
 
 .. literalinclude:: /../deploy/sample-backup-configs/sample_config_hwdb.yaml
    :language: yaml
    :start-after: DOCREF START: Xilinx Alveo HWDB Entries
    :end-before: DOCREF END: Xilinx Alveo HWDB Entries
 
-Look for the ``bit_tar: <URL>`` line within "|hwdb_entry_name|" and keep note of the URL.
+Look for the ``bitstream_tar: <URL>`` line within |hwdb_entry_name| and keep note of the URL.
 Next, we will do the following for each FPGA that will be used with FireSim.
 
 #. Create a temporary flashing area that we will delete after flashing the FPGA.

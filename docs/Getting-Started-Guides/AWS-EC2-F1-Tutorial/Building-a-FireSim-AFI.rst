@@ -16,7 +16,7 @@ to specify a name.
 So, choose a bucket name, e.g. ``firesim``. Bucket names must be
 globally unique. If you choose one that's already taken, the manager
 will notice and complain when you tell it to build an AFI. To set your
-bucket name, open ``deploy/bit-builder-recipes/f1.yaml`` in your editor and under the
+bucket name, open :gh-file-ref:`deploy/bit-builder-recipes/f1.yaml` in your editor and under the
 particular recipe you plan to build, replace
 
 .. code-block:: yaml

@@ -15,7 +15,7 @@ simulated node. To do so, we'll need to build our FireSim-compatible RISC-V
 Linux distro. For this tutorial, we will use a simple buildroot-based
 distribution. You can do this like so:
 
-::
+.. code-block:: bash
 
     cd firesim/sw/firesim-software
     ./init-submodules.sh
@@ -53,7 +53,7 @@ You'll notice that in the ``run_farm`` mapping which describes and specifies the
 First notice that the ``base_recipe`` maps to ``run-farm-recipes/externally_provisioned.yaml``.
 This indicates to the FireSim manager that the machines allocated to run simulations will be provided by the user through IP addresses
 instead of automatically launched and allocated (e.g. launching instances on-demand in AWS).
-Let's modify the ``default_platform`` to be "|deploy_manager|" so that we can launch simulations using |runner|.
+Let's modify the ``default_platform`` to be |deploy_manager_code| so that we can launch simulations using |runner|.
 Next, modify the ``default_simulation_dir`` to a directory that you want to store temporary simulation collateral to.
 When running simulations, this directory is used to store any temporary files that the simulator creates (e.g. a uartlog emitted by a Linux simulation).
 Next, lets modify the ``run_farm_hosts_to_use`` mapping.
@@ -64,7 +64,7 @@ Now, let's verify that the ``target_config`` mapping will model the correct targ
 By default, it is set to model a single-node with no network.
 It should look like the following:
 
-::
+.. code-block:: yaml
 
     target_config:
         topology: no_net_config
@@ -96,7 +96,8 @@ feature is an advanced feature that you can learn more about in the
 
 As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this (with ``PATH_TO_SIMULATION_AREA`` replaced with your simulation collateral temporary directory):
 
-::
+.. code-block:: yaml
+   :substitutions:
 
     run_farm:
       base_recipe: run-farm-recipes/externally_provisioned.yaml
@@ -132,7 +133,7 @@ Starting the Run Farm
 
 First, we will tell the manager to launch our Run Farm with a single machine called ``localhost``. Run:
 
-::
+.. code-block:: bash
 
 	firesim launchrunfarm
 
@@ -141,7 +142,7 @@ this command should not launch any machine and should be quick.
 
 You should expect output like the following:
 
-::
+.. code-block:: bash
 
 	$ firesim launchrunfarm
 	FireSim Manager. Docs: https://docs.fires.im
@@ -159,14 +160,14 @@ components necessary to run your simulation. The manager will also handle
 flashing FPGAs. To tell the manager to setup our simulation infrastructure,
 let's run:
 
-::
+.. code-block:: bash
 
 	firesim infrasetup
 
 
 For a complete run, you should expect output like the following:
 
-::
+.. code-block:: bash
 
 	$ firesim infrasetup                                                                                                                                                                                                        FireSim Manager. Docs: https://docs.fires.im
 	Running: infrasetup
@@ -194,7 +195,7 @@ Running a simulation!
 
 Finally, let's run our simulation! To do so, run:
 
-::
+.. code-block:: bash
 
 	firesim runworkload
 
@@ -202,7 +203,7 @@ Finally, let's run our simulation! To do so, run:
 This command boots up a simulation and prints out the live status of the simulated
 nodes every 10s. When you do this, you will initially see output like:
 
-::
+.. code-block:: bash
 
 	$ firesim runworkload
 	FireSim Manager. Docs: https://docs.fires.im
@@ -215,7 +216,7 @@ nodes every 10s. When you do this, you will initially see output like:
 If you don't look quickly, you might miss it, since it will get replaced with a
 live status page:
 
-::
+.. code-block:: text
 
 	FireSim Simulation Status @ 2018-05-19 00:38:56.062737
 	--------------------------------------------------------------------------------
@@ -250,13 +251,13 @@ Next, let's ``ssh`` into the simulation machine.
 In this case, since we are running the simulation on the same machine (i.e. ``localhost``)
 we can run the following:
 
-::
+.. code-block:: bash
 
 	ssh localhost
 
 Next, we can directly attach to the console of the simulated system using ``screen``, run:
 
-::
+.. code-block:: bash
 
 	screen -r fsim0
 
@@ -264,7 +265,7 @@ Voila! You should now see Linux booting on the simulated system and then be prom
 with a Linux login prompt, like so:
 
 
-::
+.. code-block:: bash
 
 	[truncated Linux boot output]
 	[    0.020000] VFS: Mounted root (ext2 filesystem) on device 254:0.
@@ -293,7 +294,7 @@ Now, you can login to the system! The username is ``root``.
 At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
-::
+.. code-block:: bash
 
 	Welcome to Buildroot
 	buildroot login: root
@@ -308,7 +309,7 @@ let's power off the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
 
-::
+.. code-block:: bash
 
 	Welcome to Buildroot
 	buildroot login: root
@@ -319,7 +320,7 @@ in the console of the simulated system, run ``poweroff -f``:
 
 You should see output like the following from the simulation console:
 
-::
+.. code-block:: bash
 
 	# poweroff -f
 	[   12.456000] reboot: Power down
@@ -337,7 +338,7 @@ You should see output like the following from the simulation console:
 You'll also notice that the manager polling loop exited! You'll see output like this
 from the manager:
 
-::
+.. code-block:: text
 
 	FireSim Simulation Status @ 2018-05-19 00:46:50.075885
 	--------------------------------------------------------------------------------
@@ -371,7 +372,7 @@ from the manager:
 
 If you take a look at the workload output directory given in the manager output (in this case, ``.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
 
-::
+.. code-block:: bash
 
 	$ ls -la firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/*/*
 	-rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
@@ -387,13 +388,13 @@ useful for running benchmarks automatically. The
 For now, let's wrap-up our tutorial by terminating the Run Farm that we launched.
 To do so, run:
 
-::
+.. code-block:: bash
 
 	firesim terminaterunfarm
 
 Which should present you with the following:
 
-::
+.. code-block:: bash
 
 	$ firesim terminaterunfarm
 	FireSim Manager. Docs: https://docs.fires.im

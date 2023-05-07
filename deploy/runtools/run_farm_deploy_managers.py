@@ -723,6 +723,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
 class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx Alveo-enabled instance """
+    PLATFORM_NAME: Optional[str]
+    BOARD_NAME: Optional[str]
 
     @classmethod
     def sim_command_requires_sudo(cls) -> bool:
@@ -731,6 +733,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
+        self.PLATFORM_NAME = None
+        self.BOARD_NAME = None
 
     def unload_xdma(self) -> None:
         if self.instance_assigned_simulations():
@@ -759,14 +763,14 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 serv = self.parent_node.sim_slots[slotno]
                 hwcfg = serv.get_resolved_server_hardware_config()
 
-                bit_tar = hwcfg.get_bit_tar_filename()
+                bitstream_tar = hwcfg.get_bitstream_tar_filename()
                 remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
-                bit_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
+                bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
                 bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
 
                 # at this point the tar file is in the sim slot
-                run(f"rm -rf {bit_tar_unpack_dir}")
-                run(f"tar xvf {remote_sim_dir}/{bit_tar} -C {remote_sim_dir}")
+                run(f"rm -rf {bitstream_tar_unpack_dir}")
+                run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
 
                 self.instance_logger(f"""Copying FPGA flashing scripts for {slotno}""")
                 rsync_cap = rsync_project(

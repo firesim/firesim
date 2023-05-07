@@ -1,5 +1,5 @@
 .. |fpga_name| replace:: Xilinx Vitis-enabled U250
-.. |bit_type| replace:: "xclbin"
+.. |bit_type| replace:: ``xclbin``
 .. |build_type| replace:: Xilinx Vitis
 
 .. include:: Intro-Template.rst

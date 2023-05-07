@@ -34,7 +34,7 @@ The Supernode target configuration wrapper can be found in Chipyard in
 ``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``.  An example wrapper
 configuration is:
 
-.. code-block:: python
+.. code-block:: scala
 
     class SupernodeFireSimRocketConfig extends Config(
        new WithNumNodes(4) ++
@@ -48,7 +48,7 @@ different target configuration, we will generate a new supernode wrapper, with
 the new target configuration. For example, to simulate 4 quad-core nodes on one
 FPGA, you can use:
 
-.. code-block:: python
+.. code-block:: scala
 
     class SupernodeFireSimQuadRocketConfig extends Config(
        new WithNumNodes(4) ++

@@ -41,7 +41,7 @@ provided for the cores' register files, which are the most FPGA-hostile memories
 Next, with these annotations in place, enabling the optimization requires mixing in the ``MCRams``
 class to the platform configuration, as shown in the following example build recipe:
 
-::
+.. code-block:: yaml
 
     firesim-boom-mem-opt:
         DESIGN: FireSim
@@ -65,7 +65,7 @@ pre-annotated for both Rocket- and BOOM-based systems. To enable this tile multi
 necessary to mix in the ``MTModels`` class to the platform configuration, as shown in the following
 example build recipe:
 
-::
+.. code-block:: yaml
 
     firesim-threaded-cores-opt:
         DESIGN: FireSim
@@ -83,7 +83,7 @@ reduced throughput relative to unoptimized FireSim simulators, very large SoCs t
 never fit on a single FPGA can be simulated without the cost and performance drawbacks of
 partitioning.
 
-::
+.. code-block:: yaml
 
     firesim-optimized-big-soc:
         DESIGN: FireSim

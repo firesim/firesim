@@ -1,5 +1,5 @@
 .. |fpga_name| replace:: Xilinx Alveo U280
-.. |bit_type| replace:: "bitstream_tar"
+.. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado
 
 .. include:: Intro-Template.rst

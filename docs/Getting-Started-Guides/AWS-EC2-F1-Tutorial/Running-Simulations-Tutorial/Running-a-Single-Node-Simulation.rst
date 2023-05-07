@@ -19,7 +19,7 @@ simulated node. To do so, we'll need to build our FireSim-compatible RISC-V
 Linux distro. For this tutorial, we will use a simple buildroot-based
 distribution. You can do this like so:
 
-::
+.. code-block:: bash
 
     cd firesim/sw/firesim-software
     ./init-submodules.sh
@@ -63,7 +63,7 @@ a workload) that you may be operating -- but more on that later.
 Since we only want to simulate a single node, let's switch to using one
 ``f1.2xlarge``. To do so, change the ``run_farm_hosts_to_use`` sequence to the following:
 
-::
+.. code-block:: yaml
 
     run_farm_hosts_to_use:
         - f1.16xlarge: 0
@@ -83,7 +83,7 @@ Now, let's verify that the ``target_config`` mapping will model the correct targ
 By default, it is set to model a single-node with no network.
 It should look like the following:
 
-::
+.. code-block:: yaml
 
     target_config:
         topology: no_net_config
@@ -114,7 +114,7 @@ feature is an advanced feature that you can learn more about in the
 
 As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this:
 
-::
+.. code-block:: yaml
 
 	run_farm:
 	    base_recipe: run-farm-recipes/aws_ec2.yaml
@@ -171,13 +171,13 @@ When you do this, you will start getting charged for the running EC2 instances
 
 To do launch your run farm, run:
 
-::
+.. code-block:: bash
 
     firesim launchrunfarm
 
 You should expect output like the following:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim launchrunfarm
 	FireSim Manager. Docs: http://docs.fires.im
@@ -212,14 +212,14 @@ components necessary to run your simulation. The manager will also handle
 flashing FPGAs. To tell the manager to setup our simulation infrastructure,
 let's run:
 
-::
+.. code-block:: bash
 
     firesim infrasetup
 
 
 For a complete run, you should expect output like the following:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim infrasetup
 	FireSim Manager. Docs: http://docs.fires.im
@@ -257,7 +257,7 @@ Running a simulation!
 
 Finally, let's run our simulation! To do so, run:
 
-::
+.. code-block:: bash
 
 	firesim runworkload
 
@@ -265,7 +265,7 @@ Finally, let's run our simulation! To do so, run:
 This command boots up a simulation and prints out the live status of the simulated
 nodes every 10s. When you do this, you will initially see output like:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim runworkload
 	FireSim Manager. Docs: http://docs.fires.im
@@ -281,7 +281,7 @@ nodes every 10s. When you do this, you will initially see output like:
 If you don't look quickly, you might miss it, since it will get replaced with a
 live status page:
 
-::
+.. code-block:: text
 
 	FireSim Simulation Status @ 2018-05-19 00:38:56.062737
 	--------------------------------------------------------------------------------
@@ -317,7 +317,7 @@ printed by the status page, **from your manager instance**. In our case, from
 the above output, we see that our simulated system is running on the instance with
 IP ``172.30.2.174``. So, run:
 
-::
+.. code-block:: bash
 
 	[RUN THIS ON YOUR MANAGER INSTANCE!]
 	ssh 172.30.2.174
@@ -325,7 +325,7 @@ IP ``172.30.2.174``. So, run:
 This will log you into the instance running the simulation. Then, to attach to the
 console of the simulated system, run:
 
-::
+.. code-block:: bash
 
 	screen -r fsim0
 
@@ -333,7 +333,7 @@ Voila! You should now see Linux booting on the simulated system and then be prom
 with a Linux login prompt, like so:
 
 
-::
+.. code-block:: bash
 
 	[truncated Linux boot output]
 	[    0.020000] VFS: Mounted root (ext2 filesystem) on device 254:0.
@@ -362,7 +362,7 @@ Now, you can login to the system! The username is ``root``.
 At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
-::
+.. code-block:: bash
 
 	Welcome to Buildroot
 	buildroot login: root
@@ -377,7 +377,7 @@ let's poweroff the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
 
-::
+.. code-block:: bash
 
 	Welcome to Buildroot
 	buildroot login: root
@@ -388,7 +388,7 @@ in the console of the simulated system, run ``poweroff -f``:
 
 You should see output like the following from the simulation console:
 
-::
+.. code-block:: bash
 
 	# poweroff -f
 	[   12.456000] reboot: Power down
@@ -406,7 +406,7 @@ You should see output like the following from the simulation console:
 You'll also notice that the manager polling loop exited! You'll see output like this
 from the manager:
 
-::
+.. code-block:: bash
 
 	FireSim Simulation Status @ 2018-05-19 00:46:50.075885
 	--------------------------------------------------------------------------------
@@ -440,7 +440,7 @@ from the manager:
 
 If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform$ ls -la */*
 	-rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
@@ -456,13 +456,13 @@ useful for running benchmarks automatically. The
 For now, let's wrap-up our tutorial by terminating the ``f1.2xlarge`` instance
 that we launched. To do so, run:
 
-::
+.. code-block:: bash
 
 	firesim terminaterunfarm
 
 Which should present you with the following:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy$ firesim terminaterunfarm
 	FireSim Manager. Docs: http://docs.fires.im
@@ -482,7 +482,7 @@ Which should present you with the following:
 You must type ``yes`` then hit enter here to have your instances terminated. Once
 you do so, you will see:
 
-::
+.. code-block:: text
 
 	[ truncated output from above ]
 	Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.

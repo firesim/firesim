@@ -103,12 +103,17 @@ class BitBuilder(metaclass=abc.ABCMeta):
         tag_build_quintuplet = self.build_config.get_chisel_quintuplet()
         tag_deploy_quintuplet = self.build_config.get_effective_deploy_quintuplet()
 
+        tag_build_triplet = self.build_config.get_chisel_triplet()
+        tag_deploy_triplet = self.build_config.get_effective_deploy_triplet()
+
         # the asserts are left over from when we tried to do this with tags
         # - technically I don't know how long these descriptions are allowed to be,
         # but it's at least 2048 chars, so I'll leave these here for now as sanity
         # checks.
         assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
         assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
+        assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
+        assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
 
         is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
         hash = local("git rev-parse HEAD", capture=True)
@@ -117,7 +122,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
         assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
 
         # construct the serialized description from these tags.
-        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_fsimcommit)
+        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_build_triplet, tag_deploy_triplet, tag_fsimcommit)
 
 class F1BitBuilder(BitBuilder):
     """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
@@ -200,8 +205,10 @@ class F1BitBuilder(BitBuilder):
         Returns:
             Boolean indicating if the build passed or failed.
         """
+        build_farm = self.build_config.build_config_file.build_farm
+
         if bypass:
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
             return True
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -217,15 +224,13 @@ class F1BitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
 
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-
-        build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
@@ -266,7 +271,7 @@ class F1BitBuilder(BitBuilder):
             on_build_failure()
             return False
 
-        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+        build_farm.release_build_host(self.build_config)
 
         return True
 
@@ -426,8 +431,10 @@ class VitisBitBuilder(BitBuilder):
         Returns:
             Boolean indicating if the build passed or failed.
         """
+        build_farm = self.build_config.build_config_file.build_farm
+
         if bypass:
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
             return True
 
         # The default error-handling procedure. Send an email and teardown instance
@@ -441,15 +448,13 @@ class VitisBitBuilder(BitBuilder):
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
 
         rootLogger.info("Building Vitis Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-
-        build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
@@ -484,9 +489,6 @@ class VitisBitBuilder(BitBuilder):
             on_build_failure()
             return False
 
-        build_farm = self.build_config.build_config_file.build_farm
-        hostname = build_farm.get_build_host_ip(self.build_config)
-
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         xclbin_path = "file://" + local_cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
@@ -517,7 +519,7 @@ class VitisBitBuilder(BitBuilder):
 
         rootLogger.info(f"Build complete! Vitis bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
-        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+        build_farm.release_build_host(self.build_config)
 
         return True
 
@@ -545,9 +547,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
         fpga_build_postfix = f"cl_{chisel_quintuplet}"
 
         # local paths
-        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.PLATFORM}"
+        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}"
 
-        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.PLATFORM}"
+        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}"
 
         # copy alveo files to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
@@ -582,30 +584,30 @@ class XilinxAlveoBitBuilder(BitBuilder):
         Returns:
             Boolean indicating if the build passed or failed.
         """
+        build_farm = self.build_config.build_config_file.build_farm
+
         if bypass:
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
             return True
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
             """ Terminate build host and notify user that build failed """
 
-            message_title = f"FireSim Xilinx Alveo {self.PLATFORM} FPGA Build Failed"
+            message_title = f"FireSim Xilinx Alveo {self.build_config.PLATFORM} FPGA Build Failed"
 
             message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
-            self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+            build_farm.release_build_host(self.build_config)
 
-        rootLogger.info(f"Building Xilinx Alveo {self.PLATFORM} Bitstream from Verilog")
+        rootLogger.info(f"Building Xilinx Alveo {self.build_config.PLATFORM} Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
         local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-
-        build_farm = self.build_config.build_config_file.build_farm
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
@@ -613,7 +615,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         alveo_result = 0
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/{self.PLATFORM}/build-bitstream.sh",
+            local_dir=f"{local_deploy_dir}/../platforms/{self.build_config.PLATFORM}/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-L", capture=True)
@@ -645,8 +647,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
-        #bit_path = "/scratch/abejgonza/firesim-private/deploy/results-build/2023-05-04--01-35-15-alveou250_firesim_rocket_singlecore_no_nic_2/cl_FireSim-FireSimRocketConfig-BaseXilinxAlveoConfig/vivado_proj/firesim.bit"
-        tar_staging_path = f"{local_cl_dir}/{self.PLATFORM}"
+        tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
         # store files into staging dir
@@ -661,13 +662,10 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # form tar.gz
         with prefix(f"cd {local_cl_dir}"):
-            local(f"tar zcvf {tar_name} {self.PLATFORM}/")
-
-        build_farm = self.build_config.build_config_file.build_farm
-        hostname = build_farm.get_build_host_ip(self.build_config)
+            local(f"tar zcvf {tar_name} {self.build_config.PLATFORM}/")
 
         hwdb_entry = hwdb_entry_name + ":\n"
-        hwdb_entry += f"    bit_tar: file://{local_cl_dir}/{tar_name}\n"
+        hwdb_entry += f"    bitstream_tar: file://{local_cl_dir}/{tar_name}\n"
         hwdb_entry += f"    deploy_quintuplet_override: null\n"
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
@@ -690,9 +688,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info(f"Build complete! Xilinx Alveo {self.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
+        rootLogger.info(f"Build complete! Xilinx Alveo {self.build_config.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
 
-        self.build_config.build_config_file.build_farm.release_build_host(self.build_config)
+        build_farm.release_build_host(self.build_config)
 
         return True
 

@@ -44,8 +44,8 @@ builds_to_run:
     # - vitis_firesim_gemmini_rocket_singlecore_no_nic
 
     # Configs for xilinx alveo u250/u280
-    # - alveou250_firesim_rocket_singlecore_no_nic
-    # - alveou280_firesim_rocket_singlecore_no_nic
+    # - alveo_u250_firesim_rocket_singlecore_no_nic
+    # - alveo_u280_firesim_rocket_singlecore_no_nic
 
     # Config for xilinx vcu118
     # - xilinx_vcu118_firesim_rocket_singlecore_no_nic
