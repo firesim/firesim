@@ -18,7 +18,7 @@ else
 $(error Invalid PLATFORM used: $(PLATFORM))
 endif
 
-fpga_work_dir  := $(board_dir)/cl_$(name_tuple)
+fpga_work_dir  := $(board_dir)/cl_$(name_quintuplet)
 fpga_build_dir := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
 repo_state     := $(fpga_work_dir)/design/repo_state

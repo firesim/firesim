@@ -4,6 +4,9 @@
 # Target-Specific  Configuration
 ################################################################################
 
+# Target-project that imports a specific makefrag for it's own chisel generator
+TARGET_PROJECT ?=
+
 # Root name for generated binaries
 DESIGN ?=
 
@@ -30,15 +33,15 @@ TARGET_LD_FLAGS ?=
 # The prefix used for all Golden Gate-generated files
 BASE_FILE_NAME := FireSim-generated
 
-name_tuple := $(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+name_quintuplet := $(PLATFORM)-$(TARGET_PROJECT)-$(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
 long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
 BUILD_DIR := $(firesim_base_dir)/generated-src
-GENERATED_DIR ?= $(BUILD_DIR)/$(PLATFORM)/$(name_tuple)
+GENERATED_DIR ?= $(BUILD_DIR)/$(PLATFORM)/$(name_quintuplet)
 # Results from RTL simulations live here
-OUTPUT_DIR ?= $(firesim_base_dir)/output/$(PLATFORM)/$(name_tuple)
+OUTPUT_DIR ?= $(firesim_base_dir)/output/$(PLATFORM)/$(name_quintuplet)
 
 # The target's FIRRTL and associated anotations; inputs to Golden Gate
 FIRRTL_FILE := $(GENERATED_DIR)/$(long_name).fir

@@ -593,7 +593,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.driver_tar = None
         self.tarball_built = False
 
-        self.deploy_quintuplet = build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
+        self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf
