@@ -171,7 +171,6 @@ class RuntimeHWConfig:
     tarball_built: bool
     additional_required_files: List[Tuple[str, str]]
     driver_name_prefix: str
-    driver_name_suffix: Optional[str]
     local_driver_base_dir: str
     driver_type_message: str
     """User-specified, URI path to driver tarball"""
@@ -210,8 +209,6 @@ class RuntimeHWConfig:
             self.uri_list.append(URIContainer('xclbin', self.get_xclbin_filename()))
         else:
             self.uri_list.append(URIContainer('bitstream_tar', self.get_bitstream_tar_filename()))
-
-        self.driver_name_suffix = None
 
         if 'deploy_triplet_override' in hwconfig_dict.keys() and 'deploy_quintuplet_override' in hwconfig_dict.keys():
             rootLogger.error("Cannot have both 'deploy_quintuplet_override' and 'deploy_triplet_override' in hwdb entry. Define only 'deploy_quintuplet_override'.")
@@ -406,7 +403,7 @@ class RuntimeHWConfig:
         screen_name = "fsim{}".format(slotid)
 
         if fpga_physical_selection is None:
-            fpga_physical_selection = slotid
+            fpga_physical_selection = str(slotid)
         run_device_placement = "+slotid={}".format(fpga_physical_selection)
 
         if self.platform == "vitis":
@@ -597,12 +594,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.xclbin = None
         self.bitstream_tar = None
         self.driver_tar = None
-
-        self.platform = None
-        self.driver_built = False
         self.tarball_built = False
-        self.additional_required_files = []
-        self.driver_name_prefix = ""
 
         self.uri_list = []
 
@@ -616,11 +608,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         # currently only f1 metasims supported
         self.platform = "f1"
         self.driver_name_prefix = ""
-        self.driver_name_suffix = ""
         if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
             self.driver_name_prefix = "V"
-        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
-            self.driver_name_suffix = "-debug"
 
         self.local_driver_base_dir = LOCAL_DRIVERS_GENERATED_SRC
 
@@ -629,8 +618,16 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.metasimulation_only_plusargs = metasimulation_only_plusargs
         self.metasimulation_only_vcs_plusargs = metasimulation_only_vcs_plusargs
 
+        self.additional_required_files = []
+
         if self.metasim_host_simulator in ["vcs", "vcs-debug"]:
             self.additional_required_files.append((self.get_local_driver_path() + ".daidir", ""))
+
+    def get_driver_name_suffix(self) -> str:
+        driver_name_suffix = ""
+        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
+            driver_name_suffix = "-debug"
+        return driver_name_suffix
 
     def get_driver_build_target(self) -> str:
         return self.metasim_host_simulator
