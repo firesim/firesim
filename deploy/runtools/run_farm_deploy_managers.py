@@ -244,7 +244,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()))
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), None)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -833,7 +833,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(bdf, (self.sim_command_requires_sudo() and has_sudo()))
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -865,8 +865,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
-        self.PLATFORM_NAME = None
-        self.BOARD_NAME = None
+        self.PLATFORM_NAME = "xilinx_vcu118"
+        self.BOARD_NAME = "xilinx_vcu118"
 
     def unload_xdma(self) -> None:
         """ unload the xdma and xvsec kernel modules. """
@@ -964,11 +964,9 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(bdf, (self.sim_command_requires_sudo() and has_sudo()))
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
-
-

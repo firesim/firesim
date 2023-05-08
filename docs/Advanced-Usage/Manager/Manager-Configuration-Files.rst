@@ -534,7 +534,7 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 ``bitstream_tar``
-"""""""""""""""
+"""""""""""""""""
 
 Indicates where the bitstream (FPGA Image) and metadata associated with it is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)

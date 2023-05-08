@@ -3,10 +3,6 @@ channels:
     - ucb-bar
     - nodefaults
 
-# non-standard key used in conda-lock: https://github.com/conda-incubator/conda-lock#platform-specification
-platforms:
-    - linux-64
-
 dependencies:
     # https://conda-forge.org/feedstock-outputs/
     #   filterable list of all conda-forge packages
@@ -15,12 +11,14 @@ dependencies:
     # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
     #   documentation on package_spec syntax for constraining versions
 
-    - sphinx>=5.3.0
+    - python>=3
+    - sphinx
     - Pygments
     - sphinx-autobuild
-    - sphinx_rtd_theme==1.1.0
+    - sphinx_rtd_theme<1.2.0,>=1.0.0
     - requests
     - sphinx-tabs
     - sphinx-copybutton
+    - pip
     - pip:
         - Sphinx-Substitution-Extensions

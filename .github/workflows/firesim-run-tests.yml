@@ -394,15 +394,19 @@ jobs:
     name: documentation-check
     needs: change-filters
     runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
         with:
           environment-file: conda-reqs/docs.yaml
           miniforge-version: latest
-      - name: Check that documentation builds with no warnings/errors
+      - name: Check that documentation builds with selective warnings/errors
         run: |
           make -C docs html
+          ! grep -v "ERROR: Undefined substitution referenced" warnings.txt
       - name: Show error log and dump objects.inv from sphinx if failed
         if: ${{ failure() }}
         run: |
@@ -439,6 +443,7 @@ jobs:
         run: |
           git fetch --recurse-submodules=no origin ${{ github.base_ref }}
           DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
+          echo "DEBUG: $DIFF_COMMIT"
           git clang-format $DIFF_COMMIT
           git diff --ignore-submodules > clang-format.patch
           if [ -s clang-format.patch ]; then
