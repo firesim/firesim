@@ -63,15 +63,12 @@ Launch a ``t2.nano`` by following these instructions:
 1. Go to the `EC2 Management
    Console <https://console.aws.amazon.com/ec2/v2/home>`__ and click
    "Launch Instance"
-2. On the AMI selection page, select "Amazon Linux AMI...", which should
-   be the top option.
-3. On the Choose an Instance Type page, select ``t2.nano``.
-4. Click "Review and Launch" (we don't need to change any other
+2. In "Application and OS Images (Amazon Machine Image)", use "Amazon Linux", which should be the default.
+3. In "Instance type", select ``t2.nano``.
+4. In "Key pair (login)", choose the ``firesim`` key pair we created previously.
+5. Click "Launch Instance" in the right-hand sidebar (we don't need to change any other
    settings)
-5. On the review page, click "Launch"
-6. Select the ``firesim`` key pair we created previously, then click
-   Launch Instances.
-7. Click on the instance name and note its public IP address.
+6. Click on the instance ID and note the instance's public IP address.
 
 Run scripts from the t2.nano
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,16 +83,17 @@ Which should present you with something like:
 
 ::
 
-    Last login: Mon Feb 12 21:11:27 2018 from 136.152.143.34
-
-           __|  __|_  )
-           _|  (     /   Amazon Linux AMI
-          ___|\___|___|
-
-    https://aws.amazon.com/amazon-linux-ami/2017.09-release-notes/
-    4 package(s) needed for security, out of 5 available
-    Run "sudo yum update" to apply all updates.
-    [ec2-user@ip-172-30-2-66 ~]$
+       ,     #_
+       ~\_  ####_        Amazon Linux 2023
+      ~~  \_#####\
+      ~~     \###|
+      ~~       \#/ ___   https://aws.amazon.com/linux/amazon-linux-2023
+       ~~       V~' '->
+        ~~~         /
+          ~~._.   _/
+             _/ _/
+           _/m/'
+    [ec2-user@ip-172-31-85-76 ~]$
 
 On this machine, run the following:
 
@@ -104,24 +102,33 @@ On this machine, run the following:
     aws configure
     [follow prompts]
 
-See
-https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about aws configure. Within the prompt, you should specify the same region that you chose
+Within the prompt, you should specify the same region that you chose
 above (one of ``us-east-1``, ``us-west-2``, ``eu-west-1``) and set the default
-output format to ``json``. You will need to generate an AWS access key in the "Security Credentials" menu of your AWS settings (as instructed in https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys ).
+output format to ``json``. You will need to generate an AWS access key in the "Security Credentials" menu of your AWS settings (as instructed in https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey ). You can also learn more about the ``aws configure`` command on the following page: https://docs.aws.amazon.com/cli/latest/reference/configure/index.html
 
 Again on the ``t2.nano`` instance, do the following:
 
 .. parsed-literal::
-
-    sudo yum install -y python36-pip
-    sudo pip3 install --upgrade pip
+    
+    sudo yum install -y python3-pip
     sudo python3 -m pip install boto3
     sudo python3 -m pip install --upgrade awscli
     wget https://raw.githubusercontent.com/firesim/firesim/|version|/deploy/awstools/aws_setup.py
+    chmod +x aws_setup.py
     ./aws_setup.py
+    
+The final command should print the following:
 
-This will create a VPC named ``firesim`` and a security group named
+::
+
+    Creating VPC for FireSim...
+    Success!
+    Creating a subnet in the VPC for each availability zone...
+    Success!
+    Creating a security group for FireSim...
+    Success!
+
+This will have created a VPC named ``firesim`` and a security group named
 ``firesim`` in your account.
 
 Terminate the t2.nano
