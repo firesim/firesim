@@ -137,7 +137,6 @@ class XilinxVCU118Config extends Config(new Config((site, here, up) => {
     size      = 0x80000000L, // 2 GiB
     beatBytes = 8,
     idBits    = 6)
-  // TODO: increase to 2
   case HostMemNumChannels => 2
   case PreLinkCircuitPath => None
   case PostLinkCircuitPath => None
