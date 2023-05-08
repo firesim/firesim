@@ -138,7 +138,7 @@ class XilinxVCU118Config extends Config(new Config((site, here, up) => {
     beatBytes = 8,
     idBits    = 6)
   // TODO: increase to 2
-  case HostMemNumChannels => 1
+  case HostMemNumChannels => 2
   case PreLinkCircuitPath => None
   case PostLinkCircuitPath => None
 }) ++ new SimConfig)
