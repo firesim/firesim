@@ -136,7 +136,8 @@ abstract class TestSuiteCommon(targetProject: String) extends TestSuiteBase {
     s"PLATFORM_CONFIG=${platformConfigString}",
   )
 
-  val targetTuple = s"${basePlatformConfig.platformName}-${targetProject}-${targetName}-${targetConfigs}-${platformConfigString}"
+  val targetTuple =
+    s"${basePlatformConfig.platformName}-${targetProject}-${targetName}-${targetConfigs}-${platformConfigString}"
 
   // These mirror those in the make files; invocation of the MIDAS compiler
   // is the one stage of the tests we don't invoke the Makefile for

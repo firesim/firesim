@@ -426,7 +426,7 @@ jobs:
 
       # Run 'clang-format', comparing against the base ref.
       - name: Run clang-format
-        uses: judicula/clang-format-actions@v4.11.0
+        uses: jidicula/clang-format-action@v4.11.0
         with:
           clang-format-version: '12'
 
