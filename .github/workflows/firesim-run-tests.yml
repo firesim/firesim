@@ -424,38 +424,11 @@ jobs:
           fetch-depth: 2
           submodules: false
 
-      # Checkout chipyard submodules.
-      - name: Checkout chipyard
-        run: |
-          git submodule update --init target-design/chipyard
-          cd target-design/chipyard
-          git submodule update --init generators/testchipip
-
-      # Install clang linters
-      - name: Install Clang linters
-        run: |
-          sudo apt update
-          sudo apt install clang-format clang-tidy-12 parallel -y
-
-      # Run 'clang-format', comparing against the base commit hash.
-      # If anything got reformatted, fail and output a patch.
+      # Run 'clang-format', comparing against the base ref.
       - name: Run clang-format
-        run: |
-          git fetch --recurse-submodules=no origin ${{ github.base_ref }}
-          DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
-          echo "DEBUG: $DIFF_COMMIT"
-          git clang-format $DIFF_COMMIT
-          echo "git clang-format $DIFF_COMMIT"
-          git diff --ignore-submodules > clang-format.patch
-          if [ -s clang-format.patch ]; then
-            echo "error: clang-format had to fix the following files:"
-            git diff --ignore-submodules --name-only
-            echo "----- 8< ---- PATCH ----- 8< ----"
-            cat clang-format.patch
-            echo "----- 8< ---- PATCH ----- 8< ----"
-            git checkout .
-            exit 1
-          fi
+        uses: judicula/clang-format-actions@v4.11.0
+        with:
+          clang-format-version: '12'
 
       # Run clang-tidy on the entire codebase. Error will be logged.
       - name: Run clang-tidy
