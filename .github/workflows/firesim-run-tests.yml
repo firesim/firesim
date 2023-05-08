@@ -445,6 +445,7 @@ jobs:
           DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
           echo "DEBUG: $DIFF_COMMIT"
           git clang-format $DIFF_COMMIT
+          echo "git clang-format $DIFF_COMMIT"
           git diff --ignore-submodules > clang-format.patch
           if [ -s clang-format.patch ]; then
             echo "error: clang-format had to fix the following files:"
