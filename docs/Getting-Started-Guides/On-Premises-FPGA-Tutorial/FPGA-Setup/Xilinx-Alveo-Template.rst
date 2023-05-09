@@ -24,6 +24,8 @@ This is needed to flash the FPGA bitstream onto the FPGA.
 FPGA Setup
 ----------
 
+.. warning:: Currently, FireSim only supports a single |fpga_name| installed on a machine. Future support will address this.
+
 After installing the |fpga_name| using the Xilinx instructions and installing the specific version of Vivado, we need to flash the |fpga_name| with a dummy XDMA-enabled design to finish setup.
 First, lets install the XDMA kernel module in a FireSim known location:
 
