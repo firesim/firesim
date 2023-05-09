@@ -4,7 +4,7 @@
 # Verilator MIDAS-Level Simulators #
 ####################################
 
-VERILATOR_CXXOPTS ?= -O0
+VERILATOR_CXXOPTS ?= -O2
 VERILATOR_MAKEFLAGS ?= -j8 VM_PARALLEL_BUILDS=1
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
