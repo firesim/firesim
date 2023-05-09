@@ -8,7 +8,7 @@ Golden Gate can synthesize printfs present in Chisel/FIRRTL (implemented as
 Rocket and BOOM have printfs of their commit logs and other useful transaction
 streams.
 
-::
+.. code-block:: text
 
     C0:        409 [1] pc=[008000004c] W[r10=0000000000000000][1] R[r 0=0000000000000000] R[r20=0000000000000003] inst=[f1402573] csrr    a0, mhartid
     C0:        410 [0] pc=[008000004c] W[r 0=0000000000000000][0] R[r 0=0000000000000000] R[r20=0000000000000003] inst=[f1402573] csrr    a0, mhartid

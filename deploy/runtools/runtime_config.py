@@ -3,8 +3,9 @@ simulation tasks. """
 
 from __future__ import annotations
 
+import re
 from datetime import timedelta
-from time import strftime, gmtime, time
+from time import strftime, gmtime
 import pprint
 import logging
 import yaml
@@ -14,12 +15,15 @@ from fabric.operations import _stdoutString # type: ignore
 from fabric.api import prefix, settings, local, run # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
+from os.path import basename, expanduser
 from pathlib import Path
 from uuid import uuid1
 from tempfile import TemporaryDirectory
+import hashlib
+import json
 
 from awstools.awstools import aws_resource_names
-from awstools.afitools import get_firesim_deploy_quadruplet_for_agfi
+from awstools.afitools import get_firesim_deploy_quintuplet_for_agfi, firesim_description_to_tags
 from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.run_farm_deploy_managers import VitisInstanceDeployManager
 from runtools.workload import WorkloadConfig
@@ -29,6 +33,7 @@ from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
 from buildtools.bitbuilder import get_deploy_dir
+from util.io import downloadURI
 
 from typing import Optional, Dict, Any, List, Sequence, Tuple, TYPE_CHECKING
 import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
@@ -41,123 +46,278 @@ CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
 
 rootLogger = logging.getLogger()
 
+# from  https://github.com/pandas-dev/pandas/blob/96b036cbcf7db5d3ba875aac28c4f6a678214bfb/pandas/io/common.py#L73
+_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
+
+class URIContainer:
+    """ A class which contains the details for downloading a single URI. """
+
+    """a property name on RuntimeHWConfig"""
+    hwcfg_prop: str
+    """ the final filename inside sim_slot_x, this is a filename, not a path"""
+    destination_name: str
+
+    def __init__(self, hwcfg_prop: str, destination_name: str):
+        self.hwcfg_prop = hwcfg_prop
+        self.destination_name = destination_name
+
+    # this filename will be used when pre-downloading
+    @classmethod
+    def hashed_name(cls, uri: str) -> str:
+        m = hashlib.sha256()
+        m.update(bytes(uri, 'utf-8'))
+        return m.hexdigest()
+
+    def _resolve_vanilla_path(self, hwcfg: RuntimeHWConfig) -> Optional[str]:
+        """ Allows fallback to a vanilla path. Relative paths are resolved relative to firesim/deploy/.
+        This will convert a vanilla path to a URI, or return None."""
+        uri: Optional[str] = getattr(hwcfg, self.hwcfg_prop)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+
+        # if already a URI, exit early returning unmodified string
+        is_uri = re.match(_RFC_3986_PATTERN, uri)
+        if is_uri:
+            return uri
+
+        # expanduser() is required to get ~ home directory expansion working
+        # relative paths are relative to firesim/deploy
+        expanded = Path(expanduser(uri))
+
+        try:
+            # strict=True will throw if the file doesn't exist
+            resolved = expanded.resolve(strict=True)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} file fallback at path '{uri}' or '{expanded}' was not found")
+
+        return f"file://{resolved}"
+
+    def _choose_path(self, local_dir: str, hwcfg: RuntimeHWConfig) -> Optional[Tuple[str, str]]:
+        """ Return a deterministic path, given a parent folder and a RuntimeHWConfig object. The URI
+        as generated from hwcfg is also returned. """
+        uri: Optional[str] = self._resolve_vanilla_path(hwcfg)
+
+        # do nothing if there isn't a URI
+        if uri is None:
+            return None
+
+        # choose a repeatable, path based on the hash of the URI
+        destination = pjoin(local_dir, self.hashed_name(uri))
+
+        return (uri, destination)
+
+    def local_pre_download(self, local_dir: str, hwcfg: RuntimeHWConfig) -> Optional[Tuple[str, str]]:
+        """ Cached download of the URI contained in this class to a user-specified
+        destination folder. The destination name is a SHA256 hash of the URI.
+        If the file exists this will NOT overwrite. """
+
+        # resolve the URI and the path '/{dir}/{hash}' we should download to
+        both = self._choose_path(local_dir, hwcfg)
+
+        # do nothing if there isn't a URI
+        if both is None:
+            return None
+
+        (uri, destination) = both
+
+        # When it exists, return the same information, but skip the download
+        if Path(destination).exists():
+            rootLogger.debug(f"Skipping download of uri: '{uri}'")
+            return (uri, destination)
+
+        try:
+            downloadURI(uri, destination)
+        except FileNotFoundError as e:
+            raise Exception(f"{self.hwcfg_prop} path '{uri}' was not found")
+
+        # return, this is not passed to rsync
+        return (uri, destination)
+
+    def get_rsync_path(self, local_dir: str, hwcfg: RuntimeHWConfig) -> Optional[Tuple[str, str]]:
+        """ Does not download. Returns the rsync path required to send an already downloaded
+        URI to the runhost. """
+
+        # resolve the URI and the path '/{dir}/{hash}' we should download to
+        both = self._choose_path(local_dir, hwcfg)
+
+        # do nothing if there isn't a URI
+        if both is None:
+            return None
+
+        (uri, destination) = both
+
+        # because the local file has a nonsense name (the hash)
+        # we are required to specify the destination name to rsync
+        return (destination, self.destination_name)
+
 class RuntimeHWConfig:
     """ A pythonic version of the entires in config_hwdb.yaml """
     name: str
-    platform: str
+    platform: Optional[str]
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
     """User-specified, URI path to xclbin"""
     xclbin: Optional[str]
+    """User-specified, URI path to bitstream tar file"""
+    bitstream_tar: Optional[str]
 
-    deploy_quadruplet: Optional[str]
+    deploy_quintuplet: Optional[str]
     customruntimeconfig: str
+    # note whether we've built a copy of the simulation driver for this hwconf
     driver_built: bool
     tarball_built: bool
     additional_required_files: List[Tuple[str, str]]
     driver_name_prefix: str
-    driver_name_suffix: str
     local_driver_base_dir: str
-    driver_build_target: str
     driver_type_message: str
     """User-specified, URI path to driver tarball"""
     driver_tar: Optional[str]
 
-    # Members that are initlized here also need to be initilized in
+    """ A list of URIContainer objects, one for each URI that is able to be specified """
+    uri_list: list[URIContainer]
+
+    # Members that are initialized here also need to be initialized in
     # RuntimeBuildRecipeConfig.__init__
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        if 'agfi' in hwconfig_dict and 'xclbin' in hwconfig_dict:
-            raise Exception(f"Unable to have agfi and xclbin in HWDB entry {name}.")
+        if sum(['agfi' in hwconfig_dict, 'xclbin' in hwconfig_dict, 'bitstream_tar' in hwconfig_dict]) > 1:
+            raise Exception(f"Must only have 'agfi' or 'xclbin' or 'bitstream_tar' HWDB entry {name}.")
 
         self.agfi = hwconfig_dict.get('agfi')
         self.xclbin = hwconfig_dict.get('xclbin')
+        self.bitstream_tar = hwconfig_dict.get('bitstream_tar')
         self.driver_tar = hwconfig_dict.get('driver_tar')
+
+        self.platform = None
+        self.driver_built = False
+        self.tarball_built = False
+        self.additional_required_files = []
+        self.driver_name_prefix = ""
+        self.driver_type_message = "FPGA software"
+        self.local_driver_base_dir = LOCAL_DRIVERS_BASE
+
+        self.uri_list = []
 
         if self.agfi is not None:
             self.platform = "f1"
-        else:
+        elif self.xclbin is not None:
             self.platform = "vitis"
+            self.uri_list.append(URIContainer('xclbin', self.get_xclbin_filename()))
+        else:
+            self.uri_list.append(URIContainer('bitstream_tar', self.get_bitstream_tar_filename()))
 
-        self.driver_name_prefix = ""
-        self.driver_name_suffix = "-" + self.platform
-
-        self.local_driver_base_dir = LOCAL_DRIVERS_BASE
-        self.driver_type_message = "FPGA software"
-        self.driver_build_target = self.platform
-
-        if 'deploy_triplet_override' in hwconfig_dict.keys() and 'deploy_quadruplet_override' in hwconfig_dict.keys():
-            rootLogger.error("Cannot have both deploy_quadruplet_override and deploy_triplet_override in hwdb entry. Define only deploy_quadruplet_override.")
+        if 'deploy_triplet_override' in hwconfig_dict.keys() and 'deploy_quintuplet_override' in hwconfig_dict.keys():
+            rootLogger.error("Cannot have both 'deploy_quintuplet_override' and 'deploy_triplet_override' in hwdb entry. Define only 'deploy_quintuplet_override'.")
             sys.exit(1)
         elif 'deploy_triplet_override' in hwconfig_dict.keys():
-            rootLogger.warning("Please rename your 'deploy_triplet_override' key in your hwdb entry to 'deploy_quadruplet_override'. Support for 'deploy_triplet_override' will be removed in the future.")
+            rootLogger.warning("Please rename your 'deploy_triplet_override' key in your hwdb entry to 'deploy_quintuplet_override'. Support for 'deploy_triplet_override' will be removed in the future.")
 
-        hwconfig_override_build_quadruplet = hwconfig_dict.get('deploy_quadruplet_override')
-        if hwconfig_override_build_quadruplet is None:
+        hwconfig_override_build_quintuplet = hwconfig_dict.get('deploy_quintuplet_override')
+        if hwconfig_override_build_quintuplet is None:
             # temporary backwards compat for old key
-            hwconfig_override_build_quadruplet = hwconfig_dict.get('deploy_triplet_override')
+            hwconfig_override_build_quintuplet = hwconfig_dict.get('deploy_triplet_override')
 
-        if hwconfig_override_build_quadruplet is not None and len(hwconfig_override_build_quadruplet.split("-")) == 3:
-            # convert old build_triplet into buildquadruplet
-            hwconfig_override_build_quadruplet = 'firesim-' + hwconfig_override_build_quadruplet
+        if hwconfig_override_build_quintuplet is not None and len(hwconfig_override_build_quintuplet.split("-")) == 3:
+            # convert old build_triplet into buildquintuplet
+            hwconfig_override_build_quintuplet = 'f1-firesim-' + hwconfig_override_build_quintuplet
 
-        self.deploy_quadruplet = hwconfig_override_build_quadruplet
-        if self.deploy_quadruplet is not None and self.platform != "vitis":
-            rootLogger.warning("{} is overriding a deploy quadruplet in your config_hwdb.yaml file. Make sure you understand why!".format(name))
+        self.deploy_quintuplet = hwconfig_override_build_quintuplet
+        if self.deploy_quintuplet is not None and self.platform != "vitis":
+            rootLogger.warning(f"{name} is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!")
 
-        # TODO: obtain deploy_quadruplet from tag in xclbin
-        if self.deploy_quadruplet is None and self.platform == "vitis":
-            raise Exception(f"Must set the deploy_quadruplet_override for Vitis bitstreams")
+        # TODO: obtain deploy_quintuplet from tag in xclbin
+        if self.deploy_quintuplet is None and self.platform == "vitis":
+            raise Exception(f"Must set the deploy_quintuplet_override for Vitis bitstreams.")
 
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
-        # note whether we've built a copy of the simulation driver for this hwconf
-        self.driver_built = False
-        self.tarball_built = False
 
         self.additional_required_files = []
 
+        self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
+
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. """
-        quad = self.get_deployquadruplet_for_config()
-        return "-".join(quad.split("-")[1:])
+        quin = self.get_deployquintuplet_for_config()
+        return "-".join(quin.split("-")[2:])
 
-    def get_deployquadruplet_for_config(self) -> str:
-        """ Get the deployquadruplet for this configuration. This memoizes the request
+    @classmethod
+    def get_driver_tar_filename(cls) -> str:
+        """ Get the name of the tarball inside the sim_slot_X directory on the run host. """
+        return "driver-bundle.tar.gz"
+
+    @classmethod
+    def get_xclbin_filename(cls) -> str:
+        """ Get the name of the xclbin inside the sim_slot_X directory on the run host. """
+        return "bitstream.xclbin"
+
+    @classmethod
+    def get_bitstream_tar_filename(cls) -> str:
+        """ Get the name of the bit tar file inside the sim_slot_X directory on the run host. """
+        return "firesim.tar.gz"
+
+    def get_platform(self) -> str:
+        assert self.platform is not None
+        return self.platform
+
+    def get_driver_name_suffix(self) -> str:
+        return "-" + self.get_platform()
+
+    def get_driver_build_target(self) -> str:
+        return self.get_platform()
+
+    def set_platform(self, platform: str) -> None:
+        assert self.platform is None, f"platform is already set to {self.platform}"
+        self.platform = platform
+
+    def set_deploy_quintuplet(self, deploy_quintuplet: str) -> None:
+        assert self.deploy_quintuplet is None, f"deploy_quintuplet is already set to {self.deploy_quintuplet}"
+        self.deploy_quintuplet = deploy_quintuplet
+
+    def get_deployquintuplet_for_config(self) -> str:
+        """ Get the deployquintuplet for this configuration. This memoizes the request
         to the AWS AGFI API."""
-        if self.deploy_quadruplet is not None:
-            return self.deploy_quadruplet
-        rootLogger.debug("Setting deploytriplet by querying the AGFI's description.")
-        self.deploy_quadruplet = get_firesim_deploy_quadruplet_for_agfi(self.agfi)
-        return self.deploy_quadruplet
+        if self.deploy_quintuplet is not None:
+            return self.deploy_quintuplet
+
+        if self.get_platform() == "f1":
+            rootLogger.debug("Setting deployquintuplet by querying the AGFI's description.")
+            self.deploy_quintuplet = get_firesim_deploy_quintuplet_for_agfi(self.agfi)
+        elif self.get_platform() == "vitis":
+            assert False, "Must have the deploy_quintuplet_override defined"
+        else:
+            assert False, "Unable to obtain deploy_quintuplet"
+
+        return self.deploy_quintuplet
 
     def get_design_name(self) -> str:
         """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
-        return self.get_deployquadruplet_for_config().split("-")[1]
+        return self.get_deployquintuplet_for_config().split("-")[2]
 
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
-        return self.driver_name_prefix + self.get_design_name() + self.driver_name_suffix
+        return self.driver_name_prefix + self.get_design_name() + self.get_driver_name_suffix()
 
     def get_local_driver_dir(self) -> str:
         """ Get the relative local directory that contains the driver used to
         run this sim. """
-        return self.local_driver_base_dir + "/" + self.platform + "/" + self.get_deploytriplet_for_config() + "/"
+        return self.local_driver_base_dir + "/" + self.get_platform() + "/" + self.get_deployquintuplet_for_config() + "/"
 
     def get_local_driver_path(self) -> str:
         """ return relative local path of the driver used to run this sim. """
         return self.get_local_driver_dir() + self.get_local_driver_binaryname()
 
-    def local_triplet_path(self) -> Path:
-        """ return the local path of the triplet folder. the tarball that is created goes inside this folder """
-        triplet = self.get_deploytriplet_for_config()
-        return Path(get_deploy_dir()) / '../sim/output' / self.platform / triplet
+    def local_quintuplet_path(self) -> Path:
+        """ return the local path of the quintuplet folder. the tarball that is created goes inside this folder """
+        quintuplet = self.get_deployquintuplet_for_config()
+        return Path(get_deploy_dir()) / '../sim/output' / self.get_platform() / quintuplet
 
     def local_tarball_path(self, name: str) -> Path:
         """ return the local path of the tarball """
-        triplet = self.get_deploytriplet_for_config()
-        return self.local_triplet_path() / name
+        return self.local_quintuplet_path() / name
 
     def get_local_runtimeconf_binaryname(self) -> str:
         """ Get the name of the runtimeconf file. """
@@ -169,8 +329,8 @@ class RuntimeHWConfig:
         """ return relative local path of the runtime conf used to run this sim. """
         if self.customruntimeconfig is None:
             return None
-        my_deploytriplet = self.get_deploytriplet_for_config()
-        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + self.platform + "/" + my_deploytriplet + "/"
+        quintuplet = self.get_deployquintuplet_for_config()
+        drivers_software_base = LOCAL_DRIVERS_GENERATED_SRC + "/" + self.get_platform() + "/" + quintuplet + "/"
         return CUSTOM_RUNTIMECONFS_BASE + self.customruntimeconfig
 
     def get_additional_required_sim_files(self) -> List[Tuple[str, str]]:
@@ -192,8 +352,9 @@ class RuntimeHWConfig:
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            extra_plusargs: str = "",
-            extra_args: str = "") -> str:
+            fpga_physical_selection: Optional[str],
+            extra_plusargs: str,
+            extra_args: str) -> str:
         """ return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
         in a runtimehwconfig. TODO: maybe runtimehwconfig should be renamed to
@@ -240,11 +401,14 @@ class RuntimeHWConfig:
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
         screen_name = "fsim{}".format(slotid)
-        run_device_placement = "+slotid={}".format(slotid)
+
+        if fpga_physical_selection is None:
+            fpga_physical_selection = str(slotid)
+        run_device_placement = "+slotid={}".format(fpga_physical_selection)
 
         if self.platform == "vitis":
             assert self.xclbin is not None
-            vitis_bit = f"+binary_file={VitisInstanceDeployManager.get_xclbin_filename()}"
+            vitis_bit = f"+binary_file={self.get_xclbin_filename()}"
         else:
             vitis_bit = ""
 
@@ -286,20 +450,69 @@ class RuntimeHWConfig:
             rootLogger.info(f"""You can also re-run '{cmd}' in the '{dir}' directory to debug this error.""")
             sys.exit(1)
 
+    def fetch_all_URI(self, dir: str) -> None:
+        """ Downloads all URI. Local filenames use a hash which will be re-calculated later. Duplicate downloads
+        are skipped via an exists() check on the filesystem. """
+        for container in self.uri_list:
+            container.local_pre_download(dir, self)
+
+    def get_local_uri_paths(self, dir: str) -> list[Tuple[str, str]]:
+        """ Get all paths of local URIs that were previously downloaded. """
+
+        ret = list()
+        for container in self.uri_list:
+            maybe_file = container.get_rsync_path(dir, self)
+            if maybe_file is not None:
+                ret.append(maybe_file)
+        return ret
+
+    def resolve_hwcfg_values(self, dir: str) -> None:
+        # must be done after fetch_all_URIs
+        # based on the platform, read the URI, fill out values
+
+        if self.platform == "f1" or self.platform == "vitis":
+            return
+        else: # bitstream_tar platforms
+            for container in self.uri_list:
+                both = container._choose_path(dir, self)
+
+                # do nothing if there isn't a URI
+                if both is None:
+                    uri = self.bitstream_tar
+                    destination = self.bitstream_tar
+                else:
+                    (uri, destination) = both
+
+                if uri == self.bitstream_tar and uri is not None:
+                    # unpack destination value
+                    temp_dir = f"{dir}/{URIContainer.hashed_name(uri)}-dir"
+                    local(f"mkdir -p {temp_dir}")
+                    local(f"tar xvf {destination} -C {temp_dir}")
+
+                    # read string from metadata
+                    cap = local(f"cat {temp_dir}/*/metadata", capture=True)
+                    metadata = firesim_description_to_tags(cap)
+
+                    self.set_platform(metadata['firesim-deployquintuplet'].split("-")[0])
+                    self.set_deploy_quintuplet(metadata['firesim-deployquintuplet'])
+
+                    break
+
     def build_sim_driver(self) -> None:
         """ Build driver for running simulation """
         if self.driver_built:
             # we already built the driver at some point
             return
         # TODO there is a duplicate of this in runtools
-        quadruplet_pieces = self.get_deployquadruplet_for_config().split("-")
+        quintuplet_pieces = self.get_deployquintuplet_for_config().split("-")
 
-        target_project = quadruplet_pieces[0]
-        design = quadruplet_pieces[1]
-        target_config = quadruplet_pieces[2]
-        platform_config = quadruplet_pieces[3]
+        platform = quintuplet_pieces[0]
+        target_project = quintuplet_pieces[1]
+        design = quintuplet_pieces[2]
+        target_config = quintuplet_pieces[3]
+        platform_config = quintuplet_pieces[4]
 
-        rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deployquadruplet_for_config())}")
+        rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deployquintuplet_for_config())}")
 
         with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}/../'), \
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
@@ -307,7 +520,7 @@ class RuntimeHWConfig:
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = f"make TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} PLATFORM={self.platform} {self.driver_build_target}"
+            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)
             self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 
@@ -342,10 +555,10 @@ class RuntimeHWConfig:
                     self.handle_failure(results, 'local rsync', get_deploy_dir(), cmd)
 
             # This must be taken outside of a cd context
-            cmd = f"mkdir -p {self.local_triplet_path()}"
+            cmd = f"mkdir -p {self.local_quintuplet_path()}"
             results = run(cmd)
             self.handle_failure(results, 'local mkdir', builddir, cmd)
-            absolute_tarball_path = self.local_triplet_path() / tarball_name
+            absolute_tarball_path = self.local_quintuplet_path() / tarball_name
 
             with InfoStreamLogger('stdout'), prefix(f'cd {builddir}'):
                 findcmd = 'find . -mindepth 1 -maxdepth 1 -printf "%P\n"'
@@ -363,7 +576,7 @@ class RuntimeHWConfig:
             self.tarball_built = True
 
     def __str__(self) -> str:
-        return """RuntimeHWConfig: {}\nDeployQuadruplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quadruplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
+        return """RuntimeHWConfig: {}\nDeployQuintuplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quintuplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
 
 
 
@@ -379,27 +592,27 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.agfi = None
         self.xclbin = None
+        self.bitstream_tar = None
         self.driver_tar = None
         self.tarball_built = False
 
-        self.deploy_quadruplet = build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
+        self.uri_list = []
+
+        self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf
         self.driver_built = False
         self.metasim_host_simulator = default_metasim_host_sim
 
+        # currently only f1 metasims supported
         self.platform = "f1"
         self.driver_name_prefix = ""
-        self.driver_name_suffix = ""
         if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
             self.driver_name_prefix = "V"
-        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
-            self.driver_name_suffix = "-debug"
 
         self.local_driver_base_dir = LOCAL_DRIVERS_GENERATED_SRC
 
-        self.driver_build_target = self.metasim_host_simulator
         self.driver_type_message = "Metasim"
 
         self.metasimulation_only_plusargs = metasimulation_only_plusargs
@@ -409,6 +622,15 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         if self.metasim_host_simulator in ["vcs", "vcs-debug"]:
             self.additional_required_files.append((self.get_local_driver_path() + ".daidir", ""))
+
+    def get_driver_name_suffix(self) -> str:
+        driver_name_suffix = ""
+        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
+            driver_name_suffix = "-debug"
+        return driver_name_suffix
+
+    def get_driver_build_target(self) -> str:
+        return self.metasim_host_simulator
 
     def get_boot_simulation_command(self,
             slotid: int,
@@ -424,8 +646,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            extra_plusargs: str = "",
-            extra_args: str = "") -> str:
+            fpga_physical_selection: Optional[str],
+            extra_plusargs: str,
+            extra_args: str) -> str:
         """ return the command used to boot the meta simulation. """
         full_extra_plusargs = " " + self.metasimulation_only_plusargs + " " + extra_plusargs
         if self.metasim_host_simulator in ['vcs', 'vcs-debug']:
@@ -448,6 +671,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config,
             synthprint_config,
             sudo,
+            fpga_physical_selection,
             full_extra_plusargs,
             full_extra_args)
 

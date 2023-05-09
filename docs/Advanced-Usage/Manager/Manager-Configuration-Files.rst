@@ -6,7 +6,7 @@ Manager Configuration Files
 This page contains a centralized reference for all of the configuration options
 in ``config_runtime.yaml``, ``config_build.yaml``, ``config_build_farm.yaml``,
 ``config_build_recipes.yaml``, and ``config_hwdb.yaml``. It also contains
-references for all build and run farm recipes (in ``deploy/build-farm-recipes/`` and ``deploy/run-farm-recipes/``).
+references for all build and run farm recipes (in :gh-file-ref:`deploy/build-farm-recipes` and :gh-file-ref:`deploy/run-farm-recipes`).
 
 .. _config-runtime:
 
@@ -306,7 +306,7 @@ for a particular call to the ``buildbitstream`` command (see
 example, if we want to run the builds named ``awesome_firesim_config`` and ``quad_core_awesome_firesim_config``, we would
 write:
 
-::
+.. code-block:: yaml
 
     builds_to_run:
         - awesome_firesim_config
@@ -323,17 +323,17 @@ users specified in the next (``share_with_accounts``) section. In this section,
 you should specify the section title (i.e. the name you made up) for a hardware
 configuration in ``config_hwdb.yaml``. For example, to share the hardware config:
 
-::
+.. code-block:: yaml
 
     firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
         # this is a comment that describes my favorite configuration!
         agfi: agfi-0a6449b5894e96e53
-        deploy_quadruplet_override: null
+        deploy_quintuplet_override: null
         custom_runtime_config: null
 
 you would use:
 
-::
+.. code-block:: yaml
 
     agfis_to_share:
         - firesim_rocket_quadcore_nic_l2_llc4mb_ddr3
@@ -392,7 +392,7 @@ Targets<generating-different-targets>`).
 This specifies parameters to pass to the compiler (Golden Gate). Notably,
 PLATFORM_CONFIG can be used to enable debugging tools like assertion synthesis,
 and resource optimizations like instance multithreading.  Critically, it also
-calls out the host-platform (e.g., F1 or Vitis) to compile against: this
+calls out the host-platform (e.g., F1) to compile against: this
 defines the widths of internal simulation interfaces and specifies resource
 limits (e.g., how much DRAM is available on the platform).
 
@@ -413,7 +413,7 @@ Specifies the host FPGA frequency for a bitstream build.
 
 Specifies a pre-canned set of strategies and directives to pass to the
 bitstream build. Note, these are implemented differently on different host
-platforms, but try to optimize for the same things. Strategies supported across both Vitis and EC2 F1 include:
+platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx Alveo U250/U280, and EC2 F1 include:
 
  - ``TIMING``: Optimize for improved fmax.
  - ``AREA``: Optimize for reduced resource utilization.
@@ -430,11 +430,18 @@ Setting ``TARGET_PROJECT`` is required for building the MIDAS examples
 (``TARGET_PROJECT: midasexamples``) with the manager, or for building a
 user-provided target project.
 
-``deploy_quadruplet``
+``PLATFORM`` `(Optional)`
+"""""""""""""""""""""""""""""""
+
+This specifies the platform for which the target will be built for (this is described
+in greater detail :ref:`here<generating-different-targets>`).  If
+``PLATFORM`` is undefined the manager will default to ``f1``.
+
+``deploy_quintuplet``
 """"""""""""""""""""""""""
 
-This allows you to override the ``deployquadruplet`` stored with the AGFI.
-Otherwise, the ``TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
+This allows you to override the ``deployquintuplet`` stored with the AGFI.
+Otherwise, the ``PLATFORM``/``TARGET_PROJECT``/``DESIGN``/``TARGET_CONFIG``/``PLATFORM_CONFIG`` you specify
 above will be used. See the AGFI Tagging section for more details. Most likely,
 you should leave this set to ``null``. This is usually only used if you have
 proprietary RTL that you bake into an FPGA image, but don't want to share with
@@ -490,12 +497,12 @@ Here is a sample of this configuration file:
 
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
-configurations, defined in the section header, an handle to a bitstream (an AGFI or ``xclbin`` path), which represents the
-FPGA image, a custom runtime config, if one is needed, and a deploy quadruplet
+configurations, defined in the section header, an handle to a bitstream (i.e. an AGFI or ``xclbin`` path), which represents the
+FPGA image, a custom runtime config, if one is needed, and a deploy quintuplet
 override if one is necessary.
 
 When you build a new bitstream, you should put the default version of it in this
-file so that it can be referenced from your other configuration files (the AGFI ID or ``xclbin`` path).
+file so that it can be referenced from your other configuration files (i.e. the AGFI ID or ``xclbin`` path).
 
 The following is an example section from this file - you can add as many of
 these as necessary:
@@ -526,11 +533,18 @@ Indicates where the bitstream (FPGA Image) is located, may be one of:
   * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
   * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
-``deploy_quadruplet_override``
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+``bitstream_tar``
+"""""""""""""""""
+
+Indicates where the bitstream (FPGA Image) and metadata associated with it is located, may be one of:
+  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
+  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
+
+``deploy_quintuplet_override``
+""""""""""""""""""""""""""""""
 
 This is an advanced feature - under normal conditions, you should leave this set to ``null``, so that the
-manager uses the configuration quadruplet that is automatically stored with the
+manager uses the configuration quintuplet that is automatically stored with the
 bitstream metadata at build time. Advanced users can set this to a different
 value to build and use a different driver when deploying simulations. Since
 the driver depends on logic now hardwired into the
@@ -572,7 +586,7 @@ Add more hardware config sections, like ``NAME_GOES_HERE_2``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can add as many of these entries to ``config_hwdb.yaml`` as you want, following the format
-discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_quadruplet_override``, and ``custom_runtime_config``).
+discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_quintuplet_override``, and ``custom_runtime_config``).
 
 .. _run-farm-recipe:
 
@@ -738,7 +752,7 @@ simulations across all run farm hosts.
 For example, this class manages how to flash FPGAs with bitstreams, how to copy back results, and how to check if a simulation is running.
 By default, deploy platform classes can be found in :gh-file-ref:`deploy/runtools/run_farm_deploy_managers.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-There are two default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs and Vitis FPGAs, ``EC2InstanceDeployManager`` and ``VitisInstanceDeployManager``, respectively.
+There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx Alveo U250/U280 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAlveo{U250,U280}InstanceDeployManager``, respectively.
 For example, to use the ``EC2InstanceDeployManager`` deploy platform class, you would write ``default_platform: EC2InstanceDeployManager``.
 
 ``default_simulation_dir``
@@ -927,13 +941,23 @@ When enabled, this appends the current users AWS user ID and region to the ``s3_
 ``vitis.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This bit builder recipe configures a build farm host to build an Vitis U250 (FPGA bitstream called an ``xclbin``).
+This bit builder recipe configures a build farm host to build an Vitis bitstream (FPGA bitstream called an ``xclbin``).
 
 ``device``
 """"""""""""""""""""""""""
-This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1``.
+This specifies a Vitis platform to compile against, for example: ``xilinx_u250_gen3x16_xdma_3_1_202020_1`` when targeting a Vitis-enabled Alveo U250 FPGA.
 
 Here is an example of this configuration file:
 
 .. literalinclude:: /../deploy/bit-builder-recipes/vitis.yaml
    :language: yaml
+
+``xilinx_alveo_u250.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U250 bitstream.
+
+``xilinx_alveo_u280.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U280 bitstream.

@@ -13,7 +13,7 @@ def firesim_input(prompt: object = None) -> str:
     Log the entered text as DEBUG so that the log contains it.
     Don't pass the prompt to builtins.input() because we don't need StreamLogger to also
     be trying to log the prompt.
-    
+
     See 'streamlogger.py' and it's use at the end of 'firesim.py'
     """
 
@@ -35,7 +35,7 @@ def downloadURI(uri: str, local_dest_path: str, tries: int = 4) -> None:
         uri: uri of an object to be fetched
         local_dest_path: path on the local file system to store the uri object
         tries: The number of times to try the download. A 1 second sleep will occur after each failure.
-    """    
+    """
 
     # TODO consider using fsspec
     # filecache https://filesystem-spec.readthedocs.io/en/latest/features.html#caching-files-locally

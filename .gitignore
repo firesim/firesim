@@ -10,3 +10,6 @@ build
 scala-doc-env.sh
 *.swp
 /.conda-env
+.metals
+vivado*.log
+vivado*.jou

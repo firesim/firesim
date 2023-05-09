@@ -41,13 +41,13 @@ provided for the cores' register files, which are the most FPGA-hostile memories
 Next, with these annotations in place, enabling the optimization requires mixing in the ``MCRams``
 class to the platform configuration, as shown in the following example build recipe:
 
-::
+.. code-block:: yaml
 
     firesim-boom-mem-opt:
         DESIGN: FireSim
         TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_FireSimLargeBoomConfig
         PLATFORM_CONFIG: MCRams_BaseF1Config
-        deploy_quadruplet: null
+        deploy_quintuplet: null
 
 
 Multi-Threading of Repeated Instances
@@ -65,13 +65,13 @@ pre-annotated for both Rocket- and BOOM-based systems. To enable this tile multi
 necessary to mix in the ``MTModels`` class to the platform configuration, as shown in the following
 example build recipe:
 
-::
+.. code-block:: yaml
 
     firesim-threaded-cores-opt:
         DESIGN: FireSim
         TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig
         PLATFORM_CONFIG: MTModels_BaseF1Config
-        deploy_quadruplet: null
+        deploy_quintuplet: null
 
 This simulator configuration will rely on a single threaded model to simulate the four Rocket tiles.
 However, it will still produce bit- and cycle-identical results to any other platform configuration
@@ -83,10 +83,10 @@ reduced throughput relative to unoptimized FireSim simulators, very large SoCs t
 never fit on a single FPGA can be simulated without the cost and performance drawbacks of
 partitioning.
 
-::
+.. code-block:: yaml
 
     firesim-optimized-big-soc:
         DESIGN: FireSim
         TARGET_CONFIG: MyMultiCoreBoomConfig
         PLATFORM_CONFIG: MTModels_MCRams_BaseF1Config
-        deploy_quadruplet: null
+        deploy_quintuplet: null
