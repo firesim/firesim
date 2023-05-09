@@ -27,12 +27,12 @@ public:
   static char KIND;
 
   tsibridge_t(simif_t &simif,
-           loadmem_t &loadmem_widget,
-           const TSIBRIDGEMODULE_struct &mmio_addrs,
-           int tsino,
-           const std::vector<std::string> &args,
-           bool has_mem,
-           int64_t mem_host_offset);
+              loadmem_t &loadmem_widget,
+              const TSIBRIDGEMODULE_struct &mmio_addrs,
+              int tsino,
+              const std::vector<std::string> &args,
+              bool has_mem,
+              int64_t mem_host_offset);
   ~tsibridge_t();
   virtual void init();
   virtual void tick();

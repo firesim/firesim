@@ -11,12 +11,12 @@
 char tsibridge_t::KIND;
 
 tsibridge_t::tsibridge_t(simif_t &simif,
-                   loadmem_t &loadmem_widget,
-                   const TSIBRIDGEMODULE_struct &mmio_addrs,
-                   int tsino,
-                   const std::vector<std::string> &args,
-                   bool has_mem,
-                   int64_t mem_host_offset)
+                         loadmem_t &loadmem_widget,
+                         const TSIBRIDGEMODULE_struct &mmio_addrs,
+                         int tsino,
+                         const std::vector<std::string> &args,
+                         bool has_mem,
+                         int64_t mem_host_offset)
     : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
       loadmem_widget(loadmem_widget), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
