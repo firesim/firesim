@@ -85,6 +85,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def enumerate_fpgas(self, uridir: str) -> None:
+        """Run platform specific implementation of how to enumerate FPGAs for FireSim."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def terminate_instance(self) -> None:
         """Run platform specific implementation of how to terminate host
         machines.
@@ -658,6 +663,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
+    def enumerate_fpgas(self, uridir: str) -> None:
+        """ FPGAs are enumerated already with F1 """
+        return
+
     def terminate_instance(self) -> None:
         self.instance_logger("Terminating instance", debug=True)
         self.parent_node.terminate_self()
@@ -717,6 +726,10 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
+    def enumerate_fpgas(self, uridir: str) -> None:
+        """ FPGAs are enumerated already with Vitis """
+        return
+
     def terminate_instance(self) -> None:
         """ VitisInstanceDeployManager machines cannot be terminated. """
         return
@@ -724,7 +737,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx Alveo-enabled instance """
     PLATFORM_NAME: Optional[str]
-    BOARD_NAME: Optional[str]
+    JSON_DB: str = "/opt/firesim-db.json"
 
     @classmethod
     def sim_command_requires_sudo(cls) -> bool:
@@ -734,33 +747,32 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = None
-        self.BOARD_NAME = None
-
-    def unload_xdma(self) -> None:
-        if self.instance_assigned_simulations():
-            self.instance_logger("Unloading XDMA Driver Kernel Module.")
-
-            with warn_only():
-                remote_kmsg("removing_xdma_start")
-                run('sudo rmmod xdma')
-                remote_kmsg("removing_xdma_end")
 
     def load_xdma(self) -> None:
         """ load the xdma kernel module. """
         if self.instance_assigned_simulations():
-            # unload first
-            self.unload_xdma()
-            # load xdma
-            self.instance_logger("Loading XDMA Driver Kernel Module.")
-            # must be installed to this path on sim. machine
-            run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
+            # load xdma if unloaded
+            if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
+                self.instance_logger("Loading XDMA Driver Kernel Module.")
+                # must be installed to this path on sim. machine
+                run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
+            else:
+                self.instance_logger("XDMA Driver Kernel Module already loaded.")
+
+    def slot_to_bdf(self, slotno: int) -> str:
+        # get fpga information from db
+        self.instance_logger(f"""Determine BDF for {slotno}""")
+        collect = run(f'cat {self.JSON_DB}')
+        db = json.loads(collect)
+        assert slotno < len(db), f"Less FPGAs available than slots ({slotno} >= {len(db)})"
+        return db[slotno]['bdf']
 
     def flash_fpgas(self) -> None:
         if self.instance_assigned_simulations():
             self.instance_logger("""Flash all FPGA Slots.""")
 
             for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
-                serv = self.parent_node.sim_slots[slotno]
+                serv = firesimservernode
                 hwcfg = serv.get_resolved_server_hardware_config()
 
                 bitstream_tar = hwcfg.get_bitstream_tar_filename()
@@ -782,13 +794,10 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
 
-                self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i serial.*xilinx')
-                bdfs = [ "0000:" + i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-                bdf = bdfs[slotno]
+                bdf = self.slot_to_bdf(slotno)
 
-                self.instance_logger(f"""Flashing FPGA Slot: {slotno} with bit: {bit}""")
-                run(f"""EXTENDED_DEVICE_BDF1={bdf} {remote_sim_dir}/scripts/program_fpga.sh {bit} {self.BOARD_NAME}""")
+                self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
+                run(f"""{remote_sim_dir}/scripts/program_fpga.py --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -813,6 +822,70 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
+    def create_fpga_database(self, uridir: str) -> None:
+        self.instance_logger(f"""Creating FPGA database""")
+
+        remote_home_dir = self.parent_node.get_sim_dir()
+        remote_sim_dir = f"{remote_home_dir}/enumerate_fpgas_staging"
+        remote_sim_rsync_dir = f"{remote_sim_dir}/rsyncdir/"
+        run(f"mkdir -p {remote_sim_rsync_dir}")
+
+        # only use the collateral from 1 driver (no need to copy all things)
+        assert len(self.parent_node.sim_slots) > 0
+        serv = self.parent_node.sim_slots[0]
+
+        files_to_copy = serv.get_required_files_local_paths()
+
+        # Append required URI paths to the end of this list
+        hwcfg = serv.get_resolved_server_hardware_config()
+        files_to_copy.extend(hwcfg.get_local_uri_paths(uridir))
+
+        for local_path, remote_path in files_to_copy:
+            # -z --inplace
+            rsync_cap = rsync_project(local_dir=local_path, remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
+                        ssh_opts="-o StrictHostKeyChecking=no", extra_opts="-L", capture=True)
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+
+        run(f"cp -r {remote_sim_rsync_dir}/* {remote_sim_dir}/", shell=True)
+
+        rsync_cap = rsync_project(
+            local_dir=f'../platforms/{self.PLATFORM_NAME}/scripts',
+            remote_dir=remote_sim_dir + "/",
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-L -p",
+            capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        bitstream_tar = hwcfg.get_bitstream_tar_filename()
+        bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
+        bitstream = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+
+        with cd(remote_sim_dir):
+            run(f"tar -xf {hwcfg.get_driver_tar_filename()}")
+
+        # at this point the tar file is in the sim slot
+        run(f"rm -rf {bitstream_tar_unpack_dir}")
+        run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
+
+        driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
+
+        with cd(remote_sim_dir):
+            run(f"""./scripts/generate-fpga-db.py --working-bitstream {bitstream} --driver {driver} --out-db-json {json}""")
+
+    def enumerate_fpgas(self, uridir: str) -> None:
+        """ Handle fpga setup for this platform. """
+
+        if self.instance_assigned_simulations():
+            # This is a sim-host node.
+
+            # load xdma driver
+            self.load_xdma()
+
+            # run the passes
+            self.create_fpga_database(uridir)
+
     def terminate_instance(self) -> None:
         """ XilinxAlveoInstanceDeployManager machines cannot be terminated. """
         return
@@ -826,10 +899,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
-            self.instance_logger(f"""Determine BDF for {slotno}""")
-            collect = run('lspci | grep -i serial.*xilinx')
-            bdfs = [ i[:2] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-            bdf = bdfs[slotno]
+            bdf = self.slot_to_bdf(slotno)
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
@@ -844,10 +914,8 @@ class XilinxAlveoU250InstanceDeployManager(XilinxAlveoInstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_alveo_u250"
-        self.BOARD_NAME = "au250"
 
 class XilinxAlveoU280InstanceDeployManager(XilinxAlveoInstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_alveo_u280"
-        self.BOARD_NAME = "au280"

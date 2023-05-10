@@ -27,6 +27,12 @@ simulation_t::simulation_t(widget_registry_t &registry,
     if (arg.find("+zero-out-dram") == 0) {
       do_zero_out_dram = true;
     }
+    if (arg.find("+check-fingerprint") == 0) {
+      check_fingerprint_only = true;
+    }
+    if (arg.find("+write-fingerprint=") == 0) {
+      write_fingerprint_only = atoi(arg.c_str() + 19);
+    }
   }
 
   if (fastloadmem)
@@ -47,9 +53,10 @@ void simulation_t::record_end_times() {
 void simulation_t::print_simulation_performance_summary() {
   // Must call record_start_times and record_end_times before invoking this
   // function
-  assert(start_hcycle != -1 && end_hcycle != 0 && "simulation not executed");
+  assert(start_hcycle.has_value() && end_hcycle.has_value() &&
+         "simulation not executed");
 
-  const uint64_t hcycles = end_hcycle - start_hcycle;
+  const uint64_t hcycles = *end_hcycle - *start_hcycle;
   const double sim_time = diff_secs(end_time, start_time);
   const double sim_speed = ((double)end_tcycle) / (sim_time * 1000.0);
   const double measured_host_frequency =
@@ -94,6 +101,30 @@ void simulation_t::simulation_finish() {
 
 int simulation_t::execute_simulation_flow() {
   wait_for_init();
+
+  // following fingerprint logic uses 'exit' instead of 'return' to avoid
+  // issues w/ deconstructors not having initialized values
+  auto &master = registry.get_widget<master_t>();
+  if (check_fingerprint_only || write_fingerprint_only.has_value()) {
+    if (check_fingerprint_only && write_fingerprint_only.has_value()) {
+      fprintf(stderr, "Unable to both check/write FireSim fingerprint\n");
+      exit(EXIT_FAILURE);
+    }
+
+    if (check_fingerprint_only && master.check_fingerprint()) {
+      fprintf(stderr, "Invalid FireSim fingerprint\n");
+      exit(EXIT_FAILURE);
+    }
+    if (write_fingerprint_only.has_value()) {
+      master.write_fingerprint(write_fingerprint_only.value());
+    }
+    exit(EXIT_SUCCESS);
+  } else {
+    if (master.check_fingerprint()) {
+      fprintf(stderr, "Invalid FireSim fingerprint\n");
+      exit(EXIT_FAILURE);
+    }
+  }
 
   if (auto *stream = registry.get_stream_engine()) {
     stream->init();

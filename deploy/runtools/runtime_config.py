@@ -918,6 +918,11 @@ class RuntimeConfig:
         """ directly called by top-level builddriver command. """
         self.firesim_topology_with_passes.build_driver_passes()
 
+    def enumerate_fpgas(self) -> None:
+        """ directly called by top-level enumeratefpgas command. """
+        use_mock_instances_for_testing = False
+        self.firesim_topology_with_passes.enumerate_fpgas_passes(use_mock_instances_for_testing)
+
     def boot(self) -> None:
         """ directly called by top-level boot command. """
         use_mock_instances_for_testing = False

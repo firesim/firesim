@@ -18,6 +18,16 @@ class SimulationMaster(implicit p: Parameters) extends Widget()(p) {
     when (initDelay =/= 0.U) { initDelay := initDelay - 1.U }
     genRORegInit(initDelay === 0.U, "INIT_DONE", 0.U)
 
+    // add fingerprint to see if device is FireSim-enabled
+    val fingerprint = 0x46697265
+    val rFingerprint = RegInit(fingerprint.U(32.W))
+    genROReg(rFingerprint, "PRESENCE_READ")
+
+    val wFingerprint = genWORegInit(Wire(UInt(32.W)), "PRESENCE_WRITE", fingerprint.U(32.W))
+    when (wFingerprint =/= rFingerprint) {
+      rFingerprint := wFingerprint
+    }
+
     genCRFile()
 
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {

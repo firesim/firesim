@@ -141,27 +141,41 @@ module emul(
 
 `ifndef VERILATOR
 `ifdef DEBUG
-  reg [2047:0] vcdplusfile = 2048'h0;
+  reg [2047:0] waveformfile = 2048'h0;
   reg [63:0] dump_start = 64'h0;
   reg [63:0] dump_end = {64{1'b1}};
   reg [63:0] dump_cycles = 64'h0;
   reg [63:0] trace_count = 64'h0;
 
   initial begin
-    if ($value$plusargs("waveform=%s", vcdplusfile))
+    if ($value$plusargs("waveform=%s", waveformfile))
     begin
       $value$plusargs("dump-start=%d", dump_start);
       if ($value$plusargs("dump-cycles=%d", dump_cycles)) begin
         dump_end = dump_start + dump_cycles;
       end
 
-      $vcdplusfile(vcdplusfile);
+      `ifdef FSDB
+        $fsdbDumpfile(waveformfile);
+        $fsdbDumpvars("+all");
+      `else
+        $vcdplusfile(waveformfile);
+      `endif
+
       wait (trace_count >= dump_start) begin
-        $vcdpluson(0);
-        $vcdplusmemon(0);
+        `ifdef FSDB
+          $fsdbDumpon;
+        `else
+          $vcdpluson(0);
+          $vcdplusmemon(0);
+        `endif
       end
       wait ((trace_count > dump_end) || fin) begin
-        $vcdplusclose;
+        `ifdef FSDB
+          $fsdbDumpoff;
+        `else
+          $vcdplusclose;
+        `endif
       end
     end
   end

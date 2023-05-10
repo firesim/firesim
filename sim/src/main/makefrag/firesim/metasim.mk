@@ -44,28 +44,28 @@ sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
 
 run-verilator: $(verilator)
 	cd $(dir $<) && \
-	$(verilator) +permissive $(verilator_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
-	$(disasm) $(sim_binary_basename).out
+	$(verilator) +permissive $(verilator_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out </dev/null
 
 run-verilator-debug: $(verilator_debug)
 	cd $(dir $<) && \
-	$(verilator_debug) +permissive $(verilator_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
-	$(disasm) $(sim_binary_basename).out
+	$(verilator_debug) +permissive $(verilator_args) +waveform=$(sim_binary_basename).vcd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out </dev/null
 
 run-vcs: $(vcs)
 	cd $(dir $<) && \
-	$(vcs) +permissive $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
+	$(vcs) +permissive $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
 	$(disasm) $(sim_binary_basename).out
 
 run-vcs-debug: $(vcs_debug)
 	cd $(dir $<) && \
-	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) \
-	$(disasm) $(sim_binary_basename).out
+	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).fsdb $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out </dev/null
 
 .PHONY: run-xsim
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
-	+permissive-off $(abspath $(SIM_BINARY))
+	+permissive-off $(abspath $(SIM_BINARY)) </dev/null
 
 ############################################
 # Midas-Level Simulation Execution Recipes #
@@ -110,7 +110,12 @@ $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	./$(notdir $($(EMUL)_debug)) $< +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
-.PRECIOUS: $(OUTPUT_DIR)/%.vpd $(OUTPUT_DIR)/%.out $(OUTPUT_DIR)/%.run
+$(OUTPUT_DIR)/%.fsdb: $(OUTPUT_DIR)/% $(EMUL)-debug
+	cd $(dir $($(EMUL)_debug)) && \
+	./$(notdir $($(EMUL)_debug)) $< +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	$(disasm) $(patsubst %.fsdb,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
+
+.PRECIOUS: $(OUTPUT_DIR)/%.fsdb $(OUTPUT_DIR)/%.vpd $(OUTPUT_DIR)/%.out $(OUTPUT_DIR)/%.run
 
 # TraceGen rules
 

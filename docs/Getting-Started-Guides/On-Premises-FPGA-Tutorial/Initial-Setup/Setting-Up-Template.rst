@@ -158,4 +158,4 @@ To run it, do the following:
 It will create initial configuration files, which we will edit in later
 sections.
 
-Now you're ready to launch FireSim simulations! Hit Next to learn how to run single-node simulations.
+Hit Next to continue with the guide.
