@@ -11,7 +11,7 @@ Bridges enable:
    Here you instantiate bridges at the I/O boundary of your chip, to provide
    a simulation models of the environment your design is executing in.  For an
    FPGA-hosted model, see FASED memory timing models. For co-simulated models
-   see the UARTBridge, BlockDeviceBridge, and SerialBridge.
+   see the UARTBridge, BlockDeviceBridge, and TSIBridge.
 
 #. **Verification against a software golden model.** Attach an bridge (anywhere
    in your target RTL) to an interface you'd like to monitor, (e.g., a

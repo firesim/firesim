@@ -1,6 +1,6 @@
 // See LICENSE for license details
-#ifndef __SERIAL_H
-#define __SERIAL_H
+#ifndef __TSIBRIDGE_H
+#define __TSIBRIDGE_H
 
 #include "bridges/serial_data.h"
 #include "core/bridge_driver.h"
@@ -9,7 +9,7 @@ class loadmem_t;
 class firesim_tsi_t;
 class firesim_loadmem_t;
 
-struct SERIALBRIDGEMODULE_struct {
+struct TSIBRIDGEMODULE_struct {
   uint64_t in_bits;
   uint64_t in_valid;
   uint64_t in_ready;
@@ -21,26 +21,26 @@ struct SERIALBRIDGEMODULE_struct {
   uint64_t start;
 };
 
-class serial_t : public bridge_driver_t {
+class tsibridge_t : public bridge_driver_t {
 public:
   /// The identifier for the bridge type used for casts.
   static char KIND;
 
-  serial_t(simif_t &simif,
-           loadmem_t &loadmem_widget,
-           const SERIALBRIDGEMODULE_struct &mmio_addrs,
-           int serialno,
-           const std::vector<std::string> &args,
-           bool has_mem,
-           int64_t mem_host_offset);
-  ~serial_t();
+  tsibridge_t(simif_t &simif,
+              loadmem_t &loadmem_widget,
+              const TSIBRIDGEMODULE_struct &mmio_addrs,
+              int tsino,
+              const std::vector<std::string> &args,
+              bool has_mem,
+              int64_t mem_host_offset);
+  ~tsibridge_t();
   virtual void init();
   virtual void tick();
   virtual bool terminate();
   virtual int exit_code();
 
 private:
-  const SERIALBRIDGEMODULE_struct mmio_addrs;
+  const TSIBRIDGEMODULE_struct mmio_addrs;
   loadmem_t &loadmem_widget;
 
   firesim_tsi_t *fesvr;
@@ -63,7 +63,7 @@ private:
   // Helper functions to handoff fesvr requests to the loadmem unit
   void handle_loadmem_read(firesim_loadmem_t loadmem);
   void handle_loadmem_write(firesim_loadmem_t loadmem);
-  void serial_bypass_via_loadmem();
+  void tsi_bypass_via_loadmem();
 };
 
-#endif // __SERIAL_H
+#endif // __TSIBRIDGE_H

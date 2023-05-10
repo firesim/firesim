@@ -1,6 +1,6 @@
 // See LICENSE for license details
 
-#include "serial.h"
+#include "tsibridge.h"
 #include "bridges/loadmem.h"
 #include "core/simif.h"
 #include "fesvr/firesim_tsi.h"
@@ -8,20 +8,20 @@
 #include <cassert>
 #include <gmp.h>
 
-char serial_t::KIND;
+char tsibridge_t::KIND;
 
-serial_t::serial_t(simif_t &simif,
-                   loadmem_t &loadmem_widget,
-                   const SERIALBRIDGEMODULE_struct &mmio_addrs,
-                   int serialno,
-                   const std::vector<std::string> &args,
-                   bool has_mem,
-                   int64_t mem_host_offset)
+tsibridge_t::tsibridge_t(simif_t &simif,
+                         loadmem_t &loadmem_widget,
+                         const TSIBRIDGEMODULE_struct &mmio_addrs,
+                         int tsino,
+                         const std::vector<std::string> &args,
+                         bool has_mem,
+                         int64_t mem_host_offset)
     : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
       loadmem_widget(loadmem_widget), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
 
-  std::string num_equals = std::to_string(serialno) + std::string("=");
+  std::string num_equals = std::to_string(tsino) + std::string("=");
   std::string prog_arg = std::string("+prog") + num_equals;
   std::vector<std::string> args_vec;
   args_vec.push_back("firesim_tsi");
@@ -56,7 +56,7 @@ serial_t::serial_t(simif_t &simif,
   }
 
   // debug for command line arguments
-  printf("command line for program %d. argc=%d:\n", serialno, argc_count);
+  printf("command line for program %d. argc=%d:\n", tsino, argc_count);
   for (int i = 0; i < argc_count; i++) {
     printf("%s ", tsi_argv[i + 1]);
   }
@@ -65,7 +65,7 @@ serial_t::serial_t(simif_t &simif,
   tsi_argc = argc_count + 1;
 }
 
-serial_t::~serial_t() {
+tsibridge_t::~tsibridge_t() {
   delete fesvr;
   if (tsi_argv) {
     for (int i = 0; i < tsi_argc; ++i) {
@@ -75,7 +75,7 @@ serial_t::~serial_t() {
   }
 }
 
-void serial_t::init() {
+void tsibridge_t::init() {
   // `ucontext` used by tsi cannot be created in one thread and resumed in
   // another. To ensure that the tsi process is on the correct thread, it is
   // built here, as the bridge constructor may be invoked from a thread other
@@ -85,23 +85,23 @@ void serial_t::init() {
   go();
 }
 
-void serial_t::go() { write(mmio_addrs.start, 1); }
+void tsibridge_t::go() { write(mmio_addrs.start, 1); }
 
-void serial_t::send() {
+void tsibridge_t::send() {
   while (fesvr->data_available() && read(mmio_addrs.in_ready)) {
     write(mmio_addrs.in_bits, fesvr->recv_word());
     write(mmio_addrs.in_valid, 1);
   }
 }
 
-void serial_t::recv() {
+void tsibridge_t::recv() {
   while (read(mmio_addrs.out_valid)) {
     fesvr->send_word(read(mmio_addrs.out_bits));
     write(mmio_addrs.out_ready, 1);
   }
 }
 
-void serial_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
+void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   assert(loadmem.size % sizeof(uint32_t) == 0);
   assert(has_mem);
   // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
@@ -133,7 +133,7 @@ void serial_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   fesvr->tick();
 }
 
-void serial_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
+void tsibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
   assert(loadmem.size <= 1024);
   assert(has_mem);
   static char buf[1024];
@@ -152,7 +152,7 @@ void serial_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
   mpz_clear(data);
 }
 
-void serial_t::serial_bypass_via_loadmem() {
+void tsibridge_t::tsi_bypass_via_loadmem() {
   firesim_loadmem_t loadmem;
   while (fesvr->has_loadmem_reqs()) {
     // Check for reads first as they preceed a narrow write;
@@ -163,7 +163,7 @@ void serial_t::serial_bypass_via_loadmem() {
   }
 }
 
-void serial_t::tick() {
+void tsibridge_t::tick() {
   // First, check to see step_size tokens have been enqueued
   if (!read(mmio_addrs.done))
     return;
@@ -174,7 +174,7 @@ void serial_t::tick() {
     fesvr->tick();
   }
   if (fesvr->has_loadmem_reqs()) {
-    serial_bypass_via_loadmem();
+    tsi_bypass_via_loadmem();
   }
   if (!terminate()) {
     // Write all the requests to the target
@@ -183,5 +183,5 @@ void serial_t::tick() {
   }
 }
 
-bool serial_t::terminate() { return fesvr->done(); }
-int serial_t::exit_code() { return fesvr->exit_code(); }
+bool tsibridge_t::terminate() { return fesvr->done(); }
+int tsibridge_t::exit_code() { return fesvr->exit_code(); }
