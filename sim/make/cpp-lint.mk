@@ -14,7 +14,7 @@ clang_tidy_files := $(shell \
 		| grep -v simif_ \
 		| grep -v tracerv \
 		| grep -v dromajo \
-		| grep -v serial \
+		| grep -v tsibridge \
 		| grep -v fesvr \
 		| grep -v generated-src \
 		| grep -v output \
@@ -26,7 +26,7 @@ clang_tidy_flags :=\
 	-I$(firesim_base_dir)/firesim-lib/src/main/cc \
 	-I$(firesim_base_dir)/src/main/cc/midasexamples \
 	-I$(testchipip_csrc_dir) \
-	-std=c++17 \
+	-std=c++20 \
 	-x c++
 
 # Checks the files in parallel without applying fixes.

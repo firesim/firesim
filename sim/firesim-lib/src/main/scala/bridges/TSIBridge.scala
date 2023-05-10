@@ -7,53 +7,52 @@ import chisel3._
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 
-import testchipip.{SerialIO, SerialAdapter}
+import testchipip.{TSIIO, TSI}
 
 /**
-  * Class which parameterizes the SerialBridge
+  * Class which parameterizes the TSIBridge
   *
   * memoryRegionNameOpt, if unset, indicates that firesim-fesvr should not attempt to write a payload into DRAM through the loadmem unit.
   * This is suitable for target designs which do not use the FASED DRAM model.
   * If a FASEDBridge for the backing AXI4 memory is present, then memoryRegionNameOpt should be set to the same memory region name which is passed
   * to the FASEDBridge. This enables fast payload loading in firesim-fesvr through the loadmem unit.
   */
-case class SerialBridgeParams(memoryRegionNameOpt: Option[String])
+case class TSIBridgeParams(memoryRegionNameOpt: Option[String])
 
-class SerialBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Bridge[HostPortIO[SerialBridgeTargetIO], SerialBridgeModule] {
-  val io = IO(new SerialBridgeTargetIO)
+class TSIBridge(memoryRegionNameOpt: Option[String]) extends BlackBox with Bridge[HostPortIO[TSIBridgeTargetIO], TSIBridgeModule] {
+  val io = IO(new TSIBridgeTargetIO)
   val bridgeIO = HostPort(io)
-  val constructorArg = Some(SerialBridgeParams(memoryRegionNameOpt))
+  val constructorArg = Some(TSIBridgeParams(memoryRegionNameOpt))
   generateAnnotations()
 }
 
-object SerialBridge {
-  def apply(clock: Clock, port: SerialIO, memoryRegionNameOpt: Option[String], reset: Bool)(implicit p: Parameters): SerialBridge = {
-    val ep = Module(new SerialBridge(memoryRegionNameOpt))
-    ep.io.serial <> port
+object TSIBridge {
+  def apply(clock: Clock, port: TSIIO, memoryRegionNameOpt: Option[String], reset: Bool)(implicit p: Parameters): TSIBridge = {
+    val ep = Module(new TSIBridge(memoryRegionNameOpt))
+    ep.io.tsi <> port
     ep.io.clock := clock
     ep.io.reset := reset
     ep
   }
 }
 
-class SerialBridgeTargetIO extends Bundle {
-  val serial = Flipped(new SerialIO(SerialAdapter.SERIAL_TSI_WIDTH))
+class TSIBridgeTargetIO extends Bundle {
+  val tsi = Flipped(new TSIIO)
   val reset = Input(Bool())
   val clock = Input(Clock())
 }
 
-class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Parameters)
-    extends BridgeModule[HostPortIO[SerialBridgeTargetIO]]()(p) {
+class TSIBridgeModule(tsiBridgeParams: TSIBridgeParams)(implicit p: Parameters)
+    extends BridgeModule[HostPortIO[TSIBridgeTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
-    val hPort = IO(HostPort(new SerialBridgeTargetIO))
+    val hPort = IO(HostPort(new TSIBridgeTargetIO))
 
-    val serialBits = SerialAdapter.SERIAL_TSI_WIDTH
-    val inBuf  = Module(new Queue(UInt(serialBits.W), 16))
-    val outBuf = Module(new Queue(UInt(serialBits.W), 16))
+    val inBuf  = Module(new Queue(UInt(TSI.WIDTH.W), 16))
+    val outBuf = Module(new Queue(UInt(TSI.WIDTH.W), 16))
     val tokensToEnqueue = RegInit(0.U(32.W))
 
-    val target = hPort.hBits.serial
+    val target = hPort.hBits.tsi
     val tFire = hPort.toHost.hValid && hPort.fromHost.hReady && tokensToEnqueue =/= 0.U
     val targetReset = tFire & hPort.hBits.reset
     inBuf.reset  := reset.asBool || targetReset
@@ -90,16 +89,16 @@ class SerialBridgeModule(serialBridgeParams: SerialBridgeParams)(implicit p: Par
     genCRFile()
 
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
-      val memoryRegionNameOpt = serialBridgeParams.memoryRegionNameOpt
+      val memoryRegionNameOpt = tsiBridgeParams.memoryRegionNameOpt
       val offsetConst = memoryRegionNameOpt.map(memoryRegions(_)).getOrElse(BigInt(0))
 
       genConstructor(
           base,
           sb,
-          "serial_t",
-          "serial",
+          "tsibridge_t",
+          "tsibridge",
           Seq(
-              CppBoolean(serialBridgeParams.memoryRegionNameOpt.isDefined),
+              CppBoolean(tsiBridgeParams.memoryRegionNameOpt.isDefined),
               UInt64(offsetConst)
           ),
           hasLoadMem = true

@@ -40,6 +40,18 @@ puts "HW device: $hw_device"
 
 open_hw_manager
 connect_hw_server -allow_non_jtag
+
+## by default vivado opens a default hw target
+#close_hw_target
+
+# note: helps view amount of fpgas
+get_hw_targets
+
+# TODO:
+#   when no FPGA is programmed
+#       can use id to index into get_hw_targets and program that specific FPGA
+#   when you notice a PCI-ID associated w/ the FPGA
+#       TODO: how do you determine the ID of the FPGA from the PCI-BDF
 open_hw_target
 current_hw_device [get_hw_devices $hw_device]
 refresh_hw_device -update_hw_probes false [lindex [get_hw_devices $hw_device] 0]

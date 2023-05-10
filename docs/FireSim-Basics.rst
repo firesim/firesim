@@ -125,6 +125,8 @@ Get Started
 FireSim supports many type of FPGAs and FPGA platforms!
 Click one of the following links to get started with your particular platform.
 
+.. warning:: If using a Xilinx Alveo U250 or U280, we recommend the FPGA-specific flows instead of the Xilinx Vitis flow.
+
 * :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/index`
 
 * :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U250-FPGAs`
