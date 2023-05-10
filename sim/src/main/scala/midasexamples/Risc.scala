@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import chisel3.util._
 
 class RiscDUT extends Module {

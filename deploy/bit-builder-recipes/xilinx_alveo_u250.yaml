@@ -1,0 +1,16 @@
+# Build-time bitbuilder design configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+###########
+# Schema:
+###########
+# # Class name of the bitbuilder type.
+# # This can be determined from `deploy/buildtools/bitbuilder.py`).
+# bitbuilder_type: <TYPE NAME>
+# args:
+#     # Bitbuilder arguments that are passed to the `BitBuilder`
+#     # object. Determined by looking at `_parse_args` function of class.
+#     <K/V pairs of args>
+
+bit_builder_type: XilinxAlveoU250BitBuilder
+args: null

@@ -104,13 +104,14 @@ def share_agfi_in_all_regions(agfi_id, useridlist):
         afi_id = get_afi_for_agfi(agfi_id, region)
         share_afi_with_users(afi_id, region, useridlist)
 
-def firesim_tags_to_description(buildtriplet, deploytriplet, commit):
+def firesim_tags_to_description(build_quintuplet, deploy_quintuplet, build_triplet, deploy_triplet, commit):
     """ Serialize the tags we want to set for storage in the AGFI description """
-    return """firesim-buildtriplet:{},firesim-deploytriplet:{},firesim-commit:{}""".format(buildtriplet,deploytriplet,commit)
+    # note: the serialized rep still includes "triplets" for future manager versions to be compatible with old agfis
+    return f"""firesim-buildquintuplet:{build_quintuplet},firesim-deployquintuplet:{deploy_quintuplet},firesim-buildtriplet:{build_triplet},firesim-deploytriplet:{deploy_triplet},firesim-commit:{commit}"""
 
 def firesim_description_to_tags(description):
     """ Deserialize the tags we want to read from the AGFI description string.
-    Return dictionary of keys/vals [buildtriplet, deploytriplet, commit]. """
+    Return dictionary of keys/vals [{build,deploy}quintuplet, {build,deploy}triplet, commit]. """
     returndict = dict()
     desc_split = description.split(",")
     for keypair in desc_split:
@@ -127,23 +128,26 @@ def get_firesim_tagval_for_afi(afi_id, tagkey):
         ]
     }
     result = depaginated_boto_query(client, 'describe_fpga_images', operation_params, 'FpgaImages')[0]['Description']
-    return firesim_description_to_tags(result)[tagkey]
+    return firesim_description_to_tags(result).get(tagkey)
 
 def get_firesim_tagval_for_agfi(agfi_id, tagkey):
     """ Given an agfi_id and tagkey, return the tagval. """
     afi_id = get_afi_for_agfi(agfi_id)
     return get_firesim_tagval_for_afi(afi_id, tagkey)
 
+def get_firesim_deploy_quintuplet_for_agfi(agfi_id):
+    """ Given an agfi_id, return the deploy_quintuplet. """
+    quin = get_firesim_tagval_for_agfi(agfi_id, 'firesim-deployquintuplet')
+    if quin is None:
+        # for old AGFIs that use the old "triplet" key
+        quin = get_firesim_tagval_for_agfi(agfi_id, 'firesim-deploytriplet')
+    if len(quin.split("-")) == 3:
+        # handle old AGFIs that only have triplet value:
+        return 'f1-firesim-' + quin
+    return quin
+
 ## Note that there are no set_firesim_tagval functions, because applying tags is
 ## done at create-fpga-image time
 
 if __name__ == '__main__':
-    print(get_firesim_tagval_for_afi("afi-0803005fb0bd1db0f", 'firesim-buildtriplet'))
-    print(get_firesim_tagval_for_afi("afi-0803005fb0bd1db0f", 'firesim-deploytriplet'))
-    print(get_firesim_tagval_for_afi("afi-0803005fb0bd1db0f", 'firesim-commit'))
-    #agfi_id = 'agfi-0f1bb91b0197a2a3a'
-
-    #tag_agfi_all_regions(agfi_id, "hello", "world")
-    #tag_agfi_all_regions(agfi_id, "hello2", "world2")
-
-    #print(get_tagval_for_agfi(agfi_id, "hello2"))
+    pass

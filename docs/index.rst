@@ -3,20 +3,16 @@ Welcome to FireSim's documentation (version "|version|")!
 
 New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
 
+
 .. toctree::
    :maxdepth: 3
    :caption: Getting Started:
 
    FireSim-Basics
-
-.. toctree::
-   :maxdepth: 3
-   :caption: AWS EC2 F1 Tutorial:
-   :numbered:
-
-   Initial-Setup/index
-   Running-Simulations-Tutorial/index
-   Building-a-FireSim-AFI
+   Getting-Started-Guides/AWS-EC2-F1-Tutorial/index
+   Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U250-FPGAs
+   Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U280-FPGAs
+   Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Vitis-FPGAs
 
 .. toctree::
    :maxdepth: 3
@@ -31,7 +27,6 @@ New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
    Advanced-Usage/Supernode.rst
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
-   Advanced-Usage/Vitis.rst
 
 .. toctree::
    :maxdepth: 3

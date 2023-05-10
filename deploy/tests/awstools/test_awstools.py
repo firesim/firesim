@@ -111,11 +111,12 @@ class TestLaunchInstances(object):
     def test_invalid_instance_type_fails(self):
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
-        from awstools.awstools import launch_instances, run_block_device_dict
+        from awstools.awstools import launch_instances, run_block_device_dict, farm_security_group_setup
 
         # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
         from awstools.aws_setup import aws_setup
         aws_setup()
+        farm_security_group_setup()
 
         with pytest.raises(Exception):
             instances = launch_instances('INVALID_TYPE', 1,
@@ -129,11 +130,12 @@ class TestLaunchInstances(object):
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
-        from awstools.awstools import launch_instances, run_block_device_dict
+        from awstools.awstools import launch_instances, run_block_device_dict, farm_security_group_setup
 
         # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
         from awstools.aws_setup import aws_setup
         aws_setup()
+        farm_security_group_setup()
 
         instances = launch_instances('f1.2xlarge', 1,
                                      instancemarket="ondemand", spotinterruptionbehavior=None, spotmaxprice=None,
@@ -183,11 +185,12 @@ class TestLaunchInstances(object):
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
-        from awstools.awstools import launch_instances, run_block_device_dict, get_instances_by_tag_type
+        from awstools.awstools import launch_instances, run_block_device_dict, get_instances_by_tag_type, farm_security_group_setup
 
         # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
         from awstools.aws_setup import aws_setup
         aws_setup()
+        farm_security_group_setup()
 
         tag1 = {'fsimcluster': 'testcluster'}
         type = 'f1.2xlarge'
@@ -254,11 +257,12 @@ class TestLaunchInstances(object):
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
-        from awstools.awstools import launch_instances, run_block_device_dict
+        from awstools.awstools import launch_instances, run_block_device_dict, farm_security_group_setup
 
         # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
         from awstools.aws_setup import aws_setup
         aws_setup()
+        farm_security_group_setup()
 
         type = 'f1.2xlarge'
 
@@ -294,11 +298,12 @@ class TestLaunchInstances(object):
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
-        from awstools.awstools import launch_instances, run_block_device_dict
+        from awstools.awstools import launch_instances, run_block_device_dict, farm_security_group_setup
 
         # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
         from awstools.aws_setup import aws_setup
         aws_setup()
+        farm_security_group_setup()
 
         type = 'f1.2xlarge'
 
@@ -314,11 +319,12 @@ class TestLaunchInstances(object):
 
         # local imports of code-under-test ensure moto has mocks
         # registered before any possible calls out to AWS
-        from awstools.awstools import launch_instances, run_block_device_dict
+        from awstools.awstools import launch_instances, run_block_device_dict, farm_security_group_setup
 
         # launch_instances requires vpc setup as done by firesim/scripts/setup_firesim.py
         from awstools.aws_setup import aws_setup
         aws_setup()
+        farm_security_group_setup()
 
         type = 'f1.2xlarge'
 

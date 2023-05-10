@@ -272,7 +272,7 @@ class FireSimServerNode(FireSimNode):
                                                    str(self.server_hardware_config))
         return msg
 
-    def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
+    def get_sim_start_command(self, slotno: int, sudo: bool, fpga_physical_selection: Optional[str]) -> str:
         """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
@@ -310,7 +310,9 @@ class FireSimServerNode(FireSimNode):
             self.hostdebug_config,
             self.synthprint_config,
             sudo,
-            self.plusarg_passthrough)
+            fpga_physical_selection,
+            self.plusarg_passthrough,
+            "")
 
         return runcommand
 
@@ -363,10 +365,10 @@ class FireSimServerNode(FireSimNode):
 
         return script_path
 
-    def write_sim_start_script(self, slotno: int, sudo: bool) -> str:
+    def write_sim_start_script(self, slotno: int, sudo: bool, fpga_physical_selection: Optional[str]) -> str:
         """ Write sim-run.sh script to local job results dir and return its
         path. """
-        start_cmd = self.get_sim_start_command(slotno, sudo)
+        start_cmd = self.get_sim_start_command(slotno, sudo, fpga_physical_selection)
         sim_start_script_local_path = self.write_script("sim-run.sh", start_cmd)
         return sim_start_script_local_path
 
@@ -510,7 +512,7 @@ class FireSimServerNode(FireSimNode):
         if hwcfg.driver_tar is not None:
             return None
 
-        return (str(self.get_resolved_server_hardware_config().local_tarball_path(InstanceDeployManager.get_driver_tar_filename())), InstanceDeployManager.get_driver_tar_filename())
+        return (str(hwcfg.local_tarball_path(hwcfg.get_driver_tar_filename())), hwcfg.get_driver_tar_filename())
 
 
 
@@ -634,7 +636,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         num_siblings = self.supernode_get_num_siblings_plus_one()
         return [self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)]
 
-    def get_sim_start_command(self, slotno: int, sudo: bool) -> str:
+    def get_sim_start_command(self, slotno: int, sudo: bool, fpga_physical_selection: Optional[str]) -> str:
         """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located."""
 
@@ -681,7 +683,9 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.hostdebug_config,
             self.synthprint_config,
             sudo,
-            self.plusarg_passthrough)
+            fpga_physical_selection,
+            self.plusarg_passthrough,
+            "")
 
         return runcommand
 

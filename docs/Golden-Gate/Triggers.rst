@@ -53,7 +53,7 @@ Trigger sources and sinks are Boolean signals, synchronous to a particular
 clock domain, that have been annotated as such.  The ``midas.targetutils``
 package provides chisel-facing utilities for annotating these signals in your
 design. We describe these utilities below, the source for which can be found in
-``sim/midas/targetutils/src/main/scala/annotations.scala``.
+:gh-file-ref:`sim/midas/targetutils/src/main/scala/midas/annotations.scala`.
 
 Trigger Sources
 ***************

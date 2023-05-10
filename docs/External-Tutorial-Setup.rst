@@ -11,7 +11,7 @@ Please follow along with the following steps to get setup if you already have an
 
 2. Run the following commands:
 
-::
+.. code-block:: bash
 
     #!/bin/bash
 
@@ -109,7 +109,7 @@ Please follow along with the following steps to get setup if you already have an
 
 3. Next copy the following contents and replace your entire ``~/.bashrc`` file with this:
 
-::
+.. code-block:: bash
 
     # .bashrc
     # Source global definitions

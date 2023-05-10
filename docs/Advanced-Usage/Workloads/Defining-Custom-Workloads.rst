@@ -53,15 +53,15 @@ Let's take a look at this file:
 
 There is also a corresponding directory named after this workload/file:
 
-::
+.. code-block:: bash
 
 	centos@ip-192-168-2-7.ec2.internal:~/firesim/deploy/workloads/linux-uniform$ ls -la
         total 4
         drwxrwxr-x  2 centos centos   69 Feb  8 00:07 .
         drwxrwxr-x 19 centos centos 4096 Feb  8 00:39 ..
-        lrwxrwxrwx  1 centos centos   47 Feb  7 00:38 br-base-bin -> ../../../sw/firesim-software/images/br-base-bin
-        lrwxrwxrwx  1 centos centos   53 Feb  8 00:07 br-base-bin-dwarf -> ../../../sw/firesim-software/images/br-base-bin-dwarf
-        lrwxrwxrwx  1 centos centos   47 Feb  7 00:38 br-base.img -> ../../../sw/firesim-software/images/br-base.img
+        lrwxrwxrwx  1 centos centos   47 Feb  7 00:38 br-base-bin -> ../../../sw/firesim-software/images/firechip/br-base/br-base-bin
+        lrwxrwxrwx  1 centos centos   53 Feb  8 00:07 br-base-bin-dwarf -> ../../../sw/firesim-software/images/firechip/br-base/br-base-bin-dwarf
+        lrwxrwxrwx  1 centos centos   47 Feb  7 00:38 br-base.img -> ../../../sw/firesim-software/images/firechip/br-base/br-base.img
 
 
 
@@ -136,7 +136,7 @@ Additionally, let's take a look at the state of the ``ping-latency`` directory
 AFTER the workload is built (assume that a tool like :ref:`firemarshal` already
 created the rootfses and linux images):
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency$ ls -la
 	total 15203216
@@ -203,5 +203,3 @@ the JSON file. We'll end up with a directory in
 ``firesim/deploy/results-workload/`` named after the workload name, with
 a subdirectory named after each job in the workload, which will contain the
 output files we want.
-
-

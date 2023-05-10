@@ -8,7 +8,7 @@ import midas.targetutils.{FirrtlFpgaDebugAnnotation, FpgaDebug}
 import midas.passes._
 import midas.stage.phases.ConfigParametersAnnotation
 
-import freechips.rocketchip.config.{Config, Parameters}
+import org.chipsalliance.cde.config.{Config, Parameters}
 
 import firrtl.annotations._
 import firrtl.transforms.BlackBoxInlineAnno

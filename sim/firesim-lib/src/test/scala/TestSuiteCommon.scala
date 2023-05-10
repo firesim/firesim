@@ -4,7 +4,7 @@ package firesim
 import java.io.File
 import scala.io.Source
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 
 import scala.collection.mutable
 
@@ -136,7 +136,8 @@ abstract class TestSuiteCommon(targetProject: String) extends TestSuiteBase {
     s"PLATFORM_CONFIG=${platformConfigString}",
   )
 
-  val targetTuple = s"${targetName}-${targetConfigs}-${platformConfigString}"
+  val targetTuple =
+    s"${basePlatformConfig.platformName}-${targetProject}-${targetName}-${targetConfigs}-${platformConfigString}"
 
   // These mirror those in the make files; invocation of the MIDAS compiler
   // is the one stage of the tests we don't invoke the Makefile for

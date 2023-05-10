@@ -3,7 +3,7 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import midas.targetutils._
 import freechips.rocketchip.util.{DecoupledHelper}
 

@@ -18,7 +18,7 @@ FPGA Dev AMI Remote Desktop Setup
 
 To Remote Desktop into your manager instance, you must do the following:
 
-::
+.. code-block:: bash
 
     curl https://s3.amazonaws.com/aws-fpga-developer-ami/1.5.0/Scripts/setup_gui.sh -o /home/centos/src/scripts/setup_gui.sh
     sudo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-CR.repo
@@ -48,7 +48,7 @@ the simulated node:
 4. Go into the newest directory that is prefixed with ``switch0-``
 5. Edit the ``switchconfig.h`` file so that it looks like this:
 
-::
+.. code-block:: c
 
     // THIS FILE IS MACHINE GENERATED. SEE deploy/buildtools/switchmodelconfig.py
 
@@ -62,7 +62,7 @@ the simulated node:
     ports[1] = new SSHPort(1);
 
     #endif
-    
+
     #ifdef MACPORTSCONFIG
     uint16_t mac2port[3]  {1, 2, 0};
     #endif
@@ -72,7 +72,7 @@ the simulated node:
 7. Run ``scp switch0 YOUR_RUN_FARM_INSTANCE_IP:switch_slot_0/switch0``
 8. On the RUN FARM INSTANCE, run:
 
-::
+.. code-block:: bash
 
     sudo ip tuntap add mode tap dev tap0 user $USER
     sudo ip link set tap0 up
@@ -83,9 +83,9 @@ the simulated node:
 
 9. Run ``firesim runworkload``. Confirm that the node has booted to the login prompt in the fsim0 screen.
 
-10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (172.16.0.2), username root, password firesim. You should also prefix with TERM=linux to get backspace to work correctly: So:
+10. To ssh into the simulated machine, you will need to first ssh onto the Run Farm instance, then ssh into the IP address of the simulated node (172.16.0.2), username ``root``. You should also prefix with TERM=linux to get backspace to work correctly: So:
 
-::
+.. code-block:: bash
 
     ssh YOUR_RUN_FARM_INSTANCE_IP
     # from within the run farm instance:
@@ -95,7 +95,7 @@ the simulated node:
 11. To also be able to access the internet from within the simulation, run the following
 on the RUN FARM INSTANCE:
 
-::
+.. code-block:: bash
 
     sudo sysctl -w net.ipv4.ip_forward=1
     export EXT_IF_TO_USE=$(ifconfig -a | sed 's/[ \t].*//;/^\(lo:\|\)$/d' | sed 's/[ \t].*//;/^\(tap0:\|\)$/d' | sed 's/://g')
@@ -106,7 +106,7 @@ on the RUN FARM INSTANCE:
 
 12. Then run the following in the simulation:
 
-::
+.. code-block:: bash
 
     route add default gw 172.16.0.1 eth0
     echo "nameserver 8.8.8.8" >> /etc/resolv.conf
@@ -129,7 +129,7 @@ by running ``./gen-tags.sh`` in your FireSim repo.
 For example, to use these tags to jump around the codebase in ``vim``, add the following to
 your ``.vimrc``:
 
-::
+.. code-block:: bash
 
     set tags=tags;/
 

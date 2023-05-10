@@ -428,32 +428,34 @@ jobs:
   #        branch-suffix: short-commit-hash
   #        title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"
 
+  run-vitis-check-docs-generated-components:
+    name: run-vitis-check-docs-generated-components
+    runs-on: local-fpga
+      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
+        run: ./.github/scripts/check-vitis-docs-generated-components.py
+
   documentation-check:
     name: documentation-check
     needs: change-filters
     runs-on: ubuntu-20.04
-    container:
-      image: firesim/firesim-ci:v1.3
-      options: --entrypoint /bin/bash
-      env:
-        JVM_MEMORY: 3500M # Default JVM maximum heap limit
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/job-start
-        id: job-start
-      - name: Check that documentation builds with no warnings/errors
-        if: steps.job-start.outputs.run_result != 'success'
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/docs.yaml
+          miniforge-version: latest
+      - name: Check that documentation builds with selective warnings/errors
         run: |
-          sudo yum update -y
-          sudo yum install -y python3-pip make
-          sudo pip3 install -r docs/requirements.txt
           make -C docs html
+          ! grep -v "ERROR: Undefined substitution referenced" warnings.txt
       - name: Show error log and dump objects.inv from sphinx if failed
-        if: ${{ steps.job-start.outputs.run_result != 'success' && failure() }}
+        if: ${{ failure() }}
         run: |
           python3 -m sphinx.ext.intersphinx docs/_build/html/objects.inv
           cat /tmp/sphinx-err*.log
-      - uses: ./.github/actions/job-end
 
   cpp-lint:
     name: cpp-lint

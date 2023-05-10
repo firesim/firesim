@@ -3,7 +3,7 @@
 package midas
 package core
 
-import freechips.rocketchip.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.unittest._
 import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue} // Better than chisel's
 

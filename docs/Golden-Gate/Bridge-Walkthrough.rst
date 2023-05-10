@@ -116,7 +116,7 @@ a concrete bridge driver must implement:
     :end-before: DOC include end: Bridge Driver Interface
 
 The declaration of the Uart bridge
-driver lives at ``sim/firesim-lib/src/main/cc/bridges/uart.h``. It is inlined
+driver lives at :gh-file-ref:`sim/firesim-lib/src/main/cc/bridges/uart.h`. It is inlined
 below:
 
 .. include:: ../../sim/firesim-lib/src/main/cc/bridges/uart.h
@@ -137,7 +137,7 @@ target RTL: SBT will make sure those classes are available on the runtime
 classpath. If you're hosting your bridge driver sources outside of the existing
 directories, you'll need to modify your target-project make fragments to include
 them. The default Chipyard/Rocket Chip-based one lives here:
-``sim/src/main/makefrag/firesim/``
+:gh-file-ref:`sim/src/main/makefrag/firesim`.
 
 Here the main order of business is to add header and source files to
 ``DRIVER_H`` and ``DRIVER_CC`` respectively in `driver.mk`, by modifying the

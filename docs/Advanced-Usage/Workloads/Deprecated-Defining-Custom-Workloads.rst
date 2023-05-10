@@ -56,14 +56,14 @@ Let's take a look at this file:
 
 There is also a corresponding directory named after this workload/file:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/linux-uniform$ ls -la
 	total 4
 	drwxrwxr-x  2 centos centos   42 May 17 21:58 .
 	drwxrwxr-x 13 centos centos 4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base-bin -> ../../../sw/firesim-software/images/br-base-bin
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base.img -> ../../../sw/firesim-software/images/br-base.img
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base-bin -> ../../../sw/firesim-software/images/firechip/br-base/br-base-bin
+	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base.img -> ../../../sw/firesim-software/images/firechip/br-base/br-base.img
 
 We will elaborate on this later.
 
@@ -132,7 +132,7 @@ job per simulated node.
 Additionally, let's take a look at the state of the ``ping-latency`` directory
 AFTER the workload is built:
 
-::
+.. code-block:: bash
 
 	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency$ ls -la
 	total 15203216
@@ -160,7 +160,7 @@ First, let's identify some of these files:
 
 Additionally, let's look at the ``overlay`` subdirectory:
 
-::
+.. code-block:: bash
 
     centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency/overlay$ ls -la */*
     -rwxrwxr-x 1 centos centos 249 May 17 21:58 bin/pinglatency.sh
@@ -190,10 +190,10 @@ overlay directory, and the base rootfses generated in ``firesim-software``,
 the following command will automatically generate all of the rootfses that you
 see in the ``ping-latency`` directory.
 
-::
+.. code-block:: bash
 
     [ from the workloads/ directory ]
-    ./gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/br-base.img -s ping-latency/overlay
+    ./gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/firechip/br-base/br-base.img -s ping-latency/overlay
 
 Notice that we tell this script where the json file lives, where the base rootfs image is, and where we expect to find files
 that we want to include in the generated disk images. This script will take care of the rest and we'll end up with
@@ -211,5 +211,3 @@ Just like in the uniform case, it will copy back the results that we specify
 in the json file. We'll end up with a directory in ``firesim/deploy/results-workload/``
 named after the workload name, with a subdirectory named after each job in the workload,
 which will contain the output files we want.
-
-

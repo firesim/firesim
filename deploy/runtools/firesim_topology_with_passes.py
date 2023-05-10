@@ -316,8 +316,6 @@ class FireSimTopologyWithPasses:
             RuntimeHWConfig object then keep it the same.
             2) If a node's hardware config is none, give it the default
             hardware config.
-            3) In either case, call get_deploytriplet_for_config() once to
-            make the API call and cache the result for the deploytriplet.
         """
         servers = self.firesimtopol.get_dfs_order_servers()
 
@@ -331,7 +329,6 @@ class FireSimTopologyWithPasses:
                 hw_cfg = runtimehwconfig_lookup_fn(self.defaulthwconfig)
             elif isinstance(hw_cfg, str):
                 hw_cfg = runtimehwconfig_lookup_fn(hw_cfg)
-            hw_cfg.get_deploytriplet_for_config()
             server.set_server_hardware_config(hw_cfg)
 
     def pass_apply_default_params(self) -> None:
@@ -406,7 +403,7 @@ class FireSimTopologyWithPasses:
                     continue # skip building or tarballing if we have a prebuilt one
 
                 resolved_cfg.build_sim_driver()
-                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), InstanceDeployManager.get_driver_tar_filename())
+                resolved_cfg.build_sim_tarball(server.get_tarball_files_paths(), resolved_cfg.get_driver_tar_filename())
 
         servers = self.firesimtopol.get_dfs_order_servers()
         execute(build_drivers_helper, servers, hosts=['localhost'])
@@ -419,18 +416,17 @@ class FireSimTopologyWithPasses:
         for switch in switches:
             switch.build_switch_sim_binary()
 
+    def pass_fetch_URI_resolve_runtime_cfg(self, dir: str) -> None:
+        """Locally download URIs, and use any URI-contained metadata to resolve runtime config values"""
+        servers = self.firesimtopol.get_dfs_order_servers()
+        for server in servers:
+            resolved_cfg = server.get_resolved_server_hardware_config()
+            resolved_cfg.fetch_all_URI(dir)
+            resolved_cfg.resolve_hwcfg_values(dir)
+
     def infrasetup_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do infrasetup """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
-
-        self.pass_build_required_drivers()
-        self.pass_build_required_switches()
-
-        def serial_fetch_URI(run_farm: RunFarm, dir: str) -> None:
-            my_node = run_farm.lookup_by_host(env.host_string)
-            assert my_node is not None
-            assert my_node.instance_deploy_manager is not None
-            my_node.instance_deploy_manager.fetch_all_URI(dir)
 
         @parallel
         def infrasetup_node_wrapper(run_farm: RunFarm, dir: str) -> None:
@@ -442,15 +438,23 @@ class FireSimTopologyWithPasses:
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_run_farm_ips)
 
-        # Both steps occur within the context of a tempdir.
+        # Steps occur within the context of a tempdir.
         # This allows URI's to survive until after deploy, and cleanup upon error
         with TemporaryDirectory() as uridir:
-            execute(serial_fetch_URI, self.run_farm, hosts=all_run_farm_ips, dir=uridir)
-            execute(infrasetup_node_wrapper, self.run_farm, hosts=all_run_farm_ips, dir=uridir)
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+            self.pass_build_required_drivers()
+            self.pass_build_required_switches()
+
+            execute(infrasetup_node_wrapper, self.run_farm, uridir, hosts=all_run_farm_ips)
 
     def build_driver_passes(self) -> None:
         """ Only run passes to build drivers. """
-        self.pass_build_required_drivers()
+
+        # Steps occur within the context of a tempdir.
+        # This allows URI's to survive until after deploy, and cleanup upon error
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+            self.pass_build_required_drivers()
 
     def boot_simulation_passes(self, use_mock_instances_for_testing: bool, skip_instance_binding: bool = False) -> None:
         """ Passes that setup for boot and boot the simulation.
@@ -470,6 +474,11 @@ class FireSimTopologyWithPasses:
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.start_switches_instance()
+
+        # Steps occur within the context of a tempdir.
+        # This allows URI's to survive until after deploy, and cleanup upon error
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
 
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_run_farm_ips)

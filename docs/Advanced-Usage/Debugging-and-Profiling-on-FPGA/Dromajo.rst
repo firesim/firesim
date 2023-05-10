@@ -46,8 +46,8 @@ Here is the modified workload json (renamed to ``br-base-dromajo`` from ``br-bas
         "uartlog",
         "dromajo_snap.re_regs"
       ],
-      "common_bootbinary": "../../../../../software/firemarshal/images/br-base-bin",
-      "common_rootfs": "../../../../../software/firemarshal/images/br-base.img",
+      "common_bootbinary": "../../../../../software/firemarshal/images/firechip/br-base/br-base-bin",
+      "common_rootfs": "../../../../../software/firemarshal/images/firechip/br-base/br-base.img",
       "common_simulation_inputs": [
         "br-base-bin.rom",
         "br-base-bin.dtb"
@@ -109,4 +109,3 @@ It is important to have the ``+drj_*`` arguments, otherwise Dromajo will not mat
 .. note:: Sometimes simulations in VCS will diverge unless a ``+define+RANDOM=0`` is added to the VCS flags in ``sim/midas/src/main/cc/rtlsim/Makefrag-vcs``.
 
 .. warning:: Dromajo currently only works in VCS and FireSim simulations.
-

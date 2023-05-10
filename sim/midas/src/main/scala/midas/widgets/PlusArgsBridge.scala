@@ -2,7 +2,7 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 /** Defines a PlusArgs interface. The signature here was copied from rocket-chip/src/main/scala/util/PlusArg.scala
   *

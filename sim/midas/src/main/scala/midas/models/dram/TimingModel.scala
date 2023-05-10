@@ -1,7 +1,7 @@
 package midas
 package models
 
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import junctions._
 
 import chisel3._
@@ -109,11 +109,13 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   pendingWReq.inc := tNasti.w.fire && tNasti.w.bits.last
   pendingWReq.dec := tNasti.b.fire
 
-  assert(!tNasti.ar.valid || (tNasti.ar.bits.burst === NastiConstants.BURST_INCR),
-    "Illegal ar request: memory model only supports incrementing bursts")
+  assert(!tNasti.ar.valid || (tNasti.ar.bits.burst === NastiConstants.BURST_INCR)
+    || ((tNasti.ar.bits.burst === NastiConstants.BURST_FIXED) && tNasti.ar.bits.len === 0.U),
+    "Illegal ar request: memory model only supports incrementing or fixed (len=0) bursts")
 
-  assert(!tNasti.aw.valid || (tNasti.aw.bits.burst === NastiConstants.BURST_INCR),
-    "Illegal aw request: memory model only supports incrementing bursts")
+  assert(!tNasti.aw.valid || (tNasti.aw.bits.burst === NastiConstants.BURST_INCR)
+    || ((tNasti.aw.bits.burst === NastiConstants.BURST_FIXED) && tNasti.aw.bits.len === 0.U),
+    "Illegal aw request: memory model only supports incrementing or fixed (len=0) bursts")
 
   // Release; returns responses to target
   val xactionRelease = Module(new AXI4Releaser)

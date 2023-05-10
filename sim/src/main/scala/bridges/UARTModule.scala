@@ -5,7 +5,7 @@ package firesim.bridges
 import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 import sifive.blocks.devices.uart.UARTParams
 

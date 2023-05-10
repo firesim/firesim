@@ -7,7 +7,7 @@ import widgets._
 import platform._
 import firrtl.stage.TransformManager.TransformDependency
 import junctions.NastiParameters
-import freechips.rocketchip.config.{Parameters, Config, Field}
+import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
 import java.io.{File}
@@ -116,6 +116,12 @@ class F1Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
 }) ++ new SimConfig)
 
+class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
+  case HostMemNumChannels => 1
+  case PreLinkCircuitPath => None
+  case PostLinkCircuitPath => None
+}) ++ new F1Config ++ new SimConfig)
+
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case CPUManagedAXI4Key => None
@@ -158,4 +164,3 @@ class VitisConfig extends Config(new Config((site, here, up) => {
 class HostDebugFeatures extends Config((site, here, up) => {
   case GenerateTokenIrrevocabilityAssertions => true
 })
-

@@ -37,7 +37,7 @@ https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html
 
 You'll probably want to start out with the following request, depending on your existing limits:
 
-::
+.. code-block:: text
 
     Limit Type:                EC2 Instances
     Region:                    US East (Northern Virginia)

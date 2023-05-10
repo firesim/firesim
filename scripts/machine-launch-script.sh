@@ -1,7 +1,10 @@
 #!/bin/bash
 
+MACHINE_LAUNCH_DIR=/tmp
+export HOME="${HOME:-/root}"
+
 CONDA_INSTALL_PREFIX=/opt/conda
-CONDA_INSTALLER_VERSION=4.12.0-0
+CONDA_INSTALLER_VERSION=22.11.1-4
 CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
 CONDA_CMD="conda" # some installers install mamba or micromamba
 CONDA_ENV_NAME="firesim"
@@ -108,21 +111,22 @@ set -o pipefail
     OS_FLAVOR=$(grep '^ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"')
     OS_VERSION=$(grep '^VERSION_ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"')
 
-    echo "machine launch script started" > machine-launchstatus
-    chmod ugo+r machine-launchstatus
+    echo "machine launch script started" > "$MACHINE_LAUNCH_DIR/machine-launchstatus"
+    chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus"
 
-    # platform-specific setup
+    # platform-specific setup (pre-conda install)
     case "$OS_FLAVOR" in
         ubuntu)
             ;;
         centos)
+            ;;
+        amzn)
             ;;
         *)
             echo "::ERROR:: Unknown OS flavor '$OS_FLAVOR'. Unable to do platform-specific setup."
             exit 1
             ;;
     esac
-
 
     # everything else is platform-agnostic and could easily be expanded to Windows and/or OSX
 
@@ -183,7 +187,7 @@ set -o pipefail
         # see https://www.anaconda.com/blog/a-faster-conda-for-a-growing-community
         $SUDO "$CONDA_EXE" install $DRY_RUN_OPTION -y -n base conda-libmamba-solver
         # Use the fast solver by default
-        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set experimental_solver libmamba
+        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set solver libmamba
 
         conda_init_extra_args=()
         if [[ "$INSTALL_TYPE" == system ]]; then
@@ -284,11 +288,33 @@ set -o pipefail
     fi
     "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
 
-    # emergency fix for buildroot open files limit issue on centos:
-    echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
+    # emergency fix for buildroot open files limit issue:
+    if [[ "$INSTALL_TYPE" == system ]]; then
+        "${DRY_RUN_ECHO[@]}" echo "* hard nofile 16384" | $SUDO tee --append /etc/security/limits.conf
+    else
+        "${DRY_RUN_ECHO[@]}" echo "::WARN:: Unable to set open files limit without sudo."
+    fi
 
-} 2>&1 | tee machine-launchstatus.log
-chmod ugo+r machine-launchstatus.log
+    # final platform-specific setup
+    case "$OS_FLAVOR" in
+        ubuntu)
+            ;;
+        centos)
+            ;;
+        amzn)
+            echo "::INFO:: using 'sudo' to install NICE DCV"
+            wget https://raw.githubusercontent.com/aws-samples/amazon-ec2-nice-dcv-samples/5439e401d3aaf394588f1029e0ec7904d8cacc8f/scripts/AmazonLinux2-user-data.sh
+            chmod +x AmazonLinux2-user-data.sh
+            sudo ./AmazonLinux2-user-data.sh
+            echo "firesim" | sudo passwd ec2-user --stdin # default password is 'firesim'
+            ;;
+        *)
+            echo "::ERROR:: Unknown OS flavor '$OS_FLAVOR'. Unable to do platform-specific setup."
+            exit 1
+            ;;
+    esac
 
+} 2>&1 | tee "$MACHINE_LAUNCH_DIR/machine-launchstatus.log"
+chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus.log"
 
-echo "machine launch script completed" >>machine-launchstatus
+echo "machine launch script completed" >> "$MACHINE_LAUNCH_DIR/machine-launchstatus"

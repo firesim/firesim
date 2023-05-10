@@ -3,7 +3,7 @@ package firesim.fasedtests
 
 import chisel3.util.isPow2
 
-import freechips.rocketchip.config.{Field, Config}
+import org.chipsalliance.cde.config.{Field, Config}
 import freechips.rocketchip.subsystem.{ExtMem, WithoutTLMonitors, WithNMemoryChannels, MemoryPortParams, MasterPortParams}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy.{AddressSet, RegionType, TransferSizes}

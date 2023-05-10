@@ -3,7 +3,7 @@
 package firesim.midasexamples
 
 import java.io.File
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 import scala.io.Source
 import org.scalatest.Suites
 

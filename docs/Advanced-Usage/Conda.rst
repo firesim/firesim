@@ -1,11 +1,12 @@
 Non-Source Dependency Management
 ================================
 
-In :doc:`/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
+In the AWS EC2 F1 setup, in :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
 of ``scripts/machine-launch-script.sh`` into the EC2 Management Console and
 that script installed many dependencies that FireSim needs using
 `conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
-manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_.
+manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_
+(or in the case of :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Initial-Setup/Setting-up-your-Manager-Instance`, we ran ``scripts/machine-launch-script.sh``).
 
 In many situations, you may not need to know anything about ``conda``.  By default, the
 ``machine-launch-script.sh`` installs ``conda`` into ``/opt/conda`` and all of the FireSim dependencies into
@@ -22,7 +23,7 @@ is that you are able to write into the install location.  See ``machine-launch-s
     To :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently requires that
     you are able to act as root via ``sudo``.
 
-    However, you can do many things without having root, like :doc:`/Building-a-FireSim-AFI`,
+    However, you can do many things without having root, like :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Building-a-FireSim-AFI`,
     `<meta-simulation>`_ of a FireSim system using Verilator or even developing new features in FireSim.
 
 Updating a Package Version
@@ -31,7 +32,9 @@ Updating a Package Version
 If you need a newer version of package, the most expedient method to see whether there
 is a newer version available on `conda-forge`_ is to run ``conda update <package-name>``.  If you are lucky,
 and the dependencies of the package you want to update are simple, you'll see output that looks something like
-this ::
+this:
+
+.. code-block:: bash
 
     bash-4.2$ conda update moto
     Collecting package metadata (current_repodata.json): done
@@ -67,7 +70,7 @@ hit ``<<Enter>>`` and move forward with your life.
 
     However, it is always a better idea to modify the version in ``machine-launch-script.sh`` so that:
     #. you remember to commit and share the new version requirement.
-    #. you are providing a complete set of requirements for ``conda`` to solve.  There is a subtle difference between installing everything you need in a single `conda install` vs incrementally installing one or two packages at a time because  the version constraints *are not maintained between conda invocations*.   (NOTE: certain packages like Python are implicitly `pinned <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-pkgs.html#preventing-packages-from-updating-pinning>`_ at environment creation and will `only be updated if explicitly requested <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-python.html#updating-or-upgrading-python>`_ .) 
+    #. you are providing a complete set of requirements for ``conda`` to solve.  There is a subtle difference between installing everything you need in a single `conda install` vs incrementally installing one or two packages at a time because  the version constraints *are not maintained between conda invocations*.   (NOTE: certain packages like Python are implicitly `pinned <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-pkgs.html#preventing-packages-from-updating-pinning>`_ at environment creation and will `only be updated if explicitly requested <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-python.html#updating-or-upgrading-python>`_ .)
 
 
 So, modify ``machine-launch-script.sh`` with the updated version of ``moto``, and run it.  If you'd like to see what
@@ -121,8 +124,8 @@ by running ``conda env list`` to get output similar to::
     doc_writing           *  /opt/conda/envs/doc_writing
 
 In the output above, you can see that I had the 'base' environment that is created when you install ``conda`` as well as
-the ``firesim`` environment that ``machine-launch-script.sh`` creates by default.  I also created a 'doc_writing' environment 
-to show some of the examples pasted earlier. 
+the ``firesim`` environment that ``machine-launch-script.sh`` creates by default.  I also created a 'doc_writing' environment
+to show some of the examples pasted earlier.
 
 You can also see that 'doc_writing' has an asterisk next to it, indicating that it is the currently 'activated' environment.
 To switch to a different environment, I could ``conda activate <name>`` e.g. ``conda activate firesim``

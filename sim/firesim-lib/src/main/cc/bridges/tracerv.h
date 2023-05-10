@@ -5,7 +5,6 @@
 #include "core/bridge_driver.h"
 #include "core/clock_info.h"
 #include <functional>
-#include <iostream>
 #include <vector>
 
 class TraceTracker;

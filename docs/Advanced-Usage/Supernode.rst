@@ -34,7 +34,7 @@ The Supernode target configuration wrapper can be found in Chipyard in
 ``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``.  An example wrapper
 configuration is:
 
-::
+.. code-block:: scala
 
     class SupernodeFireSimRocketConfig extends Config(
        new WithNumNodes(4) ++
@@ -48,7 +48,7 @@ different target configuration, we will generate a new supernode wrapper, with
 the new target configuration. For example, to simulate 4 quad-core nodes on one
 FPGA, you can use:
 
-::
+.. code-block:: scala
 
     class SupernodeFireSimQuadRocketConfig extends Config(
        new WithNumNodes(4) ++
@@ -64,19 +64,19 @@ the wrapper configuration that was defined in
 ``PLATFORM_CONFIG`` can be selected the same as in regular FireSim
 configurations.  For example:
 
-::
+.. code-block:: yaml
 
     DESIGN: FireSim
     TARGET_CONFIG: SupernodeFireSimQuadRocketConfig
     PLATFORM_CONFIG: BaseF1Config
-    deploy_triplet: None
+    deploy_quintuplet: null
 
 
 We currently provide a single pre-built AGFI for supernode of 4 quad-core
 RocketChips with DDR3 memory models. You can build your own AGFI, using the supplied samples in
 ``config_build_recipes.yaml``.  Importantly, in order to meet FPGA timing
 contraints, Supernode target may require lower host clock frequencies.
-Host clock frequencies can be configured as parts of the ``platform_config_args`` 
+Host clock frequencies can be configured as parts of the ``platform_config_args``
 (this must be done using ``PLATFORM_CONFIG`` if not using F1) in ``config_build_recipes.yaml``.
 
 Running Supernode Simulations
@@ -110,7 +110,7 @@ Supernode topologies.
 A sample Supernode topology of 4 simulated target nodes which can fit on a
 single ``f1.2xlarge`` is:
 
-::
+.. code-block:: python
 
     def supernode_example_4config(self):
         self.roots = [FireSimSwitchNode()]
@@ -121,7 +121,7 @@ single ``f1.2xlarge`` is:
 A sample Supernode topology of 32 simulated target nodes which can fit on a
 single ``f1.16xlarge`` is:
 
-::
+.. code-block:: python
 
     def supernode_example_32config(self):
         self.roots = [FireSimSwitchNode()]

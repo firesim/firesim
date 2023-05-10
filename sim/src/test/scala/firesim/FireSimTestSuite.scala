@@ -12,7 +12,7 @@ import org.scalatest.Suites
 import firesim.configs._
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.system.{BenchmarkTestSuite, RocketTestSuite}
 import freechips.rocketchip.system.TestGeneration._

@@ -2,7 +2,7 @@
 package midas.widgets
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough

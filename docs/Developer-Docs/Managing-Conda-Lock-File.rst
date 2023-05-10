@@ -11,7 +11,7 @@ If developers want to update the requirements files, they should also update the
 There are two different methods:
 
 #. Running ``build-setup.sh --unpinned-deps``. This will update the lock file in place so that it can be committed and will re-setup the FireSim repository.
-#. Manually running ``conda-lock -f <conda requirements file> -f <conda requirements file> --lockfile <conda lock file>``
+#. Running :gh-file-ref:`scripts/generate-conda-lockfile.sh`. This will update the lock file in place without setting up your directory.
 
 Caveats of the Conda Lock File and CI
 =====================================

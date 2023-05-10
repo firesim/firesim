@@ -5,7 +5,7 @@ package firesim.bridges
 import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
-import freechips.rocketchip.config.{Config, Field, Parameters}
+import org.chipsalliance.cde.config.{Config, Field, Parameters}
 import testchipip.DeclockedTracedInstruction
 import testchipip.TracedInstructionWidths
 import midas.targetutils.TriggerSink
@@ -33,6 +33,11 @@ class TracerVModuleTestCount6
 class TracerVModuleTestCount7
     extends Config((site, here, up) => { case TracerVModuleInstructionCount =>
       7
+    })
+
+class TracerVModuleTestCount9
+    extends Config((site, here, up) => { case TracerVModuleInstructionCount =>
+      9
     })
 
 class TracerVModuleTestCount14

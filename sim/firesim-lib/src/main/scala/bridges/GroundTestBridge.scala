@@ -4,7 +4,7 @@ package firesim.bridges
 import midas.widgets._
 
 import chisel3._
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 class GroundTestBridge extends BlackBox
     with Bridge[HostPortIO[GroundTestBridgeTargetIO], GroundTestBridgeModule] {

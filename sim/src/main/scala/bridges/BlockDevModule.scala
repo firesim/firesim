@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
-import freechips.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 
 class BlockDevDUT(implicit val p: Parameters) extends Module {
   val rd = Module(new BlockDevBridge)
