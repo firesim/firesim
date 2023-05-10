@@ -48,10 +48,7 @@ builds_to_run:
     # - alveo_u280_firesim_rocket_singlecore_no_nic
 
     # Config for xilinx vcu118
-    # - xilinx_vcu118_firesim_rocket_singlecore_no_nic
-    # - xilinx_vcu118_firesim_rocket_singlecore_mmio_only_no_nic
     # - xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic
-    # - xilinx_vcu118_firesim_rocket_singlecore_4GB_mmio_only_no_nic
 
 
 agfis_to_share:

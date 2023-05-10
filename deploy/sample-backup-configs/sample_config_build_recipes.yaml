@@ -317,37 +317,7 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u280.yaml
 
-# Additional Xilinx VCU118-only Config
-xilinx_vcu118_firesim_rocket_singlecore_no_nic:
-    PLATFORM: xilinx_vcu118
-    TARGET_PROJECT: firesim
-    DESIGN: FireSim
-    TARGET_CONFIG: FireSimRocket1GiBDRAMConfig
-    PLATFORM_CONFIG: BaseXilinxVCU118Config
-    deploy_quintuplet: null
-    platform_config_args:
-        fpga_frequency: 100
-        build_strategy: TIMING
-    post_build_hook: null
-    metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/xilinx_vcu118.yaml
-
-# Additional Xilinx VCU118-only Config
-xilinx_vcu118_firesim_rocket_singlecore_mmio_only_no_nic:
-    PLATFORM: xilinx_vcu118
-    TARGET_PROJECT: firesim
-    DESIGN: FireSim
-    TARGET_CONFIG: FireSimRocketMMIOOnly1GiBDRAMConfig
-    PLATFORM_CONFIG: BaseXilinxVCU118Config
-    deploy_quintuplet: null
-    platform_config_args:
-        fpga_frequency: 100
-        build_strategy: TIMING
-    post_build_hook: null
-    metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/xilinx_vcu118.yaml
-
-# Additional Xilinx VCU118-only Config
+# Xilinx VCU118-only Config
 xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     PLATFORM: xilinx_vcu118
     TARGET_PROJECT: firesim
@@ -356,25 +326,9 @@ xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     PLATFORM_CONFIG: BaseXilinxVCU118Config
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 10
+        fpga_frequency: 50
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/xilinx_vcu118.yaml
-
-# Additional Xilinx VCU118-only Config
-xilinx_vcu118_firesim_rocket_singlecore_4GB_mmio_only_no_nic:
-    PLATFORM: xilinx_vcu118
-    TARGET_PROJECT: firesim
-    DESIGN: FireSim
-    TARGET_CONFIG: FireSimRocketMMIOOnly4GiBDRAMConfig
-    PLATFORM_CONFIG: BaseXilinxVCU118Config
-    deploy_quintuplet: null
-    platform_config_args:
-        fpga_frequency: 10
-        build_strategy: TIMING
-    post_build_hook: null
-    metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/xilinx_vcu118.yaml
-
 
