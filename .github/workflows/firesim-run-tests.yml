@@ -402,30 +402,31 @@ jobs:
           branch-suffix: short-commit-hash
           title: "Update AGFI(s) for ${{ env.GITHUB_REF_NAME }}"
 
-  run-xclbin-buildbitstream:
-    if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
-    name: run-xclbin-buildbitstream
-    runs-on: local-fpga
-    env:
-      TERM: xterm-256-color
-    steps:
-      # This forces a fresh clone of the repo during the `checkout` step
-      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-      - name: Delete old checkout
-        run: |
-          rm -rf ${{ github.workspace }}/* || true
-          rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/repo-setup-aws
-      - name: Run buildbitstream command and update sample xclbins
-        run: .github/scripts/run-xclbin-buildbitstream.py
-      - uses: peter-evans/create-pull-request@v4
-        with:
-          add-paths: |
-            'deploy/sample-backup-configs/sample_config_hwdb.ini'
-          commit-message: "Update xclbin(s)"
-          branch-suffix: short-commit-hash
-          title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"
+  # TODO: Re-enable and just post bitstreams into a GH repo
+  #run-xclbin-buildbitstream:
+  #  if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
+  #  name: run-xclbin-buildbitstream
+  #  runs-on: local-fpga
+  #  env:
+  #    TERM: xterm-256-color
+  #  steps:
+  #    # This forces a fresh clone of the repo during the `checkout` step
+  #    # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+  #    - name: Delete old checkout
+  #      run: |
+  #        rm -rf ${{ github.workspace }}/* || true
+  #        rm -rf ${{ github.workspace }}/.* || true
+  #    - uses: actions/checkout@v3
+  #    - uses: ./.github/actions/repo-setup-aws
+  #    - name: Run buildbitstream command and update sample xclbins
+  #      run: .github/scripts/run-xclbin-buildbitstream.py
+  #    - uses: peter-evans/create-pull-request@v4
+  #      with:
+  #        add-paths: |
+  #          'deploy/sample-backup-configs/sample_config_hwdb.ini'
+  #        commit-message: "Update xclbin(s)"
+  #        branch-suffix: short-commit-hash
+  #        title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"
 
   documentation-check:
     name: documentation-check
