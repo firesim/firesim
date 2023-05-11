@@ -206,13 +206,24 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
       ),
     )
 
+    // performance optimization:
+    //
+    // if any of these cases is true, just spam out hPort.fromHost.hValid=1,
+    // because triggerDebit will never be set and (if trigger result is always
+    // 1) triggerCredit will be set the first cycle then always zero.
+    //
+    // false: trigger condition is unsatisfiable
+    val trigger_always_false = (triggerSelector === 1.U) && (triggerCycleCountStart > triggerCycleCountEnd)
+    // true: triggering is not enabled (i.e. selector = 0) OR using a cycle count trigger with start=0 and end=(Largest 64 Bit UInt)
+    val trigger_always_true = (triggerSelector === 0.U) || ((triggerSelector === 1.U) && (triggerCycleCountStart === 0.U) && (triggerCycleCountEnd === (BigInt("ffffffffffffffff", 16).U(64.W))))
+
     val tFireHelper = DecoupledHelper(streamEnq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
 
     val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire())
     hPort.hBits.triggerDebit  := !trigger && triggerReg
     hPort.hBits.triggerCredit := trigger && !triggerReg
 
-    hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
+    hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady) || ((trigger_always_false || trigger_always_true) && initDone)
 
     // the maximum width of a single arm, this is determined by the 512 bit width of a single beat
     val armWidth = 7
