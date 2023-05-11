@@ -92,7 +92,7 @@ def run_xclbin_buildbitstream():
                                     hwdb_to_link[hwdb] = f"https://{ci_env['AWS_BUCKET_NAME']}.s3.{ci_env['AWS_DEFAULT_REGION']}.amazonaws.com/{file_name}"
 
                 # parse the output yamls, replace the sample hwdb's xclbin line only
-                sample_hwdb_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_hwdb.ini"
+                sample_hwdb_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_hwdb.yaml"
                 for hwdb in built_hwdb_entries:
                     sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 

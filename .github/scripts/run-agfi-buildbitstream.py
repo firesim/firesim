@@ -27,7 +27,7 @@ def run_agfi_buildbitstream():
             sys.exit(rc)
         else:
             # parse the output yamls, replace the sample hwdb's agfi line only
-            sample_hwdb_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_hwdb.ini"
+            sample_hwdb_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_hwdb.yaml"
 
             hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
             built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x))]
@@ -61,7 +61,7 @@ def run_agfi_buildbitstream():
             run(f"cat {sample_hwdb_filename}")
 
             # share agfis
-            sample_build_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_build.ini"
+            sample_build_filename = f"{manager_fsim_dir}/deploy/sample-backup-configs/sample_config_build.yaml"
             sample_build_lines = open(sample_build_filename).read().split('\n')
             with open(sample_build_filename, "w") as sample_build_file:
                 for line in sample_build_lines:

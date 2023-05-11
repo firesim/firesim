@@ -114,7 +114,7 @@ tracerv_t::tracerv_t(simif_t &sim,
     }
     write_header(tracefile);
 
-    // This must be kept consistent with config_runtime.ini's output_format.
+    // This must be kept consistent with config_runtime.yaml's output_format.
     // That file's comments are the single source of truth for this.
     if (outputfmtselect == 0) {
       this->human_readable = true;

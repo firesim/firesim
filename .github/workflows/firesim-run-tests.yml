@@ -397,7 +397,7 @@ jobs:
           # must align with `manager_fsim_dir/MANAGER_FIRESIM_LOCATION`
           cwd: '/home/centos/firesim'
           add-paths: |
-            'deploy/sample-backup-configs/sample_config_hwdb.ini'
+            'deploy/sample-backup-configs/sample_config_hwdb.yaml'
           commit-message: "Update AGFI(s)"
           branch-suffix: short-commit-hash
           title: "Update AGFI(s) for ${{ env.GITHUB_REF_NAME }}"
@@ -423,7 +423,7 @@ jobs:
   #    - uses: peter-evans/create-pull-request@v4
   #      with:
   #        add-paths: |
-  #          'deploy/sample-backup-configs/sample_config_hwdb.ini'
+  #          'deploy/sample-backup-configs/sample_config_hwdb.yaml'
   #        commit-message: "Update xclbin(s)"
   #        branch-suffix: short-commit-hash
   #        title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"

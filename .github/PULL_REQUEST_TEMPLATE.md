@@ -1,4 +1,4 @@
-<!-- 
+<!--
 First, please ensure that the title of your PR is sufficient to include in the next changelog.
 Refer to https://github.com/firesim/firesim/releases for examples and feel free to ask reviewers for help.
 
@@ -21,7 +21,7 @@ Provide a brief description of the PR immediately below this comment, if the tit
 #### UI / API Impact
 
 <!-- Roughly, how would this affect the current API or user-facing interfaces? (extend, deprecate, remove, or break) -->
-<!-- Of note: manager config.ini interface, targetutils & bridge scala API, platform config behavior -->
+<!-- Of note: manager config_*.yaml interface, targetutils & bridge scala API, platform config behavior -->
 
 #### Verilog / AGFI Compatibility
 

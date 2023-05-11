@@ -193,7 +193,7 @@ field to a job and supply a path relative to the workload's directory.
 
 Once you specify the ``.json`` for this workload (and assuming you have built
 the corresponding rootfses with :ref:`firemarshal`, you can run it with the
-manager by setting ``workload_name: ping-latency.json`` in ``config_runtime.ini``.
+manager by setting ``workload_name: ping-latency.json`` in ``config_runtime.yaml``.
 The manager will automatically look for the generated rootfses (based on
 workload and job names that it reads from the JSON) and distribute work
 appropriately.
