@@ -34,11 +34,11 @@ with your own bucket name, e.g.:
 Build Recipes
 ---------------
 
-In the ``deploy/config_build.ini`` file, you will notice that the ``builds_to_run``
+In the ``deploy/config_build.yaml`` file, you will notice that the ``builds_to_run``
 section currently contains several lines, which
 indicates to the build system that you want to run all of these builds in
 parallel, with the parameters listed in the relevant section of the
-``deploy/config_build_recipes.ini`` file. Here you can set parameters of the simulated
+``deploy/config_build_recipes.yaml`` file. Here you can set parameters of the simulated
 system, and also select the type of instance on which the Vivado build will be
 deployed. From our experimentation, there are diminishing returns using
 anything above a ``z1d.2xlarge``, so we default to that. If you do wish to use a
@@ -48,13 +48,13 @@ of 32 GiB for large designs.
 
 To start out, let's build a simple design, ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
 This is a design that has four cores, no nic, and uses the 4MB LLC + DDR3 memory model.
-To do so, comment out all of the other build entries in ``deploy/config_build.ini``, besides the one we want. So, you should
+To do so, comment out all of the other build entries in ``deploy/config_build.yaml``, besides the one we want. So, you should
 end up with something like this (a line beginning with a ``#`` is a comment):
 
 .. code-block:: yaml
 
    builds_to_run:
-       # this section references builds defined in config_build_recipes.ini
+       # this section references builds defined in config_build_recipes.yaml
        # if you add a build here, it will be built when you run buildbitstream
        - firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
