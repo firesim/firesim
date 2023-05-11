@@ -326,7 +326,7 @@ xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     PLATFORM_CONFIG: BaseXilinxVCU118Config
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 50
+        fpga_frequency: 140
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
