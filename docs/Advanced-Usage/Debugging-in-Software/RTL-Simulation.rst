@@ -82,7 +82,7 @@ This configures the manager to run Verilator-hosted metasimulations (without
 waveform generation) for the target specified in ``config_runtime.yaml``.  When
 in metasimulation mode, the ``default_hw_config`` that you specify in
 ``target_config`` references an entry in ``config_build_recipes.yaml`` instead
-of an entry in ``config_hwdb.ini``.
+of an entry in ``config_hwdb.yaml``.
 
 As is the case when the manager runs FPGA-accelerated simulations, the number
 of metasimulations that are run is determined by the parameters in the
