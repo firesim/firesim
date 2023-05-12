@@ -59,9 +59,6 @@ def run_xclbin_buildbitstream():
 
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
 
-            # initially install the requirement needed
-            run("conda install pygithub")
-
             # modify config_build.yaml
             build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
             build_yaml_lines = open(build_yaml).read().split("\n")
