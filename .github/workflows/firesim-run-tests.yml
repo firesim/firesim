@@ -392,15 +392,13 @@ jobs:
       - uses: actions/checkout@v3
       - name: Run buildbitstream command and update sample AGFIs
         run: .github/scripts/run-agfi-buildbitstream.py
-      - uses: peter-evans/create-pull-request@v4
+      - uses: peter-evans/create-pull-request@v5
         with:
-          # must align with `manager_fsim_dir/MANAGER_FIRESIM_LOCATION`
-          cwd: '/home/centos/firesim'
           add-paths: |
             'deploy/sample-backup-configs/sample_config_hwdb.yaml'
           commit-message: "Update AGFI(s)"
           branch-suffix: short-commit-hash
-          title: "Update AGFI(s) for ${{ env.GITHUB_REF_NAME }}"
+          title: "Update AGFI(s) for ${{ github.ref_name }}"
 
   # TODO: Re-enable and just post bitstreams into a GH repo
   #run-xclbin-buildbitstream:
@@ -420,13 +418,13 @@ jobs:
   #    - uses: ./.github/actions/repo-setup-aws
   #    - name: Run buildbitstream command and update sample xclbins
   #      run: .github/scripts/run-xclbin-buildbitstream.py
-  #    - uses: peter-evans/create-pull-request@v4
+  #    - uses: peter-evans/create-pull-request@v5
   #      with:
   #        add-paths: |
   #          'deploy/sample-backup-configs/sample_config_hwdb.yaml'
   #        commit-message: "Update xclbin(s)"
   #        branch-suffix: short-commit-hash
-  #        title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"
+  #        title: "Update xclbin(s) for ${{ github.ref_name }}"
 
   run-vitis-check-docs-generated-components:
     name: run-vitis-check-docs-generated-components
