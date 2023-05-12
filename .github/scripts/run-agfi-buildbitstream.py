@@ -23,10 +23,13 @@ def run_agfi_buildbitstream():
         with prefix(f"export FIRESIM_BUILDFARM_PREFIX={ci_env['GITHUB_RUN_ID']}-{Path(__file__).stem}"):
             with settings(warn_only=True):
                 # pty=False needed to avoid issues with screen -ls stalling in fabric
-                rc = run("timeout 10h firesim buildbitstream --forceterminate", pty=False).return_code
+                build_result = run("timeout 10h firesim buildbitstream --forceterminate", pty=False)
+                rc = build_result.return_code
 
         if rc != 0:
-            print("Buildbitstream failed")
+            log_lines = 200
+            print(f"Buildbitstream failed. Printing {log_lines} of last log file:")
+            run(f"""LAST_LOG=$(ls | tail -n1) && if [ -f "$LAST_LOG" ]; then tail -n{log_lines} $LAST_LOG; fi""")
             sys.exit(rc)
         else:
             # parse the output yamls, replace the sample hwdb's agfi line only
@@ -36,7 +39,7 @@ def run_agfi_buildbitstream():
             built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x))]
             for hwdb in built_hwdb_entries:
                 print(f"Printing {hwdb}")
-                run(f"cat {hwdb}")
+                run(f"cat {hwdb_entry_dir}/{hwdb}")
 
                 sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 
