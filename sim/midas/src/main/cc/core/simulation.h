@@ -131,7 +131,8 @@ private:
   bool do_zero_out_dram = false;
 
   /**
-   * If set, read the presence register, check it, and exit the simulation cleanly
+   * If set, read the presence register, check it, and exit the simulation
+   * cleanly
    */
   bool check_fingerprint_only = false;
 
