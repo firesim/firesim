@@ -58,7 +58,7 @@ def run_parallel_metasim():
                     else:
                         print(f"Workload {workload} successful.")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/hello-world-localhost-vcs-metasim.yaml", "45m")
+            run_w_timeout(f"{ci_env['REMOTE_WORK_DIR']}/deploy/workloads/ci/hello-world-localhost-vcs-metasim.yaml", "45m")
 
 if __name__ == "__main__":
     execute(run_parallel_metasim, hosts=["localhost"])

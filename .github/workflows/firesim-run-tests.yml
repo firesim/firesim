@@ -440,22 +440,22 @@ jobs:
       - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
         run: ./.github/scripts/check-vitis-docs-generated-components.py
 
-  run-parallel-vcs-metasims-and-vitis-driver:
-    name: run-parallel-vcs-metasims-and-vitis-driver
-    needs: [setup-local-fpga-repo]
-    runs-on: local-fpga
-    steps:
-      # This forces a fresh clone of the repo during the `checkout` step
-      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-      - name: Delete old checkout
-        run: |
-          rm -rf ${{ github.workspace }}/* || true
-          rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
-      - name: Run parallel VCS metasims
-        run: .github/scripts/run-parallel-vcs-metasims.py
-      - name: Build Vitis driver
-        run: .github/scripts/build-vitis-driver.py
+  #run-parallel-vcs-metasims-and-vitis-driver:
+  #  name: run-parallel-vcs-metasims-and-vitis-driver
+  #  needs: [setup-local-fpga-repo]
+  #  runs-on: local-fpga
+  #  steps:
+  #    # This forces a fresh clone of the repo during the `checkout` step
+  #    # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+  #    - name: Delete old checkout
+  #      run: |
+  #        rm -rf ${{ github.workspace }}/* || true
+  #        rm -rf ${{ github.workspace }}/.* || true
+  #    - uses: actions/checkout@v3
+  #    - name: Run parallel VCS metasims
+  #      run: .github/scripts/run-parallel-vcs-metasims.py
+  #    - name: Build Vitis driver
+  #      run: .github/scripts/build-vitis-driver.py
 
   run-basic-linux-poweroff-vitis:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')

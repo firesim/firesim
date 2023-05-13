@@ -65,7 +65,7 @@ def run_xclbin_buildbitstream():
                         if "- firesim" in line:
                             # comment out AWS specific lines
                             byf.write("# " + line + '\n')
-                        elif "- {hwdb_entry_to_gen}" in line:
+                        elif f"- {hwdb_entry_to_gen}" in line:
                             # remove comment
                             byf.write(line.replace("# ", '') + '\n')
                         elif 'default_build_dir:' in line:
