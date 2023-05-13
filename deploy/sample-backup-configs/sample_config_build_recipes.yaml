@@ -235,7 +235,7 @@ vitis_firesim_rocket_singlecore_no_nic:
     PLATFORM_CONFIG: BaseVitisConfig
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 140
+        fpga_frequency: 100 # can reach up to 140MHz, but 100MHz for build speed
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
