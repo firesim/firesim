@@ -61,7 +61,7 @@ def run_xclbin_buildbitstream():
 
             run("firesim managerinit --platform vitis")
 
-            # modify config_build.yaml
+            # modify config_build.yaml (uncomment only a single vitis bitstream)
             build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
             build_yaml_lines = open(build_yaml).read().split("\n")
             with open(build_yaml, "w") as byf:
@@ -69,7 +69,7 @@ def run_xclbin_buildbitstream():
                     if "- firesim" in line:
                         # comment out AWS specific lines
                         byf.write("# " + line + '\n')
-                    elif "- vitis_firesim" in line:
+                    elif "- vitis_firesim_rocket" in line:
                         # remove comment on vitis line
                         byf.write(line.replace("# ", '') + '\n')
                     elif 'default_build_dir:' in line:
