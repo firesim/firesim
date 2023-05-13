@@ -75,7 +75,7 @@ def run_xclbin_buildbitstream():
                     else:
                         byf.write(line + '\n')
 
-            run(f"Printing {build_yaml}...")
+            print(f"Printing {build_yaml}...")
             run(f"cat {build_yaml}")
 
             rc = 0
