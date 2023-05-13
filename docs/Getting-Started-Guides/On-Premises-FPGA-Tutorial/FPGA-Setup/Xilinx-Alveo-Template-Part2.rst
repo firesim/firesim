@@ -40,7 +40,7 @@ Next, lets flash all FPGAs in the system with the dummy bitstream.
 
    BITSTREAM_TAR=<# replace me!>
    tar xvf $BITSTREAM_TAR
-   ./program_fpga.py --serial_no $SERIAL_NO |platform_name|/*.bit
+   ./fpga-util.py --serial $SERIAL_NO |platform_name|/*.bit
 
 Next, **warm reboot** the computer.
 This will reconfigure your PCI-E settings such that FireSim can detect the XDMA-enabled bitstream.

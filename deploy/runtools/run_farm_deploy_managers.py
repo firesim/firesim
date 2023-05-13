@@ -797,7 +797,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdf = self.slot_to_bdf(slotno)
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
-                run(f"""{remote_sim_dir}/scripts/program_fpga.py --bitstream {bit} --bdf {bdf}""")
+                run(f"""{remote_sim_dir}/scripts/fpga-util.py --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -872,7 +872,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
 
         with cd(remote_sim_dir):
-            run(f"""./scripts/generate-fpga-db.py --working-bitstream {bitstream} --driver {driver} --out-db-json {json}""")
+            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {json}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
