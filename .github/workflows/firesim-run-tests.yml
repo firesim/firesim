@@ -498,7 +498,7 @@ jobs:
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
-    needs: [run-parallel-vcs-metasims-and-vitis-driver, run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream, run-vitis-check-docs-generated-components]
+    needs: [run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream, run-vitis-check-docs-generated-components]
     runs-on: local-fpga
     if: ${{ always() }}
     steps:
