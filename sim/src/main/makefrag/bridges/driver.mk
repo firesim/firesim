@@ -17,7 +17,7 @@ DRIVER_CC := \
 		$(testchipip_csrc_dir)/testchip_tsi.cc \
 		$(wildcard $(addprefix $(firesim_lib_dir)/, \
 			bridges/uart.cc \
-			bridges/serial.cc \
+			bridges/tsibridge.cc \
 			bridges/blockdev.cc \
 			bridges/tracerv.cc \
 			fesvr/firesim_tsi.cc \
