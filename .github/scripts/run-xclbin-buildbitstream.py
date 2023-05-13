@@ -53,14 +53,9 @@ def run_xclbin_buildbitstream():
 
     relative_hwdb_path = f"deploy/sample-backup-configs/sample_config_hwdb.yaml"
 
-    manager_fsim_dir = ci_env['GITHUB_WORKSPACE']
+    manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
-        run("./build-setup.sh --skip-validate")
-
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
-
-            run("firesim managerinit --platform vitis")
-
             # modify config_build.yaml (uncomment only a single vitis bitstream)
             build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
             build_yaml_lines = open(build_yaml).read().split("\n")

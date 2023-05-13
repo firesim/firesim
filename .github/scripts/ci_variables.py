@@ -59,6 +59,9 @@ class CIEnvironment(TypedDict):
     FIRESIM_PEM: str
     FIRESIM_PEM_PUBLIC: str
 
+    # FireSim repo used on local CI machine to run tests from (cached across all workflow CI jobs)
+    REMOTE_WORK_DIR: str
+
 RUN_LOCAL = os.environ.get('GITHUB_ACTIONS', 'false') == 'false'
 # When running locally (not in a CI pipeline) run commands out of the clone hosting this file.
 local_fsim_dir = os.path.normpath((os.path.realpath(__file__)) + "/../../..")
@@ -94,4 +97,5 @@ ci_env: CIEnvironment = {
     'AZURE_CI_NSG_ID': get_ci_value('AZURE_CI_NSG_ID'),
     'FIRESIM_PEM': get_ci_value('FIRESIM_PEM'),
     'FIRESIM_PEM_PUBLIC': get_ci_value('FIRESIM_PEM_PUBLIC'),
+    'REMOTE_WORK_DIR': get_ci_value('REMOTE_WORK_DIR'),
 }

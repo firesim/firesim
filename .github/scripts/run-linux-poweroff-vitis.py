@@ -15,23 +15,13 @@ def run_linux_poweroff_vitis():
 
     # repo should already be checked out
 
-    with prefix(f"cd {ci_env['GITHUB_WORKSPACE']}"):
+    with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
         run("./build-setup.sh --skip-validate")
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
-            # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
             with prefix('cd sw/firesim-software'):
-                run("./init-submodules.sh")
-
                 # build outputs.yaml (use this workload since firemarshal can guestmount)
-                with settings(warn_only=True):
-                    rc = run("./marshal -v build test/outputs.yaml &> outputs.full.log").return_code
-                    if rc != 0:
-                        run("cat outputs.full.log")
-                        raise Exception("Building test/outputs.yaml failed to run")
-
+                run("./marshal -v build test/outputs.yaml")
                 run("./marshal -v install test/outputs.yaml")
-
-            run("firesim managerinit --platform vitis")
 
             def run_w_timeout(workload_path, workload, timeout, num_passes):
                 log_tail_length = 300
