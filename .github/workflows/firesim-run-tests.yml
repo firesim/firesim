@@ -138,7 +138,7 @@ jobs:
   #      if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
   #      uses: ./.github/actions/setup-workflow-monitor
   #      with:
-  #        max-runtime-hours: 4
+  #        max-runtime-hours: 8
   #    - name: Initial Scala compilation
   #      uses: ./.github/actions/initial-scala-compile
   #    - name: Catch potentially orphaned manager
