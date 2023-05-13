@@ -500,7 +500,7 @@ jobs:
     name: cleanup-local-fpga-repo
     needs: [run-parallel-vcs-metasims-and-vitis-driver, run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream, run-vitis-check-docs-generated-components]
     runs-on: local-fpga
-    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}
+    if: ${{ always() }}
     steps:
       - name: Delete repo copy
         run: rm -rf ${{ env.REMOTE_WORK_DIR }}
