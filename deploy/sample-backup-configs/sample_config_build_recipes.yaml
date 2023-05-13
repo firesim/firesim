@@ -316,3 +316,19 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u280.yaml
+
+# Xilinx VCU118-only Config
+xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
+    PLATFORM: xilinx_vcu118
+    TARGET_PROJECT: firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimRocket4GiBDRAMConfig
+    PLATFORM_CONFIG: BaseXilinxVCU118Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 140
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/xilinx_vcu118.yaml
+

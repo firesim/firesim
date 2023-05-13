@@ -12,6 +12,8 @@ else ifeq ($(PLATFORM), xilinx_alveo_u250)
 board_dir          := $(platforms_dir)/xilinx_alveo_u250
 else ifeq ($(PLATFORM), xilinx_alveo_u280)
 board_dir          := $(platforms_dir)/xilinx_alveo_u280
+else ifeq ($(PLATFORM), xilinx_vcu118)
+board_dir          := $(platforms_dir)/xilinx_vcu118/garnet-firesim
 else ifeq ($(PLATFORM), f1)
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
 else
