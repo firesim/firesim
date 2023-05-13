@@ -72,6 +72,8 @@ def run_xclbin_buildbitstream():
                     elif "- vitis_firesim" in line:
                         # remove comment on vitis line
                         byf.write(line.replace("# ", '') + '\n')
+                    elif 'default_build_dir:' in line:
+                        byf.write(line.replace('null', f"{manager_fsim_dir}/tmpbuildarea") + '\n')
                     else:
                         byf.write(line + '\n')
 
