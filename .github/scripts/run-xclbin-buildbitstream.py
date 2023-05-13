@@ -51,94 +51,108 @@ def run_xclbin_buildbitstream():
 
     # repo should already be checked out
 
-    relative_hwdb_path = f"deploy/sample-backup-configs/sample_config_hwdb.yaml"
-
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
-            # modify config_build.yaml (uncomment only a single vitis bitstream)
-            build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
-            build_yaml_lines = open(build_yaml).read().split("\n")
-            with open(build_yaml, "w") as byf:
-                for line in build_yaml_lines:
-                    if "- firesim" in line:
-                        # comment out AWS specific lines
-                        byf.write("# " + line + '\n')
-                    elif "- vitis_firesim_rocket" in line:
-                        # remove comment on vitis line
-                        byf.write(line.replace("# ", '') + '\n')
-                    elif 'default_build_dir:' in line:
-                        byf.write(line.replace('null', f"{manager_fsim_dir}/tmpbuildarea") + '\n')
-                    else:
-                        byf.write(line + '\n')
 
-            print(f"Printing {build_yaml}...")
-            run(f"cat {build_yaml}")
+            # return a copy of config_build.yaml w/ hwdb entry uncommented + new build dir
+            def modify_config_build(hwdb_entry_to_gen: str) -> str:
+                build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
+                copy_build_yaml = f"{manager_fsim_dir}/deploy/config_build_{hwdb_entry_to_gen}.yaml"
+                build_yaml_lines = open(build_yaml).read().split("\n")
+                with open(copy_build_yaml, "w") as byf:
+                    for line in build_yaml_lines:
+                        if "- firesim" in line:
+                            # comment out AWS specific lines
+                            byf.write("# " + line + '\n')
+                        elif "- {hwdb_entry_to_gen}" in line:
+                            # remove comment
+                            byf.write(line.replace("# ", '') + '\n')
+                        elif 'default_build_dir:' in line:
+                            byf.write(line.replace('null', f"{manager_fsim_dir}/tmp_build_area") + '\n')
+                        else:
+                            byf.write(line + '\n')
+                return copy_build_yaml
 
-            rc = 0
-            with settings(warn_only=True):
-                # pty=False needed to avoid issues with screen -ls stalling in fabric
-                build_result = run("timeout 10h firesim buildbitstream --forceterminate", pty=False)
-                rc = build_result.return_code
+            def build_upload(build_yaml: str, hwdb_entry_name: str) -> str:
 
-            if rc != 0:
-                log_lines = 200
-                print(f"Buildbitstream failed. Printing {log_lines} of last log file:")
-                run(f"""LAST_LOG=$(ls | tail -n1) && if [ -f "$LAST_LOG" ]; then tail -n{log_lines} $LAST_LOG; fi""")
-                sys.exit(rc)
-            else:
+                print(f"Printing {build_yaml}...")
+                run(f"cat {build_yaml}")
+
+                rc = 0
+                with settings(warn_only=True):
+                    # pty=False needed to avoid issues with screen -ls stalling in fabric
+                    build_result = run(f"timeout 10h firesim buildbitstream -b {build_yaml} --forceterminate", pty=False)
+                    rc = build_result.return_code
+
+                if rc != 0:
+                    log_lines = 200
+                    print(f"Buildbitstream failed. Printing {log_lines} of last log file:")
+                    run(f"""LAST_LOG=$(ls | tail -n1) && if [ -f "$LAST_LOG" ]; then tail -n{log_lines} $LAST_LOG; fi""")
+                    sys.exit(rc)
+
                 hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
-                built_hwdb_entries = [x for x in os.listdir(hwdb_entry_dir) if os.path.isfile(os.path.join(hwdb_entry_dir, x))]
+                hwdb_entry = f"{hwdb_entry_dir}/{hwdb_entry_name}"
 
-                hwdb_to_link = {}
-                for hwdb in built_hwdb_entries:
-                    print(f"Printing {hwdb}")
-                    run(f"cat {hwdb_entry_dir}/{hwdb}")
+                print(f"Printing {hwdb_entry}...")
+                run(f"cat {hwdb_entry}")
 
-                    with open(f"{hwdb_entry_dir}/{hwdb}") as hwdbef:
-                        lines = hwdbef.readlines()
-                        for line in lines:
-                            if "xclbin:" in line:
-                                file_path = Path(line.strip().split(' ')[1]) # 2nd element
-                                file_name = f"vitis/{hwdb}.xclbin"
-                                sha = upload_file(file_path, file_name)
-                                link = f"{URL_PREFIX}/{sha}/{file_name}"
-                                print(f"Uploaded xclbin for {hwdb} to {link}")
-                                hwdb_to_link[hwdb] = link
+                with open(hwdb_entry, 'r') as hwdbef:
+                    lines = hwdbef.readlines()
+                    for line in lines:
+                        if "xclbin:" in line:
+                            file_path = Path(line.strip().split(' ')[1]) # 2nd element (i.e. the path)
+                            file_name = f"vitis/{hwdb_entry_name}.xclbin"
+                            sha = upload_file(file_path, file_name)
+                            link = f"{URL_PREFIX}/{sha}/{file_name}"
+                            print(f"Uploaded xclbin for {hwdb_entry_name} to {link}")
+                            return link
 
-                # parse the output yamls, replace the sample hwdb's xclbin line only
-                sample_hwdb_filename = f"{manager_fsim_dir}/{relative_hwdb_path}"
-                for hwdb in built_hwdb_entries:
-                    sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
+                sys.exit(":ERROR: Something went wrong. Should have uploaded by now and returned a link.")
 
-                    with open(sample_hwdb_filename, "w") as sample_hwdb_file:
-                        match_xclbin = False
-                        for line in sample_hwdb_lines:
-                            if hwdb in line.strip().split(' ')[0].replace(':', ''):
-                                # hwdb entry matches key name
-                                match_xclbin = True
-                                sample_hwdb_file.write(line + '\n')
-                            elif match_xclbin == True and ("xclbin:" in line.strip().split(' ')[0]):
-                                # only replace this xclbin
-                                match_xclbin = False
+            relative_hwdb_path = "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+            sample_hwdb_filename = f"{manager_fsim_dir}/{relative_hwdb_path}"
 
-                                new_xclbin_line = f"    xclbin: {hwdb_to_link[hwdb]}"
-                                print(f"Replacing {line.strip()} with {new_xclbin_line}")
+            def replace_in_hwdb(hwdb_entry_name: str, link: str) -> None:
+                # replace the sample hwdb's xclbin line only
+                sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 
-                                # print out the xclbin line
-                                sample_hwdb_file.write(new_xclbin_line + '\n')
-                            else:
-                                # if no match print other lines
-                                sample_hwdb_file.write(line + '\n')
+                with open(sample_hwdb_filename, "w") as sample_hwdb_file:
+                    match_xclbin = False
+                    for line in sample_hwdb_lines:
+                        if hwdb_entry_name in line.strip().split(' ')[0].replace(':', ''):
+                            # hwdb entry matches key name
+                            match_xclbin = True
+                            sample_hwdb_file.write(line + '\n')
+                        elif match_xclbin == True and ("xclbin:" in line.strip().split(' ')[0]):
+                            # only replace this xclbin
+                            match_xclbin = False
 
-                        if match_xclbin == True:
-                            sys.exit("::ERROR:: Unable to find matching xclbin key for HWDB entry")
+                            new_xclbin_line = f"    xclbin: {link}"
+                            print(f"Replacing {line.strip()} with {new_xclbin_line}")
 
-                print(f"Printing {sample_hwdb_filename}...")
-                run(f"cat {sample_hwdb_filename}")
+                            # print out the xclbin line
+                            sample_hwdb_file.write(new_xclbin_line + '\n')
+                        else:
+                            # if no match print other lines
+                            sample_hwdb_file.write(line + '\n')
 
-                # copy back to workspace area so you can PR it
-                run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
+                    if match_xclbin == True:
+                        sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
+
+            hwdb_entry_name = "vitis_firesim_rocket_singlecore_no_nic"
+            copy_build_yaml = modify_config_build(hwdb_entry_name)
+            replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
+
+            hwdb_entry_name = "vitis_firesim_gemmini_rocket_singlecore_no_nic"
+            copy_build_yaml = modify_config_build(hwdb_entry_name)
+            replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
+
+            print(f"Printing {sample_hwdb_filename}...")
+            run(f"cat {sample_hwdb_filename}")
+
+            # copy back to workspace area so you can PR it
+            run(f"cp -f {sample_hwdb_filename} {manager_fsim_dir}/{relative_hwdb_path}")
 
 if __name__ == "__main__":
     execute(run_xclbin_buildbitstream, hosts=["localhost"])
