@@ -40,7 +40,7 @@ def upload_file(local_file_path, gh_file_path):
         content, commit = repo.create_file(git_file, "committing files", content, branch="main")
         print(git_file + ' CREATED')
 
-    print(commit)
+    print(commit, content, type(commit), type(content))
     return commit
 
 def run_xclbin_buildbitstream():
