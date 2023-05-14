@@ -5,6 +5,7 @@ from pathlib import Path
 from fabric.api import prefix, run, settings, execute # type: ignore
 import os
 from github import Github
+import base64
 
 from ci_variables import ci_env
 
