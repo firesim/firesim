@@ -34,14 +34,13 @@ def upload_file(local_file_path, gh_file_path):
     git_file = gh_file_path
     if git_file in all_files:
         contents = repo.get_contents(git_file)
-        r = repo.update_file(contents.path, "committing files", content, contents.sha, branch="main")
-        print(git_file + ' UPDATED')
+        r = repo.update_file(contents.path, f"Committing files from {ci_env['GITHUB_SHA']}", content, contents.sha, branch="main")
+        print(f"Updated: {git_file}")
     else:
-        r = repo.create_file(git_file, "committing files", content, branch="main")
-        print(git_file + ' CREATED')
+        r = repo.create_file(git_file, f"Committing files from {ci_env['GITHUB_SHA']}", content, branch="main")
+        print(f"Created: {git_file}")
 
-    print(f":DEBUG: {r} {type(r)}")
-    return r
+    return r['commit'].sha
 
 def run_xclbin_buildbitstream():
     """ Runs Xclbin buildbitstream"""
@@ -55,109 +54,112 @@ def run_xclbin_buildbitstream():
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
 
-        sha = upload_file(f"{manager_fsim_dir}/README.md", "vitis/README.md")
-        print(sha)
-        #with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
+        run(f"echo 'hi this working?' >> {manager_fsim_dir}/{relative_hwdb_path}")
 
-            ## return a copy of config_build.yaml w/ hwdb entry uncommented + new build dir
-            #def modify_config_build(hwdb_entry_to_gen: str) -> str:
-            #    build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
-            #    copy_build_yaml = f"{manager_fsim_dir}/deploy/config_build_{hwdb_entry_to_gen}.yaml"
-            #    build_yaml_lines = open(build_yaml).read().split("\n")
-            #    with open(copy_build_yaml, "w") as byf:
-            #        for line in build_yaml_lines:
-            #            if "- firesim" in line:
-            #                # comment out AWS specific lines
-            #                byf.write("# " + line + '\n')
-            #            elif f"- {hwdb_entry_to_gen}" in line:
-            #                # remove comment
-            #                byf.write(line.replace("# ", '') + '\n')
-            #            elif 'default_build_dir:' in line:
-            #                byf.write(line.replace('null', f"{manager_fsim_dir}/tmp_build_area") + '\n')
-            #            else:
-            #                byf.write(line + '\n')
-            #    return copy_build_yaml
+        sys.exit(1)
 
-            #def build_upload(build_yaml: str, hwdb_entry_name: str) -> str:
+        with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
 
-            #    print(f"Printing {build_yaml}...")
-            #    run(f"cat {build_yaml}")
+            # return a copy of config_build.yaml w/ hwdb entry uncommented + new build dir
+            def modify_config_build(hwdb_entry_to_gen: str) -> str:
+                build_yaml = f"{manager_fsim_dir}/deploy/config_build.yaml"
+                copy_build_yaml = f"{manager_fsim_dir}/deploy/config_build_{hwdb_entry_to_gen}.yaml"
+                build_yaml_lines = open(build_yaml).read().split("\n")
+                with open(copy_build_yaml, "w") as byf:
+                    for line in build_yaml_lines:
+                        if "- firesim" in line:
+                            # comment out AWS specific lines
+                            byf.write("# " + line + '\n')
+                        elif f"- {hwdb_entry_to_gen}" in line:
+                            # remove comment
+                            byf.write(line.replace("# ", '') + '\n')
+                        elif 'default_build_dir:' in line:
+                            byf.write(line.replace('null', f"{manager_fsim_dir}/tmp_build_area") + '\n')
+                        else:
+                            byf.write(line + '\n')
+                return copy_build_yaml
 
-            #    rc = 0
-            #    with settings(warn_only=True):
-            #        # pty=False needed to avoid issues with screen -ls stalling in fabric
-            #        build_result = run(f"timeout 10h firesim buildbitstream -b {build_yaml} --forceterminate", pty=False)
-            #        rc = build_result.return_code
+            def build_upload(build_yaml: str, hwdb_entry_name: str) -> str:
 
-            #    if rc != 0:
-            #        log_lines = 200
-            #        print(f"Buildbitstream failed. Printing {log_lines} of last log file:")
-            #        run(f"""LAST_LOG=$(ls | tail -n1) && if [ -f "$LAST_LOG" ]; then tail -n{log_lines} $LAST_LOG; fi""")
-            #        sys.exit(rc)
+                print(f"Printing {build_yaml}...")
+                run(f"cat {build_yaml}")
 
-            #    hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
-            #    hwdb_entry = f"{hwdb_entry_dir}/{hwdb_entry_name}"
+                rc = 0
+                with settings(warn_only=True):
+                    # pty=False needed to avoid issues with screen -ls stalling in fabric
+                    build_result = run(f"timeout 10h firesim buildbitstream -b {build_yaml} --forceterminate", pty=False)
+                    rc = build_result.return_code
 
-            #    print(f"Printing {hwdb_entry}...")
-            #    run(f"cat {hwdb_entry}")
+                if rc != 0:
+                    log_lines = 200
+                    print(f"Buildbitstream failed. Printing {log_lines} of last log file:")
+                    run(f"""LAST_LOG=$(ls | tail -n1) && if [ -f "$LAST_LOG" ]; then tail -n{log_lines} $LAST_LOG; fi""")
+                    sys.exit(rc)
 
-            #    with open(hwdb_entry, 'r') as hwdbef:
-            #        lines = hwdbef.readlines()
-            #        for line in lines:
-            #            if "xclbin:" in line:
-            #                file_path = Path(line.strip().split(' ')[1]) # 2nd element (i.e. the path)
-            #                file_name = f"vitis/{hwdb_entry_name}.xclbin"
-            #                sha = upload_file(file_path, file_name)
-            #                link = f"{URL_PREFIX}/{sha}/{file_name}"
-            #                print(f"Uploaded xclbin for {hwdb_entry_name} to {link}")
-            #                return link
+                hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
+                hwdb_entry = f"{hwdb_entry_dir}/{hwdb_entry_name}"
 
-            #    sys.exit(":ERROR: Something went wrong. Should have uploaded by now and returned a link.")
+                print(f"Printing {hwdb_entry}...")
+                run(f"cat {hwdb_entry}")
 
-            #relative_hwdb_path = "deploy/sample-backup-configs/sample_config_hwdb.yaml"
-            #sample_hwdb_filename = f"{manager_fsim_dir}/{relative_hwdb_path}"
+                with open(hwdb_entry, 'r') as hwdbef:
+                    lines = hwdbef.readlines()
+                    for line in lines:
+                        if "xclbin:" in line:
+                            file_path = Path(line.strip().split(' ')[1]) # 2nd element (i.e. the path)
+                            file_name = f"vitis/{hwdb_entry_name}.xclbin"
+                            sha = upload_file(file_path, file_name)
+                            link = f"{URL_PREFIX}/{sha}/{file_name}"
+                            print(f"Uploaded xclbin for {hwdb_entry_name} to {link}")
+                            return link
 
-            #def replace_in_hwdb(hwdb_entry_name: str, link: str) -> None:
-            #    # replace the sample hwdb's xclbin line only
-            #    sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
+                sys.exit(":ERROR: Something went wrong. Should have uploaded by now and returned a link.")
 
-            #    with open(sample_hwdb_filename, "w") as sample_hwdb_file:
-            #        match_xclbin = False
-            #        for line in sample_hwdb_lines:
-            #            if hwdb_entry_name in line.strip().split(' ')[0].replace(':', ''):
-            #                # hwdb entry matches key name
-            #                match_xclbin = True
-            #                sample_hwdb_file.write(line + '\n')
-            #            elif match_xclbin == True and ("xclbin:" in line.strip().split(' ')[0]):
-            #                # only replace this xclbin
-            #                match_xclbin = False
+            relative_hwdb_path = "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+            sample_hwdb_filename = f"{manager_fsim_dir}/{relative_hwdb_path}"
 
-            #                new_xclbin_line = f"    xclbin: {link}"
-            #                print(f"Replacing {line.strip()} with {new_xclbin_line}")
+            def replace_in_hwdb(hwdb_entry_name: str, link: str) -> None:
+                # replace the sample hwdb's xclbin line only
+                sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 
-            #                # print out the xclbin line
-            #                sample_hwdb_file.write(new_xclbin_line + '\n')
-            #            else:
-            #                # if no match print other lines
-            #                sample_hwdb_file.write(line + '\n')
+                with open(sample_hwdb_filename, "w") as sample_hwdb_file:
+                    match_xclbin = False
+                    for line in sample_hwdb_lines:
+                        if hwdb_entry_name in line.strip().split(' ')[0].replace(':', ''):
+                            # hwdb entry matches key name
+                            match_xclbin = True
+                            sample_hwdb_file.write(line + '\n')
+                        elif match_xclbin == True and ("xclbin:" in line.strip().split(' ')[0]):
+                            # only replace this xclbin
+                            match_xclbin = False
 
-            #        if match_xclbin == True:
-            #            sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
+                            new_xclbin_line = f"    xclbin: {link}"
+                            print(f"Replacing {line.strip()} with {new_xclbin_line}")
 
-            ## roughly takes ~4h to generate
-            #hwdb_entry_name = "vitis_firesim_rocket_singlecore_no_nic"
+                            # print out the xclbin line
+                            sample_hwdb_file.write(new_xclbin_line + '\n')
+                        else:
+                            # if no match print other lines
+                            sample_hwdb_file.write(line + '\n')
+
+                    if match_xclbin == True:
+                        sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
+
+            # roughly takes ~4h to generate
+            hwdb_entry_name = "vitis_firesim_rocket_singlecore_no_nic"
+            copy_build_yaml = modify_config_build(hwdb_entry_name)
+            replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
+
+            # TODO: re-enable later
+            #hwdb_entry_name = "vitis_firesim_gemmini_rocket_singlecore_no_nic"
             #copy_build_yaml = modify_config_build(hwdb_entry_name)
             #replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
 
-            ##hwdb_entry_name = "vitis_firesim_gemmini_rocket_singlecore_no_nic"
-            ##copy_build_yaml = modify_config_build(hwdb_entry_name)
-            ##replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
+            print(f"Printing {sample_hwdb_filename}...")
+            run(f"cat {sample_hwdb_filename}")
 
-            #print(f"Printing {sample_hwdb_filename}...")
-            #run(f"cat {sample_hwdb_filename}")
-
-            ## copy back to workspace area so you can PR it
-            #run(f"cp -f {sample_hwdb_filename} {manager_fsim_dir}/{relative_hwdb_path}")
+            # copy back to workspace area so you can PR it
+            run(f"cp -f {sample_hwdb_filename} {manager_fsim_dir}/{relative_hwdb_path}")
 
 if __name__ == "__main__":
     execute(run_xclbin_buildbitstream, hosts=["localhost"])
