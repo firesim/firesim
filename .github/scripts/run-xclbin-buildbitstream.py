@@ -13,7 +13,7 @@ GH_ORG = 'firesim'
 URL_PREFIX = f"https://raw.githubusercontent.com/{GH_ORG}/{GH_REPO}"
 
 # taken from https://stackoverflow.com/questions/63427607/python-upload-files-directly-to-github-using-pygithub
-def upload_file(local_file_path, gh_file_path):
+def upload_binary_file(local_file_path, gh_file_path):
     g = Github(ci_env['PERSONAL_ACCESS_TOKEN'])
 
     repo = g.get_repo(f'{GH_ORG}/{GH_REPO}')
@@ -27,8 +27,8 @@ def upload_file(local_file_path, gh_file_path):
             file = file_content
             all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
 
-    with open(local_file_path, 'r') as file:
-        content = file.read()
+    with open(local_file_path, 'rb') as file:
+        content = base64.b64encode(file.read()).decode("utf-8")
 
     # Upload to github
     git_file = gh_file_path
@@ -104,7 +104,7 @@ def run_xclbin_buildbitstream():
                         if "xclbin:" in line:
                             file_path = Path(line.strip().split(' ')[1].replace('file://', '')) # 2nd element (i.e. the path) (no URI)
                             file_name = f"vitis/{hwdb_entry_name}.xclbin"
-                            sha = upload_file(file_path, file_name)
+                            sha = upload_binary_file(file_path, file_name)
                             link = f"{URL_PREFIX}/{sha}/{file_name}"
                             print(f"Uploaded xclbin for {hwdb_entry_name} to {link}")
                             return link
