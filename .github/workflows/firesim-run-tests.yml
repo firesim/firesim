@@ -480,6 +480,7 @@ jobs:
     needs: [setup-local-fpga-repo]
     name: run-xclbin-buildbitstream
     runs-on: local-fpga
+    timeout-minutes: 600
     steps:
       # This forces a fresh clone of the repo during the `checkout` step
       # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
