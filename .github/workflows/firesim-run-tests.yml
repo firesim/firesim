@@ -426,9 +426,9 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          ./build-setup.sh --skip-validate
-          source sourceme-f1-manager.sh --skip-ssh-setup
-          firesim managerinit --platform vitis
+          #./build-setup.sh --skip-validate
+          #source sourceme-f1-manager.sh --skip-ssh-setup
+          #firesim managerinit --platform vitis
           #cd sw/firesim-software && ./init-submodules.sh
 
   #run-vitis-check-docs-generated-components:
@@ -498,7 +498,7 @@ jobs:
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
-    needs: [run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream, run-vitis-check-docs-generated-components]
+    needs: [run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream]
     runs-on: local-fpga
     if: ${{ always() }}
     steps:
