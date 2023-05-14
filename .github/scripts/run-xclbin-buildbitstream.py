@@ -54,7 +54,8 @@ def run_xclbin_buildbitstream():
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
 
-        run(f"echo 'hi this working?' >> {manager_fsim_dir}/{relative_hwdb_path}")
+        relative_hwdb_path = "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+        run(f"echo 'hi this working?' >> {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
         sys.exit(1)
 
@@ -159,7 +160,7 @@ def run_xclbin_buildbitstream():
             run(f"cat {sample_hwdb_filename}")
 
             # copy back to workspace area so you can PR it
-            run(f"cp -f {sample_hwdb_filename} {manager_fsim_dir}/{relative_hwdb_path}")
+            run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
 if __name__ == "__main__":
     execute(run_xclbin_buildbitstream, hosts=["localhost"])
