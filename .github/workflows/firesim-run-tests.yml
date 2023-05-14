@@ -490,12 +490,12 @@ jobs:
         run: .github/scripts/run-xclbin-buildbitstream.py
       - uses: peter-evans/create-pull-request@v5
         with:
-          base: ${{ github.base_ref }}
+          base: ${{ github.ref }}
           add-paths: |
             'deploy/sample-backup-configs/sample_config_hwdb.yaml'
           commit-message: "Update xclbin(s) [ci skip]"
           branch-suffix: short-commit-hash
-          title: "Update xclbin(s) for ${{ github.ref_name }}"
+          title: "Update xclbin(s) for ${{ github.ref }}"
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
