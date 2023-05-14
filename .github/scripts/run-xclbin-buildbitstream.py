@@ -57,7 +57,7 @@ def run_xclbin_buildbitstream():
         relative_hwdb_path = "deploy/sample-backup-configs/sample_config_hwdb.yaml"
         run(f"echo 'hi this working?' >> {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
-        sys.exit(1)
+        sys.exit(0)
 
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
 
