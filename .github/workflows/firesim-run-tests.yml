@@ -493,8 +493,9 @@ jobs:
           base: ${{ github.head_ref }}
           add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
           commit-message: "Update xclbin(s) [ci skip]"
+          body: "Update xclbin(s) for PR #${{ github.event.pull_request.number }}"
           branch-suffix: short-commit-hash
-          title: "Update xclbin(s) for PR #${{ github.event.pull_request.number }}"
+          title: "Update xclbin(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
