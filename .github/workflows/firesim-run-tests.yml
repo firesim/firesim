@@ -428,10 +428,10 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          #./build-setup.sh --skip-validate
-          #source sourceme-f1-manager.sh --skip-ssh-setup
-          #firesim managerinit --platform vitis
-          #cd sw/firesim-software && ./init-submodules.sh
+          ./build-setup.sh --skip-validate
+          source sourceme-f1-manager.sh --skip-ssh-setup
+          firesim managerinit --platform vitis
+          cd sw/firesim-software && ./init-submodules.sh
 
   #run-vitis-check-docs-generated-components:
   #  name: run-vitis-check-docs-generated-components
@@ -480,7 +480,6 @@ jobs:
     needs: [setup-local-fpga-repo]
     name: run-xclbin-buildbitstream
     runs-on: local-fpga
-    timeout-minutes: 600 # 10h
     steps:
       # This forces a fresh clone of the repo during the `checkout` step
       # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
