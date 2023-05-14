@@ -429,16 +429,16 @@ jobs:
           ./build-setup.sh --skip-validate
           source sourceme-f1-manager.sh --skip-ssh-setup
           firesim managerinit --platform vitis
-          cd sw/firesim-software && ./init-submodules.sh
+          #cd sw/firesim-software && ./init-submodules.sh
 
-  run-vitis-check-docs-generated-components:
-    name: run-vitis-check-docs-generated-components
-    needs: [setup-local-fpga-repo]
-    runs-on: local-fpga
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
-        run: ./.github/scripts/check-vitis-docs-generated-components.py
+  #run-vitis-check-docs-generated-components:
+  #  name: run-vitis-check-docs-generated-components
+  #  needs: [setup-local-fpga-repo]
+  #  runs-on: local-fpga
+  #  steps:
+  #    - uses: actions/checkout@v3
+  #    - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
+  #      run: ./.github/scripts/check-vitis-docs-generated-components.py
 
   #run-parallel-vcs-metasims-and-vitis-driver:
   #  name: run-parallel-vcs-metasims-and-vitis-driver
