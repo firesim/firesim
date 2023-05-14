@@ -34,13 +34,13 @@ def upload_file(local_file_path, gh_file_path):
     git_file = gh_file_path
     if git_file in all_files:
         contents = repo.get_contents(git_file)
-        content, commit = repo.update_file(contents.path, "committing files", content, contents.sha, branch="master")
-        print(git_file + ' UPDATED')
+        r = repo.update_file(contents.path, f"Committing files from {ci_env['GITHUB_SHA']}", content, contents.sha, branch="main")
+        print(f"Updated: {git_file}")
     else:
-        content, commit = repo.create_file(git_file, "committing files", content, branch="master")
-        print(git_file + ' CREATED')
+        r = repo.create_file(git_file, f"Committing files from {ci_env['GITHUB_SHA']}", content, branch="main")
+        print(f"Created: {git_file}")
 
-    return commit.commit.sha
+    return r['commit'].sha
 
 def run_xclbin_buildbitstream():
     """ Runs Xclbin buildbitstream"""
@@ -53,6 +53,7 @@ def run_xclbin_buildbitstream():
 
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
+
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
 
             # return a copy of config_build.yaml w/ hwdb entry uncommented + new build dir
@@ -140,10 +141,12 @@ def run_xclbin_buildbitstream():
                     if match_xclbin == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
+            # roughly takes ~4h to generate
             hwdb_entry_name = "vitis_firesim_rocket_singlecore_no_nic"
             copy_build_yaml = modify_config_build(hwdb_entry_name)
             replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
 
+            # roughly takes ~Nh to generate
             hwdb_entry_name = "vitis_firesim_gemmini_rocket_singlecore_no_nic"
             copy_build_yaml = modify_config_build(hwdb_entry_name)
             replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
@@ -152,7 +155,7 @@ def run_xclbin_buildbitstream():
             run(f"cat {sample_hwdb_filename}")
 
             # copy back to workspace area so you can PR it
-            run(f"cp -f {sample_hwdb_filename} {manager_fsim_dir}/{relative_hwdb_path}")
+            run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
 if __name__ == "__main__":
     execute(run_xclbin_buildbitstream, hosts=["localhost"])

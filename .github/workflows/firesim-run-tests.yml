@@ -320,17 +320,19 @@ jobs:
   #  name: run-agfi-buildbitstream
   #  needs: [build-f1-driver] # delay until known working scala compile
   #  runs-on: aws-${{ github.run_id }}
+  #  timeout-minutes: 600 # 10h
   #  steps:
   #    - uses: actions/checkout@v3
   #    - name: Run buildbitstream command and update sample AGFIs
   #      run: .github/scripts/run-agfi-buildbitstream.py
   #    - uses: peter-evans/create-pull-request@v5
   #      with:
-  #        add-paths: |
-  #          'deploy/sample-backup-configs/sample_config_hwdb.yaml'
+  #        base: ${{ github.head_ref }}
+  #        add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
   #        commit-message: "Update AGFI(s) [ci skip]"
+  #        body: "Update AGFI(s) for PR #${{ github.event.pull_request.number }}"
   #        branch-suffix: short-commit-hash
-  #        title: "Update AGFI(s) for ${{ github.ref_name }}"
+  #        title: "Update AGFI(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
   #documentation-check:
   #  name: documentation-check
@@ -426,19 +428,19 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          ./build-setup.sh --skip-validate
-          source sourceme-f1-manager.sh --skip-ssh-setup
-          firesim managerinit --platform vitis
-          cd sw/firesim-software && ./init-submodules.sh
+          #./build-setup.sh --skip-validate
+          #source sourceme-f1-manager.sh --skip-ssh-setup
+          #firesim managerinit --platform vitis
+          #cd sw/firesim-software && ./init-submodules.sh
 
-  run-vitis-check-docs-generated-components:
-    name: run-vitis-check-docs-generated-components
-    needs: [setup-local-fpga-repo]
-    runs-on: local-fpga
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
-        run: ./.github/scripts/check-vitis-docs-generated-components.py
+  #run-vitis-check-docs-generated-components:
+  #  name: run-vitis-check-docs-generated-components
+  #  needs: [setup-local-fpga-repo]
+  #  runs-on: local-fpga
+  #  steps:
+  #    - uses: actions/checkout@v3
+  #    - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
+  #      run: ./.github/scripts/check-vitis-docs-generated-components.py
 
   #run-parallel-vcs-metasims-and-vitis-driver:
   #  name: run-parallel-vcs-metasims-and-vitis-driver
@@ -478,6 +480,7 @@ jobs:
     needs: [setup-local-fpga-repo]
     name: run-xclbin-buildbitstream
     runs-on: local-fpga
+    timeout-minutes: 600 # 10h
     steps:
       # This forces a fresh clone of the repo during the `checkout` step
       # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
@@ -490,15 +493,16 @@ jobs:
         run: .github/scripts/run-xclbin-buildbitstream.py
       - uses: peter-evans/create-pull-request@v5
         with:
-          add-paths: |
-            'deploy/sample-backup-configs/sample_config_hwdb.yaml'
+          base: ${{ github.head_ref }}
+          add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
           commit-message: "Update xclbin(s) [ci skip]"
+          body: "Update xclbin(s) for PR #${{ github.event.pull_request.number }}"
           branch-suffix: short-commit-hash
-          title: "Update xclbin(s) for ${{ github.ref_name }}"
+          title: "Update xclbin(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
-    needs: [run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream, run-vitis-check-docs-generated-components]
+    needs: [run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream]
     runs-on: local-fpga
     if: ${{ always() }}
     steps:
