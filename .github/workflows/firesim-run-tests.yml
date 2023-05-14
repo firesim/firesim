@@ -491,8 +491,6 @@ jobs:
       - uses: peter-evans/create-pull-request@v5
         with:
           base: ${{ github.head_ref }}
-          add-paths: |
-            'deploy/sample-backup-configs/sample_config_hwdb.yaml'
           commit-message: "Update xclbin(s) [ci skip]"
           branch-suffix: short-commit-hash
           title: "Update xclbin(s) for ${{ github.head_ref }}"
