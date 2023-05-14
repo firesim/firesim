@@ -5,6 +5,8 @@ from pathlib import Path
 from fabric.api import prefix, run, settings, execute # type: ignore
 import os
 from github import Github
+import base64
+import time
 
 from ci_variables import ci_env
 
@@ -13,7 +15,9 @@ GH_ORG = 'firesim'
 URL_PREFIX = f"https://raw.githubusercontent.com/{GH_ORG}/{GH_REPO}"
 
 # taken from https://stackoverflow.com/questions/63427607/python-upload-files-directly-to-github-using-pygithub
-def upload_file(local_file_path, gh_file_path):
+def upload_binary_file(local_file_path, gh_file_path):
+    print(f":DEBUG: Attempting to upload {local_file_path} to {gh_file_path}")
+
     g = Github(ci_env['PERSONAL_ACCESS_TOKEN'])
 
     repo = g.get_repo(f'{GH_ORG}/{GH_REPO}')
@@ -27,20 +31,40 @@ def upload_file(local_file_path, gh_file_path):
             file = file_content
             all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
 
-    with open(local_file_path, 'r') as file:
-        content = file.read()
+    with open(local_file_path, 'rb') as file:
+        content = base64.b64encode(file.read()).decode("utf-8")
+
+    tries = 10
+    delay = 15
+    msg = f"Committing files from {ci_env['GITHUB_SHA']}"
+    upload_branch = 'main'
+    r = None
 
     # Upload to github
     git_file = gh_file_path
     if git_file in all_files:
         contents = repo.get_contents(git_file)
-        content, commit = repo.update_file(contents.path, "committing files", content, contents.sha, branch="master")
-        print(git_file + ' UPDATED')
+        for n in range(tries):
+            try:
+                r = repo.update_file(contents.path, msg, content, contents.sha, branch=upload_branch)
+                break
+            except Exception as e:
+                print(f"Got exception: {e}")
+                time.sleep(delay)
+        assert r is not None, f"Unable to poll 'update_file' API {tries} times"
+        print(f"Updated: {git_file}")
     else:
-        content, commit = repo.create_file(git_file, "committing files", content, branch="master")
-        print(git_file + ' CREATED')
+        for n in range(tries):
+            try:
+                r = repo.create_file(git_file, msg, content, branch=upload_branch)
+                break
+            except Exception as e:
+                print(f"Got exception: {e}")
+                time.sleep(delay)
+        assert r is not None, f"Unable to poll 'create_file' API {tries} times"
+        print(f"Created: {git_file}")
 
-    return commit.commit.sha
+    return r['commit'].sha
 
 def run_xclbin_buildbitstream():
     """ Runs Xclbin buildbitstream"""
@@ -51,8 +75,12 @@ def run_xclbin_buildbitstream():
 
     # repo should already be checked out
 
+    #print("DEBUG: " + str(upload_binary_file("/scratch/buildbot/prebuilt-xclbins/firesim.xclbin", "vitis/temp2.xclbin")))
+    #sys.exit(0)
+
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
+
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
 
             # return a copy of config_build.yaml w/ hwdb entry uncommented + new build dir
@@ -101,9 +129,9 @@ def run_xclbin_buildbitstream():
                     lines = hwdbef.readlines()
                     for line in lines:
                         if "xclbin:" in line:
-                            file_path = Path(line.strip().split(' ')[1]) # 2nd element (i.e. the path)
+                            file_path = Path(line.strip().split(' ')[1].replace('file://', '')) # 2nd element (i.e. the path) (no URI)
                             file_name = f"vitis/{hwdb_entry_name}.xclbin"
-                            sha = upload_file(file_path, file_name)
+                            sha = upload_binary_file(file_path, file_name)
                             link = f"{URL_PREFIX}/{sha}/{file_name}"
                             print(f"Uploaded xclbin for {hwdb_entry_name} to {link}")
                             return link
@@ -140,10 +168,12 @@ def run_xclbin_buildbitstream():
                     if match_xclbin == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
+            # roughly takes ~4h to generate
             hwdb_entry_name = "vitis_firesim_rocket_singlecore_no_nic"
             copy_build_yaml = modify_config_build(hwdb_entry_name)
             replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
 
+            # roughly takes ~Nh to generate
             hwdb_entry_name = "vitis_firesim_gemmini_rocket_singlecore_no_nic"
             copy_build_yaml = modify_config_build(hwdb_entry_name)
             replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
@@ -152,7 +182,7 @@ def run_xclbin_buildbitstream():
             run(f"cat {sample_hwdb_filename}")
 
             # copy back to workspace area so you can PR it
-            run(f"cp -f {sample_hwdb_filename} {manager_fsim_dir}/{relative_hwdb_path}")
+            run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
 if __name__ == "__main__":
     execute(run_xclbin_buildbitstream, hosts=["localhost"])
