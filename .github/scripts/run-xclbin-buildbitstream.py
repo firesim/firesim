@@ -34,14 +34,14 @@ def upload_file(local_file_path, gh_file_path):
     git_file = gh_file_path
     if git_file in all_files:
         contents = repo.get_contents(git_file)
-        content, commit = repo.update_file(contents.path, "committing files", content, contents.sha, branch="main")
+        r = repo.update_file(contents.path, "committing files", content, contents.sha, branch="main")
         print(git_file + ' UPDATED')
     else:
-        content, commit = repo.create_file(git_file, "committing files", content, branch="main")
+        r = repo.create_file(git_file, "committing files", content, branch="main")
         print(git_file + ' CREATED')
 
-    print(commit, content, type(commit), type(content))
-    return commit
+    print(f":DEBUG: {r} {type(r)}")
+    return r
 
 def run_xclbin_buildbitstream():
     """ Runs Xclbin buildbitstream"""
