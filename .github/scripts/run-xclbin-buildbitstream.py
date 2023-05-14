@@ -102,7 +102,7 @@ def run_xclbin_buildbitstream():
                     lines = hwdbef.readlines()
                     for line in lines:
                         if "xclbin:" in line:
-                            file_path = Path(line.strip().split(' ')[1]) # 2nd element (i.e. the path)
+                            file_path = Path(line.strip().split(' ')[1].replace('file://', '')) # 2nd element (i.e. the path) (no URI)
                             file_name = f"vitis/{hwdb_entry_name}.xclbin"
                             sha = upload_file(file_path, file_name)
                             link = f"{URL_PREFIX}/{sha}/{file_name}"
