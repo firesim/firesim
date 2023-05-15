@@ -14,7 +14,7 @@ GH_REPO = 'firesim-public-bitstreams'
 GH_ORG = 'firesim'
 URL_PREFIX = f"https://raw.githubusercontent.com/{GH_ORG}/{GH_REPO}"
 
-def poll_api(tries, delay, api_func, *args):
+def poll_api(tries: int, delay: int, api_func, *args) -> Any:
     for n in range(tries):
         try:
             return api_func(*args)
@@ -43,14 +43,32 @@ def upload_binary_file(local_file_path, gh_file_path):
     with open(local_file_path, 'rb') as file:
         content = base64.b64encode(file.read()).decode("utf-8")
 
+    tries = 10
+    delay = 15
+    msg = f"Committing files from {ci_env['GITHUB_SHA']}"
+    upload_branch = 'main'
+    r = None
+
     # Upload to github
     git_file = gh_file_path
     if git_file in all_files:
         contents = repo.get_contents(git_file)
-        r = poll_api(5, 15, repo.update_file, contents.path, f"Committing files from {ci_env['GITHUB_SHA']}", content, contents.sha, branch="main")
+        for n in range(tries):
+            try:
+                r = repo.update_file(contents.path, msg, content, contents.sha, branch=upload_branch)
+            except Exception as e:
+                print(f"Got exception: {e}")
+                time.sleep(delay)
+        assert r is not None, f"Unable to poll 'update_file' API {tries} times"
         print(f"Updated: {git_file}")
     else:
-        r = poll_api(5, 15, repo.create_file, git_file, f"Committing files from {ci_env['GITHUB_SHA']}", content, branch="main")
+        for n in range(tries):
+            try:
+                r = repo.create_file(git_file, msg, content, branch=upload_branch)
+            except Exception as e:
+                print(f"Got exception: {e}")
+                time.sleep(delay)
+        assert r is not None, f"Unable to poll 'update_file' API {tries} times"
         print(f"Created: {git_file}")
 
     return r['commit'].sha
