@@ -4,8 +4,6 @@
 
 .. include:: Intro-Template.rst
 
-.. include:: Xilinx-Alveo-Outline-Template.rst
-
 .. toctree::
    :maxdepth: 3
 

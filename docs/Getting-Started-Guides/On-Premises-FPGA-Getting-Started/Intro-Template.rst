@@ -5,21 +5,22 @@ This getting started guide will guide you through the complete flow
 for getting an example FireSim simulation up and running using an on-premises
 |fpga_name| FPGA.
 
-We will first set up an on-premises FireSim host cluster,
-consisting of three types of machines: Manager machines (where you'll write code),
-Build Farm machines (where you'll run Vivado), and Run Farm machines (where you'll
-run FPGA simulations).
+First, we will set up a single machine to run all
+FireSim-related tasks, or a full cluster to handle different tasks separately.
 
-All three of these machine types can map to a single host, for example if
-you plan to use one Desktop computer with an FPGA attached and Vivado installed
-to run FPGA simulations, run bitstream builds, and do your work (e.g., edit code/RTL).
+In general, there are three "types" of machines in a FireSim cluster: Manager
+machines (where you'll write code and run most commands), Build Farm machines
+(where you'll run Vivado to build bitstreams), and Run Farm machines (where
+you have FPGAs attached and run simulations).
 
-The first part of this getting started guide will guide you through setting up and running
-a FireSim simulation on your FPGA, modeling a quad-core Rocket Chip-based
-SoC with a 4 MB LLC and 1 to 16 GB of DDR3, depending on the host DRAM capacity
-of your FPGA board.
+In a single-machine setup (where you edit code, run Vivado to build bitstreams, and
+have an FPGA-attached, all on one machine), your machine will serve as **all three** of
+these machine types.
 
-The second part of this getting started guide will guide you through building your own FPGA
+Once we set up our machine or cluster, we will then walk through running a FireSim
+simulation of a RISC-V SoC on your FPGA, booting Linux.
+
+Finally, we will walk you through building your own FPGA
 bitstreams with customized hardware. After you complete this guide, you
 can look at the "Advanced Docs" in the sidebar to the left to learn more.
 
