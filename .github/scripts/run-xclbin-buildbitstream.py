@@ -14,15 +14,6 @@ GH_REPO = 'firesim-public-bitstreams'
 GH_ORG = 'firesim'
 URL_PREFIX = f"https://raw.githubusercontent.com/{GH_ORG}/{GH_REPO}"
 
-def poll_api(tries: int, delay: int, api_func, *args) -> Any:
-    for n in range(tries):
-        try:
-            return api_func(*args)
-        except Exception as e:
-            print(f"Got exception: {e}")
-            time.sleep(delay)
-    raise Exception(f"Failed to poll {api_func} within {tries} tries")
-
 # taken from https://stackoverflow.com/questions/63427607/python-upload-files-directly-to-github-using-pygithub
 def upload_binary_file(local_file_path, gh_file_path):
     print(f":DEBUG: Attempting to upload {local_file_path} to {gh_file_path}")
