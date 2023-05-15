@@ -34,6 +34,8 @@ dependencies:
 
     - fsspec
 
+    - pygithub
+
     - pip
     - pip:
         - fab-classic>=1.19.2
