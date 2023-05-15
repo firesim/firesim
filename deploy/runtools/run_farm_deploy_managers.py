@@ -1010,6 +1010,10 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
+    def enumerate_fpgas(self, uridir: str) -> None:
+        """ FPGAs are enumerated already with VCU118's """
+        return
+
     def terminate_instance(self) -> None:
         """ XilinxVCU118InstanceDeployManager machines cannot be terminated. """
         return
