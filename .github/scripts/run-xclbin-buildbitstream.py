@@ -47,6 +47,7 @@ def upload_binary_file(local_file_path, gh_file_path):
         for n in range(tries):
             try:
                 r = repo.update_file(contents.path, msg, content, contents.sha, branch=upload_branch)
+                break
             except Exception as e:
                 print(f"Got exception: {e}")
                 time.sleep(delay)
@@ -56,6 +57,7 @@ def upload_binary_file(local_file_path, gh_file_path):
         for n in range(tries):
             try:
                 r = repo.create_file(git_file, msg, content, branch=upload_branch)
+                break
             except Exception as e:
                 print(f"Got exception: {e}")
                 time.sleep(delay)
