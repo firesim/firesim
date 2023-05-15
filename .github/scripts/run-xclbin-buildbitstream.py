@@ -61,7 +61,7 @@ def upload_binary_file(local_file_path, gh_file_path):
             except Exception as e:
                 print(f"Got exception: {e}")
                 time.sleep(delay)
-        assert r is not None, f"Unable to poll 'update_file' API {tries} times"
+        assert r is not None, f"Unable to poll 'create_file' API {tries} times"
         print(f"Created: {git_file}")
 
     return r['commit'].sha
@@ -75,8 +75,8 @@ def run_xclbin_buildbitstream():
 
     # repo should already be checked out
 
-    print("DEBUG: " + str(upload_binary_file("/scratch/buildbot/prebuilt-xclbins/firesim.xclbin", "vitis/temp2.xclbin")))
-    sys.exit(0)
+    #print("DEBUG: " + str(upload_binary_file("/scratch/buildbot/prebuilt-xclbins/firesim.xclbin", "vitis/temp2.xclbin")))
+    #sys.exit(0)
 
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
