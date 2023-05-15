@@ -122,6 +122,26 @@ class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => None
 }) ++ new F1Config ++ new SimConfig)
 
+class XilinxVCU118Config extends Config(new Config((site, here, up) => {
+  case Platform       => (p: Parameters) => new F1Shim()(p)
+  case HasDMAChannel  => true
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+  case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
+    addrBits = 64,
+    dataBits = 512,
+    idBits = 4,
+  ))
+  case FPGAManagedAXI4Key   => None
+  case CtrlNastiKey   => NastiParameters(32, 25, 12)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x80000000L, // 2 GiB
+    beatBytes = 8,
+    idBits    = 6)
+  case HostMemNumChannels => 2
+  case PreLinkCircuitPath => None
+  case PostLinkCircuitPath => None
+}) ++ new SimConfig)
+
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case CPUManagedAXI4Key => None
