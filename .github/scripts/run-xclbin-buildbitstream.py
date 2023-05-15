@@ -173,7 +173,7 @@ def run_xclbin_buildbitstream():
             copy_build_yaml = modify_config_build(hwdb_entry_name)
             replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
 
-            # roughly takes ~Nh to generate
+            # roughly takes ~4h to generate
             hwdb_entry_name = "vitis_firesim_gemmini_rocket_singlecore_no_nic"
             copy_build_yaml = modify_config_build(hwdb_entry_name)
             replace_in_hwdb(hwdb_entry_name, build_upload(copy_build_yaml, hwdb_entry_name))
