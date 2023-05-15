@@ -14,7 +14,7 @@ GH_REPO = 'firesim-public-bitstreams'
 GH_ORG = 'firesim'
 URL_PREFIX = f"https://raw.githubusercontent.com/{GH_ORG}/{GH_REPO}"
 
-def poll_api(tries: int, delay: int, api_func, *args) -> Any:
+def poll_api(tries, delay, api_func, *args):
     for n in range(tries):
         try:
             return api_func(*args)
