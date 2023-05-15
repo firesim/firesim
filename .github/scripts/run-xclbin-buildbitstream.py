@@ -6,6 +6,7 @@ from fabric.api import prefix, run, settings, execute # type: ignore
 import os
 from github import Github
 import base64
+import time
 
 from ci_variables import ci_env
 
@@ -13,8 +14,19 @@ GH_REPO = 'firesim-public-bitstreams'
 GH_ORG = 'firesim'
 URL_PREFIX = f"https://raw.githubusercontent.com/{GH_ORG}/{GH_REPO}"
 
+def poll_api(tries: int, delay: int, api_func, *args) -> Any:
+    for n in range(tries):
+        try:
+            return api_func(*args)
+        except Exception as e:
+            print(f"Got exception: {e}")
+            time.sleep(delay)
+    raise Exception(f"Failed to poll {api_func} within {tries} tries")
+
 # taken from https://stackoverflow.com/questions/63427607/python-upload-files-directly-to-github-using-pygithub
 def upload_binary_file(local_file_path, gh_file_path):
+    print(f":DEBUG: Attempting to upload {local_file_path} to {gh_file_path}")
+
     g = Github(ci_env['PERSONAL_ACCESS_TOKEN'])
 
     repo = g.get_repo(f'{GH_ORG}/{GH_REPO}')
@@ -35,10 +47,10 @@ def upload_binary_file(local_file_path, gh_file_path):
     git_file = gh_file_path
     if git_file in all_files:
         contents = repo.get_contents(git_file)
-        r = repo.update_file(contents.path, f"Committing files from {ci_env['GITHUB_SHA']}", content, contents.sha, branch="main")
+        r = poll_api(5, 15, repo.update_file, contents.path, f"Committing files from {ci_env['GITHUB_SHA']}", content, contents.sha, branch="main")
         print(f"Updated: {git_file}")
     else:
-        r = repo.create_file(git_file, f"Committing files from {ci_env['GITHUB_SHA']}", content, branch="main")
+        r = poll_api(5, 15, repo.create_file, git_file, f"Committing files from {ci_env['GITHUB_SHA']}", content, branch="main")
         print(f"Created: {git_file}")
 
     return r['commit'].sha
