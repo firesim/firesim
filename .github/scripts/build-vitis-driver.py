@@ -11,7 +11,7 @@ def build_vitis_driver():
     #   - the firesim repo is already setup in a prior script
     #   - machine-launch-script requirements are already installed
 
-    with prefix(f"cd {ci_env['GITHUB_WORKSPACE']}"):
+    with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
             with prefix("cd ./sim"):
                 run("make PLATFORM=vitis vitis")

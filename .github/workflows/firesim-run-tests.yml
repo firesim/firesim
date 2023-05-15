@@ -13,7 +13,6 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-  AWS_BUCKET_NAME: firesim-ci-vitis-xclbins
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -30,6 +29,8 @@ env:
   LC_ALL: "en_US.UTF-8"
   CI_LABEL_DEBUG: ${{ contains(github.event.pull_request.labels.*.name, 'ci:debug') }}
   CI_LABEL_PERSIST: ${{ contains(github.event.pull_request.labels.*.name, 'ci:persist-prior-workflows') }}
+  REMOTE_WORK_DIR: /scratch/buildbot/fs-shared/fs-${{ github.sha }}
+  TERM: xterm-256-color
 
 jobs:
   cancel-prior-workflows:
@@ -139,7 +140,7 @@ jobs:
         if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
         uses: ./.github/actions/setup-workflow-monitor
         with:
-          max-runtime-hours: 4
+          max-runtime-hours: 8
       - name: Initial Scala compilation
         uses: ./.github/actions/initial-scala-compile
       - name: Catch potentially orphaned manager
@@ -156,8 +157,6 @@ jobs:
     name: build-default-workloads
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Build default workloads (FireMarshal and paper workloads)
@@ -167,8 +166,6 @@ jobs:
     name: run-manager-pytests
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run pytests
@@ -178,8 +175,6 @@ jobs:
     name: run-manager-python-typecheck
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run manager Python type checker
@@ -189,8 +184,6 @@ jobs:
       name: run-ci-python-typecheck
       needs: [setup-manager]
       runs-on: aws-${{ github.run_id }}
-      env:
-        TERM: xterm-256-color
       steps:
       - uses: actions/checkout@v3
       - name: Run CI Python type checker
@@ -200,8 +193,6 @@ jobs:
     name: run-scalafmt-check
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run Scalafmt on FireSim Scala main sources
@@ -211,8 +202,6 @@ jobs:
     name: run-check-docs-generated-components
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
@@ -222,8 +211,6 @@ jobs:
     name: build-f1-driver
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Runs compilation of F1 driver for the make-default tuple
@@ -233,8 +220,6 @@ jobs:
     name: run-targetutils-scala-tests
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run targetutils scala tests
@@ -244,8 +229,6 @@ jobs:
     name: run-midas-scala-tests
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run targetutils scala tests
@@ -255,8 +238,6 @@ jobs:
     name: run-test-groupA
     needs: [build-f1-driver]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run CIGroupA Scala tests
@@ -268,8 +249,6 @@ jobs:
     name: run-test-groupB
     needs: [run-test-groupA]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run CIGroupB Scala tests
@@ -281,8 +260,6 @@ jobs:
     name: run-test-firesim-lib
     needs: [run-test-groupB]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run firesim-lib Scala tests
@@ -296,8 +273,6 @@ jobs:
     name: run-chipyard-tests
     needs: [run-test-firesim-lib]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run other (CITests) Scala tests
@@ -313,8 +288,6 @@ jobs:
     # this behind the scalatest train. Remove once we're off SBT.
     needs: [run-chipyard-tests]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run parallel Verilator metasimulation tests (deploy on localhost and on AWS instances)
@@ -327,8 +300,6 @@ jobs:
     # this behind the scalatest train. Remove once we're off SBT.
     needs: [build-default-workloads, run-chipyard-tests, run-parallel-verilator-metasims]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run linux-poweroff test w/ AWS EC2 run farm
@@ -339,104 +310,29 @@ jobs:
     name: run-basic-linux-poweroff-externally-provisioned
     needs: [build-default-workloads]
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
     steps:
       - uses: actions/checkout@v3
       - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
         run: .github/scripts/run-linux-poweroff-externally-provisioned.py
-
-  run-parallel-vcs-metasims-and-vitis-driver:
-    name: run-parallel-vcs-metasims-and-vitis-driver
-    runs-on: local-fpga
-    env:
-      TERM: xterm-256-color
-    steps:
-      # This forces a fresh clone of the repo during the `checkout` step
-      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-      - name: Delete old checkout
-        run: |
-          rm -rf ${{ github.workspace }}/* || true
-          rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
-      - name: Run parallel VCS metasims
-        run: .github/scripts/run-parallel-vcs-metasims.py
-      - name: Build Vitis driver
-        run: .github/scripts/build-vitis-driver.py
-
-  run-basic-linux-poweroff-vitis:
-    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
-    name: run-basic-linux-poweroff-vitis
-    runs-on: local-fpga
-    env:
-      TERM: xterm-256-color
-    steps:
-      # This forces a fresh clone of the repo during the `checkout` step
-      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-      - name: Delete old checkout
-        run: |
-          rm -rf ${{ github.workspace }}/* || true
-          rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
-      - name: Run simple linux poweroff test w/ vitis
-        run: .github/scripts/run-linux-poweroff-vitis.py
 
   run-agfi-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
     name: run-agfi-buildbitstream
     needs: [build-f1-driver] # delay until known working scala compile
     runs-on: aws-${{ github.run_id }}
-    env:
-      TERM: xterm-256-color
+    timeout-minutes: 600 # 10h
     steps:
       - uses: actions/checkout@v3
       - name: Run buildbitstream command and update sample AGFIs
         run: .github/scripts/run-agfi-buildbitstream.py
-      - uses: peter-evans/create-pull-request@v4
+      - uses: peter-evans/create-pull-request@v5
         with:
-          # must align with `manager_fsim_dir/MANAGER_FIRESIM_LOCATION`
-          cwd: '/home/centos/firesim'
-          add-paths: |
-            'deploy/sample-backup-configs/sample_config_hwdb.yaml'
-          commit-message: "Update AGFI(s)"
+          base: ${{ github.head_ref }}
+          add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+          commit-message: "Update AGFI(s) [ci skip]"
+          body: "Update AGFI(s) for PR #${{ github.event.pull_request.number }}"
           branch-suffix: short-commit-hash
-          title: "Update AGFI(s) for ${{ env.GITHUB_REF_NAME }}"
-
-  # TODO: Re-enable and just post bitstreams into a GH repo
-  #run-xclbin-buildbitstream:
-  #  if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
-  #  name: run-xclbin-buildbitstream
-  #  runs-on: local-fpga
-  #  env:
-  #    TERM: xterm-256-color
-  #  steps:
-  #    # This forces a fresh clone of the repo during the `checkout` step
-  #    # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-  #    - name: Delete old checkout
-  #      run: |
-  #        rm -rf ${{ github.workspace }}/* || true
-  #        rm -rf ${{ github.workspace }}/.* || true
-  #    - uses: actions/checkout@v3
-  #    - uses: ./.github/actions/repo-setup-aws
-  #    - name: Run buildbitstream command and update sample xclbins
-  #      run: .github/scripts/run-xclbin-buildbitstream.py
-  #    - uses: peter-evans/create-pull-request@v4
-  #      with:
-  #        add-paths: |
-  #          'deploy/sample-backup-configs/sample_config_hwdb.yaml'
-  #        commit-message: "Update xclbin(s)"
-  #        branch-suffix: short-commit-hash
-  #        title: "Update xclbin(s) for ${{ env.GITHUB_REF_NAME }}"
-
-  run-vitis-check-docs-generated-components:
-    name: run-vitis-check-docs-generated-components
-    runs-on: local-fpga
-    env:
-      TERM: xterm-256-color
-    steps:
-      - uses: actions/checkout@v3
-      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
-        run: ./.github/scripts/check-vitis-docs-generated-components.py
+          title: "Update AGFI(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
   documentation-check:
     name: documentation-check
@@ -509,3 +405,106 @@ jobs:
           export FIRESIM_ENV_SOURCED=1
           export FIRESIM_STANDALONE=1
           make -C sim clang-tidy
+
+  ### Local FPGAs CI ###
+
+  setup-local-fpga-repo:
+    name: setup-local-fpga-repo
+    runs-on: local-fpga
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+            ls -alh .
+            rm -rf ${{ github.workspace }}/* || true
+            rm -rf ${{ github.workspace }}/.* || true
+            ls -alh .
+      - uses: actions/checkout@v3
+      - name: Setup repo copy
+        run: |
+          mkdir -p $(dirname ${{ env.REMOTE_WORK_DIR }})
+          git clone ${{ github.workspace }} ${{ env.REMOTE_WORK_DIR }}
+      - name: Setup repo
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          ./build-setup.sh --skip-validate
+          source sourceme-f1-manager.sh --skip-ssh-setup
+          firesim managerinit --platform vitis
+          cd sw/firesim-software && ./init-submodules.sh
+
+  run-vitis-check-docs-generated-components:
+    name: run-vitis-check-docs-generated-components
+    needs: [setup-local-fpga-repo]
+    runs-on: local-fpga
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
+        run: ./.github/scripts/check-vitis-docs-generated-components.py
+
+  run-parallel-vcs-metasims-and-vitis-driver:
+    name: run-parallel-vcs-metasims-and-vitis-driver
+    needs: [setup-local-fpga-repo]
+    runs-on: local-fpga
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run parallel VCS metasims
+        run: .github/scripts/run-parallel-vcs-metasims.py
+      - name: Build Vitis driver
+        run: .github/scripts/build-vitis-driver.py
+
+  run-basic-linux-poweroff-vitis:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    needs: [setup-local-fpga-repo]
+    name: run-basic-linux-poweroff-vitis
+    runs-on: local-fpga
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run simple linux poweroff test w/ vitis
+        run: .github/scripts/run-linux-poweroff-vitis.py
+
+  run-xclbin-buildbitstream:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
+    needs: [setup-local-fpga-repo]
+    name: run-xclbin-buildbitstream
+    runs-on: local-fpga
+    timeout-minutes: 600
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run buildbitstream command and update sample xclbins
+        run: .github/scripts/run-xclbin-buildbitstream.py
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          base: ${{ github.head_ref }}
+          add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+          commit-message: "Update xclbin(s) [ci skip]"
+          body: "Update xclbin(s) for PR #${{ github.event.pull_request.number }}"
+          branch-suffix: short-commit-hash
+          title: "Update xclbin(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
+
+  cleanup-local-fpga-repo:
+    name: cleanup-local-fpga-repo
+    needs: [run-basic-linux-poweroff-vitis, run-vitis-check-docs-generated-components, run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream]
+    runs-on: local-fpga
+    if: ${{ always() }}
+    steps:
+      - name: Delete repo copy
+        run: rm -rf ${{ env.REMOTE_WORK_DIR }}
