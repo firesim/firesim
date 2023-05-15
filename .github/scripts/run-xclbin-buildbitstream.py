@@ -52,6 +52,9 @@ def run_xclbin_buildbitstream():
 
     # repo should already be checked out
 
+    print("DEBUG: " + str(upload_binary_file("/scratch/buildbot/prebuilt-xclbins/firesim.xclbin", "vitis/temp.xclbin")))
+    sys.exit(0)
+
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
 

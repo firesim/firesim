@@ -428,10 +428,10 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          ./build-setup.sh --skip-validate
-          source sourceme-f1-manager.sh --skip-ssh-setup
-          firesim managerinit --platform vitis
-          cd sw/firesim-software && ./init-submodules.sh
+          #./build-setup.sh --skip-validate
+          #source sourceme-f1-manager.sh --skip-ssh-setup
+          #firesim managerinit --platform vitis
+          #cd sw/firesim-software && ./init-submodules.sh
 
   #run-vitis-check-docs-generated-components:
   #  name: run-vitis-check-docs-generated-components
