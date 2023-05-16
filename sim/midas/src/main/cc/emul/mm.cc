@@ -54,7 +54,10 @@ void mm_t::init(size_t sz, int lsz) {
   size = sz;
 }
 
-mm_t::~mm_t() { munmap(data, this->size); }
+mm_t::~mm_t() {
+  if (data)
+    munmap(data, this->size);
+}
 
 void mm_magic_t::init(size_t sz, int lsz) {
   mm_t::init(sz, lsz);

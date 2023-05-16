@@ -304,6 +304,11 @@ def builddriver(runtime_conf: RuntimeConfig) -> None:
     runtime_conf.build_driver()
 
 @register_task
+def enumeratefpgas(runtime_conf: RuntimeConfig) -> None:
+    """ For all run hosts, create the /opt/firesim-db.json file """
+    runtime_conf.enumerate_fpgas()
+
+@register_task
 # XXX this needs to be renamed or rethought, perhaps this is a backend-specific task?
 def tar2afi(build_config_file: BuildConfigFile) -> None:
     """

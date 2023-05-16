@@ -3,6 +3,7 @@
 #ifndef __SIMULATION_H
 #define __SIMULATION_H
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -129,10 +130,21 @@ private:
    */
   bool do_zero_out_dram = false;
 
+  /**
+   * If set, read the presence register, check it, and exit the simulation
+   * cleanly
+   */
+  bool check_fingerprint_only = false;
+
+  /**
+   * If set, write the presence register and exit the simulation cleanly
+   */
+  std::optional<uint32_t> write_fingerprint_only;
+
   midas_time_t start_time;
   midas_time_t end_time;
-  uint64_t start_hcycle = -1;
-  uint64_t end_hcycle = 0;
+  std::optional<uint64_t> start_hcycle;
+  std::optional<uint64_t> end_hcycle;
   uint64_t end_tcycle = 0;
 };
 

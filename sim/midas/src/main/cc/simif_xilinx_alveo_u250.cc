@@ -10,7 +10,7 @@
 #include "bridges/cpu_managed_stream.h"
 #include "core/simif.h"
 
-#define PCI_DEV_FMT "%04x:%02x:%02x.%d"
+#define PCI_DEV_FMT "%04x:%02d:%02x.%d"
 
 class simif_xilinx_alveo_u250_t final : public simif_t,
                                         public CPUManagedStreamIO {
@@ -49,7 +49,11 @@ private:
 };
 
 static int fpga_pci_check_file_id(char *path, uint16_t id) {
-  assert(path);
+  if (path) {
+    fprintf(stdout, "Opening %s\n", path);
+  } else {
+    assert(path);
+  }
   int ret = 0;
   FILE *fp = fopen(path, "r");
   assert(fp);
@@ -112,8 +116,10 @@ void simif_xilinx_alveo_u250_t::check_rc(int rc, char *infostr) {
 }
 
 void simif_xilinx_alveo_u250_t::fpga_shutdown() {
-  int ret = munmap(bar0_base, bar0_size);
-  assert(ret == 0);
+  if (bar0_base) {
+    int ret = munmap(bar0_base, bar0_size);
+    assert(ret == 0);
+  }
   close(edma_write_fd);
   close(edma_read_fd);
 }

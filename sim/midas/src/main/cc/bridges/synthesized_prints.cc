@@ -132,7 +132,8 @@ synthesized_prints_t::synthesized_prints_t(
 
 synthesized_prints_t::~synthesized_prints_t() {
   for (size_t i = 0; i < prints.size(); i++) {
-    delete masks[i];
+    if (masks[i])
+      delete masks[i];
   }
 }
 
