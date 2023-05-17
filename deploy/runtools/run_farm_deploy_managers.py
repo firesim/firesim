@@ -293,7 +293,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """Boot up all the switches on this host in screens."""
         # remove shared mem pages used by switches
         if self.instance_assigned_switches():
-            run("sudo rm -rf /dev/shm/*")
+            if has_sudo():
+                run("sudo rm -rf /dev/shm/*")
+            else:
+                run("find /dev/shm -user $UID -exec rm -rf {} \;")
 
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.start_switch_slot(slotno)
@@ -310,7 +313,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.instance_assigned_switches():
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.kill_switch_slot(slotno)
-            run("sudo rm -rf /dev/shm/*")
+            if has_sudo():
+                run("sudo rm -rf /dev/shm/*")
+            else:
+                run("find /dev/shm -user $UID -exec rm -rf {} \;")
 
     def kill_simulations_instance(self, disconnect_all_nbds: bool = True) -> None:
         """ Kill all simulations on this host. """
@@ -899,7 +905,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
-            bdf = self.slot_to_bdf(slotno)
+            bdf = None if self.parent_node.metasimulation_enabled else self.slot_to_bdf(slotno)
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
@@ -1027,14 +1033,18 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
-            self.instance_logger(f"""Determine BDF for {slotno}""")
-            collect = run('lspci | grep -i serial.*xilinx')
-            bdfs = [ i[:2] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-            bdf = bdfs[slotno]
+            if not self.parent_node.metasimulation_enabled:
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                collect = run('lspci | grep -i serial.*xilinx')
+                bdfs = [ i[:2] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno]
 
-            # make the local job results dir for this sim slot
-            server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
+                # make the local job results dir for this sim slot
+                server.mkdir_and_prep_local_job_results_dir()
+                sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
+            else:
+                server.mkdir_and_prep_local_job_results_dir()
+                sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), None)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
