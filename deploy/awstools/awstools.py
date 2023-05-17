@@ -48,7 +48,7 @@ def get_f1_ami_name() -> str:
     else:
         if cuser != "centos":
             print("Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI.")
-        return "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+        return "FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
