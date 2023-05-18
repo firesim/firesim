@@ -129,15 +129,18 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
     bar_id = 0;
   }
   if (pci_vendor_id) {
-    fprintf(stderr, "PCI Vendor ID not specified. Assuming PCI Vendor ID 0x10ee\n");
+    fprintf(stderr,
+            "PCI Vendor ID not specified. Assuming PCI Vendor ID 0x10ee\n");
     pci_vendor_id = 0x10ee;
   }
   if (pci_device_id) {
-    fprintf(stderr, "PCI Device ID not specified. Assuming PCI Vendor ID 0x903f\n");
+    fprintf(stderr,
+            "PCI Device ID not specified. Assuming PCI Vendor ID 0x903f\n");
     pci_vendor_id = 0x903f;
   }
 
-  printf("Using: " PCI_DEV_FMT ", BAR ID: %u, PCI Vendor ID: 0x%lx, PCI Device ID: 0x%lx\n",
+  printf("Using: " PCI_DEV_FMT
+         ", BAR ID: %u, PCI Vendor ID: 0x%lx, PCI Device ID: 0x%lx\n",
          domain_id,
          bus_id,
          device_id,
@@ -146,7 +149,13 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
          pci_vendor_id,
          pci_device_id);
 
-  fpga_setup(domain_id, bus_id, device_id, pf_id, bar_id, pci_vendor_id, pci_device_id);
+  fpga_setup(domain_id,
+             bus_id,
+             device_id,
+             pf_id,
+             bar_id,
+             pci_vendor_id,
+             pci_device_id);
 }
 
 void *
@@ -197,15 +206,13 @@ constexpr uint16_t pci_vendor_id = 0x10ee;
  */
 constexpr uint16_t pci_device_id = 0x903f;
 
-void simif_xilinx_alveo_u250_t::fpga_setup(
-  uint16_t domain_id,
-  uint8_t bus_id,
-  uint8_t device_id,
-  uint8_t pf_id,
-  uint8_t bar_id,
-  uint16_t pci_vendor_id,
-  uint16_t pci_device_id
-) {
+void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
+                                           uint8_t bus_id,
+                                           uint8_t device_id,
+                                           uint8_t pf_id,
+                                           uint8_t bar_id,
+                                           uint16_t pci_vendor_id,
+                                           uint16_t pci_device_id) {
 
   int fd = -1;
   char sysfs_name[256];

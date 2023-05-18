@@ -404,7 +404,6 @@ class RuntimeHWConfig:
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"] if runtimeconf else []
-        permissive_driver_args += [vitis_bit]
         if profile_interval != -1:
             permissive_driver_args += [f"+profile-interval={profile_interval}"]
         permissive_driver_args += [zero_out_dram]
