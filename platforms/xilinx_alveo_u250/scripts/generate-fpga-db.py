@@ -25,10 +25,13 @@ def get_bdfs() -> List[str]:
 
     sout, serr = pGrep.communicate()
 
-    if pGrep.returncode != 0:
-        sys.exit(f":ERROR: It failed with stdout: {sout.decode('utf-8')} stderr: {serr.decode('utf-8')}")
+    eSout = sout.decode('utf-8') if sout is not None else ""
+    eSerr = serr.decode('utf-8') if serr is not None else ""
 
-    outputLines = sout.decode('utf-8').splitlines()
+    if pGrep.returncode != 0:
+        sys.exit(f":ERROR: It failed with stdout: {eSout} stderr: {eSerr}")
+
+    outputLines = eSout.splitlines()
     bdfs = [ i[:7] for i in outputLines if len(i.strip()) >= 0]
     return bdfs
 
@@ -42,8 +45,11 @@ def call_fpga_util(args: List[str]) -> None:
 
     sout, serr = pProg.communicate()
 
-    if pProg.returncode != 0:
-        sys.exit(f":ERROR: It failed with stdout: {sout.decode('utf-8')} stderr: {serr.decode('utf-8')}")
+    eSout = sout.decode('utf-8') if sout is not None else ""
+    eSerr = serr.decode('utf-8') if serr is not None else ""
+
+    if pGrep.returncode != 0:
+        sys.exit(f":ERROR: It failed with stdout: {eSout} stderr: {eSerr}")
 
 def disconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
     print(f":INFO: Disconnecting BDF: {bdf}")
@@ -135,12 +141,15 @@ def call_driver(bdf: str, driver: Path, args: List[str]) -> int:
         # retrieve flushed output
         sout, serr = pProg.communicate()
 
+    eSout = sout.decode('utf-8') if sout is not None else ""
+    eSerr = serr.decode('utf-8') if serr is not None else ""
+
     if pProg.returncode == 124 or pProg.returncode is None:
         sys.exit(":ERROR: Timed out...")
     elif pProg.returncode != 0:
         print(f":WARNING: Running the driver failed...", file=sys.stderr)
 
-    print(f":DEBUG: bdf: {bdf} bus_id: {bus_id}\nstdout:\n{sout.decode('utf-8')}")
+    print(f":DEBUG: bdf: {bdf} bus_id: {bus_id}\nstdout:\n{eSout}\nstderr:\n{eSerr}")
     return pProg.returncode
 
 def run_driver_check_fingerprint(bdf: str, driver: Path) -> int:
