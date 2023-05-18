@@ -49,7 +49,7 @@ Verify that you can see the XDMA module with:
 
 .. code-block:: bash
 
-   lsmod | grep -wq xdma
+   lsmod | grep -i xdma
 
 .. warning:: After the machine is rebooted, you may need to re-insert the XDMA kernel module.
 
