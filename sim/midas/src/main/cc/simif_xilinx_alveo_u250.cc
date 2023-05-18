@@ -25,7 +25,13 @@ public:
   uint32_t is_write_ready();
   void check_rc(int rc, char *infostr);
   void fpga_shutdown();
-  void fpga_setup(int slot_id);
+  void fpga_setup(uint16_t domain_id,
+                  uint8_t bus_id,
+                  uint8_t device_id,
+                  uint8_t pf_id,
+                  uint8_t bar_id,
+                  uint16_t pci_vendor_id,
+                  uint16_t pci_device_id);
 
   CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
 
@@ -108,54 +114,54 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
     }
   }
 
-  if (domain_id) {
+  if (!domain_id) {
     fprintf(stderr, "Domain ID not specified. Assuming Domain ID 0\n");
     domain_id = 0;
   }
-  if (bus_id) {
+  if (!bus_id) {
     fprintf(stderr, "Bus ID not specified. Assuming Bus ID 0\n");
     bus_id = 0;
   }
-  if (device_id) {
+  if (!device_id) {
     fprintf(stderr, "Device ID not specified. Assuming Device ID 0\n");
     device_id = 0;
   }
-  if (pf_id) {
+  if (!pf_id) {
     fprintf(stderr, "Function ID not specified. Assuming Function ID 0\n");
     pf_id = 0;
   }
-  if (bar_id) {
+  if (!bar_id) {
     fprintf(stderr, "BAR ID not specified. Assuming BAR ID 0\n");
     bar_id = 0;
   }
-  if (pci_vendor_id) {
+  if (!pci_vendor_id) {
     fprintf(stderr,
             "PCI Vendor ID not specified. Assuming PCI Vendor ID 0x10ee\n");
     pci_vendor_id = 0x10ee;
   }
-  if (pci_device_id) {
+  if (!pci_device_id) {
     fprintf(stderr,
             "PCI Device ID not specified. Assuming PCI Vendor ID 0x903f\n");
     pci_vendor_id = 0x903f;
   }
 
   printf("Using: " PCI_DEV_FMT
-         ", BAR ID: %u, PCI Vendor ID: 0x%lx, PCI Device ID: 0x%lx\n",
-         domain_id,
-         bus_id,
-         device_id,
-         pf_id,
-         bar_id,
-         pci_vendor_id,
-         pci_device_id);
+         ", BAR ID: %u, PCI Vendor ID: 0x%04x, PCI Device ID: 0x%04x\n",
+         *domain_id,
+         *bus_id,
+         *device_id,
+         *pf_id,
+         *bar_id,
+         *pci_vendor_id,
+         *pci_device_id);
 
-  fpga_setup(domain_id,
-             bus_id,
-             device_id,
-             pf_id,
-             bar_id,
-             pci_vendor_id,
-             pci_device_id);
+  fpga_setup(*domain_id,
+             *bus_id,
+             *device_id,
+             *pf_id,
+             *bar_id,
+             *pci_vendor_id,
+             *pci_device_id);
 }
 
 void *
@@ -223,7 +229,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
                  sizeof(sysfs_name),
                  "/sys/bus/pci/devices/" PCI_DEV_FMT "/vendor",
                  domain_id,
-                 slot_id,
+                 bus_id,
                  device_id,
                  pf_id);
   assert(ret >= 0);
@@ -234,7 +240,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
                  sizeof(sysfs_name),
                  "/sys/bus/pci/devices/" PCI_DEV_FMT "/device",
                  domain_id,
-                 slot_id,
+                 bus_id,
                  device_id,
                  pf_id);
   assert(ret >= 0);
@@ -245,7 +251,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
            sizeof(sysfs_name),
            "/sys/bus/pci/devices/" PCI_DEV_FMT "/resource%u",
            domain_id,
-           slot_id,
+           bus_id,
            device_id,
            pf_id,
            bar_id);
@@ -265,8 +271,8 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
   ret = snprintf(sysfs_name,
                  sizeof(sysfs_name),
                  "/sys/bus/pci/devices/" PCI_DEV_FMT "/xdma",
-                 domain,
-                 slot_id,
+                 domain_id,
+                 bus_id,
                  device_id,
                  pf_id);
   assert(ret >= 0);

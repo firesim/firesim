@@ -928,8 +928,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             server = self.parent_node.sim_slots[slotno]
 
             if not self.parent_node.metasimulation_enabled:
-                bdf = self.slot_to_bdf(slotno).split(':')
-                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
+                bdf = self.slot_to_bdf(slotno).replace('.', ':').split(':')
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
             else:
                 extra_args = None
 
@@ -1061,8 +1061,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 self.instance_logger(f"""Determine BDF for {slotno}""")
                 collect = run('lspci | grep -i serial.*xilinx')
                 bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-                bdf = bdfs[slotno].split(':')
-                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
+                bdf = bdfs[slotno].replace('.', ':').split(':')
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
             else:
                 extra_args = None
 

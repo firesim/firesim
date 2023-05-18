@@ -270,11 +270,13 @@ class RuntimeHWConfig:
         return self.get_platform()
 
     def set_platform(self, platform: str) -> None:
-        assert self.platform is None, f"platform is already set to {self.platform}"
+        if self.platform is not None:
+            assert self.platform == platform, f"platform is already set to {self.platform} cannot set it to {platform}"
         self.platform = platform
 
     def set_deploy_quintuplet(self, deploy_quintuplet: str) -> None:
-        assert self.deploy_quintuplet is None, f"deploy_quintuplet is already set to {self.deploy_quintuplet}"
+        if self.deploy_quintuplet is not None:
+            assert self.deploy_quintuplet == deploy_quintuplet, f"deploy_quintuplet is already set to {self.deploy_quintuplet} cannot set it to {deploy_quintuplet}"
         self.deploy_quintuplet = deploy_quintuplet
 
     def get_deployquintuplet_for_config(self) -> str:
