@@ -401,12 +401,6 @@ class RuntimeHWConfig:
 
         screen_name = "fsim{}".format(slotid)
 
-        if self.platform == "vitis":
-            assert self.xclbin is not None
-            vitis_bit = f"+binary_file={self.get_xclbin_filename()}"
-        else:
-            vitis_bit = ""
-
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"] if runtimeconf else []

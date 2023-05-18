@@ -289,12 +289,17 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """ return true if this instance has any assigned switch simulations. """
         return len(self.parent_node.switch_slots) != 0
 
+    def remove_shm_files(self) -> None:
+        if has_sudo():
+            run("sudo rm -rf /dev/shm/*")
+        else:
+            run("find /dev/shm -user $UID -exec rm -rf {} \;")
+
     def start_switches_instance(self) -> None:
         """Boot up all the switches on this host in screens."""
         # remove shared mem pages used by switches
         if self.instance_assigned_switches():
-            run("sudo rm -rf /dev/shm/*")
-
+            self.remove_shm_files()
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.start_switch_slot(slotno)
 
@@ -310,7 +315,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.instance_assigned_switches():
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.kill_switch_slot(slotno)
-            run("sudo rm -rf /dev/shm/*")
+            self.remove_shm_files()
 
     def kill_simulations_instance(self, disconnect_all_nbds: bool = True) -> None:
         """ Kill all simulations on this host. """
@@ -707,8 +712,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
-        metasim_enabled = self.parent_node.metasimulation_enabled
-
         if self.instance_assigned_simulations():
             # This is a sim-host node.
 
@@ -717,7 +720,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
                 self.copy_sim_slot_infrastructure(slotno, uridir)
                 self.extract_driver_tarball(slotno)
 
-            if not metasim_enabled:
+            if not self.parent_node.metasimulation_enabled:
                 # clear/flash fpgas
                 self.clear_fpgas()
 
@@ -725,6 +728,31 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             # all nodes could have a switch
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
+
+    def start_sim_slot(self, slotno: int) -> None:
+        """ start a simulation. (same as default except that you pass in the bitstream file)"""
+        if self.instance_assigned_simulations():
+            self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
+            remote_home_dir = self.parent_node.sim_dir
+            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            server = self.parent_node.sim_slots[slotno]
+            hwcfg = server.get_resolved_server_hardware_config()
+
+            if not self.parent_node.metasimulation_enabled:
+                assert hwcfg.xclbin is not None
+                extra_args = f"+slotid={slotno} +binary_file={hwcfg.get_xclbin_filename()}"
+            else:
+                extra_args = None
+
+            # make the local job results dir for this sim slot
+            server.mkdir_and_prep_local_job_results_dir()
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
+            put(sim_start_script_local_path, remote_sim_dir)
+
+            with cd(remote_sim_dir):
+                run("chmod +x sim-run.sh")
+                run("./sim-run.sh")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ FPGAs are enumerated already with Vitis """
@@ -899,9 +927,11 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
-            bdf = self.slot_to_bdf(slotno).split(':')
-
-            extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
+            if not self.parent_node.metasimulation_enabled:
+                bdf = self.slot_to_bdf(slotno).split(':')
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
+            else:
+                extra_args = None
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
@@ -990,8 +1020,6 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
-        metasim_enabled = self.parent_node.metasimulation_enabled
-
         if self.instance_assigned_simulations():
             # This is a sim-host node.
 
@@ -1000,7 +1028,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 self.copy_sim_slot_infrastructure(slotno, uridir)
                 self.extract_driver_tarball(slotno)
 
-            if not metasim_enabled:
+            if not self.parent_node.metasimulation_enabled:
                 # load xdma driver
                 self.load_xdma()
                 self.load_xvsec()
@@ -1029,12 +1057,14 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
-            self.instance_logger(f"""Determine BDF for {slotno}""")
-            collect = run('lspci | grep -i serial.*xilinx')
-            bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-            bdf = bdfs[slotno].split(':')
-
-            extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
+            if not self.parent_node.metasimulation_enabled:
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                collect = run('lspci | grep -i serial.*xilinx')
+                bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno].split(':')
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
+            else:
+                extra_args = None
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
