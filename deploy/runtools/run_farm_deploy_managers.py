@@ -243,13 +243,13 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
-            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), None)
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), f"+slotid={slotno}")
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -895,15 +895,17 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
-            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
-            bdf = self.slot_to_bdf(slotno)
+            bdf = self.slot_to_bdf(slotno).split(':')
+
+            extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -1023,18 +1025,20 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
-            remote_sim_dir = """{}/sim_slot_{}/""".format(remote_home_dir, slotno)
+            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
 
             self.instance_logger(f"""Determine BDF for {slotno}""")
             collect = run('lspci | grep -i serial.*xilinx')
-            bdfs = [ i[:2] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-            bdf = bdfs[slotno]
+            bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+            bdf = bdfs[slotno].split(':')
+
+            extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci_vendor=0x10ee +pci_device=0x903f"
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), bdf)
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):

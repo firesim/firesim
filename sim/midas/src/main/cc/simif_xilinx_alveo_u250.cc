@@ -10,7 +10,7 @@
 #include "bridges/cpu_managed_stream.h"
 #include "core/simif.h"
 
-#define PCI_DEV_FMT "%04x:%02d:%02x.%d"
+#define PCI_DEV_FMT "%04x:%02x:%02x.%d"
 
 class simif_xilinx_alveo_u250_t final : public simif_t,
                                         public CPUManagedStreamIO {
@@ -45,7 +45,7 @@ private:
   int edma_write_fd;
   int edma_read_fd;
   void *bar0_base;
-  uint32_t bar0_size = 0x2000000; // 32 MB
+  uint32_t bar0_size = 0x2000000; // 32 MB (TODO: Make configurable?)
 };
 
 static int fpga_pci_check_file_id(char *path, uint16_t id) {
@@ -69,21 +69,84 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
     const TargetConfig &config, const std::vector<std::string> &args)
     : simif_t(config) {
 
-  int slot_id = -1;
+  std::optional<uint16_t> domain_id;
+  std::optional<uint8_t> bus_id;
+  std::optional<uint8_t> device_id;
+  std::optional<uint8_t> pf_id;
+  std::optional<uint8_t> bar_id;
+  std::optional<uint16_t> pci_vendor_id;
+  std::optional<uint16_t> pci_device_id;
+
   for (auto &arg : args) {
-    if (arg.find("+slotid=") == 0) {
-      slot_id = atoi((arg.c_str()) + 8);
+    if (arg.find("+domain=") == 0) {
+      domain_id = strtoul(arg.c_str() + 8, NULL, 16);
+      continue;
+    }
+    if (arg.find("+bus=") == 0) {
+      bus_id = strtoul(arg.c_str() + 5, NULL, 16);
+      continue;
+    }
+    if (arg.find("+device=") == 0) {
+      device_id = strtoul(arg.c_str() + 8, NULL, 16);
+      continue;
+    }
+    if (arg.find("+function=") == 0) {
+      pf_id = strtoul(arg.c_str() + 10, NULL, 16);
+      continue;
+    }
+    if (arg.find("+bar=") == 0) {
+      bar_id = strtoul(arg.c_str() + 5, NULL, 16);
+      continue;
+    }
+    if (arg.find("+pci-vendor=") == 0) {
+      pci_vendor_id = strtoul(arg.c_str() + 12, NULL, 16);
+      continue;
+    }
+    if (arg.find("+pci-device=") == 0) {
+      pci_device_id = strtoul(arg.c_str() + 12, NULL, 16);
       continue;
     }
   }
 
-  if (slot_id == -1) {
-    fprintf(stderr, "Slot ID not specified. Assuming Slot 0\n");
-    slot_id = 0;
+  if (domain_id) {
+    fprintf(stderr, "Domain ID not specified. Assuming Domain ID 0\n");
+    domain_id = 0;
+  }
+  if (bus_id) {
+    fprintf(stderr, "Bus ID not specified. Assuming Bus ID 0\n");
+    bus_id = 0;
+  }
+  if (device_id) {
+    fprintf(stderr, "Device ID not specified. Assuming Device ID 0\n");
+    device_id = 0;
+  }
+  if (pf_id) {
+    fprintf(stderr, "Function ID not specified. Assuming Function ID 0\n");
+    pf_id = 0;
+  }
+  if (bar_id) {
+    fprintf(stderr, "BAR ID not specified. Assuming BAR ID 0\n");
+    bar_id = 0;
+  }
+  if (pci_vendor_id) {
+    fprintf(stderr, "PCI Vendor ID not specified. Assuming PCI Vendor ID 0x10ee\n");
+    pci_vendor_id = 0x10ee;
+  }
+  if (pci_device_id) {
+    fprintf(stderr, "PCI Device ID not specified. Assuming PCI Vendor ID 0x903f\n");
+    pci_vendor_id = 0x903f;
   }
 
-  // note: slot_id here corresponds to the ID in the BDF (i.e. 0000:<THIS>:00.0)
-  fpga_setup(slot_id);
+  printf("Using: " PCI_DEV_FMT ", BAR ID: %u, PCI Vendor ID: 0x%lx, PCI Device ID: 0x%lx\n",
+         domain_id,
+         bus_id,
+         device_id,
+         pf_id,
+         bar_id,
+         pci_vendor_id,
+         pci_device_id);
+
+  fpga_setup(domain_id, bus_id, device_id, pf_id, bar_id, pci_vendor_id, pci_device_id);
 }
 
 void *
@@ -134,11 +197,15 @@ constexpr uint16_t pci_vendor_id = 0x10ee;
  */
 constexpr uint16_t pci_device_id = 0x903f;
 
-void simif_xilinx_alveo_u250_t::fpga_setup(int slot_id) {
-  int domain = 0;
-  int device_id = 0;
-  int pf_id = 0;
-  int bar_id = 0;
+void simif_xilinx_alveo_u250_t::fpga_setup(
+  uint16_t domain_id,
+  uint8_t bus_id,
+  uint8_t device_id,
+  uint8_t pf_id,
+  uint8_t bar_id,
+  uint16_t pci_vendor_id,
+  uint16_t pci_device_id
+) {
 
   int fd = -1;
   char sysfs_name[256];
@@ -148,7 +215,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(int slot_id) {
   ret = snprintf(sysfs_name,
                  sizeof(sysfs_name),
                  "/sys/bus/pci/devices/" PCI_DEV_FMT "/vendor",
-                 domain,
+                 domain_id,
                  slot_id,
                  device_id,
                  pf_id);
@@ -159,7 +226,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(int slot_id) {
   ret = snprintf(sysfs_name,
                  sizeof(sysfs_name),
                  "/sys/bus/pci/devices/" PCI_DEV_FMT "/device",
-                 domain,
+                 domain_id,
                  slot_id,
                  device_id,
                  pf_id);
@@ -170,7 +237,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(int slot_id) {
   snprintf(sysfs_name,
            sizeof(sysfs_name),
            "/sys/bus/pci/devices/" PCI_DEV_FMT "/resource%u",
-           domain,
+           domain_id,
            slot_id,
            device_id,
            pf_id,

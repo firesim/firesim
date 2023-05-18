@@ -352,7 +352,6 @@ class RuntimeHWConfig:
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            fpga_physical_selection: Optional[str],
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the simulation. this has to have
@@ -402,10 +401,6 @@ class RuntimeHWConfig:
 
         screen_name = "fsim{}".format(slotid)
 
-        if fpga_physical_selection is None:
-            fpga_physical_selection = str(slotid)
-        run_device_placement = "+slotid={}".format(fpga_physical_selection)
-
         if self.platform == "vitis":
             assert self.xclbin is not None
             vitis_bit = f"+binary_file={self.get_xclbin_filename()}"
@@ -415,7 +410,6 @@ class RuntimeHWConfig:
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"] if runtimeconf else []
-        permissive_driver_args += [run_device_placement]
         permissive_driver_args += [vitis_bit]
         if profile_interval != -1:
             permissive_driver_args += [f"+profile-interval={profile_interval}"]
@@ -646,7 +640,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            fpga_physical_selection: Optional[str],
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the meta simulation. """
@@ -671,7 +664,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config,
             synthprint_config,
             sudo,
-            fpga_physical_selection,
             full_extra_plusargs,
             full_extra_args)
 
