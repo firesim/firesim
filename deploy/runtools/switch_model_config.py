@@ -176,7 +176,7 @@ class AbstractSwitchToSwitchConfig:
 
     def kill_switch_simulation_command(self) -> str:
         """ Return the command to kill the switch. """
-        return """pkill {}""".format(self.switch_binary_name())
+        return """pkill -f -SIGKILL {}""".format(self.switch_binary_name())
 
     def switch_build_local_dir(self) -> str:
         """ get local build dir of the switch. """
