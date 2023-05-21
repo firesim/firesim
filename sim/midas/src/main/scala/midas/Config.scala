@@ -122,6 +122,26 @@ class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => None
 }) ++ new F1Config ++ new SimConfig)
 
+class NitefuryConfig extends Config(new Config((site, here, up) => {
+  case Platform       => (p: Parameters) => new F1Shim()(p)
+  case HasDMAChannel  => true
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+  case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
+    addrBits = 64,
+    dataBits = 512,
+    idBits = 6,
+  ))
+  case FPGAManagedAXI4Key   => None
+  case CtrlNastiKey   => NastiParameters(32, 25, 12)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x40000000L, // 1 GiB
+    beatBytes = 8,
+    idBits    = 16)
+  case HostMemNumChannels => 1
+  case PreLinkCircuitPath => None
+  case PostLinkCircuitPath => None
+}) ++ new SimConfig)
+
 class XilinxVCU118Config extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
