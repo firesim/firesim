@@ -116,7 +116,6 @@ def call_driver(bdf: str, driver: Path, args: List[str]) -> int:
             str(driverPath),
             "+permissive",
             f"+bus={bus_id}",
-            "+pci-device=0x7011",
         ] + args + [
             "+permissive-off",
             "+prog0=none",
