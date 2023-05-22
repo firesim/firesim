@@ -8,7 +8,6 @@ def call_vivado(vivado: Path, args: List[str]) -> Tuple[int, str, str]:
         [
             str(vivado),
             '-mode', 'tcl',
-            '-nolog', '-nojournal', '-notrace',
         ] + args,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,

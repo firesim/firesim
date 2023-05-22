@@ -19,7 +19,7 @@ scriptPath = Path(__file__).resolve().parent
 
 def get_bdfs() -> List[str]:
     pLspci= subprocess.Popen(['lspci'], stdout=subprocess.PIPE)
-    pGrep = subprocess.Popen(['grep', '-i', 'serial.*xilinx'], stdin=pLspci.stdout, stdout=subprocess.PIPE)
+    pGrep = subprocess.Popen(['grep', '-i', 'xilinx'], stdin=pLspci.stdout, stdout=subprocess.PIPE)
     if pLspci.stdout is not None:
         pLspci.stdout.close()
 
@@ -48,7 +48,7 @@ def call_fpga_util(args: List[str]) -> None:
     eSout = sout.decode('utf-8') if sout is not None else ""
     eSerr = serr.decode('utf-8') if serr is not None else ""
 
-    if pGrep.returncode != 0:
+    if pProg.returncode != 0:
         sys.exit(f":ERROR: It failed with stdout: {eSout} stderr: {eSerr}")
 
 def disconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
@@ -72,7 +72,7 @@ def reconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
 def program_fpga(serial: str, bitstream: str, vivado: str, hw_server: str) -> None:
     print(f":INFO: Programming {serial} with {bitstream}")
     call_fpga_util([
-        "--serial_no", serial,
+        "--serial", serial,
         "--bitstream", bitstream,
         "--vivado-bin", vivado,
         "--hw-server-bin", hw_server,
@@ -116,6 +116,7 @@ def call_driver(bdf: str, driver: Path, args: List[str]) -> int:
             str(driverPath),
             "+permissive",
             f"+bus={bus_id}",
+            "+pci-device=0x7011",
         ] + args + [
             "+permissive-off",
             "+prog0=none",
@@ -174,6 +175,8 @@ def main(args: List[str]) -> int:
         parsed_args.hw_server_bin = shutil.which('hw_server')
     if parsed_args.vivado_bin is None:
         parsed_args.vivado_bin = shutil.which('vivado')
+    if parsed_args.vivado_bin is None:
+        parsed_args.vivado_bin = shutil.which('vivado_lab')
 
     if parsed_args.hw_server_bin is None:
         print(':ERROR: Could not find Xilinx Hardware Server!', file=sys.stderr)
@@ -211,7 +214,7 @@ def main(args: List[str]) -> int:
         disconnect_bdf(bdf, str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
 
     for serial in serials:
-        program_fpga(serial, str(parsed_args.working_bitstream.resolve().absolute()), str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
+        program_fpga(serial, str(parsed_args.bitstream.resolve().absolute()), str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
 
     # reconnect all
     for bdf in bdfs:
@@ -233,7 +236,7 @@ def main(args: List[str]) -> int:
         for bdf in bdfs:
             disconnect_bdf(bdf, str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
 
-        program_fpga(serial, str(parsed_args.working_bitstream.resolve().absolute()), str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
+        program_fpga(serial, str(parsed_args.bitstream.resolve().absolute()), str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
 
         # reconnect all
         for bdf in bdfs:

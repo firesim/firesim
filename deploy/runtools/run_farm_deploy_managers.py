@@ -900,7 +900,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
 
         with cd(remote_sim_dir):
-            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {json}""")
+            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
@@ -951,6 +951,11 @@ class XilinxAlveoU280InstanceDeployManager(XilinxAlveoInstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_alveo_u280"
+
+class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "rhsresearch_nitefury_ii"
 
 class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx VCU118-enabled instance using the
@@ -1005,7 +1010,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
 
                 self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i serial.*xilinx')
+                collect = run('lspci | grep -i xilinx')
 
                 # TODO: is hardcoded cap 0x1 correct?
                 # TODO: is "Partial Reconfig Clear File" useful (see xvsecctl help)?
@@ -1059,7 +1064,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
             if not self.parent_node.metasimulation_enabled:
                 self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i serial.*xilinx')
+                collect = run('lspci | grep -i xilinx')
                 bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
                 bdf = bdfs[slotno].replace('.', ':').split(':')
                 extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
@@ -1074,3 +1079,36 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             with cd(remote_sim_dir):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
+
+class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "rhsresearch_nitefury_ii"
+
+    def start_sim_slot(self, slotno: int) -> None:
+        """ start a simulation. (same as the default except that you have a mapping from slotno to a specific BDF)"""
+        if self.instance_assigned_simulations():
+            self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
+            remote_home_dir = self.parent_node.sim_dir
+            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            server = self.parent_node.sim_slots[slotno]
+
+            if not self.parent_node.metasimulation_enabled:
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                collect = run('lspci | grep -i xilinx')
+                bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno].replace('.', ':').split(':')
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x7011"
+            else:
+                extra_args = None
+
+            # make the local job results dir for this sim slot
+            server.mkdir_and_prep_local_job_results_dir()
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
+            put(sim_start_script_local_path, remote_sim_dir)
+
+            with cd(remote_sim_dir):
+                run("chmod +x sim-run.sh")
+                run("./sim-run.sh")
+
