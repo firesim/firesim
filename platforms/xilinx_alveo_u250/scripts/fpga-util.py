@@ -82,12 +82,14 @@ def main(args: List[str]) -> int:
         parsed_args.hw_server_bin = shutil.which('hw_server')
     if parsed_args.vivado_bin is None:
         parsed_args.vivado_bin = shutil.which('vivado')
+    if parsed_args.vivado_bin is None:
+        parsed_args.vivado_bin = shutil.which('vivado_lab')
 
     if parsed_args.hw_server_bin is None:
         print(':ERROR: Could not find Xilinx Hardware Server!', file=sys.stderr)
         exit(1)
     if parsed_args.vivado_bin is None:
-        print(':ERROR: Could not find Xilinx Vivado!', file=sys.stderr)
+        print(':ERROR: Could not find Xilinx Vivado (or Vivado Lab)!', file=sys.stderr)
         exit(1)
 
     parsed_args.vivado_bin = Path(parsed_args.vivado_bin).absolute()
