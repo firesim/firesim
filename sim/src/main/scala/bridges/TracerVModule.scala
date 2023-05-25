@@ -6,12 +6,12 @@ import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
-import testchipip.{SerializableTraceBundle, TraceBundleWidths}
+import testchipip.{SerializableTracedInstruction, TraceBundleWidths}
 import midas.targetutils.TriggerSink
 
 class TracerVDUTIO(widths: TraceBundleWidths) extends Bundle {
   val triggerSink = Output(Bool())
-  val trace       = Flipped(new SerializableTraceBundle(widths))
+  val insns       = Input(Vec(widths.retireWidth, new SerializableTracedInstruction(widths)))
 }
 
 class TracerVModuleTestCount1
@@ -66,7 +66,8 @@ class TracerVDUT(implicit val p: Parameters) extends Module {
   val io = IO(new TracerVDUTIO(insnWidths))
 
   val tracerV = TracerVBridge(insnWidths)
-  tracerV.io.trace.trace := io.trace
+  tracerV.io.trace.trace.insns := io.insns
+  tracerV.io.trace.trace.time  := 0.U // this test ignores this
   TriggerSink(io.triggerSink)
 }
 
