@@ -6,12 +6,12 @@ import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
-import testchipip.{TraceBundleWidths, SerializableTileTraceIO}
+import testchipip.{SerializableTileTraceIO, TraceBundleWidths}
 import midas.targetutils.TriggerSink
 
 class TracerVDUTIO(widths: TraceBundleWidths) extends Bundle {
   val triggerSink = Output(Bool())
-  val trace = new SerializableTileTraceIO(widths)
+  val trace       = new SerializableTileTraceIO(widths)
 }
 
 class TracerVModuleTestCount1
