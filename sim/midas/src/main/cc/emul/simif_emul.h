@@ -137,8 +137,6 @@ protected:
   uint64_t fuzz_seed = 0;
   std::mt19937_64 fuzz_gen;
 
-  std::string waveform = "dump.vcd";
-
   uint64_t memsize;
 
   /**

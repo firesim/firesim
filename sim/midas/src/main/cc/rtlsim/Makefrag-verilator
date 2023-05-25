@@ -9,24 +9,27 @@
 # 	emul_cc: C++ sources
 # 	emul_h: C++ headers
 # 	emul_v: verilog sources and headers
+#       TB: The top level module on which the stop and printf conditions are defined
+#       SIM_TIMESCALE: timescale of the simulation
+#       CXXFLAGS: CXXFLAGS to pass to simulator compile
+#       LDFLAGS: LDFLAGS to pass to simulator compile
+#       sim_wrapper_v: An additional verilog wrapper around the DUT
+#       sim_harness: Additional C++ sources for simulation
 #
 # Verilator Only:
-#   verilator_wrapper_v: An additional verilog wrapper around the DUT
-#   verilator_harness: Additional C++ sources for verilator simulation
-#   top_module: The name of the top-level module (contained within the provided wrapper)
 #   (optional) verilator_conf: An verilator configuration file
 #   (optional) VERILATOR_FLAGS: extra flags depending on the target
 
-VERILATOR ?= verilator --cc --exe --timing
-verilator_v := $(emul_v) $(verilator_wrapper_v)
-verilator_cc := $(emul_cc) $(verilator_harness)
+VERILATOR ?= verilator --main --timing --cc --exe
+verilator_v := $(emul_v) $(sim_wrapper_v)
+verilator_cc := $(emul_cc) $(sim_harness)
 
-TIMESCALE_OPTS := $(shell verilator --version | perl -lne 'if (/(\d.\d+)/ && $$1 >= 4.034) { print "--timescale 1ns/1ps"; }')
 override VERILATOR_FLAGS := \
-	$(TIMESCALE_OPTS) \
-	--top-module $(top_module) \
-	-O3 \
+	--timescale $(SIM_TIMESCALE) \
+	--top-module $(TB) \
+	-O2 \
 	-sv \
+	--vpi \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
 	-Wall \
@@ -34,22 +37,31 @@ override VERILATOR_FLAGS := \
 	-Wno-DECLFILENAME \
 	-Wno-VARHIDDEN \
 	-Wno-UNDRIVEN \
-	-CFLAGS "$(CXXFLAGS) " \
-	-LDFLAGS "$(LDFLAGS) " \
+	-CFLAGS "$(CXXFLAGS) -DVERILATOR" \
+	-LDFLAGS "$(LDFLAGS)" \
+	$(SIM_PREPROC_DEFINES) \
 	$(VERILATOR_FLAGS)
 
-$(OUT_DIR)/V$(DRIVER_NAME): $(verilator_v) $(verilator_cc) $(emul_h)
-	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/V$(DRIVER_NAME).csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) -Mdir $(GEN_DIR)/V$(DRIVER_NAME).csrc \
-	-CFLAGS "-include $(GEN_DIR)/V$(DRIVER_NAME).csrc/V$(top_module).h" \
-	-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DRIVER_NAME).csrc -f V$(top_module).mk
+model_dir = $(GEN_DIR)/V$(DRIVER_NAME).csrc
+model_dir_debug = $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc
 
-$(OUT_DIR)/V$(DRIVER_NAME)-debug: $(verilator_v) $(verilator_cc) $(emul_h)
+model_header = $(model_dir)/V$(TB).h
+model_header_debug = $(model_dir_debug)/V$(TB).h
+
+model_mk = V$(TB).mk
+
+$(OUT_DIR)/V$(DRIVER_NAME): $(verilator_v) $(verilator_cc) $(emul_h) $(verilator_conf)
 	mkdir -p $(OUT_DIR)
-	rm -rf $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc
-	$(VERILATOR) $(VERILATOR_FLAGS) --trace -Mdir $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc \
-	-CFLAGS "-include $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc/V$(top_module).h" \
-	-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
-	$(MAKE) -C $(GEN_DIR)/V$(DRIVER_NAME)-debug.csrc -f V$(top_module).mk
+	rm -rf $(model_dir)
+	$(VERILATOR) $(VERILATOR_FLAGS) -Mdir $(model_dir) \
+		-CFLAGS "-include $(model_header)" \
+		-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
+	$(MAKE) -C $(model_dir) -f $(model_mk)
+
+$(OUT_DIR)/V$(DRIVER_NAME)-debug: $(verilator_v) $(verilator_cc) $(emul_h) $(verilator_conf)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(model_dir_debug)
+	$(VERILATOR) $(VERILATOR_FLAGS) --trace +define+DEBUG -Mdir $(model_dir_debug) \
+		-CFLAGS "-include $(model_header_debug)" \
+		-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
+	$(MAKE) -C $(model_dir_debug) -f $(model_mk)

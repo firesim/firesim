@@ -107,14 +107,10 @@ import "DPI-C" function void simulator_tick
   output mem_fwd_t                                    mem_3_fwd
 );
 
+import "DPI-C" function void simulator_entry();
+
 module emul(
-`ifdef VERILATOR
-  input bit clock,
-  input bit reset,
-  output bit fin
-`endif
 );
-`ifndef VERILATOR
   // Generate a single clock signal as long as the simulation is running.
   bit clock = 1'b0;
   bit fin = 1'b0;
@@ -134,39 +130,86 @@ module emul(
     while (glbl.GSR) @(posedge clock);
     `endif
 
-    // Maintain 10 reset cycles. This should be identical to Verilator.
+    // Maintain 10 reset cycles.
     #(`CLOCK_PERIOD * 1000 * 9.0) reset = 1'b0;
   end
-`endif
 
-`ifndef VERILATOR
 `ifdef DEBUG
   reg [2047:0] vcdplusfile = 2048'h0;
+  reg [2047:0] fsdbfile = 2048'h0;
+  reg [2047:0] waveformfile = 2048'h0;
   reg [63:0] dump_start = 64'h0;
   reg [63:0] dump_end = {64{1'b1}};
   reg [63:0] dump_cycles = 64'h0;
   reg [63:0] trace_count = 64'h0;
+`endif // DEBUG
+  integer stderr = 32'h80000002;
 
   initial begin
-    if ($value$plusargs("waveform=%s", vcdplusfile))
-    begin
-      $value$plusargs("dump-start=%d", dump_start);
-      if ($value$plusargs("dump-cycles=%d", dump_cycles)) begin
-        dump_end = dump_start + dump_cycles;
-      end
+`ifdef DEBUG
 
+    if ($value$plusargs("vcdplusfile=%s", vcdplusfile)) begin
+`ifdef VCS
       $vcdplusfile(vcdplusfile);
-      wait (trace_count >= dump_start) begin
-        $vcdpluson(0);
-        $vcdplusmemon(0);
-      end
-      wait ((trace_count > dump_end) || fin) begin
-        $vcdplusclose;
-      end
+`else // VCS
+      $fdisplay(stderr, "Error: +vcdplusfile is VCS-only; use +waveformfile instead or recompile with VCS=1");
+      $fatal;
+`endif // VCS
     end
+
+    if ($value$plusargs("fsdbfile=%s", fsdbfile)) begin
+`ifdef FSDB
+      $fsdbDumpfile(fsdbfile);
+      $fsdbDumpvars("+all");
+      //$fsdbDumpSVA;
+`else // FSDB
+      $fdisplay(stderr, "Error: +fsdbfile is FSDB-only; use +waveformfile/+vcdplusfile instead or recompile with FSDB=1");
+      $fatal;
+`endif // FSDB
+    end
+
+    if ($value$plusargs("waveformfile=%s", waveformfile))
+    begin
+      $dumpfile(waveformfile);
+      $dumpvars(0, FPGATop);
+    end
+
+`ifdef FSDB
+`define WAVEFORMON $fsdbDumpon;
+`define WAVEFORMCLOSE $fsdbDumpoff;
+`elsif VCS
+`define WAVEFORMON $vcdpluson(0); $vcdplusmemon(0);
+`define WAVEFORMCLOSE $vcdplusclose; $dumpoff;
+`else // FSDB/VCS
+`define WAVEFORMON $dumpon;
+`define WAVEFORMCLOSE $dumpoff;
+`endif // FSDB/VCS
+
+    void'($value$plusargs("dump-start=%d", dump_start));
+    void'($value$plusargs("max-cycles=%d", dump_cycles));
+    dump_end = dump_start + dump_cycles;
+
+    wait (trace_count >= dump_start) begin
+      `WAVEFORMON
+    end
+    wait ((trace_count > dump_end) || fin) begin
+      `WAVEFORMCLOSE
+    end
+
+`else // DEBUG
+
+    if ($test$plusargs("vcdplusfile=") || $test$plusargs("waveformfile=") || $test$plusargs("fsdbfile="))
+    begin
+      $fdisplay(stderr, "Error: +waveformfile, +vcdplusfile, or +fsdbfile requested but compile did not have +define+DEBUG enabled");
+      $fatal;
+    end
+
+`endif // DEBUG
   end
-`endif
-`endif
+
+  initial begin
+    simulator_entry();
+  end
 
   // Bind the top-level to the records carrying information in and out of it.
   ctrl_rev_t ctrl_rev;
@@ -257,10 +300,11 @@ module emul(
       mem_3_fwd_sync
     );
 
-`ifndef VERILATOR
+
 `ifdef DEBUG
+    /* verilator lint_off BLKSEQ */
     trace_count = trace_count + 1;
-`endif
+    /* verilator lint_on BLKSEQ */
 `endif
   end
 

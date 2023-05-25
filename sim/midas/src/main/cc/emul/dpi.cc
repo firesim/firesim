@@ -9,12 +9,12 @@
 #include <memory>
 
 #include <signal.h>
+#include <vpi_user.h>
 
 #include "emul/mm.h"
 #include "emul/mmio.h"
 #include "emul/simif_emul.h"
-
-extern simif_emul_t *emulator;
+#include "entry.h"
 
 /**
  * Helper to encode sequential elements into a packed structure.
@@ -273,7 +273,6 @@ void simulator_tick(
       AXI4::fwd_put(*simulator->slave[i], mem_out[i]);
     }
 
-#ifdef VCS
     if (*fin) {
       int exit_code = simulator->end();
       delete simulator;
@@ -281,16 +280,24 @@ void simulator_tick(
       if (exit_code)
         exit(exit_code);
     }
-#endif
   } catch (std::exception &e) {
-    fprintf(stderr, "Caught Exception headed for VCS: %s.\n", e.what());
+    fprintf(stderr, "Caught Exception headed for the simulator: %s.\n", e.what());
     abort();
   } catch (...) {
     // seriously, VCS will give you an unhelpful message if you let an exception
     // propagate catch it here and if we hit this, I can go rememeber how to
     // unwind the stack to print a trace
-    fprintf(stderr, "Caught non std::exception headed for VCS\n");
+    fprintf(stderr, "Caught non std::exception headed for the simulator\n");
     abort();
   }
+}
+
+void simulator_entry() {
+    s_vpi_vlog_info info;
+    if (!vpi_get_vlog_info(&info)) {
+        abort();
+    }
+
+    entry(info.argc, info.argv);
 }
 }
