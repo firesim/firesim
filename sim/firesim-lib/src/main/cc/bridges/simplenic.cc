@@ -216,11 +216,14 @@ simplenic_t::~simplenic_t() {
     fclose(this->niclog);
   if (loopback) {
     for (auto &pcis_read_buf : pcis_read_bufs)
-      free(pcis_read_buf);
+      if (pcis_read_buf)
+        free(pcis_read_buf);
   } else {
     for (int j = 0; j < 2; j++) {
-      munmap(pcis_read_bufs[j], BUFBYTES + EXTRABYTES);
-      munmap(pcis_write_bufs[j], BUFBYTES + EXTRABYTES);
+      if (pcis_read_bufs[j])
+        munmap(pcis_read_bufs[j], BUFBYTES + EXTRABYTES);
+      if (pcis_write_bufs[j])
+        munmap(pcis_write_bufs[j], BUFBYTES + EXTRABYTES);
     }
   }
 }

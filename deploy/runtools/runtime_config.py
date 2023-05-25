@@ -270,11 +270,13 @@ class RuntimeHWConfig:
         return self.get_platform()
 
     def set_platform(self, platform: str) -> None:
-        assert self.platform is None, f"platform is already set to {self.platform}"
+        if self.platform is not None:
+            assert self.platform == platform, f"platform is already set to {self.platform} cannot set it to {platform}"
         self.platform = platform
 
     def set_deploy_quintuplet(self, deploy_quintuplet: str) -> None:
-        assert self.deploy_quintuplet is None, f"deploy_quintuplet is already set to {self.deploy_quintuplet}"
+        if self.deploy_quintuplet is not None:
+            assert self.deploy_quintuplet == deploy_quintuplet, f"deploy_quintuplet is already set to {self.deploy_quintuplet} cannot set it to {deploy_quintuplet}"
         self.deploy_quintuplet = deploy_quintuplet
 
     def get_deployquintuplet_for_config(self) -> str:
@@ -352,7 +354,6 @@ class RuntimeHWConfig:
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            fpga_physical_selection: Optional[str],
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the simulation. this has to have
@@ -402,21 +403,9 @@ class RuntimeHWConfig:
 
         screen_name = "fsim{}".format(slotid)
 
-        if fpga_physical_selection is None:
-            fpga_physical_selection = str(slotid)
-        run_device_placement = "+slotid={}".format(fpga_physical_selection)
-
-        if self.platform == "vitis":
-            assert self.xclbin is not None
-            vitis_bit = f"+binary_file={self.get_xclbin_filename()}"
-        else:
-            vitis_bit = ""
-
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
         permissive_driver_args += [f"$(sed \':a;N;$!ba;s/\\n/ /g\' {runtimeconf})"] if runtimeconf else []
-        permissive_driver_args += [run_device_placement]
-        permissive_driver_args += [vitis_bit]
         if profile_interval != -1:
             permissive_driver_args += [f"+profile-interval={profile_interval}"]
         permissive_driver_args += [zero_out_dram]
@@ -646,7 +635,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
             sudo: bool,
-            fpga_physical_selection: Optional[str],
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the meta simulation. """
@@ -671,7 +659,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             hostdebug_config,
             synthprint_config,
             sudo,
-            fpga_physical_selection,
             full_extra_plusargs,
             full_extra_args)
 
@@ -917,6 +904,11 @@ class RuntimeConfig:
     def build_driver(self) -> None:
         """ directly called by top-level builddriver command. """
         self.firesim_topology_with_passes.build_driver_passes()
+
+    def enumerate_fpgas(self) -> None:
+        """ directly called by top-level enumeratefpgas command. """
+        use_mock_instances_for_testing = False
+        self.firesim_topology_with_passes.enumerate_fpgas_passes(use_mock_instances_for_testing)
 
     def boot(self) -> None:
         """ directly called by top-level boot command. """

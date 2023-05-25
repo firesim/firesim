@@ -15,10 +15,8 @@ def run_docs_generated_components_check():
 
     # repo should already be checked out
 
-    with prefix(f"cd {ci_env['GITHUB_WORKSPACE']}"):
-        run("./build-setup.sh --skip-validate")
+    with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
         with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
-            run("firesim managerinit --platform vitis")
             with prefix("cd deploy"):
                 run("cat config_runtime.yaml")
                 path = "docs/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml"

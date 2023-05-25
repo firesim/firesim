@@ -66,10 +66,12 @@ tsibridge_t::tsibridge_t(simif_t &simif,
 }
 
 tsibridge_t::~tsibridge_t() {
-  delete fesvr;
+  if (fesvr)
+    delete fesvr;
   if (tsi_argv) {
     for (int i = 0; i < tsi_argc; ++i) {
-      delete[] tsi_argv[i];
+      if (tsi_argv[i])
+        delete[] tsi_argv[i];
     }
     delete[] tsi_argv;
   }

@@ -18,6 +18,29 @@ Other Miscellaneous Setup
 Additionally, you should be able to run ``ssh localhost`` without needing a password.
 The FireSim manager program runs all commands by ``ssh``-ing into a BuildFarm/RunFarm machine given an IP address then running the command.
 To do so non-interactively, it needs passwordless access to the machines (in our case, ``localhost``) to build/run on.
+To safely enable passwordless access, you can first create a unique SSH key and add it to the ``~/.ssh/authorized_keys`` file.
+For example, the following instructions will create a SSH key called ``id_rsa_local`` and add it to the authorized keys:
+
+.. code-block:: bash
+
+   cd ~/.ssh
+
+   # create the new key with name `id_rsa_local` and a comment
+   # you can use a different name (and modify the comment)
+   ssh-keygen -f id_rsa_local -C "@localhost"
+
+   # add the key to the `authorized_keys` file
+   cat id_rsa_local.pub >> authorized_keys
+   chmod 600 authorized_keys
+
+Next, you should use that key to for ``localhost`` logins by modifying your ``~/.ssh/config`` file so that the SSH agent can use that SSH key.
+For example:
+
+.. code-block:: text
+
+   # add the following lines
+   Host localhost
+      IdentityFile ~/.ssh/id_rsa_local
 
 Finally, you should also install the ``guestmount`` program and ensure it runs properly.
 This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
@@ -158,4 +181,4 @@ To run it, do the following:
 It will create initial configuration files, which we will edit in later
 sections.
 
-Now you're ready to launch FireSim simulations! Hit Next to learn how to run single-node simulations.
+Hit Next to continue with the guide.

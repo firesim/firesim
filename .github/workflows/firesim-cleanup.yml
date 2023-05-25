@@ -21,6 +21,7 @@ env:
   FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
   FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
   MANAGER_FIRESIM_LOCATION: "~/firesim"
+  REMOTE_WORK_DIR: unused
 
 jobs:
   cull-old-ci-instances:

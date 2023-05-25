@@ -40,7 +40,7 @@ platform_files := simif_$(MAIN) main
 platform_cc := $(addprefix $(midas_dir)/, $(addsuffix .cc, $(platform_files)))
 platform_o := $(addprefix $(GEN_DIR)/, $(addsuffix .o, $(platform_files)))
 
-$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc
+$(platform_o): $(GEN_DIR)/%.o: $(midas_dir)/%.cc $(design_h)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 

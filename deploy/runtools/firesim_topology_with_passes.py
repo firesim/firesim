@@ -447,6 +447,27 @@ class FireSimTopologyWithPasses:
 
             execute(infrasetup_node_wrapper, self.run_farm, uridir, hosts=all_run_farm_ips)
 
+    def enumerate_fpgas_passes(self, use_mock_instances_for_testing: bool) -> None:
+        """ extra passes needed to do enumerate_fpgas """
+        self.run_farm.post_launch_binding(use_mock_instances_for_testing)
+
+        @parallel
+        def enumerate_fpgas_node_wrapper(run_farm: RunFarm, dir: str) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
+            assert my_node is not None
+            assert my_node.instance_deploy_manager is not None
+            my_node.instance_deploy_manager.enumerate_fpgas(dir)
+
+        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
+        execute(instance_liveness, hosts=all_run_farm_ips)
+
+        # Steps occur within the context of a tempdir.
+        # This allows URI's to survive until after deploy, and cleanup upon error
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+            self.pass_build_required_drivers()
+            execute(enumerate_fpgas_node_wrapper, self.run_farm, uridir, hosts=all_run_farm_ips)
+
     def build_driver_passes(self) -> None:
         """ Only run passes to build drivers. """
 
@@ -496,8 +517,6 @@ class FireSimTopologyWithPasses:
         """ Passes that kill the simulator. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
-        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
-
         @parallel
         def kill_switch_wrapper(run_farm: RunFarm) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
@@ -510,6 +529,13 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_simulations_instance(disconnect_all_nbds=disconnect_all_nbds)
 
+        # Steps occur within the context of a tempdir.
+        # This allows URI's to survive until after deploy, and cleanup upon error
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+
+        all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
+
         execute(kill_switch_wrapper, self.run_farm, hosts=all_run_farm_ips)
         execute(kill_simulation_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
@@ -519,6 +545,7 @@ class FireSimTopologyWithPasses:
                 rootLogger.info("Confirming exit...")
                 # keep checking screen until it reports that there are no screens left
                 while True:
+                    run("screen -wipe || true") # wipe any potentially dead screens
                     screenoutput = run("screen -ls")
                     # If AutoILA is enabled, use the following condition
                     if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:

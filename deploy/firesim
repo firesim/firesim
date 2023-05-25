@@ -184,7 +184,7 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             bf_recipe_lines)
-    elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280':
+    elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280' or args.platform == 'xilinx_vcu118':
         runfarm_default_file = "run-farm-recipes/externally_provisioned.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
@@ -302,6 +302,11 @@ def builddriver(runtime_conf: RuntimeConfig) -> None:
     """ Only perform the driver build (host-processor side of an FPGA sim or
     an entire metasim)."""
     runtime_conf.build_driver()
+
+@register_task
+def enumeratefpgas(runtime_conf: RuntimeConfig) -> None:
+    """ For all run hosts, create the /opt/firesim-db.json file """
+    runtime_conf.enumerate_fpgas()
 
 @register_task
 # XXX this needs to be renamed or rethought, perhaps this is a backend-specific task?

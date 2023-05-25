@@ -116,3 +116,5 @@ if {[get_property PROGRESS [get_runs ${impl_run}]] != "100%"} {
 }
 
 file copy -force ${root_dir}/vivado_proj/firesim.runs/${impl_run}/design_1_wrapper.bit ${root_dir}/vivado_proj/firesim.bit
+
+write_cfgmem -format mcs -interface SPIx1 -size 1024 -loadbit "up 0x01002000 ${root_dir}/vivado_proj/firesim.bit" -verbose  ${root_dir}/vivado_proj/firesim.mcs

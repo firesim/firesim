@@ -114,7 +114,7 @@ tracerv_t::tracerv_t(simif_t &sim,
     }
     write_header(tracefile);
 
-    // This must be kept consistent with config_runtime.ini's output_format.
+    // This must be kept consistent with config_runtime.yaml's output_format.
     // That file's comments are the single source of truth for this.
     if (outputfmtselect == 0) {
       this->human_readable = true;
@@ -252,7 +252,7 @@ void tracerv_t::serialize(
     const bool fireperf) {
   const int max_consider = std::min(max_core_ipc, 7);
   if (human_readable || test_output) {
-    for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
+    for (size_t i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
       if (test_output) {
         fprintf(tracefile, "%016lx", OUTBUF[i + 7]);
         fprintf(tracefile, "%016lx", OUTBUF[i + 6]);
@@ -277,7 +277,7 @@ void tracerv_t::serialize(
     }
   } else if (fireperf) {
 
-    for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
+    for (size_t i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
       uint64_t cycle_internal = OUTBUF[i + 0];
 
       for (int q = 0; q < max_consider; q++) {
@@ -293,7 +293,7 @@ void tracerv_t::serialize(
       }
     }
   } else {
-    for (int i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
+    for (size_t i = 0; i < (bytes_received / sizeof(uint64_t)); i += 8) {
       // this stores as raw binary. stored as little endian.
       // e.g. to get the same thing as the human readable above,
       // flip all the bytes in each 512-bit line.

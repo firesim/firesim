@@ -235,7 +235,7 @@ class F1BitBuilder(BitBuilder):
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
-        vivado_result = 0
+        vivado_rc = 0
 
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
@@ -251,7 +251,13 @@ class F1BitBuilder(BitBuilder):
         build_strategy = self.build_config.get_strategy().name
 
         with InfoStreamLogger('stdout'), settings(warn_only=True):
-            vivado_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
+            vivado_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}")
+            vivado_rc = vivado_result.return_code
+
+            if vivado_result != 0:
+                rootLogger.info("Printing error output:")
+                for line in vivado_result.splitlines()[-100:]:
+                    rootLogger.info(line)
 
         # put build results in the result-build area
 
@@ -263,7 +269,7 @@ class F1BitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-        if vivado_result != 0:
+        if vivado_rc != 0:
             on_build_failure()
             return False
 
@@ -459,7 +465,7 @@ class VitisBitBuilder(BitBuilder):
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
-        vitis_result = 0
+        vitis_rc = 0
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
             local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
@@ -473,7 +479,13 @@ class VitisBitBuilder(BitBuilder):
         build_strategy = self.build_config.get_strategy().name
 
         with InfoStreamLogger('stdout'), settings(warn_only=True):
-            vitis_result = run(f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device} --frequency {fpga_frequency} --strategy {build_strategy}").return_code
+            vitis_result = run(f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device} --frequency {fpga_frequency} --strategy {build_strategy}")
+            vitis_rc = vitis_result.return_code
+
+            if vitis_rc != 0:
+                rootLogger.info("Printing error output:")
+                for line in vitis_result.splitlines()[-100:]:
+                    rootLogger.info(line)
 
         # put build results in the result-build area
 
@@ -485,7 +497,7 @@ class VitisBitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-        if vitis_result != 0:
+        if vitis_rc != 0:
             on_build_failure()
             return False
 
@@ -612,7 +624,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         # 'cl_dir' holds the eventual directory in which vivado will run.
         cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
 
-        alveo_result = 0
+        alveo_rc = 0
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
             local_dir=f"{local_deploy_dir}/../platforms/{self.build_config.PLATFORM}/build-bitstream.sh",
@@ -626,7 +638,13 @@ class XilinxAlveoBitBuilder(BitBuilder):
         build_strategy = self.build_config.get_strategy().name
 
         with InfoStreamLogger('stdout'), settings(warn_only=True):
-            alveo_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}").return_code
+            alveo_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}")
+            alveo_rc = alveo_result.return_code
+
+            if alveo_rc != 0:
+                rootLogger.info("Printing error output:")
+                for line in alveo_result.splitlines()[-100:]:
+                    rootLogger.info(line)
 
         # put build results in the result-build area
 
@@ -638,7 +656,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
-        if alveo_result != 0:
+        if alveo_rc != 0:
             on_build_failure()
             return False
 
@@ -647,6 +665,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
+        mcs_path = f"{local_cl_dir}/vivado_proj/firesim.mcs"
         tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
@@ -654,8 +673,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
         local(f"rm -rf {tar_staging_path}")
         local(f"mkdir -p {tar_staging_path}")
 
-        # store bitfile
+        # store bitfile/mcs
         local(f"cp {bit_path} {tar_staging_path}")
+        local(f"cp {mcs_path} {tar_staging_path}")
 
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
@@ -703,3 +723,52 @@ class XilinxAlveoU250BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au250"
+
+class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
+    """Bit builder class that builds a Xilinx VCU118 bitstream from the build config."""
+    BOARD_NAME: Optional[str]
+
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        super().__init__(build_config, args)
+        self.BOARD_NAME = "xilinx_vcu118"
+
+    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
+        """Setup CL_DIR on build host.
+
+        Args:
+            chisel_quintuplet: Build config chisel quintuplet used to uniquely identify build dir.
+            dest_build_dir: Destination base directory to use.
+
+        Returns:
+            Path to CL_DIR directory (that is setup) or `None` if invalid.
+        """
+        fpga_build_postfix = f"cl_{chisel_quintuplet}"
+
+        # local paths
+        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}/garnet-firesim"
+
+        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/garnet-firesim"
+
+        # copy alveo files to the build instance.
+        # do the rsync, but ignore any checkpoints that might exist on this machine
+        # (in case builds were run locally)
+        # extra_opts -L resolves symlinks
+
+        run(f'mkdir -p {dest_alveo_dir}')
+        rsync_cap = rsync_project(
+            local_dir=local_alveo_dir + "/",
+            remote_dir=dest_alveo_dir,
+            ssh_opts="-o StrictHostKeyChecking=no",
+            exclude="cl_*",
+            extra_opts="-L", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+        rsync_cap = rsync_project(
+            local_dir=f"{local_alveo_dir}/{fpga_build_postfix}/",
+            remote_dir=f'{dest_alveo_dir}/{fpga_build_postfix}',
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-L", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        return f"{dest_alveo_dir}/{fpga_build_postfix}"

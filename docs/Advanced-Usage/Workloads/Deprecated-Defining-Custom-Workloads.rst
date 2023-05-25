@@ -203,7 +203,7 @@ You'll notice a Makefile in the ``workloads/`` directory -- it contains many
 similar commands for all of the workloads included with FireSim.
 
 Once you generate the rootfses for this workload, you can run it with the manager
-by setting ``workload_name: ping-latency.json`` in ``config_runtime.ini``. The manager
+by setting ``workload_name: ping-latency.json`` in ``config_runtime.yaml``. The manager
 will automatically look for the generated rootfses (based on workload and job names
 that it reads from the json) and distribute work appropriately.
 

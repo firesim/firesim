@@ -60,9 +60,9 @@ def main(platform: Platform, issue_id: int):
 
                 print(f"Workflow {ci_env['GITHUB_RUN_ID']} status: {state_status} {state_concl}")
 
-                # check that select instances are terminated on time
+                # check that select instances are terminated on time (45m for run farm insts, 12h for build farm insts)
                 platform_lib.check_and_terminate_run_farm_instances(45, ci_env['GITHUB_RUN_ID'], issue_id)
-                platform_lib.check_and_terminate_build_farm_instances(12, ci_env['GITHUB_RUN_ID'], issue_id)
+                platform_lib.check_and_terminate_build_farm_instances(12*60, ci_env['GITHUB_RUN_ID'], issue_id)
 
                 if state_status in ['completed']:
                     if state_concl in TERMINATE_STATES:
