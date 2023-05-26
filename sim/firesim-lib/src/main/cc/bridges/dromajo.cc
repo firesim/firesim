@@ -231,7 +231,7 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   for (uint32_t offset = 0; offset < bytes_received;
        offset += STREAM_WIDTH_BYTES / 2) {
     // invoke dromajo (requires that buffer is aligned properly)
-    int rval = this->invoke_dromajo(((uint8_t*)OUTBUF) + offset);
+    int rval = this->invoke_dromajo(((uint8_t *)OUTBUF) + offset);
     if (rval) {
       dromajo_failed = true;
       dromajo_exit_code = rval;

@@ -10,8 +10,10 @@
  * Utility to create static buffers aligned to and a multiple of the page-size
  */
 #define page_size 4096
-#define page_aligned_sized_array(__NAME__, __SIZE_IN_BYTES__) \
-  alignas(page_size) char __NAME__[(((__SIZE_IN_BYTES__) + page_size - 1) / page_size) * page_size];
+#define page_aligned_sized_array(__NAME__, __SIZE_IN_BYTES__)                  \
+  alignas(page_size) char                                                      \
+      __NAME__[(((__SIZE_IN_BYTES__) + page_size - 1) / page_size) *           \
+               page_size];
 
 // DOC include start: Bridge Driver Interface
 /**
