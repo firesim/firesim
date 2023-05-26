@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from fabric.api import prefix, run, settings, execute # type: ignore
+from fabric.api import env, prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
 
@@ -24,4 +24,5 @@ def run_docs_generated_components_check():
                 run(f"diff config_runtime.yaml ../{path}")
 
 if __name__ == "__main__":
+    env.use_ssh_config = True
     execute(run_docs_generated_components_check, hosts=["localhost"])

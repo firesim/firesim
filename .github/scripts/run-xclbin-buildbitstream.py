@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from fabric.api import prefix, run, settings, execute # type: ignore
+from fabric.api import env, prefix, run, settings, execute # type: ignore
 import os
 from github import Github
 import base64
@@ -185,4 +185,5 @@ def run_xclbin_buildbitstream():
             run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
 if __name__ == "__main__":
+    env.use_ssh_config = True
     execute(run_xclbin_buildbitstream, hosts=["localhost"])

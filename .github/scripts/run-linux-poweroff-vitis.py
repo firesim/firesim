@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from fabric.api import prefix, run, settings, execute # type: ignore
+from fabric.api import env, prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
 from utils import search_match_in_last_workloads_output_file
@@ -67,4 +67,5 @@ def run_linux_poweroff_vitis():
             run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m", 1)
 
 if __name__ == "__main__":
+    env.use_ssh_config = True
     execute(run_linux_poweroff_vitis, hosts=["localhost"])
