@@ -61,7 +61,8 @@ int entry(int argc, char **argv) {
     #define GET_BRIDGE_CONSTRUCTOR
     #include "FireSim-generated.const.h"
     #undef GET_BRIDGE_CONSTRUCTOR
-  } // clang-format on
+  }
+  // clang-format on
 
   // Create the simulation instance.
   simulation = create_simulation(simif, *widget_registry_ptr, args);
