@@ -6,6 +6,7 @@
 #include "core/simif.h"
 #include "core/simulation.h"
 
+// NOLINTBEGIN
 #define GET_INCLUDES
 #include "FireSim-generated.const.h"
 #undef GET_INCLUDES
@@ -14,6 +15,7 @@
 #define GET_SUBSTRUCT_CHECKS
 #include "FireSim-generated.const.h"
 #undef GET_SUBSTRUCT_CHECKS
+// NOLINTEND
 
 // The user-defined part of the driver implements this method to return
 // a simulation instance implementing all simulation-specific logic.
@@ -41,7 +43,8 @@ int entry(int argc, char **argv) {
   // must have this exist for *.const.h
   auto &simif = *simulator;
 
-  // clang-format off
+  /* clang-format off */
+  // NOLINTBEGIN
   widget_registry_t *widget_registry_ptr = new widget_registry_t(); // must be never deallocated to avoid deletion
   // must have this for *.const.h
   widget_registry_t &registry = *widget_registry_ptr;
@@ -62,7 +65,8 @@ int entry(int argc, char **argv) {
     #include "FireSim-generated.const.h"
     #undef GET_BRIDGE_CONSTRUCTOR
   }
-  // clang-format on
+  // NOLINTEND
+  /* clang-format on */
 
   // Create the simulation instance.
   simulation = create_simulation(simif, *widget_registry_ptr, args);

@@ -9,7 +9,7 @@
 #include <memory>
 
 #include <signal.h>
-#include <vpi_user.h>
+#include <vpi_user.h> // NOLINT
 
 #include "emul/mm.h"
 #include "emul/mmio.h"
