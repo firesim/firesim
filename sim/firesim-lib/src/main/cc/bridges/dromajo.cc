@@ -220,7 +220,7 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_BYTES;
   size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
   // TODO: as opt can mmap file and just load directly into it.
-  alignas(4096) uint8_t OUTBUF[maximum_batch_bytes];
+  page_aligned_sized_array(OUTBUF, maximum_batch_bytes);
   auto bytes_received =
       pull(stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
 
@@ -231,7 +231,7 @@ size_t dromajo_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   for (uint32_t offset = 0; offset < bytes_received;
        offset += STREAM_WIDTH_BYTES / 2) {
     // invoke dromajo (requires that buffer is aligned properly)
-    int rval = this->invoke_dromajo(OUTBUF + offset);
+    int rval = this->invoke_dromajo(((uint8_t*)OUTBUF) + offset);
     if (rval) {
       dromajo_failed = true;
       dromajo_exit_code = rval;

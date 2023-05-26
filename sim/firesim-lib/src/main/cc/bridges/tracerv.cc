@@ -212,7 +212,7 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
   size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_BYTES;
   size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
   // TODO. as opt can mmap file and just load directly into it.
-  alignas(4096) char OUTBUF[this->stream_depth * STREAM_WIDTH_BYTES];
+  page_aligned_sized_array(OUTBUF, this->stream_depth * STREAM_WIDTH_BYTES);
   auto bytes_received =
       pull(this->stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
   // check that a tracefile exists (one is enough) since the manager
