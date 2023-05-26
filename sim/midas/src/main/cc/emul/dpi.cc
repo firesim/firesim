@@ -281,7 +281,8 @@ void simulator_tick(
         exit(exit_code);
     }
   } catch (std::exception &e) {
-    fprintf(stderr, "Caught Exception headed for the simulator: %s.\n", e.what());
+    fprintf(
+        stderr, "Caught Exception headed for the simulator: %s.\n", e.what());
     abort();
   } catch (...) {
     // seriously, VCS will give you an unhelpful message if you let an exception
@@ -293,11 +294,11 @@ void simulator_tick(
 }
 
 void simulator_entry() {
-    s_vpi_vlog_info info;
-    if (!vpi_get_vlog_info(&info)) {
-        abort();
-    }
+  s_vpi_vlog_info info;
+  if (!vpi_get_vlog_info(&info)) {
+    abort();
+  }
 
-    entry(info.argc, info.argv);
+  entry(info.argc, info.argv);
 }
 }

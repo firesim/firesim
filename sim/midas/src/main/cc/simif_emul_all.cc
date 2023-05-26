@@ -1,5 +1,5 @@
-#include <signal.h>
 #include "emul/simif_emul.h"
+#include <signal.h>
 
 /**
  * VCS-specific metasimulator implementation.
@@ -21,8 +21,7 @@ simif_emul_vcs_t::simif_emul_vcs_t(const TargetConfig &config,
                                    int argc,
                                    char **argv)
     : simif_emul_t(config, std::vector<std::string>(argv + 1, argv + argc)),
-      argc(argc), argv(argv) {
-}
+      argc(argc), argv(argv) {}
 
 int simif_emul_vcs_t::run(simulation_t &sim) {
   start_driver(sim);

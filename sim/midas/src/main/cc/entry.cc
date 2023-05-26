@@ -27,7 +27,8 @@ create_simulation(simif_t &simif,
 extern std::unique_ptr<simif_t>
 create_simif(const TargetConfig &config, int argc, char **argv);
 
-std::unique_ptr<simif_t> simulator; // must exist for dpi.cc calls in emulation, must be global to avoid deletion
+std::unique_ptr<simif_t> simulator; // must exist for dpi.cc calls in emulation,
+                                    // must be global to avoid deletion
 std::unique_ptr<simulation_t> simulation; // must be global to avoid deletion
 
 // Entry point of the driver.
@@ -60,8 +61,7 @@ int entry(int argc, char **argv) {
     #define GET_BRIDGE_CONSTRUCTOR
     #include "FireSim-generated.const.h"
     #undef GET_BRIDGE_CONSTRUCTOR
-  }
-  // clang-format on
+  } // clang-format on
 
   // Create the simulation instance.
   simulation = create_simulation(simif, *widget_registry_ptr, args);

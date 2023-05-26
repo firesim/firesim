@@ -213,10 +213,8 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
   size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
   // TODO. as opt can mmap file and just load directly into it.
   alignas(4096) char OUTBUF[this->stream_depth * STREAM_WIDTH_BYTES];
-  auto bytes_received = pull(this->stream_idx,
-                             OUTBUF,
-                             maximum_batch_bytes,
-                             minimum_batch_bytes);
+  auto bytes_received =
+      pull(this->stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
   // check that a tracefile exists (one is enough) since the manager
   // does not create a tracefile when trace_enable is disabled, but the
   // TracerV bridge still exists, and no tracefile is created by default.
@@ -229,7 +227,7 @@ size_t tracerv_t::process_tokens(int num_beats, int minimum_batch_beats) {
                                  std::placeholders::_1,
                                  std::placeholders::_2);
     }
-    serialize((uint64_t*)OUTBUF,
+    serialize((uint64_t *)OUTBUF,
               bytes_received,
               tracefile,
               addInstruction,
