@@ -410,6 +410,7 @@ class VitisBitBuilder(BitBuilder):
         # extra_opts -l preserves symlinks
 
         run('mkdir -p {}'.format(dest_vitis_dir))
+        run('rm -rf {}/{}'.format(dest_vitis_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_vitis_dir,
             remote_dir=dest_vitis_dir,
@@ -569,6 +570,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         # extra_opts -L resolves symlinks
 
         run(f'mkdir -p {dest_alveo_dir}')
+        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir,
             remote_dir=dest_alveo_dir,
@@ -755,6 +757,7 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
         # extra_opts -L resolves symlinks
 
         run(f'mkdir -p {dest_alveo_dir}')
+        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir + "/",
             remote_dir=dest_alveo_dir,
@@ -804,6 +807,7 @@ class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
         # extra_opts -L resolves symlinks
 
         run(f'mkdir -p {dest_alveo_dir}')
+        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir + "/",
             remote_dir=dest_alveo_dir,

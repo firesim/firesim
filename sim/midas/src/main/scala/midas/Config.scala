@@ -129,7 +129,7 @@ class NitefuryConfig extends Config(new Config((site, here, up) => {
   case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
     addrBits = 64,
     dataBits = 512,
-    idBits = 6,
+    idBits = 4,
   ))
   case FPGAManagedAXI4Key   => None
   case CtrlNastiKey   => NastiParameters(32, 25, 12)
@@ -138,8 +138,8 @@ class NitefuryConfig extends Config(new Config((site, here, up) => {
     beatBytes = 8,
     idBits    = 16)
   case HostMemNumChannels => 1
-  case PreLinkCircuitPath => None
-  case PostLinkCircuitPath => None
+  case PreLinkCircuitPath => Some("firesim_top")
+  case PostLinkCircuitPath => Some("Top_i/firesim_wrapper_0/inst/firesim_top")
 }) ++ new SimConfig)
 
 class XilinxVCU118Config extends Config(new Config((site, here, up) => {

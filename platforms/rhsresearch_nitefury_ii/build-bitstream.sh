@@ -78,3 +78,4 @@ chmod +x build-bitstream.sh
 
 mkdir -p ../../vivado_proj
 cp project.runs/impl_1/Top_wrapper.bit ../../vivado_proj/firesim.bit
+cp ../mcs/out.mcs ../../vivado_proj/firesim.mcs
