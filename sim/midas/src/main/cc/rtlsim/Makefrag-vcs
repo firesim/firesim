@@ -19,7 +19,7 @@ vcs_flags := \
 	-Mdir=$(GEN_DIR)/$(DRIVER_NAME)-debug.csrc \
 	+vc+list \
 	-CFLAGS "$(CXXFLAGS) -D_GNU_SOURCE -DVCS -I$(VCS_HOME)/include" \
-	-LDFLAGS "$(LDFLAGS)" \
+	$(if $(LDFLAGS),-LDFLAGS "$(LDFLAGS)",) \
 	-sverilog \
 	-assert svaext \
 	$(SIM_PREPROC_DEFINES) \
