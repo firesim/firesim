@@ -17,7 +17,7 @@ clang_tidy_files := $(shell \
 		| grep -v fesvr \
 		| grep -v generated-src \
 		| grep -v output \
-		| grep -v -F 'main.cc' \
+		| grep -v -F 'entry.cc' \
 )
 
 clang_tidy_flags :=\
