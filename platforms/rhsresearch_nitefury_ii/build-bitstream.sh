@@ -72,10 +72,8 @@ fi
 
 # run build
 cd $CL_DIR/Nitefury-II/project
-chmod +x build-bitstream.sh
-./build-bitstream.sh $FREQUENCY $STRATEGY $BOARD
-#vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs
+vivado -mode batch -source top.tcl -tclargs $FREQUENCY $STRATEGY
 
 mkdir -p ../../vivado_proj
-cp project.runs/impl_1/Top_wrapper.bit ../../vivado_proj/firesim.bit
+cp project/project.runs/impl_1/Top_wrapper.bit ../../vivado_proj/firesim.bit
 cp ../mcs/out.mcs ../../vivado_proj/firesim.mcs
