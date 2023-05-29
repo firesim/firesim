@@ -18,6 +18,7 @@ clang_tidy_files := $(shell \
 		| grep -v generated-src \
 		| grep -v output \
 		| grep -v -F 'entry.cc' \
+		| grep -v -F 'dpi.cc' \
 )
 
 clang_tidy_flags :=\
