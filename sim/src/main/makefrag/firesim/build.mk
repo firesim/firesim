@@ -2,11 +2,11 @@
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(TARGET_CP)
 	@mkdir -p $(@D)
-	cd $(base_dir) && java -cp $$(cat $(TARGET_CP)) chipyard.Generator \
+	$(call run_scala_main,$(TARGET_CP),chipyard.Generator,\
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \
-		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG)
+		--legacy-configs $(TARGET_CONFIG_PACKAGE):$(TARGET_CONFIG))
 
 #######################################
 # Setup Extra Verilator Compile Flags #

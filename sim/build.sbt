@@ -2,6 +2,23 @@ import Tests._
 
 val chiselVersion = "3.5.6"
 
+// keep chisel/firrtl specific class files, drop other conflicts
+val chiselFirrtlMergeStrategy = CustomMergeStrategy("cfmergestrategy") { deps =>
+  import sbtassembly.Assembly.{Project, Library}
+  val keepDeps = deps.filter { dep =>
+    val nm = dep match {
+      case p: Project => p.name
+      case l: Library => l.moduleCoord.name
+    }
+    Seq("firrtl", "chisel3").contains(nm.split("_")(0)) // split by _ to avoid checking on major/minor version
+  }
+  if (keepDeps.size <= 1) {
+    Right(keepDeps.map(dep => JarEntry(dep.target, dep.stream)))
+  } else {
+    Left(s"Unable to resolve conflict (${keepDeps.size}>1 conflicts):\n${keepDeps.mkString("\n")}")
+  }
+}
+
 // This is set by CI and should otherwise be unmodified
 val apiDirectory = settingKey[String]("The site directory into which the published scaladoc should placed.")
 apiDirectory := "latest"
@@ -25,7 +42,15 @@ lazy val commonSettings = Seq(
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases"),
-    Resolver.mavenLocal)
+    Resolver.mavenLocal),
+  assembly / test := {},
+  assembly / assemblyMergeStrategy := {
+    case PathList("chisel3", "stage", xs @ _*) => chiselFirrtlMergeStrategy
+    case PathList("firrtl", "stage", xs @ _*) => chiselFirrtlMergeStrategy
+    case x =>
+      val oldStrategy = (assembly / assemblyMergeStrategy).value
+      oldStrategy(x)
+  }
 )
 
 // Fork each scala test for now, to work around persistent mutable state
