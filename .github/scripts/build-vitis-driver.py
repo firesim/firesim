@@ -17,5 +17,4 @@ def build_vitis_driver():
                 run("make PLATFORM=vitis vitis")
 
 if __name__ == "__main__":
-    env.use_ssh_config = True
     execute(build_vitis_driver, hosts=["localhost"])

@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-from fabric.api import env, prefix, run, settings, execute # type: ignore
+from fabric.api import prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
 
@@ -61,5 +61,4 @@ def run_parallel_metasim():
             run_w_timeout(f"{ci_env['REMOTE_WORK_DIR']}/deploy/workloads/ci/hello-world-localhost-vcs-metasim.yaml", "45m")
 
 if __name__ == "__main__":
-    env.use_ssh_config = True
     execute(run_parallel_metasim, hosts=["localhost"])
