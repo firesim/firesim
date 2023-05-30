@@ -1099,7 +1099,7 @@ class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManage
                 collect = run('lspci | grep -i xilinx')
                 bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
                 bdf = bdfs[slotno].replace('.', ':').split(':')
-                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x7011"
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
             else:
                 extra_args = None
 

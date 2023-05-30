@@ -26,15 +26,16 @@ trait StreamParameters {
   def name: String
   def idx: Int
   def fpgaBufferDepth: Int
+  def fpgaBufferWidthBytes: Int
   /**
     * Pretty prints a description of this stream.
     */
   def summaryString: String =
-    s"${name}, FPGA Buffer Depth: ${fpgaBufferDepth} Beats"
+    s"Name: ${name}, Idx: ${idx}, FPGA Buffer Depth: ${fpgaBufferDepth}, FPGA Buffer Width: ${fpgaBufferWidthBytes}"
 }
 
-case class StreamSourceParameters(name: String, idx: Int, fpgaBufferDepth: Int) extends StreamParameters
-case class StreamSinkParameters  (name: String, idx: Int, fpgaBufferDepth: Int) extends StreamParameters
+case class StreamSourceParameters(name: String, idx: Int, fpgaBufferDepth: Int, fpgaBufferWidthBytes: Int) extends StreamParameters
+case class StreamSinkParameters  (name: String, idx: Int, fpgaBufferDepth: Int, fpgaBufferWidthBytes: Int) extends StreamParameters
 
 /**
   * A wrapper class for common arguments to all StreamEngine implementations.

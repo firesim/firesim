@@ -128,7 +128,7 @@ class NitefuryConfig extends Config(new Config((site, here, up) => {
   case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
   case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
     addrBits = 64,
-    dataBits = 512,
+    dataBits = 128,
     idBits = 4,
   ))
   case FPGAManagedAXI4Key   => None
