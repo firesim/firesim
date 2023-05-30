@@ -2,20 +2,17 @@ import Tests._
 
 val chiselVersion = "3.5.6"
 
-// keep chisel/firrtl specific class files, drop other conflicts
-val chiselFirrtlMergeStrategy = CustomMergeStrategy("cfmergestrategy") { deps =>
+// keep chisel/firrtl specific class files, rename other conflicts
+val chiselFirrtlMergeStrategy = CustomMergeStrategy.rename { dep =>
   import sbtassembly.Assembly.{Project, Library}
-  val keepDeps = deps.filter { dep =>
-    val nm = dep match {
-      case p: Project => p.name
-      case l: Library => l.moduleCoord.name
-    }
-    Seq("firrtl", "chisel3").contains(nm.split("_")(0)) // split by _ to avoid checking on major/minor version
+  val nm = dep match {
+    case p: Project => p.name
+    case l: Library => l.moduleCoord.name
   }
-  if (keepDeps.size <= 1) {
-    Right(keepDeps.map(dep => JarEntry(dep.target, dep.stream)))
+  if (Seq("firrtl", "chisel3").contains(nm.split("_")(0))) { // split by _ to avoid checking on major/minor version
+    dep.target
   } else {
-    Left(s"Unable to resolve conflict (${keepDeps.size}>1 conflicts):\n${keepDeps.mkString("\n")}")
+    "renamed/" + dep.target
   }
 }
 
@@ -27,7 +24,7 @@ lazy val commonSettings = Seq(
   organization := "berkeley",
   version      := "1.0",
   scalaVersion := "2.13.10",
-  scalacOptions ++= Seq("-deprecation","-unchecked","-Ywarn-unused"),
+  scalacOptions ++= Seq("-deprecation","-unchecked","-Ywarn-unused","-Ymacro-annotations"),
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test",
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -47,6 +44,8 @@ lazy val commonSettings = Seq(
   assembly / assemblyMergeStrategy := {
     case PathList("chisel3", "stage", xs @ _*) => chiselFirrtlMergeStrategy
     case PathList("firrtl", "stage", xs @ _*) => chiselFirrtlMergeStrategy
+    // should be safe in JDK11: https://stackoverflow.com/questions/54834125/sbt-assembly-deduplicate-module-info-class
+    case x if x.endsWith("module-info.class") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
