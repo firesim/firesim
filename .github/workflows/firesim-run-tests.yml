@@ -32,6 +32,10 @@ env:
   REMOTE_WORK_DIR: /scratch/buildbot/fs-shared/fs-${{ github.sha }}
   TERM: xterm-256-color
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 jobs:
   cancel-prior-workflows:
     name: cancel-prior-workflows
