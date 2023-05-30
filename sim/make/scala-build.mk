@@ -70,17 +70,10 @@ firesim_main_srcs = $(foreach dir, $(firesim_source_dirs), \
 firesim_test_srcs = $(foreach dir, $(firesim_source_dirs), \
 	$(call find_sources_in_dir, $(dir), 'src/test/scala'))
 
-# Dummy rule building a token file which compiles all scala sources of the main
-# FireSim project. This ensures that SBT is invoked once in parallel builds.
-$(BUILD_DIR)/firesim.build: $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
-	@mkdir -p $(@D)
-	$(SBT) "set showSuccess := false; project $(FIRESIM_SBT_PROJECT); compile; package"
-	@touch $@
-
 FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.jar
 # if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
 FIRESIM_MAIN_CP_TARGETS := $(subst :, ,$(FIRESIM_MAIN_CP))
-$(FIRESIM_MAIN_CP): $(BUILD_DIR)/firesim.build
+$(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
 
@@ -91,15 +84,10 @@ ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
 target_srcs = $(foreach dir,$(TARGET_SOURCE_DIRS), \
 	$(call find_sources_in_dir, $(dir), 'src/main/scala'))
 
-$(BUILD_DIR)/target.build: $(BUILD_DIR)/firesim.build $(target_srcs)
-	@mkdir -p $(@D)
-	$(SBT) "set showSuccess := false; project $(TARGET_SBT_PROJECT); compile; package"
-	@touch $@
-
 TARGET_CP := $(BUILD_DIR)/target.jar
 # if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
 TARGET_CP_TARGETS ?= $(subst :, ,$(TARGET_CP))
-$(TARGET_CP): $(BUILD_DIR)/target.build
+$(TARGET_CP): $(target_srcs) | $(FIRESIM_MAIN_CP)
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(TARGET_SBT_PROJECT),$(TARGET_CP))
 
@@ -123,7 +111,7 @@ test: $(FIRESIM_MAIN_CP) $(TARGET_CP)
 
 .PHONY: testOnly
 testOnly: $(FIRESIM_MAIN_CP) $(TARGET_CP)
-	$(call run_scala_main,$(FIRESIM_MAIN_CP),org.scalatest.run,$(SCALA_TEST))
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); testOnly $(SCALA_TEST)"
 
 ################################################################################
 # ScalaDoc
