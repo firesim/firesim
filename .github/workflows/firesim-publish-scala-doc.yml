@@ -14,6 +14,10 @@ on:
       - main
       - stable
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

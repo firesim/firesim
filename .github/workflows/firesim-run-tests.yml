@@ -7,6 +7,10 @@ on:
       - main
       - stable
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -103,9 +107,6 @@ jobs:
     needs: change-filters
     if: needs.change-filters.outputs.needs-manager == 'true'
     runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
@@ -338,9 +339,6 @@ jobs:
     name: documentation-check
     needs: change-filters
     runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
