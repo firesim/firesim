@@ -6,18 +6,13 @@ import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util._
 
-import testchipip.{TileTraceIO, TracedInstructionWidths}
+import testchipip.{SerializableTileTraceIO, TileTraceIO, TraceBundleWidths}
 
 import midas.targetutils.TriggerSource
 import midas.widgets._
 
-case class TracerVKey(
-  insnWidths: TracedInstructionWidths, // Widths of variable length fields in each TI
-  vecSize:    Int,                     // The number of insns in the traced insn vec (= max insns retired at that core)
-)
-
-class TracerVTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extends Bundle {
-  val trace         = Input(new TileTraceIO(insnWidths, numInsns))
+class TracerVTargetIO(widths: TraceBundleWidths) extends Bundle {
+  val trace         = Input(new SerializableTileTraceIO(widths))
   val triggerCredit = Output(Bool())
   val triggerDebit  = Output(Bool())
 }
@@ -33,13 +28,13 @@ class TracerVTargetIO(insnWidths: TracedInstructionWidths, numInsns: Int) extend
   * Warning: If you're not going to use the companion object to instantiate this bridge you must call
   * [[TracerVBridge.generateTriggerAnnotations] _in the parent module_.
   */
-class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int)
+class TracerVBridge(widths: TraceBundleWidths)
     extends BlackBox
     with Bridge[HostPortIO[TracerVTargetIO], TracerVBridgeModule] {
-  require(numInsns > 0, "TracerVBridge: number of instructions must be larger than 0")
-  val io                                 = IO(new TracerVTargetIO(insnWidths, numInsns))
+  require(widths.retireWidth > 0, "TracerVBridge: number of instructions must be larger than 0")
+  val io                                 = IO(new TracerVTargetIO(widths))
   val bridgeIO                           = HostPort(io)
-  val constructorArg                     = Some(TracerVKey(insnWidths, numInsns))
+  val constructorArg                     = Some(widths)
   generateAnnotations()
   // Use in parent module: annotates the bridge instance's ports to indicate its trigger sources
   // def generateTriggerAnnotations(): Unit = TriggerSource(io.triggerCredit, io.triggerDebit)
@@ -56,14 +51,14 @@ class TracerVBridge(insnWidths: TracedInstructionWidths, numInsns: Int)
   // a lowered verilog module.
   //
   // See https://github.com/firesim/firesim/issues/729.
-  def defnameSuffix = s"_${numInsns}Wide_" + insnWidths.toString.replaceAll("[(),]", "_")
+  def defnameSuffix = s"_${widths.retireWidth}Wide_" + widths.toString.replaceAll("[(),]", "_")
 
   override def desiredName = super.desiredName + defnameSuffix
 }
 
 object TracerVBridge {
-  def apply(widths: TracedInstructionWidths, numInsns: Int)(implicit p: Parameters): TracerVBridge = {
-    val tracerv = Module(new TracerVBridge(widths, numInsns))
+  def apply(widths: TraceBundleWidths)(implicit p: Parameters): TracerVBridge = {
+    val tracerv = Module(new TracerVBridge(widths))
     tracerv.generateTriggerAnnotations
     tracerv.io.trace.clock := Module.clock
     tracerv.io.trace.reset := Module.reset
@@ -72,14 +67,14 @@ object TracerVBridge {
 
   def apply(tracedInsns: TileTraceIO)(implicit p: Parameters): TracerVBridge = {
     val tracerv = withClockAndReset(tracedInsns.clock, tracedInsns.reset) {
-      TracerVBridge(tracedInsns.insnWidths, tracedInsns.numInsns)
+      TracerVBridge(tracedInsns.traceBundleWidths)
     }
-    tracerv.io.trace := tracedInsns
+    tracerv.io.trace := tracedInsns.asSerializableTileTrace
     tracerv
   }
 }
 
-class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
+class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[TracerVTargetIO]]()(p)
     with StreamToHostCPU {
 
@@ -89,10 +84,10 @@ class TracerVBridgeModule(key: TracerVKey)(implicit p: Parameters)
 
   lazy val module = new BridgeModuleImp(this) {
     val io    = IO(new WidgetIO)
-    val hPort = IO(HostPort(new TracerVTargetIO(key.insnWidths, key.vecSize)))
+    val hPort = IO(HostPort(new TracerVTargetIO(key)))
 
     // Mask off valid committed instructions when under reset
-    val traces            = hPort.hBits.trace.insns.map({ unmasked =>
+    val traces            = hPort.hBits.trace.trace.insns.map({ unmasked =>
       val masked = WireDefault(unmasked)
       masked.valid := unmasked.valid && !hPort.hBits.trace.reset.asBool
       masked
