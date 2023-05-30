@@ -421,6 +421,7 @@ jobs:
             rm -rf ${{ github.workspace }}/.* || true
             ls -alh .
       - uses: actions/checkout@v3
+      - run: ssh-add -L
       - name: Run buildbitstream command and update sample xclbins
         run: .github/scripts/run-xclbin-buildbitstream.py
       #- name: Setup repo copy
