@@ -69,6 +69,10 @@ def upload_binary_file(local_file_path, gh_file_path):
 def run_xclbin_buildbitstream():
     """ Runs Xclbin buildbitstream"""
 
+    run("uname -n")
+
+    return 0
+
     # assumptions:
     #   - machine-launch-script requirements are already installed
     #   - XILINX_VITIS, XILINX_XRT, XILINX_VIVADO are setup (in env / LD_LIBRARY_PATH / path / etc)
