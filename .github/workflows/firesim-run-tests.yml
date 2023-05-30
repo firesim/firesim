@@ -425,22 +425,17 @@ jobs:
             rm -rf ${{ github.workspace }}/.* || true
             ls -alh .
       - uses: actions/checkout@v3
-      - run: |
-          echo $BUILDBOT_BASHRC_SOURCED
-          ssh-add -L
-      - name: Run buildbitstream command and update sample xclbins
-        run: .github/scripts/run-xclbin-buildbitstream.py
-      #- name: Setup repo copy
-      #  run: |
-      #    mkdir -p $(dirname ${{ env.REMOTE_WORK_DIR }})
-      #    git clone ${{ github.workspace }} ${{ env.REMOTE_WORK_DIR }}
-      #- name: Setup repo
-      #  run: |
-      #    cd ${{ env.REMOTE_WORK_DIR }}
-      #    ./build-setup.sh --skip-validate
-      #    source sourceme-f1-manager.sh --skip-ssh-setup
-      #    firesim managerinit --platform vitis
-      #    #cd sw/firesim-software && ./init-submodules.sh
+      - name: Setup repo copy
+        run: |
+          mkdir -p $(dirname ${{ env.REMOTE_WORK_DIR }})
+          git clone ${{ github.workspace }} ${{ env.REMOTE_WORK_DIR }}
+      - name: Setup repo
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          ./build-setup.sh --skip-validate
+          source sourceme-f1-manager.sh --skip-ssh-setup
+          firesim managerinit --platform vitis
+          #cd sw/firesim-software && ./init-submodules.sh
 
   #  run-vitis-check-docs-generated-components:
   #    name: run-vitis-check-docs-generated-components
