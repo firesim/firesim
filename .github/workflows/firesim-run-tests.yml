@@ -112,7 +112,6 @@ jobs:
           ./build-setup.sh --skip-validate
           source sourceme-f1-manager.sh --skip-ssh-setup
           firesim managerinit --platform vitis
-          cd sw/firesim-software && ./init-submodules.sh
 
   run-u250-xclbin-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:u250-xclbin-buildbitstream-deploy')
