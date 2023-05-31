@@ -1,0 +1,3 @@
+demo configs should be in deploy/demo-configs
+workloads both demo and demo-resnet50 should exist in the workloads area
+need to make sure that gemmini-rocc-tests is patched (see the original tutorial-demo-summer-2023 branch in the repo)(doesn't work out of the box, need to port changes to more recent gemmini rocc tests version)
