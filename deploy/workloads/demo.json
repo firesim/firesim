@@ -1,0 +1,7 @@
+{
+  "benchmark_name": "demo",
+  "common_bootbinary": "mobilenet-baremetal",
+  "common_rootfs": null,
+  "common_outputs": [],
+  "common_simulation_outputs": ["uartlog"]
+}

@@ -672,7 +672,7 @@ class FireSimTopologyWithPasses:
             if not is_networked and all(global_status):
                 break
 
-            time.sleep(10)
+            time.sleep(1)
 
         # run post-workload hook, if one exists
         if self.workload.post_run_hook is not None:

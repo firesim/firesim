@@ -1,0 +1,7 @@
+{
+  "benchmark_name": "demo-resnet50",
+  "common_bootbinary": "resnet50-baremetal",
+  "common_rootfs": null,
+  "common_outputs": [],
+  "common_simulation_outputs": ["uartlog"]
+}
