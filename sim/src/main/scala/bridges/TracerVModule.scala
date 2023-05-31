@@ -6,13 +6,12 @@ import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
-import testchipip.DeclockedTracedInstruction
-import testchipip.TracedInstructionWidths
+import testchipip.{SerializableTracedInstruction, TraceBundleWidths}
 import midas.targetutils.TriggerSink
 
-class TracerVDUTIO(insnWidths: TracedInstructionWidths, numInsns: Int) extends Bundle {
+class TracerVDUTIO(widths: TraceBundleWidths) extends Bundle {
   val triggerSink = Output(Bool())
-  val insns       = Input(Vec(numInsns, new DeclockedTracedInstruction(insnWidths)))
+  val insns       = Input(Vec(widths.retireWidth, new SerializableTracedInstruction(widths)))
 }
 
 class TracerVModuleTestCount1
@@ -62,12 +61,13 @@ class TracerVDUT(implicit val p: Parameters) extends Module {
 
   val insnCount  = p(TracerVModuleInstructionCount)
   val insnWidth  = p(TracerVModuleInstructionWidth)
-  val insnWidths = TracedInstructionWidths(insnWidth, insnCount, None, 64, 40)
+  val insnWidths = TraceBundleWidths(insnCount, 40, 32, None, 64, 64, None)
 
-  val io = IO(new TracerVDUTIO(insnWidths, insnCount))
+  val io = IO(new TracerVDUTIO(insnWidths))
 
-  val tracerV = TracerVBridge(insnWidths, insnCount)
-  tracerV.io.trace.insns := io.insns
+  val tracerV = TracerVBridge(insnWidths)
+  tracerV.io.trace.trace.insns := io.insns
+  tracerV.io.trace.trace.time  := 0.U // this test ignores this
   TriggerSink(io.triggerSink)
 }
 

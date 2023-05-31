@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "0,30 */1 * * *"
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -22,16 +26,12 @@ env:
   FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
   MANAGER_FIRESIM_LOCATION: "~/firesim"
   REMOTE_WORK_DIR: unused
+  TERM: xterm-256-color
 
 jobs:
   cull-old-ci-instances:
     name: cull-old-ci-instances
     runs-on: ubuntu-latest
-    env:
-      TERM: xterm-256-color
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
@@ -52,11 +52,6 @@ jobs:
   cull-old-ci-runners:
     name: cull-old-ci-runners
     runs-on: ubuntu-latest
-    env:
-      TERM: xterm-256-color
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
