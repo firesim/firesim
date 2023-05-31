@@ -19,7 +19,7 @@ metadata:
   - url: nodefaults
     used_env_vars: []
   content_hash:
-    linux-64: 3a4c40224cf558809f7a4607bb9a45ec454f47e1383c92041a750b0c9bc49be1
+    linux-64: 7a868c796a6e48ef38d85e44473bff53babc4e39a1ce0404723d754ebf7426ab
   platforms:
   - linux-64
   sources:
@@ -229,14 +229,14 @@ package:
   dependencies:
     _sysroot_linux-64_curr_repodata_hack: 3.*
   hash:
-    md5: 540e9f635ce30eb7fbf4488cfcf656bf
-    sha256: b0a77e609081d5a03327fd718c713fe83671043fdcd97f5983a1e956fe4d3052
+    md5: 523bc836a954faf0cca94831971bb85a
+    sha256: 67a3caa56e2a59f407f3d290437b865aaf996873006e2fcfca6295d0f0be8db9
   manager: conda
   name: kernel-headers_linux-64
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-4.18.0-he073ed8_0.conda
-  version: 4.18.0
+  url: https://conda.anaconda.org/conda-forge/noarch/kernel-headers_linux-64-3.10.0-h4a8ded7_13.tar.bz2
+  version: 3.10.0
 - category: main
   dependencies:
     libgfortran5: 12.2.0 h337968e_19
@@ -289,16 +289,16 @@ package:
 - category: main
   dependencies:
     _sysroot_linux-64_curr_repodata_hack: 3.*
-    kernel-headers_linux-64: 4.18.0 he073ed8_0
+    kernel-headers_linux-64: 3.10.0 h4a8ded7_13
   hash:
-    md5: f55932f8af2630b906d746c374028226
-    sha256: cbcaffe5c8df0e0e3e3110582b666b154482a1517233836b3ec2b2aa122dd7fb
+    md5: 57e5a5191ffe999b9f4dfdbcd0ddcba4
+    sha256: f09f2fea4b571dcd225f1e35bd3c851e809cd4c2f5f151438133969ab28478e5
   manager: conda
   name: sysroot_linux-64
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.28-he073ed8_0.conda
-  version: '2.28'
+  url: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.17-h4a8ded7_13.tar.bz2
+  version: '2.17'
 - category: main
   dependencies:
     ld_impl_linux-64: 2.40 h41732ed_0
