@@ -77,10 +77,6 @@ $(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
 
-# If the target project is the main FireSim project, provide the test classpath
-# as it defines the target configs and parameters for designs to elaborate.
-ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
-
 target_srcs = $(foreach dir,$(TARGET_SOURCE_DIRS), \
 	$(call find_sources_in_dir, $(dir), 'src/main/scala'))
 
@@ -90,12 +86,6 @@ TARGET_CP_TARGETS ?= $(subst :, ,$(TARGET_CP))
 $(TARGET_CP): $(target_srcs) | $(FIRESIM_MAIN_CP)
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(TARGET_SBT_PROJECT),$(TARGET_CP))
-
-else
-
-TARGET_CP :=
-
-endif
 
 .PHONY: firesim-main-classpath target-classpath
 firesim-main-classpath: $(FIRESIM_MAIN_CP)
