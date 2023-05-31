@@ -109,6 +109,68 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     assert(!axi4.aw.valid || axi4.aw.bits.size === log2Ceil(axiBeatBytes).U)
     assert(!axi4.w.valid  || axi4.w.bits.strb === ~0.U(axiBeatBytes.W))
 
+
+
+
+    val read_have_seen_bad_size = RegInit(false.B)
+    val read_bad_size_value = RegInit(0x7.U(3.W))
+    val read_have_seen_bad_len = RegInit(false.B)
+    val read_bad_len_value = RegInit(0xFF.U(8.W))
+
+    when (axi4.ar.valid) {
+      when (axi4.ar.bits.size =/= log2Ceil(axiBeatBytes).U) {
+        read_have_seen_bad_size := true.B
+        read_bad_size_value := axi4.ar.bits.size
+      }
+      when (axi4.ar.bits.len =/= 255.U) {
+        read_have_seen_bad_len := true.B
+        read_bad_len_value := axi4.ar.bits.len
+      }
+    }
+
+
+
+    val write_have_seen_bad_size = RegInit(false.B)
+    val write_bad_size_value = RegInit(0x7.U(3.W))
+    val write_have_seen_bad_len = RegInit(false.B)
+    val write_bad_len_value = RegInit(0xFF.U(8.W))
+    val write_have_seen_bad_strb = RegInit(false.B)
+    val write_bad_strb_value = RegInit(~0.U(axiBeatBytes.W))
+
+
+    // TODO: attach
+    //
+    //
+    when (axi4.aw.valid) {
+      when (axi4.aw.bits.size =/= log2Ceil(axiBeatBytes).U) {
+        write_have_seen_bad_size := true.B
+        write_bad_size_value := axi4.aw.bits.size
+      }
+      when (axi4.aw.bits.len =/= 255.U) {
+        write_have_seen_bad_len := true.B
+        write_bad_len_value := axi4.aw.bits.len
+      }
+    }
+    when (axi4.w.valid) {
+      when (axi4.w.bits.strb =/= (~0.U(axiBeatBytes.W))) {
+        write_have_seen_bad_strb := true.B
+        write_bad_strb_value := axi4.w.bits.strb
+      }
+    }
+
+
+    val a0 = attach(read_have_seen_bad_size, s"read_have_seen_bad_size", ReadOnly, substruct = false)
+    val a1 = attach(read_bad_size_value, s"read_bad_size_value", ReadOnly, substruct = false)
+    val a2 = attach(read_have_seen_bad_len, s"read_have_seen_bad_len", ReadOnly, substruct = false)
+    val a3 = attach(read_bad_len_value, s"read_bad_len_value", ReadOnly, substruct = false)
+
+    val a4 = attach(write_have_seen_bad_size, s"write_have_seen_bad_size", ReadOnly, substruct = false)
+    val a5 = attach(write_bad_size_value, s"write_bad_size_value", ReadOnly, substruct = false)
+    val a6 = attach(write_have_seen_bad_len, s"write_have_seen_bad_len", ReadOnly, substruct = false)
+    val a7 = attach(write_bad_len_value, s"write_bad_len_value", ReadOnly, substruct = false)
+    val a8 = attach(write_have_seen_bad_strb, s"", ReadOnly, substruct = false)
+    val a9 = attach(write_bad_strb_value, s"write_bad_strb_value", ReadOnly, substruct = false)
+
     axi4.b.bits.resp := 0.U(2.W)
     axi4.b.bits.id := axi4.aw.bits.id
     axi4.b.bits.user := axi4.aw.bits.user
@@ -279,7 +341,17 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
                        |  ${UInt64(p.bufferBaseAddress).toC},
                        |  ${UInt64(base + p.countMMIOAddress).toC},
                        |  ${UInt32(p.bufferCapacity).toC},
-                       |  ${UInt32(p.bufferWidthBytes).toC}
+                       |  ${UInt32(p.bufferWidthBytes).toC},
+                       |  ${UInt64(base + a0).toC},
+                       |  ${UInt64(base + a1).toC},
+                       |  ${UInt64(base + a2).toC},
+                       |  ${UInt64(base + a3).toC},
+                       |  ${UInt64(base + a4).toC},
+                       |  ${UInt64(base + a5).toC},
+                       |  ${UInt64(base + a6).toC},
+                       |  ${UInt64(base + a7).toC},
+                       |  ${UInt64(base + a8).toC},
+                       |  ${UInt64(base + a9).toC}
                        |)""".stripMargin)))
       }
 

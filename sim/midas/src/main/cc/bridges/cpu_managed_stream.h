@@ -58,15 +58,31 @@ struct StreamParameters {
   uint64_t count_addr;
   uint32_t fpga_buffer_size;
   uint32_t fpga_buffer_width_bytes;
+  size_t a0; size_t a1; size_t a2; size_t a3; size_t a4;
+  size_t a5; size_t a6; size_t a7; size_t a8; size_t a9;
 
   StreamParameters(const std::string &stream_name,
                    uint64_t dma_addr,
                    uint64_t count_addr,
                    int fpga_buffer_size,
-                   int fpga_buffer_width_bytes)
+                   int fpga_buffer_width_bytes,
+                   size_t a0, size_t a1, size_t a2, size_t a3, size_t a4,
+                   size_t a5, size_t a6, size_t a7, size_t a8, size_t a9
+                   )
       : stream_name(stream_name), dma_addr(dma_addr), count_addr(count_addr),
         fpga_buffer_size(fpga_buffer_size),
-        fpga_buffer_width_bytes(fpga_buffer_width_bytes) {}
+        fpga_buffer_width_bytes(fpga_buffer_width_bytes),
+        a0(a0),  
+        a1(a1),  
+        a2(a2),  
+        a3(a3),  
+        a4(a4),  
+        a5(a5),  
+        a6(a6),  
+        a7(a7),  
+        a8(a8),  
+        a9(a9)
+    {}
 };
 
 /**
@@ -110,6 +126,18 @@ public:
   uint64_t dma_addr() { return params.dma_addr; };
   uint64_t count_addr() { return params.count_addr; };
   uint64_t fpga_buffer_width_bytes() const { return params.fpga_buffer_width_bytes; }
+
+  uint64_t a0() { return params.a0; };
+  uint64_t a1() { return params.a1; };
+  uint64_t a2() { return params.a2; };
+  uint64_t a3() { return params.a3; };
+  uint64_t a4() { return params.a4; };
+  uint64_t a5() { return params.a5; };
+  uint64_t a6() { return params.a6; };
+  uint64_t a7() { return params.a7; };
+  uint64_t a8() { return params.a8; };
+  uint64_t a9() { return params.a9; };
+
 };
 
 /**

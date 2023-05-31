@@ -40,6 +40,20 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   auto push_bytes = push_beats * fpga_buffer_width_bytes();
   auto bytes_written =
       cpu_managed_axi4_write(dma_addr(), (char *)src, push_bytes);
+
+  if (bytes_written != push_bytes) {
+    printf("a0: %016llx\n", mmio_read(a0()));
+    printf("a1: %016llx\n", mmio_read(a1()));
+    printf("a2: %016llx\n", mmio_read(a2()));
+    printf("a3: %016llx\n", mmio_read(a3()));
+    printf("a4: %016llx\n", mmio_read(a4()));
+    printf("a5: %016llx\n", mmio_read(a5()));
+    printf("a6: %016llx\n", mmio_read(a6()));
+    printf("a7: %016llx\n", mmio_read(a7()));
+    printf("a8: %016llx\n", mmio_read(a8()));
+    printf("a9: %016llx\n", mmio_read(a9()));
+  }
+
   assert(bytes_written == push_bytes);
 
   return bytes_written;
@@ -85,6 +99,20 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   auto pull_beats = std::min(count, num_beats);
   auto pull_bytes = pull_beats * fpga_buffer_width_bytes();
   auto bytes_read = cpu_managed_axi4_read(dma_addr(), (char *)dest, pull_bytes);
+
+  if (bytes_read != pull_bytes) {
+    printf("a0: %016llx\n", mmio_read(a0()));
+    printf("a1: %016llx\n", mmio_read(a1()));
+    printf("a2: %016llx\n", mmio_read(a2()));
+    printf("a3: %016llx\n", mmio_read(a3()));
+    printf("a4: %016llx\n", mmio_read(a4()));
+    printf("a5: %016llx\n", mmio_read(a5()));
+    printf("a6: %016llx\n", mmio_read(a6()));
+    printf("a7: %016llx\n", mmio_read(a7()));
+    printf("a8: %016llx\n", mmio_read(a8()));
+    printf("a9: %016llx\n", mmio_read(a9()));
+  }
+
   assert(bytes_read == pull_bytes);
   return bytes_read;
 }
