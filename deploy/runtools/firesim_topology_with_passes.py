@@ -545,6 +545,7 @@ class FireSimTopologyWithPasses:
                 rootLogger.info("Confirming exit...")
                 # keep checking screen until it reports that there are no screens left
                 while True:
+                    run("screen -wipe || true") # wipe any potentially dead screens
                     screenoutput = run("screen -ls")
                     # If AutoILA is enabled, use the following condition
                     if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
