@@ -12,9 +12,7 @@
 DESIGN := TestHarness
 CONFIG ?= AllUnitTests
 OUT_DIR ?= $(GEN_DIR)
-TB ?= TestDriver
 EMUL ?= vcs
-CLOCK_PERIOD ?= 1.0
 
 default: $(GEN_DIR)/$(DESIGN).v
 
@@ -47,16 +45,34 @@ $(GEN_DIR)/$(DESIGN).v: $(GEN_DIR)/$(DESIGN).fir
 		-td $(GEN_DIR) \
 		-faf $(GEN_DIR)/$(DESIGN).anno.json -X verilog"
 
+override CXXFLAGS += -std=c++20
+
 emul_v     := $(GEN_DIR)/$(DESIGN).v
 emul_h     :=
 emul_cc    :=
 
-# VCS Makefrag arguments
+TB ?= TestDriver
+CLOCK_PERIOD ?= 1.0
+
+SIM_TIMESCALE ?= 1ps/1ps
+SIM_PREPROC_DEFINES = \
+	+define+CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	+define+RANDOMIZE_MEM_INIT \
+	+define+RANDOMIZE_REG_INIT \
+	+define+RANDOMIZE_GARBAGE_ASSIGN \
+	+define+RANDOMIZE_INVALID_ASSIGN \
+	+define+STOP_COND=!$(TB).reset \
+	+define+PRINTF_COND=!$(TB).reset \
+	+define+RANDOM=32\'b0 \
+
+sim_wrapper_v := $(vsrc)/TestDriver.v
 # Since we're reusing the makefrags we use to build metasimulators, we need to
 # set DRIVER_NAME. We set it here so simulator binaries are named V$(DESIGN) / $(DESIGN)
 DRIVER_NAME := $(DESIGN)
+
 ifeq ($(EMUL),vcs)
-vcs_wrapper_v := $(vsrc)/TestDriver.v
+
+# VCS Makefrag arguments
 VCS_FLAGS = +verbose
 include $(sim_makefrag_dir)/Makefrag-vcs
 
@@ -65,13 +81,11 @@ vcs_debug = $(OUT_DIR)/$(DESIGN)-debug
 
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
+
 else
 
 # Verilator Makefrag arguments
-top_module := TestHarness
-override CXXFLAGS  += -I$(csrc) -include $(csrc)/verilator.h -DTEST_HARNESS=V$(top_module) -std=c++11
-override emul_cc += $(sim_makefrag_dir)/generic_vharness.cc
-
+VERILATOR_FLAGS = -Wno-BLKSEQ # ignore TestDriver.v BLKSEQ warnings
 include $(sim_makefrag_dir)/Makefrag-verilator
 
 verilator = $(OUT_DIR)/V$(DESIGN)
