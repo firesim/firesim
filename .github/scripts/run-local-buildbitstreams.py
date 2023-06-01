@@ -172,7 +172,7 @@ def run_local_buildbitstreams():
                             match_bit = True
                             sample_hwdb_file.write(line + '\n')
                         elif match_bit == True:
-                            elif ("bitstream_tar:" in line.strip().split(' ')[0]):
+                            if ("bitstream_tar:" in line.strip().split(' ')[0]):
                                 # only replace this bit
                                 match_bit = False
 
