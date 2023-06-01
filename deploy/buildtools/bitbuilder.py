@@ -687,9 +687,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
         local(f"rm -rf {tar_staging_path}")
         local(f"mkdir -p {tar_staging_path}")
 
-        # store bitfile/mcs
+        # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        local(f"cp {mcs_path} {tar_staging_path}")
+        local(f"cp {mcs_path} {tar_staging_path} || true")
 
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
