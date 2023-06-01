@@ -224,19 +224,21 @@ set -o pipefail
         vim \
         git \
         screen \
-        argcomplete==1.12.3 \
-        "conda-lock>=1" \
+        argcomplete \
+        "conda-lock=1" \
         expect \
-        python \
-        boto3==1.20.21 \
+        "python>=3.8" \
+        boto3 \
         pytz \
-        mypy-boto3-s3==1.21.0 \
-        azure-mgmt-resource==18.0.0 \
-        azure-identity==1.5.0 \
+        mypy-boto3-s3 \
+        mypy_boto3_ec2 \
+        "azure-mgmt-resource>=18" \
+        azure-identity \
         azure-mgmt-compute \
         azure-mgmt-network \
         fsspec \
-        s3fs \
+        "s3fs==0.4.2" \
+        "cryptography<41" \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
@@ -267,8 +269,7 @@ set -o pipefail
     # prefer creating the environment with a single invocation of
     # conda
     PIP_PKGS=( \
-        fab-classic==1.19.1 \
-        mypy-boto3-ec2==1.21.9 \
+        "fab-classic>=1.19.2" \
         azure-mgmt-resourcegraph \
     )
     if [[ -n "$PIP_PKGS[*]" ]]; then

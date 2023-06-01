@@ -57,7 +57,7 @@ jobs:
       image: firesim/firesim-ci:v1.3
       options: --entrypoint /bin/bash
       env:
-        JVM_MEMORY: 3500M # Default JVM maximum heap limit
+        JAVA_HEAP_SIZE: 3500M # Default JVM maximum heap limit
     steps:
       - run: |
           sudo yum -y remove git git224 git224-core ius-release.noarch # remove any older git versions and collateral first from docker image
