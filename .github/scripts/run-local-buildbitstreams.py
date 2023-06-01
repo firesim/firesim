@@ -113,6 +113,8 @@ def run_local_buildbitstreams():
                             start_space_idx = line.index('b')
                             for host in hostlist:
                                 byf.write((' ' * (start_space_idx + 4)) + f"- {host}" + '\n')
+                        else:
+                            byf.write(line + '\n')
                 return copy_build_yaml
 
             def build_upload(build_yaml: str, hwdb_entries: List[str], platforms: List[str]) -> List[str]:
@@ -144,14 +146,6 @@ def run_local_buildbitstreams():
                     with open(hwdb_entry, 'r') as hwdbef:
                         lines = hwdbef.readlines()
                         for line in lines:
-                            if "xclbin:" in line:
-                                file_path = Path(line.strip().split(' ')[1].replace('file://', '')) # 2nd element (i.e. the path) (no URI)
-                                file_name = f"{platform}/{hwdb_entry_name}.xclbin"
-                                sha = upload_binary_file(file_path, file_name)
-                                link = f"{URL_PREFIX}/{sha}/{file_name}"
-                                print(f"Uploaded xclbin for {hwdb_entry_name} to {link}")
-                                links.append(link)
-                                break
                             if "bitstream_tar:" in line:
                                 file_path = Path(line.strip().split(' ')[1].replace('file://', '')) # 2nd element (i.e. the path) (no URI)
                                 file_name = f"{platform}/{hwdb_entry_name}.tar.gz"
@@ -167,42 +161,33 @@ def run_local_buildbitstreams():
             sample_hwdb_filename = f"{manager_fsim_dir}/{relative_hwdb_path}"
 
             def replace_in_hwdb(hwdb_entry_name: str, link: str) -> None:
-                # replace the sample hwdb's xclbin line only
+                # replace the sample hwdb's bit line only
                 sample_hwdb_lines = open(sample_hwdb_filename).read().split('\n')
 
                 with open(sample_hwdb_filename, "w") as sample_hwdb_file:
-                    match_xclbin = False
+                    match_bit = False
                     for line in sample_hwdb_lines:
                         if hwdb_entry_name in line.strip().split(' ')[0].replace(':', ''):
                             # hwdb entry matches key name
-                            match_xclbin = True
+                            match_bit = True
                             sample_hwdb_file.write(line + '\n')
-                        elif match_xclbin == True:
-                            if ("xclbin:" in line.strip().split(' ')[0]):
-                                # only replace this xclbin
-                                match_xclbin = False
-
-                                new_xclbin_line = f"    xclbin: {link}"
-                                print(f"Replacing {line.strip()} with {new_xclbin_line}")
-
-                                # print out the xclbin line
-                                sample_hwdb_file.write(new_xclbin_line + '\n')
+                        elif match_bit == True:
                             elif ("bitstream_tar:" in line.strip().split(' ')[0]):
-                                # only replace this xclbin
-                                match_xclbin = False
+                                # only replace this bit
+                                match_bit = False
 
-                                new_xclbin_line = f"    bitstream_tar: {link}"
-                                print(f"Replacing {line.strip()} with {new_xclbin_line}")
+                                new_bit_line = f"    bitstream_tar: {link}"
+                                print(f"Replacing {line.strip()} with {new_bit_line}")
 
-                                # print out the xclbin line
-                                sample_hwdb_file.write(new_xclbin_line + '\n')
+                                # print out the bit line
+                                sample_hwdb_file.write(new_bit_line + '\n')
                             else:
                                 sys.exit("::ERROR:: Something went wrong")
                         else:
                             # if no match print other lines
                             sample_hwdb_file.write(line + '\n')
 
-                    if match_xclbin == True:
+                    if match_bit == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
             batch_hwdbs = [
