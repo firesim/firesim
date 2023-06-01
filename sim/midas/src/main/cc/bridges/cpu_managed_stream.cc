@@ -52,6 +52,17 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
     printf("a7: %016llx\n", mmio_read(a7()));
     printf("a8: %016llx\n", mmio_read(a8()));
     printf("a9: %016llx\n", mmio_read(a9()));
+    printf("a10: %016llx\n", mmio_read(a10()));
+    printf("a11: %016llx\n", mmio_read(a11()));
+    printf("a12: %016llx\n", mmio_read(a12()));
+    printf("a13: %016llx\n", mmio_read(a13()));
+    printf("a14: %016llx\n", mmio_read(a14()));
+    printf("a15: %016llx\n", mmio_read(a15()));
+    printf("a16: %016llx\n", mmio_read(a16()));
+    printf("a17: %016llx\n", mmio_read(a17()));
+    printf("a18: %016llx\n", mmio_read(a18()));
+//    printf("a19: %016llx\n", mmio_read(a19()));
+
   }
 
   assert(bytes_written == push_bytes);
@@ -111,6 +122,15 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
     printf("a7: %016llx\n", mmio_read(a7()));
     printf("a8: %016llx\n", mmio_read(a8()));
     printf("a9: %016llx\n", mmio_read(a9()));
+    printf("a10: %016llx\n", mmio_read(a10()));
+    printf("a11: %016llx\n", mmio_read(a11()));
+    printf("a12: %016llx\n", mmio_read(a12()));
+    printf("a13: %016llx\n", mmio_read(a13()));
+    printf("a14: %016llx\n", mmio_read(a14()));
+    printf("a15: %016llx\n", mmio_read(a15()));
+    printf("a16: %016llx\n", mmio_read(a16()));
+    printf("a17: %016llx\n", mmio_read(a17()));
+    printf("a18: %016llx\n", mmio_read(a18()));
   }
 
   assert(bytes_read == pull_bytes);

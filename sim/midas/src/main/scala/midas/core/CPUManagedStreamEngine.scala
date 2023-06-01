@@ -116,6 +116,13 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     val read_bad_size_value = RegInit(0x7.U(3.W))
     val read_have_seen_bad_len = RegInit(false.B)
     val read_bad_len_value = RegInit(0xFF.U(8.W))
+    val read_have_seen_bad_addr = RegInit(false.B)
+    val read_bad_addr_value = RegInit(0.U(64.W))
+
+
+    val count_read_reqs_popped = RegInit(0.U(64.W))
+    val count_read_resp_beats = RegInit(0.U(64.W))
+    val count_read_resp_lasts = RegInit(0.U(64.W))
 
     when (axi4.ar.valid) {
       when (axi4.ar.bits.size =/= log2Ceil(axiBeatBytes).U) {
@@ -126,9 +133,23 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         read_have_seen_bad_len := true.B
         read_bad_len_value := axi4.ar.bits.len
       }
+      when (axi4.ar.bits.addr(63, 19) =/= 0.U) {
+        read_have_seen_bad_addr := true.B
+        read_bad_addr_value := axi4.ar.bits.addr
+      }
     }
 
+    when (axi4.ar.fire()) {
+      count_read_reqs_popped := count_read_reqs_popped + 1.U
+    }
 
+    when (axi4.r.fire()) {
+      count_read_resp_beats := count_read_resp_beats + 1.U
+
+      when (axi4.r.bits.last) {
+        count_read_resp_lasts := count_read_resp_lasts + 1.U
+      }
+    }
 
     val write_have_seen_bad_size = RegInit(false.B)
     val write_bad_size_value = RegInit(0x7.U(3.W))
@@ -137,10 +158,6 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     val write_have_seen_bad_strb = RegInit(false.B)
     val write_bad_strb_value = RegInit(~0.U(axiBeatBytes.W))
 
-
-    // TODO: attach
-    //
-    //
     when (axi4.aw.valid) {
       when (axi4.aw.bits.size =/= log2Ceil(axiBeatBytes).U) {
         write_have_seen_bad_size := true.B
@@ -170,6 +187,21 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     val a7 = attach(write_bad_len_value, s"write_bad_len_value", ReadOnly, substruct = false)
     val a8 = attach(write_have_seen_bad_strb, s"", ReadOnly, substruct = false)
     val a9 = attach(write_bad_strb_value, s"write_bad_strb_value", ReadOnly, substruct = false)
+
+
+
+    val a10 = attach(count_read_reqs_popped(31, 0), s"count_read_reqs_popped_lo", ReadOnly, substruct = false)
+    val a11 = attach(count_read_reqs_popped(63, 32), s"count_read_reqs_popped_hi", ReadOnly, substruct = false)
+    val a12 = attach(count_read_resp_beats(31, 0), s"count_read_resp_beats_lo", ReadOnly, substruct = false)
+    val a13 = attach(count_read_resp_beats(63, 32), s"count_read_resp_beats_hi", ReadOnly, substruct = false)
+    val a14 = attach(count_read_resp_lasts(31, 0), s"count_read_resp_lasts_lo", ReadOnly, substruct = false)
+    val a15 = attach(count_read_resp_lasts(63, 32), s"count_read_resp_lasts_hi", ReadOnly, substruct = false)
+
+
+
+    val a16 = attach(read_have_seen_bad_addr, s"read_have_seen_bad_addr", ReadOnly, substruct = false)
+    val a17 = attach(read_bad_addr_value(31, 0),  s"read_bad_addr_value_lo", ReadOnly, substruct = false)
+    val a18 = attach(read_bad_addr_value(63, 32), s"read_bad_addr_value_hi", ReadOnly, substruct = false)
 
     axi4.b.bits.resp := 0.U(2.W)
     axi4.b.bits.id := axi4.aw.bits.id
@@ -351,7 +383,16 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
                        |  ${UInt64(base + a6).toC},
                        |  ${UInt64(base + a7).toC},
                        |  ${UInt64(base + a8).toC},
-                       |  ${UInt64(base + a9).toC}
+                       |  ${UInt64(base + a9).toC},
+                       |  ${UInt64(base + a10).toC},
+                       |  ${UInt64(base + a11).toC},
+                       |  ${UInt64(base + a12).toC},
+                       |  ${UInt64(base + a13).toC},
+                       |  ${UInt64(base + a14).toC},
+                       |  ${UInt64(base + a15).toC},
+                       |  ${UInt64(base + a16).toC},
+                       |  ${UInt64(base + a17).toC},
+                       |  ${UInt64(base + a18).toC}
                        |)""".stripMargin)))
       }
 
