@@ -113,6 +113,8 @@ def run_local_buildbitstreams():
                             start_space_idx = line.index('b')
                             for host in hostlist:
                                 byf.write((' ' * (start_space_idx + 4)) + f"- {host}" + '\n')
+                        elif '- localhost' in line and not '#' in line:
+                            byf.write("# " + line + '\n')
                         else:
                             byf.write(line + '\n')
                 return copy_build_yaml
@@ -190,12 +192,13 @@ def run_local_buildbitstreams():
                     if match_bit == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
+            # same order as in config_build.yaml
             batch_hwdbs = [
+                "vitis_firesim_rocket_singlecore_no_nic", # 2022.1
                 "vitis_firesim_gemmini_rocket_singlecore_no_nic", # 2022.1
                 "alveo_u250_firesim_rocket_singlecore_no_nic", # 2021.1
                 #"alveo_u280_firesim_rocket_singlecore_no_nic", # 2021.1
                 "xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", # 2019.1
-                "vitis_firesim_rocket_singlecore_no_nic", # 2022.1
             ]
             batch_platforms = [
                 "vitis",
@@ -205,14 +208,15 @@ def run_local_buildbitstreams():
                 "vitis",
             ]
             hosts = [
-                "jktgz",
-                "jktqos",
-                "firesim1",
-                #"knight", # could use but might be overloaded
-                #"ferry", # could use but might be overloaded
-            ] # localhost is always last
+                "localhost", # 2022.1
+                "jktgz", # 2022.1
+                "jktqos", # 2021.1
+                "firesim1", # 2019.1
+            ]
+            #"knight", # could use but might be overloaded
+            #"ferry", # could use but might be overloaded
 
-            assert len(hosts) + 1 >= len(batch_hwdbs)
+            assert len(hosts) >= len(batch_hwdbs)
             assert len(batch_hwdbs) == len(batch_platforms)
 
             copy_build_yaml = modify_config_build(batch_hwdbs)
