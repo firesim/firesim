@@ -501,6 +501,9 @@ class VitisBitBuilder(BitBuilder):
             on_build_failure()
             return False
 
+        hwdb_entry_name = self.build_config.name
+        local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
+
         bit_path = f"{local_cl_dir}/bitstream/build_dir.{self.device}/firesim.xclbin"
         tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
