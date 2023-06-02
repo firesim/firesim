@@ -41,7 +41,7 @@ abstract class FireSimTestSuite(
 
   def invokeMlSimulator(backend: String, name: String, debug: Boolean, additionalArgs: Seq[String] = Nil) = {
     make(
-      (Seq(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "vpd" else "out"), s"EMUL=${backend}")
+      (Seq(s"${outDir.getAbsolutePath}/${name}.%s".format(if (debug) "fsdb" else "out"), s"EMUL=${backend}")
         ++ additionalArgs): _*
     )
   }

@@ -30,10 +30,9 @@
 ################################################################################
 
 SBT_COMMAND ?= shell
-SBT_NON_THIN ?= $(subst $(SBT_CLIENT_FLAG),,$(SBT))
 .PHONY: sbt
 sbt:
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
 
 ################################################################################
 # Target Configuration
@@ -49,19 +48,6 @@ TARGET_SOURCE_DIRS ?=
 ################################################################################
 # Build jars using SBT assembly and cache them.
 ################################################################################
-
-# Helper to build a classpath for a project. This first builds the project
-# while showing error messages, then it runs sbt again with errors disabled to
-# capture the classpath from the output (errors are dumped to stdout otherwise).
-define build_classpath
-	bash -c '\
-	export TMP=$(shell mktemp); \
-	($(SBT_NON_THIN) \
-		--error \
-		"set showSuccess := false; project $(1); compile; package; export $(2):fullClasspath" \
-		> $$TMP || (cat $$TMP | head -n -1 && rm $$TMP && exit 1)) && \
-	((cat $$TMP | head -n 1 | tr -d "\n" > $@) 2> /dev/null || true; rm -f $$TMP)'
-endef
 
 # Helpers to identify all source files of the FireSim project.
 find_sources_in_dir = $(shell \
@@ -84,51 +70,33 @@ firesim_main_srcs = $(foreach dir, $(firesim_source_dirs), \
 firesim_test_srcs = $(foreach dir, $(firesim_source_dirs), \
 	$(call find_sources_in_dir, $(dir), 'src/test/scala'))
 
-# Dummy rule building a token file which compiles all scala sources of the main
-# FireSim project. This ensures that SBT is invoked once in parallel builds.
-$(BUILD_DIR)/firesim.build: $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
+FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.jar
+# if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
+FIRESIM_MAIN_CP_TARGETS := $(subst :, ,$(FIRESIM_MAIN_CP))
+$(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
 	@mkdir -p $(@D)
-	$(SBT_NON_THIN) "set showSuccess := false; project $(FIRESIM_SBT_PROJECT); compile; package"
-	@touch $@
+	$(call run_sbt_assembly,$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
 
-
-FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.classpath
-$(FIRESIM_MAIN_CP): $(BUILD_DIR)/firesim.build
-	@mkdir -p $(@D)
-	cd $(base_dir) && $(call build_classpath,$(FIRESIM_SBT_PROJECT),runtime)
-
-
-FIRESIM_TEST_CP := $(BUILD_DIR)/firesim-test.classpath
-$(FIRESIM_TEST_CP): $(BUILD_DIR)/firesim.build
-	@mkdir -p $(@D)
-	cd $(base_dir) && $(call build_classpath,$(FIRESIM_SBT_PROJECT),test)
-
-# If the target project is the main FireSim project, provide the test classpath
-# as it defines the target configs and parameters for designs to elaborate.
 ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
 
 target_srcs = $(foreach dir,$(TARGET_SOURCE_DIRS), \
 	$(call find_sources_in_dir, $(dir), 'src/main/scala'))
 
-$(BUILD_DIR)/target.build: $(BUILD_DIR)/firesim.build $(target_srcs)
+TARGET_CP := $(BUILD_DIR)/target.jar
+# if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
+TARGET_CP_TARGETS ?= $(subst :, ,$(TARGET_CP))
+$(TARGET_CP): $(target_srcs) | $(FIRESIM_MAIN_CP)
 	@mkdir -p $(@D)
-	$(SBT_NON_THIN) "set showSuccess := false; project $(TARGET_SBT_PROJECT); compile; package"
-	@touch $@
-
-TARGET_CP := $(BUILD_DIR)/target.classpath
-$(TARGET_CP): $(BUILD_DIR)/target.build
-	@mkdir -p $(@D)
-	cd $(base_dir) && $(call build_classpath,$(TARGET_SBT_PROJECT),runtime)
+	$(call run_sbt_assembly,$(TARGET_SBT_PROJECT),$(TARGET_CP))
 
 else
 
-TARGET_CP := $(FIRESIM_TEST_CP)
+TARGET_CP := $(FIRESIM_MAIN_CP)
 
 endif
 
-.PHONY: firesim-main-classpath firesim-test-classpath target-classpath
+.PHONY: firesim-main-classpath target-classpath
 firesim-main-classpath: $(FIRESIM_MAIN_CP)
-firesim-test-classpath: $(FIRESIM_TEST_CP)
 target-classpath: $(TARGET_CP)
 
 ################################################################################
@@ -136,12 +104,12 @@ target-classpath: $(TARGET_CP)
 ################################################################################
 
 .PHONY: test
-test: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
-	cd $(base_dir) && $(SBT_NON_THIN) ";project $(FIRESIM_SBT_PROJECT); test"
+test: $(FIRESIM_MAIN_CP) $(TARGET_CP)
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); test"
 
 .PHONY: testOnly
-testOnly: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
-	cd $(base_dir) && java -cp $$(cat $(FIRESIM_TEST_CP)) org.scalatest.run $(SCALA_TEST)
+testOnly: $(FIRESIM_MAIN_CP) $(TARGET_CP)
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); testOnly $(SCALA_TEST)"
 
 ################################################################################
 # ScalaDoc
@@ -149,4 +117,4 @@ testOnly: $(FIRESIM_MAIN_CP) $(FIRESIM_TEST_CP) $(TARGET_CP)
 
 .PHONY: scaladoc
 scaladoc:
-	cd $(base_dir) && $(SBT) "project {file:$(firesim_base_dir)}firesim" "unidoc"
+	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); unidoc"

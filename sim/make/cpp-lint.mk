@@ -9,7 +9,6 @@ testchipip_csrc_dir = $(chipyard_dir)/generators/testchipip/src/main/resources/t
 
 clang_tidy_files := $(shell \
 	find $(firesim_base_dir) -name '*.cc' -or -name '*.h' \
-		| grep -v generic_vharness.cc \
 		| grep -v TestPointerChaser.cc \
 		| grep -v simif_ \
 		| grep -v tracerv \
@@ -18,7 +17,8 @@ clang_tidy_files := $(shell \
 		| grep -v fesvr \
 		| grep -v generated-src \
 		| grep -v output \
-		| grep -v -F 'main.cc' \
+		| grep -v -F 'entry.cc' \
+		| grep -v -F 'dpi.cc' \
 )
 
 clang_tidy_flags :=\

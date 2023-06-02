@@ -231,10 +231,10 @@ size_t synthesized_prints_t::process_tokens(size_t beats,
   // request is lost. Once aligned, requests larger than a page will be
   // fractured into page-size (64-beat) requests and these seem to behave
   // correctly.
-  alignas(4096) char buf[maximum_batch_bytes];
+  page_aligned_sized_array(buf, maximum_batch_bytes);
 
   uint32_t bytes_received =
-      pull(stream_idx, (char *)buf, maximum_batch_bytes, minimum_batch_bytes);
+      pull(stream_idx, buf, maximum_batch_bytes, minimum_batch_bytes);
 
   if (human_readable) {
     for (size_t idx = 0; idx < bytes_received; idx += token_bytes) {

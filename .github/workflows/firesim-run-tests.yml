@@ -7,6 +7,10 @@ on:
       - main
       - stable
 
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.GH_A_PERSONAL_ACCESS_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -103,9 +107,6 @@ jobs:
     needs: change-filters
     if: needs.change-filters.outputs.needs-manager == 'true'
     runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
@@ -316,7 +317,7 @@ jobs:
         run: .github/scripts/run-linux-poweroff-externally-provisioned.py
 
   run-agfi-buildbitstream:
-    if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
+    if: contains(github.event.pull_request.labels.*.name, 'ci:agfi-buildbitstream-deploy')
     name: run-agfi-buildbitstream
     needs: [build-f1-driver] # delay until known working scala compile
     runs-on: aws-${{ github.run_id }}
@@ -338,9 +339,6 @@ jobs:
     name: documentation-check
     needs: change-filters
     runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash -el {0}
     steps:
       - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
@@ -475,10 +473,10 @@ jobs:
       - name: Run simple linux poweroff test w/ vitis
         run: .github/scripts/run-linux-poweroff-vitis.py
 
-  run-xclbin-buildbitstream:
-    if: contains(github.event.pull_request.labels.*.name, 'ci:buildbitstream-deploy')
+  run-u250-xclbin-buildbitstream:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:u250-xclbin-buildbitstream-deploy')
     needs: [setup-local-fpga-repo]
-    name: run-xclbin-buildbitstream
+    name: run-u250-xclbin-buildbitstream
     runs-on: local-fpga
     timeout-minutes: 600
     steps:
@@ -502,7 +500,7 @@ jobs:
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
-    needs: [run-basic-linux-poweroff-vitis, run-vitis-check-docs-generated-components, run-basic-linux-poweroff-vitis, run-xclbin-buildbitstream]
+    needs: [run-basic-linux-poweroff-vitis, run-vitis-check-docs-generated-components, run-basic-linux-poweroff-vitis, run-u250-xclbin-buildbitstream]
     runs-on: local-fpga
     if: ${{ always() }}
     steps:

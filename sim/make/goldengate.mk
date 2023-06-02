@@ -28,17 +28,16 @@ $(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos): $(simulator_veril
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
 $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP)
-	java -cp $$(cat $(FIRESIM_MAIN_CP)) midas.stage.GoldenGateMain \
+	$(call run_jar_scala_main,$(FIRESIM_MAIN_CP),midas.stage.GoldenGateMain,\
 		-i $(FIRRTL_FILE) \
 		-td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		--output-filename-base $(BASE_FILE_NAME) \
-		--no-dedup \
-
+		--no-dedup)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
-	xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
+		xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
 
 ####################################
 # Runtime-Configuration Generation #
@@ -49,10 +48,10 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP
 # to generate a runtime configuration that is compatible with the generated
 # hardware (BridgeModule). Useful for modelling a memory system that differs from the default.
 .PHONY: conf
-conf: $(fame_annos)
+conf: $(fame_annos) $(FIRESIM_MAIN_CP)
 	mkdir -p $(GENERATED_DIR)
-	cd $(base_dir) && $(SBT) "project $(FIRESIM_SBT_PROJECT)" "runMain midas.stage.RuntimeConfigGeneratorMain \
+	$(call run_jar_scala_main,$(FIRESIM_MAIN_CP),midas.stage.RuntimeConfigGeneratorMain,\
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
-		-ggcs $(PLATFORM_CONFIG)"
+		-ggcs $(PLATFORM_CONFIG))
