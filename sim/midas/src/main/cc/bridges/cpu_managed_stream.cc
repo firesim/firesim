@@ -61,7 +61,7 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
     printf("a16: %016llx\n", mmio_read(a16()));
     printf("a17: %016llx\n", mmio_read(a17()));
     printf("a18: %016llx\n", mmio_read(a18()));
-//    printf("a19: %016llx\n", mmio_read(a19()));
+    printf("a19: %016llx\n", mmio_read(a19()));
 
   }
 
@@ -131,6 +131,7 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
     printf("a16: %016llx\n", mmio_read(a16()));
     printf("a17: %016llx\n", mmio_read(a17()));
     printf("a18: %016llx\n", mmio_read(a18()));
+    printf("a19: %016llx\n", mmio_read(a19()));
   }
 
   assert(bytes_read == pull_bytes);

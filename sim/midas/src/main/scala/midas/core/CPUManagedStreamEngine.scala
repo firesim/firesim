@@ -124,6 +124,14 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     val count_read_resp_beats = RegInit(0.U(64.W))
     val count_read_resp_lasts = RegInit(0.U(64.W))
 
+
+    val have_outstanding_ar_valid = RegInit(false.B)
+    when (axi4.ar.valid && axi4.ar.ready) {
+      have_outstanding_ar_valid := false.B 
+    } .elsewhen (axi4.ar.valid) {
+      have_outstanding_ar_valid := true.B
+    }
+
     when (axi4.ar.valid) {
       when (axi4.ar.bits.size =/= log2Ceil(axiBeatBytes).U) {
         read_have_seen_bad_size := true.B
@@ -202,6 +210,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     val a16 = attach(read_have_seen_bad_addr, s"read_have_seen_bad_addr", ReadOnly, substruct = false)
     val a17 = attach(read_bad_addr_value(31, 0),  s"read_bad_addr_value_lo", ReadOnly, substruct = false)
     val a18 = attach(read_bad_addr_value(63, 32), s"read_bad_addr_value_hi", ReadOnly, substruct = false)
+    val a19 = attach(have_outstanding_ar_valid, s"have_outstanding_ar_valid", ReadOnly, substruct = false)
 
     axi4.b.bits.resp := 0.U(2.W)
     axi4.b.bits.id := axi4.aw.bits.id
@@ -392,7 +401,8 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
                        |  ${UInt64(base + a15).toC},
                        |  ${UInt64(base + a16).toC},
                        |  ${UInt64(base + a17).toC},
-                       |  ${UInt64(base + a18).toC}
+                       |  ${UInt64(base + a18).toC},
+                       |  ${UInt64(base + a19).toC}
                        |)""".stripMargin)))
       }
 

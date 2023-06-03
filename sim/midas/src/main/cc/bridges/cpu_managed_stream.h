@@ -77,7 +77,7 @@ struct StreamParameters {
   size_t a16;
   size_t a17;
   size_t a18;
-//  size_t a19;
+  size_t a19;
 
 
   StreamParameters(const std::string &stream_name,
@@ -103,8 +103,8 @@ struct StreamParameters {
                    size_t a15,
                    size_t a16,
                    size_t a17,
-                   size_t a18/*,
-                   size_t a19*/
+                   size_t a18,
+                   size_t a19
 
                    )
       : stream_name(stream_name), dma_addr(dma_addr), count_addr(count_addr),
@@ -128,8 +128,8 @@ struct StreamParameters {
         a15(a15),
         a16(a16),
         a17(a17),
-        a18(a18)/*,
-        a19(a19)*/
+        a18(a18),
+        a19(a19)
 
     {}
 };
@@ -195,7 +195,7 @@ public:
   uint64_t a16() { return params.a16; };
   uint64_t a17() { return params.a17; };
   uint64_t a18() { return params.a18; };
-//  uint64_t a19() { return params.a19; };
+  uint64_t a19() { return params.a19; };
 
 
 };
