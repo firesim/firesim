@@ -192,37 +192,49 @@ def run_local_buildbitstreams():
                     if match_bit == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
+            # could potentially use knight/ferry in the future (currently unused since they are currently overloaded)
+            hosts = {
+                ("localhost", "vitis:2022.1"),
+                #("jktgz", "vitis:2022.1"),
+                ("jktqos", "vivado:2021.1"),
+                ("firesim1", "vivado:2019.1"),
+            }
+
             # same order as in config_build.yaml
             batch_hwdbs = [
-                "vitis_firesim_rocket_singlecore_no_nic", # 2022.1
-                "vitis_firesim_gemmini_rocket_singlecore_no_nic", # 2022.1
-                "alveo_u250_firesim_rocket_singlecore_no_nic", # 2021.1
-                #"alveo_u280_firesim_rocket_singlecore_no_nic", # 2021.1
-                "xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", # 2019.1
+                # hwdb_entry_name, platform_name, buildtool:version
+                ("vitis_firesim_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
+                #("vitis_firesim_gemmini_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
+                ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2021.1"),
+                ("xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", "xilinx_vcu118", "vivado:2019.1"),
             ]
-            batch_platforms = [
-                "vitis",
-                "xilinx_alveo_u250",
-                # "xilinx_alveo_u280",
-                "xilinx_vcu118",
-                "vitis",
-            ]
-            hosts = [
-                "localhost", # 2022.1
-                "jktgz", # 2022.1
-                "jktqos", # 2021.1
-                "firesim1", # 2019.1
-            ]
-            #"knight", # could use but might be overloaded
-            #"ferry", # could use but might be overloaded
 
-            assert len(hosts) >= len(batch_hwdbs)
-            assert len(batch_hwdbs) == len(batch_platforms)
+            assert len(hosts) >= len(batch_hwdbs), f"Need at least {len(batch_hwdbs)} hosts to run builds"
 
-            copy_build_yaml = modify_config_build(batch_hwdbs)
-            copy_build_yaml_2 = add_host_list(copy_build_yaml, hosts)
-            links = build_upload(copy_build_yaml_2, batch_hwdbs, batch_platforms)
-            for hwdb, link in zip(batch_hwdbs, links):
+            # map hwdb tuple to hosts
+            hwdb_2_host = {}
+            for hwdb in batch_hwdbs:
+                buildtool_version = hwdb[2]
+                for host in hosts:
+                    if host[1] == buildtool_version:
+                        if not host[0] in hwdb_2_host.values():
+                            hwdb_2_host[hwdb[0]] = host[0]
+
+            assert len(hwdb_2_host) == len(batch_hwdbs), "Unable to map hosts to hwdb build"
+
+            hwdbs_ordered = [hwdb[0] for hwdb in batch_hwdbs]
+            platforms_ordered = [hwdb[1] for hwdb in batch_hwdbs]
+            hosts_ordered = hwdb_2_host.values()
+
+            print("Mappings")
+            print(f"HWDBS: {hwdbs_ordered}")
+            print(f"Platforms: {platforms_ordered}")
+            print(f"Hosts: {hosts_ordered}")
+
+            copy_build_yaml = modify_config_build(hwdbs_ordered)
+            copy_build_yaml_2 = add_host_list(copy_build_yaml, hosts_ordered)
+            links = build_upload(copy_build_yaml_2, hwdbs_ordered, platforms_ordered)
+            for hwdb, link in zip(hwdbs_ordered, links):
                 replace_in_hwdb(hwdb_entry_name, link)
 
             print(f"Printing {sample_hwdb_filename}...")
@@ -231,9 +243,9 @@ def run_local_buildbitstreams():
             # copy back to workspace area so you can PR it
             run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
-            # wipe old data
-            for host in hosts:
-                run(f"ssh {host} rm -rf {build_location}")
+            ## wipe old data
+            #for host in hosts_ordered:
+            #    run(f"ssh {host} rm -rf {build_location}")
 
 if __name__ == "__main__":
     execute(run_local_buildbitstreams, hosts=["localhost"])
