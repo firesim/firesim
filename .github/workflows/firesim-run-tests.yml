@@ -109,9 +109,9 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          #./build-setup.sh --skip-validate
-          #source sourceme-f1-manager.sh --skip-ssh-setup
-          #firesim managerinit --platform vitis
+          ./build-setup.sh --skip-validate
+          source sourceme-f1-manager.sh --skip-ssh-setup
+          firesim managerinit --platform vitis
 
   run-u250-xclbin-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:u250-xclbin-buildbitstream-deploy')
@@ -138,11 +138,11 @@ jobs:
           branch-suffix: short-commit-hash
           title: "Update local bitstream(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
-  cleanup-local-fpga-repo:
-    name: cleanup-local-fpga-repo
-    needs: [run-u250-xclbin-buildbitstream]
-    runs-on: local-fpga
-    if: ${{ always() }}
-    steps:
-      - name: Delete repo copy
-        run: rm -rf ${{ env.REMOTE_WORK_DIR }}
+  #cleanup-local-fpga-repo:
+  #  name: cleanup-local-fpga-repo
+  #  needs: [run-u250-xclbin-buildbitstream]
+  #  runs-on: local-fpga
+  #  if: ${{ always() }}
+  #  steps:
+  #    - name: Delete repo copy
+  #      run: rm -rf ${{ env.REMOTE_WORK_DIR }}
