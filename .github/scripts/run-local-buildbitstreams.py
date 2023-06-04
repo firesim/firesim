@@ -236,7 +236,7 @@ def run_local_buildbitstreams():
             copy_build_yaml_2 = add_host_list(copy_build_yaml, hosts_ordered)
             links = build_upload(copy_build_yaml_2, hwdbs_ordered, platforms_ordered)
             for hwdb, link in zip(hwdbs_ordered, links):
-                replace_in_hwdb(hwdb_entry_name, link)
+                replace_in_hwdb(hwdb, link)
 
             print(f"Printing {sample_hwdb_filename}...")
             run(f"cat {sample_hwdb_filename}")
