@@ -36,7 +36,7 @@ def upload_binary_file(local_file_path, gh_file_path):
             all_files.append(str(file).replace('ContentFile(path="','').replace('")',''))
 
     with open(local_file_path, 'rb') as file:
-        content = base64.b64encode(file.read()).decode("utf-8")
+        content = base64.b64encode(file.read())
 
     tries = 10
     delay = 15
