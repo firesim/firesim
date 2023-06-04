@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from fabric.api import prefix, run, settings, execute, local # type: ignore
+from fabric.api import prefix, run, settings, execute # type: ignore
 import os
 from github import Github
 import base64
@@ -151,9 +151,7 @@ def run_local_buildbitstreams():
                             if "bitstream_tar:" in line:
                                 file_path = Path(line.strip().split(' ')[1].replace('file://', '')) # 2nd element (i.e. the path) (no URI)
                                 file_name = f"{platform}/{hwdb_entry_name}.tar.gz"
-                                localcap = local(f"shasum -a 256 {file_path}", capture=True)
-                                print(f":DEBUG: stdout: {str(localcap)}")
-                                print(f":DEBUG: stderr: {str(localcap.stderr)}")
+                                run(f"shasum -a 256 {file_path}")
                                 sha = upload_binary_file(file_path, file_name)
                                 link = f"{URL_PREFIX}/{sha}/{file_name}"
                                 print(f"Uploaded bitstream_tar for {hwdb_entry_name} to {link}")
