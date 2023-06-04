@@ -210,10 +210,10 @@ def run_local_buildbitstreams():
             ("xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", "xilinx_vcu118", "vivado:2019.1"),
         ]
 
-        run("mkdir -p testing_tar")
-        run("touch testing_tar/ME_A_FILE")
-        run("tar zcvf dummy.tar.gz testing_tar/")
-        upload_binary_file(f"{manager_fsim_dir}/dummy.tar.gz", "testing.tar.gz")
+        run("mkdir -p /scratch/buildbot/testing_tar")
+        run("touch /scratch/buildbot/testing_tar/ME_A_FILE")
+        run("tar zcvf /scratch/buildbot/dummy.tar.gz /scratch/buildbot/testing_tar/")
+        upload_binary_file(f"/scratch/buildbot/dummy.tar.gz", "testing.tar.gz")
         #assert len(hosts) >= len(batch_hwdbs), f"Need at least {len(batch_hwdbs)} hosts to run builds"
 
         ## map hwdb tuple to hosts
