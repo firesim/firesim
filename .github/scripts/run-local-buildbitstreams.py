@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from fabric.api import prefix, run, settings, execute # type: ignore
+from fabric.api import prefix, run, settings, execute, local # type: ignore
 import os
 from github import Github
 import base64
