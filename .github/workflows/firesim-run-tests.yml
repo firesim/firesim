@@ -109,9 +109,9 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          ./build-setup.sh --skip-validate
-          source sourceme-f1-manager.sh --skip-ssh-setup
-          firesim managerinit --platform vitis
+          #./build-setup.sh --skip-validate
+          #source sourceme-f1-manager.sh --skip-ssh-setup
+          #firesim managerinit --platform vitis
 
   run-u250-xclbin-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:u250-xclbin-buildbitstream-deploy')
