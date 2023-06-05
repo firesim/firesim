@@ -131,7 +131,7 @@ Next, run:
 
 .. code-block:: bash
 
-    source sourceme-f1-manager.sh --skip-ssh-setup
+    source sourceme-manager.sh --skip-ssh-setup
 
 This will perform various environment setup steps, such as adding the RISC-V tools to your
 path. Sourcing this the first time will take some time -- however each time after that should be instantaneous.

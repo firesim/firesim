@@ -10,7 +10,7 @@ To get the new default AGFI's you must run the manager initialization again by d
 .. code-block:: bash
 
     cd firesim
-    source sourceme-f1-manager.sh
+    source sourceme-manager.sh
     firesim managerinit
 
 Is there a good way to keep track of what AGFI corresponds to what FireSim commit?
@@ -22,7 +22,7 @@ To view a list of AGFI's that you have built and what you have access to, you ca
 .. code-block:: bash
 
     cd firesim
-    source sourceme-f1-manager.sh
+    source sourceme-manager.sh
     aws ec2 describe-fpga-images --fpga-image-ids # List all AGFI images
 
 You can also view a specific AGFI image by giving the AGFI ID (found in ``deploy/config_hwdb.yaml``) through the following command:
@@ -30,7 +30,7 @@ You can also view a specific AGFI image by giving the AGFI ID (found in ``deploy
 .. code-block:: bash
 
     cd firesim
-    source sourceme-f1-manager.sh
+    source sourceme-manager.sh
     aws ec2 describe-fpga-images --filter Name=fpga-image-global-id,Values=agfi-<Your ID Here> # List particular AGFI image
 
 After querying an AGFI, you can find the commit hash of the FireSim repository used to build the AGFI within the "Description"

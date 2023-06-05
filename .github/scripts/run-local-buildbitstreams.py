@@ -83,7 +83,7 @@ def run_local_buildbitstreams():
     manager_fsim_dir = ci_env['REMOTE_WORK_DIR']
     with prefix(f"cd {manager_fsim_dir}"):
 
-        with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
+        with prefix('source sourceme-manager.sh --skip-ssh-setup'):
 
             # return a copy of config_build.yaml w/ hwdb entry(s) uncommented + new build dir
             def modify_config_build(hwdb_entries_to_gen: List[str]) -> str:

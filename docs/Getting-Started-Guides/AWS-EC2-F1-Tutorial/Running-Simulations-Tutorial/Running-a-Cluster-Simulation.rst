@@ -8,7 +8,7 @@ by a network with one 8-port Top-of-Rack (ToR) switch and 200 Gbps, 2μs links.
 This will require one ``f1.16xlarge`` (8 FPGA) instance.
 
 Make sure you are ``ssh`` or ``mosh``'d into your manager instance and have sourced
-``sourceme-f1-manager.sh`` before running any of these commands.
+``sourceme-manager.sh`` before running any of these commands.
 
 Returning to a clean configuration
 -------------------------------------
@@ -330,7 +330,7 @@ a live status page once simulations are kicked-off:
 In cycle-accurate networked mode, this will only exit when any ONE of the
 simulated nodes shuts down. So, let's let it run and open another ssh
 connection to the manager instance. From there, ``cd`` into your firesim
-directory again and ``source sourceme-f1-manager.sh`` again to get our ssh key
+directory again and ``source sourceme-manager.sh`` again to get our ssh key
 setup. To access our simulated system, ssh into the IP address being printed by
 the status page, **from your manager instance**. In our case, from the above
 output, we see that our simulated system is running on the instance with IP

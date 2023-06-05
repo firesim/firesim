@@ -1,7 +1,7 @@
 Overview
 ========================
 
-When you source ``sourceme-f1-manager.sh`` in your copy of the FireSim repo,
+When you source ``sourceme-manager.sh`` in your copy of the FireSim repo,
 you get access to a new command, ``firesim``, which is the FireSim simulation
 manager. If you've used tools like Vagrant or Docker, the ``firesim`` program
 is to FireSim what ``vagrant`` and ``docker`` are to Vagrant and Docker

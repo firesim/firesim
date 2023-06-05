@@ -15,7 +15,7 @@ def run_agfi_buildbitstream():
     relative_hwdb_path = f"deploy/sample-backup-configs/sample_config_hwdb.yaml"
     relative_build_path = f"deploy/sample-backup-configs/sample_config_build.yaml"
 
-    with prefix(f'cd {manager_fsim_dir} && source sourceme-f1-manager.sh'):
+    with prefix(f'cd {manager_fsim_dir} && source sourceme-manager.sh'):
         rc = 0
 
         # unique tag based on the ci workflow and filename is needed to ensure

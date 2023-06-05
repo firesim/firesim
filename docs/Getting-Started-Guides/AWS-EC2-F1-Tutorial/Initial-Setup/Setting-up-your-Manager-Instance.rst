@@ -128,7 +128,7 @@ Next, run:
 
 .. code-block:: bash
 
-    source sourceme-f1-manager.sh
+    source sourceme-manager.sh
 
 This will have initialized the AWS shell, added the RISC-V tools to your
 path, and started an ``ssh-agent`` that supplies ``~/firesim.pem``

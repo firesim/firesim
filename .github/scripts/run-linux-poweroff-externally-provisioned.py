@@ -16,7 +16,7 @@ from util.filelineswap import file_line_swap
 def run_linux_poweroff_externally_provisioned():
     """ Runs Linux poweroff workloads using externally provisioned AWS run farm """
 
-    with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
+    with prefix(f"cd {manager_fsim_dir} && source sourceme-manager.sh"):
 
         def run_w_timeout(workload_path, workload, timeout, num_passes):
             """ Run workload with a specific timeout

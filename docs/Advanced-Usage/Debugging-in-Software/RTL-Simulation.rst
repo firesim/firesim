@@ -250,7 +250,7 @@ As part of target-generation, Rocket Chip emits a make fragment with recipes
 for running suites of assembly tests. MIDAS puts this in
 ``firesim/sim/generated-src/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
 Make sure your ``$RISCV`` environment variable is set by sourcing
-``firesim/sourceme-f1-manager.sh`` or ``firesim/env.sh``, and type:
+``firesim/sourceme-manager.sh`` or ``firesim/env.sh``, and type:
 
 .. code-block:: bash
 

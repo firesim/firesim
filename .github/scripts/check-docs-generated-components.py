@@ -8,7 +8,7 @@ def run_docs_generated_components_check():
     """ Runs checks to make sure generated components of docs have been
     updated. """
 
-    with cd(manager_fsim_dir), prefix('source sourceme-f1-manager.sh'):
+    with cd(manager_fsim_dir), prefix('source sourceme-manager.sh'):
         with prefix("cd deploy"):
             run("cat config_runtime.yaml")
             path = 'docs/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml'

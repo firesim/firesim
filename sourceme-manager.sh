@@ -6,7 +6,7 @@ DO_SSH_SETUP=true
 
 function usage
 {
-    echo "usage: source sourceme-f1-manager.sh [OPTIONS]"
+    echo "usage: source sourceme-manager.sh [OPTIONS]"
     echo "options:"
     echo "   --skip-ssh-setup: if set, skips ssh setup checks."
 }
