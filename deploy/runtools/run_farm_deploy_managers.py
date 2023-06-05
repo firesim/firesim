@@ -808,6 +808,16 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
 
+    def unload_xdma(self) -> None:
+        """ unload the xdma kernel module. """
+        if self.instance_assigned_simulations():
+            # unload xdma if loaded
+            if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
+                self.instance_logger("Unloading XDMA Driver Kernel Module.")
+                run(f"sudo rmmod xdma", shell=True)
+            else:
+                self.instance_logger("XDMA Driver Kernel Module already unloaded.")
+
     def slot_to_bdf(self, slotno: int) -> str:
         # get fpga information from db
         self.instance_logger(f"""Determine BDF for {slotno}""")
@@ -861,10 +871,12 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
-                # load xdma driver
-                self.load_xdma()
+                # unload xdma driver
+                self.unload_xdma()
                 # flash fpgas
                 self.flash_fpgas()
+                # load xdma driver
+                self.load_xdma()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
@@ -929,6 +941,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             # This is a sim-host node.
 
+            # unload xdma driver
+            self.unload_xdma()
             # load xdma driver
             self.load_xdma()
 
@@ -1073,38 +1087,6 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
     def terminate_instance(self) -> None:
         """ XilinxVCU118InstanceDeployManager machines cannot be terminated. """
         return
-
-    def start_sim_slot(self, slotno: int) -> None:
-        """ start a simulation. (same as the default except that you have a mapping from slotno to a specific BDF)"""
-        if self.instance_assigned_simulations():
-            self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
-            remote_home_dir = self.parent_node.sim_dir
-            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
-            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
-            server = self.parent_node.sim_slots[slotno]
-
-            if not self.parent_node.metasimulation_enabled:
-                self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i xilinx')
-                bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-                bdf = bdfs[slotno].replace('.', ':').split(':')
-                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
-            else:
-                extra_args = None
-
-            # make the local job results dir for this sim slot
-            server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
-            put(sim_start_script_local_path, remote_sim_dir)
-
-            with cd(remote_sim_dir):
-                run("chmod +x sim-run.sh")
-                run("./sim-run.sh")
-
-class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):
-    def __init__(self, parent_node: Inst) -> None:
-        super().__init__(parent_node)
-        self.PLATFORM_NAME = "rhsresearch_nitefury_ii"
 
     def start_sim_slot(self, slotno: int) -> None:
         """ start a simulation. (same as the default except that you have a mapping from slotno to a specific BDF)"""
