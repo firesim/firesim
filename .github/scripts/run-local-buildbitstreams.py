@@ -245,9 +245,9 @@ def run_local_buildbitstreams():
             # copy back to workspace area so you can PR it
             run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
 
-            ## wipe old data
-            #for host in hosts_ordered:
-            #    run(f"ssh {host} rm -rf {build_location}")
+            # wipe old data
+            for host in hosts_ordered:
+                run(f"ssh {host} rm -rf {build_location}")
 
 if __name__ == "__main__":
     execute(run_local_buildbitstreams, hosts=["localhost"])
