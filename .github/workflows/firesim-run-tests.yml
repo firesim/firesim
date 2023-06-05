@@ -494,11 +494,11 @@ jobs:
           branch-suffix: short-commit-hash
           title: "Update local bitstream(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
-  #cleanup-local-fpga-repo:
-  #  name: cleanup-local-fpga-repo
-  #  needs: [run-local-fpga-buildbitstream]
-  #  runs-on: local-fpga
-  #  if: ${{ always() }}
-  #  steps:
-  #    - name: Delete repo copy
-  #      run: rm -rf ${{ env.REMOTE_WORK_DIR }}
+  cleanup-local-fpga-repo:
+    name: cleanup-local-fpga-repo
+    needs: [run-parallel-vcs-metasims-and-vitis-driver, run-basic-linux-poweroff-vitis, run-vitis-check-docs-generated-components, run-local-fpga-buildbitstream]
+    runs-on: local-fpga
+    if: ${{ always() }}
+    steps:
+      - name: Delete repo copy
+        run: rm -rf ${{ env.REMOTE_WORK_DIR }}
