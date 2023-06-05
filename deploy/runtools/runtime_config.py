@@ -623,8 +623,10 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         full_extra_plusargs = " " + self.metasimulation_only_plusargs + " " + extra_plusargs
         if self.metasim_host_simulator in ['vcs', 'vcs-debug']:
             full_extra_plusargs = " " + self.metasimulation_only_vcs_plusargs + " " +  full_extra_plusargs
-        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
-            full_extra_plusargs += " +waveform=metasim_waveform.vpd "
+        if self.metasim_host_simulator == 'verilator-debug':
+            full_extra_plusargs += " +waveformfile=metasim_waveform.vcd "
+        if self.metasim_host_simulator == 'vcs-debug':
+            full_extra_plusargs += " +fsdbfile=metasim_waveform.fsdb "
         # TODO: spike-dasm support
         full_extra_args = " 2> metasim_stderr.out " + extra_args
         return super(RuntimeBuildRecipeConfig, self).get_boot_simulation_command(

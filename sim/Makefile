@@ -5,7 +5,7 @@
 # - building a simulation driver (phony: f1)
 # - populating an FPGA build directory (phony: replace-rtl)
 # - generating new runtime configurations (phony: conf)
-# - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug)
+# - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug, xcelium)
 
 # ensure make is not executed in parallel (ignore -j)
 .NOTPARALLEL:
@@ -63,8 +63,10 @@ include make/library.mk
 
 include make/driver.mk
 include make/fpga.mk
+
 include make/verilator.mk
 include make/vcs.mk
+include make/xcelium.mk
 include make/xsim.mk
 
 include $(TARGET_PROJECT_MAKEFRAG)/metasim.mk
@@ -78,7 +80,7 @@ include make/cpp-lint.mk
 #########################
 .PHONY: mostlyclean
 mostlyclean:
-	rm -rf $(verilator) $(verilator_debug) $(vcs) $(vcs_debug) $($(PLATFORM)) $(OUTPUT_DIR)
+	rm -rf $(verilator) $(verilator_debug) $(vcs) $(vcs_debug) $(xcelium) $($(PLATFORM)) $(OUTPUT_DIR)
 
 .PHONY: clean
 clean:
@@ -91,4 +93,3 @@ veryclean:
 # Remove all implicit suffix rules; This improves make performance substantially as it no longer
 # attempts to resolve implicit rules on 1000+ scala files.
 .SUFFIXES:
-

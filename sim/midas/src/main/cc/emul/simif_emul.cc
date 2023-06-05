@@ -16,9 +16,6 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
   memsize = 1L << config.mem.addr_bits;
   bool fastloadmem = false;
   for (auto arg : args) {
-    if (arg.find("+waveform=") == 0) {
-      waveform = arg.c_str() + 10;
-    }
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
     }

@@ -40,17 +40,18 @@ vcs = $(GENERATED_DIR)/$(DESIGN)
 vcs_debug = $(GENERATED_DIR)/$(DESIGN)-debug
 vcs_args = +vcs+initreg+0 +vcs+initmem+0
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
+xcelium = $(GENERATED_DIR)/X$(DESIGN)
 sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
 
 run-verilator: $(verilator)
 	cd $(dir $<) && \
 	$(verilator) +permissive $(verilator_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out </dev/null
+	$(disasm) $(sim_binary_basename).out
 
 run-verilator-debug: $(verilator_debug)
 	cd $(dir $<) && \
-	$(verilator_debug) +permissive $(verilator_args) +waveform=$(sim_binary_basename).vcd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out </dev/null
+	$(verilator_debug) +permissive $(verilator_args) +waveformfile=$(sim_binary_basename).vcd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out
 
 run-vcs: $(vcs)
 	cd $(dir $<) && \
@@ -59,13 +60,19 @@ run-vcs: $(vcs)
 
 run-vcs-debug: $(vcs_debug)
 	cd $(dir $<) && \
-	$(vcs_debug) +permissive $(vcs_args) +waveform=$(sim_binary_basename).vpd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out </dev/null
+	$(vcs_debug) +permissive $(vcs_args) +fsdbfile=$(sim_binary_basename).fsdb $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out
 
-.PHONY: run-xsim
+run-xcelium: $(xcelium)
+	cd $(dir $<) && \
+	$(xcelium) +permissive $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out
+
 run-xsim: $(xsim)
-	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
-	+permissive-off $(abspath $(SIM_BINARY)) </dev/null
+	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
+	$(disasm) $(sim_binary_basename).out
+
+.PHONY: run-verilator run-verilator-debug run-vcs run-vcs-debug run-xcelium run-xsim
 
 ############################################
 # Midas-Level Simulation Execution Recipes #
@@ -107,10 +114,15 @@ $(OUTPUT_DIR)/%.out: $(OUTPUT_DIR)/% $(EMUL)
 
 $(OUTPUT_DIR)/%.vpd: $(OUTPUT_DIR)/% $(EMUL)-debug
 	cd $(dir $($(EMUL)_debug)) && \
-	./$(notdir $($(EMUL)_debug)) $< +waveform=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	./$(notdir $($(EMUL)_debug)) $< +vcdplusfile=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
 	$(disasm) $(patsubst %.vpd,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
 
-.PRECIOUS: $(OUTPUT_DIR)/%.vpd $(OUTPUT_DIR)/%.out $(OUTPUT_DIR)/%.run
+$(OUTPUT_DIR)/%.fsdb: $(OUTPUT_DIR)/% $(EMUL)-debug
+	cd $(dir $($(EMUL)_debug)) && \
+	./$(notdir $($(EMUL)_debug)) $< +fsdbfile=$@ $($*_ARGS) $($(EMUL)_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) \
+	$(disasm) $(patsubst %.fsdb,%.out,$@) && [ $$PIPESTATUS -eq 0 ]
+
+.PRECIOUS: $(OUTPUT_DIR)/%.fsdb $(OUTPUT_DIR)/%.vpd $(OUTPUT_DIR)/%.out $(OUTPUT_DIR)/%.run
 
 # TraceGen rules
 
