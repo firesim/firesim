@@ -678,6 +678,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
 class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
+    PLATFORM_NAME: str = "vitis"
 
     @classmethod
     def sim_command_requires_sudo(cls) -> bool:
@@ -710,6 +711,23 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             for card_bdf in card_bdfs:
                 run(f"xbutil reset -d {card_bdf} --force")
 
+    def copy_bitstreams(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Copy bitstreams to flash.""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                serv = firesimservernode
+                hwcfg = serv.get_resolved_server_hardware_config()
+
+                bitstream_tar = hwcfg.get_bitstream_tar_filename()
+                remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
+                bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
+                bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.xclbin"
+
+                # at this point the tar file is in the sim slot
+                run(f"rm -rf {bitstream_tar_unpack_dir}")
+                run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
+
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
         if self.instance_assigned_simulations():
@@ -723,6 +741,8 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             if not self.parent_node.metasimulation_enabled:
                 # clear/flash fpgas
                 self.clear_fpgas()
+                # copy bitstreams to use in run
+                self.copy_bitstreams()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
@@ -734,14 +754,15 @@ class VitisInstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
             remote_home_dir = self.parent_node.sim_dir
-            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
+            remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
             hwcfg = server.get_resolved_server_hardware_config()
 
+            bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.xclbin"
+
             if not self.parent_node.metasimulation_enabled:
-                assert hwcfg.xclbin is not None
-                extra_args = f"+slotid={slotno} +binary_file={hwcfg.get_xclbin_filename()}"
+                extra_args = f"+slotid={slotno} +binary_file={bit}"
             else:
                 extra_args = None
 

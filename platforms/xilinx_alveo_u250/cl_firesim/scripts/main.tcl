@@ -77,6 +77,11 @@ if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireS
     add_files -fileset impl -norecurse $constrFile
 }
 
+
+if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/bitstream_config.xdc $vivado_version]]]} {
+    add_files -fileset impl -norecurse $constrFile
+}
+
 update_compile_order -fileset sources_1
 set_property top design_1_wrapper [current_fileset]
 update_compile_order -fileset sources_1

@@ -7,9 +7,9 @@
 # Install this environment as "YOURENV" with:
 #     conda-lock install -n YOURENV --file conda-reqs.conda-lock.yml
 # To update a single package to the latest version compatible with the version constraints in the source:
-#     conda-lock lock  --lockfile conda-reqs.conda-lock.yml --update PACKAGE
+#     conda-lock lock --lockfile conda-reqs.conda-lock.yml --update PACKAGE
 # To re-solve the entire environment, e.g. after changing a version constraint in the source file:
-#     conda-lock -f /scratch/abejgonza/firesim/conda-reqs/firesim.yaml -f /scratch/abejgonza/firesim/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/fs-typing/conda-reqs/firesim.yaml -f /scratch/abejgonza/fs-typing/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/al2-fs/conda-reqs/firesim.yaml -f /scratch/abejgonza/al2-fs/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/fs-buildafi-ci/conda-reqs/firesim.yaml -f /scratch/abejgonza/fs-buildafi-ci/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/cy-check/sims/firesim/conda-reqs/firesim.yaml -f /scratch/abejgonza/cy-check/sims/firesim/conda-reqs/ci-shared.yaml --lockfile conda-reqs.conda-lock.yml
+#     conda-lock -f /scratch/abejgonza/firesim/conda-reqs/firesim.yaml -f /scratch/abejgonza/firesim/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/fs-typing/conda-reqs/firesim.yaml -f /scratch/abejgonza/fs-typing/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/al2-fs/conda-reqs/firesim.yaml -f /scratch/abejgonza/al2-fs/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/fs-buildafi-ci/conda-reqs/firesim.yaml -f /scratch/abejgonza/fs-buildafi-ci/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/cy-check/sims/firesim/conda-reqs/firesim.yaml -f /scratch/abejgonza/cy-check/sims/firesim/conda-reqs/ci-shared.yaml -f /scratch/abejgonza/fs-rcbump/conda-reqs/firesim.yaml -f /scratch/abejgonza/fs-rcbump/conda-reqs/ci-shared.yaml --lockfile conda-reqs.conda-lock.yml
 metadata:
   channels:
   - url: conda-forge
@@ -19,7 +19,7 @@ metadata:
   - url: nodefaults
     used_env_vars: []
   content_hash:
-    linux-64: 7a868c796a6e48ef38d85e44473bff53babc4e39a1ce0404723d754ebf7426ab
+    linux-64: 71c8fd7b314d91d449dcb72854671e3c751c788e69fc879d5d96313909880024
   platforms:
   - linux-64
   sources:
@@ -33,6 +33,8 @@ metadata:
   - /scratch/abejgonza/fs-buildafi-ci/conda-reqs/ci-shared.yaml
   - /scratch/abejgonza/cy-check/sims/firesim/conda-reqs/firesim.yaml
   - /scratch/abejgonza/cy-check/sims/firesim/conda-reqs/ci-shared.yaml
+  - /scratch/abejgonza/fs-rcbump/conda-reqs/firesim.yaml
+  - /scratch/abejgonza/fs-rcbump/conda-reqs/ci-shared.yaml
 package:
 - category: main
   dependencies: {}
@@ -403,6 +405,7 @@ package:
     libstdcxx-ng: '>=12'
   hash:
     md5: 6bfb79319763a11c7423c9d0e0ee00b7
+    sha256: null
   manager: conda
   name: dromajo
   optional: false
@@ -4382,6 +4385,7 @@ package:
     libzlib: '>=1.2.12,<1.3.0a0'
   hash:
     md5: 5b3ed39ee3809d63d347b649de0a45f8
+    sha256: null
   manager: conda
   name: libdwarf
   optional: false
@@ -4516,14 +4520,14 @@ package:
     pip: ''
     python: '>=3.7,<4.0'
   hash:
-    md5: 82e8ad8e403f7183c54806064eaad6f0
-    sha256: 558698d3bf59058578c3b7919d8f92a678ece0da20332970b58fa29e666c4684
+    md5: 7a02fed21d1bf45cb41eaeaefc7eea25
+    sha256: 6ba480465154a4ac2ba1c08d10e4824dc10db30d8087b83b2b041df0ebba18e8
   manager: conda
   name: types-awscrt
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/types-awscrt-0.16.18-pyhd8ed1ab_0.conda
-  version: 0.16.18
+  url: https://conda.anaconda.org/conda-forge/noarch/types-awscrt-0.16.19-pyhd8ed1ab_0.conda
+  version: 0.16.19
 - category: main
   dependencies:
     libgcc-ng: '>=9.3.0'
@@ -4584,14 +4588,14 @@ package:
     types-awscrt: ''
     typing_extensions: ''
   hash:
-    md5: 02c4d0596fd90242135cbd533368f723
-    sha256: eaa094606d1dd54579fd78299d39b185e80d0c91c031915eeaeae963aa5d271c
+    md5: f19106a30c5fb2c52d84d1dbf0b5e097
+    sha256: 8bf3c568732facd3ca9adf2f1867f91f84fc0e3779dba9e4da4c10f35ac0dfba
   manager: conda
   name: botocore-stubs
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/botocore-stubs-1.29.141-pyhd8ed1ab_0.conda
-  version: 1.29.141
+  url: https://conda.anaconda.org/conda-forge/noarch/botocore-stubs-1.29.145-pyhd8ed1ab_0.conda
+  version: 1.29.145
 - category: main
   dependencies:
     clang-format: 16.0.3 default_h1cdf331_2
@@ -4673,6 +4677,7 @@ package:
     libzlib: '>=1.2.12,<1.3.0a0'
   hash:
     md5: 899c511688e6c41cb51c2921a8d25e63
+    sha256: null
   manager: conda
   name: libdwarf-dev
   optional: false
@@ -5021,14 +5026,14 @@ package:
     python-dateutil: '>=2.1,<3.0.0'
     urllib3: '>=1.25.4,<1.27'
   hash:
-    md5: 463d2b735eeee0cbc7db341883bfcf11
-    sha256: e5523742644f9dc765dd3b3b4681c9cf45853d1030e9e930eaab67246619edf1
+    md5: a1b8b2b1df2fa7a35fc15e561601cbe0
+    sha256: 61c711c9620821ef97ef04ad1991c23328debbe722ca1891e917821bc47f1611
   manager: conda
   name: botocore
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.29.143-pyhd8ed1ab_0.conda
-  version: 1.29.143
+  url: https://conda.anaconda.org/conda-forge/noarch/botocore-1.29.145-pyhd8ed1ab_0.conda
+  version: 1.29.145
 - category: main
   dependencies:
     cairo: '>=1.16.0,<2.0a0'
@@ -5112,28 +5117,28 @@ package:
     six: '>=1.11.0'
     typing-extensions: '>=4.0.1'
   hash:
-    md5: f4d871cde207029fbd3059fc4ad76af9
-    sha256: 85884ae07cd171b577dba67059b633df5c6ad0a8fff8222de4bf77530426aea6
+    md5: 4e49a7bd8f79a678c4fa2e871f4e2881
+    sha256: 485bd7bba4820ea7265990d335ec10ab2f431c6bb1cca19f3ce7b87879f62e72
   manager: conda
   name: azure-core
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/azure-core-1.26.4-pyhd8ed1ab_0.conda
-  version: 1.26.4
+  url: https://conda.anaconda.org/conda-forge/noarch/azure-core-1.27.0-pyhd8ed1ab_0.conda
+  version: 1.27.0
 - category: main
   dependencies:
     msgpack-python: '>=0.5.2'
     python: '>=3.6'
-    requests: ''
+    requests: '>=2.16.0'
   hash:
-    md5: e8f0410e0aa03342304357c5cc3bb75d
-    sha256: 466ce7c155be90a5c903052eba391759ae88eb65f2bb06b0cc1c9d09c4311800
+    md5: 9f0b2eb5f5dd2cec36d5342a80adfec0
+    sha256: 894e2f4c59221b9633c60281a17fefe09ba0bf5d996992cebeb504d0585dd0dd
   manager: conda
   name: cachecontrol
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/cachecontrol-0.12.11-pyhd8ed1ab_1.conda
-  version: 0.12.11
+  url: https://conda.anaconda.org/conda-forge/noarch/cachecontrol-0.13.0-pyhd8ed1ab_0.conda
+  version: 0.13.0
 - category: main
   dependencies:
     conda-package-handling: '>=1.3.0'
@@ -5306,7 +5311,7 @@ package:
   version: 5.1.1
 - category: main
   dependencies:
-    botocore: 1.29.143
+    botocore: 1.29.145
     colorama: '>=0.2.5,<0.4.5'
     docutils: '>=0.10,<0.17'
     python: '>=3.10,<3.11.0a0'
@@ -5315,14 +5320,14 @@ package:
     rsa: '>=3.1.2,<4.8'
     s3transfer: '>=0.6.0,<0.7.0'
   hash:
-    md5: 4158d57511fdf4c065de63cd1c955868
-    sha256: 66329dbc7621c9be4a0caa926a0032c2ee725e2abcce82503189642703977a28
+    md5: 72db444c038161792bce84c115badf4f
+    sha256: d3ca2cd8c3cf320828c19d4afcb5e06aa42a2782c2e4cd43b511a812fa0242fd
   manager: conda
   name: awscli
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/linux-64/awscli-1.27.143-py310hff52083_0.conda
-  version: 1.27.143
+  url: https://conda.anaconda.org/conda-forge/linux-64/awscli-1.27.145-py310hff52083_0.conda
+  version: 1.27.145
 - category: main
   dependencies:
     azure-core: <2.0.0,>=1.26.2
@@ -5338,33 +5343,33 @@ package:
   version: 1.4.0
 - category: main
   dependencies:
-    botocore: '>=1.29.143,<1.30.0'
+    botocore: '>=1.29.145,<1.30.0'
     jmespath: '>=0.7.1,<2.0.0'
     python: '>=3.7'
     s3transfer: '>=0.6.0,<0.7.0'
   hash:
-    md5: a8be0d7d1ac025e9232e7542c76d583e
-    sha256: 814f58ebeafe4917b063de172e664cc2da87efee943613e4c3b05e4d81c79254
+    md5: 09e0b5c5f94eb5b480477ae63072b7dd
+    sha256: 82d045f01c87a8202796eadf2f10350b7e2417b480e93c69bb85a8364b750f02
   manager: conda
   name: boto3
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/boto3-1.26.143-pyhd8ed1ab_0.conda
-  version: 1.26.143
+  url: https://conda.anaconda.org/conda-forge/noarch/boto3-1.26.145-pyhd8ed1ab_0.conda
+  version: 1.26.145
 - category: main
   dependencies:
-    cachecontrol: 0.12.11 pyhd8ed1ab_1
+    cachecontrol: 0.13.0 pyhd8ed1ab_0
     lockfile: '>=0.9'
     python: '>=3.6'
   hash:
-    md5: 9df660456c0076d27b802448f7ede78f
-    sha256: 81c483fc92656873eb5a7ba657b208c34186556d942a9cebc1f7771e565b95b7
+    md5: 3fd3d55ea862cc0736ac1cce6f44c2d1
+    sha256: a8e20149f8ef160fbac5c751733638ccd5f35e20f3f552cfd46a467ffeceeeaf
   manager: conda
   name: cachecontrol-with-filecache
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/cachecontrol-with-filecache-0.12.11-pyhd8ed1ab_1.conda
-  version: 0.12.11
+  url: https://conda.anaconda.org/conda-forge/noarch/cachecontrol-with-filecache-0.13.0-pyhd8ed1ab_0.conda
+  version: 0.13.0
 - category: main
   dependencies:
     colorama: ''
@@ -5525,14 +5530,14 @@ package:
     python: ''
     typing_extensions: ''
   hash:
-    md5: e4035713762b745fe7521141eef9cbec
-    sha256: d0f14dcdaf50e693a5a3422945cf034587b9c19e0b41ef04a8525b3f5418e737
+    md5: 1cc6dd0f40481c8a20eaa91a76f48ce5
+    sha256: c0c0c81cfaf11a662d331d934d7a8eca12adbf12fa89a1fd60b514318c87c6c8
   manager: conda
   name: boto3-stubs
   optional: false
   platform: linux-64
-  url: https://conda.anaconda.org/conda-forge/noarch/boto3-stubs-1.26.143-pyhd8ed1ab_0.conda
-  version: 1.26.143
+  url: https://conda.anaconda.org/conda-forge/noarch/boto3-stubs-1.26.145-pyhd8ed1ab_0.conda
+  version: 1.26.145
 - category: main
   dependencies:
     cachecontrol-with-filecache: '>=0.12.9'
@@ -5689,6 +5694,7 @@ package:
   name: mock
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/e6/88/8a05e7ad0bb823246b2add3d2e97f990c41c71a40762c8db77a4bd78eedf/mock-5.0.1-py3-none-any.whl
   version: 5.0.1
 - category: main
@@ -5700,6 +5706,7 @@ package:
   name: asttokens
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/f3/e1/64679d9d0759db5b182222c81ff322c2fe2c31e156a59afd6e9208c960e5/asttokens-2.2.1-py2.py3-none-any.whl
   version: 2.2.1
 - category: main
@@ -5713,6 +5720,7 @@ package:
   name: azure-mgmt-resourcegraph
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/bd/16/63c37bffdce5082c9997ad7783921b02ed534b5971e5bdbd1ae617a5b2e3/azure_mgmt_resourcegraph-8.0.0-py2.py3-none-any.whl
   version: 8.0.0
 - category: main
@@ -5725,6 +5733,7 @@ package:
   name: paramiko-ng
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/9f/53/1ac75eab589149b1e02e38185ecebf09e1b805fc3fdeadbc16d1a2b7d208/paramiko_ng-2.8.10-py2.py3-none-any.whl
   version: 2.8.10
 - category: main
@@ -5737,6 +5746,7 @@ package:
   name: sure
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/c7/ee/043531858afab5f312ca02867de51189c0c1dd76ba652f1d95ffa13d07f7/sure-2.0.0.tar.gz
   version: 2.0.0
 - category: main
@@ -5749,6 +5759,7 @@ package:
   name: fab-classic
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/6b/0f/efc537eebfd2a2c470250c0ac8bd8a05ffc13d95a7fb22021367890d7c46/fab_classic-1.19.2-py2.py3-none-any.whl
   version: 1.19.2
 - category: main
@@ -5761,6 +5772,7 @@ package:
   name: icontract
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/d8/91/9756e7cf0b155e80bf9a62beffdd1dec4afce43cc6ab7f432f2267c62762/icontract-2.6.2-py3-none-any.whl
   version: 2.6.2
 - category: main
@@ -5773,6 +5785,7 @@ package:
   name: pylddwrap
   optional: false
   platform: linux-64
+  source: null
   url: https://files.pythonhosted.org/packages/6b/4e/aebc1cff19a572dbcc7e60d8e74f38fd568ef9185650b39f72fde9ff84d1/pylddwrap-1.2.1.tar.gz
   version: 1.2.1
 version: 1
