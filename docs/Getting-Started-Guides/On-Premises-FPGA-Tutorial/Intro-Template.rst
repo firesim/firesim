@@ -2,8 +2,8 @@
 =======================================
 
 The tutorials that follow this page will guide you through the complete flow for
-getting an example FireSim simulation up and running using an on-premise |fpga_name| FPGA.
-This tutorial is setting up a single node on-premise cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
+getting an example FireSim simulation up and running using an on-premises |fpga_name| FPGA.
+This tutorial is setting up a single node on-premises cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
 At the end of this
 tutorial, you'll have a simulation that simulates a single quad-core Rocket
