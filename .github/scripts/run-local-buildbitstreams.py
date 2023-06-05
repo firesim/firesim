@@ -7,6 +7,7 @@ import os
 from github import Github
 import base64
 import time
+import argparse
 
 from ci_variables import ci_env
 
@@ -202,52 +203,61 @@ def run_local_buildbitstreams():
                 ("firesim1", "vivado:2019.1"),
             }
 
+            def do_builds(batch_hwdbs):
+                assert len(hosts) >= len(batch_hwdbs), f"Need at least {len(batch_hwdbs)} hosts to run builds"
+
+                # map hwdb tuple to hosts
+                hwdb_2_host = {}
+                for hwdb in batch_hwdbs:
+                    buildtool_version = hwdb[2]
+                    for host in hosts:
+                        if host[1] == buildtool_version:
+                            if not host[0] in hwdb_2_host.values():
+                                hwdb_2_host[hwdb[0]] = host[0]
+
+                assert len(hwdb_2_host) == len(batch_hwdbs), "Unable to map hosts to hwdb build"
+
+                hwdbs_ordered = [hwdb[0] for hwdb in batch_hwdbs]
+                platforms_ordered = [hwdb[1] for hwdb in batch_hwdbs]
+                hosts_ordered = hwdb_2_host.values()
+
+                print("Mappings")
+                print(f"HWDBS: {hwdbs_ordered}")
+                print(f"Platforms: {platforms_ordered}")
+                print(f"Hosts: {hosts_ordered}")
+
+                copy_build_yaml = modify_config_build(hwdbs_ordered)
+                copy_build_yaml_2 = add_host_list(copy_build_yaml, hosts_ordered)
+                links = build_upload(copy_build_yaml_2, hwdbs_ordered, platforms_ordered)
+                for hwdb, link in zip(hwdbs_ordered, links):
+                    replace_in_hwdb(hwdb, link)
+
+                # wipe old data
+                for host in hosts_ordered:
+                    run(f"ssh {host} rm -rf {build_location}")
+
             # same order as in config_build.yaml
             # hwdb_entry_name, platform_name, buildtool:version
-            batch_hwdbs = [
+            batch_hwdbs_in = [
                 ("vitis_firesim_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
                 ("vitis_firesim_gemmini_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
                 ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2021.1"),
                 ("xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", "xilinx_vcu118", "vivado:2019.1"),
             ]
 
-            assert len(hosts) >= len(batch_hwdbs), f"Need at least {len(batch_hwdbs)} hosts to run builds"
+            do_builds(batch_hwdbs_in)
 
-            # map hwdb tuple to hosts
-            hwdb_2_host = {}
-            for hwdb in batch_hwdbs:
-                buildtool_version = hwdb[2]
-                for host in hosts:
-                    if host[1] == buildtool_version:
-                        if not host[0] in hwdb_2_host.values():
-                            hwdb_2_host[hwdb[0]] = host[0]
+            batch_hwdbs_in = [
+                ("alveo_u280_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u280", "vivado:2021.1"),
+            ]
 
-            assert len(hwdb_2_host) == len(batch_hwdbs), "Unable to map hosts to hwdb build"
-
-            hwdbs_ordered = [hwdb[0] for hwdb in batch_hwdbs]
-            platforms_ordered = [hwdb[1] for hwdb in batch_hwdbs]
-            hosts_ordered = hwdb_2_host.values()
-
-            print("Mappings")
-            print(f"HWDBS: {hwdbs_ordered}")
-            print(f"Platforms: {platforms_ordered}")
-            print(f"Hosts: {hosts_ordered}")
-
-            copy_build_yaml = modify_config_build(hwdbs_ordered)
-            copy_build_yaml_2 = add_host_list(copy_build_yaml, hosts_ordered)
-            links = build_upload(copy_build_yaml_2, hwdbs_ordered, platforms_ordered)
-            for hwdb, link in zip(hwdbs_ordered, links):
-                replace_in_hwdb(hwdb, link)
+            do_builds(batch_hwdbs_in)
 
             print(f"Printing {sample_hwdb_filename}...")
             run(f"cat {sample_hwdb_filename}")
 
             # copy back to workspace area so you can PR it
             run(f"cp -f {sample_hwdb_filename} {ci_env['GITHUB_WORKSPACE']}/{relative_hwdb_path}")
-
-            # wipe old data
-            for host in hosts_ordered:
-                run(f"ssh {host} rm -rf {build_location}")
 
 if __name__ == "__main__":
     execute(run_local_buildbitstreams, hosts=["localhost"])
