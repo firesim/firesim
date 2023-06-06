@@ -5,7 +5,7 @@ Now that we've completed the setup of our manager machine, it's time to run
 a simulation! In this section, we will simulate **1 target node**, for which we
 will need a single |fpga_type|.
 
-**Make sure you have sourced** ``sourceme-f1-manager.sh --skip-ssh-setup`` **before running any of these commands.**
+**Make sure you have sourced** ``sourceme-manager.sh --skip-ssh-setup`` **before running any of these commands.**
 
 Building target software
 ------------------------
@@ -246,7 +246,7 @@ live status page:
 
 This will only exit once all of the simulated nodes have completed simulations. So, let's let it
 run and open another terminal to the manager machine. From there, ``cd`` into
-your FireSim directory again and ``source sourceme-f1-manager.sh --skip-ssh-setup``.
+your FireSim directory again and ``source sourceme-manager.sh --skip-ssh-setup``.
 Next, let's ``ssh`` into the simulation machine.
 In this case, since we are running the simulation on the same machine (i.e. ``localhost``)
 we can run the following:

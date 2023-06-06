@@ -331,3 +331,19 @@ xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/xilinx_vcu118.yaml
+
+# RHSResearch Nitefury II-only Config
+nitefury_firesim_rocket_singlecore_no_nic:
+    PLATFORM: rhsresearch_nitefury_ii
+    TARGET_PROJECT: firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimRocket1GiBDRAMConfig
+    PLATFORM_CONFIG: BaseNitefuryConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/rhsresearch_nitefury_ii.yaml
+

@@ -44,7 +44,7 @@ Please follow along with the following steps to get setup if you already have an
 
     ./scripts/firesim-setup.sh --fast
     cd sims/firesim
-    source sourceme-f1-manager.sh
+    source sourceme-manager.sh
 
     cd ~/chipyard-morning/sims/verilator/
     make
@@ -69,7 +69,7 @@ Please follow along with the following steps to get setup if you already have an
 
     ./scripts/firesim-setup.sh --fast
     cd sims/firesim
-    source sourceme-f1-manager.sh
+    source sourceme-manager.sh
     cd sim
     unset MAKEFLAGS
     make f1
@@ -119,7 +119,7 @@ Please follow along with the following steps to get setup if you already have an
     # Uncomment the following line if you don't like systemctl's auto-paging feature:
     # export SYSTEMD_PAGER=
     # User specific aliases and functions
-    cd /home/centos/chipyard-afternoon && source env.sh && cd sims/firesim && source sourceme-f1-manager.sh && cd /home/centos/
+    cd /home/centos/chipyard-afternoon && source env.sh && cd sims/firesim && source sourceme-manager.sh && cd /home/centos/
     export FDIR=/home/centos/chipyard-afternoon/sims/firesim/
     export CDIR=/home/centos/chipyard-afternoon/
 

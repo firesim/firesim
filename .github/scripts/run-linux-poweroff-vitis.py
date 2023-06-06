@@ -17,7 +17,7 @@ def run_linux_poweroff_vitis():
 
     with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
         run("./build-setup.sh --skip-validate")
-        with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
+        with prefix('source sourceme-manager.sh --skip-ssh-setup'):
             with prefix('cd sw/firesim-software'):
                 # build outputs.yaml (use this workload since firemarshal can guestmount)
                 run("./marshal -v build test/outputs.yaml")
