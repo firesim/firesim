@@ -65,7 +65,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             InfoStreamLogger('stdout'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("replace-rtl"))
@@ -79,7 +79,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("driver"))
 

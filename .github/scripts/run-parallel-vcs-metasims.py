@@ -17,7 +17,7 @@ def run_parallel_metasim():
     # repo should already be checked out
 
     with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
-        with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
+        with prefix('source sourceme-manager.sh --skip-ssh-setup'):
             with prefix('cd sw/firesim-software'):
                 # build hello world baremetal test
                 run("./marshal -v build test/bare.yaml")

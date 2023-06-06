@@ -5,7 +5,7 @@ set -o pipefail
 
 # build setup
 ./build-setup.sh fast
-source sourceme-f1-manager.sh
+source sourceme-manager.sh
 
 # run through elaboration flow to get chisel/sbt all setup
 cd sim

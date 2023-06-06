@@ -11,7 +11,7 @@ from ci_variables import ci_env
 def run_parallel_metasim():
     """ Runs parallel baremetal metasimulations """
 
-    with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
+    with prefix(f"cd {manager_fsim_dir} && source sourceme-manager.sh"):
 
         # build hello world baremetal test
         with prefix('cd sw/firesim-software'):
