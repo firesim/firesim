@@ -65,7 +65,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             InfoStreamLogger('stdout'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("replace-rtl"))
@@ -79,7 +79,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("driver"))
 
@@ -503,11 +503,28 @@ class VitisBitBuilder(BitBuilder):
 
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
-        xclbin_path = "file://" + local_cl_dir + f"/bitstream/build_dir.{self.device}/firesim.xclbin"
+
+        bit_path = f"{local_cl_dir}/bitstream/build_dir.{self.device}/firesim.xclbin"
+        tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
+        tar_name = "firesim.tar.gz"
+
+        # store files into staging dir
+        local(f"rm -rf {tar_staging_path}")
+        local(f"mkdir -p {tar_staging_path}")
+
+        # store bitfile
+        local(f"cp {bit_path} {tar_staging_path}")
+
+        # store metadata string
+        local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
+
+        # form tar.gz
+        with prefix(f"cd {local_cl_dir}"):
+            local(f"tar zcvf {tar_name} {self.build_config.PLATFORM}/")
 
         hwdb_entry = hwdb_entry_name + ":\n"
-        hwdb_entry +=  "    xclbin: " + xclbin_path + "\n"
-        hwdb_entry += f"    deploy_quintuplet_override: {self.build_config.get_chisel_quintuplet()}\n"
+        hwdb_entry += f"    bitstream_tar: file://{local_cl_dir}/{tar_name}\n"
+        hwdb_entry += f"    deploy_quintuplet_override: null\n"
         hwdb_entry +=  "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
@@ -673,9 +690,10 @@ class XilinxAlveoBitBuilder(BitBuilder):
         local(f"rm -rf {tar_staging_path}")
         local(f"mkdir -p {tar_staging_path}")
 
-        # store bitfile/mcs
+        # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        local(f"cp {mcs_path} {tar_staging_path}")
+        if self.build_config.PLATFORM != "xilinx_vcu118":
+            local(f"cp {mcs_path} {tar_staging_path}")
 
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")

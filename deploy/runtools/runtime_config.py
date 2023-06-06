@@ -159,8 +159,6 @@ class RuntimeHWConfig:
 
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
-    """User-specified, URI path to xclbin"""
-    xclbin: Optional[str]
     """User-specified, URI path to bitstream tar file"""
     bitstream_tar: Optional[str]
 
@@ -184,11 +182,10 @@ class RuntimeHWConfig:
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
         self.name = name
 
-        if sum(['agfi' in hwconfig_dict, 'xclbin' in hwconfig_dict, 'bitstream_tar' in hwconfig_dict]) > 1:
-            raise Exception(f"Must only have 'agfi' or 'xclbin' or 'bitstream_tar' HWDB entry {name}.")
+        if sum(['agfi' in hwconfig_dict, 'bitstream_tar' in hwconfig_dict]) > 1:
+            raise Exception(f"Must only have 'agfi' or 'bitstream_tar' HWDB entry {name}.")
 
         self.agfi = hwconfig_dict.get('agfi')
-        self.xclbin = hwconfig_dict.get('xclbin')
         self.bitstream_tar = hwconfig_dict.get('bitstream_tar')
         self.driver_tar = hwconfig_dict.get('driver_tar')
 
@@ -204,9 +201,6 @@ class RuntimeHWConfig:
 
         if self.agfi is not None:
             self.platform = "f1"
-        elif self.xclbin is not None:
-            self.platform = "vitis"
-            self.uri_list.append(URIContainer('xclbin', self.get_xclbin_filename()))
         else:
             self.uri_list.append(URIContainer('bitstream_tar', self.get_bitstream_tar_filename()))
 
@@ -226,12 +220,8 @@ class RuntimeHWConfig:
             hwconfig_override_build_quintuplet = 'f1-firesim-' + hwconfig_override_build_quintuplet
 
         self.deploy_quintuplet = hwconfig_override_build_quintuplet
-        if self.deploy_quintuplet is not None and self.platform != "vitis":
+        if self.deploy_quintuplet is not None:
             rootLogger.warning(f"{name} is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!")
-
-        # TODO: obtain deploy_quintuplet from tag in xclbin
-        if self.deploy_quintuplet is None and self.platform == "vitis":
-            raise Exception(f"Must set the deploy_quintuplet_override for Vitis bitstreams.")
 
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
 
@@ -248,11 +238,6 @@ class RuntimeHWConfig:
     def get_driver_tar_filename(cls) -> str:
         """ Get the name of the tarball inside the sim_slot_X directory on the run host. """
         return "driver-bundle.tar.gz"
-
-    @classmethod
-    def get_xclbin_filename(cls) -> str:
-        """ Get the name of the xclbin inside the sim_slot_X directory on the run host. """
-        return "bitstream.xclbin"
 
     @classmethod
     def get_bitstream_tar_filename(cls) -> str:
@@ -288,8 +273,6 @@ class RuntimeHWConfig:
         if self.get_platform() == "f1":
             rootLogger.debug("Setting deployquintuplet by querying the AGFI's description.")
             self.deploy_quintuplet = get_firesim_deploy_quintuplet_for_agfi(self.agfi)
-        elif self.get_platform() == "vitis":
-            assert False, "Must have the deploy_quintuplet_override defined"
         else:
             assert False, "Unable to obtain deploy_quintuplet"
 
@@ -459,7 +442,7 @@ class RuntimeHWConfig:
         # must be done after fetch_all_URIs
         # based on the platform, read the URI, fill out values
 
-        if self.platform == "f1" or self.platform == "vitis":
+        if self.platform == "f1":
             return
         else: # bitstream_tar platforms
             for container in self.uri_list:
@@ -507,7 +490,7 @@ class RuntimeHWConfig:
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)
@@ -565,7 +548,7 @@ class RuntimeHWConfig:
             self.tarball_built = True
 
     def __str__(self) -> str:
-        return """RuntimeHWConfig: {}\nDeployQuintuplet: {}\nAGFI: {}\nXCLBIN: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quintuplet, self.agfi, self.xclbin, str(self.customruntimeconfig))
+        return """RuntimeHWConfig: {}\nDeployQuintuplet: {}\nAGFI: {}\nBitstream tar: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quintuplet, self.agfi, self.bitstream_tar, str(self.customruntimeconfig))
 
 
 
@@ -580,7 +563,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.name = name
 
         self.agfi = None
-        self.xclbin = None
         self.bitstream_tar = None
         self.driver_tar = None
         self.tarball_built = False
@@ -641,8 +623,10 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         full_extra_plusargs = " " + self.metasimulation_only_plusargs + " " + extra_plusargs
         if self.metasim_host_simulator in ['vcs', 'vcs-debug']:
             full_extra_plusargs = " " + self.metasimulation_only_vcs_plusargs + " " +  full_extra_plusargs
-        if self.metasim_host_simulator in ['verilator-debug', 'vcs-debug']:
-            full_extra_plusargs += " +waveform=metasim_waveform.vpd "
+        if self.metasim_host_simulator == 'verilator-debug':
+            full_extra_plusargs += " +waveformfile=metasim_waveform.vcd "
+        if self.metasim_host_simulator == 'vcs-debug':
+            full_extra_plusargs += " +fsdbfile=metasim_waveform.fsdb "
         # TODO: spike-dasm support
         full_extra_args = " 2> metasim_stderr.out " + extra_args
         return super(RuntimeBuildRecipeConfig, self).get_boot_simulation_command(

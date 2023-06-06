@@ -1,0 +1,99 @@
+# XCELIUM RTL Simulation Makefrag
+#
+# This makefrag stores common recipes for building RTL simulators with XCELIUM
+#
+# Compulsory variables:
+#  All those described Makefrag-verilator
+
+define CAD_INFO_HEADER
+# --------------------------------------------------------------------------------
+# This script was written and developed by FireSim at UC Berkeley; however, the
+# underlying commands and reports are copyrighted by Cadence. We thank Cadence for
+# granting permission to share our research to help promote and foster the next
+# generation of innovators.
+# --------------------------------------------------------------------------------
+endef
+
+export CAD_INFO_HEADER
+
+xcelium_v := $(emul_v) $(sim_wrapper_v)
+xcelium_cc := $(emul_cc) $(sim_harness)
+
+XC_CXX_PREFIX=-Wcxx,
+XC_LD_PREFIX=-Wld,
+
+REMOVE_RPATH=-Wl,-rpath%
+REMOVE_CPP20=-std=c++20
+
+# default to c++17 for non-shared library code (xcelium doesn't like c++20)
+XCELIUM_CXXFLAGS = $(addprefix $(XC_CXX_PREFIX), $(filter-out $(REMOVE_CPP20), $(CXXFLAGS)) -std=c++17 -DXCELIUM)
+XCELIUM_LDFLAGS = $(addprefix $(XC_LD_PREFIX), $(filter-out $(REMOVE_RPATH), $(LDFLAGS)))
+
+xc_sim_name=$(OUT_DIR)/X$(DRIVER_NAME)
+xc_sharedlib=$(OUT_DIR)/libfiresim.so
+xc_workdir=$(xc_sim_name).xcelium.d
+xc_run_tcl=$(xc_sim_name)_run.tcl
+
+XCELIUM_COMMON_ARGS = \
+	-64bit \
+	-xmlibdirname $(xc_workdir) \
+	-l /dev/null \
+	-log_xmsc_run /dev/null
+
+XCELIUM_CC_OPTS = \
+	$(XCELIUM_CXXFLAGS) \
+	$(XCELIUM_LDFLAGS)
+
+XCELIUM_NONCC_OPTS = \
+	-fast_recompilation \
+	-top $(TB) \
+	-ALLOWREDEFINITION \
+	-timescale $(SIM_TIMESCALE) \
+	-define INTCNOPWR \
+	-define INTC_NO_PWR_PINS \
+	-define INTC_EMULATION \
+	-glsperf \
+	-notimingchecks \
+	-delay_mode zero
+
+PREPROC_DEFINES = \
+	-define XCELIUM \
+	$(subst +define+,-define ,$(SIM_PREPROC_DEFINES))
+
+XCELIUM ?= xrun
+
+xcelium_flags := \
+    $(XCELIUM_CC_OPTS)
+
+################################################################################
+
+xcelium_rtl_flags := \
+	$(xcelium_flags) \
+	$(XCELIUM_COMMON_ARGS) \
+	$(XCELIUM_NONCC_OPTS) \
+	$(PREPROC_DEFINES)
+
+$(xc_sharedlib): $(xcelium_v) $(xcelium_cc) $(emul_h)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/$(DRIVER_NAME).csrc
+	rm -rf $(OUT_DIR)/$(DRIVER_NAME).daidir
+	$(CXX) -shared -fPIC -o $(xc_sharedlib) $(CXXFLAGS) $(LDFLAGS) $(xcelium_cc) -I$(XCELIUM_HOME)/tools/include
+
+$(xc_workdir): $(xcelium_v) $(xcelium_cc) $(emul_h) $(xc_sharedlib)
+	mkdir -p $(OUT_DIR)
+	rm -rf $(GEN_DIR)/$(DRIVER_NAME).csrc
+	rm -rf $(OUT_DIR)/$(DRIVER_NAME).daidir
+	$(XCELIUM) -elaborate $(xcelium_rtl_flags) $(xcelium_v) -Wld,-L$(OUT_DIR) -Wld,-lfiresim $(emul_dir)/dpi.cc -Wcxx,-I$(midas_dir)
+
+$(xc_run_tcl): $(xc_workdir)
+	echo "$$CAD_INFO_HEADER" > $@
+	echo "run" >> $@
+	echo "exit" >> $@
+
+$(xc_sim_name): $(xc_workdir) $(xc_run_tcl)
+	echo "#!/usr/bin/env bash" > $@
+	echo "$$CAD_INFO_HEADER" >> $@
+	cat $(TOP_DIR)/sims/xcelium/arg-reshuffle >> $@
+	echo "export LD_LIBRARY_PATH=$(CONDA_PREFIX)/lib:\$$LD_LIBRARY_PATH" >> $@
+	echo "LD_PRELOAD=$(CONDA_PREFIX)/lib/libstdc++.so.6 $(XCELIUM) +permissive -R -input $(xc_run_tcl) $(XCELIUM_COMMON_ARGS) +permissive-off \$$INPUT_ARGS" >> $@
+	chmod +x $@

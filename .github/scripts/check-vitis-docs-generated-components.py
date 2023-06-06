@@ -16,7 +16,7 @@ def run_docs_generated_components_check():
     # repo should already be checked out
 
     with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
-        with prefix('source sourceme-f1-manager.sh --skip-ssh-setup'):
+        with prefix('source sourceme-manager.sh --skip-ssh-setup'):
             with prefix("cd deploy"):
                 run("cat config_runtime.yaml")
                 path = "docs/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml"

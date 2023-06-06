@@ -35,7 +35,7 @@ endef
 # (1) - sbt project to assemble
 # (2) - classpath file(s) to create
 define run_sbt_assembly
-	cd $(base_dir) && $(SBT) ";project $(1); set assembly / assemblyOutputPath := file(\"$(2)\"); assembly"
+	cd $(base_dir) && $(SBT) ";project $(1); set assembly / assemblyOutputPath := file(\"$(2)\"); assembly" && touch $(2)
 endef
 
 else # FIRESIM_STANDALONE

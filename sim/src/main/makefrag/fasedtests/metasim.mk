@@ -30,7 +30,7 @@ run-verilator run-verilator-debug: run-verilator%: $(GENERATED_DIR)/V$(DESIGN)%
 		$(COMMON_SIM_ARGS) \
 		$(MIDAS_LEVEL_SIM_ARGS) \
 		$(EXTRA_SIM_ARGS) \
-		+waveform=$(call waveform,verilator$(<:$(GENERATED_DIR)/V$(DESIGN)%=%),vcd) \
+		$(if $(findstring debug,$@),+waveformfile=$(call waveform,verilator$(<:$(GENERATED_DIR)/V$(DESIGN)%=%),vcd),) \
 		2> $(call logfile,verilator$(<:$(GENERATED_DIR)/V$(DESIGN)%=%))
 
 run-vcs run-vcs-post-synth run-vcs-debug run-vcs-post-synth-debug: run-vcs%: $(GENERATED_DIR)/$(DESIGN)% $(LOADMEM)
@@ -40,7 +40,7 @@ run-vcs run-vcs-post-synth run-vcs-debug run-vcs-post-synth-debug: run-vcs%: $(G
 		$(COMMON_SIM_ARGS) \
 		$(ARGS) \
 		$(loadmem) \
-		+waveform=$(call waveform,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%),vpd) \
+		$(if $(findstring debug,$@),+fsdbfile=$(call waveform,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%),fsdb),) \
 		2> $(call logfile,vcs$(<:$(GENERATED_DIR)/$(DESIGN)%=%))
 
 .PHONY: run-xsim

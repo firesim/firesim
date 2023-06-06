@@ -7,7 +7,7 @@ from common import manager_fsim_dir, set_fabric_firesim_pem
 def build_default_workloads():
     """ Builds workloads that will be run on F1 instances as part of CI """
 
-    with prefix(f'cd {manager_fsim_dir} && source sourceme-f1-manager.sh'), \
+    with prefix(f'cd {manager_fsim_dir} && source sourceme-manager.sh'), \
          prefix(f'cd {manager_fsim_dir}/deploy/workloads'):
 
         # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
