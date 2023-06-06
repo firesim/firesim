@@ -239,8 +239,9 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
     val maybeFire = !anyValidRemainMux || (counter === (armCount - 1).U)
     val maybeEnq  = anyValidRemainMux
 
-    val do_enq_helper  = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, streamEnq.ready, maybeEnq, traceEnable)
-    val do_fire_helper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, streamEnq.ready, maybeFire)
+    val commonPredicates = Seq(hPort.toHost.hValid, hPort.fromHost.hReady, streamEnq.ready, initDone)
+    val do_enq_helper  = DecoupledHelper((Seq(maybeEnq, traceEnable) ++ commonPredicates):_*)
+    val do_fire_helper = DecoupledHelper((maybeFire +: commonPredicates):_*)
 
     // Note, if we dequeue a token that wins out over the increment below
     when(do_fire_helper.fire()) {
