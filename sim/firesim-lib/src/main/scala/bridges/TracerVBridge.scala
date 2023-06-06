@@ -201,14 +201,6 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
       ),
     )
 
-    val tFireHelper = DecoupledHelper(streamEnq.ready, hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
-
-    val triggerReg = RegEnable(trigger, false.B, tFireHelper.fire())
-    hPort.hBits.triggerDebit  := !trigger && triggerReg
-    hPort.hBits.triggerCredit := trigger && !triggerReg
-
-    hPort.fromHost.hValid := tFireHelper.fire(hPort.fromHost.hReady)
-
     // the maximum width of a single arm, this is determined by the 512 bit width of a single beat
     val armWidth = 7
 
@@ -247,8 +239,8 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
     val maybeFire = !anyValidRemainMux || (counter === (armCount - 1).U)
     val maybeEnq  = anyValidRemainMux
 
-    val do_enq_helper  = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, maybeEnq, traceEnable)
-    val do_fire_helper = DecoupledHelper(hPort.toHost.hValid, streamEnq.ready, maybeFire)
+    val do_enq_helper  = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, streamEnq.ready, maybeEnq, traceEnable)
+    val do_fire_helper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, streamEnq.ready, maybeFire)
 
     // Note, if we dequeue a token that wins out over the increment below
     when(do_fire_helper.fire()) {
@@ -259,6 +251,13 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
 
     streamEnq.valid     := do_enq_helper.fire(streamEnq.ready, trigger)
     hPort.toHost.hReady := do_fire_helper.fire(hPort.toHost.hValid)
+
+    // Output token (back to hub model) handling.
+    val triggerReg = RegEnable(trigger, false.B, do_fire_helper.fire())
+    hPort.hBits.triggerDebit  := !trigger && triggerReg
+    hPort.hBits.triggerCredit := trigger && !triggerReg
+
+    hPort.fromHost.hValid := do_fire_helper.fire(hPort.fromHost.hReady)
 
     when(hPort.toHost.fire) {
       trace_cycle_counter := trace_cycle_counter + 1.U
