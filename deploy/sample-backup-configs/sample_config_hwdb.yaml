@@ -73,4 +73,8 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
     deploy_quintuplet_override: null
     custom_runtime_config: null
 # DOCREF END: Xilinx Alveo HWDB Entries
+nitefury_firesim_rocket_singlecore_no_nic:
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/b8666b4ba253cb7cd9e82ad2247703d4544adae0/rhsresearch_nitefury_ii/nitefury_firesim_rocket_singlecore_no_nic.tar.gz
+    deploy_quintuplet_override: null
+    custom_runtime_config: null
 
