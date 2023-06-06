@@ -490,7 +490,7 @@ class RuntimeHWConfig:
             prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
             prefix(f'export PATH={os.getenv("PATH", "")}'), \
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
-            prefix('source sourceme-f1-manager.sh --skip-ssh-setup'), \
+            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)

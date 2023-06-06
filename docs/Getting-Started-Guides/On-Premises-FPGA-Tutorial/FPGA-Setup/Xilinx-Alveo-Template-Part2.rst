@@ -77,7 +77,7 @@ Re-enter the FireSim repository and run the following commands to re-setup the r
    cd firesim
 
    # rerunning this since the machine rebooted
-   source sourceme-f1-manager.sh --skip-ssh-setup
+   source sourceme-manager.sh --skip-ssh-setup
 
 Next, open up the ``deploy/config_runtime.yaml`` file and replace the following keys to be the following:
 

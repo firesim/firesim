@@ -9,7 +9,7 @@ from ci_variables import ci_env
 def run_aws_configure() -> None:
     """ Runs AWS configure on the CI manager """
 
-    with cd(manager_fsim_dir), prefix("source ./sourceme-f1-manager.sh"):
+    with cd(manager_fsim_dir), prefix("source ./sourceme-manager.sh"):
         run(".github/scripts/firesim-managerinit.expect {} {} {}".format(
             ci_env['AWS_ACCESS_KEY_ID'],
             ci_env['AWS_SECRET_ACCESS_KEY'],

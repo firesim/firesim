@@ -12,7 +12,7 @@ from ci_variables import ci_env
 def run_linux_poweroff():
     """ Runs Linux poweroff workloads """
 
-    with prefix(f"cd {manager_fsim_dir} && source sourceme-f1-manager.sh"):
+    with prefix(f"cd {manager_fsim_dir} && source sourceme-manager.sh"):
         def run_w_timeout(workload, timeout, num_passes):
             """ Run workload with a specific timeout
 
