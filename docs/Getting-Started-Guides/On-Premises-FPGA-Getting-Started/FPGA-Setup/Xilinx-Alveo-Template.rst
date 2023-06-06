@@ -1,11 +1,48 @@
 FPGA Software Setup
 ===================
 
-Requirements and Installations
+System requirements and Setup
 ------------------------------
 
-We require a base machine that is able to support the |fpga_name| and running Xilinx Vivado.
-Please refer to the minimum system requirements given in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements.
+The below sections outline what you need to install to run FireSim on each
+machine type in a FireSim cluster. Note that the below three machine types
+can all map to a single machine in your setup; in this case, you should follow
+all the installation instructions on your single machine.
+
+We highly recommend using Ubuntu 20.04 LTS as the host operating system for
+all machine types in an on-premises setup, as this is the OS recommended by
+Xilinx. 
+
+
+Manager Machine
+--------------------
+
+The manager machine requires no special setup at this stage. We will clone
+the FireSim repo and set up dependencies for the manager in a later step.
+
+Run Farm Machine(s)
+----------------------
+
+To set up your Run Farm Machines, please do the following:
+
+First, please refer to the 
+`minimum system requirements on the Xilinx website <https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements>`_
+to ensure that your intended Run Farm machine is sufficient for hosting a |fpga_name|.
+
+
+
+
+
+
+Build Farm Machines(s)
+-------------------------
+
+If you are not planning to run bitstream builds, you can skip this section
+for now and return later.
+
+
+
+
 Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Card-Installation-Procedures
 
 We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:

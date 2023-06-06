@@ -127,10 +127,10 @@ Click one of the following links to get started with your particular platform.
 
 .. warning:: If using a Xilinx Alveo U250 or U280, we recommend the FPGA-specific flows instead of the Xilinx Vitis flow.
 
-* :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/index`
+* :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index`
 
-* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U250-FPGAs`
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs`
 
-* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U280-FPGAs`
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U280-FPGAs`
 
-* :doc:`Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Vitis-FPGAs`
+* :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`

@@ -37,5 +37,5 @@ RTL or changing non-runtime configurable hardware parameters.
    :maxdepth: 2
 
    Initial-Setup/index
-   Running-Simulations-Tutorial/index
+   Running-Simulations/index
    Building-a-FireSim-AFI

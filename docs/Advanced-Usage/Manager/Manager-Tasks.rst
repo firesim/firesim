@@ -357,7 +357,7 @@ starting another one, even if it is the same exact simulation on the same Run
 Farm.**
 
 You can see detailed output from an example run of ``infrasetup`` in the
-:ref:`single-node-sim` and :ref:`cluster-sim` Tutorials.
+:ref:`single-node-sim` and :ref:`cluster-sim` Getting Started Guides.
 
 .. _firesim-boot:
 

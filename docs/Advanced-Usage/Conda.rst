@@ -1,12 +1,12 @@
 Non-Source Dependency Management
 ================================
 
-In the AWS EC2 F1 setup, in :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
+In the AWS EC2 F1 setup, in :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
 of ``scripts/machine-launch-script.sh`` into the EC2 Management Console and
 that script installed many dependencies that FireSim needs using
 `conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
 manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_
-(or in the case of :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Initial-Setup/Setting-up-your-Manager-Instance`, we ran ``scripts/machine-launch-script.sh``).
+(or in the case of :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Initial-Setup/Setting-up-your-Manager-Instance`, we ran ``scripts/machine-launch-script.sh``).
 
 In many situations, you may not need to know anything about ``conda``.  By default, the
 ``machine-launch-script.sh`` installs ``conda`` into ``/opt/conda`` and all of the FireSim dependencies into
@@ -23,7 +23,7 @@ is that you are able to write into the install location.  See ``machine-launch-s
     To :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently requires that
     you are able to act as root via ``sudo``.
 
-    However, you can do many things without having root, like :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Building-a-FireSim-AFI`,
+    However, you can do many things without having root, like :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Building-a-FireSim-AFI`,
     `<meta-simulation>`_ of a FireSim system using Verilator or even developing new features in FireSim.
 
 Updating a Package Version
