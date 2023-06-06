@@ -40,31 +40,6 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   auto push_bytes = push_beats * fpga_buffer_width_bytes();
   auto bytes_written =
       cpu_managed_axi4_write(dma_addr(), (char *)src, push_bytes);
-
-  if (bytes_written != push_bytes) {
-    printf("a0: %016llx\n", mmio_read(a0()));
-    printf("a1: %016llx\n", mmio_read(a1()));
-    printf("a2: %016llx\n", mmio_read(a2()));
-    printf("a3: %016llx\n", mmio_read(a3()));
-    printf("a4: %016llx\n", mmio_read(a4()));
-    printf("a5: %016llx\n", mmio_read(a5()));
-    printf("a6: %016llx\n", mmio_read(a6()));
-    printf("a7: %016llx\n", mmio_read(a7()));
-    printf("a8: %016llx\n", mmio_read(a8()));
-    printf("a9: %016llx\n", mmio_read(a9()));
-    printf("a10: %016llx\n", mmio_read(a10()));
-    printf("a11: %016llx\n", mmio_read(a11()));
-    printf("a12: %016llx\n", mmio_read(a12()));
-    printf("a13: %016llx\n", mmio_read(a13()));
-    printf("a14: %016llx\n", mmio_read(a14()));
-    printf("a15: %016llx\n", mmio_read(a15()));
-    printf("a16: %016llx\n", mmio_read(a16()));
-    printf("a17: %016llx\n", mmio_read(a17()));
-    printf("a18: %016llx\n", mmio_read(a18()));
-    printf("a19: %016llx\n", mmio_read(a19()));
-
-  }
-
   assert(bytes_written == push_bytes);
 
   return bytes_written;
@@ -110,30 +85,6 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   auto pull_beats = std::min(count, num_beats);
   auto pull_bytes = pull_beats * fpga_buffer_width_bytes();
   auto bytes_read = cpu_managed_axi4_read(dma_addr(), (char *)dest, pull_bytes);
-
-  if (bytes_read != pull_bytes) {
-    printf("a0: %016llx\n", mmio_read(a0()));
-    printf("a1: %016llx\n", mmio_read(a1()));
-    printf("a2: %016llx\n", mmio_read(a2()));
-    printf("a3: %016llx\n", mmio_read(a3()));
-    printf("a4: %016llx\n", mmio_read(a4()));
-    printf("a5: %016llx\n", mmio_read(a5()));
-    printf("a6: %016llx\n", mmio_read(a6()));
-    printf("a7: %016llx\n", mmio_read(a7()));
-    printf("a8: %016llx\n", mmio_read(a8()));
-    printf("a9: %016llx\n", mmio_read(a9()));
-    printf("a10: %016llx\n", mmio_read(a10()));
-    printf("a11: %016llx\n", mmio_read(a11()));
-    printf("a12: %016llx\n", mmio_read(a12()));
-    printf("a13: %016llx\n", mmio_read(a13()));
-    printf("a14: %016llx\n", mmio_read(a14()));
-    printf("a15: %016llx\n", mmio_read(a15()));
-    printf("a16: %016llx\n", mmio_read(a16()));
-    printf("a17: %016llx\n", mmio_read(a17()));
-    printf("a18: %016llx\n", mmio_read(a18()));
-    printf("a19: %016llx\n", mmio_read(a19()));
-  }
-
   assert(bytes_read == pull_bytes);
   return bytes_read;
 }
