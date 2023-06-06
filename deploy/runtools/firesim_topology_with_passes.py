@@ -550,8 +550,10 @@ class FireSimTopologyWithPasses:
                     # If AutoILA is enabled, use the following condition
                     if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
                         break
-                    # If AutoILA is disabled, use the following condition
-                    elif "No Sockets found" in screenoutput:
+                    # If AutoILA is disabled, continue as long as there is a fsim* or switch* screen.
+                    elif "fsim" in screenoutput or "switch" in screenoutput:
+                        continue
+                    else:
                         break
                     time.sleep(1)
 
