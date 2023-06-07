@@ -142,7 +142,7 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
   if (!pci_device_id) {
     fprintf(stderr,
             "PCI Device ID not specified. Assuming PCI Device ID 0x903f\n");
-    pci_vendor_id = 0x903f;
+    pci_device_id = 0x903f;
   }
 
   printf("Using: " PCI_DEV_FMT
