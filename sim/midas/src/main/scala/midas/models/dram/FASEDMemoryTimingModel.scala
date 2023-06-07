@@ -69,9 +69,25 @@ case class BaseParams(
 
   // Number of xactions in flight in a given cycle. Bin N contains the range
   // (occupancyHistograms[N-1], occupancyHistograms[N]]
-  occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
-  addrRangeCounters: BigInt = BigInt(0)
-)
+  occupancyHistograms: Seq[Int] = Seq(0, 1, 4, 8, 16, 32, 48, 64),
+  addrRangeCounters:   BigInt   = BigInt(0),
+) {
+  occupancyHistograms.foldLeft(-1) { case (a: Int, b: Int) =>
+    require(a < b, "Occupancy histogram maximums must be strictly increasing")
+    b
+  }
+
+  def enableAllBaseInstrumentation(): BaseParams = this.copy(
+    detectAddressCollisions = true,
+    stallEventCounters      = true,
+    localHCycleCount        = true,
+    latencyHistograms       = true,
+    xactionCounters         = true,
+    beatCounters            = true,
+    targetCycleCounter      = true,
+  )
+}
+
 // A serializable summary of the diplomatic edge
 case class AXI4EdgeSummary(
   maxReadTransfer: Int,

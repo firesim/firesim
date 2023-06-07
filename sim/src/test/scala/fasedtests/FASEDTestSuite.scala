@@ -5,18 +5,9 @@ package firesim.fasedtests
 import java.io.File
 
 import scala.io.Source
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Random
 import org.scalatest.Suites
 
-import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.system.{BenchmarkTestSuite, RocketTestSuite}
-import freechips.rocketchip.system.TestGeneration._
-import freechips.rocketchip.system.DefaultTestSuites._
-
-import firesim.configs.LlcKey
 import firesim.TestSuiteUtil._
-import firesim.BasePlatformConfig
 import firesim.midasexamples.BaseConfigs
 
 /** Different runtime-configuration modes extend this trait. See below. */
@@ -39,6 +30,13 @@ case class CustomRuntimeConfig(pathRelativeToSim: String) extends RuntimeConfig 
   val behaviorString = s"with runtime conf ${pathRelativeToSim}"
 }
 
+trait MemoryStatsCSVConstants {
+  val readOutstandingHistogramPrefix  = "readOutstandingHistogram"
+  val writeOutstandingHistogramPrefix = "writeOutstandingHistogram"
+  val targetCycle                     = "targetCycle"
+  def memoryStatsFilename(idx: Int): String = s"memory_stats${idx}.csv"
+}
+
 /** A specialization of TestSuiteCommon for FASED-specific testing. Mostly handles differences in the makefrag vs
   * midasexamples..
   *
@@ -59,12 +57,11 @@ abstract class FASEDTest(
   platformConfigs:            String        = "",
   baseRuntimeConfig:          RuntimeConfig = DefaultRuntimeConfig,
   additionalPlusArgs:         Seq[String]   = Seq(),
-) extends firesim.TestSuiteCommon("fasedtests") {
+  profileInterval:            Int           = 10000,
+) extends firesim.TestSuiteCommon("fasedtests")
+    with MemoryStatsCSVConstants {
 
   override def basePlatformConfig = BaseConfigs.F1
-
-  import scala.concurrent.duration._
-  import ExecutionContext.Implicits.global
 
   def invokeMlSimulator(backend: String, debug: Boolean, args: Seq[String]) = {
     make((s"run-${backend}%s".format(if (debug) "-debug" else "") +: args): _*)
@@ -84,7 +81,7 @@ abstract class FASEDTest(
       case EmptyRuntimeConfig        => Some(s"COMMON_SIM_ARGS=")
       case CustomRuntimeConfig(path) => Some(s"COMMON_SIM_ARGS=${Source.fromFile(path).getLines.mkString(" ")}")
     }
-    val plusArgs                       = Seq(s"""EXTRA_SIM_ARGS=${additionalPlusArgs.mkString(" ")}""")
+    val plusArgs                       = Seq(s"""EXTRA_SIM_ARGS=+profile-interval=${profileInterval} ${additionalPlusArgs.mkString(" ")}""")
     val logArg                         = logFile.map { logName => s"LOGFILE=${logName}" }
 
     val makeArgs =
@@ -98,7 +95,42 @@ abstract class FASEDTest(
     }
   }
 
-  override def defineTests(backend: String, debug: Boolean): Unit = runTest(backend, debug)
+  def checkMemoryStats(modelIndex: Int): Unit = {
+    val statsFilename = memoryStatsFilename(modelIndex)
+    behavior.of(statsFilename)
+
+    def statsMap = {
+      val memoryStatsFile = new File(genDir, statsFilename)
+      parseCSV(memoryStatsFile).mapValues(_.map(_.toLong))
+    }
+
+    def targetCycles = statsMap(targetCycle)
+
+    def checkOccupancyHistograms(binPrefix: String): Unit = {
+      val readColumns = statsMap.filterKeys(_.startsWith(binPrefix))
+      val sumOfBins   = readColumns.values.transpose
+        .map(_.sum)
+
+      for (((cycle, sum), i) <- targetCycles.zip(sumOfBins).zipWithIndex) {
+        assert(
+          cycle == sum,
+          s"Row ${i}, target cycle ${cycle}: sum of ${binPrefix} bins did not equal elapsed target cycles.",
+        )
+      }
+    }
+
+    it should s"have its read occupancy histogram columns sum to the target cycles elapsed" in {
+      checkOccupancyHistograms(readOutstandingHistogramPrefix)
+    }
+    it should s"have its write occupancy histogram columns sum to the target cycles elapsed" in {
+      checkOccupancyHistograms(writeOutstandingHistogramPrefix)
+    }
+  }
+
+  override def defineTests(backend: String, debug: Boolean): Unit = {
+    runTest(backend, debug)
+    checkMemoryStats(0)
+  }
 }
 
 class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig")

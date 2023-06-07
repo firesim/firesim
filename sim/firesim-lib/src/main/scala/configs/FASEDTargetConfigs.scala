@@ -77,9 +77,14 @@ class WithFuncModelLimits(maxReads: Int, maxWrites: Int) extends Config((site, h
   )
 })
 
-/*******************************************************************************
-* Complete Memory-Timing Model Configurations
-*******************************************************************************/
+/** Turns on all available model-agnostic instrumentation */
+class WithAllBaseInstrumentation
+    extends Config((site, here, up) => { case BaseParamsKey =>
+      up(BaseParamsKey, site).enableAllBaseInstrumentation()
+    })
+
+/** Complete Memory-Timing Model Configurations */
+
 // Latency Bandwidth Pipes
 class LBP32R32W extends Config(
   new WithFuncModelLimits(32,32) ++

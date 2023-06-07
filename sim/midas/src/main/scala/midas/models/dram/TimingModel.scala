@@ -28,13 +28,16 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
   val llc = if (cfg.useLLCModel) Some(new LLCProgrammableSettings(cfg.params.llcKey.get)) else None
 
   // Instrumentation Registers
-  val bins = cfg.params.occupancyHistograms match {
-    case Nil => 0
-    case binMaximums => binMaximums.size + 1
+  val (readBins, writeBins) = cfg.params.occupancyHistograms match {
+    case Nil         => (Nil, Nil)
+    case binMaximums =>
+      val readBins  = binMaximums.filter(_ < cfg.params.maxReads) :+ cfg.params.maxReads
+      val writeBins = binMaximums.filter(_ < cfg.params.maxWrites) :+ cfg.params.maxWrites
+      (readBins, writeBins)
   }
 
-  val readOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
-  val writeOutstandingHistogram = Output(Vec(bins, UInt(32.W)))
+  val readOutstandingHistogram  = Output(Vec(readBins.size, UInt(32.W)))
+  val writeOutstandingHistogram = Output(Vec(writeBins.size, UInt(32.W)))
 
   val targetCycle = if (cfg.params.targetCycleCounter) Some(Output(UInt(32.W))) else None
 
@@ -159,29 +162,27 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
     io.mmReg.totalWriteBeats foreach { _ := totalWriteBeats }
   }
 
-  cfg.params.occupancyHistograms match {
-    case Nil => Nil
-    case binMaximums =>
-      val numBins = binMaximums.size + 1
-      val readOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
-      val writeOutstandingHistogram = Seq.fill(numBins)(RegInit(0.U(32.W)))
+  /** Generates a histogram of n bins, one of which is incremented by the value of count each target-cycle.
+    *
+    * @param maximums
+    *   The maximum value indexed by each bin. Seq(0,4,8) would produce three bins: [0], [1-4], [5-8]
+    *
+    * @params
+    *   count The UInt used to select which bin should be incremented.
+    */
+  def bindOccupancyHistogram(maximums: Seq[Int], count: UInt): Seq[UInt] = {
+    val bins               = Seq.fill(maximums.size) { RegInit(0.U(32.W)) }
+    assert(count <= maximums.last.U, "Count exceeds maximum range of histogram.")
+    val upperBoundChecks   = maximums.map { count <= _.U }
+    val lowerBoundChecks   = true.B +: (upperBoundChecks.dropRight(1).map { !_ })
+    val binIncrementEnable = lowerBoundChecks.zip(upperBoundChecks).map { case (gtLB, lteUB) => gtLB && lteUB }
 
-      def bindHistograms(bins: Seq[UInt], maximums: Seq[Int], count: UInt): Bool = {
-        (bins.zip(maximums)).foldLeft(false.B)({ case (hasIncrmented, (bin, maximum)) =>
-          when (!hasIncrmented && (count <= maximum.U)) {
-            bin :=  bin + 1.U
-          }
-          hasIncrmented || (count <= maximum.U)
-        })
-      }
-
-      // Append the largest UInt representable to the end of the Seq to catch remaining cases
-      val allBinMaximums = binMaximums :+ -1
-      bindHistograms(readOutstandingHistogram, binMaximums, pendingReads.value)
-      bindHistograms(writeOutstandingHistogram, binMaximums, pendingAWReq.value)
-      io.mmReg.readOutstandingHistogram := readOutstandingHistogram
-      io.mmReg.writeOutstandingHistogram := writeOutstandingHistogram
+    bins.zip(binIncrementEnable).foreach { case (bin, en) => bin := bin + en }
+    bins
   }
+
+  io.mmReg.readOutstandingHistogram  := bindOccupancyHistogram(io.mmReg.readBins, pendingReads.value)
+  io.mmReg.writeOutstandingHistogram := bindOccupancyHistogram(io.mmReg.writeBins, pendingAWReq.value)
 }
 
 // A class of simple timing models that has independently programmable bounds on
