@@ -7,7 +7,8 @@ BASE_LINUX:=../../sw/firesim-software/images/firechip/br-base/br-base-bin
 # be attached to your EC2 instance if you have a license
 # Regular benchmarks are cloned from git/the internet and built automatically
 
-allpaper: memcached-thread-imbalance simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
+# TODO: re-enable memcached-thread-imbalance (disabled since sysroot needs to be re-built instead of cached in newer version of FireMarshal)
+allpaper: simperf-test-latency simperf-test-scale bw-test-two-instances ping-latency
 
 spec17-%:
 	$(info Support for SPEC2017 has been ported to FireMarshal.)
