@@ -14,6 +14,8 @@ else ifeq ($(PLATFORM), xilinx_alveo_u280)
 board_dir          := $(platforms_dir)/xilinx_alveo_u280
 else ifeq ($(PLATFORM), xilinx_vcu118)
 board_dir          := $(platforms_dir)/xilinx_vcu118/garnet-firesim
+else ifeq ($(PLATFORM), rhsresearch_nitefury_ii)
+board_dir          := $(platforms_dir)/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim/Sample-Projects/Project-0
 else ifeq ($(PLATFORM), f1)
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
 else
@@ -25,9 +27,14 @@ fpga_build_dir := $(fpga_work_dir)/build
 verif_dir      := $(fpga_work_dir)/verif
 repo_state     := $(fpga_work_dir)/design/repo_state
 fpga_driver_dir:= $(fpga_work_dir)/driver
+fpga_delivery_dir := $(fpga_work_dir)/design
+
+ifeq ($(PLATFORM), rhsresearch_nitefury_ii)
+	fpga_delivery_dir := $(fpga_work_dir)/Nitefury-II/project/project.srcs/sources_1/imports/HDL
+endif
 
 # Enumerates the subset of generated files that must be copied over for FPGA compilation
-fpga_delivery_files = $(addprefix $(fpga_work_dir)/design/$(BASE_FILE_NAME), \
+fpga_delivery_files = $(addprefix $(fpga_delivery_dir)/$(BASE_FILE_NAME), \
 	.sv .defines.vh \
 	.synthesis.xdc .implementation.xdc)
 
@@ -42,7 +49,7 @@ $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 	$(firesim_base_dir)/../scripts/repo_state_summary.sh > $(repo_state)
 
-$(fpga_work_dir)/design/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
+$(fpga_delivery_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
 

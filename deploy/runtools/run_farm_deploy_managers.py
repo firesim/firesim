@@ -808,6 +808,16 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
 
+    def unload_xdma(self) -> None:
+        """ unload the xdma kernel module. """
+        if self.instance_assigned_simulations():
+            # unload xdma if loaded
+            if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
+                self.instance_logger("Unloading XDMA Driver Kernel Module.")
+                run(f"sudo rmmod xdma", shell=True)
+            else:
+                self.instance_logger("XDMA Driver Kernel Module already unloaded.")
+
     def slot_to_bdf(self, slotno: int) -> str:
         # get fpga information from db
         self.instance_logger(f"""Determine BDF for {slotno}""")
@@ -861,10 +871,12 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
-                # load xdma driver
-                self.load_xdma()
+                # unload xdma driver
+                self.unload_xdma()
                 # flash fpgas
                 self.flash_fpgas()
+                # load xdma driver
+                self.load_xdma()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
@@ -921,7 +933,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
 
         with cd(remote_sim_dir):
-            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {json}""")
+            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
@@ -929,6 +941,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             # This is a sim-host node.
 
+            # unload xdma driver
+            self.unload_xdma()
             # load xdma driver
             self.load_xdma()
 
@@ -972,6 +986,11 @@ class XilinxAlveoU280InstanceDeployManager(XilinxAlveoInstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_alveo_u280"
+
+class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "rhsresearch_nitefury_ii"
 
 class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx VCU118-enabled instance using the
@@ -1026,7 +1045,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
 
                 self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i serial.*xilinx')
+                collect = run('lspci | grep -i xilinx')
 
                 # TODO: is hardcoded cap 0x1 correct?
                 # TODO: is "Partial Reconfig Clear File" useful (see xvsecctl help)?
@@ -1080,7 +1099,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
             if not self.parent_node.metasimulation_enabled:
                 self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i serial.*xilinx')
+                collect = run('lspci | grep -i xilinx')
                 bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
                 bdf = bdfs[slotno].replace('.', ':').split(':')
                 extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
@@ -1095,3 +1114,4 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             with cd(remote_sim_dir):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
+

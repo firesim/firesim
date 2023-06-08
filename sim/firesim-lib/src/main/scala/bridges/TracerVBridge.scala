@@ -81,7 +81,7 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
 
   // StreamToHostCPU  mixin parameters
   // Use the legacy NIC depth
-  val toHostCPUQueueDepth  = TokenQueueConsts.TOKEN_QUEUE_DEPTH
+  val toHostCPUQueueDepth = 6144
 
   lazy val module = new BridgeModuleImp(this) {
     val io    = IO(new WidgetIO)

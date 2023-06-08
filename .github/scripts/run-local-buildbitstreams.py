@@ -249,6 +249,7 @@ def run_local_buildbitstreams():
 
             batch_hwdbs_in = [
                 ("alveo_u280_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u280", "vivado:2021.1"),
+                ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
             ]
 
             do_builds(batch_hwdbs_in)

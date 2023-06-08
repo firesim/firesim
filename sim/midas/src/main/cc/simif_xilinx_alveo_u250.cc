@@ -141,8 +141,8 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
   }
   if (!pci_device_id) {
     fprintf(stderr,
-            "PCI Device ID not specified. Assuming PCI Vendor ID 0x903f\n");
-    pci_vendor_id = 0x903f;
+            "PCI Device ID not specified. Assuming PCI Device ID 0x903f\n");
+    pci_device_id = 0x903f;
   }
 
   printf("Using: " PCI_DEV_FMT
@@ -201,16 +201,6 @@ void simif_xilinx_alveo_u250_t::fpga_shutdown() {
   close(edma_write_fd);
   close(edma_read_fd);
 }
-
-/**
- * Xilinx PCI Vendor ID.
- */
-constexpr uint16_t pci_vendor_id = 0x10ee;
-
-/**
- * Xilinx PCI Device ID pre-assigned by for XDMA applications.
- */
-constexpr uint16_t pci_device_id = 0x903f;
 
 void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
                                            uint8_t bus_id,
@@ -284,7 +274,7 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
   if (d) {
     while ((dir = readdir(d)) != NULL) {
       printf("examining xdma/%s\n", dir->d_name);
-      if (strstr(dir->d_name, "xdma")) {
+      if (strstr(dir->d_name, "xdma") && strstr(dir->d_name, "_h2c_0")) {
         xdma_id = strtol(dir->d_name + 4, NULL, 10);
         break;
       }

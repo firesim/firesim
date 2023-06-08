@@ -46,7 +46,7 @@ class DromajoBridgeModule(key: TraceBundleWidths)(implicit p: Parameters) extend
     with StreamToHostCPU
 {
   // CONSTANTS: DMA Parameters
-  val toHostCPUQueueDepth = TokenQueueConsts.TOKEN_QUEUE_DEPTH
+  val toHostCPUQueueDepth = 6144
 
   lazy val module = new BridgeModuleImp(this) {
 

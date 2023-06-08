@@ -184,7 +184,7 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             bf_recipe_lines)
-    elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280' or args.platform == 'xilinx_vcu118':
+    elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280' or args.platform == 'xilinx_vcu118' or args.platform == 'rhsresearch_nitefury_ii':
         runfarm_default_file = "run-farm-recipes/externally_provisioned.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()

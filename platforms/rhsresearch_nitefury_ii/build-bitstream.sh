@@ -70,15 +70,10 @@ if [ -z "$BOARD" ] ; then
     usage 1
 fi
 
-cd $CL_DIR/../
-make ip
-
 # run build
-cd $CL_DIR/build
-vivado -mode batch -source ../tcl/build.tcl -tclargs $FREQUENCY $STRATEGY $BOARD
+cd $CL_DIR/Nitefury-II/project
+vivado -mode batch -source top.tcl -tclargs $FREQUENCY $STRATEGY
 
-# TODO: remove later. this is for temporary compatibility with u250 flow
-# in manager
-mkdir -p ../vivado_proj
-cp example_pblock_partition_partial.bit ../vivado_proj/firesim.bit
-cp ../../shell/prebuilt/empty_primary.mcs ../vivado_proj/firesim.mcs
+mkdir -p ../../vivado_proj
+cp project/project.runs/impl_1/Top_wrapper.bit ../../vivado_proj/firesim.bit
+cp ../mcs/out.mcs ../../vivado_proj/firesim.mcs

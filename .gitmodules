@@ -22,3 +22,6 @@
 [submodule "platforms/xilinx_vcu118/garnet-firesim"]
 	path = platforms/xilinx_vcu118/garnet-firesim
 	url = https://github.com/firesim/garnet-firesim
+[submodule "platforms/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim"]
+	path = platforms/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim
+	url = https://github.com/firesim/NiteFury-and-LiteFury-firesim.git

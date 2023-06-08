@@ -58,7 +58,8 @@ trait StreamFromHostCPU { self: Widget =>
   final def streamSinkParams = StreamSinkParameters(
     fromHostStreamName,
     fromHostStreamIdx,
-    fromHostCPUQueueDepth)
+    fromHostCPUQueueDepth,
+    BridgeStreamConstants.streamWidthBits/8)
 
 
   private val _streamDeq = InModuleBody {
@@ -83,7 +84,8 @@ trait StreamToHostCPU { self: Widget =>
   final def streamSourceParams = StreamSourceParameters(
     toHostStreamName,
     toHostStreamIdx,
-    toHostCPUQueueDepth)
+    toHostCPUQueueDepth,
+    BridgeStreamConstants.streamWidthBits/8)
 
   private val _streamEnq = InModuleBody {
     val streamToHostCPU = IO(BridgeStreamConstants.streamChiselType)

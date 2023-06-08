@@ -14,6 +14,54 @@ import freechips.rocketchip.util.DecoupledHelper
 import midas.targetutils.xdc
 import midas.widgets._
 
+class StreamAdapterIO(val w: Int) extends Bundle {
+  val in = Flipped(Decoupled(UInt(w.W)))
+  val out = Decoupled(UInt(w.W))
+
+  def flipConnect(other: StreamAdapterIO) {
+    in <> other.out
+    other.in <> out
+  }
+}
+
+class StreamWidthAdapter(narrowW: Int, wideW: Int) extends Module {
+  require(wideW >= narrowW)
+  require(wideW % narrowW == 0)
+  val io = IO(new Bundle {
+    val narrow = new StreamAdapterIO(narrowW)
+    val wide = new StreamAdapterIO(wideW)
+  })
+
+  if (wideW == narrowW) {
+    io.narrow.out <> io.wide.in
+    io.wide.out <> io.narrow.in
+  } else {
+    val beats = wideW / narrowW
+
+    val narrow_beats = RegInit(0.U(log2Ceil(beats).W))
+    val narrow_last_beat = narrow_beats === (beats-1).U
+    val narrow_data = Reg(Vec(beats-1, UInt(narrowW.W)))
+
+    val wide_beats = RegInit(0.U(log2Ceil(beats).W))
+    val wide_last_beat = wide_beats === (beats-1).U
+
+    io.narrow.in.ready := Mux(narrow_last_beat, io.wide.out.ready, true.B)
+    when (io.narrow.in.fire()) {
+      narrow_beats := Mux(narrow_last_beat, 0.U, narrow_beats + 1.U)
+      when (!narrow_last_beat) { narrow_data(narrow_beats) := io.narrow.in.bits }
+    }
+    io.wide.out.valid := narrow_last_beat && io.narrow.in.valid
+    io.wide.out.bits := Cat(io.narrow.in.bits, narrow_data.asUInt)
+
+    io.narrow.out.valid := io.wide.in.valid
+    io.narrow.out.bits := io.wide.in.bits >> (wide_beats << 3)
+    when (io.narrow.out.fire()) {
+      wide_beats := Mux(wide_last_beat, 0.U, wide_beats + 1.U)
+    }
+    io.wide.in.ready := wide_last_beat && io.narrow.out.ready
+  }
+}
+
 /**
   * A helper container to serialize per-stream constants to the header. This is
   * currently somewhat redundant with the default header emission for widgets.
@@ -22,15 +70,17 @@ case class StreamDriverParameters(
   name: String,
   bufferBaseAddress: Int,
   countMMIOAddress: Int,
-  bufferCapacity: Int)
+  bufferCapacity: Int,
+  bufferWidthBytes: Int)
 
 class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) extends StreamEngine(p) {
 
   val cpuManagedAXI4params = p(CPUManagedAXI4Key).get
-  require(BridgeStreamConstants.streamWidthBits == cpuManagedAXI4params.dataBits,
-    s"CPU-managed AXI4 IF data width must match the stream width: ${BridgeStreamConstants.streamWidthBits}.")
+  require(BridgeStreamConstants.streamWidthBits >= cpuManagedAXI4params.dataBits,
+    s"CPU-managed AXI4 IF data width (${cpuManagedAXI4params.dataBits}) must be less than or equal to the stream width (${BridgeStreamConstants.streamWidthBits}).")
 
-  val beatBytes = cpuManagedAXI4params.dataBits / 8
+  val axiBeatBytes = cpuManagedAXI4params.dataBits / 8
+  val bufferWidthBytes = BridgeStreamConstants.streamWidthBits / 8
 
   val cpuManagedAXI4NodeOpt = Some(AXI4SlaveNode(
       Seq(AXI4SlavePortParameters(
@@ -39,10 +89,10 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
           resources     = (new MemoryDevice).reg,
           regionType    = RegionType.UNCACHED, // cacheable
           executable    = false,
-          supportsWrite = TransferSizes(beatBytes, 4096),
-          supportsRead  = TransferSizes(beatBytes, 4096),
+          supportsWrite = TransferSizes(axiBeatBytes, 4096),
+          supportsRead  = TransferSizes(axiBeatBytes, 4096),
           interleavedId = Some(0))), // slave does not interleave read responses
-        beatBytes = beatBytes)
+        beatBytes = axiBeatBytes)
     ))
   )
 
@@ -56,8 +106,8 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
 
     // FromHostCPU streams are implemented using the AW, W, B channels, which
     // write into large BRAM FIFOs for each stream.
-    assert(!axi4.aw.valid || axi4.aw.bits.size === log2Ceil(beatBytes).U)
-    assert(!axi4.w.valid  || axi4.w.bits.strb === ~0.U(beatBytes.W))
+    assert(!axi4.aw.valid || axi4.aw.bits.size === log2Ceil(axiBeatBytes).U)
+    assert(!axi4.w.valid  || axi4.w.bits.strb === ~0.U(axiBeatBytes.W))
 
     axi4.b.bits.resp := 0.U(2.W)
     axi4.b.bits.id := axi4.aw.bits.id
@@ -67,7 +117,6 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     axi4.aw.ready := false.B
     axi4.w.ready := false.B
 
-
     // TODO: Chisel naming prefix to indicate what channel this hw belongs to.
     // This demultiplexes the AW, W, and B channels onto the decoupled ports representing each stream.
     def elaborateFromHostCPUStream(
@@ -75,6 +124,12 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         chParams: StreamSinkParameters,
         idx: Int,
         addressSpaceBits: Int): StreamDriverParameters = prefix(chParams.name) {
+
+      val ser_des = Module(new StreamWidthAdapter(cpuManagedAXI4params.dataBits, BridgeStreamConstants.streamWidthBits))
+      // unused
+      ser_des.io.wide.in.bits := 0.U
+      ser_des.io.wide.in.valid := false.B
+      ser_des.io.narrow.out.ready := false.B
 
       val streamName = chParams.name
       val grant = (axi4.aw.bits.addr >> addressSpaceBits) === idx.U
@@ -88,11 +143,15 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       val countAddr =
         attach(incomingQueue.io.count, s"${chParams.name}_count", ReadOnly, substruct = false)
 
+      incomingQueue.io.enq.bits := ser_des.io.wide.out.bits
+      incomingQueue.io.enq.valid := ser_des.io.wide.out.valid
+      ser_des.io.wide.out.ready := incomingQueue.io.enq.ready
+
       val writeHelper = DecoupledHelper(
         axi4.aw.valid,
         axi4.w.valid,
         axi4.b.ready,
-        incomingQueue.io.enq.ready
+        ser_des.io.narrow.in.ready
       )
 
       // TODO: Get rid of this magic number.
@@ -108,18 +167,19 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         axi4.b.valid  := writeHelper.fire(axi4.b.ready, lastWriteBeat)
       }
 
-      incomingQueue.io.enq.valid := grant && writeHelper.fire(incomingQueue.io.enq.ready)
-      incomingQueue.io.enq.bits := axi4.w.bits.data
+      ser_des.io.narrow.in.valid := grant && writeHelper.fire(ser_des.io.narrow.in.ready)
+      ser_des.io.narrow.in.bits := axi4.w.bits.data
 
       StreamDriverParameters(
         chParams.name,
         idx * (1 << addressSpaceBits),
         countAddr,
-        chParams.fpgaBufferDepth
+        chParams.fpgaBufferDepth,
+        chParams.fpgaBufferWidthBytes
         )
     }
 
-    assert(!axi4.ar.valid || axi4.ar.bits.size === log2Ceil(beatBytes).U)
+    assert(!axi4.ar.valid || axi4.ar.bits.size === log2Ceil(axiBeatBytes).U)
 
     axi4.r.bits.resp := 0.U(2.W)
     axi4.r.bits.id := axi4.ar.bits.id
@@ -134,12 +194,23 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         idx: Int,
         addressSpaceBits: Int): StreamDriverParameters = prefix(chParams.name) {
 
+
+      val ser_des = Module(new StreamWidthAdapter(cpuManagedAXI4params.dataBits, BridgeStreamConstants.streamWidthBits))
+      // unused
+      ser_des.io.narrow.in.bits := 0.U
+      ser_des.io.narrow.in.valid := false.B
+      ser_des.io.wide.out.ready := false.B
+
       val grant = (axi4.ar.bits.addr >> addressSpaceBits) === idx.U
 
       val outgoingQueue = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
       xdc.RAMStyleHint(outgoingQueue.fq.ram, xdc.RAMStyles.ULTRA)
 
       outgoingQueue.io.enq <> channel
+
+      ser_des.io.wide.in.bits := outgoingQueue.io.deq.bits
+      ser_des.io.wide.in.valid := outgoingQueue.io.deq.valid
+      outgoingQueue.io.deq.ready := ser_des.io.wide.in.ready
 
       // check to see if axi4 has valid output instead of waiting for timeouts
       val countAddr =
@@ -148,7 +219,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       val readHelper = DecoupledHelper(
         axi4.ar.valid,
         axi4.r.ready,
-        outgoingQueue.io.deq.valid
+        ser_des.io.narrow.out.valid
       )
 
       val readBeatCounter = RegInit(0.U(9.W))
@@ -157,11 +228,11 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         readBeatCounter := Mux(lastReadBeat, 0.U, readBeatCounter + 1.U)
       }
 
-      outgoingQueue.io.deq.ready := grant && readHelper.fire(outgoingQueue.io.deq.valid)
+      ser_des.io.narrow.out.ready := grant && readHelper.fire(ser_des.io.narrow.out.valid)
 
       when (grant) {
         axi4.r.valid := readHelper.fire(axi4.r.ready)
-        axi4.r.bits.data := outgoingQueue.io.deq.bits
+        axi4.r.bits.data := ser_des.io.narrow.out.bits
         axi4.r.bits.last := lastReadBeat
         axi4.ar.ready := readHelper.fire(axi4.ar.valid, lastReadBeat)
       }
@@ -169,7 +240,8 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
         chParams.name,
         idx * (1 << addressSpaceBits),
         countAddr,
-        chParams.fpgaBufferDepth)
+        chParams.fpgaBufferDepth,
+        chParams.fpgaBufferWidthBytes)
     }
 
     def implementStreams[A <: StreamParameters](
@@ -187,7 +259,7 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       // fractured into multiple, smaller AXI4 transactions (<= 4K in size), it
       // is simplest to maintain the illusion that each stream is granted an
       // address range at least as large as the largest DMA access.
-      def streamASBits = log2Ceil(beatBytes * streamParameters.map(_.fpgaBufferDepth).max)
+      def streamASBits = log2Ceil(bufferWidthBytes * streamParameters.map(_.fpgaBufferDepth).max)
 
       for (((port, params), idx) <- streamPorts.zip(streamParameters).zipWithIndex) yield {
         elaborator(port, params, idx, streamASBits)
@@ -206,7 +278,8 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
                        |  std::string(${CStrLit(p.name).toC}),
                        |  ${UInt64(p.bufferBaseAddress).toC},
                        |  ${UInt64(base + p.countMMIOAddress).toC},
-                       |  ${UInt32(p.bufferCapacity).toC}
+                       |  ${UInt32(p.bufferCapacity).toC},
+                       |  ${UInt32(p.bufferWidthBytes).toC}
                        |)""".stripMargin)))
       }
 

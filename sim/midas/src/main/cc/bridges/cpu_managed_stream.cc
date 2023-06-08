@@ -24,10 +24,10 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   // implement non-multiples of 512b. The FPGA-side queue will take on the
   // high-order bytes of the final beat in the transaction, and the strobe is
   // not respected. So put the assertion here and discuss what to do next.
-  assert((num_bytes % beat_bytes()) == 0);
+  assert((num_bytes % fpga_buffer_width_bytes()) == 0);
 
-  auto num_beats = num_bytes / beat_bytes();
-  auto threshold_beats = required_bytes / beat_bytes();
+  auto num_beats = num_bytes / fpga_buffer_width_bytes();
+  auto threshold_beats = required_bytes / fpga_buffer_width_bytes();
 
   assert(threshold_beats <= fpga_buffer_size());
   auto space_available = fpga_buffer_size() - mmio_read(count_addr());
@@ -37,7 +37,7 @@ size_t CPUManagedStreams::CPUToFPGADriver::push(void *src,
   }
 
   auto push_beats = std::min(space_available, num_beats);
-  auto push_bytes = push_beats * beat_bytes();
+  auto push_bytes = push_beats * fpga_buffer_width_bytes();
   auto bytes_written =
       cpu_managed_axi4_write(dma_addr(), (char *)src, push_bytes);
   assert(bytes_written == push_bytes);
@@ -70,10 +70,10 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   // Due to the destructive nature of reads, if we wish to support reads that
   // aren't a multiple of 512b, we'll need to keep a little buffer around for
   // the remainder, and prepend this to the destination buffer.
-  assert((num_bytes % beat_bytes()) == 0);
+  assert((num_bytes % fpga_buffer_width_bytes()) == 0);
 
-  auto num_beats = num_bytes / beat_bytes();
-  auto threshold_beats = required_bytes / beat_bytes();
+  auto num_beats = num_bytes / fpga_buffer_width_bytes();
+  auto threshold_beats = required_bytes / fpga_buffer_width_bytes();
 
   assert(threshold_beats <= fpga_buffer_size());
   auto count = mmio_read(count_addr());
@@ -83,7 +83,7 @@ size_t CPUManagedStreams::FPGAToCPUDriver::pull(void *dest,
   }
 
   auto pull_beats = std::min(count, num_beats);
-  auto pull_bytes = pull_beats * beat_bytes();
+  auto pull_bytes = pull_beats * fpga_buffer_width_bytes();
   auto bytes_read = cpu_managed_axi4_read(dma_addr(), (char *)dest, pull_bytes);
   assert(bytes_read == pull_bytes);
   return bytes_read;

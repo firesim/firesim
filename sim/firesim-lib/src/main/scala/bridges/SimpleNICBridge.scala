@@ -14,7 +14,7 @@ import icenet.{NICIOvonly, RateLimiterSettings}
 object TokenQueueConsts {
   val TOKENS_PER_BIG_TOKEN = 7
   val BIG_TOKEN_WIDTH = (TOKENS_PER_BIG_TOKEN + 1) * 64
-  val TOKEN_QUEUE_DEPTH = 6144
+  val TOKEN_QUEUE_DEPTH = 3072
 }
 import TokenQueueConsts._
 

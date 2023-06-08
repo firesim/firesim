@@ -410,6 +410,7 @@ class VitisBitBuilder(BitBuilder):
         # extra_opts -l preserves symlinks
 
         run('mkdir -p {}'.format(dest_vitis_dir))
+        run('rm -rf {}/{}'.format(dest_vitis_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_vitis_dir,
             remote_dir=dest_vitis_dir,
@@ -586,6 +587,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         # extra_opts -L resolves symlinks
 
         run(f'mkdir -p {dest_alveo_dir}')
+        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir,
             remote_dir=dest_alveo_dir,
@@ -773,6 +775,7 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
         # extra_opts -L resolves symlinks
 
         run(f'mkdir -p {dest_alveo_dir}')
+        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir + "/",
             remote_dir=dest_alveo_dir,
@@ -790,3 +793,54 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
         rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_alveo_dir}/{fpga_build_postfix}"
+
+class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
+    """Bit builder class that builds an RHS Research Nitefury II bitstream from the build config."""
+    BOARD_NAME: Optional[str]
+
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        super().__init__(build_config, args)
+        self.BOARD_NAME = "rhsresearch_nitefury_ii"
+
+    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
+        """Setup CL_DIR on build host.
+
+        Args:
+            chisel_quintuplet: Build config chisel quintuplet used to uniquely identify build dir.
+            dest_build_dir: Destination base directory to use.
+
+        Returns:
+            Path to CL_DIR directory (that is setup) or `None` if invalid.
+        """
+        fpga_build_postfix = f"Sample-Projects/Project-0/cl_{chisel_quintuplet}"
+
+        # local paths
+        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}/NiteFury-and-LiteFury-firesim"
+
+        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/NiteFury-and-LiteFury-firesim"
+
+        # copy alveo files to the build instance.
+        # do the rsync, but ignore any checkpoints that might exist on this machine
+        # (in case builds were run locally)
+        # extra_opts -L resolves symlinks
+
+        run(f'mkdir -p {dest_alveo_dir}')
+        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
+        rsync_cap = rsync_project(
+            local_dir=local_alveo_dir + "/",
+            remote_dir=dest_alveo_dir,
+            ssh_opts="-o StrictHostKeyChecking=no",
+            exclude="cl_*",
+            extra_opts="-L", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+        rsync_cap = rsync_project(
+            local_dir=f"{local_alveo_dir}/{fpga_build_postfix}/",
+            remote_dir=f'{dest_alveo_dir}/{fpga_build_postfix}',
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-L", capture=True)
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        return f"{dest_alveo_dir}/{fpga_build_postfix}"
+
