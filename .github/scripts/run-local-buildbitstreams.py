@@ -195,6 +195,15 @@ def run_local_buildbitstreams():
                     if match_bit == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
+                # strip newlines from end of file
+                with open(sample_hwdb_filename, "r+") as sample_hwdb_file:
+                    content = sample_hwdb_file.read()
+                    content = content.rstrip('\n')
+                    sample_hwdb_file.seek(0)
+
+                    sample_hwdb_file.write(content)
+                    sample_hwdb_file.truncate()
+
             # could potentially use knight/ferry in the future (currently unused since they are currently overloaded)
             # note: vitis includes vivado (but not vice versa)
             hosts = {
