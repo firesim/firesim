@@ -24,7 +24,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
   FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
-  FIRESIM-REPO-DEP-KEY: ${{ secrets.FIRESIM_REPO_DEP_KEY }}
+  FIRESIM-REPO-DEP-KEY: ${{ secrets.BARTENDER_PRIVATE_SSH_KEY }}
   MANAGER_FIRESIM_LOCATION: "~/firesim"
   LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
   LANGUAGE: "en_US:en"
