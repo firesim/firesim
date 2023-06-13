@@ -39,7 +39,7 @@ rootLogger = logging.getLogger()
 # https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
-f1_ami_name = "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+f1_ami_name = "FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc"
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
