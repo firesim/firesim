@@ -32,7 +32,7 @@ To launch a manager instance, follow these steps:
    not lost when pricing spikes on the spot market.
 #. In the *Name* field, give the instance a recognizable name, for example ``firesim-manager-1``. This is purely for your own convenience and can also be left blank.
 #. In the *Application and OS Images* search box, search for
-   ``FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
+   ``FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
    select the AMI that appears under the ***Community AMIs*** tab (there
    should be only one). **DO NOT USE ANY OTHER VERSION.** For example, **do not** use `FPGA Developer AMI` from the *AWS Marketplace AMIs* tab, as you will likely get an incorrect version of the AMI.
 #. In the *Instance Type* drop-down, select the instance type of
