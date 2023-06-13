@@ -548,14 +548,17 @@ class FireSimTopologyWithPasses:
                     run("screen -wipe || true") # wipe any potentially dead screens
                     screenoutput = run("screen -ls")
                     # If AutoILA is enabled, use the following condition
-                    if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
+                    if "No Sockets found" in screenoutput:
+                        break
+                    elif "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
                         break
                     # If AutoILA is disabled, continue as long as there is a fsim* or switch* screen.
                     elif "fsim" in screenoutput or "switch" in screenoutput:
+                        time.sleep(1)
                         continue
                     else:
+                        rootLogger.warning("Unknown screen state. Breaking poll")
                         break
-                    time.sleep(1)
 
         execute(screens, hosts=all_run_farm_ips)
 
