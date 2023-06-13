@@ -1,7 +1,7 @@
 [
   {
     "ami_id": "ami-0ef416754763a5ab7",
-    "name": "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc",
+    "name": "FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc",
     "description": "Xilinx 2021.2 release with latest AMI updates",
     "owner_id": "679593333241",
     "public": true,
