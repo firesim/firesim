@@ -22,7 +22,7 @@ args:
     #     # by "four_fpgas_spec" below.
     #     - "111.111.1.111": four_fpgas_spec
     run_farm_hosts_to_use:
-        - localhost: four_fpgas_spec
+        - localhost: one_fpgas_spec
     # managerinit arg end
 
     # REQUIRED: List of host "specifications", i.e. re-usable collections of
@@ -61,6 +61,86 @@ args:
 
         - one_fpga_spec:
             num_fpgas: 1
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - one_fpgas_spec:
+            num_fpgas: 1
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - two_fpgas_spec:
+            num_fpgas: 2
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - three_fpgas_spec:
+            num_fpgas: 3
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - four_fpgas_spec:
+            num_fpgas: 4
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - five_fpgas_spec:
+            num_fpgas: 5
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - six_fpgas_spec:
+            num_fpgas: 6
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - seven_fpgas_spec:
+            num_fpgas: 7
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - eight_fpgas_spec:
+            num_fpgas: 8
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - nine_fpgas_spec:
+            num_fpgas: 9
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - ten_fpgas_spec:
+            num_fpgas: 10
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - eleven_fpgas_spec:
+            num_fpgas: 11
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - twelve_fpgas_spec:
+            num_fpgas: 12
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - thirteen_fpgas_spec:
+            num_fpgas: 13
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - fourteen_fpgas_spec:
+            num_fpgas: 14
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - fifteen_fpgas_spec:
+            num_fpgas: 15
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - sixteen_fpgas_spec:
+            num_fpgas: 16
             num_metasims: 0
             use_for_switch_only: false
 
