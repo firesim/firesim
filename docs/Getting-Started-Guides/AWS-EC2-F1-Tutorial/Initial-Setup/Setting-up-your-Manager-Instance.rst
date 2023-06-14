@@ -35,6 +35,7 @@ To launch a manager instance, follow these steps:
    ``FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
    select the AMI that appears under the **Community AMIs** tab (there
    should be only one). **DO NOT USE ANY OTHER VERSION.** For example, **do not** use `FPGA Developer AMI` from the *AWS Marketplace AMIs* tab, as you will likely get an incorrect version of the AMI.
+   If you find that there are no results for this search, you can try incrementing the last part of the version number in the search string, e.g., ``1.12.2 -> 1.12.3``. Other parts of the search term should be unchanged.
 #. In the *Instance Type* drop-down, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
 #. In the *Key pair (login)* drop-down, select the ``firesim`` key pair we setup earlier.
@@ -71,6 +72,23 @@ To launch a manager instance, follow these steps:
    #. Selecting the wrong AMI.
 
 #. Click the orange *Launch Instance* button.
+
+
+.. warning::
+    Recently, some AWS users been having issues with the launch process (after
+    you click ``Launch Instance``) getting stuck trying to "Subscribe" to the
+    AMI even when the account is already subscribed. We have been able to
+    bypass this issue by going to the FPGA Developer AMI page on AWS
+    Marketplace, clicking subscribe (even if already subscribed), then clicking
+    "Continue to Configuration", then verify the correct AMI version and 
+    region are selected and click "Continue to Launch". Finally, change
+    the dropdown that says "Launch from Website" to "Launch through EC2" and
+    click "Launch". At this point, you will be brought back to
+    the usual launch instance page, but the AMI will be pre-selected and you
+    will be able to successfully launch at the end, after updating the rest
+    of the options as noted above.
+
+
 
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
