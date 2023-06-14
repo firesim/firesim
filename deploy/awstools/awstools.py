@@ -48,7 +48,23 @@ def get_f1_ami_name() -> str:
     else:
         if cuser != "centos":
             print("Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI.")
-        return "FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+        return "FPGA Developer AMI - 1.12.1-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+
+def get_incremented_f1_ami_name(ami_name: str, increment: int) -> str:
+    """ For an ami_name of the format "STUFF - X.Y.Z-hash-stuff",
+    return ami_name, but with Z incremented by increment for auto-bumping
+    the AMI on hotfix releases. """
+    base_name = get_f1_ami_name()
+    split1 = base_name.split(" - ")
+    prefix = split1[0] + " - "
+
+    split2 = split1[1].split("-")
+    suffix = "-" + "-".join(split2[1:])
+
+    version_number = list(map(int, split2[0].split(".")))
+    version_number[-1] += increment
+    version_number = ".".join(map(str, version_number))
+    return prefix + version_number + suffix
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
@@ -286,13 +302,23 @@ def awsinit() -> None:
     else:
         rootLogger.info("You did not supply an email address. No notifications will be sent.")
 
-
 # AMIs are region specific
 def get_f1_ami_id() -> str:
     """ Get the AWS F1 Developer AMI by looking up the image name -- should be region independent.
     """
     client = boto3.client('ec2')
-    response = client.describe_images(Filters=[{'Name': 'name', 'Values': [get_f1_ami_name()]}])
+    # Try up to MAX_ATTEMPTS additional hotfix versions of an AMI if the
+    # initial one fails.
+    MAX_ATTEMPTS = 10
+    for increment in range(MAX_ATTEMPTS):
+        ami_search_name = get_incremented_f1_ami_name(get_f1_ami_name(), increment)
+        if increment > 0:
+            rootLogger.warning(f"AMI {get_f1_ami_name()} not found. Trying: {ami_search_name}.")
+        response = client.describe_images(Filters=[{'Name': 'name', 'Values': [ami_search_name]}])
+        if len(response['Images']) >= 1:
+            if increment > 0:
+                rootLogger.warning(f"AMI {get_f1_ami_name()} not found. Successfully found: {ami_search_name}.")
+            break
     assert len(response['Images']) == 1
     return response['Images'][0]['ImageId']
 
