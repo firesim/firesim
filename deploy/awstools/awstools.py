@@ -63,8 +63,8 @@ def get_incremented_f1_ami_name(ami_name: str, increment: int) -> str:
 
     version_number = list(map(int, split2[0].split(".")))
     version_number[-1] += increment
-    version_number = ".".join(map(str, version_number))
-    return prefix + version_number + suffix
+    version_number_str = ".".join(map(str, version_number))
+    return prefix + version_number_str + suffix
 
 class MockBoto3Instance:
     """ This is used for testing without actually launching instances. """
