@@ -79,10 +79,11 @@ To launch a manager instance, follow these steps:
     you click ``Launch Instance``) getting stuck trying to "Subscribe" to the
     AMI even when the account is already subscribed. We have been able to
     bypass this issue by going to the FPGA Developer AMI page on AWS
-    Marketplace, clicking subscribe (even if already subscribed), and then
-    following the prompts about launching an instance until you get to the
-    point where you can select "Launch via EC2" in a dropdown. Once you click
-    continue on the page with "Launch via EC2", you will be brought back to
+    Marketplace, clicking subscribe (even if already subscribed), then clicking
+    "Continue to Configuration", then verify the correct AMI version and 
+    region are selected and click "Continue to Launch". Finally, change
+    the dropdown that says "Launch from Website" to "Launch through EC2" and
+    click "Launch". At this point, you will be brought back to
     the usual launch instance page, but the AMI will be pre-selected and you
     will be able to successfully launch at the end, after updating the rest
     of the options as noted above.
