@@ -296,7 +296,7 @@ alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:
     PLATFORM_CONFIG: BaseXilinxAlveoConfig
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 75 # 60 known to work, 90 not working
+        fpga_frequency: 60
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
