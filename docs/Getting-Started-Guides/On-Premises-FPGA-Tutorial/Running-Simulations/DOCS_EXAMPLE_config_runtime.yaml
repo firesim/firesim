@@ -6,10 +6,10 @@ run_farm:
   recipe_arg_overrides:
     # REQUIRED: default platform used for run farm hosts. this is a class specifying
     # how to run simulations on a run farm host.
-    default_platform: EC2InstanceDeployManager
+    default_platform: VitisInstanceDeployManager
 
     # REQUIRED: default directory where simulations are run out of on the run farm hosts
-    default_simulation_dir: /home/centos
+    default_simulation_dir: /vm/home/buildbot/FIRESIM_RUNS_DIR
 
     # REQUIRED: List of unique hostnames/IP addresses, each with their
     # corresponding specification that describes the properties of the host.
@@ -22,7 +22,7 @@ run_farm:
     #     # by "four_fpgas_spec" below.
     #     - "111.111.1.111": four_fpgas_spec
     run_farm_hosts_to_use:
-        - localhost: four_fpgas_spec
+        - localhost: one_fpgas_spec
 
 metasimulation:
   metasimulation_enabled: false

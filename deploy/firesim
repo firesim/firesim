@@ -191,8 +191,22 @@ def managerinit(args: argparse.Namespace):
         start_lines = [f"base_recipe: {runfarm_default_file}\n"]
         start_lines += ["recipe_arg_overrides:\n"]
 
+        deploy_manager_map = {
+            'vitis': 'VitisInstanceDeployManager',
+            'xilinx_alveo_u250': 'XilinxAlveoU250InstanceDeployManager',
+            'xilinx_alveo_u280': 'XilinxAlveoU280InstanceDeployManager',
+            'xilinx_vcu118': 'XilinxVCU118InstanceDeployManager',
+            'rhsresearch_nitefury_ii': 'RHSResearchNitefuryIIInstanceDeployManager',
+        }
+        firesim_runs_dir = str(Path.home()) + "/FIRESIM_RUNS_DIR"
+
         start_arg_idx, end_arg_idx = get_indexes(rf_recipe_lines, "managerinit arg start", "managerinit arg end")
         rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[start_arg_idx:end_arg_idx]
+        for l in range(len(rf_recipe_lines)):
+            if "EC2InstanceDeployManager" in rf_recipe_lines[l]:
+                rf_recipe_lines[l] = rf_recipe_lines[l].replace("EC2InstanceDeployManager", deploy_manager_map[args.platform])
+            if "/home/centos" in rf_recipe_lines[l]:
+                rf_recipe_lines[l] = rf_recipe_lines[l].replace("/home/centos", firesim_runs_dir)
 
         file_line_swap(
             "config_runtime.yaml",
