@@ -239,22 +239,10 @@ def run_local_buildbitstreams():
             # same order as in config_build.yaml
             # hwdb_entry_name, platform_name, buildtool:version
             batch_hwdbs_in = [
-                ("vitis_firesim_gemmini_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
+                ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
                 ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2021.1"),
                 ("alveo_u280_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u280", "vivado:2021.1"),
                 ("xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", "xilinx_vcu118", "vivado:2019.1"),
-            ]
-
-            do_builds(batch_hwdbs_in)
-
-            batch_hwdbs_in = [
-                ("vitis_firesim_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
-            ]
-
-            do_builds(batch_hwdbs_in)
-
-            batch_hwdbs_in = [
-                ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
             ]
 
             do_builds(batch_hwdbs_in)
