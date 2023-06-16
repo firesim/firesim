@@ -4,7 +4,7 @@ MACHINE_LAUNCH_DIR=/tmp
 export HOME="${HOME:-/root}"
 
 CONDA_INSTALL_PREFIX=/opt/conda
-CONDA_INSTALLER_VERSION=22.11.1-4
+CONDA_INSTALLER_VERSION=23.1.0-1
 CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
 CONDA_CMD="conda" # some installers install mamba or micromamba
 CONDA_ENV_NAME="firesim"
