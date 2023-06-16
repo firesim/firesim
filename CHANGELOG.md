@@ -2,6 +2,66 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.17.0] - 2023-06-16
+Added support for VCU118, RHSResearch NiteFury II, XCelium. Imporved support for U250/U280/xcelium
+
+### Added
+* Manager support for custom TARGET_PROJECT by @sagark in https://github.com/firesim/firesim/pull/1495
+* Bare Xilinx U250/U280 shell support by @abejgonzalez in https://github.com/firesim/firesim/pull/1497
+* Buildbitstream CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1458
+* FireSim Support for Xilinx VCU118 by @sagark in https://github.com/firesim/firesim/pull/1507
+* add mcs command to implementation script for u250 by @kevindna in https://github.com/firesim/firesim/pull/1518
+* Xcelium + Verilog-as-Top by @abejgonzalez in https://github.com/firesim/firesim/pull/1527
+* Add U250/VCU118 bitstream builds to CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1522
+* Support building U280 in CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1544
+* FireSim Support for RHSResearch Nitefury II + various fixes by @sagark in https://github.com/firesim/firesim/pull/1525
+
+### Changed
+* Update Makefile to be non-parallel by @abejgonzalez in https://github.com/firesim/firesim/pull/1488
+* Dedup CI uartlog checking | Add more checks by @abejgonzalez in https://github.com/firesim/firesim/pull/1489
+* Bump to chisel3.5.6/latest rocketchip by @jerryz123 in https://github.com/firesim/firesim/pull/1476
+* Clear screen before prompt by @abejgonzalez in https://github.com/firesim/firesim/pull/1491
+* Update sample_config_hwdb.yaml for Gemmini build by @abejgonzalez in https://github.com/firesim/firesim/pull/1490
+* Create separate security group for build/run farm instances that is only accessible from within the firesim VPC by @sagark in https://github.com/firesim/firesim/pull/1492
+* Bump Verilator to 5.006 by @abejgonzalez in https://github.com/firesim/firesim/pull/1471
+* Rename SerialBridge to TSIBridge by @jerryz123 in https://github.com/firesim/firesim/pull/1500
+* bump aws-fpga for fix when using exactly 3 of 4 mem channels by @sagark in https://github.com/firesim/firesim/pull/1505
+* EC2 AMI update by @joey0320 in https://github.com/firesim/firesim/pull/1517
+* Split buildbitstream tag into two tags by @abejgonzalez in https://github.com/firesim/firesim/pull/1528
+* Update CI workflow to use login shell | Misc. cleanup by @abejgonzalez in https://github.com/firesim/firesim/pull/1532
+* Update xclbin(s) for PR #1530 (`bumprc-bitstream`) by @github-actions in https://github.com/firesim/firesim/pull/1533
+* Bump to latest rocketchip by @jerryz123 in https://github.com/firesim/firesim/pull/1526
+* Use fat jar to reduce SBT invocations instead of cached classpath by @abejgonzalez in https://github.com/firesim/firesim/pull/1529
+* Update AGFI(s) for PR #1536 (`revert-tv-wide`) by @github-actions in https://github.com/firesim/firesim/pull/1538
+* Touch *.jar assembly files by @abejgonzalez in https://github.com/firesim/firesim/pull/1540
+* conda-lock=1.4, Loosen/restrict conda req. specs by @abejgonzalez in https://github.com/firesim/firesim/pull/1539
+* Update AGFI(s) for PR #1525 (`nitefury_ii`) by @github-actions in https://github.com/firesim/firesim/pull/1545
+* Update AGFI(s) for PR #1543 (`rename-scripts`) by @github-actions in https://github.com/firesim/firesim/pull/1546
+* Rename sourceme-f1-manager.sh to sourceme-manager.sh by @sagark in https://github.com/firesim/firesim/pull/1543
+* Update local bitstream(s) for PR #1525 (`nitefury_ii`) by @github-actions in https://github.com/firesim/firesim/pull/1548
+* fix fased useHardwareDefaults setting bug by @PKUZHOU in https://github.com/firesim/firesim/pull/1499
+* Revert "Expand TracerV to support more than 7 IPC (#1383)" by @abejgonzalez in https://github.com/firesim/firesim/pull/1536
+* Misc. CI Cleanup - Local Cleanup Parallelism + Clobbered Buildbitstream PRs by @abejgonzalez in https://github.com/firesim/firesim/pull/1551
+* Update AGFI(s) for PR #1525 (`nitefury_ii`) by @github-actions in https://github.com/firesim/firesim/pull/1553
+* Update local bitstream(s) for PR #1525 (`nitefury_ii`) by @github-actions in https://github.com/firesim/firesim/pull/1554
+
+### Fixed
+* Fix conda lockfile docs / make lockfile generation easier by @t14916 in https://github.com/firesim/firesim/pull/1478
+* Dedup CI uartlog checking | Add more checks by @abejgonzalez in https://github.com/firesim/firesim/pull/1489
+* Fix open files only on sudo by @abejgonzalez in https://github.com/firesim/firesim/pull/1493
+* update assert in timingmodel to allow BURST_FIXED w/len=0 by @sagark in https://github.com/firesim/firesim/pull/1496
+* Fix first-time-user setup docs by @sagark in https://github.com/firesim/firesim/pull/1498
+* Fix Scala test on machines with multiple simulators by @abejgonzalez in https://github.com/firesim/firesim/pull/1474
+* fix main.o build dependency on generated const.h by @sagark in https://github.com/firesim/firesim/pull/1504
+* Fix `buildbitstream` CI issues + Add `xclbin` bitstream generation by @abejgonzalez in https://github.com/firesim/firesim/pull/1508
+* Misc. U250/U280 FPGA Fixes by @abejgonzalez in https://github.com/firesim/firesim/pull/1502
+* Various Fixes by @abejgonzalez in https://github.com/firesim/firesim/pull/1521
+* Misc. Fixes (Downgrade cryptography package, pin packages, fix non-firesim make project compilation) by @abejgonzalez in https://github.com/firesim/firesim/pull/1534
+* Bump CY by @abejgonzalez in https://github.com/firesim/firesim/pull/1555
+* automatically try newer hotfix versions of AMI in manager by @sagark in https://github.com/firesim/firesim/pull/1559
+* Local FPGA managerinit QoL Fixes by @sagark in https://github.com/firesim/firesim/pull/1561
+* changed mmap to xdma_user instead of pci resource  by @cyyself in https://github.com/firesim/firesim/pull/1564
+
 ## [1.16.0] - 2023-03-23
 
 Vitis documentation updates, re-work of FireSim driver code, URI support for tarball/xclbins, Various bumps
