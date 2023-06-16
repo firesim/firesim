@@ -54,12 +54,20 @@ builds_to_run:
     # - nitefury_firesim_rocket_singlecore_no_nic
 
 agfis_to_share:
-    - firesim_rocket_quadcore_nic_l2_llc4mb_ddr3
     - firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
     - firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3
-    - firesim_boom_singlecore_nic_l2_llc4mb_ddr3
 
     - firesim_supernode_rocket_singlecore_nic_l2_lbp
+    - firesim_rocket_quadcore_nic_l2_llc4mb_ddr3
+    - firesim_boom_singlecore_nic_l2_llc4mb_ddr3
+
+    - firesim_rocket_singlecore_no_nic_l2_lbp
+    - firesim_rocket_singlecore_sha3_nic_l2_llc4mb_ddr3
+    - firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3
+    - firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3_printf
+    - firesim_gemmini_rocket_singlecore_no_nic
+    - firesim_gemmini_printf_rocket_singlecore_no_nic
+
 
     # Configs for tutorials
     # - firesim_rocket_singlecore_no_nic_l2_lbp
