@@ -257,7 +257,7 @@ set -o pipefail
     fi
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to conda
-    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -y "${CONDA_PACKAGE_SPECS[@]}"
+    $SUDO "${CONDA_EXE}" "$CONDA_SUBCOMMAND" $DRY_RUN_OPTION -n "$CONDA_ENV_NAME" -c conda-forge -y "${CONDA_PACKAGE_SPECS[@]}"
 
     # to enable use of sudo and avoid modifying 'secure_path' in /etc/sudoers, we specify the full path to pip
     CONDA_PIP_EXE="${CONDA_ENV_BIN}/pip"
