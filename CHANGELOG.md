@@ -3,11 +3,11 @@
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
 ## [1.17.0] - 2023-06-16
-Added support for VCU118, RHSResearch NiteFury II, XCelium. Imporved support for U250/U280/xcelium
+Support for several new local FPGA boards added: Xilinx VCU118 (w/XDMA), Xilinx Alveo U250/U280 (w/XDMA, in addition to previous Vitis support), RHSResearch NiteFury II (w/XDMA). FireSim now also supports Xcelium for metasims.
 
 ### Added
 * Manager support for custom TARGET_PROJECT by @sagark in https://github.com/firesim/firesim/pull/1495
-* Bare Xilinx U250/U280 shell support by @abejgonzalez in https://github.com/firesim/firesim/pull/1497
+* Bare Xilinx U250/U280 shell support by @bgottschall @davidmetz @abejgonzalez in https://github.com/firesim/firesim/pull/1497
 * Buildbitstream CI by @abejgonzalez in https://github.com/firesim/firesim/pull/1458
 * FireSim Support for Xilinx VCU118 by @sagark in https://github.com/firesim/firesim/pull/1507
 * add mcs command to implementation script for u250 by @kevindna in https://github.com/firesim/firesim/pull/1518
