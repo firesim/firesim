@@ -223,7 +223,7 @@ set -o pipefail
         argcomplete==1.12.3 \
         "conda-lock>=1" \
         expect \
-        python \
+        python=3.11 \
         boto3==1.20.21 \
         pytz \
         mypy-boto3-s3==1.21.0 \
