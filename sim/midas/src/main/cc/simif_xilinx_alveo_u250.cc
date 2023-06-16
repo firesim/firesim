@@ -142,7 +142,7 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
   if (!pci_device_id) {
     fprintf(stderr,
             "PCI Device ID not specified. Assuming PCI Device ID 0x903f\n");
-    pci_vendor_id = 0x903f;
+    pci_device_id = 0x903f;
   }
 
   printf("Using: " PCI_DEV_FMT
@@ -236,27 +236,10 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
   assert(ret >= 0);
   fpga_pci_check_file_id(sysfs_name, pci_device_id);
 
-  // open and memory map
-  snprintf(sysfs_name,
-           sizeof(sysfs_name),
-           "/sys/bus/pci/devices/" PCI_DEV_FMT "/resource%u",
-           domain_id,
-           bus_id,
-           device_id,
-           pf_id,
-           bar_id);
-
-  fd = open(sysfs_name, O_RDWR | O_SYNC);
-  assert(fd != -1);
-
-  bar0_base = mmap(0, bar0_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  assert(bar0_base != MAP_FAILED);
-  close(fd);
-  fd = -1;
-
   // XDMA setup
   char device_file_name[256];
   char device_file_name2[256];
+  char user_file_name[256];
 
   ret = snprintf(sysfs_name,
                  sizeof(sysfs_name),
@@ -283,6 +266,17 @@ void simif_xilinx_alveo_u250_t::fpga_setup(uint16_t domain_id,
   }
 
   assert(xdma_id != -1);
+
+  // open and memory map
+  sprintf(user_file_name, "/dev/xdma%d_user", xdma_id);
+
+  fd = open(user_file_name, O_RDWR | O_SYNC);
+  assert(fd != -1);
+
+  bar0_base = mmap(0, bar0_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  assert(bar0_base != MAP_FAILED);
+  close(fd);
+  fd = -1;
 
   sprintf(device_file_name, "/dev/xdma%d_h2c_0", xdma_id);
   printf("Using xdma write queue: %s\n", device_file_name);
