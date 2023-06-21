@@ -180,7 +180,6 @@ class PeekPokeTokenizedIO(private val targetIO: PeekPokeTargetIO) extends Record
   val outs  = targetOutputs.map({ case (field, name) => name -> InputChannel(field) })
   val ins = targetInputs.map({ case (field, name) => name -> OutputChannel(field) })
   override val elements = ListMap((ins ++ outs):_*)
-  override def cloneType = new PeekPokeTokenizedIO(targetIO).asInstanceOf[this.type]
 }
 
 object PeekPokeTokenizedIO {
@@ -210,7 +209,6 @@ class PeekPokeTargetIO(targetIO: Seq[(String, Data)]) extends Record {
     Seq("clock" -> clock) ++
     targetIO.map({ case (name, field) => name -> Flipped(chiselTypeOf(field)) })
   ):_*)
-  override def cloneType = new PeekPokeTargetIO(targetIO).asInstanceOf[this.type]
 }
 
 class PeekPokeBridge(targetIO: Seq[(String, Data)]) extends BlackBox

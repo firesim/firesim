@@ -99,7 +99,6 @@ object SimUtils {
   // Simple wrapper for nested bundles.
   private class BundleRecord(elms: Seq[(String, Data)]) extends Record {
     override val elements = ListMap((elms.map { case (name, data) => name -> data.cloneType }):_*)
-    override def cloneType: this.type = new BundleRecord(elms).asInstanceOf[this.type]
     override def toString: String = s"{${elements.map({case (name, data) => s"${name}: ${data}"}).mkString(", ")}}"
   }
 
