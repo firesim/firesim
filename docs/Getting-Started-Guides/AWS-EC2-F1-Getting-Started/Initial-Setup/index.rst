@@ -10,6 +10,7 @@ FireSim, as well as cloning/installing FireSim on your manager instance.
    :maxdepth: 2
    :caption: Initial Setup/Installation:
 
+   Background-Terminology
    First-time-AWS-User-Setup
    Configuring-Required-Infrastructure-in-Your-AWS-Account
    Setting-up-your-Manager-Instance

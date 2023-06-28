@@ -1,0 +1,1 @@
+.. include:: ../../Terminology-Template.rst
