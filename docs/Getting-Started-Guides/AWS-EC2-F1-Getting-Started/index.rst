@@ -1,5 +1,5 @@
-AWS EC2 F1 Getting Started
-==========================
+AWS EC2 F1 Getting Started Guide
+=====================================
 
 The tutorials that follow this page will guide you through the complete flow for
 getting an example FireSim simulation up and running using AWS EC2 F1. At the end of this

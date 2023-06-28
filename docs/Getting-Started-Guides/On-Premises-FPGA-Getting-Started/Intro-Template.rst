@@ -1,4 +1,4 @@
-|fpga_name| Getting Started
+|fpga_name| Getting Started Guide
 =======================================
 
 This getting started guide will guide you through the complete flow
