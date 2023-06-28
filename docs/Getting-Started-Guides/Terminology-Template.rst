@@ -32,29 +32,26 @@ on the simulated RISC-V system (*target*-software) or on a host x86 machine (*ho
 Machines used to build and run FireSim simulations are broadly classified into
 three groups:
 
-**Manager Machine/Instance**
-  This is the main host machine (e.g., your local desktop or an AWS EC2
-  instance) that you will "do work" on. This is where you'll clone your copy of
-  FireSim and use the FireSim Manager to deploy builds/simulations from.
+**Manager |mach_or_inst|**
+  This is the main host machine (e.g., |mach_details|) that you will "do work"
+  on. This is where you'll clone your copy of FireSim and use the FireSim
+  Manager to deploy builds/simulations from.
 
-**Build Farm Machines/Instances**
-  These are local machines ("build farm machines") or cloud instances ("build
-  farm instances") that are used by the FireSim manager to run FPGA bitstream
-  builds. The manager will automatically ship all sources necessary to run
-  builds to these machines and will run the Verilog to FPGA bitstream build
-  process on them.
+**Build Farm |mach_or_inst|s**
+  These are a collection of |mach_or_inst2|s ("build farm |mach_or_inst_l|s")
+  that are used by the FireSim manager to run FPGA bitstream builds. The
+  manager will automatically ship all sources necessary to run builds to these
+  |mach_or_inst_l| and will run the Verilog to FPGA bitstream build process on
+  them.
 
-**Run Farm Machines/Instances**
-  These are a collection of local machines ("run farm machines") or cloud
-  instances ("run farm instances") with FPGAs attached that the manager manages
-  and deploys simulations onto. You can use multiple Run Farms in parallel to
-  run multiple separate simulations in parallel.
+**Run Farm |mach_or_inst|s**
+  These are a collection of |mach_or_inst2|s ("run farm |mach_or_inst_l|s")
+  with FPGAs attached that the manager manages and deploys simulations onto.
+  You can use multiple Run Farms in parallel to run multiple separate
+  simulations in parallel.
 
 
-In the simplest setup, a single host machine (e.g. your desktop) can serve
-the function of all three of these: as the manager machine, the build farm
-machine (assuming Vivado is installed), and the run farm machine (assuming
-an FPGA is attached).
+|simple_setup|
 
 One final piece of terminology will also be referenced throughout these
 docs:

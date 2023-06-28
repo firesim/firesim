@@ -4,6 +4,12 @@ Initial Setup/Installation
 Background/Terminology
 --------------------------
 
+.. |mach_or_inst| replace:: Machine
+.. |mach_or_inst_l| replace:: machine
+.. |mach_details| replace:: your local desktop or server
+.. |mach_or_inst2| replace:: local machine
+.. |simple_setup| replace:: In the simplest setup, a single host machine (e.g. your desktop) can serve the function of all three of these: as the manager machine, the build farm machine (assuming Vivado is installed), and the run farm machine (assuming an FPGA is attached).
+
 .. include:: ../../Terminology-Template.rst
 
 
