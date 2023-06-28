@@ -16,7 +16,7 @@ Building target software
 
 In these instructions, we'll assume that you want to boot Linux on your
 simulated node. To do so, we'll need to build our FireSim-compatible RISC-V
-Linux distro. For this tutorial, we will use a simple buildroot-based
+Linux distro. For this guide, we will use a simple buildroot-based
 distribution. You can do this like so:
 
 .. code-block:: bash
@@ -372,7 +372,7 @@ where you can type commands into the simulation and run programs. For example:
 	#
 
 
-At this point, you can run workloads as you'd like. To finish off this tutorial,
+At this point, you can run workloads as you'd like. To finish off this guide,
 let's poweroff the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
@@ -453,7 +453,7 @@ automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.
 
-For now, let's wrap-up our tutorial by terminating the ``f1.2xlarge`` instance
+For now, let's wrap-up our guide by terminating the ``f1.2xlarge`` instance
 that we launched. To do so, run:
 
 .. code-block:: bash
@@ -499,4 +499,4 @@ Congratulations on running your first FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left
 (for example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`), or you can continue
-on with the cluster simulation tutorial.
+on with the cluster simulation guide.

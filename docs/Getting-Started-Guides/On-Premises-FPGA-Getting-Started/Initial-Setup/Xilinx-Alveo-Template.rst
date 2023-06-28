@@ -96,7 +96,7 @@ Now you're ready to continue with other FireSim setup!
 Setting up your On-Premises Machine
 ===================================
 
-This tutorial is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
+This guide is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
 
 Finally, ensure that the |tool_type| tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
@@ -237,7 +237,7 @@ your FireSim directory and source this file again with the argument given.**
 Final Environment Check
 -----------------------
 
-Finally, lets verify that the environment variables are correctly setup for the tutorial. Run:
+Finally, lets verify that the environment variables are correctly setup for the guide. Run:
 
 .. code-block:: bash
 

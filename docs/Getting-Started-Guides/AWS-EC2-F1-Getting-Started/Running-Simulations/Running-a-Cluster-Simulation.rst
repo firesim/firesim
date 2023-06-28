@@ -13,7 +13,7 @@ Make sure you are ``ssh`` or ``mosh``'d into your manager instance and have sour
 Returning to a clean configuration
 -------------------------------------
 
-If you already ran the single-node tutorial, let's return to a clean FireSim
+If you already ran the single-node getting started guide, let's return to a clean FireSim
 manager configuration by doing the following:
 
 .. code-block:: bash
@@ -25,8 +25,8 @@ manager configuration by doing the following:
 Building target software
 ------------------------
 
-If you already built target software during the single-node tutorial, you can
-skip to the next part (Setting up the manager configuration). If you haven't followed the single-node tutorial,
+If you already built target software during the single-node getting started guide, you can
+skip to the next part (Setting up the manager configuration). If you haven't followed the single-node getting started guide,
 continue with this section.
 
 In these instructions, we'll assume that you want to boot the buildroot-based
@@ -81,7 +81,7 @@ You'll see other parameters here, like ``run_instance_market``,
 AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
-As in the single-node tutorial, we will leave the ``workload:`` mapping
+As in the single-node getting started guide, we will leave the ``workload:`` mapping
 unchanged here, since we do want to run the buildroot-based Linux on our
 simulated system. The ``terminate_on_completion`` feature is an advanced feature
 that you can learn more about in the :ref:`manager-configuration-files`
@@ -396,7 +396,7 @@ where you can type commands into the simulation and run programs. For example:
 	#
 
 
-At this point, you can run workloads as you'd like. To finish off this tutorial,
+At this point, you can run workloads as you'd like. To finish off this getting started guide,
 let's poweroff the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
@@ -530,7 +530,7 @@ useful for running benchmarks automatically. Note that there is a directory for
 each simulated node and each simulated switch in the cluster. The
 :ref:`defining-custom-workloads` section describes this process in detail.
 
-For now, let's wrap-up our tutorial by terminating the ``f1.16xlarge`` instance
+For now, let's wrap-up our guide by terminating the ``f1.16xlarge`` instance
 that we launched. To do so, run:
 
 .. code-block:: bash
@@ -575,5 +575,5 @@ responsible for ensuring that your instances are terminated appropriately.**
 
 Congratulations on running a cluster FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left.
-Or, hit next to continue to a tutorial that shows you how to build your own
+Or, hit next to continue to a guide that shows you how to build your own
 custom FPGA images.

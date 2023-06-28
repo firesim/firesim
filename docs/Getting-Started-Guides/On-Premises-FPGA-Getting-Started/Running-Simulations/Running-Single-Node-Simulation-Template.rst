@@ -12,7 +12,7 @@ Building target software
 
 In these instructions, we'll assume that you want to boot Linux on your
 simulated node. To do so, we'll need to build our FireSim-compatible RISC-V
-Linux distro. For this tutorial, we will use a simple buildroot-based
+Linux distro. For this guide, we will use a simple buildroot-based
 distribution. You can do this like so:
 
 .. code-block:: bash
@@ -304,7 +304,7 @@ where you can type commands into the simulation and run programs. For example:
 	#
 
 
-At this point, you can run workloads as you'd like. To finish off this tutorial,
+At this point, you can run workloads as you'd like. To finish off this guide,
 let's power off the simulated system and see what the manager does. To do so,
 in the console of the simulated system, run ``poweroff -f``:
 
@@ -381,11 +381,11 @@ If you take a look at the workload output directory given in the manager output 
 
 What are these files? They are specified to the manager in a configuration file
 (:gh-file-ref:`deploy/workloads/linux-uniform.json`) as files that we want
-automatically copied back from the temporary simulation directory into the ``results-workload`` directory (on our manager machine - which is also ``localhost`` for this tutorial) after we run a simulation, which is
+automatically copied back from the temporary simulation directory into the ``results-workload`` directory (on our manager machine - which is also ``localhost`` for this guide) after we run a simulation, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.
 
-For now, let's wrap-up our tutorial by terminating the Run Farm that we launched.
+For now, let's wrap-up our guide by terminating the Run Farm that we launched.
 To do so, run:
 
 .. code-block:: bash

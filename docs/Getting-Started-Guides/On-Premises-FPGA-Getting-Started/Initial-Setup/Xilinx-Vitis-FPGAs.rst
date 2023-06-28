@@ -13,7 +13,7 @@ Requirements and Installations
 ------------------------------
 
 We require a base machine that is able to support a |fpga_name| and running Xilinx Vitis.
-For the purposes of this tutorial, we assume you are running with a |fpga_name|.
+For the purposes of this guide, we assume you are running with a |fpga_name|.
 Please refer to the minimum system requirements given in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements.
 ``sudo`` access is not needed for the machine except for when the |fpga_name| and corresponding software is installed.
 
@@ -52,7 +52,7 @@ Now you're ready to continue with other FireSim setup!
 Setting up your On-Premises Machine
 ===================================
 
-This tutorial is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
+This guide will walk you through setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
 
 Finally, ensure that the |tool_type| tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
@@ -193,7 +193,7 @@ your FireSim directory and source this file again with the argument given.**
 Final Environment Check
 -----------------------
 
-Finally, lets verify that the environment variables are correctly setup for the tutorial. Run:
+Finally, let's verify that the environment variables are correctly set up for the rest of this guide. Run:
 
 .. code-block:: bash
 
