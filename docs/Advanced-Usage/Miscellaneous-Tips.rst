@@ -148,7 +148,7 @@ refer to the the ``CI_README.md`` under the ``.github/`` directory.
 Accessing Vivado logs
 -----------------------------------
 
-There are times when we want to view Vivado logs when a bitstream build fails (especially when a bitstream builds
+There are times when we want to view Vivado logs when a bitstream build fails (especially when a bitstream build fails
 while the manager is printing out ``pending``).
 FireSim stores these logs in storage servers called EC2 buckets.
 The following steps will guide you on how to copy these logs from the bucket to your manager instance:
