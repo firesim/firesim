@@ -15,7 +15,7 @@ usage() {
     echo "   --strategy  : A string to a precanned set of build directives.
                           See aws-fpga documentation for more info/.
                           For this platform TIMING and AREA supported."
-    echo "   --board     : FPGA board {au250,au280}."
+    echo "   --board     : FPGA board {au200,au250,au280}."
     echo "   --help      : Display this message"
     exit "$1"
 }
