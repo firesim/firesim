@@ -37,8 +37,8 @@ Single-Node Simulations Using One or More On-Premises FPGAs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this usage model, FireSim allows for simulation of targets consisting of
-individual SoC designs (e.g., those produced by `Chipyard
-<https://chipyard.readthedocs.io/>__`) at 150+ MHz running on on-premises
+individual SoC designs (e.g., those produced by `Chipyard <https://chipyard.readthedocs.io/>`__)
+at 150+ MHz running on on-premises
 FPGAs, such as those attached to your local desktop, laptop, or cluster. Just
 like on the cloud, the FireSim manager can automatically distribute and manage
 jobs on one or more on-premises FPGAs, including running complex workloads like
