@@ -18,7 +18,7 @@ We frequently prefix words with these terms. For example, software can run
 on the simulated RISC-V system (*target*-software) or on a host x86 machine (*host*-software).
 
 
-.. figure:: img/firesim_env.png
+.. figure:: ../img/firesim_env.png
    :alt: FireSim Infrastructure Setup
 
    FireSim Infrastructure Diagram
