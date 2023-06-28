@@ -1,10 +1,17 @@
+Initial Setup/Installation
+==============================
+
+Background/Terminology
+--------------------------
+
 .. include:: ../../Terminology-Template.rst
 
+
 FPGA Software Setup
-===================
+---------------------------
 
 System requirements and Setup
-------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The below sections outline what you need to install to run FireSim on each
 machine type in a FireSim cluster. Note that the below three machine types
@@ -17,13 +24,13 @@ Xilinx.
 
 
 Manager Machine
---------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The manager machine requires no special setup at this stage. We will clone
 the FireSim repo and set up dependencies for the manager in a later step.
 
 Run Farm Machine(s)
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To set up your Run Farm Machines, please do the following:
 
@@ -37,7 +44,7 @@ to ensure that your intended Run Farm machine is sufficient for hosting a |fpga_
 
 
 Build Farm Machines(s)
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you are not planning to run bitstream builds, you can skip this section
 for now and return later.
@@ -61,7 +68,7 @@ Importantly, using this FPGA with FireSim requires that you have ``sudo`` **pass
 This is needed to flash the FPGA bitstream onto the FPGA.
 
 XDMA Setup
-----------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To communicate with the FPGA over PCI-e, we need to install the Xilinx XDMA kernel module.
 First, lets install the XDMA kernel module into a FireSim-known location:
@@ -96,7 +103,7 @@ Now you're ready to continue with other FireSim setup!
 
 
 Setting up your On-Premises Machine
-===================================
+--------------------------------------
 
 This guide is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
@@ -110,7 +117,7 @@ You can check this by ensuring that the output of the following command shows th
     ssh localhost printenv
 
 Other Miscellaneous Setup
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Additionally, you should be able to run ``ssh localhost`` without needing a password.
 The FireSim manager program runs all commands by ``ssh``-ing into a BuildFarm/RunFarm machine given an IP address then running the command.
@@ -148,7 +155,7 @@ Most likely you will need to follow the instructions `here <https://askubuntu.co
    does not reside on an NFS mount.
 
 Setting up the FireSim Repo
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We're finally ready to fetch FireSim's sources. Run:
 
@@ -237,7 +244,7 @@ path. Sourcing this the first time will take some time -- however each time afte
 your FireSim directory and source this file again with the argument given.**
 
 Final Environment Check
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Finally, lets verify that the environment variables are correctly setup for the guide. Run:
 
@@ -265,7 +272,7 @@ Inspect that both the ``PATH`` and ``LD_LIBRARY_PATH`` are setup similarly to ru
 locally (without ``ssh localhost``).
 
 Completing Setup Using the Manager
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The FireSim manager contains a command that will finish the rest of the FireSim setup process.
 To run it, do the following:
@@ -281,10 +288,10 @@ sections.
 Hit Next to continue with the guide.
 
 FPGA Board Setup
-===================
+------------------------
 
 FPGA Setup
-----------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. warning:: Currently, FireSim only supports a single type of FPGA (i.e only |fpga_name| FPGAs) installed on a machine.
    This includes not mixing the use of Xilinx Vitis/XRT-enabled FPGAs on the system.

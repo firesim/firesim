@@ -1,6 +1,3 @@
-Background/Terminology
-==============================
-
 Before we jump into setting up FireSim, it is important to clarify several terms
 that we will use throughout the rest of this documentation.
 
