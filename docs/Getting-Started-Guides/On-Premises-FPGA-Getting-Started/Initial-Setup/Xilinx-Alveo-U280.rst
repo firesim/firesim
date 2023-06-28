@@ -6,4 +6,4 @@
 .. |example_var| replace:: XILINX_VIVADO
 .. |deploy_manager_code| replace:: ``XilinxAlveoU280InstanceDeployManager``
 
-.. include:: Xilinx-Alveo-Template.rst
+.. include:: Xilinx-XDMA-Template.rst

@@ -5,6 +5,7 @@
 .. |tool_type| replace:: Xilinx XRT/Vitis
 .. |example_var| replace:: XILINX_XRT
 
+.. include:: ../../Terminology-Template.rst
 
 FPGA and Tool Setup
 ===================

@@ -1,3 +1,5 @@
+.. include:: ../../Terminology-Template.rst
+
 FPGA Software Setup
 ===================
 
