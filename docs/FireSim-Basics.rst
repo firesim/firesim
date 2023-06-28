@@ -162,5 +162,5 @@ FireSim supports many types of FPGAs and FPGA platforms! Click one of the follow
 
 * :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/RHS-Research-Nitefury-II-FPGAs`
 
-* :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`. The Vitis flow is not recommended unless you have specific constraints that require using Vitis. Use the aforementioned `/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs` Guide instead.
+* (Not recommended) :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`. The Vitis flow is not recommended unless you have specific constraints that require using Vitis. Use the aforementioned :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs` instead.
 
