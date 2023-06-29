@@ -4,13 +4,14 @@
 .. |runner| replace:: Xilinx XRT/Vitis
 .. |hwdb_entry_name| replace:: vitis_firesim_rocket_singlecore_no_nic
 
-.. warning:: **We highly recommend using the standard U250 flow instead of this
-   Vitis-based flow. You can find the standard flow here: :ref:`u250-standard-flow`.**
+.. warning:: **We highly recommend using the standard, XDMA-based U250 flow instead of this
+   Vitis-based U250 flow. You can find the standard, XDMA-based flow here:** :ref:`u250-standard-flow`.
 
-.. include:: Running-Single-Node-Simulation-Template.rst
+.. warning:: The Vitis flow does not support FireSim simulations with bridges that use the PCIe DMA interface (i.e. TracerV, NIC, Dromajo, Printfs).
+	This will be added in a future FireSim release. For now, you should use the XDMA-based U250 support, which supports all of the aforementioned
+        FireSim features. The XDMA-based U250 support is described here: :ref:`u250-standard-flow`.
 
-.. warning:: Currently, FireSim simulations with bridges that use the  PCI-E DMA interface are not supported (i.e. TracerV, NIC, Dromajo, Printfs) with |fpga_type| FPGAs.
-	This will be added in a future FireSim release.
+.. include:: Running-Single-Node-Simulation-Vitis-Template.rst
 
 .. warning:: In some cases, simulation may fail because you might need to update the |fpga_type| DRAM offset that is currently hard coded in both the FireSim |runner| driver code and platform shim.
 	To verify this, run ``xclbinutil --info --input <YOUR_XCL_BIN>``, obtain the ``bank0`` ``MEM_DDR4`` offset.

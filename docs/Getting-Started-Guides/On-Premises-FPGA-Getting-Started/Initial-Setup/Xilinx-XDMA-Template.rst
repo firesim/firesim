@@ -34,7 +34,7 @@ machine types).
 
 
 1. Fix default ``.bashrc``
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
