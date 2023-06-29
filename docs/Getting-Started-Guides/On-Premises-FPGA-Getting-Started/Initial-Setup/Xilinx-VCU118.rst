@@ -1,9 +1,15 @@
 .. |fpga_name| replace:: Xilinx VCU118
-.. |hwdb_entry_name| replace:: ``xilinx_vcu118_firesim_rocket_singlecore_no_nic``
+.. _fpga_name: https://www.xilinx.com/products/boards-and-kits/vcu118.html
+.. |fpga_power_info| replace:: For the VCU118, this is usually ATX 4-pin peripheral power (NOT PCIe power) from the system's PSU, attached to the FPGA via the "ATX Power Supply Adapter Cable" that comes with the VCU118.
+.. |hwdb_entry_name| replace:: ``xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic``
 .. |platform_name| replace:: xilinx_vcu118
 .. |board_name| replace:: vcu118
 .. |tool_type| replace:: Xilinx Vivado
-.. |example_var| replace:: XILINX_VIVADO
+.. |tool_type_lab| replace:: Xilinx Vivado Lab
+.. |example_var| replace:: ``XILINX_VIVADO``
 .. |deploy_manager_code| replace:: ``XilinxVCU118InstanceDeployManager``
+.. |fpga_spi_part_number| replace:: ``mt25qu01g-spi-x1_x2_x4``
+.. |fpga_attach_prereq| replace:: into an open PCIe slot in the machine. Also, ensure that the SW16 switches on the FPGA are set to ``0101`` to enable QSPI flashing over JTAG (i.e., ``position 1 = 0``, ``position 2 = 1``, ``position 3 = 0``, and ``position 4 = 1``. Having the switch set to the side of the position label indicates 0.)
+.. |jtag_help| replace:: JTAG. 
 
 .. include:: Xilinx-XDMA-Template.rst

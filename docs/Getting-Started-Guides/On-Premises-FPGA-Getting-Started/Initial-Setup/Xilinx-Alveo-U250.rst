@@ -9,5 +9,7 @@
 .. |example_var| replace:: ``XILINX_VIVADO``
 .. |deploy_manager_code| replace:: ``XilinxAlveoU250InstanceDeployManager``
 .. |fpga_spi_part_number| replace:: ``mt25qu01g-spi-x1_x2_x4``
+.. |fpga_attach_prereq| replace:: into an open PCIe slot in the machine.
+.. |jtag_help| replace:: JTAG. 
 
 .. include:: Xilinx-XDMA-Template.rst

@@ -168,19 +168,17 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 1. Poweroff your machine.
 
-2. Insert your |fpga_name|_ FPGA into an open PCIe slot in the machine.
+2. Insert your |fpga_name|_ FPGA |fpga_attach_prereq|
 
 3. Attach any additional power cables between the FPGA and the host machine. |fpga_power_info|
 
-4. Attach the USB cable between the FPGA and the host machine for JTAG.
+4. Attach the USB cable between the FPGA and the host machine for |jtag_help|
 
 5. Boot the machine.
 
-6. Download a bitstream tar file for your FPGA using one of the links from this
-   file: `FireSim Sample HWDB
+6. Obtain an existing bitstream tar file for your FPGA by opening the ``bitstream_tar`` URL listed
+   under |hwdb_entry_name| in the `FireSim Sample HWDB File
    <https://github.com/firesim/firesim/blob/main/deploy/sample-backup-configs/sample_config_hwdb.yaml>`_.
-   If there are multiple bitstreams listed for your FPGA, you can choose any
-   bitstream.
 
 7. Extract the ``.tar.gz`` file to a known location. Inside, you will find
    three files; the one we are currently interested in will be called
@@ -332,7 +330,7 @@ IP address.
 Setting up the FireSim Repo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Machine:** Manager Machine
+**Machine:** From this point forward, run everything on your Manager Machine, unless otherwise instructed.
 
 We're finally ready to fetch FireSim's sources. This should be done on your Manager Machine. Run:
 
@@ -346,45 +344,25 @@ We're finally ready to fetch FireSim's sources. This should be done on your Mana
     git checkout |overall_version|
 
 Next, we will bootstrap the machine by installing Miniforge Conda, our software package manager, and set up a default software environment using Conda.
-First run the following to see the options to the bootstrap script:
+
+You should select a location where you want conda to be installed. This can be an existing Miniforge Conda
+install, or a directory (that does not exist) where you would like conda to be installed.
+
+Replace ``REPLACE_ME_USER_CONDA_LOCATION`` in the command below with your chosen path and run it:
 
 .. code-block:: bash
 
-   ./scripts/machine-launch-script.sh --help
+   ./scripts/machine-launch-script.sh --prefix REPLACE_ME_USER_CONDA_LOCATION
 
-Make sure you understand the options and appropriately run the command.
-For example, if you already installed Conda you can use the ``--prefix`` flag to point to an existing installation.
-You can also use that same flag to setup Conda in a non-``sudo`` required location.
-Next run the ``machine-launch-script.sh``, with the options your setup requires.
-Below we will give a few examples on how to run the command (choose the command or modify it accordingly):
 
-.. Warning:: We recommend you re-install Conda in favor of Miniforge Conda (a minimal installation of Conda).
+Among other setup steps, the script will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim``.
 
-.. tabs::
+When prompted, you should allow the Conda installer to modify your ``~/.bashrc`` to automatically place you in the conda environment when opening a new shell.
 
-   .. tab:: With ``sudo`` access (newly install Conda)
+**Once the** ``machine-launch-script.sh`` **completes, ensure that you log out of the machine / exit out of the terminal so that the** ``.bashrc`` **modifications can apply**.
 
-      .. code-block:: bash
+After re-logging back into the machine, you should be in the ``firesim`` Conda environment.
 
-         sudo ./scripts/machine-launch-script.sh
-
-   .. tab:: Without ``sudo`` access (install Conda to user-specified location)
-
-      .. code-block:: bash
-
-         ./scripts/machine-launch-script.sh --prefix REPLACE_USER_SPECIFIED_LOCATION
-
-   .. tab:: Without ``sudo`` access (use existing Conda)
-
-      .. code-block:: bash
-
-         ./scripts/machine-launch-script.sh --prefix REPLACE_PATH_TO_CONDA
-
-If the option is selected, the script will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim`` that is used.
-**Ensure that you log out of the machine / exit out of the terminal after this step so that** ``.bashrc`` **modifications can apply**.
-
-After re-logging back into the machine, you should be in the ``firesim`` Conda environment (or whatever you decided to name the
-environment in the ``machine-launch-script.sh``).
 Verify this by running:
 
 .. code-block:: bash
@@ -395,63 +373,37 @@ If you are not in the ``firesim`` environment and the environment exists, you ca
 
 .. code-block:: bash
 
-   conda activate firesim # or whatever the environment is called
+   conda activate firesim
 
-Next run:
+Next, return to your clone of the FireSim repo and run:
 
 .. code-block:: bash
 
     ./build-setup.sh
 
 The ``build-setup.sh`` script will validate that you are on a tagged branch,
-otherwise it will prompt for confirmation.
-This will have initialized submodules and installed the RISC-V tools and
-other dependencies.
+otherwise it will prompt for confirmation. Then, it will automatically
+initialize submodules and install the RISC-V tools and other dependencies.
 
-Next, run:
+Once ``build-setup.sh`` completes, run:
 
 .. code-block:: bash
 
     source sourceme-manager.sh --skip-ssh-setup
 
 This will perform various environment setup steps, such as adding the RISC-V tools to your
-path. Sourcing this the first time will take some time -- however each time after that should be instantaneous.
+path. Sourcing this the first time will take some time -- however each subsequent sourcing should be instantaneous.
 
 **Every time you want to use FireSim, you should** ``cd`` **into
-your FireSim directory and source this file again with the argument given.**
+your FireSim directory and source** ``sourceme-manager.sh`` **again with the arguments shown above.**
 
-Final Environment Check
+
+Initializing FireSim Config Files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Finally, lets verify that the environment variables are correctly setup for the guide. Run:
+The FireSim manager contains a command that will automatically provide a fresh
+set of configuration files for a given platform.
 
-.. code-block:: bash
-
-   echo $PATH
-
-You should see that both the |tool_type| tools are located in the ``PATH`` are are **after**
-the conda environment path. Next run:
-
-.. code-block:: bash
-
-   echo $LD_LIBRARY_PATH
-
-You should see that the |tool_type| tools are located on your ``LD_LIBRARY_PATH`` and that there
-is no trailing ``:`` (otherwise compilation will error later).
-
-Finally verify that |tool_type| tools are found when running locally through ``ssh``. Run:
-
-.. code-block:: bash
-
-   ssh localhost printenv
-
-Inspect that both the ``PATH`` and ``LD_LIBRARY_PATH`` are setup similarly to running
-locally (without ``ssh localhost``).
-
-Completing Setup Using the Manager
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The FireSim manager contains a command that will finish the rest of the FireSim setup process.
 To run it, do the following:
 
 .. code-block:: bash
@@ -459,92 +411,18 @@ To run it, do the following:
 
     firesim managerinit --platform |platform_name|
 
-It will create initial configuration files, which we will edit in later
-sections.
-
-Hit Next to continue with the guide.
+This will produce several initial configuration files, which we will edit in the next
+section.
 
 
+Configuring the FireSim manager to understand your Run Farm Machine setup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+As our final setup step, we will edit FireSim's configuration files so that the
+manager understands our Run Farm machine setup and the set of FPGAs attached to
+each machine.
 
-
-
-
-
-TODO: OLD FPGA Setup
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-We need to flash the |fpga_name| FPGA(s) SPI flash with a dummy XDMA-enabled design and determine the PCI-e ID (or BDF) associated with the serial number of the FPGA.
-First, we need to flash the FPGA's SPI flash with the dummy XDMA-enabled design so that the PCI-e subsystem can be initially configured.
-Afterwards, we will generate the mapping from FPGA serial numbers to BDFs.
-We provide a set of scripts to do this.
-
-First lets obtain the sample bitstream, let's find the URL to download the file to the machine with the FPGA.
-Below find the HWDB entry called |hwdb_entry_name|.
-
-.. literalinclude:: /../deploy/sample-backup-configs/sample_config_hwdb.yaml
-   :language: yaml
-   :start-after: DOCREF START: |fpga_name| HWDB Entries
-   :end-before: DOCREF END: |fpga_name| HWDB Entries
-
-Look for the ``bitstream_tar: <URL>`` line within |hwdb_entry_name| and keep note of the URL.
-We will replace the ``BITSTREAM_TAR`` bash variable below with that URL.
-Next, lets unpack the ``tar`` archive and obtain the ``mcs`` file used to program the FPGA SPI flash.
-
-.. code-block:: bash
-   :substitutions:
-
-   # unpack the file in any area
-   cd ~
-
-   BITSTREAM_TAR=<URL FROM BEFORE>
-   tar xvf $BITSTREAM_TAR
-
-   ls |platform_name|
-
-You should see a ``mcs`` file use to program the SPI flash of the FPGA.
-Next, lets flash the SPI flash modules of each |fpga_name| in the system with the dummy bitstream.
-Open Xilinx Vivado (or Vivado Lab), connect to each FPGA and program the SPI flash.
-You can refer to https://www.fpgadeveloper.com/how-to-program-configuration-flash-with-vivado-hardware-manager/ for examples on how to do this for various boards.
-
-Next, **cold reboot** the computer.
-This will reconfigure your PCI-E settings such that FireSim can detect the XDMA-enabled bitstream.
-After the machine is rebooted, you may need to re-insert the XDMA kernel module.
-Then verify that you can see the XDMA module with:
-
-.. code-block:: bash
-
-   lsmod | grep -i xdma
-
-Also, verify that the FPGA programming worked by looking at the ``lspci`` output.
-For example, we should see ``Serial controller`` for BDF's that were flashed.
-
-.. code-block:: bash
-
-   lspci | grep -i xilinx
-
-   # example output
-   04:00.0 Serial controller: Xilinx Corporation Device 903f (rev ff)
-   83:00.0 Serial controller: Xilinx Corporation Device 903f (rev ff)
-
-If you don't see similar output, you might need to **warm reboot** your machine until you see the output.
-
-.. Warning:: Anytime the host computer is rebooted you may need to re-run parts of the setup process (i.e. re-insert XDMA kernel module).
-     Before continuing to FireSim simulations after a host computer reboot, ensure that ``cat /proc/devices | grep xdma`` command is successful.
-     Also ensure that you see ``Serial controller`` for the BDF of the FPGA you would like to use in ``lspci | grep -i xilinx``.
-
-Next, let's generate the mapping from FPGA serial numbers to the BDF.
-Re-enter the FireSim repository and run the following commands to re-setup the repo after reboot.
-
-.. code-block:: bash
-   :substitutions:
-
-   cd firesim
-
-   # rerunning this since the machine rebooted
-   source sourceme-manager.sh --skip-ssh-setup
-
-Next, open up the ``deploy/config_runtime.yaml`` file and replace the following keys to be the following:
+Inside the cloned FireSim repo, open up the ``deploy/config_runtime.yaml`` file and replace the following keys to be the following:
 
 * ``default_platform`` should be |deploy_manager_code|
 
@@ -561,25 +439,5 @@ Then, run the following command to generate a mapping from a PCI-E BDF to FPGA U
 
 This will generate a database file in ``/opt/firesim-db.json`` that has this mapping.
 
-Now you're ready to continue with other FireSim setup!
-
-
-
-
-
-TODO
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Card-Installation-Procedures
-
-We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:
-
-* Vivado 2021.1 or 2022.2
-
-* U250 board package (corresponding with Vivado 2021.1 or 2022.2)
-
-  * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
-
-  * Ensure that the board package is installed to a Vivado accessible location: https://support.xilinx.com/s/article/The-board-file-location-with-the-latest-Vivado-tools?language=en_US
-
+Now you're ready to run your first FireSim simulation! Hit Next to continue with the guide.
 

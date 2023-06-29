@@ -3,6 +3,30 @@ Building Your Own Hardware Designs
 
 This section will guide you through building a |fpga_name| FPGA |bit_file_type| (FPGA image) for a FireSim simulation.
 
+
+TODO
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Card-Installation-Procedures
+
+We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:
+
+* Vivado 2021.1 or 2022.2
+
+* U250 board package (corresponding with Vivado 2021.1 or 2022.2)
+
+  * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
+
+  * Ensure that the board package is installed to a Vivado accessible location: https://support.xilinx.com/s/article/The-board-file-location-with-the-latest-Vivado-tools?language=en_US
+
+
+
+
+
+
+
+
+
 Build Recipes
 ---------------
 
