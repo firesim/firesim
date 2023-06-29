@@ -42,9 +42,10 @@ To do so, edit your ``~/.bashrc`` file so that the following section is removed:
 
 .. code-block:: bash
 
-   # IF not running interactively, don't do anything
-   case
-   ...
+   # If not running interactively, don't do anything
+   case $- in
+        *i*) ;;
+          *) return;;
    esac
 
 
