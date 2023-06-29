@@ -5,6 +5,16 @@
 .. |tool_type| replace:: Xilinx XRT/Vitis
 .. |example_var| replace:: XILINX_XRT
 
+.. |manager_machine| replace:: **Manager Machine**
+.. |build_farm_machine| replace:: **Build Farm Machines**
+.. |run_farm_machine| replace:: **Run Farm Machines**
+
+.. |mach_or_inst| replace:: Machine
+.. |mach_or_inst_l| replace:: machines
+.. |mach_details| replace:: your local desktop or server
+.. |mach_or_inst2| replace:: local machines
+.. |simple_setup| replace:: In the simplest setup, a single host machine (e.g. your desktop) can serve the function of all three of these: as the manager machine, the build farm machine (assuming Vivado is installed), and the run farm machine (assuming an FPGA is attached).
+
 .. include:: ../../Terminology-Template.rst
 
 FPGA and Tool Setup
