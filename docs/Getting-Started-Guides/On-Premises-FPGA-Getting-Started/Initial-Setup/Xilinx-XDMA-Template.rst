@@ -240,7 +240,7 @@ and build farm machines:
 .. code-block:: bash
 
    cd ~/.ssh
-   ssh-keygen -t ed25519 -C "firesim" -f firesim.pem
+   ssh-keygen -t ed25519 -C "firesim.pem" -f firesim.pem
    [create passphrase]
 
 Next, add this key to the ``authorized_keys`` file on the manager machine:
@@ -277,12 +277,36 @@ and Build Farm Machines without being prompted for a passphrase.
 
 **Machines:** Manager Machine and Run Farm Machines
 
-Finally, you should also install the ``guestmount`` program and ensure it runs properly.
-This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
-Most likely you will need to follow the instructions `here <https://askubuntu.com/questions/1046828/how-to-run-libguestfs-tools-tools-such-as-virt-make-fs-without-sudo>`_ to ensure ``guestmount`` doesn't error.
+Next, install the ``guestmount`` program:
 
-.. warning:: If using ``guestmount``, verify that the command is able to work properly.
-   Due to prior issues with ``guestmount`` internally, ensure that your FireSim repository (and all temporary directories)
+.. code-block:: bash
+
+   sudo chmod +r /boot/vmlinuz-*
+   sudo apt install libguestfs-tools
+   sudo chmod +r /boot/vmlinuz-*
+
+
+This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
+Using ``guestmount`` instead of the standard mount commands allows for users to perform these operations without requiring ``sudo`` (after this initial installation).
+
+Let's double check that ``guestmount`` is functioning correctly on your system. To do so, we'll generate a dummy filesystem image:
+
+.. code-block:: bash
+
+   cd ~/   # or any scratch area
+   mkdir sysroot-testing
+   cd sysroot-testing
+   mkdir sysroot
+   dd if=/dev/urandom of=sysroot/myfile bs=1024 count=1024
+   virt-make-fs --format=qcow2 --type=ext2 sysroot sysroot.qcow2
+
+Ensure that this command completed without producing an error and that the output file ``sysroot.qcow2`` exists.
+
+Assuming all of this completed successfully (i.e., no error from ``virt-make-fs``), you can delete the ``sysroot-testing`` directory,
+since we will not need it any longer.
+
+
+.. warning:: Due to prior issues we've seen with ``guestmount``, ensure that your FireSim repository
    does not reside on an NFS mount.
 
 
