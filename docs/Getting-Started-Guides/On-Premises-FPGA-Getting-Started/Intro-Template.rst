@@ -1,8 +1,8 @@
 |fpga_name| Getting Started Guide
 ============================================================================================
 
-The getting started guides that follow this page will walk you through the complete flow for
-getting an example FireSim simulation up and running using an on-premises |fpga_name|_ FPGA,
+The getting started guides that follow this page will walk you through the complete (|flow_name|) flow for
+getting an example FireSim simulation up and running using an on-premises |fpga_name_short|_ FPGA,
 from scratch.
 
 First, we'll set up your environment, then run a simulation of a single RISC-V Rocket-based 
