@@ -54,7 +54,7 @@ class StreamWidthAdapter(narrowW: Int, wideW: Int) extends Module {
     io.wide.out.bits := Cat(io.narrow.in.bits, narrow_data.asUInt)
 
     io.narrow.out.valid := io.wide.in.valid
-    io.narrow.out.bits := io.wide.in.bits >> (wide_beats << 3)
+    io.narrow.out.bits := io.wide.in.bits.asTypeOf(Vec(beats, UInt(narrowW.W)))(wide_beats)
     when (io.narrow.out.fire()) {
       wide_beats := Mux(wide_last_beat, 0.U, wide_beats + 1.U)
     }
