@@ -11,6 +11,6 @@ Background/Terminology
 .. |mach_details| replace:: an AWS EC2 instance
 .. |mach_or_inst2| replace:: cloud instances
 .. |simple_setup| replace:: ..
-this is a comment
+        this is a comment
 
 .. include:: ../../Terminology-Template.rst
