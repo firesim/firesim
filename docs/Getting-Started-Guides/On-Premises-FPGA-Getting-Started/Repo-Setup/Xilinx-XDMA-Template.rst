@@ -12,8 +12,8 @@ FireSim Repo Setup
 .. |simple_setup| replace:: In the simplest setup, a single host machine (e.g. your desktop) can serve the function of all three of these: as the manager machine, the build farm machine (assuming Vivado is installed), and the run farm machine (assuming an FPGA is attached).
 
 
-In this step, we will perform final setup by cloning FireSim on your Manager Machine
-and completing setup in the repo.
+Next, we'll clone FireSim on your Manager Machine and run a few final setup steps
+using scripts in the repo.
 
 
 Setting up the FireSim Repo
@@ -112,24 +112,46 @@ Configuring the FireSim manager to understand your Run Farm Machine setup
 
 As our final setup step, we will edit FireSim's configuration files so that the
 manager understands our Run Farm machine setup and the set of FPGAs attached to
-each machine.
+each Run Farm machine.
 
-Inside the cloned FireSim repo, open up the ``deploy/config_runtime.yaml`` file and replace the following keys to be the following:
+Inside the cloned FireSim repo, open up the ``deploy/config_runtime.yaml`` file and set the following keys to the indicated values:
 
-* ``default_platform`` should be |deploy_manager_code|
+* ``default_simulation_dir`` should point to a temporary simulation directory of your choice on your Run Farm Machines. This is the directory that simulations will run out of.
 
-* ``default_simulation_dir`` should point to a temporary simulation directory of your choice
+* ``run_farm_hosts_to_use`` should be a list of ``- IP-address: machine_spec`` pairs, one pair for each of your Run Farm Machines. ``IP-address`` should be the IP address or hostname
+  of the system (that the Manager Machine can use to ssh into the Run Farm Machine) and the ``machine_spec`` should be a value from ``run_farm_host_specs`` in :gh-file-ref:`deploy/run-farm-recipes/externally_provisioned.yaml`. Each spec describes the number of FPGAs attached to a system and other properties about the system.
+
+Here are two examples of how this could be configured:
+
+**Example 1**: Your Run Farm has a single machine with one FPGA attached and this machine is also your Manager Machine:
+
+.. code-block:: yaml
+
+   ...
+       run_farm_hosts_to_use:
+           - localhost: one_fpgas_spec
+   ...
+
+**Example 2**: You have two Run Farm Machines (separate from your Manager Machine). The Run Farm Machines are accessible from your manager machine with the hostnames ``firesim-runner1.berkeley.edu`` and ``firesim-runner2.berkeley.edu``, each with eight FPGAs attached.
+
+.. code-block:: yaml
+
+   ...
+       run_farm_hosts_to_use:
+           - firesim-runner1.berkeley.edu: eight_fpgas_spec
+           - firesim-runner2.berkeley.edu: eight_fpgas_spec
+   ...
 
 * ``default_hw_config`` should be |hwdb_entry_name|
 
-Then, run the following command to generate a mapping from a PCI-E BDF to FPGA UID/serial number.
+Then, run the following command so that FireSim can generate a mapping from the FPGA ID used for JTAG programming to the PCIe ID used to run simulations. If you ever change the physical layout of the machine (e.g., which PCIe slot the FPGAs are attached to), you will need to re-run this command.
 
 .. code-block:: bash
    :substitutions:
 
    firesim enumeratefpgas
 
-This will generate a database file in ``/opt/firesim-db.json`` that has this mapping.
+This will generate a database file in ``/opt/firesim-db.json`` on each Run Farm Machine that has this mapping.
 
 Now you're ready to run your first FireSim simulation! Hit Next to continue with the guide.
 

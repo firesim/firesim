@@ -296,7 +296,9 @@ set -o pipefail
         # with --user so that it goes into the home directory
         argcomplete_extra_args=( --user )
     fi
-    "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
+    set +o pipefail
+    "${DRY_RUN_ECHO[@]}" yes | $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
+    set -o pipefail
 
     # emergency fix for buildroot open files limit issue:
     if [[ "$INSTALL_TYPE" == system ]]; then
